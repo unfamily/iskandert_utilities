@@ -8,6 +8,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.block.ModBlocks;
 
 public class ModCreativeModeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = 
@@ -16,7 +17,7 @@ public class ModCreativeModeTabs {
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> ISKA_UTIL_TAB = 
             CREATIVE_MODE_TABS.register("iska_utils_tab", 
                     () -> CreativeModeTab.builder()
-                            .title(Component.translatable("creativetab.iska_utils_tab"))
+                            .title(Component.translatable("creativetab.iska_utils.tab"))
                             .icon(() -> new ItemStack(ModItems.ULTRA_VECT.get()))
                             .displayItems((pParameters, pOutput) -> {
                                 // Standard Vector Plates
@@ -32,6 +33,9 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.PLAYER_FAST_VECT.get());
                                 pOutput.accept(ModItems.PLAYER_EXTREME_VECT.get());
                                 pOutput.accept(ModItems.PLAYER_ULTRA_VECT.get());
+                                
+                                // Utility Blocks
+                                pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
                             }).build());
 
     public static void register(IEventBus eventBus) {

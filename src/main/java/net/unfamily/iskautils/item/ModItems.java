@@ -49,6 +49,12 @@ public class ModItems {
             
     public static final DeferredItem<Item> PLAYER_ULTRA_VECT = ITEMS.register("player_ultra_vect",
             () -> new BlockItem(ModBlocks.PLAYER_ULTRA_VECT.get(), ITEM_PROPERTIES));
+            
+    // ===== UTILITY ITEMS =====
+    
+    // Item per l'Hellfire Igniter
+    public static final DeferredItem<Item> HELLFIRE_IGNITER = ITEMS.register("hellfire_igniter",
+            () -> new BlockItem(ModBlocks.HELLFIRE_IGNITER.get(), ITEM_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

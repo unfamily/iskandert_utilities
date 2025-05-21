@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "iska_utils:fast_vect"
+    }
+  ],
+  "result": {
+    "id": "iska_utils:player_fast_vect",
+    "count": 1
+  }
+} 

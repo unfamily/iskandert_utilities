@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BBB",
+    "SLS",
+    "BBB"
+  ],
+  "key": {
+    "B": {
+      "item": "minecraft:blackstone"
+    },
+    "S": {
+      "item": "minecraft:sugar"
+    },
+    "L": [
+      {"tag": "c:slimeballs"},
+      {"tag": "c:slime_balls"}
+    ]
+  },
+  "result": {
+    "id": "iska_utils:slow_vect",
+    "count": 6
+  }
+} 

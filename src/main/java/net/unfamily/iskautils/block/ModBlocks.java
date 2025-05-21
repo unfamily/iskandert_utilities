@@ -16,15 +16,23 @@ public class ModBlocks {
 
     // Common properties for all vector blocks
     private static final BlockBehaviour.Properties VECTOR_PROPERTIES = BlockBehaviour.Properties.of()
-            .mapColor(MapColor.METAL)
-            .strength(0.5f, 1.0f)
-            .sound(SoundType.METAL)
+            .mapColor(MapColor.COLOR_BLACK)
+            .strength(0.3f, 1.0f)
+            .sound(SoundType.DEEPSLATE)
             .noOcclusion()
             .noCollission()
             .isRedstoneConductor((state, level, pos) -> false)
             .pushReaction(PushReaction.DESTROY)
             .isViewBlocking((state, level, pos) -> false)
             .lightLevel((state) -> 0);
+    
+    // Proprietà per l'Hellfire Igniter
+    private static final BlockBehaviour.Properties HELLFIRE_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.STONE)
+            .strength(0.3f, 1.0f)
+            .sound(SoundType.STONE)
+            .requiresCorrectToolForDrops()
+            .lightLevel((state) -> state.getValue(HellfireIgniterBlock.POWERED) ? 7 : 0);
     
     // ===== STANDARD VECTOR PLATES (DON'T AFFECT PLAYERS) =====
     
@@ -69,6 +77,12 @@ public class ModBlocks {
     // Player Ultra Vector Plate (fastest)
     public static final DeferredBlock<PlayerUltraVectBlock> PLAYER_ULTRA_VECT = BLOCKS.register("player_ultra_vect",
             () -> new PlayerUltraVectBlock(VECTOR_PROPERTIES));
+    
+    // ===== UTILITY BLOCKS =====
+    
+    // Hellfire Igniter (crea fuoco quando attivato da redstone)
+    public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
+            () -> new HellfireIgniterBlock(HELLFIRE_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

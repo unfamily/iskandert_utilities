@@ -4,19 +4,26 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -46,7 +53,7 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     }
 
     public VectorBlock(Properties properties, Supplier<Double> speedSupplier, boolean affectsPlayers) {
-        super(properties);
+        super(properties.sound(SoundType.STONE)); // Set the sound type to STONE
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
         this.speedSupplier = speedSupplier;
         this.affectsPlayers = affectsPlayers;
@@ -58,6 +65,28 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     
     public VectorBlock(Properties properties) {
         this(properties, () -> 0.05D, false);
+    }
+
+    // Add right-click rotation behavior with shift
+    @Override
+    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        // Check if player is sneaking (shift) and it's the main hand
+        if (player.isShiftKeyDown()) {
+            if (!level.isClientSide) {
+                // Get current direction and calculate next direction (rotate clockwise)
+                Direction currentDirection = state.getValue(FACING);
+                Direction newDirection = currentDirection.getClockWise();
+                
+                // Update the block state with the new direction
+                level.setBlock(pos, state.setValue(FACING, newDirection), 3);
+                
+                // Play a stone click sound
+                level.playSound(null, pos, SoundEvents.STONE_PRESSURE_PLATE_CLICK_ON, SoundSource.BLOCKS, 0.3F, 0.6F);
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
+        
+        return InteractionResult.PASS;
     }
 
     @Override
@@ -124,7 +153,7 @@ public class VectorBlock extends HorizontalDirectionalBlock {
         return true;
     }
     
-    /**n
+    /**
      * Check if a VoxelShape has a full face on top
      */
     private boolean hasFullFaceOnTop(VoxelShape shape) {
@@ -193,61 +222,120 @@ public class VectorBlock extends HorizontalDirectionalBlock {
             // Calculate speed based on the configuration
             double speed = speedSupplier.get();
             
+            // If player is sneaking (shift), don't apply movement
+            if (isPlayer && ((Player)entity).isShiftKeyDown()) {
+                return;
+            }
+            
             // players might require a different approach for pushing
             if (isPlayer) {
                 Player player = (Player) entity;
                 
-                // increase the speed for players, who have more control over movement
-                double playerSpeed = speed * 3.0; // increased even more
+                // Get current player motion
+                net.minecraft.world.phys.Vec3 currentMotion = player.getDeltaMovement();
                 
-                // apply the movement directly to the player - more aggressive method
+                // Constant acceleration for all plate types
+                double accelerationFactor = 0.6;
+                double conserveFactor = 0.75; // Keep 75% of lateral velocity
+                
+                // Maintain momentum in the direction of travel for smoother movement
                 switch (direction) {
                     case NORTH -> {
-                        // set the speed as new, not as a sum of the existing
-                        player.setDeltaMovement(0, 0, -playerSpeed);
-                        
-                        // add an instant force
-                        player.knockback(playerSpeed, 0, 1);
-                        
-                        // make sure they are always in the air
-                        player.setDeltaMovement(player.getDeltaMovement().add(0, 0.1, 0));
+                        double targetZ = -speed;
+                        double newZ = (currentMotion.z * (1 - accelerationFactor)) + (targetZ * accelerationFactor);
+                        // Keep current Y to avoid hopping
+                        player.setDeltaMovement(
+                            currentMotion.x * conserveFactor, 
+                            currentMotion.y, 
+                            newZ
+                        );
                     }
                     case SOUTH -> {
-                        player.setDeltaMovement(0, 0, playerSpeed);
-                        player.knockback(playerSpeed, 0, -1);
-                        player.setDeltaMovement(player.getDeltaMovement().add(0, 0.1, 0));
+                        double targetZ = speed;
+                        double newZ = (currentMotion.z * (1 - accelerationFactor)) + (targetZ * accelerationFactor);
+                        // Keep current Y to avoid hopping
+                        player.setDeltaMovement(
+                            currentMotion.x * conserveFactor, 
+                            currentMotion.y, 
+                            newZ
+                        );
                     }
                     case WEST -> {
-                        player.setDeltaMovement(-playerSpeed, 0, 0);
-                        player.knockback(playerSpeed, 1, 0);
-                        player.setDeltaMovement(player.getDeltaMovement().add(0, 0.1, 0));
+                        double targetX = -speed;
+                        double newX = (currentMotion.x * (1 - accelerationFactor)) + (targetX * accelerationFactor);
+                        // Keep current Y to avoid hopping
+                        player.setDeltaMovement(
+                            newX, 
+                            currentMotion.y, 
+                            currentMotion.z * conserveFactor
+                        );
                     }
                     case EAST -> {
-                        player.setDeltaMovement(playerSpeed, 0, 0);
-                        player.knockback(playerSpeed, -1, 0);
-                        player.setDeltaMovement(player.getDeltaMovement().add(0, 0.1, 0));
+                        double targetX = speed;
+                        double newX = (currentMotion.x * (1 - accelerationFactor)) + (targetX * accelerationFactor);
+                        // Keep current Y to avoid hopping
+                        player.setDeltaMovement(
+                            newX, 
+                            currentMotion.y, 
+                            currentMotion.z * conserveFactor
+                        );
                     }
                     default -> {} // Should never happen
                 }
                 
-                // set a flag to avoid the player falling immediately
+                // Prevent fall damage
                 player.fallDistance = 0;
                 
-                // set the horizontal acceleration to the maximum
+                // Set flag to confirm physics updates
                 player.hurtMarked = true;
                 
             } else {
-                // for other entities, use the standard method
+                // For other entities, we use a more complete method
+                // Plate speed for entities
+                double entitySpeed = speed * 1.5;
+                
+                // Get current entity motion
+                net.minecraft.world.phys.Vec3 currentMotion = entity.getDeltaMovement();
+                
+                // Slower acceleration factor for non-player entities
+                double entityAccelerationFactor = 0.3;
+                
                 switch (direction) {
-                    case NORTH -> entity.setDeltaMovement(entity.getDeltaMovement().x, entity.getDeltaMovement().y, -speed);
-                    case SOUTH -> entity.setDeltaMovement(entity.getDeltaMovement().x, entity.getDeltaMovement().y, speed);
-                    case WEST -> entity.setDeltaMovement(-speed, entity.getDeltaMovement().y, entity.getDeltaMovement().z);
-                    case EAST -> entity.setDeltaMovement(speed, entity.getDeltaMovement().y, entity.getDeltaMovement().z);
+                    case NORTH -> {
+                        double targetZ = -entitySpeed;
+                        double newZ = (currentMotion.z * (1 - entityAccelerationFactor)) + (targetZ * entityAccelerationFactor);
+                        // Keep current Y to avoid hopping
+                        entity.setDeltaMovement(currentMotion.x, currentMotion.y, newZ);
+                    }
+                    case SOUTH -> {
+                        double targetZ = entitySpeed;
+                        double newZ = (currentMotion.z * (1 - entityAccelerationFactor)) + (targetZ * entityAccelerationFactor);
+                        // Keep current Y to avoid hopping
+                        entity.setDeltaMovement(currentMotion.x, currentMotion.y, newZ);
+                    }
+                    case WEST -> {
+                        double targetX = -entitySpeed;
+                        double newX = (currentMotion.x * (1 - entityAccelerationFactor)) + (targetX * entityAccelerationFactor);
+                        // Keep current Y to avoid hopping
+                        entity.setDeltaMovement(newX, currentMotion.y, currentMotion.z);
+                    }
+                    case EAST -> {
+                        double targetX = entitySpeed;
+                        double newX = (currentMotion.x * (1 - entityAccelerationFactor)) + (targetX * entityAccelerationFactor);
+                        // Keep current Y to avoid hopping
+                        entity.setDeltaMovement(newX, currentMotion.y, currentMotion.z);
+                    }
                     default -> {} // Should never happen
                 }
                 
-                // Set that the entity is not on the ground to avoid friction
-                entity.setOnGround(false);
+                // Avoid excessive friction without making the entity hop
+                if (entity.onGround()) {
+                    // This helps prevent entities from "sticking" to the ground
+                    entity.setDeltaMovement(entity.getDeltaMovement().x, Math.min(entity.getDeltaMovement().y, 0), entity.getDeltaMovement().z);
+                }
+                
+                // Set fall distance to 0 to prevent fall damage
+                entity.fallDistance = 0;
             }
         }
     }

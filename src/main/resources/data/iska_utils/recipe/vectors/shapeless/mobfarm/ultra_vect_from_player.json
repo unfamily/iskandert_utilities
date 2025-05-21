@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "iska_utils:player_ultra_vect"
+    }
+  ],
+  "result": {
+    "id": "iska_utils:ultra_vect",
+    "count": 1
+  }
+} 

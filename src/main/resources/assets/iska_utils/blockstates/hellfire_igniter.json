@@ -1,0 +1,17 @@
+{
+  "variants": {
+    "facing=north,powered=false": { "model": "iska_utils:block/hellfire_igniter" },
+    "facing=east,powered=false": { "model": "iska_utils:block/hellfire_igniter", "y": 90 },
+    "facing=south,powered=false": { "model": "iska_utils:block/hellfire_igniter", "y": 180 },
+    "facing=west,powered=false": { "model": "iska_utils:block/hellfire_igniter", "y": 270 },
+    "facing=up,powered=false": { "model": "iska_utils:block/hellfire_igniter", "x": 270 },
+    "facing=down,powered=false": { "model": "iska_utils:block/hellfire_igniter", "x": 90 },
+    
+    "facing=north,powered=true": { "model": "iska_utils:block/hellfire_igniter" },
+    "facing=east,powered=true": { "model": "iska_utils:block/hellfire_igniter", "y": 90 },
+    "facing=south,powered=true": { "model": "iska_utils:block/hellfire_igniter", "y": 180 },
+    "facing=west,powered=true": { "model": "iska_utils:block/hellfire_igniter", "y": 270 },
+    "facing=up,powered=true": { "model": "iska_utils:block/hellfire_igniter", "x": 270 },
+    "facing=down,powered=true": { "model": "iska_utils:block/hellfire_igniter", "x": 90 }
+  }
+} 
