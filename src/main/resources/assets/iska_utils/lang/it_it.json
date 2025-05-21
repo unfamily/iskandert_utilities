@@ -1,0 +1,15 @@
+{
+  "block.iska_utils.slow_vect": "Piastra Vettoriale Lenta per Mobfarm",
+  "block.iska_utils.moderate_vect": "Piastra Vettoriale Moderata per Mobfarm",
+  "block.iska_utils.fast_vect": "Piastra Vettoriale Veloce per Mobfarm",
+  "block.iska_utils.extreme_vect": "Piastra Vettoriale Estrema per Mobfarm",
+  "block.iska_utils.ultra_vect": "Piastra Vettoriale Ultra per Mobfarm",
+
+  "block.iska_utils.player_slow_vect": "Piastra Vettoriale Lenta per Giocatori",
+  "block.iska_utils.player_moderate_vect": "Piastra Vettoriale Moderata per Giocatori",
+  "block.iska_utils.player_fast_vect": "Piastra Vettoriale Veloce per Giocatori",
+  "block.iska_utils.player_extreme_vect": "Piastra Vettoriale Estema per Giocatori",
+  "block.iska_utils.player_ultra_vect": "Piastra Vettoriale Ultra per Giocatori",
+
+  "creativetab.iska_utils.tab": "Utilità di Iska"
+} 

@@ -1,0 +1,15 @@
+{
+  "block.iska_utils.slow_vect": "Mobfarm Slow Vector Plate",
+  "block.iska_utils.moderate_vect": "Mobfarm Moderate Vector Plate",
+  "block.iska_utils.fast_vect": "Mobfarm Fast Vector Plate",
+  "block.iska_utils.extreme_vect": "Mobfarm Extreme Vector Plate",
+  "block.iska_utils.ultra_vect": "Mobfarm Ultra Vector Plate",
+  
+  "block.iska_utils.player_slow_vect": "Player Slow Vector Plate",
+  "block.iska_utils.player_moderate_vect": "Player Moderate Vector Plate",
+  "block.iska_utils.player_fast_vect": "Player Fast Vector Plate",
+  "block.iska_utils.player_extreme_vect": "Player Extreme Vector Plate",
+  "block.iska_utils.player_ultra_vect": "Player Ultra Vector Plate",
+  
+  "creativetab.iska_utils.tab": "Iska's Utilities"
+} 

@@ -1,0 +1,7 @@
+{
+	"parent": "iska_utils:block/vector_base",
+	"textures": {
+		"top": "iska_utils:block/ultra_vect",
+		"bottom": "iska_utils:block/vector_bottom"
+	}
+} 
