@@ -1,8 +1,8 @@
 MIT License
 
-Copyright (c) 2023 NeoForged project
+Copyright (c) 2025 Unfamily
 
-This license applies to the template files as supplied by github.com/NeoForged/MDK
+This license applies to the template files as supplied by github.com/unfamily/iskandert_utilities
 
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
