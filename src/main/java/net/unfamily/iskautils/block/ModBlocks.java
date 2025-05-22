@@ -94,7 +94,8 @@ public class ModBlocks {
     private static final BlockBehaviour.Properties SMOOTH_BLACKSTONE_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.COLOR_BLACK)
             .strength(1.5f, 6.0f)
-            .sound(SoundType.DEEPSLATE);
+            .sound(SoundType.DEEPSLATE)
+            .requiresCorrectToolForDrops();
 
     public static final DeferredBlock<Block> SMOOTH_BLACKSTONE = BLOCKS.register("smooth_blackstone",
             () -> new Block(SMOOTH_BLACKSTONE_PROPERTIES));
@@ -102,7 +103,7 @@ public class ModBlocks {
             () -> new SlabBlock(SMOOTH_BLACKSTONE_PROPERTIES));
     public static final DeferredBlock<StairBlock> SMOOTH_BLACKSTONE_STAIRS = BLOCKS.register("smooth_blackstone_stairs",
             () -> new StairBlock(SMOOTH_BLACKSTONE.get().defaultBlockState(), SMOOTH_BLACKSTONE_PROPERTIES));
-    public static final DeferredBlock<SmoothBlackstoneWallBlock> SMOOTH_BLACKSTONE_WALL = BLOCKS.register("smooth_blackstone_wall",
+    public static final DeferredBlock<Block> SMOOTH_BLACKSTONE_WALL = BLOCKS.register("smooth_blackstone_wall",
             () -> new SmoothBlackstoneWallBlock(SMOOTH_BLACKSTONE_PROPERTIES));
 
     // ===== PLATE BASE BLOCK (tipo vector, texture sopra e sotto plate_base) =====

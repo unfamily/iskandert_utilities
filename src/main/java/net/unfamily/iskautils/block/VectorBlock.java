@@ -22,7 +22,6 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -126,12 +125,6 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
         // Always show the bottom face
         return side != Direction.DOWN && adjacentBlockState.is(this) ? true : super.skipRendering(state, adjacentBlockState, side);
-    }
-    
-    @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-        // Ensure the block always drops itself
-        return Collections.singletonList(new ItemStack(this));
     }
     
     /**

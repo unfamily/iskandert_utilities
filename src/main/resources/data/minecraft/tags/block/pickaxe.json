@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "iska_utils:smooth_blackstone",
+    "iska_utils:smooth_blackstone_slab",
+    "iska_utils:smooth_blackstone_stairs",
+    "iska_utils:smooth_blackstone_wall",
+    "iska_utils:hellfire_igniter"
+  ]
+} 

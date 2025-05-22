@@ -1,6 +1,7 @@
 {
   "parent": "block/template_wall_post",
   "textures": {
-    "wall": "iska_utils:block/plate_base"
+    "wall": "iska_utils:block/plate_base",
+    "particle": "iska_utils:block/plate_base"
   }
 } 

@@ -8,6 +8,6 @@ public class SmoothBlackstoneWallBlock extends WallBlock {
     public static final MapCodec<SmoothBlackstoneWallBlock> CODEC = simpleCodec(SmoothBlackstoneWallBlock::new);
 
     public SmoothBlackstoneWallBlock(BlockBehaviour.Properties properties) {
-        super(properties);
+        super(properties.forceSolidOn());
     }
 } 
