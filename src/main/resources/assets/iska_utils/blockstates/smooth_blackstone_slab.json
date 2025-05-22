@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "type=bottom": { "model": "iska_utils:block/smooth_blackstone_slab" },
+    "type=top": { "model": "iska_utils:block/smooth_blackstone_slab_top" },
+    "type=double": { "model": "iska_utils:block/smooth_blackstone" }
+  }
+}

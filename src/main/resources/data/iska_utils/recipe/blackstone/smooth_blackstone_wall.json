@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "item": "iska_utils:smooth_blackstone"
+    }
+  },
+  "result": {
+    "id": "iska_utils:smooth_blackstone_wall",
+    "count": 6
+  }
+} 

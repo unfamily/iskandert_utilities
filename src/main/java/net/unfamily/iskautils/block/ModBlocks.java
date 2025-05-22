@@ -10,6 +10,12 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.standard.*;
 import net.unfamily.iskautils.block.player.*;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.WallBlock;
+import net.minecraft.world.level.block.Block;
+import net.unfamily.iskautils.block.PlateBaseBlock;
+import net.unfamily.iskautils.block.SmoothBlackstoneWallBlock;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -83,6 +89,25 @@ public class ModBlocks {
     // Hellfire Igniter (crea fuoco quando attivato da redstone)
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
             () -> new HellfireIgniterBlock(HELLFIRE_PROPERTIES));
+
+    // ===== SMOOTH BLACKSTONE =====
+    private static final BlockBehaviour.Properties SMOOTH_BLACKSTONE_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_BLACK)
+            .strength(1.5f, 6.0f)
+            .sound(SoundType.DEEPSLATE);
+
+    public static final DeferredBlock<Block> SMOOTH_BLACKSTONE = BLOCKS.register("smooth_blackstone",
+            () -> new Block(SMOOTH_BLACKSTONE_PROPERTIES));
+    public static final DeferredBlock<SlabBlock> SMOOTH_BLACKSTONE_SLAB = BLOCKS.register("smooth_blackstone_slab",
+            () -> new SlabBlock(SMOOTH_BLACKSTONE_PROPERTIES));
+    public static final DeferredBlock<StairBlock> SMOOTH_BLACKSTONE_STAIRS = BLOCKS.register("smooth_blackstone_stairs",
+            () -> new StairBlock(SMOOTH_BLACKSTONE.get().defaultBlockState(), SMOOTH_BLACKSTONE_PROPERTIES));
+    public static final DeferredBlock<SmoothBlackstoneWallBlock> SMOOTH_BLACKSTONE_WALL = BLOCKS.register("smooth_blackstone_wall",
+            () -> new SmoothBlackstoneWallBlock(SMOOTH_BLACKSTONE_PROPERTIES));
+
+    // ===== PLATE BASE BLOCK (tipo vector, texture sopra e sotto plate_base) =====
+    public static final DeferredBlock<PlateBaseBlock> PLATE_BASE_BLOCK = BLOCKS.register("plate_base_block",
+            () -> new PlateBaseBlock(VECTOR_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

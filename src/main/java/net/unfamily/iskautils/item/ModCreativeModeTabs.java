@@ -36,6 +36,11 @@ public class ModCreativeModeTabs {
                                 
                                 // Utility Blocks
                                 pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
+                                pOutput.accept(ModItems.SMOOTH_BLACKSTONE.get());
+                                pOutput.accept(ModItems.SMOOTH_BLACKSTONE_SLAB.get());
+                                pOutput.accept(ModItems.SMOOTH_BLACKSTONE_STAIRS.get());
+                                pOutput.accept(ModItems.SMOOTH_BLACKSTONE_WALL.get());
+                                pOutput.accept(ModItems.PLATE_BASE_BLOCK.get());
                             }).build());
 
     public static void register(IEventBus eventBus) {

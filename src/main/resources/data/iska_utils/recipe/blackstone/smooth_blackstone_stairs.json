@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "A  ",
+    "AA ",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "item": "iska_utils:smooth_blackstone"
+    }
+  },
+  "result": {
+    "id": "iska_utils:smooth_blackstone_stairs",
+    "count": 4
+  }
+} 

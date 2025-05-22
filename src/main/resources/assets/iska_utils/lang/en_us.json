@@ -13,5 +13,11 @@
   
   "block.iska_utils.hellfire_igniter": "Hellfire Igniter",
   
-  "creativetab.iska_utils.tab": "Iska's Utilities"
+  "creativetab.iska_utils.tab": "Iska's Utilities",
+  
+  "block.iska_utils.smooth_blackstone": "Smooth Blackstone",
+  "block.iska_utils.smooth_blackstone_slab": "Smooth Blackstone Slab",
+  "block.iska_utils.smooth_blackstone_stairs": "Smooth Blackstone Stairs",
+  "block.iska_utils.smooth_blackstone_wall": "Smooth Blackstone Wall",
+  "block.iska_utils.plate_base_block": "Plate Base"
 } 

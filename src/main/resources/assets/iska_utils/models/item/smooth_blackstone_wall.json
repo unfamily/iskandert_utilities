@@ -1,0 +1,6 @@
+{
+  "parent": "iska_utils:block/wall_inventory",
+  "textures": {
+    "wall": "iska_utils:block/plate_base"
+  }
+} 

@@ -13,5 +13,11 @@
   
   "block.iska_utils.hellfire_igniter":"Innesco Infernale",
 
-  "creativetab.iska_utils.tab": "Utilità di Iska"
+  "creativetab.iska_utils.tab": "Utilità di Iska",
+
+  "block.iska_utils.smooth_blackstone": "Pietra Nera Levigata",
+  "block.iska_utils.smooth_blackstone_slab": "Lastra di Pietra Nera Levigata",
+  "block.iska_utils.smooth_blackstone_stairs": "Scalini di Pietra Nera Levigata",
+  "block.iska_utils.smooth_blackstone_wall": "Muretto di Pietra Nera Levigata",
+  "block.iska_utils.plate_base_block": "Piastra Base"
 } 

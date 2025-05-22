@@ -56,6 +56,17 @@ public class ModItems {
     public static final DeferredItem<Item> HELLFIRE_IGNITER = ITEMS.register("hellfire_igniter",
             () -> new BlockItem(ModBlocks.HELLFIRE_IGNITER.get(), ITEM_PROPERTIES));
 
+    public static final DeferredItem<Item> SMOOTH_BLACKSTONE = ITEMS.register("smooth_blackstone",
+            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE.get(), ITEM_PROPERTIES));
+    public static final DeferredItem<Item> SMOOTH_BLACKSTONE_SLAB = ITEMS.register("smooth_blackstone_slab",
+            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_SLAB.get(), ITEM_PROPERTIES));
+    public static final DeferredItem<Item> SMOOTH_BLACKSTONE_STAIRS = ITEMS.register("smooth_blackstone_stairs",
+            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_STAIRS.get(), ITEM_PROPERTIES));
+    public static final DeferredItem<Item> SMOOTH_BLACKSTONE_WALL = ITEMS.register("smooth_blackstone_wall",
+            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_WALL.get(), ITEM_PROPERTIES));
+    public static final DeferredItem<Item> PLATE_BASE_BLOCK = ITEMS.register("plate_base_block",
+            () -> new BlockItem(ModBlocks.PLATE_BASE_BLOCK.get(), ITEM_PROPERTIES));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

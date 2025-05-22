@@ -7,7 +7,7 @@
   ],
   "key": {
     "B": {
-      "item": "minecraft:blackstone"
+      "item": "iska_utils:plate_base_block"
     },
     "S": {
       "item": "minecraft:sugar"

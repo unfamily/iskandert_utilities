@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "iska_utils:smooth_blackstone"
+  },
+  "result": {
+    "id": "iska_utils:smooth_blackstone_slab",
+    "count": 2
+  }
+} 
