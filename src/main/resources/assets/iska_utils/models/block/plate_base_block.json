@@ -1,8 +1,7 @@
 {
-  "parent": "iska_utils:block/vector_base",
+  "parent": "iska_utils:block/plate_base",
   "textures": {
     "top": "iska_utils:block/plate_base",
-    "bottom": "iska_utils:block/plate_base",
-    "side": "iska_utils:block/plate_base"
+    "bottom": "iska_utils:block/plate_base"
   }
 } 

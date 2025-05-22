@@ -1,5 +1,5 @@
 {
-	"parent": "iska_utils:block/plate_base",
+	"parent": "iska_utils:block/plate_base_vertical",
 	"textures": {
 		"top": "iska_utils:block/extreme_vect",
 		"bottom": "iska_utils:block/plate_base"

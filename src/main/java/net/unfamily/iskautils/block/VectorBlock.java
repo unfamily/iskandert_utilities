@@ -21,6 +21,8 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -31,14 +33,26 @@ import org.slf4j.Logger;
 import java.util.List;
 import java.util.Collections;
 import java.util.function.Supplier;
+import net.minecraft.world.level.block.state.properties.Property;
 
 public class VectorBlock extends HorizontalDirectionalBlock {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final BooleanProperty VERTICAL = BooleanProperty.create("vertical");
     public static final MapCodec<VectorBlock> CODEC = simpleCodec(VectorBlock::new);
     
-    // Block shape based on the new model (0.5 pixel height)
-    protected static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 0.5, 16);
+    // Block shape based on the model (0.5 pixel height)
+    protected static final VoxelShape SHAPE_HORIZONTAL = Block.box(0, 0, 0, 16, 0.5, 16);
+    
+    // Vertical shapes for walls (north, south, east, west)
+    protected static final VoxelShape SHAPE_VERTICAL_NORTH = Block.box(0, 0, 0, 16, 16, 1);
+    protected static final VoxelShape SHAPE_VERTICAL_SOUTH = Block.box(0, 0, 15, 16, 16, 16);
+    protected static final VoxelShape SHAPE_VERTICAL_EAST = Block.box(15, 0, 0, 16, 16, 16);
+    protected static final VoxelShape SHAPE_VERTICAL_WEST = Block.box(0, 0, 0, 1, 16, 16);
+    
+    // Vertical boost factors - can be adjusted for balancing
+    protected static final double VERTICAL_BOOST_FACTOR = 0.5;       // Base boost for players
+    protected static final double ENTITY_VERTICAL_BOOST_FACTOR = 1.2; // Higher boost for mobs to overcome gravity
     
     // Variable for block speed
     private final Supplier<Double> speedSupplier;
@@ -52,8 +66,10 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     }
 
     public VectorBlock(Properties properties, Supplier<Double> speedSupplier, boolean affectsPlayers) {
-        super(properties.sound(SoundType.STONE)); // Set the sound type to STONE
-        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
+        super(properties.sound(SoundType.DEEPSLATE));
+        this.registerDefaultState(this.stateDefinition.any()
+            .setValue(FACING, Direction.NORTH)
+            .setValue(VERTICAL, false));
         this.speedSupplier = speedSupplier;
         this.affectsPlayers = affectsPlayers;
     }
@@ -71,12 +87,18 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         // Check if player is sneaking (shift) and it's the main hand
         if (player.isShiftKeyDown()) {
+            // Don't allow rotation for vertical plates
+            boolean isVertical = state.getValue(VERTICAL);
+            if (isVertical) {
+                return InteractionResult.PASS;
+            }
+            
             if (!level.isClientSide) {
                 // Get current direction and calculate next direction (rotate clockwise)
                 Direction currentDirection = state.getValue(FACING);
                 Direction newDirection = currentDirection.getClockWise();
                 
-                // Update the block state with the new direction
+                // Update the block state with the new direction, preserving vertical state
                 level.setBlock(pos, state.setValue(FACING, newDirection), 3);
                 
                 // Play a stone click sound
@@ -90,8 +112,23 @@ public class VectorBlock extends HorizontalDirectionalBlock {
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        // Use the same shape regardless of direction since the model is symmetrical
-        return SHAPE;
+        Direction facing = state.getValue(FACING);
+        boolean vertical = state.getValue(VERTICAL);
+        
+        // Check if this is a vertical placement
+        if (vertical) {
+            // Return the appropriate shape based on the facing direction
+            return switch (facing) {
+                case NORTH -> SHAPE_VERTICAL_NORTH;
+                case SOUTH -> SHAPE_VERTICAL_SOUTH;
+                case EAST -> SHAPE_VERTICAL_EAST;
+                case WEST -> SHAPE_VERTICAL_WEST;
+                default -> SHAPE_HORIZONTAL; // Fallback
+            };
+        } else {
+            // Horizontal placement
+            return SHAPE_HORIZONTAL;
+        }
     }
     
     @Override
@@ -119,12 +156,22 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     }
     
     /**
-     * Always make the bottom face of the block visible
+     * Handle face visibility for rendering
      */
     @Override
     public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
+        boolean vertical = state.getValue(VERTICAL);
+        
         // Always show the bottom face
-        return side != Direction.DOWN && adjacentBlockState.is(this) ? true : super.skipRendering(state, adjacentBlockState, side);
+        if (!vertical && side != Direction.DOWN) {
+            return adjacentBlockState.is(this) ? true : super.skipRendering(state, adjacentBlockState, side);
+        } else if (vertical) {
+            Direction facing = state.getValue(FACING);
+            if (side != facing.getOpposite()) {
+                return adjacentBlockState.is(this) ? true : super.skipRendering(state, adjacentBlockState, side);
+            }
+        }
+        return super.skipRendering(state, adjacentBlockState, side);
     }
     
     /**
@@ -132,18 +179,38 @@ public class VectorBlock extends HorizontalDirectionalBlock {
      */
     @Override
     public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
-        BlockPos belowPos = pos.below();
-        BlockState belowState = level.getBlockState(belowPos);
+        boolean vertical = state.getValue(VERTICAL);
         
-        // Check if the block below is a solid block that can support the vector block
-        VoxelShape belowShape = belowState.getCollisionShape(level, belowPos);
-        
-        // If the block below is empty or not complete at the top, it cannot support our block
-        if (belowShape.isEmpty() || !hasFullFaceOnTop(belowShape)) {
-            return false;
+        if (!vertical) {
+            // Horizontal placement - check below
+            BlockPos belowPos = pos.below();
+            BlockState belowState = level.getBlockState(belowPos);
+            
+            // Check if the block below is a solid block that can support the vector block
+            VoxelShape belowShape = belowState.getCollisionShape(level, belowPos);
+            
+            // If the block below is empty or not complete at the top, it cannot support our block
+            if (belowShape.isEmpty() || !hasFullFaceOnTop(belowShape)) {
+                return false;
+            }
+            
+            return true;
+        } else {
+            // Vertical placement - check the block it's attached to
+            Direction attachmentDirection = state.getValue(FACING);
+            BlockPos attachedPos = pos.relative(attachmentDirection);
+            BlockState attachedState = level.getBlockState(attachedPos);
+            
+            // Check if the block it's attached to has a solid face
+            VoxelShape attachedShape = attachedState.getCollisionShape(level, attachedPos);
+            
+            if (attachedShape.isEmpty()) {
+                return false;
+            }
+            
+            // Check if the attached block has a solid face on the side we're attaching to
+            return hasFullFaceOnSide(attachedShape, attachmentDirection.getOpposite());
         }
-        
-        return true;
     }
     
     /**
@@ -156,31 +223,57 @@ public class VectorBlock extends HorizontalDirectionalBlock {
                shape.min(Direction.Axis.Z) <= 0.01 && shape.max(Direction.Axis.Z) >= 0.99;
     }
     
+    /**
+     * Check if a VoxelShape has a full face on the given side
+     */
+    private boolean hasFullFaceOnSide(VoxelShape shape, Direction direction) {
+        if (shape.isEmpty()) {
+            return false;
+        }
+        
+        switch (direction.getAxis()) {
+            case X:
+                return shape.min(Direction.Axis.Y) <= 0.01 && shape.max(Direction.Axis.Y) >= 0.99 &&
+                       shape.min(Direction.Axis.Z) <= 0.01 && shape.max(Direction.Axis.Z) >= 0.99;
+            case Z:
+                return shape.min(Direction.Axis.X) <= 0.01 && shape.max(Direction.Axis.X) >= 0.99 &&
+                       shape.min(Direction.Axis.Y) <= 0.01 && shape.max(Direction.Axis.Y) >= 0.99;
+            default:
+                return false;
+        }
+    }
+    
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        // Check if the changed block is above our vector block
-        if (fromPos.equals(pos.above())) {
-            BlockState aboveState = level.getBlockState(fromPos);
-            
-            // Check if the block above has a non-full or ethereal shape (no collision shape)
-            boolean shouldBreak = false;
-            
-            // Check if the block above has an empty or non-full collision shape (like vector plates)
-            VoxelShape collisionShape = aboveState.getCollisionShape(level, fromPos);
-            if (collisionShape.isEmpty() || !isFullBlock(collisionShape)) {
-                shouldBreak = true;
+        boolean vertical = state.getValue(VERTICAL);
+        
+        // Check if the block can still survive
+        if (!this.canSurvive(state, level, pos)) {
+            if (!level.isClientSide) {
+                level.destroyBlock(pos, true); // Break the block and drop its item
             }
-            
-            // If the block should break, break the vector block and drop the item
-            if (shouldBreak && !level.isClientSide) {
-                level.destroyBlock(pos, true); // The second parameter 'true' makes the block drop its item
-            }
-        } 
-        // Check if the changed block is below our vector block
-        else if (fromPos.equals(pos.below())) {
-            // Check if the block can still survive
-            if (!this.canSurvive(state, level, pos) && !level.isClientSide) {
-                level.destroyBlock(pos, true); // Break the vector block and drop the item
+            return;
+        }
+        
+        if (!vertical) {
+            // Horizontal placement logic
+            // Check if the changed block is above our vector block
+            if (fromPos.equals(pos.above())) {
+                BlockState aboveState = level.getBlockState(fromPos);
+                
+                // Check if the block above has a non-full or ethereal shape (no collision shape)
+                boolean shouldBreak = false;
+                
+                // Check if the block above has an empty or non-full collision shape (like vector plates)
+                VoxelShape collisionShape = aboveState.getCollisionShape(level, fromPos);
+                if (collisionShape.isEmpty() || !isFullBlock(collisionShape)) {
+                    shouldBreak = true;
+                }
+                
+                // If the block should break, break the vector block and drop the item
+                if (shouldBreak && !level.isClientSide) {
+                    level.destroyBlock(pos, true); // The second parameter 'true' makes the block drop its item
+                }
             }
         }
         
@@ -211,6 +304,7 @@ public class VectorBlock extends HorizontalDirectionalBlock {
             
             // Get the block direction
             Direction direction = state.getValue(FACING);
+            boolean vertical = state.getValue(VERTICAL);
             
             // Calculate speed based on the configuration
             double speed = speedSupplier.get();
@@ -220,127 +314,237 @@ public class VectorBlock extends HorizontalDirectionalBlock {
                 return;
             }
             
-            // players might require a different approach for pushing
-            if (isPlayer) {
-                Player player = (Player) entity;
-                
-                // Get current player motion
-                net.minecraft.world.phys.Vec3 currentMotion = player.getDeltaMovement();
-                
-                // Constant acceleration for all plate types
-                double accelerationFactor = 0.6;
-                double conserveFactor = 0.75; // Keep 75% of lateral velocity
-                
-                // Maintain momentum in the direction of travel for smoother movement
-                switch (direction) {
-                    case NORTH -> {
-                        double targetZ = -speed;
-                        double newZ = (currentMotion.z * (1 - accelerationFactor)) + (targetZ * accelerationFactor);
-                        // Keep current Y to avoid hopping
-                        player.setDeltaMovement(
-                            currentMotion.x * conserveFactor, 
-                            currentMotion.y, 
-                            newZ
-                        );
-                    }
-                    case SOUTH -> {
-                        double targetZ = speed;
-                        double newZ = (currentMotion.z * (1 - accelerationFactor)) + (targetZ * accelerationFactor);
-                        // Keep current Y to avoid hopping
-                        player.setDeltaMovement(
-                            currentMotion.x * conserveFactor, 
-                            currentMotion.y, 
-                            newZ
-                        );
-                    }
-                    case WEST -> {
-                        double targetX = -speed;
-                        double newX = (currentMotion.x * (1 - accelerationFactor)) + (targetX * accelerationFactor);
-                        // Keep current Y to avoid hopping
-                        player.setDeltaMovement(
-                            newX, 
-                            currentMotion.y, 
-                            currentMotion.z * conserveFactor
-                        );
-                    }
-                    case EAST -> {
-                        double targetX = speed;
-                        double newX = (currentMotion.x * (1 - accelerationFactor)) + (targetX * accelerationFactor);
-                        // Keep current Y to avoid hopping
-                        player.setDeltaMovement(
-                            newX, 
-                            currentMotion.y, 
-                            currentMotion.z * conserveFactor
-                        );
-                    }
-                    default -> {} // Should never happen
-                }
-                
-                // Prevent fall damage
-                player.fallDistance = 0;
-                
-                // Set flag to confirm physics updates
-                player.hurtMarked = true;
-                
+            // Different logic for horizontal vs vertical plates
+            if (!vertical) {
+                // Horizontal plate logic
+                applyHorizontalMovement(entity, direction, speed, isPlayer);
             } else {
-                // For other entities, we use a more complete method
-                // Plate speed for entities
-                double entitySpeed = speed * 1.5;
-                
-                // Get current entity motion
-                net.minecraft.world.phys.Vec3 currentMotion = entity.getDeltaMovement();
-                
-                // Slower acceleration factor for non-player entities
-                double entityAccelerationFactor = 0.3;
-                
-                switch (direction) {
-                    case NORTH -> {
-                        double targetZ = -entitySpeed;
-                        double newZ = (currentMotion.z * (1 - entityAccelerationFactor)) + (targetZ * entityAccelerationFactor);
-                        // Keep current Y to avoid hopping
-                        entity.setDeltaMovement(currentMotion.x, currentMotion.y, newZ);
-                    }
-                    case SOUTH -> {
-                        double targetZ = entitySpeed;
-                        double newZ = (currentMotion.z * (1 - entityAccelerationFactor)) + (targetZ * entityAccelerationFactor);
-                        // Keep current Y to avoid hopping
-                        entity.setDeltaMovement(currentMotion.x, currentMotion.y, newZ);
-                    }
-                    case WEST -> {
-                        double targetX = -entitySpeed;
-                        double newX = (currentMotion.x * (1 - entityAccelerationFactor)) + (targetX * entityAccelerationFactor);
-                        // Keep current Y to avoid hopping
-                        entity.setDeltaMovement(newX, currentMotion.y, currentMotion.z);
-                    }
-                    case EAST -> {
-                        double targetX = entitySpeed;
-                        double newX = (currentMotion.x * (1 - entityAccelerationFactor)) + (targetX * entityAccelerationFactor);
-                        // Keep current Y to avoid hopping
-                        entity.setDeltaMovement(newX, currentMotion.y, currentMotion.z);
-                    }
-                    default -> {} // Should never happen
-                }
-                
-                // Avoid excessive friction without making the entity hop
-                if (entity.onGround()) {
-                    // This helps prevent entities from "sticking" to the ground
-                    entity.setDeltaMovement(entity.getDeltaMovement().x, Math.min(entity.getDeltaMovement().y, 0), entity.getDeltaMovement().z);
-                }
-                
-                // Set fall distance to 0 to prevent fall damage
-                entity.fallDistance = 0;
+                // Vertical plate logic
+                applyVerticalMovement(entity, direction, speed, isPlayer);
             }
+        }
+    }
+    
+    private void applyHorizontalMovement(Entity entity, Direction direction, double speed, boolean isPlayer) {
+        if (isPlayer) {
+            Player player = (Player) entity;
+            
+            // Get current player motion
+            net.minecraft.world.phys.Vec3 currentMotion = player.getDeltaMovement();
+            
+            // Constant acceleration for all plate types
+            double accelerationFactor = 0.6;
+            double conserveFactor = 0.75; // Keep 75% of lateral velocity
+            
+            // Maintain momentum in the direction of travel for smoother movement
+            switch (direction) {
+                case NORTH -> {
+                    double targetZ = -speed;
+                    double newZ = (currentMotion.z * (1 - accelerationFactor)) + (targetZ * accelerationFactor);
+                    // Keep current Y to avoid hopping
+                    player.setDeltaMovement(
+                        currentMotion.x * conserveFactor, 
+                        currentMotion.y, 
+                        newZ
+                    );
+                }
+                case SOUTH -> {
+                    double targetZ = speed;
+                    double newZ = (currentMotion.z * (1 - accelerationFactor)) + (targetZ * accelerationFactor);
+                    // Keep current Y to avoid hopping
+                    player.setDeltaMovement(
+                        currentMotion.x * conserveFactor, 
+                        currentMotion.y, 
+                        newZ
+                    );
+                }
+                case WEST -> {
+                    double targetX = -speed;
+                    double newX = (currentMotion.x * (1 - accelerationFactor)) + (targetX * accelerationFactor);
+                    // Keep current Y to avoid hopping
+                    player.setDeltaMovement(
+                        newX, 
+                        currentMotion.y, 
+                        currentMotion.z * conserveFactor
+                    );
+                }
+                case EAST -> {
+                    double targetX = speed;
+                    double newX = (currentMotion.x * (1 - accelerationFactor)) + (targetX * accelerationFactor);
+                    // Keep current Y to avoid hopping
+                    player.setDeltaMovement(
+                        newX, 
+                        currentMotion.y, 
+                        currentMotion.z * conserveFactor
+                    );
+                }
+                default -> {} // Should never happen
+            }
+            
+            // Prevent fall damage
+            player.fallDistance = 0;
+            
+            // Set flag to confirm physics updates
+            player.hurtMarked = true;
+            
+        } else {
+            // For other entities, we use a more complete method
+            // Plate speed for entities
+            double entitySpeed = speed * 1.5;
+            
+            // Get current entity motion
+            net.minecraft.world.phys.Vec3 currentMotion = entity.getDeltaMovement();
+            
+            // Slower acceleration factor for non-player entities
+            double entityAccelerationFactor = 0.3;
+            
+            switch (direction) {
+                case NORTH -> {
+                    double targetZ = -entitySpeed;
+                    double newZ = (currentMotion.z * (1 - entityAccelerationFactor)) + (targetZ * entityAccelerationFactor);
+                    // Keep current Y to avoid hopping
+                    entity.setDeltaMovement(currentMotion.x, currentMotion.y, newZ);
+                }
+                case SOUTH -> {
+                    double targetZ = entitySpeed;
+                    double newZ = (currentMotion.z * (1 - entityAccelerationFactor)) + (targetZ * entityAccelerationFactor);
+                    // Keep current Y to avoid hopping
+                    entity.setDeltaMovement(currentMotion.x, currentMotion.y, newZ);
+                }
+                case WEST -> {
+                    double targetX = -entitySpeed;
+                    double newX = (currentMotion.x * (1 - entityAccelerationFactor)) + (targetX * entityAccelerationFactor);
+                    // Keep current Y to avoid hopping
+                    entity.setDeltaMovement(newX, currentMotion.y, currentMotion.z);
+                }
+                case EAST -> {
+                    double targetX = entitySpeed;
+                    double newX = (currentMotion.x * (1 - entityAccelerationFactor)) + (targetX * entityAccelerationFactor);
+                    // Keep current Y to avoid hopping
+                    entity.setDeltaMovement(newX, currentMotion.y, currentMotion.z);
+                }
+                default -> {} // Should never happen
+            }
+            
+            // Avoid excessive friction without making the entity hop
+            if (entity.onGround()) {
+                // This helps prevent entities from "sticking" to the ground
+                entity.setDeltaMovement(entity.getDeltaMovement().x, Math.min(entity.getDeltaMovement().y, 0), entity.getDeltaMovement().z);
+            }
+            
+            // Set fall distance to 0 to prevent fall damage
+            entity.fallDistance = 0;
+        }
+    }
+    
+    private void applyVerticalMovement(Entity entity, Direction direction, double speed, boolean isPlayer) {
+        // For vertical plates, we push away from the wall and up
+        // Direction is where the plate is facing (opposite of the wall)
+        
+        // Vertical plates provide upward movement with different factors for players vs mobs
+        double verticalBoostFactor = isPlayer ? VERTICAL_BOOST_FACTOR : ENTITY_VERTICAL_BOOST_FACTOR;
+        double verticalBoost = speed * verticalBoostFactor;
+        
+        // Calculate horizontal speed - for vertical plates, push in the SAME horizontal direction
+        double horizontalSpeed = speed * 1.2;
+        
+        // Get current motion
+        net.minecraft.world.phys.Vec3 currentMotion = entity.getDeltaMovement();
+        
+        // Acceleration factors
+        double accelerationFactor = isPlayer ? 0.6 : 0.3;
+        double conserveFactor = 0.75; // Keep 75% of other velocity components
+        
+        // For vertical plates, push in the SAME direction as the plate is facing
+        // This is counter-intuitive but makes sense in the context of vertical placement
+        switch (direction) {
+            case NORTH -> {
+                // Plate is on North wall (facing north), push North (same direction)
+                double targetZ = -horizontalSpeed;  // Negative Z is NORTH
+                double newZ = (currentMotion.z * (1 - accelerationFactor)) + (targetZ * accelerationFactor);
+                double newY = Math.max(currentMotion.y, verticalBoost);
+                
+                entity.setDeltaMovement(
+                    currentMotion.x * conserveFactor,
+                    newY,
+                    newZ
+                );
+            }
+            case SOUTH -> {
+                // Plate is on South wall (facing south), push South (same direction)
+                double targetZ = horizontalSpeed;  // Positive Z is SOUTH
+                double newZ = (currentMotion.z * (1 - accelerationFactor)) + (targetZ * accelerationFactor);
+                double newY = Math.max(currentMotion.y, verticalBoost);
+                
+                entity.setDeltaMovement(
+                    currentMotion.x * conserveFactor,
+                    newY,
+                    newZ
+                );
+            }
+            case EAST -> {
+                // Plate is on East wall (facing east), push East (same direction)
+                double targetX = horizontalSpeed;  // Positive X is EAST
+                double newX = (currentMotion.x * (1 - accelerationFactor)) + (targetX * accelerationFactor);
+                double newY = Math.max(currentMotion.y, verticalBoost);
+                
+                entity.setDeltaMovement(
+                    newX,
+                    newY,
+                    currentMotion.z * conserveFactor
+                );
+            }
+            case WEST -> {
+                // Plate is on West wall (facing west), push West (same direction)
+                double targetX = -horizontalSpeed;  // Negative X is WEST
+                double newX = (currentMotion.x * (1 - accelerationFactor)) + (targetX * accelerationFactor);
+                double newY = Math.max(currentMotion.y, verticalBoost);
+                
+                entity.setDeltaMovement(
+                    newX,
+                    newY,
+                    currentMotion.z * conserveFactor
+                );
+            }
+            default -> {} // Should never happen
+        }
+        
+        // Prevent fall damage
+        entity.fallDistance = 0;
+        
+        // Set flag to confirm physics updates for players
+        if (isPlayer) {
+            ((Player)entity).hurtMarked = true;
         }
     }
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // Get player direction and use it for the block facing
-        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection());
+        Direction clickedFace = context.getClickedFace();
+        Direction horizontalDirection = context.getHorizontalDirection();
+        
+        // If the player clicked on a side face, place vertically
+        if (clickedFace.getAxis() != Direction.Axis.Y) {
+            // When clicking on a face, the plate should face the opposite direction
+            Direction oppositeFace = clickedFace.getOpposite();
+            
+            BlockState state = this.defaultBlockState()
+                .setValue(FACING, oppositeFace)
+                .setValue(VERTICAL, true);
+                
+            return state;
+        } else {
+            // For horizontal placement, just use the player's facing direction
+            BlockState state = this.defaultBlockState()
+                .setValue(FACING, horizontalDirection)
+                .setValue(VERTICAL, false);
+                
+            return state;
+        }
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, VERTICAL);
     }
 } 

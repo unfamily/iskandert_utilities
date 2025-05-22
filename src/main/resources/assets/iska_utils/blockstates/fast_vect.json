@@ -1,8 +1,12 @@
 {
   "variants": {
-    "facing=north": { "model": "iska_utils:block/fast_vect" },
-    "facing=east": { "model": "iska_utils:block/fast_vect", "y": 90 },
-    "facing=south": { "model": "iska_utils:block/fast_vect", "y": 180 },
-    "facing=west": { "model": "iska_utils:block/fast_vect", "y": 270 }
+    "vertical=false,facing=north": { "model": "iska_utils:block/fast_vect" },
+    "vertical=false,facing=east": { "model": "iska_utils:block/fast_vect", "y": 90 },
+    "vertical=false,facing=south": { "model": "iska_utils:block/fast_vect", "y": 180 },
+    "vertical=false,facing=west": { "model": "iska_utils:block/fast_vect", "y": 270 },
+    "vertical=true,facing=north": { "model": "iska_utils:block/fast_vect_vertical" },
+    "vertical=true,facing=east": { "model": "iska_utils:block/fast_vect_vertical", "y": 90 },
+    "vertical=true,facing=south": { "model": "iska_utils:block/fast_vect_vertical", "y": 180 },
+    "vertical=true,facing=west": { "model": "iska_utils:block/fast_vect_vertical", "y": 270 }
   }
 } 

@@ -1,18 +1,33 @@
 {
   "variants": {
-    "facing=north": {
+    "vertical=false,facing=north": {
       "model": "iska_utils:block/plate_base_block"
     },
-    "facing=east": {
+    "vertical=false,facing=east": {
       "model": "iska_utils:block/plate_base_block",
       "y": 90
     },
-    "facing=south": {
+    "vertical=false,facing=south": {
       "model": "iska_utils:block/plate_base_block",
       "y": 180
     },
-    "facing=west": {
+    "vertical=false,facing=west": {
       "model": "iska_utils:block/plate_base_block",
+      "y": 270
+    },
+    "vertical=true,facing=north": {
+      "model": "iska_utils:block/plate_base_block_vertical"
+    },
+    "vertical=true,facing=east": {
+      "model": "iska_utils:block/plate_base_block_vertical",
+      "y": 90
+    },
+    "vertical=true,facing=south": {
+      "model": "iska_utils:block/plate_base_block_vertical",
+      "y": 180
+    },
+    "vertical=true,facing=west": {
+      "model": "iska_utils:block/plate_base_block_vertical",
       "y": 270
     }
   }

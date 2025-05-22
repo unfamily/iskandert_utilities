@@ -1,0 +1,7 @@
+{
+	"parent": "iska_utils:block/plate_base_vertical",
+	"textures": {
+		"top": "iska_utils:block/plate_base",
+		"bottom": "iska_utils:block/plate_base"
+	}
+} 
