@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Collections;
 import java.util.function.Supplier;
 import net.minecraft.world.level.block.state.properties.Property;
+import net.unfamily.iskautils.Config;
 
 public class VectorBlock extends HorizontalDirectionalBlock {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -49,10 +50,6 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     protected static final VoxelShape SHAPE_VERTICAL_SOUTH = Block.box(0, 0, 15, 16, 16, 16);
     protected static final VoxelShape SHAPE_VERTICAL_EAST = Block.box(15, 0, 0, 16, 16, 16);
     protected static final VoxelShape SHAPE_VERTICAL_WEST = Block.box(0, 0, 0, 1, 16, 16);
-    
-    // Vertical boost factors - can be adjusted for balancing
-    protected static final double VERTICAL_BOOST_FACTOR = 0.5;       // Base boost for players
-    protected static final double ENTITY_VERTICAL_BOOST_FACTOR = 1.2; // Higher boost for mobs to overcome gravity
     
     // Variable for block speed
     private final Supplier<Double> speedSupplier;
@@ -442,7 +439,7 @@ public class VectorBlock extends HorizontalDirectionalBlock {
         // Direction is where the plate is facing (opposite of the wall)
         
         // Vertical plates provide upward movement with different factors for players vs mobs
-        double verticalBoostFactor = isPlayer ? VERTICAL_BOOST_FACTOR : ENTITY_VERTICAL_BOOST_FACTOR;
+        double verticalBoostFactor = isPlayer ? Config.verticalBoostFactor : Config.entityVerticalBoostFactor;
         double verticalBoost = speed * verticalBoostFactor;
         
         // Calculate horizontal speed - for vertical plates, push in the SAME horizontal direction
@@ -523,8 +520,9 @@ public class VectorBlock extends HorizontalDirectionalBlock {
         Direction clickedFace = context.getClickedFace();
         Direction horizontalDirection = context.getHorizontalDirection();
         
-        // If the player clicked on a side face, place vertically
-        if (clickedFace.getAxis() != Direction.Axis.Y) {
+        // If the player clicked on a side face, place vertically (if enabled in config)
+        // If vertical conveyors are disabled, all placements will be horizontal
+        if (clickedFace.getAxis() != Direction.Axis.Y && Config.verticalConveyorEnabled) {
             // When clicking on a face, the plate should face the opposite direction
             Direction oppositeFace = clickedFace.getOpposite();
             
