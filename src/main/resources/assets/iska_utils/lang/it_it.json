@@ -1,4 +1,12 @@
 {
+  "item.iska_utils.base_module": "Modulo Vettoriale Base",
+  "item.iska_utils.slow_module": "Modulo Vettoriale Lento",
+  "item.iska_utils.moderate_module": "Modulo Vettoriale Moderato",
+  "item.iska_utils.fast_module": "Modulo Vettoriale Veloce",
+  "item.iska_utils.extreme_module": "Modulo Vettoriale Estremo",
+  "item.iska_utils.ultra_module": "Modulo Vettoriale Ultra",
+  "item.iska_utils.vector_charm": "Amuleto Vettoriale",
+  
   "block.iska_utils.slow_vect": "Piastra Vettoriale Lenta per Mob",
   "block.iska_utils.moderate_vect": "Piastra Vettoriale Moderata per Mob",
   "block.iska_utils.fast_vect": "Piastra Vettoriale Veloce per Mob",
@@ -19,5 +27,22 @@
   "block.iska_utils.smooth_blackstone_slab": "Lastra di Pietra Nera Levigata",
   "block.iska_utils.smooth_blackstone_stairs": "Scalini di Pietra Nera Levigata",
   "block.iska_utils.smooth_blackstone_wall": "Muretto di Pietra Nera Levigata",
-  "block.iska_utils.plate_base_block": "Piastra Base"
+  "block.iska_utils.plate_base_block": "Piastra Base",
+  
+  "key.category.iska_utils": "Utilità di Iska",
+  "key.iska_utils.vector_vertical": "Impostazione Verticale Amuleto Vettoriale",
+  "key.iska_utils.vector_horizontal": "Impostazione Orizzontale Amuleto Vettoriale",
+  
+  "vectorcharm.factor.none": "Nessuno",
+  "vectorcharm.factor.slow": "Lento",
+  "vectorcharm.factor.moderate": "Moderato",
+  "vectorcharm.factor.fast": "Veloce",
+  "vectorcharm.factor.extreme": "Estremo",
+  "vectorcharm.factor.ultra": "Ultra",
+  "vectorcharm.factor.unknown": "Sconosciuto",
+  
+  "message.iska_utils.vector_vertical_factor": "Fattore verticale Amuleto Vettoriale impostato a: %s",
+  "message.iska_utils.vector_horizontal_factor": "Fattore orizzontale Amuleto Vettoriale impostato a: %s",
+
+  "curios.identifier.charm": "Amuleto"
 } 

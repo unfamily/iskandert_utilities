@@ -6,6 +6,7 @@ import com.mojang.logging.LogUtils;
 
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.server.level.ServerLevel;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -15,13 +16,20 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
+import net.unfamily.iskautils.client.ClientEvents;
+import net.unfamily.iskautils.data.VectorCharmData;
 import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.item.custom.CuriosIntegration;
+import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskautils.util.ModUtils;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)
@@ -34,6 +42,11 @@ public class IskaUtils {
     public IskaUtils(IEventBus modEventBus, ModContainer modContainer) {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
+        
+        // Se siamo sul client, registriamo anche il client setup
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            modEventBus.addListener(this::clientSetup);
+        }
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (ExampleMod) to respond directly to events.
@@ -48,14 +61,47 @@ public class IskaUtils {
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
+        
+        // Registra l'integrazione con Curios se è installato
+        CuriosIntegration.register(modEventBus);
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
+        
+        // Log Curios integration
+        if (ModUtils.isCuriosLoaded()) {
+            LOGGER.info("Curios mod detected - enabling integration");
+        }
+        
+        // Registriamo lo shutdown hook per fermare i thread quando la mod viene scaricata
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                LOGGER.info("Shutdown hook called, stopping client threads");
+                ClientEvents.shutdown();
+            }));
+        }
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        // Some common setup code
-        // LOGGER.info("Slow Vector Speed: " + Config.slowVectorSpeed);
+        // Inizializzazione generale
+        LOGGER.info("Common setup starting");
+        
+        // Registra i pacchetti di rete
+        event.enqueueWork(ModMessages::register);
+    }
+    
+    /**
+     * Inizializzazione lato client
+     */
+    private void clientSetup(final FMLClientSetupEvent event) {
+        // Garantiamo che questa operazione venga eseguita in modo sicuro nel thread del client
+        event.enqueueWork(() -> {
+            LOGGER.info("Client setup starting");
+            
+            // Inizializza gli eventi client per i keybindings
+            ClientEvents.init();
+            LOGGER.info("Client events initialized");
+        });
     }
 
     // Add the example block item to the building blocks tab
@@ -67,6 +113,16 @@ public class IskaUtils {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
+        LOGGER.info("Server starting - initializing Vector Charm data");
+    }
+    
+    @SubscribeEvent
+    public void onServerStopping(ServerStoppingEvent event) {
+        // Salva i dati persistenti quando il server si ferma
+        LOGGER.info("Server stopping - saving Vector Charm data");
+        if (event.getServer().overworld() != null) {
+            LOGGER.info("Vector Charm data is handled in memory only for now");
+        }
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
@@ -78,8 +134,6 @@ public class IskaUtils {
             event.enqueueWork(() -> {
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.SLOW_VECT.get(), RenderType.cutout());
             });
-            
-            // LOGGER.info("HELLO FROM CLIENT SETUP");
         }
     }
 }

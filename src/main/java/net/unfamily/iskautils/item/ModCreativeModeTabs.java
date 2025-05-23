@@ -18,8 +18,17 @@ public class ModCreativeModeTabs {
             CREATIVE_MODE_TABS.register("iska_utils_tab", 
                     () -> CreativeModeTab.builder()
                             .title(Component.translatable("creativetab.iska_utils.tab"))
-                            .icon(() -> new ItemStack(ModItems.ULTRA_VECT.get()))
+                            .icon(() -> new ItemStack(ModItems.VECTOR_CHARM.get()))
                             .displayItems((pParameters, pOutput) -> {
+                                // Custom Items
+                                pOutput.accept(ModItems.VECTOR_CHARM.get());
+                                pOutput.accept(ModItems.BASE_MODULE.get());
+                                pOutput.accept(ModItems.SLOW_MODULE.get());
+                                pOutput.accept(ModItems.MODERATE_MODULE.get());
+                                pOutput.accept(ModItems.FAST_MODULE.get());
+                                pOutput.accept(ModItems.EXTREME_MODULE.get());
+                                pOutput.accept(ModItems.ULTRA_MODULE.get());
+                                
                                 // Standard Vector Plates
                                 pOutput.accept(ModItems.SLOW_VECT.get());
                                 pOutput.accept(ModItems.MODERATE_VECT.get());

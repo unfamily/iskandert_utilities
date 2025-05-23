@@ -1,4 +1,12 @@
 {
+  "item.iska_utils.base_module": "Vector Base Module",
+  "item.iska_utils.slow_module": "Slow Vector Module",
+  "item.iska_utils.moderate_module": "Moderate Vector Module",
+  "item.iska_utils.fast_module": "Fast Vector Module",
+  "item.iska_utils.extreme_module": "Extreme Vector Module",
+  "item.iska_utils.ultra_module": "Ultra Vector Module",
+  "item.iska_utils.vector_charm": "Vector Charm",
+  
   "block.iska_utils.slow_vect": "Mobfarm Slow Vector Plate",
   "block.iska_utils.moderate_vect": "Mobfarm Moderate Vector Plate",
   "block.iska_utils.fast_vect": "Mobfarm Fast Vector Plate",
@@ -19,5 +27,20 @@
   "block.iska_utils.smooth_blackstone_slab": "Smooth Blackstone Slab",
   "block.iska_utils.smooth_blackstone_stairs": "Smooth Blackstone Stairs",
   "block.iska_utils.smooth_blackstone_wall": "Smooth Blackstone Wall",
-  "block.iska_utils.plate_base_block": "Plate Base"
+  "block.iska_utils.plate_base_block": "Plate Base",
+  
+  "key.category.iska_utils": "Iska's Utilities",
+  "key.iska_utils.vector_vertical": "Vector Charm Vertical Setting",
+  "key.iska_utils.vector_horizontal": "Vector Charm Horizontal Setting",
+  
+  "vectorcharm.factor.none": "None",
+  "vectorcharm.factor.slow": "Slow",
+  "vectorcharm.factor.moderate": "Moderate",
+  "vectorcharm.factor.fast": "Fast",
+  "vectorcharm.factor.extreme": "Extreme",
+  "vectorcharm.factor.ultra": "Ultra",
+  "vectorcharm.factor.unknown": "Unknown",
+  
+  "message.iska_utils.vector_vertical_factor": "Vector Charm vertical factor set to: %s",
+  "message.iska_utils.vector_horizontal_factor": "Vector Charm horizontal factor set to: %s"
 } 

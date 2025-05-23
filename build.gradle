@@ -114,16 +114,24 @@ configurations {
 }
 
 dependencies {
-    // Dipendenze opzionali per JEI/REI/EMI
+
+    // Cursio optional dependency
+    if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "curios") {
+        implementation "curse.maven:curios-309927:6529130"
+    } else {
+        compileOnly "curse.maven:curios-309927:6529130"
+    }
+
+    // Optional dependencies for JEI/REI/EMI
     
-    // JEI dependency
+    // JEI dependency (Curseforge)
     if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "jei") {
         localRuntime "curse.maven:jei-238222:6516057"
     } else {
         compileOnly "curse.maven:jei-238222:6516057"
     }
     
-    // REI dependencies
+    // REI dependencies (Curseforge)
     if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "rei") {
         localRuntime "curse.maven:roughly-enough-items-310111:6199140"
         localRuntime "curse.maven:architectury-api-419699:5786327"
@@ -134,20 +142,20 @@ dependencies {
         compileOnly "curse.maven:cloth-config-348521:5729127"
     }
     
-    // EMI dependency
+    // EMI dependency (Curseforge)
     if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "emi") {
         localRuntime "curse.maven:emi-580555:6420931"
-        // Aggiunge JEI a runtime for the JEI compatibility built in EMI
+        // Adds JEI at runtime for the JEI compatibility built into EMI
         localRuntime "curse.maven:jei-238222:6516057"
     } else {
         compileOnly "curse.maven:emi-580555:6420931"
     }
     
-    // Verifica che il valore di runtime_itemlist_mod sia valido
+    // Verify that the value of runtime_itemlist_mod is valid
     if (project.hasProperty('runtime_itemlist_mod') && 
-        !(project.runtime_itemlist_mod in ["jei", "rei", "emi", "none"])) {
-        throw new GradleException("Valore di runtime_itemlist_mod non valido: " + project.runtime_itemlist_mod + 
-                                  ". Valori consentiti: jei, rei, emi, none")
+        !(project.runtime_itemlist_mod in ["jei", "rei", "emi", "curios", "none"])) {
+        throw new GradleException("Invalid value for runtime_itemlist_mod: " + project.runtime_itemlist_mod + 
+                                  ". Allowed values: jei, rei, emi, curios, none")
     }
 }
 

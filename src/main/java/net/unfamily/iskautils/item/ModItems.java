@@ -7,12 +7,43 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.item.custom.VectorCharmItem;
+import net.unfamily.iskautils.util.ModUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ModItems {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModItems.class);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(IskaUtils.MOD_ID);
 
     // Common properties for all items
     private static final Item.Properties ITEM_PROPERTIES = new Item.Properties();
+
+    // ===== CUSTOM ITEMS =====
+    
+    // Vector Modules
+    public static final DeferredItem<Item> BASE_MODULE = ITEMS.register("base_module",
+            () -> new Item(ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> SLOW_MODULE = ITEMS.register("slow_module",
+            () -> new Item(ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> MODERATE_MODULE = ITEMS.register("moderate_module",
+            () -> new Item(ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> FAST_MODULE = ITEMS.register("fast_module",
+            () -> new Item(ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> EXTREME_MODULE = ITEMS.register("extreme_module",
+            () -> new Item(ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> ULTRA_MODULE = ITEMS.register("ultra_module",
+            () -> new Item(ITEM_PROPERTIES));
+            
+    // Vector Charm - Custom item with special functionality
+    // Registered as a Curio charm when Curios is available
+    public static final DeferredItem<Item> VECTOR_CHARM = ITEMS.register("vector_charm",
+            () -> new VectorCharmItem(new Item.Properties().stacksTo(1)));
 
     // ===== STANDARD VECTOR PLATE ITEMS =====
     
@@ -52,7 +83,7 @@ public class ModItems {
             
     // ===== UTILITY ITEMS =====
     
-    // Item per l'Hellfire Igniter
+    // Item for the Hellfire Igniter
     public static final DeferredItem<Item> HELLFIRE_IGNITER = ITEMS.register("hellfire_igniter",
             () -> new BlockItem(ModBlocks.HELLFIRE_IGNITER.get(), ITEM_PROPERTIES));
 
@@ -69,5 +100,12 @@ public class ModItems {
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
+        
+        // Log Curios integration status for Vector Charm
+        if (ModUtils.isCuriosLoaded()) {
+            LOGGER.info("Vector Charm will be registered as a Curio charm");
+        } else {
+            LOGGER.info("Vector Charm will be registered as a standard item (Curios not available)");
+        }
     }
 } 
