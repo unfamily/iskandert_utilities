@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Classe che gestisce gli eventi specifici del client
  */
-@EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT)
 public class ClientEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientEvents.class);
     
@@ -77,6 +76,9 @@ public class ClientEvents {
     private static void checkKeysInClientThread() {
         if (Minecraft.getInstance().screen == null && Minecraft.getInstance().player != null) {
             KeyBindings.checkKeys();
+            
+            // Applica il movimento del Vector Charm
+            VectorCharmMovement.applyMovement(Minecraft.getInstance().player);
         }
     }
 } 

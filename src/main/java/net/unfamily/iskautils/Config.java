@@ -51,6 +51,27 @@ public class Config
             .comment("Enable vertical conveyor belts")
             .define("007_verticalConveyorEnabled", true);
 
+    // Vector Charm configurazione
+    private static final ModConfigSpec.BooleanValue VERTICAL_CHARM_ENABLED = BUILDER
+            .comment("Enable vertical vector charm")
+            .define("008_verticalCharmEnabled", true);
+
+    private static final ModConfigSpec.BooleanValue HORIZONTAL_CHARM_ENABLED = BUILDER
+            .comment("Enable horizontal vector charm")
+            .define("009_horizontalCharmEnabled", true);
+
+    private static final ModConfigSpec.DoubleValue HOVER_VALUE = BUILDER
+            .comment("Value for hover mode")
+            .defineInRange("010_hoverValue", 0.05D, 0.00D, 5.0D);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends Integer>> ENERGY_CHARM_CONSUME = BUILDER
+            .comment("Energy consumption for each level of vector charm [None, Slow, Moderate, Fast, Extreme, Ultra]")
+            .defineList("011_energyCharmConsume", java.util.List.of(0, 5, 15, 50, 100, 300), obj -> obj instanceof Integer);
+
+    private static final ModConfigSpec.IntValue ENERGY_CHARM_STORE = BUILDER
+            .comment("Energy storage capacity of vector charm")
+            .defineInRange("012_energyCharmStore", 100000, 1, Integer.MAX_VALUE);
+
     static {
         BUILDER.pop(); // End of vector_plates category
         
@@ -83,6 +104,11 @@ public class Config
     public static boolean verticalConveyorEnabled;
     public static int hellfireIgniterConsume;
     public static int hellfireIgniterBuffer;
+    public static boolean verticalCharmEnabled;
+    public static boolean horizontalCharmEnabled;
+    public static double hoverValue;
+    public static java.util.List<Integer> energyCharmConsume;
+    public static int energyCharmStore;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -95,6 +121,11 @@ public class Config
         verticalBoostFactor = VERTICAL_BOOST_FACTOR.get();
         entityVerticalBoostFactor = ENTITY_VERTICAL_BOOST_FACTOR.get();
         verticalConveyorEnabled = VERTICAL_CONVEYOR_ENABLED.get();
+        verticalCharmEnabled = VERTICAL_CHARM_ENABLED.get();
+        horizontalCharmEnabled = HORIZONTAL_CHARM_ENABLED.get();
+        hoverValue = HOVER_VALUE.get();
+        energyCharmConsume = (java.util.List<Integer>) ENERGY_CHARM_CONSUME.get();
+        energyCharmStore = ENERGY_CHARM_STORE.get();
         hellfireIgniterConsume = HELLFIRE_IGNITER_CONSUME.get();
         hellfireIgniterBuffer = HELLFIRE_IGNITER_BUFFER.get();
     }

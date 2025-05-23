@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,10 +28,15 @@ public class CuriosIntegration {
 
     /**
      * Metodo chiamato durante il setup per integrare con Curios
+     * Utilizza FMLCommonSetupEvent che è un evento valido per il mod bus
      */
-    private static void setupCurios(Object event) {
-        // L'evento specifico dipende dalla versione di Curios
+    private static void setupCurios(FMLCommonSetupEvent event) {
+        // L'evento specifico deve essere una sottoclasse di IModBusEvent
         LOGGER.info("Setup dell'integrazione con Curios in corso...");
+        
+        // Registra il Vector Charm come curio
+        VectorCharmCurioHandler.register();
+        
         LOGGER.info("Vector Charm sarà disponibile come ciondolo quando Curios è presente");
     }
 } 

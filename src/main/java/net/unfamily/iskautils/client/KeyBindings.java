@@ -20,13 +20,13 @@ import org.slf4j.LoggerFactory;
 /**
  * Gestisce i keybindings per la mod
  */
-@EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT)
 public class KeyBindings {
     private static final Logger LOGGER = LoggerFactory.getLogger(KeyBindings.class);
     
     public static final String KEY_CATEGORY_ISKA_UTILS = "key.category.iska_utils";
     public static final String KEY_VECTOR_VERTICAL = "key.iska_utils.vector_vertical";
     public static final String KEY_VECTOR_HORIZONTAL = "key.iska_utils.vector_horizontal";
+    public static final String KEY_VECTOR_HOVER = "key.iska_utils.vector_hover";
 
     public static final KeyMapping VECTOR_VERTICAL_KEY = new KeyMapping(
             KEY_VECTOR_VERTICAL,
@@ -44,6 +44,14 @@ public class KeyBindings {
             KEY_CATEGORY_ISKA_UTILS
     );
 
+    public static final KeyMapping VECTOR_HOVER_KEY = new KeyMapping(
+            KEY_VECTOR_HOVER,
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_H,  // Tasto H per l'hover
+            KEY_CATEGORY_ISKA_UTILS
+    );
+
     /**
      * Registra i key bindings
      */
@@ -54,6 +62,7 @@ public class KeyBindings {
             LOGGER.info("Registrando i keybindings per Vector Charm");
             event.register(VECTOR_VERTICAL_KEY);
             event.register(VECTOR_HORIZONTAL_KEY);
+            event.register(VECTOR_HOVER_KEY);
         }
     }
 
@@ -94,6 +103,34 @@ public class KeyBindings {
                 // Invia un messaggio al giocatore
                 player.displayClientMessage(Component.translatable("message.iska_utils.vector_horizontal_factor", 
                                      Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
+            }
+
+            // Tasto per l'hover (imposta solo il fattore verticale a 6 per attivare, o ripristina il valore precedente per disattivare)
+            if (VECTOR_HOVER_KEY.consumeClick()) {
+                LOGGER.debug("Vector Charm hover key pressed");
+                
+                // Ottieni il valore corrente del fattore verticale
+                byte currentFactor = VectorCharmData.getInstance().getVerticalFactor(player);
+                
+                // Valore speciale per hover mode è 6
+                byte hoverFactor = VectorCharmData.HOVER_MODE_VALUE;
+                
+                // Se il fattore corrente è già hover, disattivalo e torna al valore precedente
+                if (currentFactor == hoverFactor) {
+                    // Disattiva l'hover mode e ripristina il valore precedente
+                    VectorCharmData.getInstance().disableHoverMode(player);
+                    
+                    // Invia un messaggio al giocatore
+                    player.displayClientMessage(Component.translatable("message.iska_utils.vector_hover_mode.disabled"), true);
+                    LOGGER.debug("Hover mode disabled");
+                } else {
+                    // Altrimenti, attiva la modalità hover
+                    VectorCharmData.getInstance().setVerticalFactor(player, hoverFactor);
+                    
+                    // Invia un messaggio al giocatore
+                    player.displayClientMessage(Component.translatable("message.iska_utils.vector_hover_mode.enabled"), true);
+                    LOGGER.debug("Hover mode enabled");
+                }
             }
         }
     }

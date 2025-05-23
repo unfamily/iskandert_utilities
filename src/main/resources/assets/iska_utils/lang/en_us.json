@@ -32,6 +32,7 @@
   "key.category.iska_utils": "Iska's Utilities",
   "key.iska_utils.vector_vertical": "Vector Charm Vertical Setting",
   "key.iska_utils.vector_horizontal": "Vector Charm Horizontal Setting",
+  "key.iska_utils.vector_hover": "Vector Charm Hover Mode Toggle",
   
   "vectorcharm.factor.none": "None",
   "vectorcharm.factor.slow": "Slow",
@@ -42,5 +43,9 @@
   "vectorcharm.factor.unknown": "Unknown",
   
   "message.iska_utils.vector_vertical_factor": "Vector Charm vertical factor set to: %s",
-  "message.iska_utils.vector_horizontal_factor": "Vector Charm horizontal factor set to: %s"
+  "message.iska_utils.vector_horizontal_factor": "Vector Charm horizontal factor set to: %s",
+  "message.iska_utils.vector_hover_mode.enabled": "Vector Charm hover mode enabled",
+  "message.iska_utils.vector_hover_mode.disabled": "Vector Charm hover mode disabled",
+  
+  "curios.identifier.charm": "Charm"
 } 

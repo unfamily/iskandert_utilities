@@ -32,6 +32,7 @@
   "key.category.iska_utils": "Utilità di Iska",
   "key.iska_utils.vector_vertical": "Impostazione Verticale Amuleto Vettoriale",
   "key.iska_utils.vector_horizontal": "Impostazione Orizzontale Amuleto Vettoriale",
+  "key.iska_utils.vector_hover": "Attiva/Disattiva Modalità Fluttuante",
   
   "vectorcharm.factor.none": "Nessuno",
   "vectorcharm.factor.slow": "Lento",
@@ -43,6 +44,8 @@
   
   "message.iska_utils.vector_vertical_factor": "Fattore verticale Amuleto Vettoriale impostato a: %s",
   "message.iska_utils.vector_horizontal_factor": "Fattore orizzontale Amuleto Vettoriale impostato a: %s",
+  "message.iska_utils.vector_hover_mode.enabled": "Modalità fluttuante attivata",
+  "message.iska_utils.vector_hover_mode.disabled": "Modalità fluttuante disattivata",
 
   "curios.identifier.charm": "Amuleto"
 } 
