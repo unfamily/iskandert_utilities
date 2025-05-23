@@ -12,9 +12,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Classe per gestire i dati persistenti del Vector Charm.
- * Attualmente utilizza solo la memoria, il supporto di salvataggio
- * verrà implementato in seguito.
+ * Class to manage persistent Vector Charm data.
+ * Currently only uses memory, save support will be
+ * implemented later.
  */
 public class VectorCharmData {
     private static final Logger LOGGER = LoggerFactory.getLogger(VectorCharmData.class);
@@ -23,61 +23,70 @@ public class VectorCharmData {
     // Singleton instance
     private static VectorCharmData instance;
     
-    // Mappe per memorizzare i fattori per ciascun giocatore
+    // Maps to store factors for each player
     private final Map<UUID, Byte> verticalFactors = new HashMap<>();
     private final Map<UUID, Byte> horizontalFactors = new HashMap<>();
     
-    // Mappa per memorizzare il valore precedente del fattore verticale prima dell'hover
+    // Map to store previous vertical factor value before hover
     private final Map<UUID, Byte> previousVerticalFactors = new HashMap<>();
     
-    // Valore speciale per la modalità hover
+    // Special value for hover mode
     public static final byte HOVER_MODE_VALUE = 6;
     
-    // Flag per tracciare i cambiamenti
+    // Special value for parachute mode (initial activation)
+    public static final byte PARACHUTE_MODE_VALUE = 7;
+    
+    // Special value for parachute active mode (after slow falling is applied)
+    public static final byte PARACHUTE_ACTIVE_VALUE = 8;
+    
+    // Duration of parachute mode in ticks (5 seconds)
+    public static final int PARACHUTE_DURATION = 100;
+    
+    // Map to track remaining parachute time
+    private final Map<UUID, Integer> parachuteTicksLeft = new HashMap<>();
+    
+    // Flag to track changes
     private boolean isDirty = false;
 
     /**
-     * Costruttore privato per il singleton
+     * Private constructor for singleton
      */
     private VectorCharmData() {
         // Private constructor
     }
     
     /**
-     * Ottiene l'istanza singleton di VectorCharmData
+     * Gets the singleton instance of VectorCharmData
      */
     public static VectorCharmData getInstance() {
         if (instance == null) {
             instance = new VectorCharmData();
-            LOGGER.info("Created new Vector Charm data instance");
         }
         return instance;
     }
 
     /**
-     * Imposta il fattore verticale per un giocatore
-     * @param player il giocatore
-     * @param factor il fattore (0-5, o 6 per hover)
+     * Sets the vertical factor for a player
+     * @param player the player
+     * @param factor the factor (0-5, or 6 for hover)
      */
     public void setVerticalFactor(Player player, byte factor) {
         UUID playerId = player.getUUID();
         
-        // Se stiamo attivando la modalità hover, salva il valore precedente
+        // If we're activating hover mode, save the previous value
         byte currentFactor = verticalFactors.getOrDefault(playerId, (byte) 0);
         if (factor == HOVER_MODE_VALUE && currentFactor != HOVER_MODE_VALUE) {
             previousVerticalFactors.put(playerId, currentFactor);
-            LOGGER.debug("Saved previous vertical factor {} before hover mode for player {}", currentFactor, playerId);
         }
         
         verticalFactors.put(playerId, factor);
         isDirty = true;
-        LOGGER.debug("Set vertical factor {} for player {}", factor, playerId);
     }
 
     /**
-     * Ottiene il fattore verticale per un giocatore
-     * @param player il giocatore
-     * @return il fattore (0-5, o 6 per hover)
+     * Gets the vertical factor for a player
+     * @param player the player
+     * @return the factor (0-5, or 6 for hover)
      */
     public byte getVerticalFactor(Player player) {
         UUID playerId = player.getUUID();
@@ -85,40 +94,38 @@ public class VectorCharmData {
     }
     
     /**
-     * Disattiva la modalità hover ripristinando il valore precedente
-     * @param player il giocatore
-     * @return il fattore ripristinato
+     * Disables hover mode and restores the previous value
+     * @param player the player
+     * @return the restored factor
      */
     public byte disableHoverMode(Player player) {
         UUID playerId = player.getUUID();
         
-        // Ottieni il valore precedente, o usa 0 come fallback
+        // Get the previous value, or use 0 as fallback
         byte previousFactor = previousVerticalFactors.getOrDefault(playerId, (byte) 0);
         
-        // Imposta il fattore verticale al valore precedente
+        // Set the vertical factor to the previous value
         verticalFactors.put(playerId, previousFactor);
         isDirty = true;
         
-        LOGGER.debug("Disabled hover mode for player {}, restored vertical factor to {}", playerId, previousFactor);
         return previousFactor;
     }
 
     /**
-     * Imposta il fattore orizzontale per un giocatore
-     * @param player il giocatore
-     * @param factor il fattore (0-5)
+     * Sets the horizontal factor for a player
+     * @param player the player
+     * @param factor the factor (0-5)
      */
     public void setHorizontalFactor(Player player, byte factor) {
         UUID playerId = player.getUUID();
         horizontalFactors.put(playerId, factor);
         isDirty = true;
-        LOGGER.debug("Set horizontal factor {} for player {}", factor, playerId);
     }
 
     /**
-     * Ottiene il fattore orizzontale per un giocatore
-     * @param player il giocatore
-     * @return il fattore (0-5)
+     * Gets the horizontal factor for a player
+     * @param player the player
+     * @return the factor (0-5)
      */
     public byte getHorizontalFactor(Player player) {
         UUID playerId = player.getUUID();
@@ -126,56 +133,63 @@ public class VectorCharmData {
     }
 
     /**
-     * Verifica se i dati sono stati modificati
+     * Checks if data has been modified
      */
     public boolean isDirty() {
         return isDirty;
     }
 
     /**
-     * Resetta il flag dirty
+     * Resets the dirty flag
      */
     public void resetDirty() {
         isDirty = false;
     }
 
     /**
-     * Salva i dati in NBT
+     * Saves data to NBT
      */
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
         CompoundTag verticalTag = new CompoundTag();
         CompoundTag horizontalTag = new CompoundTag();
         CompoundTag previousVerticalTag = new CompoundTag();
+        CompoundTag parachuteTicksTag = new CompoundTag();
 
-        // Salva tutti i fattori verticali
+        // Save all vertical factors
         for (Map.Entry<UUID, Byte> entry : verticalFactors.entrySet()) {
             verticalTag.putByte(entry.getKey().toString(), entry.getValue());
         }
         
-        // Salva tutti i fattori orizzontali
+        // Save all horizontal factors
         for (Map.Entry<UUID, Byte> entry : horizontalFactors.entrySet()) {
             horizontalTag.putByte(entry.getKey().toString(), entry.getValue());
         }
         
-        // Salva tutti i fattori verticali precedenti
+        // Save all previous vertical factors
         for (Map.Entry<UUID, Byte> entry : previousVerticalFactors.entrySet()) {
             previousVerticalTag.putByte(entry.getKey().toString(), entry.getValue());
         }
+        
+        // Save all parachute counters
+        for (Map.Entry<UUID, Integer> entry : parachuteTicksLeft.entrySet()) {
+            parachuteTicksTag.putInt(entry.getKey().toString(), entry.getValue());
+        }
 
-        // Aggiunge le mappe al tag principale
+        // Add maps to main tag
         tag.put("vertical_factors", verticalTag);
         tag.put("horizontal_factors", horizontalTag);
         tag.put("previous_vertical_factors", previousVerticalTag);
+        tag.put("parachute_ticks", parachuteTicksTag);
 
         return tag;
     }
 
     /**
-     * Carica i dati da NBT
+     * Loads data from NBT
      */
     public void load(CompoundTag tag) {
-        // Carica i fattori verticali
+        // Load vertical factors
         if (tag.contains("vertical_factors")) {
             CompoundTag verticalTag = tag.getCompound("vertical_factors");
             for (String key : verticalTag.getAllKeys()) {
@@ -188,7 +202,7 @@ public class VectorCharmData {
             }
         }
         
-        // Carica i fattori orizzontali
+        // Load horizontal factors
         if (tag.contains("horizontal_factors")) {
             CompoundTag horizontalTag = tag.getCompound("horizontal_factors");
             for (String key : horizontalTag.getAllKeys()) {
@@ -201,7 +215,7 @@ public class VectorCharmData {
             }
         }
         
-        // Carica i fattori verticali precedenti
+        // Load previous vertical factors
         if (tag.contains("previous_vertical_factors")) {
             CompoundTag previousVerticalTag = tag.getCompound("previous_vertical_factors");
             for (String key : previousVerticalTag.getAllKeys()) {
@@ -213,12 +227,109 @@ public class VectorCharmData {
                 }
             }
         }
+        
+        // Load parachute counters
+        if (tag.contains("parachute_ticks")) {
+            CompoundTag parachuteTicksTag = tag.getCompound("parachute_ticks");
+            for (String key : parachuteTicksTag.getAllKeys()) {
+                try {
+                    UUID playerId = UUID.fromString(key);
+                    parachuteTicksLeft.put(playerId, parachuteTicksTag.getInt(key));
+                } catch (IllegalArgumentException e) {
+                    LOGGER.error("Invalid UUID in parachute_ticks: {}", key);
+                }
+            }
+        }
     }
 
     /**
-     * Ottiene l'istanza dei dati, creandola se necessario
+     * Gets the data instance, creating it if necessary
      */
     public static VectorCharmData get(ServerLevel level) {
         return getInstance();
+    }
+
+    /**
+     * Activates parachute mode for a player
+     * @param player the player
+     */
+    public void enableParachuteMode(Player player) {
+        UUID playerId = player.getUUID();
+        
+        // Get current factor and store it for future use
+        byte currentFactor = verticalFactors.getOrDefault(playerId, (byte) 0);
+        
+        // Only save the value if we're not already in hover mode and not already in parachute mode
+        if (currentFactor != HOVER_MODE_VALUE && currentFactor != PARACHUTE_MODE_VALUE) {
+            previousVerticalFactors.put(playerId, currentFactor);
+        }
+        
+        // Set vertical factor directly to parachute value (7)
+        verticalFactors.put(playerId, PARACHUTE_MODE_VALUE);
+        
+        // Initialize counter for parachute duration
+        parachuteTicksLeft.put(playerId, PARACHUTE_DURATION);
+        
+        isDirty = true;
+    }
+    
+    /**
+     * Disables parachute mode and restores the previous value
+     * @param player the player
+     * @return the restored factor
+     */
+    public byte disableParachuteMode(Player player) {
+        UUID playerId = player.getUUID();
+        
+        // Get the previous value, or use 0 as fallback
+        byte previousFactor = previousVerticalFactors.getOrDefault(playerId, (byte) 0);
+        
+        // Set the vertical factor to the previous value
+        verticalFactors.put(playerId, previousFactor);
+        
+        // Remove the parachute counter
+        parachuteTicksLeft.remove(playerId);
+        
+        // Clean up the previous factor storage
+        previousVerticalFactors.remove(playerId);
+        
+        // No need to remove the Slow Falling effect here - it will expire naturally
+        // If needed, it would be: player.removeEffect(MobEffects.SLOW_FALLING);
+        
+        isDirty = true;
+        return previousFactor;
+    }
+    
+    /**
+     * Gets the remaining time of parachute mode for a player
+     * @param player the player
+     * @return the number of ticks left, or 0 if not active
+     */
+    public int getParachuteTicksLeft(Player player) {
+        UUID playerId = player.getUUID();
+        return parachuteTicksLeft.getOrDefault(playerId, 0);
+    }
+    
+    /**
+     * Decrements the remaining time of parachute mode for a player
+     * @param player the player
+     * @return true if parachute is still active, false if it has ended
+     */
+    public boolean decrementParachuteTicks(Player player) {
+        UUID playerId = player.getUUID();
+        if (!parachuteTicksLeft.containsKey(playerId)) {
+            return false;
+        }
+        
+        int ticksLeft = parachuteTicksLeft.get(playerId) - 1;
+        if (ticksLeft <= 0) {
+            // Parachute has ended, restore previous value
+            disableParachuteMode(player);
+            return false;
+        } else {
+            // Update counter
+            parachuteTicksLeft.put(playerId, ticksLeft);
+            return true;
+        }
     }
 } 

@@ -7,36 +7,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Classe per gestire l'integrazione con Curios API.
- * Questo codice verrà eseguito solo quando Curios è presente.
- * Implementazione semplificata per evitare problemi di compatibilità.
+ * Class to handle integration with Curios API.
+ * This code will only run when Curios is present.
+ * Simplified implementation to avoid compatibility issues.
  */
 public class CuriosIntegration {
     private static final Logger LOGGER = LoggerFactory.getLogger(CuriosIntegration.class);
 
     /**
-     * Registra gli eventi necessari per l'integrazione con Curios
-     * @param eventBus Bus degli eventi della mod
+     * Registers the necessary events for Curios integration
+     * @param eventBus Mod event bus
      */
     public static void register(IEventBus eventBus) {
-        // Registra questa classe solo se Curios è caricato
+        // Register this class only if Curios is loaded
         if (ModUtils.isCuriosLoaded()) {
-            LOGGER.info("Registrando l'integrazione con Curios");
+            // LOGGER.info("Registering Curios integration");
             eventBus.addListener(CuriosIntegration::setupCurios);
         }
     }
 
     /**
-     * Metodo chiamato durante il setup per integrare con Curios
-     * Utilizza FMLCommonSetupEvent che è un evento valido per il mod bus
+     * Method called during setup to integrate with Curios
+     * Uses FMLCommonSetupEvent which is a valid event for the mod bus
      */
     private static void setupCurios(FMLCommonSetupEvent event) {
-        // L'evento specifico deve essere una sottoclasse di IModBusEvent
-        LOGGER.info("Setup dell'integrazione con Curios in corso...");
+        // The specific event must be a subclass of IModBusEvent
+        // LOGGER.info("Setting up Curios integration...");
         
-        // Registra il Vector Charm come curio
+        // Register Vector Charm as curio
         VectorCharmCurioHandler.register();
         
-        LOGGER.info("Vector Charm sarà disponibile come ciondolo quando Curios è presente");
+        // LOGGER.info("Vector Charm will be available as a charm when Curios is present");
     }
 } 

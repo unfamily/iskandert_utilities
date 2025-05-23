@@ -32,7 +32,7 @@ public class ModBlocks {
             .isViewBlocking((state, level, pos) -> false)
             .lightLevel((state) -> 0);
     
-    // Proprietà per l'Hellfire Igniter
+    // Properties for the Hellfire Igniter
     private static final BlockBehaviour.Properties HELLFIRE_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.STONE)
             .strength(0.3f, 1.0f)
@@ -86,7 +86,7 @@ public class ModBlocks {
     
     // ===== UTILITY BLOCKS =====
     
-    // Hellfire Igniter (crea fuoco quando attivato da redstone)
+    // Hellfire Igniter (creates fire when activated by redstone)
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
             () -> new HellfireIgniterBlock(HELLFIRE_PROPERTIES));
 
@@ -106,7 +106,7 @@ public class ModBlocks {
     public static final DeferredBlock<Block> SMOOTH_BLACKSTONE_WALL = BLOCKS.register("smooth_blackstone_wall",
             () -> new SmoothBlackstoneWallBlock(SMOOTH_BLACKSTONE_PROPERTIES));
 
-    // ===== PLATE BASE BLOCK (tipo vector, texture sopra e sotto plate_base) =====
+    // ===== PLATE BASE BLOCK (vector type, texture above and below plate_base) =====
     public static final DeferredBlock<PlateBaseBlock> PLATE_BASE_BLOCK = BLOCKS.register("plate_base_block",
             () -> new PlateBaseBlock(VECTOR_PROPERTIES));
 

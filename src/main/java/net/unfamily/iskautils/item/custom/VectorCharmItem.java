@@ -12,61 +12,60 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Method;
 
 /**
- * Item speciale per il Vector Charm che può essere indossato come Curio quando disponibile.
- * Quando indossato o tenuto in mano, fornisce una maggiore velocità alle placche vettoriali.
+ * Special item for the Vector Charm that can be worn as a Curio when available.
+ * When worn or held in hand, provides increased speed to vector plates.
  */
 public class VectorCharmItem extends Item {
     private static final Logger LOGGER = LoggerFactory.getLogger(VectorCharmItem.class);
 
     /**
-     * Moltiplicatore di forza quando il ciondolo è indossato o in mano
+     * Force multiplier when the charm is worn or in hand
      */
     private static final float BOOST_MULTIPLIER = 1.5f;
 
     public VectorCharmItem(Properties properties) {
         super(properties);
-        LOGGER.debug("Vector Charm item created");
+        // LOGGER.debug("Vector Charm item created");
     }
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        // Aggiungi l'effetto 'enchanted' al ciondolo
+        // Add the 'enchanted' effect to the charm
         return true;
     }
     
     /**
-     * Questo metodo viene chiamato ad ogni tick per ogni item nell'inventario
+     * This method is called every tick for every item in the inventory
      */
     @Override
     public void inventoryTick(ItemStack stack, net.minecraft.world.level.Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
         super.inventoryTick(stack, level, entity, slotId, isSelected);
         
-        // Eseguiamo solo sul client e solo per i giocatori
+        // Execute only on client and only for players
         if (level.isClientSide && entity instanceof Player player) {
-            // Il movimento effettivo viene applicato tramite ClientEvents
-            // Questo avviene in modo centralizzato ad ogni tick tramite ClientEvents.checkKeysInClientThread()
-            // e VectorCharmMovement.applyMovement(player)
+            // Apply Vector Charm movement directly when the item is in inventory
+            net.unfamily.iskautils.client.VectorCharmMovement.applyMovement(player);
         }
     }
     
     /**
-     * Controlla se il giocatore ha un Vector Charm equipaggiato o in mano
-     * @param player Il giocatore da controllare
-     * @return true se il giocatore ha un Vector Charm
+     * Checks if the player has a Vector Charm equipped or in hand
+     * @param player The player to check
+     * @return true if the player has a Vector Charm
      */
     public static boolean hasVectorCharm(Player player) {
-        // Controlla le mani (priorità più alta)
+        // Check hands (highest priority)
         if (player.getMainHandItem().getItem() instanceof VectorCharmItem ||
             player.getOffhandItem().getItem() instanceof VectorCharmItem) {
             return true;
         }
         
-        // Se Curios è caricato, controlla gli slot di Curios (seconda priorità)
+        // If Curios is loaded, check Curios slots (second priority)
         if (ModUtils.isCuriosLoaded() && checkCuriosSlots(player)) {
             return true;
         }
         
-        // Controlla l'inventario del giocatore (priorità più bassa)
+        // Check player inventory (lowest priority)
         for (ItemStack stack : player.getInventory().items) {
             if (stack.getItem() instanceof VectorCharmItem) {
                 return true;
@@ -77,69 +76,96 @@ public class VectorCharmItem extends Item {
     }
     
     /**
-     * Utilizza reflection per controllare se il Vector Charm è equipaggiato in uno slot Curios
+     * Uses reflection to check if the Vector Charm is equipped in a Curios slot
      */
     private static boolean checkCuriosSlots(Player player) {
         try {
-            // Utilizziamo la reflection per accedere a Curios API
+            // Use reflection to access Curios API
             Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
             
-            // Ottieni il metodo per controllare un item specifico
-            Method hasItemMethod = null;
+            // Approach 1: Use hasAnyEquipped method (preferred)
             try {
-                // Prima prova con un metodo più diretto se disponibile
-                hasItemMethod = curioApiClass.getMethod("hasAnyEquipped", LivingEntity.class, java.util.function.Predicate.class);
+                Method hasItemMethod = curioApiClass.getMethod("hasAnyEquipped", LivingEntity.class, java.util.function.Predicate.class);
                 if (hasItemMethod != null) {
-                    // Crea un predicate per VectorCharmItem
+                    // Create a predicate for VectorCharmItem
                     java.util.function.Predicate<ItemStack> predicate = 
                         (ItemStack stack) -> stack.getItem() instanceof VectorCharmItem;
                     
-                    // Invoca il metodo
-                    return (Boolean) hasItemMethod.invoke(null, player, predicate);
+                    // Invoke the method
+                    Boolean result = (Boolean) hasItemMethod.invoke(null, player, predicate);
+                    return result;
                 }
-            } catch (NoSuchMethodException e) {
-                // Metodo non trovato, procedi con l'approccio alternativo
+            } catch (Exception e) {
+                // LOGGER.warn("Could not use hasAnyEquipped method: {}", e.getMessage());
+                // Fallback to method 2
             }
             
-            // Approccio alternativo: scansiona manualmente gli slot
-            Method getCuriosMethod = curioApiClass.getMethod("getCurios", LivingEntity.class);
-            Object curiosHelper = getCuriosMethod.invoke(null, player);
-
-            if (curiosHelper != null) {
-                // Controlla ogni slot curio
-                Class<?> iCurioHelperClass = Class.forName("top.theillusivec4.curios.api.type.capability.ICurioHelper");
-                Method getEquippedCuriosMethod = iCurioHelperClass.getMethod("getEquippedCurios", LivingEntity.class);
-                Object equippedCurios = getEquippedCuriosMethod.invoke(curiosHelper, player);
-
-                if (equippedCurios instanceof Iterable<?> curios) {
-                    for (Object curio : curios) {
-                        // Ottieni l'ItemStack del curio
-                        Method getStackMethod = curio.getClass().getMethod("getStack");
-                        ItemStack stack = (ItemStack) getStackMethod.invoke(curio);
-                        
-                        if (stack.getItem() instanceof VectorCharmItem) {
-                            LOGGER.debug("Found Vector Charm in Curios slot for player {}", player.getScoreboardName());
-                            return true;
+            // Approach 2: Try to find Vector Charm through getAllEquipped
+            try {
+                Method getAllEquippedMethod = curioApiClass.getMethod("getAllEquipped", LivingEntity.class);
+                if (getAllEquippedMethod != null) {
+                    Object allEquipped = getAllEquippedMethod.invoke(null, player);
+                    if (allEquipped instanceof Iterable<?> items) {
+                        for (Object itemPair : items) {
+                            // Extract stack from each pair
+                            Method getStackMethod = itemPair.getClass().getMethod("getRight");
+                            ItemStack stack = (ItemStack) getStackMethod.invoke(itemPair);
+                            
+                            if (stack.getItem() instanceof VectorCharmItem) {
+                                return true;
+                            }
                         }
                     }
                 }
+            } catch (Exception e) {
+                // LOGGER.warn("Could not use getAllEquipped method: {}", e.getMessage());
+                // Fallback to method 3
             }
+            
+            // Approach 3: Manual approach using getCurios
+            try {
+                Method getCuriosMethod = curioApiClass.getMethod("getCurios", LivingEntity.class);
+                Object curiosHelper = getCuriosMethod.invoke(null, player);
+
+                if (curiosHelper != null) {
+                    // Check each curio slot
+                    Class<?> iCurioHelperClass = Class.forName("top.theillusivec4.curios.api.type.capability.ICurioHelper");
+                    Method getEquippedCuriosMethod = iCurioHelperClass.getMethod("getEquippedCurios", LivingEntity.class);
+                    Object equippedCurios = getEquippedCuriosMethod.invoke(curiosHelper, player);
+
+                    if (equippedCurios instanceof Iterable<?> curios) {
+                        for (Object curio : curios) {
+                            // Get the ItemStack of the curio
+                            Method getStackMethod = curio.getClass().getMethod("getStack");
+                            ItemStack stack = (ItemStack) getStackMethod.invoke(curio);
+                            
+                            if (stack.getItem() instanceof VectorCharmItem) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // LOGGER.warn("Could not use getCurios method: {}", e.getMessage());
+            }
+            
+            return false;
+            
         } catch (Exception e) {
-            // Se c'è un errore nella reflection, logga e continua
+            // If there's an error in reflection, log and continue
             LOGGER.error("Error checking Curios slots: {}", e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
+            return false;
         }
-        
-        return false;
     }
     
     /**
-     * Applica l'effetto boost alla velocità del vettore
-     * @param entity L'entità che attraversa la placca vettoriale
-     * @param motion Il vettore movimento originale
-     * @return Il vettore movimento potenziato
+     * Applies boost effect to vector speed
+     * @param entity The entity crossing the vector plate
+     * @param motion The original movement vector
+     * @return The boosted movement vector
      */
     public static Vec3 applyBoost(LivingEntity entity, Vec3 motion) {
         if (entity instanceof Player player && hasVectorCharm(player)) {

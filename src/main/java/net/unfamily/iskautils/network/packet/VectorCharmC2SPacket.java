@@ -12,37 +12,28 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Supplier;
 
 /**
- * Pacchetto client-to-server per gestire il cambio di impostazioni del Vector Charm.
- * Versione semplificata che non dipende da NetworkEvent
+ * Packet for Vector Charm configuration from client to server
+ * Currently simplified to avoid networking complexity
  */
 public class VectorCharmC2SPacket {
     private static final Logger LOGGER = LoggerFactory.getLogger(VectorCharmC2SPacket.class);
+    
+    private final byte newFactor;
     private final boolean isVertical;
-
+    
     /**
-     * Costruttore per decodificare il pacchetto dal buffer
+     * Creates a new Vector Charm packet
+     * @param newFactor The new factor value (0-5)
+     * @param isVertical true if it's the vertical factor, false for horizontal
      */
-    public VectorCharmC2SPacket(FriendlyByteBuf buf) {
-        this.isVertical = buf.readBoolean();
-    }
-
-    /**
-     * Costruttore standard
-     * @param isVertical true se è il fattore verticale, false per quello orizzontale
-     */
-    public VectorCharmC2SPacket(boolean isVertical) {
+    public VectorCharmC2SPacket(byte newFactor, boolean isVertical) {
+        this.newFactor = newFactor;
         this.isVertical = isVertical;
     }
-
+    
     /**
-     * Codifica il pacchetto nel buffer
-     */
-    public void encode(FriendlyByteBuf buf) {
-        buf.writeBoolean(isVertical);
-    }
-
-    /**
-     * Gestisce la ricezione del pacchetto sul server
+     * Handles the packet on the server side
+     * @param player The server player who sent the packet
      */
     public void handle(ServerPlayer player) {
         if (player == null) {
@@ -52,45 +43,41 @@ public class VectorCharmC2SPacket {
         
         ServerLevel level = player.serverLevel();
 
-        // Ottieni i dati persistenti del Vector Charm
-        VectorCharmData charmData = VectorCharmData.get(level);
+        // Get the Vector Charm data instance
+        VectorCharmData data = VectorCharmData.get(level);
         
-        // Aggiorna il valore del fattore (verticale o orizzontale)
-        VectorFactorType newFactor;
+        // Update the appropriate factor
         if (isVertical) {
-            // Cicla al fattore verticale successivo
-            byte currentFactor = charmData.getVerticalFactor(player);
-            byte nextFactor = (byte) ((currentFactor + 1) % 6); // 0-5 (None, Slow, Moderate, Fast, Extreme, Ultra)
-            charmData.setVerticalFactor(player, nextFactor);
-            newFactor = VectorFactorType.fromByte(nextFactor);
+            data.setVerticalFactor(player, newFactor);
             
-            // Invia un messaggio al giocatore
+            // Send confirmation message to player
+            VectorFactorType newFactorType = VectorFactorType.fromByte(newFactor);
             player.sendSystemMessage(Component.translatable("message.iska_utils.vector_vertical_factor", 
-                                 Component.translatable("vectorcharm.factor." + newFactor.getName())));
+                                   Component.translatable("vectorcharm.factor." + newFactorType.getName())));
             
-            LOGGER.info("Player {} set vertical factor to {}", player.getScoreboardName(), newFactor.getName());
+            // Log the change
+            // LOGGER.info("Player {} set vertical factor to {}", player.getScoreboardName(), newFactorType.getName());
+            
         } else {
-            // Cicla al fattore orizzontale successivo
-            byte currentFactor = charmData.getHorizontalFactor(player);
-            byte nextFactor = (byte) ((currentFactor + 1) % 6); // 0-5 (None, Slow, Moderate, Fast, Extreme, Ultra)
-            charmData.setHorizontalFactor(player, nextFactor);
-            newFactor = VectorFactorType.fromByte(nextFactor);
+            data.setHorizontalFactor(player, newFactor);
             
-            // Invia un messaggio al giocatore
+            // Send confirmation message to player
+            VectorFactorType newFactorType = VectorFactorType.fromByte(newFactor);
             player.sendSystemMessage(Component.translatable("message.iska_utils.vector_horizontal_factor", 
-                                 Component.translatable("vectorcharm.factor." + newFactor.getName())));
+                                   Component.translatable("vectorcharm.factor." + newFactorType.getName())));
             
-            LOGGER.info("Player {} set horizontal factor to {}", player.getScoreboardName(), newFactor.getName());
+            // Log the change
+            // LOGGER.info("Player {} set horizontal factor to {}", player.getScoreboardName(), newFactorType.getName());
         }
     }
     
     /**
-     * Metodo di compatibilità per quando verranno implementati i pacchetti di rete completi
-     * Questo è un metodo stub che consente di mantenere una firma simile a quella che sarà usata
-     * con l'implementazione completa di NetworkEvent
+     * Compatibility method for when complete network packets will be implemented
+     * This is a stub method that allows maintaining a signature similar to what will be used
+     * in the future when full networking is implemented
      */
-    public boolean handle(Supplier<?> contextSupplier) {
-        LOGGER.debug("Handling VectorCharmC2SPacket (stub method)");
-        return true;
+    public static void handlePacket(VectorCharmC2SPacket packet, ServerPlayer player) {
+        // LOGGER.debug("Handling VectorCharmC2SPacket (stub method)");
+        packet.handle(player);
     }
 } 

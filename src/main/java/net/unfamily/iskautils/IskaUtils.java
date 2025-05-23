@@ -6,7 +6,6 @@ import com.mojang.logging.LogUtils;
 
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.server.level.ServerLevel;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -17,7 +16,6 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
@@ -43,15 +41,10 @@ public class IskaUtils {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
         
-        // Se siamo sul client, registriamo anche il client setup
+        // If we are on the client, also register client setup
         if (FMLEnvironment.dist == Dist.CLIENT) {
             modEventBus.addListener(this::clientSetup);
         }
-
-        // Register ourselves for server and other game events we are interested in.
-        // Note that this is necessary if and only if we want *this* class (ExampleMod) to respond directly to events.
-        // Do not add this line if there are no @SubscribeEvent-annotated functions in this class, like onServerStarting() below.
-        NeoForge.EVENT_BUS.register(this);
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
@@ -62,46 +55,31 @@ public class IskaUtils {
         ModBlockEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
         
-        // Registra l'integrazione con Curios se è installato
-        CuriosIntegration.register(modEventBus);
+        // Register Curios integration if it's installed
+        if (ModUtils.isCuriosLoaded()) {
+            CuriosIntegration.register(modEventBus);
+        }
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
         
-        // Log Curios integration
-        if (ModUtils.isCuriosLoaded()) {
-            LOGGER.info("Curios mod detected - enabling integration");
-        }
-        
-        // Registriamo lo shutdown hook per fermare i thread quando la mod viene scaricata
-        if (FMLEnvironment.dist == Dist.CLIENT) {
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                LOGGER.info("Shutdown hook called, stopping client threads");
-                ClientEvents.shutdown();
-            }));
-        }
+        // Add shutdown hook to clean up client threads
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            ClientEvents.shutdown();
+        }));
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        // Inizializzazione generale
-        LOGGER.info("Common setup starting");
-        
-        // Registra i pacchetti di rete
-        event.enqueueWork(ModMessages::register);
+        // Register network messages
+        ModMessages.register();
     }
     
     /**
-     * Inizializzazione lato client
+     * Client-side initialization
      */
     private void clientSetup(final FMLClientSetupEvent event) {
-        // Garantiamo che questa operazione venga eseguita in modo sicuro nel thread del client
-        event.enqueueWork(() -> {
-            LOGGER.info("Client setup starting");
-            
-            // Inizializza gli eventi client per i keybindings
-            ClientEvents.init();
-            LOGGER.info("Client events initialized");
-        });
+        // Initialize client events
+        ClientEvents.init();
     }
 
     // Add the example block item to the building blocks tab
@@ -109,23 +87,16 @@ public class IskaUtils {
         // No need to add anything here as we already defined the content of our tab
     }
 
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
-        // Do something when the server starts
-        LOGGER.info("Server starting - initializing Vector Charm data");
-    }
-    
-    @SubscribeEvent
-    public void onServerStopping(ServerStoppingEvent event) {
-        // Salva i dati persistenti quando il server si ferma
-        LOGGER.info("Server stopping - saving Vector Charm data");
-        if (event.getServer().overworld() != null) {
-            LOGGER.info("Vector Charm data is handled in memory only for now");
+    // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
+    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.MOD)
+    public static class ModEventBusEvents {
+        @SubscribeEvent
+        public static void commonSetup(FMLCommonSetupEvent event) {
+            // Register network messages
+            ModMessages.register();
         }
     }
 
-    // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
     @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
         @SubscribeEvent
@@ -134,6 +105,19 @@ public class IskaUtils {
             event.enqueueWork(() -> {
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.SLOW_VECT.get(), RenderType.cutout());
             });
+        }
+    }
+
+    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.GAME)
+    public static class GameEventBusEvents {
+        @SubscribeEvent
+        public static void onServerStarting(ServerStartingEvent event) {
+            VectorCharmData.getInstance();
+        }
+
+        @SubscribeEvent
+        public static void onServerStopping(ServerStoppingEvent event) {
+            // For now, data is only stored in memory
         }
     }
 }

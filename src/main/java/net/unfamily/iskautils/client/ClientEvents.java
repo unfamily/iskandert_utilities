@@ -8,77 +8,67 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Classe che gestisce gli eventi specifici del client
+ * Class that manages client-specific events
  */
 public class ClientEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientEvents.class);
     
     /**
-     * Flag per controllare se il thread è attivo
+     * Flag to check if the thread is active
      */
     private static volatile boolean threadActive = false;
 
     /**
-     * Registra l'evento di tick del client
+     * Registers the client tick event
      */
     public static void init() {
-        LOGGER.info("Initializing client events for Vector Charm keys");
-        
-        // Evita di inizializzare più volte
+        // Avoid initializing multiple times
         if (threadActive) {
-            LOGGER.warn("Key checking thread already active, skipping initialization");
             return;
         }
         
         threadActive = true;
         
-        // Crea un thread dedicato al controllo dei tasti
+        // Create a dedicated thread for key checking
         Thread keyCheckThread = new Thread(() -> {
-            LOGGER.info("Vector Charm key checking thread started");
-            
             while (threadActive) {
                 try {
-                    // Controlla i tasti ogni 100ms
+                    // Check keys every 100ms
                     Thread.sleep(100);
                     
-                    // Esegue il controllo dei tasti solo nel thread del client
+                    // Execute key checking only in the client thread
                     if (Minecraft.getInstance() != null) {
                         Minecraft.getInstance().execute(ClientEvents::checkKeysInClientThread);
                     }
                 } catch (InterruptedException e) {
-                    LOGGER.warn("Vector Charm key checking thread interrupted", e);
                     break;
                 } catch (Exception e) {
-                    LOGGER.error("Error in key checking thread", e);
                     // Continue running despite errors
                 }
             }
-            
-            LOGGER.info("Vector Charm key checking thread stopped");
         }, "VectorCharmKeyChecker");
         
-        // Imposta il thread come daemon in modo che si fermi quando il gioco viene chiuso
+        // Set the thread as daemon so it stops when the game is closed
         keyCheckThread.setDaemon(true);
         keyCheckThread.start();
     }
     
     /**
-     * Metodo per arrestare il thread di controllo tasti
+     * Method to stop the key checking thread
      */
     public static void shutdown() {
         threadActive = false;
-        LOGGER.info("Shutting down Vector Charm key checking thread");
     }
 
     /**
-     * Verifica i tasti nel thread del client
+     * Check keys in the client thread
      */
     private static void checkKeysInClientThread() {
+        // Check keys only if there is no GUI open
         if (Minecraft.getInstance().screen == null && Minecraft.getInstance().player != null) {
             KeyBindings.checkKeys();
-            
-            // Applica il movimento del Vector Charm
-            VectorCharmMovement.applyMovement(Minecraft.getInstance().player);
         }
+        
+        // We no longer apply movement here, as it's done directly by the item tick methods
     }
 } 

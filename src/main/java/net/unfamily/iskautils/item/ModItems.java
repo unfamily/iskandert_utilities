@@ -101,11 +101,11 @@ public class ModItems {
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
         
-        // Log Curios integration status for Vector Charm
+        // Register Vector Charm with Curios integration if available
         if (ModUtils.isCuriosLoaded()) {
-            LOGGER.info("Vector Charm will be registered as a Curio charm");
+            // LOGGER.info("Vector Charm will be registered as a Curio charm");
         } else {
-            LOGGER.info("Vector Charm will be registered as a standard item (Curios not available)");
+            // LOGGER.info("Vector Charm will be registered as a standard item (Curios not available)");
         }
     }
 } 

@@ -44,8 +44,8 @@
   
   "message.iska_utils.vector_vertical_factor": "Vector Charm vertical factor set to: %s",
   "message.iska_utils.vector_horizontal_factor": "Vector Charm horizontal factor set to: %s",
-  "message.iska_utils.vector_hover_mode.enabled": "Vector Charm hover mode enabled",
-  "message.iska_utils.vector_hover_mode.disabled": "Vector Charm hover mode disabled",
+  "message.iska_utils.vector_hover_mode.hover": "Vector Charm mode: hover",
+  "message.iska_utils.vector_hover_mode.off": "Vector Charm mode: default",
   
   "curios.identifier.charm": "Charm"
 } 

@@ -67,10 +67,10 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
                 level.setBlock(pos, state.setValue(POWERED, isPowered), 3);
                 
                 if (isPowered) {
-                    // L'entità di blocco gestirà la creazione del fuoco se ha energia sufficiente
+                    // The block entity will handle fire creation if it has sufficient energy
                     BlockEntity blockEntity = level.getBlockEntity(pos);
-                    if (blockEntity instanceof HellfireIgniterBlockEntity hellfireEntity) {
-                        hellfireEntity.ignite();
+                    if (blockEntity instanceof HellfireIgniterBlockEntity igniter) {
+                        igniter.ignite();
                     }
                 }
             }
@@ -88,7 +88,7 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
         return createTickerHelper(
                 blockEntityType,
-                ModBlockEntities.HELLFIRE_IGNITER.get(),
+                ModBlockEntities.HELLFIRE_IGNITER_BE.get(),
                 HellfireIgniterBlockEntity::tick
         );
     }

@@ -26,7 +26,7 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
     private final int effectiveEnergyConsume;
 
     public HellfireIgniterBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.HELLFIRE_IGNITER.get(), pos, state);
+        super(ModBlockEntities.HELLFIRE_IGNITER_BE.get(), pos, state);
         
         // Calculate effective values based on configurations
         this.effectiveBufferCapacity = determineEffectiveCapacity();

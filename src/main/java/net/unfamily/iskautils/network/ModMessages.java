@@ -1,29 +1,27 @@
 package net.unfamily.iskautils.network;
 
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.network.packet.VectorCharmC2SPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Classe che gestisce i messaggi di rete della mod
- * Versione semplificata per evitare problemi di compatibilità con NeoForge
+ * Simplified version to avoid compatibility issues with NeoForge
  */
 public class ModMessages {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModMessages.class);
-
-    /**
-     * Registra tutti i messaggi di rete
-     */
+    
     public static void register() {
-        LOGGER.info("Registering network messages for {}", IskaUtils.MOD_ID);
-        // Per implementare in seguito quando sarà necessario il networking
+        // LOGGER.info("Registering network messages for {}", IskaUtils.MOD_ID);
+        
+        // To implement later when networking is needed
     }
-
+    
     /**
-     * Invia un pacchetto al server (stub per quando sarà implementato)
+     * Sends a packet to the server (stub for when it will be implemented)
      */
     public static <MSG> void sendToServer(MSG message) {
-        // Metodo stub per l'invio di pacchetti al server
-        LOGGER.debug("Sending packet to server: {}", message);
+        // LOGGER.debug("Sending packet to server: {}", message);
+        // Stub implementation - will be completed when networking is needed
     }
 } 

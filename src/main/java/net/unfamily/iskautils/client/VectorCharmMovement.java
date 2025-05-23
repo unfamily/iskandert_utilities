@@ -11,132 +11,95 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Gestisce il movimento del giocatore quando ha il Vector Charm equipaggiato
+ * Manages player movement when they have Vector Charm equipped
  */
 public class VectorCharmMovement {
     private static final Logger LOGGER = LoggerFactory.getLogger(VectorCharmMovement.class);
     
-    // Flag per tracciare se il giocatore era in hover mode nello scorso tick
+    // Flag to track if the player was in hover mode in the previous tick
     private static boolean wasInHoverMode = false;
     
-    // Contatore per l'effetto paracadute
-    private static int parachuteTicksLeft = 0;
-    
-    // Durata dell'effetto paracadute (in tick)
-    private static final int PARACHUTE_DURATION = 40; // 2 secondi
-    
-    // Valore dell'effetto paracadute
-    private static final double PARACHUTE_EFFECT = 0.03; // Caduta lenta
+    // Fixed value for hover mode
+    private static final double HOVER_VALUE = 0.0D;
 
     /**
-     * Applica il movimento in base ai fattori del Vector Charm
-     * @param player Il giocatore a cui applicare il movimento
+     * Applies movement based on Vector Charm factors
+     * @param player The player to apply movement to
      */
     public static void applyMovement(Player player) {
         if (player == null) return;
 
-        // Verifica se i charm sono abilitati
+        // Check if charms are enabled
         if (!Config.verticalCharmEnabled && !Config.horizontalCharmEnabled) return;
         
-        // Verifica se il giocatore ha il Vector Charm equipaggiato
-        if (!VectorCharmItem.hasVectorCharm(player)) {
-            wasInHoverMode = false;
-            parachuteTicksLeft = 0;
-            return;
-        }
-
-        // Ottieni i fattori del charm
+        // Get charm factors
         byte verticalFactorValue = VectorCharmData.getInstance().getVerticalFactor(player);
         byte horizontalFactorValue = VectorCharmData.getInstance().getHorizontalFactor(player);
 
-        // Verifica se è attiva la modalità hover (valore speciale 6)
+        // Check if hover mode is active (special value 6)
         boolean isHoverMode = verticalFactorValue == VectorCharmData.HOVER_MODE_VALUE;
         
-        // Controlla se è stata appena disattivata la hover mode
-        if (wasInHoverMode && !isHoverMode) {
-            // Inizia l'effetto paracadute
-            parachuteTicksLeft = PARACHUTE_DURATION;
-            LOGGER.debug("Hover mode deactivated, parachute effect activated for {} ticks", PARACHUTE_DURATION);
-        }
-        
-        // Aggiorna lo stato dell'hover per il prossimo tick
+        // Update hover state for next tick
+        boolean wasHoverModePreviously = wasInHoverMode;
         wasInHoverMode = isHoverMode;
 
-        // Verifica se ci sono fattori attivi
-        boolean hasVerticalFactor = Config.verticalCharmEnabled && 
-                                   (verticalFactorValue > 0 || parachuteTicksLeft > 0);
+        // Check if there are active factors
+        // Exclude special value 6 (hover) from normal vertical factor check
+        boolean hasVerticalFactor = Config.verticalCharmEnabled && verticalFactorValue > 0 && 
+                                   verticalFactorValue != VectorCharmData.HOVER_MODE_VALUE;
         boolean hasHorizontalFactor = Config.horizontalCharmEnabled && horizontalFactorValue > 0;
 
-        // Se non ci sono fattori attivi, esci
-        if (!hasVerticalFactor && !hasHorizontalFactor) return;
+        // If there are no active factors, exit
+        if (!hasVerticalFactor && !hasHorizontalFactor && !isHoverMode) return;
 
-        // Gestisce il movimento verticale
+        // Handle vertical movement for normal factors or hover
         if (hasVerticalFactor || isHoverMode) {
             applyVerticalMovement(player, verticalFactorValue, isHoverMode);
+            
+            // Prevent fall damage for vertical movement and hover
+            player.fallDistance = 0;
         }
 
-        // Gestisce il movimento orizzontale
+        // Handle horizontal movement
         if (hasHorizontalFactor) {
             applyHorizontalMovement(player, horizontalFactorValue);
-        }
-        
-        // Riduce il tempo dell'effetto paracadute se attivo
-        if (parachuteTicksLeft > 0) {
-            parachuteTicksLeft--;
-            
-            if (parachuteTicksLeft == 0) {
-                LOGGER.debug("Parachute effect has ended");
-            }
         }
     }
 
     /**
-     * Applica il movimento verticale
-     * @param player Il giocatore a cui applicare il movimento
-     * @param factorValue Il valore del fattore verticale
-     * @param isHoverMode True se è attiva la modalità hover
+     * Applies vertical movement
+     * @param player The player to apply movement to
+     * @param factorValue The vertical factor value
+     * @param isHoverMode True if hover mode is active
      */
     private static void applyVerticalMovement(Player player, byte factorValue, boolean isHoverMode) {
-        // Ottieni il movimento attuale
+        // Get current motion
         Vec3 currentMotion = player.getDeltaMovement();
 
         if (isHoverMode) {
-            // Modalità hover: imposta direttamente il valore dal config
-            double hoverValue = Config.hoverValue;
+            // Hover mode: set directly to fixed value
             player.setDeltaMovement(
                 currentMotion.x,
-                hoverValue,
+                HOVER_VALUE,
                 currentMotion.z
             );
-            LOGGER.debug("Applied hover mode with value: {}", hoverValue);
-        } else if (parachuteTicksLeft > 0) {
-            // Effetto paracadute attivo dopo la disattivazione dell'hover
             
-            // Se il giocatore sta scendendo, rallenta la discesa
-            if (currentMotion.y < 0) {
-                double parachuteStrength = PARACHUTE_EFFECT * ((double) parachuteTicksLeft / PARACHUTE_DURATION);
-                
-                player.setDeltaMovement(
-                    currentMotion.x,
-                    Math.max(currentMotion.y, -parachuteStrength), // Limita la velocità di discesa
-                    currentMotion.z
-                );
-                LOGGER.debug("Applied parachute effect with strength: {}, resulting in Y motion: {}", 
-                        parachuteStrength, Math.max(currentMotion.y, -parachuteStrength));
-            }
+            // Make sure fall distance is reset
+            player.fallDistance = 0;
+            
         } else if (factorValue > 0) {
-            // Modalità normale: ottieni il valore direttamente dal config
+            // Normal mode: get value directly from config
             double speed = getVectorSpeed(factorValue);
             
-            // Aggiungi il fattore del player dal config invece di moltiplicare
-            // In questo modo, emula il comportamento delle vector plates per player
+            // Add player factor from config instead of multiplying
+            // This emulates the behavior of vector plates for players
             double verticalBoost = speed + Config.verticalBoostFactor;
             
-            // Simula il comportamento della VectorBlock.applyVerticalMovement
-            // Usa le stesse costanti e logica per mantenere la coerenza
-            double accelerationFactor = 0.0; // Stesso valore di VectorBlock
+            // Simulate VectorBlock.applyVerticalMovement behavior
+            // Use the same constants and logic for consistency
+            double accelerationFactor = 0.6; // Same value as VectorBlock
             
-            // Calcola la nuova velocità verticale - non usare Math.max per permettere la discesa
+            // Calculate new vertical speed - don't use Math.max to allow descent
             double targetY = verticalBoost;
             double newY = (currentMotion.y * (1 - accelerationFactor)) + (targetY * accelerationFactor);
             
@@ -145,62 +108,57 @@ public class VectorCharmMovement {
                 newY,
                 currentMotion.z
             );
-            LOGGER.debug("Applied vertical movement with factor: {}, speed: {}, boost: {}, resulting in Y motion: {}", 
-                    VectorFactorType.fromByte(factorValue).getName(), speed, verticalBoost, newY);
+            
+            // Prevent fall damage for vertical movement
+            player.fallDistance = 0;
         }
         
-        // Previeni danni da caduta
-        player.fallDistance = 0;
-        
-        // Conferma gli aggiornamenti fisici
+        // Confirm physics updates
         player.hurtMarked = true;
     }
 
     /**
-     * Applica il movimento orizzontale
-     * @param player Il giocatore a cui applicare il movimento
-     * @param factorValue Il valore del fattore orizzontale
+     * Applies horizontal movement
+     * @param player The player to apply movement to
+     * @param factorValue The horizontal factor value
      */
     private static void applyHorizontalMovement(Player player, byte factorValue) {
-        // Ottieni il movimento attuale
+        // Get current motion
         Vec3 currentMotion = player.getDeltaMovement();
         
-        // Ottieni la direzione in cui il giocatore sta guardando
+        // Get the direction the player is facing
         Vec3 lookVec = player.getLookAngle();
         
-        // Ottieni il valore direttamente dal config
+        // Get value directly from config
         double speed = getVectorSpeed(factorValue);
         
-        // Calcola le nuove componenti di velocità
+        // Calculate new velocity components
         double targetX = lookVec.x * speed;
         double targetZ = lookVec.z * speed;
         
-        // Applica l'accelerazione graduale - valore preso da VectorBlock
+        // Apply gradual acceleration - value taken from VectorBlock
         double accelerationFactor = 0.6;
-        double conserveFactor = 0.75; // Keep 75% of lateral velocity - valore preso da VectorBlock
+        double conserveFactor = 0.75; // Keep 75% of lateral velocity - value taken from VectorBlock
         
-        // Applica l'accelerazione graduale
+        // Apply gradual acceleration
         double newX = (currentMotion.x * (1 - accelerationFactor)) + (targetX * accelerationFactor);
         double newZ = (currentMotion.z * (1 - accelerationFactor)) + (targetZ * accelerationFactor);
         
-        // Imposta il nuovo movimento
+        // Set new movement
         player.setDeltaMovement(
             newX,
             currentMotion.y,
             newZ
         );
         
-        // Conferma gli aggiornamenti fisici
+        // Confirm physics updates
         player.hurtMarked = true;
-        
-        LOGGER.debug("Applied horizontal movement with factor: {}, speed: {}", 
-                VectorFactorType.fromByte(factorValue).getName(), speed);
     }
     
     /**
-     * Ottiene la velocità Vector corrispondente al fattore specificato
-     * @param factorValue Il valore del fattore (0-5)
-     * @return La velocità corrispondente
+     * Gets the Vector speed corresponding to the specified factor
+     * @param factorValue The factor value (0-5)
+     * @return The corresponding speed
      */
     private static double getVectorSpeed(byte factorValue) {
         VectorFactorType factorType = VectorFactorType.fromByte(factorValue);
