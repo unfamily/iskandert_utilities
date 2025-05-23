@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    "ABA",
+    "AAA"
+  ],
+  "key": {
+    "A": [
+      {"item": "iska_utils:extreme_vect"},
+      {"item": "iska_utils:player_extreme_vect"}
+    ],
+    "B": {
+      "item": "iska_utils:fast_module"
+    }
+  },
+  "result": {
+    "id": "iska_utils:extreme_module",
+    "count": 1
+  }
+} 

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ABA",
+    "BCB",
+    "ABA"
+  ],
+  "key": {
+    "B": {
+      "tag": "c:ingots/copper"
+    },
+    "A": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "item": "iska_utils:smooth_blackstone"
+    }
+  },
+  "result": {
+    "id": "iska_utils:base_module",
+    "count": 1
+  }
+} 

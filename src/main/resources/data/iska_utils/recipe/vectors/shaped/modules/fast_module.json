@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    "ABA",
+    "AAA"
+  ],
+  "key": {
+    "A": [
+      {"item": "iska_utils:fast_vect"},
+      {"item": "iska_utils:player_fast_vect"}
+    ],
+    "B": {
+      "item": "iska_utils:moderate_module"
+    }
+  },
+  "result": {
+    "id": "iska_utils:fast_module",
+    "count": 1
+  }
+} 

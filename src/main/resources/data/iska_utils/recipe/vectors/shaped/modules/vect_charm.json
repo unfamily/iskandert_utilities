@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BAB",
+    "BCB",
+    "BDB"
+  ],
+  "key": {
+    "B": {
+      "tag": "c:rods/breeze"
+    },
+    "A": {
+      "tag": "c:nether_stars"
+    },
+    "C": {
+      "item": "iska_utils:ultra_module"
+    },
+    "D": {
+      "tag": "minecraft:trim_templates"
+    }
+  },
+  "result": {
+    "id": "iska_utils:vector_charm",
+    "count": 1
+  }
+} 

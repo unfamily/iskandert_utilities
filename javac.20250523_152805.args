@@ -1,0 +1,5 @@
+-cp
+.:*
+-d
+/tmp/test
+src/main/java/net/unfamily/iskautils/block/VectorBlock.java
