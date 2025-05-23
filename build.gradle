@@ -157,6 +157,13 @@ dependencies {
         throw new GradleException("Invalid value for runtime_itemlist_mod: " + project.runtime_itemlist_mod + 
                                   ". Allowed values: jei, rei, emi, curios, none")
     }
+    
+    // Verify that the value of include_compass_mods is valid
+    if (project.hasProperty('include_compass_mods') && 
+        !(project.include_compass_mods in ["true", "false"])) {
+        throw new GradleException("Invalid value for include_compass_mods: " + project.include_compass_mods + 
+                                  ". Allowed values: true, false")
+    }
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

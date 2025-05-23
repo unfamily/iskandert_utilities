@@ -16,6 +16,16 @@ public class ModUtils {
     private static final String CURIOS_MOD_ID = "curios";
     
     /**
+     * Nature's Compass mod ID for integration
+     */
+    private static final String NATURES_COMPASS_MOD_ID = "naturescompass";
+    
+    /**
+     * Explorer's Compass mod ID for integration
+     */
+    private static final String EXPLORERS_COMPASS_MOD_ID = "explorerscompass";
+    
+    /**
      * Checks if the Curios mod is loaded
      * @return true if Curios is loaded
      */
@@ -25,6 +35,34 @@ public class ModUtils {
             // LOGGER.debug("Curios mod is loaded");
         } else {
             // LOGGER.debug("Curios mod is not loaded");
+        }
+        return loaded;
+    }
+    
+    /**
+     * Checks if the Nature's Compass mod is loaded
+     * @return true if Nature's Compass is loaded
+     */
+    public static boolean isNaturesCompassLoaded() {
+        boolean loaded = ModList.get().isLoaded(NATURES_COMPASS_MOD_ID);
+        if (loaded) {
+            // LOGGER.debug("Nature's Compass mod is loaded");
+        } else {
+            // LOGGER.debug("Nature's Compass mod is not loaded");
+        }
+        return loaded;
+    }
+    
+    /**
+     * Checks if the Explorer's Compass mod is loaded
+     * @return true if Explorer's Compass is loaded
+     */
+    public static boolean isExplorersCompassLoaded() {
+        boolean loaded = ModList.get().isLoaded(EXPLORERS_COMPASS_MOD_ID);
+        if (loaded) {
+            // LOGGER.debug("Explorer's Compass mod is loaded");
+        } else {
+            // LOGGER.debug("Explorer's Compass mod is not loaded");
         }
         return loaded;
     }

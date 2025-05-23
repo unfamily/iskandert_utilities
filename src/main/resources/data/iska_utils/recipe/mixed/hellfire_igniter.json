@@ -13,7 +13,7 @@
       "item": "minecraft:magma_cream"
     },
     "R": {
-      "item": "c:dusts/redstone"
+      "tag": "c:dusts/redstone"
     }
   },
   "result": {

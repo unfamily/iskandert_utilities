@@ -1,11 +1,12 @@
 {
-  "item.iska_utils.base_module": "Vector Base Module",
+  "item.iska_utils.base_module": "Base Module",
   "item.iska_utils.slow_module": "Slow Vector Module",
   "item.iska_utils.moderate_module": "Moderate Vector Module",
   "item.iska_utils.fast_module": "Fast Vector Module",
   "item.iska_utils.extreme_module": "Extreme Vector Module",
   "item.iska_utils.ultra_module": "Ultra Vector Module",
   "item.iska_utils.vector_charm": "Vector Charm",
+  "item.iska_utils.portable_dislocator": "Portable Dislocator",
   
   "block.iska_utils.slow_vect": "Mobfarm Slow Vector Plate",
   "block.iska_utils.moderate_vect": "Mobfarm Moderate Vector Plate",
@@ -33,6 +34,7 @@
   "key.iska_utils.vector_vertical": "Vector Charm Vertical Setting",
   "key.iska_utils.vector_horizontal": "Vector Charm Horizontal Setting",
   "key.iska_utils.vector_hover": "Vector Charm Hover Mode Toggle",
+  "key.iska_utils.portable_dislocator": "Activate Portable Dislocator",
   
   "vectorcharm.factor.none": "None",
   "vectorcharm.factor.slow": "Slow",
@@ -47,5 +49,9 @@
   "message.iska_utils.vector_hover_mode.hover": "Vector Charm mode: hover",
   "message.iska_utils.vector_hover_mode.off": "Vector Charm mode: default",
   
-  "curios.identifier.charm": "Charm"
-} 
+  "item.iska_utils.portable_dislocator.tooltip.main": "Press %s to teleport near compass coordinates (100-300 blocks away)",
+  "item.iska_utils.portable_dislocator.tooltip.compasses": "Works with Nature's Compass and Explorer's Compass",
+  
+  "curios.identifier.charm": "Charm",
+  "curios.identifier.curio": "Curio"
+}

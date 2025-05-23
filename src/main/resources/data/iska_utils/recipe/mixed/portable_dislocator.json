@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ABA",
+    "BCB",
+    "ABA"
+  ],
+  "key": {
+    "A": {
+      "item": "iska_utils:base_module"
+    },
+    "B": {
+      "tag": "c:obsidians/crying"
+    },
+    "C": {
+      "item": "minecraft:heart_of_the_sea"
+    }
+  },
+  "result": {
+    "id": "iska_utils:portable_dislocator",
+    "count": 1
+  }
+} 

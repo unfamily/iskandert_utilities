@@ -22,6 +22,7 @@ public class ModCreativeModeTabs {
                             .displayItems((pParameters, pOutput) -> {
                                 // Custom Items
                                 pOutput.accept(ModItems.VECTOR_CHARM.get());
+                                pOutput.accept(ModItems.PORTABLE_DISLOCATOR.get());
                                 pOutput.accept(ModItems.BASE_MODULE.get());
                                 pOutput.accept(ModItems.SLOW_MODULE.get());
                                 pOutput.accept(ModItems.MODERATE_MODULE.get());

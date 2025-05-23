@@ -60,14 +60,6 @@ public class Config
             .comment("Enable horizontal vector charm")
             .define("009_horizontalCharmEnabled", true);
 
-    private static final ModConfigSpec.ConfigValue<java.util.List<? extends Integer>> ENERGY_CHARM_CONSUME = BUILDER
-            .comment("Energy consumption for each level of vector charm [None, Slow, Moderate, Fast, Extreme, Ultra]")
-            .defineList("010_energyCharmConsume", java.util.List.of(0, 5, 15, 50, 100, 300), obj -> obj instanceof Integer);
-
-    private static final ModConfigSpec.IntValue ENERGY_CHARM_STORE = BUILDER
-            .comment("Energy storage capacity of vector charm")
-            .defineInRange("011_energyCharmStore", 100000, 1, Integer.MAX_VALUE);
-
     static {
         BUILDER.pop(); // End of vector_plates category
         
@@ -118,8 +110,6 @@ public class Config
         verticalConveyorEnabled = VERTICAL_CONVEYOR_ENABLED.get();
         verticalCharmEnabled = VERTICAL_CHARM_ENABLED.get();
         horizontalCharmEnabled = HORIZONTAL_CHARM_ENABLED.get();
-        energyCharmConsume = (java.util.List<Integer>) ENERGY_CHARM_CONSUME.get();
-        energyCharmStore = ENERGY_CHARM_STORE.get();
         hellfireIgniterConsume = HELLFIRE_IGNITER_CONSUME.get();
         hellfireIgniterBuffer = HELLFIRE_IGNITER_BUFFER.get();
     }

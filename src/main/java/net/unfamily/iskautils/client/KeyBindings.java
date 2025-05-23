@@ -27,6 +27,7 @@ public class KeyBindings {
     public static final String KEY_VECTOR_VERTICAL = "key.iska_utils.vector_vertical";
     public static final String KEY_VECTOR_HORIZONTAL = "key.iska_utils.vector_horizontal";
     public static final String KEY_VECTOR_HOVER = "key.iska_utils.vector_hover";
+    public static final String KEY_PORTABLE_DISLOCATOR = "key.iska_utils.portable_dislocator";
 
     public static final KeyMapping VECTOR_VERTICAL_KEY = new KeyMapping(
             KEY_VECTOR_VERTICAL,
@@ -52,6 +53,14 @@ public class KeyBindings {
             KEY_CATEGORY_ISKA_UTILS
     );
 
+    public static final KeyMapping PORTABLE_DISLOCATOR_KEY = new KeyMapping(
+            KEY_PORTABLE_DISLOCATOR,
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_G,  // G key for dislocator
+            KEY_CATEGORY_ISKA_UTILS
+    );
+
     /**
      * Registers key bindings
      */
@@ -62,6 +71,7 @@ public class KeyBindings {
             event.register(VECTOR_VERTICAL_KEY);
             event.register(VECTOR_HORIZONTAL_KEY);
             event.register(VECTOR_HOVER_KEY);
+            event.register(PORTABLE_DISLOCATOR_KEY);
         }
     }
 
@@ -123,6 +133,12 @@ public class KeyBindings {
                     player.displayClientMessage(Component.translatable("message.iska_utils.vector_hover_mode.hover"), true);
                 }
             }
+
+            // Key for Portable Dislocator
+            // Note: Now handled in PortableDislocatorItem tick methods
+            // if (PORTABLE_DISLOCATOR_KEY.consumeClick()) {
+            //     handlePortableDislocatorActivation(player);
+            // }
         }
     }
 } 

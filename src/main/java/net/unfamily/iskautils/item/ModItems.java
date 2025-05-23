@@ -8,6 +8,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
+import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,11 @@ public class ModItems {
     // Registered as a Curio charm when Curios is available
     public static final DeferredItem<Item> VECTOR_CHARM = ITEMS.register("vector_charm",
             () -> new VectorCharmItem(new Item.Properties().stacksTo(1)));
+
+    // Portable Dislocator - Custom item with dislocator functionality
+    // Registered as a Curio when Curios is available
+    public static final DeferredItem<Item> PORTABLE_DISLOCATOR = ITEMS.register("portable_dislocator",
+            () -> new PortableDislocatorItem(new Item.Properties().stacksTo(1)));
 
     // ===== STANDARD VECTOR PLATE ITEMS =====
     

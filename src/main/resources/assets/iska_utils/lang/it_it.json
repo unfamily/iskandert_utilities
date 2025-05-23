@@ -6,6 +6,7 @@
   "item.iska_utils.extreme_module": "Modulo Vettoriale Estremo",
   "item.iska_utils.ultra_module": "Modulo Vettoriale Ultra",
   "item.iska_utils.vector_charm": "Amuleto Vettoriale",
+  "item.iska_utils.portable_dislocator": "Dislocatore Portatile",
   
   "block.iska_utils.slow_vect": "Piastra Vettoriale Lenta per Mob",
   "block.iska_utils.moderate_vect": "Piastra Vettoriale Moderata per Mob",
@@ -33,6 +34,7 @@
   "key.iska_utils.vector_vertical": "Impostazione Verticale Amuleto Vettoriale",
   "key.iska_utils.vector_horizontal": "Impostazione Orizzontale Amuleto Vettoriale",
   "key.iska_utils.vector_hover": "Attiva/Disattiva Modalità Fluttuante",
+  "key.iska_utils.portable_dislocator": "Attiva Dislocatore Portatile",
    
   "vectorcharm.factor.none": "Nessuno",
   "vectorcharm.factor.slow": "Lento",
@@ -47,5 +49,9 @@
   "message.iska_utils.vector_hover_mode.hover": "Modalità Amuleto Vettoriale: fluttuazione",
   "message.iska_utils.vector_hover_mode.off": "Modalità Amuleto Vettoriale: default",
 
-  "curios.identifier.charm": "Amuleto"
-} 
+  "item.iska_utils.portable_dislocator.tooltip.main": "Premi %s per teletrasportarti vicino alle coordinate della bussola (100-300 blocchi)",
+  "item.iska_utils.portable_dislocator.tooltip.compasses": "Funziona con Bussola della Natura e Bussola dell'Esploratore",
+
+  "curios.identifier.charm": "Amuleto",
+  "curios.identifier.curio": "Ninnolo"
+}

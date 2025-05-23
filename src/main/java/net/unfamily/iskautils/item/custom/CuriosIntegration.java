@@ -37,6 +37,9 @@ public class CuriosIntegration {
         // Register Vector Charm as curio
         VectorCharmCurioHandler.register();
         
-        // LOGGER.info("Vector Charm will be available as a charm when Curios is present");
+        // Register Portable Dislocator as curio
+        PortableDislocatorCurioHandler.register();
+        
+        // LOGGER.info("Vector Charm and Portable Dislocator will be available as curios when Curios is present");
     }
 } 
