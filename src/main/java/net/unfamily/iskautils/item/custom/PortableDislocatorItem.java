@@ -22,6 +22,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.unfamily.iskautils.client.KeyBindings;
+import net.unfamily.iskautils.Config;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.component.CustomData;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +43,11 @@ import java.util.HashMap;
 public class PortableDislocatorItem extends Item {
     private static final Logger LOGGER = LoggerFactory.getLogger(PortableDislocatorItem.class);
     
+    // Energy storage tag
+    private static final String ENERGY_TAG = "Energy";
+    
     // Custom ticket type for chunk loading
-    private static final TicketType<Unit> DISLOCATOR_TICKET = TicketType.create("portable_dislocator", (a, b) -> 0, 100); // 5 second duration
+    private static final TicketType<Unit> DISLOCATOR_TICKET = TicketType.create("portable_dislocator", (a, b) -> 0, 100);
     
     // Static variables to track teleportation state per player
     private static final Map<UUID, TeleportationData> activeTeleportations = new HashMap<>();
@@ -107,6 +113,20 @@ public class PortableDislocatorItem extends Item {
         
         // Add additional info about supported compasses
         tooltipComponents.add(Component.translatable("item.iska_utils.portable_dislocator.tooltip.compasses"));
+        
+        // Add energy information
+        if (canStoreEnergy()) {
+            int energy = getEnergyStored(stack);
+            int maxEnergy = getMaxEnergyStored(stack);
+            
+            tooltipComponents.add(Component.literal(String.format("Energy: %,d / %,d RF", energy, maxEnergy)));
+            
+            if (requiresEnergyToFunction()) {
+                tooltipComponents.add(Component.literal("§7Energy per teleportation: " + getEffectiveEnergyConsumption() + " RF"));
+            }
+        } else {
+            tooltipComponents.add(Component.literal("§7No energy required"));
+        }
     }
     
     /**
@@ -171,8 +191,15 @@ public class PortableDislocatorItem extends Item {
             // Clear the request
             pendingRequests.remove(playerId);
             
-            // Start the server-side teleportation
-            startServerTeleportation(player, request.targetX, request.targetZ);
+            // Find the Portable Dislocator and check/consume energy
+            ItemStack dislocatorStack = findPortableDislocator(player);
+            if (dislocatorStack != null) {
+                PortableDislocatorItem dislocator = (PortableDislocatorItem) dislocatorStack.getItem();
+                if (dislocator.consumeEnergyForTeleportation(dislocatorStack)) {
+                    // Start the server-side teleportation
+                    startServerTeleportation(player, request.targetX, request.targetZ);
+                }
+            }
         }
     }
     
@@ -735,6 +762,19 @@ public class PortableDislocatorItem extends Item {
             return;
         }
         
+        // Find the Portable Dislocator
+        ItemStack dislocatorStack = findPortableDislocator(player);
+        if (dislocatorStack == null) {
+            return; // No dislocator found
+        }
+        
+        // Check energy requirements
+        PortableDislocatorItem dislocator = (PortableDislocatorItem) dislocatorStack.getItem();
+        if (!dislocator.hasEnoughEnergy(dislocatorStack)) {
+            // Silent failure - insufficient energy
+            return;
+        }
+        
         // Check if the player has a compass in hand
         ItemStack mainHand = player.getMainHandItem();
         ItemStack offHand = player.getOffhandItem();
@@ -778,8 +818,10 @@ public class PortableDislocatorItem extends Item {
             pendingRequests.put(player.getUUID(), request);
             // Silent request - no feedback
         } else {
-            // Server side - start teleportation directly
-            startServerTeleportation(player, coordinates.getLeft(), coordinates.getRight());
+            // Server side - consume energy and start teleportation
+            if (dislocator.consumeEnergyForTeleportation(dislocatorStack)) {
+                startServerTeleportation(player, coordinates.getLeft(), coordinates.getRight());
+            }
         }
     }
     
@@ -929,6 +971,149 @@ public class PortableDislocatorItem extends Item {
         } else if (itemIdString.equals("explorerscompass:explorerscompass")) {
             return "explorerscompass";
         }
+        return null;
+    }
+    
+    // ===== ENERGY MANAGEMENT METHODS =====
+    
+    /**
+     * Check if the item can store energy
+     * If consumption is exactly 0, disable energy system completely
+     */
+    public boolean canStoreEnergy() {
+        // If consumption is exactly 0, disable energy system completely
+        if (Config.portableDislocatorEnergyConsume == 0) {
+            return false;
+        }
+        
+        return Config.portableDislocatorEnergyCapacity > 0;
+    }
+    
+    /**
+     * Gets the effective energy consumption, limited by capacity
+     */
+    public int getEffectiveEnergyConsumption() {
+        if (!canStoreEnergy()) {
+            return 0;
+        }
+        
+        int configuredConsumption = Config.portableDislocatorEnergyConsume;
+        int maxCapacity = Config.portableDislocatorEnergyCapacity;
+        
+        // If consumption is greater than capacity, limit it to capacity
+        if (configuredConsumption > maxCapacity) {
+            return maxCapacity;
+        }
+        
+        return configuredConsumption;
+    }
+    
+    /**
+     * Check if the item requires energy to function
+     */
+    public boolean requiresEnergyToFunction() {
+        return getEffectiveEnergyConsumption() > 0;
+    }
+    
+    /**
+     * Gets the energy stored in the ItemStack
+     */
+    public int getEnergyStored(ItemStack stack) {
+        if (!canStoreEnergy()) {
+            return 0;
+        }
+        
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        return tag.getInt(ENERGY_TAG);
+    }
+    
+    /**
+     * Sets the energy stored in the ItemStack
+     */
+    public void setEnergyStored(ItemStack stack, int energy) {
+        if (!canStoreEnergy()) {
+            return;
+        }
+        
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        int maxCapacity = Config.portableDislocatorEnergyCapacity;
+        tag.putInt(ENERGY_TAG, Math.max(0, Math.min(energy, maxCapacity)));
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+    
+    /**
+     * Gets the maximum energy that can be stored
+     */
+    public int getMaxEnergyStored(ItemStack stack) {
+        if (!canStoreEnergy()) {
+            return 0;
+        }
+        return Config.portableDislocatorEnergyCapacity;
+    }
+    
+    /**
+     * Checks if the dislocator has enough energy for teleportation
+     */
+    public boolean hasEnoughEnergy(ItemStack stack) {
+        if (!requiresEnergyToFunction()) {
+            return true; // No energy required
+        }
+        
+        int currentEnergy = getEnergyStored(stack);
+        return currentEnergy >= getEffectiveEnergyConsumption();
+    }
+    
+    /**
+     * Consumes energy for teleportation
+     * @param stack The ItemStack
+     * @return true if energy was consumed or no energy is required, false if insufficient energy
+     */
+    public boolean consumeEnergyForTeleportation(ItemStack stack) {
+        if (!requiresEnergyToFunction()) {
+            return true; // No energy required
+        }
+        
+        int consumption = getEffectiveEnergyConsumption();
+        if (consumption <= 0) {
+            return true; // No consumption
+        }
+        
+        int currentEnergy = getEnergyStored(stack);
+        if (currentEnergy >= consumption) {
+            setEnergyStored(stack, currentEnergy - consumption);
+            return true;
+        }
+        
+        return false; // Insufficient energy
+    }
+    
+    /**
+     * Finds the Portable Dislocator in player's inventory or curios
+     * @param player The player to check
+     * @return ItemStack of the Portable Dislocator if found, null otherwise
+     */
+    public static ItemStack findPortableDislocator(Player player) {
+        // Check hands first
+        ItemStack mainHand = player.getMainHandItem();
+        if (mainHand.getItem() instanceof PortableDislocatorItem) {
+            return mainHand;
+        }
+        
+        ItemStack offHand = player.getOffhandItem();
+        if (offHand.getItem() instanceof PortableDislocatorItem) {
+            return offHand;
+        }
+        
+        // Check inventory
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (stack.getItem() instanceof PortableDislocatorItem) {
+                return stack;
+            }
+        }
+        
+        // TODO: Check Curios slots if needed
+        
         return null;
     }
 } 

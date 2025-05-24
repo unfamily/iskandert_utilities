@@ -14,7 +14,7 @@ public class Config
 
     // Category for Vector Plates
     static {
-        BUILDER.comment("Vector Plates Configuration").push("vector_plates");
+        BUILDER.comment("Vector Things Configuration").push("vector_plates");
     }
 
     // Vector plates speed configuration, ordered from slowest to fastest
@@ -90,7 +90,7 @@ public class Config
     // Portable Dislocator energy configuration
     private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CAPACITY = BUILDER
             .comment("Energy capacity of the Portable Dislocator in RF/FE")
-            .defineInRange("002_portableDislocatorEnergyCapacity", 5000000, 0, Integer.MAX_VALUE);
+            .defineInRange("002_portableDislocatorEnergyCapacity", 50000, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CONSUME = BUILDER
             .comment("Energy consumed per teleportation by the Portable Dislocator in RF/FE")

@@ -27,13 +27,15 @@ public class KeyBindings {
     public static final String KEY_VECTOR_VERTICAL = "key.iska_utils.vector_vertical";
     public static final String KEY_VECTOR_HORIZONTAL = "key.iska_utils.vector_horizontal";
     public static final String KEY_VECTOR_HOVER = "key.iska_utils.vector_hover";
+    public static final String KEY_VECTOR_VERTICAL_DECREASE = "key.iska_utils.vector_vertical_decrease";
+    public static final String KEY_VECTOR_HORIZONTAL_DECREASE = "key.iska_utils.vector_horizontal_decrease";
     public static final String KEY_PORTABLE_DISLOCATOR = "key.iska_utils.portable_dislocator";
 
     public static final KeyMapping VECTOR_VERTICAL_KEY = new KeyMapping(
             KEY_VECTOR_VERTICAL,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_V,  // V key for vertical adjustment
+            GLFW.GLFW_KEY_V,  // V key for vertical adjustment (increase)
             KEY_CATEGORY_ISKA_UTILS
     );
 
@@ -41,7 +43,7 @@ public class KeyBindings {
             KEY_VECTOR_HORIZONTAL,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_B,  // B key for horizontal adjustment
+            GLFW.GLFW_KEY_N,  // N key for horizontal adjustment (increase)
             KEY_CATEGORY_ISKA_UTILS
     );
 
@@ -53,11 +55,27 @@ public class KeyBindings {
             KEY_CATEGORY_ISKA_UTILS
     );
 
+    public static final KeyMapping VECTOR_VERTICAL_DECREASE_KEY = new KeyMapping(
+            KEY_VECTOR_VERTICAL_DECREASE,
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_C,  // C key for vertical adjustment (decrease)
+            KEY_CATEGORY_ISKA_UTILS
+    );
+
+    public static final KeyMapping VECTOR_HORIZONTAL_DECREASE_KEY = new KeyMapping(
+            KEY_VECTOR_HORIZONTAL_DECREASE,
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_B,  // B key for horizontal adjustment (decrease)
+            KEY_CATEGORY_ISKA_UTILS
+    );
+
     public static final KeyMapping PORTABLE_DISLOCATOR_KEY = new KeyMapping(
             KEY_PORTABLE_DISLOCATOR,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_G,  // G key for dislocator
+            GLFW.GLFW_KEY_Y,  // Y key for dislocator (G is reserved for future use)
             KEY_CATEGORY_ISKA_UTILS
     );
 
@@ -71,6 +89,8 @@ public class KeyBindings {
             event.register(VECTOR_VERTICAL_KEY);
             event.register(VECTOR_HORIZONTAL_KEY);
             event.register(VECTOR_HOVER_KEY);
+            event.register(VECTOR_VERTICAL_DECREASE_KEY);
+            event.register(VECTOR_HORIZONTAL_DECREASE_KEY);
             event.register(PORTABLE_DISLOCATOR_KEY);
         }
     }
@@ -146,6 +166,36 @@ public class KeyBindings {
             // if (PORTABLE_DISLOCATOR_KEY.consumeClick()) {
             //     handlePortableDislocatorActivation(player);
             // }
+            
+            // Key for vertical adjustment decrease
+            if (VECTOR_VERTICAL_DECREASE_KEY.consumeClick()) {
+                // Use persistent player data instead of singleton
+                byte currentFactor = VectorCharmData.getVerticalFactorFromPlayer(player);
+                byte nextFactor = (byte) ((currentFactor - 1 + 6) % 6); // 0-5 (None, Slow, Moderate, Fast, Extreme, Ultra)
+                VectorCharmData.setVerticalFactorToPlayer(player, nextFactor);
+                VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
+                
+                // Singleton no longer needed - using persistent data only
+                
+                // Send message to player
+                player.displayClientMessage(Component.translatable("message.iska_utils.vector_vertical_factor", 
+                                     Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
+            }
+
+            // Key for horizontal adjustment decrease
+            if (VECTOR_HORIZONTAL_DECREASE_KEY.consumeClick()) {
+                // Use persistent player data instead of singleton
+                byte currentFactor = VectorCharmData.getHorizontalFactorFromPlayer(player);
+                byte nextFactor = (byte) ((currentFactor - 1 + 6) % 6); // 0-5 (None, Slow, Moderate, Fast, Extreme, Ultra)
+                VectorCharmData.setHorizontalFactorToPlayer(player, nextFactor);
+                VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
+                
+                // Singleton no longer needed - using persistent data only
+                
+                // Send message to player
+                player.displayClientMessage(Component.translatable("message.iska_utils.vector_horizontal_factor", 
+                                     Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
+            }
         }
     }
 } 

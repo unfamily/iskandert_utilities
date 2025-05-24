@@ -7,6 +7,7 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
+import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 
 @EventBusSubscriber(modid = IskaUtils.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public class ModItemCapabilities {
@@ -25,6 +26,20 @@ public class ModItemCapabilities {
                     return null;
                 },
                 ModItems.VECTOR_CHARM.get()
+        );
+        
+        // Register energy capability for Portable Dislocator
+        event.registerItem(
+                Capabilities.EnergyStorage.ITEM,
+                (stack, context) -> {
+                    if (stack.getItem() instanceof PortableDislocatorItem dislocator) {
+                        if (dislocator.canStoreEnergy()) {
+                            return new PortableDislocatorEnergyStorage(dislocator, stack);
+                        }
+                    }
+                    return null;
+                },
+                ModItems.PORTABLE_DISLOCATOR.get()
         );
     }
     
@@ -83,6 +98,64 @@ public class ModItemCapabilities {
         @Override
         public boolean canReceive() {
             return vectorCharm.canStoreEnergy();
+        }
+    }
+    
+    /**
+     * Energy storage implementation for Portable Dislocator
+     */
+    public static class PortableDislocatorEnergyStorage implements IEnergyStorage {
+        private final PortableDislocatorItem dislocator;
+        private final net.minecraft.world.item.ItemStack stack;
+        
+        public PortableDislocatorEnergyStorage(PortableDislocatorItem dislocator, net.minecraft.world.item.ItemStack stack) {
+            this.dislocator = dislocator;
+            this.stack = stack;
+        }
+        
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int currentEnergy = dislocator.getEnergyStored(stack);
+            int maxEnergy = dislocator.getMaxEnergyStored(stack);
+            int energyToReceive = Math.min(maxReceive, maxEnergy - currentEnergy);
+            
+            if (!simulate && energyToReceive > 0) {
+                dislocator.setEnergyStored(stack, currentEnergy + energyToReceive);
+            }
+            
+            return energyToReceive;
+        }
+        
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            int currentEnergy = dislocator.getEnergyStored(stack);
+            int energyToExtract = Math.min(maxExtract, currentEnergy);
+            
+            if (!simulate && energyToExtract > 0) {
+                dislocator.setEnergyStored(stack, currentEnergy - energyToExtract);
+            }
+            
+            return energyToExtract;
+        }
+        
+        @Override
+        public int getEnergyStored() {
+            return dislocator.getEnergyStored(stack);
+        }
+        
+        @Override
+        public int getMaxEnergyStored() {
+            return dislocator.getMaxEnergyStored(stack);
+        }
+        
+        @Override
+        public boolean canExtract() {
+            return false; // Portable Dislocator doesn't allow energy extraction
+        }
+        
+        @Override
+        public boolean canReceive() {
+            return dislocator.canStoreEnergy();
         }
     }
 } 

@@ -163,13 +163,13 @@ public class VectorCharmItem extends Item {
             if (requiresEnergyToFunction()) {
                 List<Integer> consumption = getEffectiveEnergyConsume();
                 tooltipComponents.add(Component.literal("§7Energy consumption per tick:"));
-                tooltipComponents.add(Component.literal("§8  None: " + consumption.get(0) + " RF"));
-                tooltipComponents.add(Component.literal("§8  Slow: " + consumption.get(1) + " RF"));
-                tooltipComponents.add(Component.literal("§8  Moderate: " + consumption.get(2) + " RF"));
-                tooltipComponents.add(Component.literal("§8  Fast: " + consumption.get(3) + " RF"));
-                tooltipComponents.add(Component.literal("§8  Extreme: " + consumption.get(4) + " RF"));
-                tooltipComponents.add(Component.literal("§8  Ultra: " + consumption.get(5) + " RF"));
-                tooltipComponents.add(Component.literal("§8  Hover: " + consumption.get(6) + " RF"));
+                
+                // Safe access to array elements with fallback to 0
+                String[] speedNames = {"None", "Slow", "Moderate", "Fast", "Extreme", "Ultra", "Hover"};
+                for (int i = 0; i < speedNames.length; i++) {
+                    int energyConsumption = (i < consumption.size()) ? consumption.get(i) : 0;
+                    tooltipComponents.add(Component.literal("§8  " + speedNames[i] + ": " + energyConsumption + " RF"));
+                }
             }
         } else {
             tooltipComponents.add(Component.literal("§7No energy required"));
