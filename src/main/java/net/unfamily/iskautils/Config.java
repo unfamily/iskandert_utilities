@@ -60,6 +60,18 @@ public class Config
             .comment("Enable horizontal vector charm")
             .define("009_horizontalCharmEnabled", true);
 
+    // Vector Charm energy configuration
+    private static final ModConfigSpec.IntValue VECTOR_CHARM_ENERGY_CAPACITY = BUILDER
+            .comment("Energy capacity of the Vector Charm in RF/FE")
+            .defineInRange("010_vectorCharmEnergyCapacity", 1000000, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends Integer>> VECTOR_CHARM_ENERGY_CONSUME = BUILDER
+            .comment("Energy consumed per tick by the Vector Charm when active in RF/FE",
+                     "Array with 7 values for: [none, slow, moderate, fast, extreme, ultra, hover]")
+            .defineList("011_vectorCharmEnergyConsume", 
+                       java.util.Arrays.asList(0, 5, 15, 30, 50, 100, 3), 
+                       obj -> obj instanceof Integer && (Integer) obj >= 0);
+
     static {
         BUILDER.pop(); // End of vector_plates category
         
@@ -74,6 +86,15 @@ public class Config
     private static final ModConfigSpec.IntValue HELLFIRE_IGNITER_BUFFER = BUILDER
             .comment("Quantity of energy the Hellfire Igniter can be stored")
             .defineInRange("001_hellfireIgniterBuffer", 1000, 0, Integer.MAX_VALUE);
+
+    // Portable Dislocator energy configuration
+    private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CAPACITY = BUILDER
+            .comment("Energy capacity of the Portable Dislocator in RF/FE")
+            .defineInRange("002_portableDislocatorEnergyCapacity", 5000000, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CONSUME = BUILDER
+            .comment("Energy consumed per teleportation by the Portable Dislocator in RF/FE")
+            .defineInRange("003_portableDislocatorEnergyConsume", 1000, 0, Integer.MAX_VALUE);
 
     static {
         BUILDER.pop(); // End of general_utilities category
@@ -94,8 +115,10 @@ public class Config
     public static int hellfireIgniterBuffer;
     public static boolean verticalCharmEnabled;
     public static boolean horizontalCharmEnabled;
-    public static java.util.List<Integer> energyCharmConsume;
-    public static int energyCharmStore;
+    public static int vectorCharmEnergyCapacity;
+    public static java.util.List<Integer> vectorCharmEnergyConsume;
+    public static int portableDislocatorEnergyCapacity;
+    public static int portableDislocatorEnergyConsume;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -110,7 +133,11 @@ public class Config
         verticalConveyorEnabled = VERTICAL_CONVEYOR_ENABLED.get();
         verticalCharmEnabled = VERTICAL_CHARM_ENABLED.get();
         horizontalCharmEnabled = HORIZONTAL_CHARM_ENABLED.get();
+        vectorCharmEnergyCapacity = VECTOR_CHARM_ENERGY_CAPACITY.get();
+        vectorCharmEnergyConsume = new java.util.ArrayList<>(VECTOR_CHARM_ENERGY_CONSUME.get());
         hellfireIgniterConsume = HELLFIRE_IGNITER_CONSUME.get();
         hellfireIgniterBuffer = HELLFIRE_IGNITER_BUFFER.get();
+        portableDislocatorEnergyCapacity = PORTABLE_DISLOCATOR_ENERGY_CAPACITY.get();
+        portableDislocatorEnergyConsume = PORTABLE_DISLOCATOR_ENERGY_CONSUME.get();
     }
 }

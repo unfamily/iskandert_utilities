@@ -65,9 +65,11 @@ public class VectorCharmCurioHandler {
      * @param entity The entity wearing the curio
      */
     public static void curioTick(ItemStack stack, LivingEntity entity) {
-        if (entity instanceof Player player && entity.level().isClientSide) {
-            // Apply movement using the same client tick logic
-            VectorCharmMovement.applyMovement(player);
+        if (entity instanceof Player player) {
+            // Apply movement (includes energy consumption)
+            VectorCharmMovement.applyMovement(player, stack);
         }
     }
+    
+
 } 

@@ -85,12 +85,13 @@ public class KeyBindings {
             
             // Key for vertical adjustment
             if (VECTOR_VERTICAL_KEY.consumeClick()) {
-                // Simulate changing the vertical value (in a complete implementation,
-                // this would send a packet to the server and the server would respond with the new value)
-                byte currentFactor = VectorCharmData.getInstance().getVerticalFactor(player);
+                // Use persistent player data instead of singleton
+                byte currentFactor = VectorCharmData.getVerticalFactorFromPlayer(player);
                 byte nextFactor = (byte) ((currentFactor + 1) % 6); // 0-5 (None, Slow, Moderate, Fast, Extreme, Ultra)
-                VectorCharmData.getInstance().setVerticalFactor(player, nextFactor);
+                VectorCharmData.setVerticalFactorToPlayer(player, nextFactor);
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
+                
+                // Singleton no longer needed - using persistent data only
                 
                 // Send message to player
                 player.displayClientMessage(Component.translatable("message.iska_utils.vector_vertical_factor", 
@@ -99,11 +100,13 @@ public class KeyBindings {
 
             // Key for horizontal adjustment
             if (VECTOR_HORIZONTAL_KEY.consumeClick()) {
-                // Simulate changing the horizontal value
-                byte currentFactor = VectorCharmData.getInstance().getHorizontalFactor(player);
+                // Use persistent player data instead of singleton
+                byte currentFactor = VectorCharmData.getHorizontalFactorFromPlayer(player);
                 byte nextFactor = (byte) ((currentFactor + 1) % 6); // 0-5 (None, Slow, Moderate, Fast, Extreme, Ultra)
-                VectorCharmData.getInstance().setHorizontalFactor(player, nextFactor);
+                VectorCharmData.setHorizontalFactorToPlayer(player, nextFactor);
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
+                
+                // Singleton no longer needed - using persistent data only
                 
                 // Send message to player
                 player.displayClientMessage(Component.translatable("message.iska_utils.vector_horizontal_factor", 
@@ -112,8 +115,8 @@ public class KeyBindings {
 
             // Key for hover mode toggle
             if (VECTOR_HOVER_KEY.consumeClick()) {
-                // Get current vertical factor value
-                byte currentFactor = VectorCharmData.getInstance().getVerticalFactor(player);
+                // Use persistent player data instead of singleton
+                byte currentFactor = VectorCharmData.getVerticalFactorFromPlayer(player);
                 
                 // Special value for hover mode is 6
                 byte hoverFactor = VectorCharmData.HOVER_MODE_VALUE;
@@ -121,13 +124,17 @@ public class KeyBindings {
                 // Simple toggle: normal mode <-> hover mode
                 if (currentFactor == hoverFactor) {
                     // If in hover mode, disable it and restore previous value
-                    VectorCharmData.getInstance().disableHoverMode(player);
+                    byte restoredFactor = VectorCharmData.disableHoverModeFromPlayer(player);
+                    
+                    // Singleton no longer needed - using persistent data only
                     
                     // Send message to player
                     player.displayClientMessage(Component.translatable("message.iska_utils.vector_hover_mode.off"), true);
                 } else {
                     // Otherwise, activate hover mode
-                    VectorCharmData.getInstance().setVerticalFactor(player, hoverFactor);
+                    VectorCharmData.setVerticalFactorToPlayer(player, hoverFactor);
+                    
+                    // Singleton no longer needed - using persistent data only
                     
                     // Send message to player
                     player.displayClientMessage(Component.translatable("message.iska_utils.vector_hover_mode.hover"), true);

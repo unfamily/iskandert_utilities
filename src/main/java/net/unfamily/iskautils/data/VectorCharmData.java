@@ -332,4 +332,70 @@ public class VectorCharmData {
             return true;
         }
     }
+
+    /**
+     * Gets the vertical factor for a player from their persistent data
+     * @param player the player
+     * @return the factor (0-5, or 6 for hover)
+     */
+    public static byte getVerticalFactorFromPlayer(Player player) {
+        if (player.getPersistentData().contains("VectorCharmVertical")) {
+            return player.getPersistentData().getByte("VectorCharmVertical");
+        }
+        return 0; // Default value
+    }
+    
+    /**
+     * Sets the vertical factor for a player in their persistent data
+     * @param player the player
+     * @param factor the factor (0-5, or 6 for hover)
+     */
+    public static void setVerticalFactorToPlayer(Player player, byte factor) {
+        // Save previous value if entering hover mode
+        if (factor == HOVER_MODE_VALUE) {
+            byte currentFactor = getVerticalFactorFromPlayer(player);
+            if (currentFactor != HOVER_MODE_VALUE) {
+                player.getPersistentData().putByte("VectorCharmPreviousVertical", currentFactor);
+            }
+        }
+        
+        player.getPersistentData().putByte("VectorCharmVertical", factor);
+    }
+    
+    /**
+     * Gets the horizontal factor for a player from their persistent data
+     * @param player the player
+     * @return the factor (0-5)
+     */
+    public static byte getHorizontalFactorFromPlayer(Player player) {
+        if (player.getPersistentData().contains("VectorCharmHorizontal")) {
+            return player.getPersistentData().getByte("VectorCharmHorizontal");
+        }
+        return 0; // Default value
+    }
+    
+    /**
+     * Sets the horizontal factor for a player in their persistent data
+     * @param player the player
+     * @param factor the factor (0-5)
+     */
+    public static void setHorizontalFactorToPlayer(Player player, byte factor) {
+        player.getPersistentData().putByte("VectorCharmHorizontal", factor);
+    }
+    
+    /**
+     * Disables hover mode and restores the previous value from player data
+     * @param player the player
+     * @return the restored factor
+     */
+    public static byte disableHoverModeFromPlayer(Player player) {
+        byte previousFactor = 0;
+        if (player.getPersistentData().contains("VectorCharmPreviousVertical")) {
+            previousFactor = player.getPersistentData().getByte("VectorCharmPreviousVertical");
+            player.getPersistentData().remove("VectorCharmPreviousVertical");
+        }
+        
+        setVerticalFactorToPlayer(player, previousFactor);
+        return previousFactor;
+    }
 } 

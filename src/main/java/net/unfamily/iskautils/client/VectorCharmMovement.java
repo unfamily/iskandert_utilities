@@ -1,7 +1,9 @@
 package net.unfamily.iskautils.client;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.data.VectorCharmData;
@@ -21,20 +23,49 @@ public class VectorCharmMovement {
     
     // Fixed value for hover mode
     private static final double HOVER_VALUE = 0.0D;
+    
+    // Track which players have already had movement applied this tick to avoid duplicates
+    private static final java.util.Set<java.util.UUID> processedPlayersThisTick = new java.util.HashSet<>();
+    private static long lastTickTime = -1;
 
     /**
      * Applies movement based on Vector Charm factors
      * @param player The player to apply movement to
      */
     public static void applyMovement(Player player) {
+        applyMovement(player, null);
+    }
+    
+    /**
+     * Applies movement based on Vector Charm factors with specific charm source
+     * @param player The player to apply movement to
+     * @param sourceCharm The specific charm to use (null = auto-detect)
+     */
+    public static void applyMovement(Player player, ItemStack sourceCharm) {
         if (player == null) return;
 
         // Check if charms are enabled
         if (!Config.verticalCharmEnabled && !Config.horizontalCharmEnabled) return;
         
-        // Get charm factors
-        byte verticalFactorValue = VectorCharmData.getInstance().getVerticalFactor(player);
-        byte horizontalFactorValue = VectorCharmData.getInstance().getHorizontalFactor(player);
+        // Clear processed players set if we're in a new tick
+        long currentTick = player.level().getGameTime();
+        if (currentTick != lastTickTime) {
+            processedPlayersThisTick.clear();
+            lastTickTime = currentTick;
+        }
+        
+        // Check if this player has already been processed this tick
+        java.util.UUID playerId = player.getUUID();
+        if (processedPlayersThisTick.contains(playerId)) {
+            return; // Already processed this tick, avoid duplicate movement
+        }
+        
+        // Mark this player as processed for this tick
+        processedPlayersThisTick.add(playerId);
+        
+        // Get charm factors from persistent player data (same as server-side)
+        byte verticalFactorValue = VectorCharmData.getVerticalFactorFromPlayer(player);
+        byte horizontalFactorValue = VectorCharmData.getHorizontalFactorFromPlayer(player);
 
         // Check if hover mode is active (special value 6)
         boolean isHoverMode = verticalFactorValue == VectorCharmData.HOVER_MODE_VALUE;
@@ -54,7 +85,9 @@ public class VectorCharmMovement {
 
         // Handle vertical movement for normal factors or hover
         if (hasVerticalFactor || isHoverMode) {
-            applyVerticalMovement(player, verticalFactorValue, isHoverMode);
+            // Determine energy level for vertical movement
+            int energyLevel = isHoverMode ? 6 : verticalFactorValue;
+            applyVerticalMovement(player, verticalFactorValue, isHoverMode, energyLevel, sourceCharm);
             
             // Prevent fall damage for vertical movement and hover
             player.fallDistance = 0;
@@ -62,7 +95,7 @@ public class VectorCharmMovement {
 
         // Handle horizontal movement
         if (hasHorizontalFactor) {
-            applyHorizontalMovement(player, horizontalFactorValue);
+            applyHorizontalMovement(player, horizontalFactorValue, horizontalFactorValue, sourceCharm);
         }
     }
 
@@ -71,8 +104,35 @@ public class VectorCharmMovement {
      * @param player The player to apply movement to
      * @param factorValue The vertical factor value
      * @param isHoverMode True if hover mode is active
+     * @param energyLevel The energy level for consumption
      */
-    private static void applyVerticalMovement(Player player, byte factorValue, boolean isHoverMode) {
+    private static void applyVerticalMovement(Player player, byte factorValue, boolean isHoverMode, int energyLevel, ItemStack sourceCharm) {
+        // Use provided charm or auto-detect
+        ItemStack activeCharm = sourceCharm;
+        if (activeCharm == null) {
+            activeCharm = VectorCharmItem.getActiveVectorCharm(player, energyLevel);
+        }
+        
+        if (activeCharm == null || !(activeCharm.getItem() instanceof VectorCharmItem charm)) {
+            // No charm found
+            return;
+        }
+        
+        // Check if charm has enough energy (client-side check for smooth UX)
+        if (!charm.hasEnoughEnergy(activeCharm, energyLevel)) {
+            // Insufficient energy - show message occasionally
+            if (player.level().getGameTime() % 60 == 0) { // Every 3 seconds
+                player.displayClientMessage(
+                    Component.literal("§cVector Charm out of energy!"), 
+                    true // actionbar
+                );
+            }
+            return;
+        }
+        
+        // CONSUME ENERGY: Always consume energy when movement is applied
+        charm.consumeEnergyForMovement(activeCharm, energyLevel);
+        
         // Get current motion
         Vec3 currentMotion = player.getDeltaMovement();
 
@@ -121,8 +181,35 @@ public class VectorCharmMovement {
      * Applies horizontal movement
      * @param player The player to apply movement to
      * @param factorValue The horizontal factor value
+     * @param energyLevel The energy level for consumption
      */
-    private static void applyHorizontalMovement(Player player, byte factorValue) {
+    private static void applyHorizontalMovement(Player player, byte factorValue, int energyLevel, ItemStack sourceCharm) {
+        // Use provided charm or auto-detect
+        ItemStack activeCharm = sourceCharm;
+        if (activeCharm == null) {
+            activeCharm = VectorCharmItem.getActiveVectorCharm(player, energyLevel);
+        }
+        
+        if (activeCharm == null || !(activeCharm.getItem() instanceof VectorCharmItem charm)) {
+            // No charm found
+            return;
+        }
+        
+        // Check if charm has enough energy (client-side check for smooth UX)
+        if (!charm.hasEnoughEnergy(activeCharm, energyLevel)) {
+            // Insufficient energy - show message occasionally
+            if (player.level().getGameTime() % 60 == 0) { // Every 3 seconds
+                player.displayClientMessage(
+                    Component.literal("§cVector Charm out of energy!"), 
+                    true // actionbar
+                );
+            }
+            return;
+        }
+        
+        // CONSUME ENERGY: Always consume energy when movement is applied
+        charm.consumeEnergyForMovement(activeCharm, energyLevel);
+        
         // Get current motion
         Vec3 currentMotion = player.getDeltaMovement();
         
