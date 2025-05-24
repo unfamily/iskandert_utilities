@@ -54,21 +54,21 @@ public class Config
     // Vector Charm configurazione
     private static final ModConfigSpec.BooleanValue VERTICAL_CHARM_ENABLED = BUILDER
             .comment("Enable vertical vector charm")
-            .define("008_verticalCharmEnabled", true);
+            .define("100_verticalCharmEnabled", true);
 
     private static final ModConfigSpec.BooleanValue HORIZONTAL_CHARM_ENABLED = BUILDER
             .comment("Enable horizontal vector charm")
-            .define("009_horizontalCharmEnabled", true);
+            .define("101_horizontalCharmEnabled", true);
 
     // Vector Charm energy configuration
     private static final ModConfigSpec.IntValue VECTOR_CHARM_ENERGY_CAPACITY = BUILDER
             .comment("Energy capacity of the Vector Charm in RF/FE")
-            .defineInRange("010_vectorCharmEnergyCapacity", 1000000, 0, Integer.MAX_VALUE);
+            .defineInRange("102_vectorCharmEnergyCapacity", 1000000, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends Integer>> VECTOR_CHARM_ENERGY_CONSUME = BUILDER
             .comment("Energy consumed per tick by the Vector Charm when active in RF/FE",
                      "Array with 7 values for: [none, slow, moderate, fast, extreme, ultra, hover]")
-            .defineList("011_vectorCharmEnergyConsume", 
+            .defineList("103_vectorCharmEnergyConsume", 
                        java.util.Arrays.asList(0, 5, 15, 30, 50, 100, 3), 
                        obj -> obj instanceof Integer && (Integer) obj >= 0);
 
@@ -90,11 +90,11 @@ public class Config
     // Portable Dislocator energy configuration
     private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CAPACITY = BUILDER
             .comment("Energy capacity of the Portable Dislocator in RF/FE")
-            .defineInRange("002_portableDislocatorEnergyCapacity", 50000, 0, Integer.MAX_VALUE);
+            .defineInRange("100_portableDislocatorEnergyCapacity", 50000, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CONSUME = BUILDER
             .comment("Energy consumed per teleportation by the Portable Dislocator in RF/FE")
-            .defineInRange("003_portableDislocatorEnergyConsume", 1000, 0, Integer.MAX_VALUE);
+            .defineInRange("100_portableDislocatorEnergyConsume", 1000, 0, Integer.MAX_VALUE);
 
     static {
         BUILDER.pop(); // End of general_utilities category
