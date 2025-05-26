@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "CAC",
+    " B "
+  ],
+  "key": {
+   "A": {
+    "item": "minecraft:blue_ice"
+   },
+   "B": {
+    "item": "iska_utils:base_plate_block"
+   },  
+   "C": {
+    "item": "minecraft:packed_ice"
+   }
+  },
+  "result": {
+    "id": "iska_utils:iska_utils_freeze",
+    "count": 1
+  }
+}

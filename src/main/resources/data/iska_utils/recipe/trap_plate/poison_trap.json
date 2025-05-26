@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "CAC",
+    " B "
+  ],
+  "key": {
+   "A": {
+    "item": "minecraft:potion",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:poison"
+      }
+    }
+   },
+   "B": {
+    "item": "iska_utils:plate_base_block"
+   },  
+   "C": {
+    "item": "minecraft:spider_eye"
+   }
+  },
+  "result": {
+    "id": "iska_utils:iska_utils_poison",
+    "count": 1
+  }
+} 

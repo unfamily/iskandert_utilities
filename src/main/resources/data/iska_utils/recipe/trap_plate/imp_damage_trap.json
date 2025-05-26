@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "CAC",
+    " B "
+  ],
+  "key": {
+   "A": {
+    "item": "minecraft:netherite_upgrade_smithing_template"
+   },
+   "B": {
+    "item": "iska_utils:iska_utils_damage"
+   },  
+   "C": {
+    "item": "minecraft:flint"
+   }
+  },
+  "result": {
+    "id": "iska_utils:iska_utils_improved_damage",
+    "count": 1
+  }
+} 

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "CAC",
+    " B "
+  ],
+  "key": {
+   "A": {
+    "item": "minecraft:cactus"
+   },
+   "B": {
+    "item": "iska_utils:plate_base_block"
+   },  
+   "C": {
+    "item": "minecraft:pointed_dripstone"
+   }
+  },
+  "result": {
+    "id": "iska_utils:iska_utils_damage",
+    "count": 1
+  }
+} 

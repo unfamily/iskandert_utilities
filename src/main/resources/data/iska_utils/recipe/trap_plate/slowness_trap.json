@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "CAC",
+    " B "
+  ],
+  "key": {
+   "A": {
+    "item": "minecraft:honey_bottle"
+   },
+   "B": {
+    "item": "iska_utils:plate_base_block"
+   },  
+   "C": {
+    "item": "minecraft:clay_ball"
+   }
+  },
+  "result": {
+    "id": "iska_utils:iska_utils_slowness",
+    "count": 1
+  }
+} 
