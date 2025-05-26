@@ -9,6 +9,11 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.data.PotionPlateRegistry;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+
+import java.util.Map;
 
 public class ModCreativeModeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = 
@@ -43,6 +48,12 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.PLAYER_FAST_VECT.get());
                                 pOutput.accept(ModItems.PLAYER_EXTREME_VECT.get());
                                 pOutput.accept(ModItems.PLAYER_ULTRA_VECT.get());
+                                
+                                // Dynamic Potion Plates
+                                Map<String, DeferredHolder<Item, BlockItem>> potionPlateItems = PotionPlateRegistry.getAllItems();
+                                for (DeferredHolder<Item, BlockItem> itemHolder : potionPlateItems.values()) {
+                                    pOutput.accept(itemHolder.get());
+                                }
                                 
                                 // Utility Blocks
                                 pOutput.accept(ModItems.HELLFIRE_IGNITER.get());

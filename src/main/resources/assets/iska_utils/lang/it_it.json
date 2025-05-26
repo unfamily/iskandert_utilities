@@ -22,6 +22,10 @@
   
   "block.iska_utils.hellfire_igniter":"Innesco Infernale",
 
+  "block.iska_utils.iska_utils_slowness": "Piastra Trappola Lentezza",
+  "block.iska_utils.iska_utils_poison": "Piastra Trappola Veleno",
+  "block.iska_utils.iska_utils_weakness": "Piastra Trappola Debolezza",
+
   "creativetab.iska_utils.tab": "Utilità di Iska",
 
   "block.iska_utils.smooth_blackstone": "Pietra Nera Levigata",

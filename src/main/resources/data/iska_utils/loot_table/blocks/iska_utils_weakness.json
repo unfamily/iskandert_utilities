@@ -1,6 +1,6 @@
 {
   "type": "minecraft:block",
-  "random_sequence": "iska_utils:blocks/plate_base_block",
+  "random_sequence": "iska_utils:blocks/iska_utils_weakness",
   "pools": [
     {
       "rolls": 1.0,
@@ -8,7 +8,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "iska_utils:plate_base_block"
+          "name": "iska_utils:iska_utils_weakness"
         }
       ],
       "conditions": [

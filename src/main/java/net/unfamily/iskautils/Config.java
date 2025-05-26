@@ -98,6 +98,21 @@ public class Config
 
     static {
         BUILDER.pop(); // End of general_utilities category
+        
+        // Category for Development/Advanced Configuration
+        BUILDER.comment("Development and Advanced Configuration").push("dev");
+    }
+
+    // Dynamic Potion Plates configuration
+    private static final ModConfigSpec.ConfigValue<String> EXTERNAL_SCRIPTS_PATH = BUILDER
+            .comment("Path to the external scripts directory for custom potion plates",
+                    "Default: 'kubejs/external_scripts'",
+                    "The system will look for potion plates in: <path>/potion_plates/",
+                    "You can use relative paths from the game directory or absolute paths")
+            .define("000_external_scripts_path", "kubejs/external_scripts");
+
+    static {
+        BUILDER.pop(); // End of dev category
     }
 
     static final ModConfigSpec SPEC = BUILDER.build();
@@ -119,6 +134,7 @@ public class Config
     public static java.util.List<Integer> vectorCharmEnergyConsume;
     public static int portableDislocatorEnergyCapacity;
     public static int portableDislocatorEnergyConsume;
+    public static String externalScriptsPath;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -139,5 +155,6 @@ public class Config
         hellfireIgniterBuffer = HELLFIRE_IGNITER_BUFFER.get();
         portableDislocatorEnergyCapacity = PORTABLE_DISLOCATOR_ENERGY_CAPACITY.get();
         portableDislocatorEnergyConsume = PORTABLE_DISLOCATOR_ENERGY_CONSUME.get();
+        externalScriptsPath = EXTERNAL_SCRIPTS_PATH.get();
     }
 }

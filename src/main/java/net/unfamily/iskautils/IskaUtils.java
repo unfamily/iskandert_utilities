@@ -19,6 +19,8 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.ClientEvents;
@@ -28,6 +30,11 @@ import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.util.ModUtils;
+import net.unfamily.iskautils.data.PotionPlateLoader;
+import net.unfamily.iskautils.data.PotionPlateRegistry;
+import net.unfamily.iskautils.block.PotionPlateBlock;
+import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
+import net.unfamily.iskautils.data.DynamicPotionPlateModelLoader;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)
@@ -49,11 +56,28 @@ public class IskaUtils {
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         
+        // ===== DYNAMIC POTION PLATE SYSTEM =====
+        // IMPORTANT: This must happen BEFORE registering the DeferredRegisters
+        // to ensure blocks are available when registries are built
+        
+        // Scan for potion plate configurations in our mod resources
+        DynamicPotionPlateScanner.scanForPotionPlates();
+        
+        // Scan for external configurations in config directory (before registry freeze)
+        DynamicPotionPlateScanner.scanConfigDirectory();
+        
+        // Register discovered dynamic potion plates from our mod AND config directory
+        PotionPlateRegistry.registerDiscoveredBlocks();
+        
         // Register blocks and items
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
+        
+        // Register dynamic potion plate blocks and items
+        PotionPlateRegistry.POTION_PLATES.register(modEventBus);
+        PotionPlateRegistry.POTION_PLATE_ITEMS.register(modEventBus);
         
         // Register Curios integration if it's installed
         if (ModUtils.isCuriosLoaded()) {
@@ -106,10 +130,17 @@ public class IskaUtils {
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.SLOW_VECT.get(), RenderType.cutout());
             });
         }
+        
+        @SubscribeEvent
+        public static void registerGeometryLoaders(net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders event) {
+            event.register(DynamicPotionPlateModelLoader.ID, DynamicPotionPlateModelLoader.INSTANCE);
+        }
     }
 
     @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.GAME)
     public static class GameEventBusEvents {
+        private static int cooldownCleanupTimer = 0;
+        
         @SubscribeEvent
         public static void onServerStarting(ServerStartingEvent event) {
             VectorCharmData.getInstance();
@@ -118,6 +149,24 @@ public class IskaUtils {
         @SubscribeEvent
         public static void onServerStopping(ServerStoppingEvent event) {
             // For now, data is only stored in memory
+        }
+        
+        @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.LOWEST)
+        public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
+            // Server is fully started, all external datapacks should be loaded by now
+            LOGGER.info("Server fully started, all external datapacks should be available");
+        }
+        
+        @SubscribeEvent
+        public static void onServerTick(ServerTickEvent.Post event) {
+            // Clean up potion plate cooldowns every 5 minutes (6000 ticks)
+            cooldownCleanupTimer++;
+            if (cooldownCleanupTimer >= 6000) {
+                cooldownCleanupTimer = 0;
+                if (event.getServer().overworld() != null) {
+                    PotionPlateBlock.cleanupCooldowns(event.getServer().overworld());
+                }
+            }
         }
     }
 }

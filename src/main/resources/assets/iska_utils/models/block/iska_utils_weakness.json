@@ -1,0 +1,7 @@
+{
+  "parent": "iska_utils:block/plate_base",
+  "textures": {
+    "top": "iska_utils:block/potion_plates/iska_utils/plate_trap_weakness",
+    "bottom": "iska_utils:block/plate_base"
+  }
+} 

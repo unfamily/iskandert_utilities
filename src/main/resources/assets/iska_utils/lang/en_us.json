@@ -22,6 +22,10 @@
   
   "block.iska_utils.hellfire_igniter": "Hellfire Igniter",
   
+  "block.iska_utils.iska_utils_slowness": "Slowness Trap Plate",
+  "block.iska_utils.iska_utils_poison": "Poison Trap Plate",
+  "block.iska_utils.iska_utils_weakness": "Weakness Trap Plate",
+  
   "creativetab.iska_utils.tab": "Iska's Utilities",
   
   "block.iska_utils.smooth_blackstone": "Smooth Blackstone",

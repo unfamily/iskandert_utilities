@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.Block;
 import net.unfamily.iskautils.block.PlateBaseBlock;
 import net.unfamily.iskautils.block.SmoothBlackstoneWallBlock;
+import net.unfamily.iskautils.block.PotionPlateBlock;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
