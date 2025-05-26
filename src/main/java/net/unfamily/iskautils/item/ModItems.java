@@ -103,6 +103,8 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_WALL.get(), ITEM_PROPERTIES));
     public static final DeferredItem<Item> PLATE_BASE_BLOCK = ITEMS.register("plate_base_block",
             () -> new BlockItem(ModBlocks.PLATE_BASE_BLOCK.get(), ITEM_PROPERTIES));
+    public static final DeferredItem<Item> RAFT = ITEMS.register("raft",
+            () -> new BlockItem(ModBlocks.RAFT.get(), ITEM_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

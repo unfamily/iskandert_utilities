@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.Block;
 import net.unfamily.iskautils.block.PlateBaseBlock;
 import net.unfamily.iskautils.block.SmoothBlackstoneWallBlock;
 import net.unfamily.iskautils.block.PotionPlateBlock;
+import net.unfamily.iskautils.block.RaftBlock;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -110,6 +111,17 @@ public class ModBlocks {
     // ===== PLATE BASE BLOCK (vector type, texture above and below plate_base) =====
     public static final DeferredBlock<PlateBaseBlock> PLATE_BASE_BLOCK = BLOCKS.register("plate_base_block",
             () -> new PlateBaseBlock(VECTOR_PROPERTIES));
+            
+    // ===== RAFT BLOCK (floating wood block) =====
+    private static final BlockBehaviour.Properties RAFT_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
+            .strength(0.5f, 1.0f)
+            .sound(SoundType.WOOD)
+            .noOcclusion()
+            .isViewBlocking((state, level, pos) -> false);
+            
+    public static final DeferredBlock<RaftBlock> RAFT = BLOCKS.register("raft",
+            () -> new RaftBlock(RAFT_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

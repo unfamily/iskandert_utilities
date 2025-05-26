@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "iska_utils:block/raft"
+    },
+    "facing=east": {
+      "model": "iska_utils:block/raft",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "iska_utils:block/raft",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "iska_utils:block/raft",
+      "y": 270
+    }
+  }
+} 
