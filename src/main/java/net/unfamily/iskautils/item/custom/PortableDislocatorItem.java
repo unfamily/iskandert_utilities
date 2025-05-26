@@ -28,6 +28,9 @@ import net.minecraft.world.item.component.CustomData;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.minecraft.ChatFormatting;
+import net.minecraft.server.level.ServerPlayer;
+import net.unfamily.iskautils.util.ModUtils;
 
 import java.lang.reflect.Method;
 import java.util.regex.Matcher;
@@ -105,27 +108,43 @@ public class PortableDislocatorItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, java.util.List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
-        // Get the current keybind from the player's settings
+        // Get the keybind name
         String keybindName = KeyBindings.PORTABLE_DISLOCATOR_KEY.getTranslatedKeyMessage().getString();
         
-        // Add the main tooltip with the current keybind
+        // Add main tooltip
         tooltipComponents.add(Component.translatable("item.iska_utils.portable_dislocator.tooltip.main", keybindName));
         
-        // Add additional info about supported compasses
+        // Add compass info
         tooltipComponents.add(Component.translatable("item.iska_utils.portable_dislocator.tooltip.compasses"));
         
-        // Add energy information
+        // Energy information
         if (canStoreEnergy()) {
             int energy = getEnergyStored(stack);
             int maxEnergy = getMaxEnergyStored(stack);
+            float percentage = (float) energy / Math.max(1, maxEnergy) * 100f;
             
-            tooltipComponents.add(Component.literal(String.format("Energy: %,d / %,d RF", energy, maxEnergy)));
+            String energyString = String.format("%,d / %,d RF (%.1f%%)", energy, maxEnergy, percentage);
+            Component energyText = Component.translatable("item.iska_utils.portable_dislocator.tooltip.energy")
+                .withStyle(style -> style.withColor(ChatFormatting.RED))
+                .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
             
-            if (requiresEnergyToFunction()) {
-                tooltipComponents.add(Component.literal("§7Energy per teleportation: " + getEffectiveEnergyConsumption() + " RF"));
+            tooltipComponents.add(energyText);
+            
+            // If energy is enabled but we also have XP consumption as backup
+            if (Config.portableDislocatorXpConsume > 0) {
+                Component xpBackupText = Component.translatable(
+                    "item.iska_utils.portable_dislocator.tooltip.xp_backup", 
+                    Config.portableDislocatorXpConsume)
+                    .withStyle(style -> style.withColor(ChatFormatting.GREEN));
+                tooltipComponents.add(xpBackupText);
             }
-        } else {
-            tooltipComponents.add(Component.literal("§7No energy required"));
+        } else if (Config.portableDislocatorXpConsume > 0) {
+            // Energy is disabled but XP consumption is enabled
+            Component xpText = Component.translatable(
+                "item.iska_utils.portable_dislocator.tooltip.consumes_xp", 
+                Config.portableDislocatorXpConsume)
+                .withStyle(style -> style.withColor(ChatFormatting.GREEN));
+            tooltipComponents.add(xpText);
         }
     }
     
@@ -156,7 +175,8 @@ public class PortableDislocatorItem extends Item {
      */
     private void tickInInventory(ItemStack stack, net.minecraft.world.level.Level level, Player player, int slotId, boolean isSelected) {
         // Check if the portable dislocator keybind was pressed
-        if (KeyBindings.PORTABLE_DISLOCATOR_KEY.consumeClick()) {
+        if (KeyBindings.consumeDislocatorKeyClick()) {
+            LOGGER.info("Dislocator key pressed while in inventory for player {}", player.getName().getString());
             handleDislocatorActivation(player, "inventory");
         }
     }
@@ -180,7 +200,7 @@ public class PortableDislocatorItem extends Item {
     /**
      * Checks for teleport requests from client side
      */
-    private static void checkForTeleportRequest(Player player, Level level) {
+    public static void checkForTeleportRequest(Player player, Level level) {
         UUID playerId = player.getUUID();
         TeleportRequest request = pendingRequests.get(playerId);
         
@@ -191,15 +211,8 @@ public class PortableDislocatorItem extends Item {
             // Clear the request
             pendingRequests.remove(playerId);
             
-            // Find the Portable Dislocator and check/consume energy
-            ItemStack dislocatorStack = findPortableDislocator(player);
-            if (dislocatorStack != null) {
-                PortableDislocatorItem dislocator = (PortableDislocatorItem) dislocatorStack.getItem();
-                if (dislocator.consumeEnergyForTeleportation(dislocatorStack)) {
-                    // Start the server-side teleportation
-                    startServerTeleportation(player, request.targetX, request.targetZ);
-                }
-            }
+            // Start the server-side teleportation
+            startServerTeleportation(player, request.targetX, request.targetZ);
         }
     }
     
@@ -207,51 +220,206 @@ public class PortableDislocatorItem extends Item {
      * Starts server-side teleportation
      */
     private static void startServerTeleportation(Player player, int targetX, int targetZ) {
-        UUID playerId = player.getUUID();
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
         
-        // Silent operation - no feedback
+        // Find the dislocator and check if it has energy
+        ItemStack dislocatorStack = findPortableDislocator(player);
+        if (dislocatorStack == null) {
+            LOGGER.warn("Portable Dislocator not found in player inventory during teleportation");
+            return;
+        }
         
-        // Always randomize coordinates to be 100-300 blocks away from the original target
+        PortableDislocatorItem dislocator = (PortableDislocatorItem) dislocatorStack.getItem();
+        
+        // Check resources based on priority settings
+        boolean canTeleport = false;
+        boolean energyEnabled = dislocator.canStoreEnergy() && dislocator.requiresEnergyToFunction();
+        boolean xpEnabled = Config.portableDislocatorXpConsume > 0;
+        boolean hasEnoughEnergy = energyEnabled && dislocator.hasEnoughEnergy(dislocatorStack);
+        boolean hasEnoughXp = xpEnabled && dislocator.hasEnoughXp(player);
+        
+        // Get priority settings
+        boolean prioritizeEnergy = Config.portableDislocatorPrioritizeEnergy;
+        boolean prioritizeXp = Config.portableDislocatorPrioritizeXp;
+        
+        // Check if both priorities are enabled (consume both resources)
+        if (prioritizeEnergy && prioritizeXp) {
+            // Both resources must be available to teleport
+            if (hasEnoughEnergy && hasEnoughXp) {
+                boolean energyConsumed = dislocator.consumeEnergyForTeleportation(dislocatorStack);
+                boolean xpConsumed = dislocator.consumeXpForTeleportation(player);
+                
+                LOGGER.info("Consumed energy (dual mode): {}", dislocator.getEffectiveEnergyConsumption());
+                LOGGER.info("Consumed XP (dual mode): {}", Config.portableDislocatorXpConsume);
+                
+                if (energyConsumed && xpConsumed) {
+                    player.displayClientMessage(
+                        Component.translatable("item.iska_utils.portable_dislocator.message.used_both", 
+                                             dislocator.getEffectiveEnergyConsumption(),
+                                             Config.portableDislocatorXpConsume)
+                                .withStyle(ChatFormatting.GOLD), 
+                        true);
+                }
+                
+                // Can teleport only if both resources were consumed
+                canTeleport = energyConsumed && xpConsumed;
+            } else {
+                // Not enough of both resources, cannot teleport
+                canTeleport = false;
+            }
+        }
+        // Energy has priority
+        else if (prioritizeEnergy) {
+            if (hasEnoughEnergy) {
+                canTeleport = dislocator.consumeEnergyForTeleportation(dislocatorStack);
+                LOGGER.info("Used energy with priority: {}", dislocator.getEffectiveEnergyConsumption());
+            } 
+            // If energy priority but no energy, try XP
+            else if (hasEnoughXp) {
+                canTeleport = dislocator.consumeXpForTeleportation(player);
+                LOGGER.info("Energy prioritized but not available, used XP: {}", Config.portableDislocatorXpConsume);
+                
+                if (canTeleport) {
+                    player.displayClientMessage(
+                        Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
+                                             Config.portableDislocatorXpConsume)
+                                .withStyle(ChatFormatting.GOLD), 
+                        true);
+                }
+            }
+        }
+        // XP has priority
+        else if (prioritizeXp) {
+            if (hasEnoughXp) {
+                canTeleport = dislocator.consumeXpForTeleportation(player);
+                LOGGER.info("Used XP with priority: {}", Config.portableDislocatorXpConsume);
+                
+                if (canTeleport) {
+                    player.displayClientMessage(
+                        Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
+                                             Config.portableDislocatorXpConsume)
+                                .withStyle(ChatFormatting.GOLD), 
+                        true);
+                }
+            } 
+            // If XP priority but no XP, try energy
+            else if (hasEnoughEnergy) {
+                canTeleport = dislocator.consumeEnergyForTeleportation(dislocatorStack);
+                LOGGER.info("XP prioritized but not available, used energy: {}", dislocator.getEffectiveEnergyConsumption());
+            }
+        }
+        // No priority set (default to energy first, then XP)
+        else {
+            if (energyEnabled) {
+                if (hasEnoughEnergy) {
+                    canTeleport = dislocator.consumeEnergyForTeleportation(dislocatorStack);
+                    LOGGER.info("Default priority - used energy: {}", dislocator.getEffectiveEnergyConsumption());
+                } else if (xpEnabled && hasEnoughXp) {
+                    canTeleport = dislocator.consumeXpForTeleportation(player);
+                    LOGGER.info("Default priority - energy not available, used XP: {}", Config.portableDislocatorXpConsume);
+                    
+                    if (canTeleport) {
+                        player.displayClientMessage(
+                            Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
+                                                 Config.portableDislocatorXpConsume)
+                                    .withStyle(ChatFormatting.GOLD), 
+                            true);
+                    }
+                }
+            } else if (xpEnabled && hasEnoughXp) {
+                canTeleport = dislocator.consumeXpForTeleportation(player);
+                LOGGER.info("Default priority - energy disabled, used XP: {}", Config.portableDislocatorXpConsume);
+                
+                if (canTeleport) {
+                    player.displayClientMessage(
+                        Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
+                                             Config.portableDislocatorXpConsume)
+                                .withStyle(ChatFormatting.GOLD), 
+                        true);
+                }
+            } else if (!energyEnabled && !xpEnabled) {
+                // Both systems disabled, teleport is free
+                canTeleport = true;
+                LOGGER.info("Both energy and XP disabled, teleport is free");
+            }
+        }
+        
+        if (!canTeleport) {
+            // Check which resource is depleted and notify player
+            if (energyEnabled && !hasEnoughEnergy) {
+                player.displayClientMessage(
+                    Component.translatable("item.iska_utils.portable_dislocator.message.no_energy")
+                            .withStyle(ChatFormatting.RED), 
+                    true);
+            } 
+            if (xpEnabled && !hasEnoughXp) {
+                player.displayClientMessage(
+                    Component.translatable("item.iska_utils.portable_dislocator.message.no_xp")
+                            .withStyle(ChatFormatting.RED), 
+                    true);
+            }
+            if (!energyEnabled && !xpEnabled) {
+                LOGGER.warn("Unexpected state: teleportation failed but no resources are required");
+            }
+            return;
+        }
+        
+        // Generate random offset to teleport 100-150 blocks away from the target
         java.util.Random random = new java.util.Random();
         
-        // Generate random offset for X: either [-300, -100] or [100, 300]
+        // Generate random offset for X: either [-150, -100] or [100, 150]
         int offsetX;
         if (random.nextBoolean()) {
-            // Positive range: 100 to 300
-            offsetX = random.nextInt(201) + 100; // 100-300
+            // Positive range: 100 to 150
+            offsetX = random.nextInt(51) + 100; // 100-150
         } else {
-            // Negative range: -300 to -100
-            offsetX = -(random.nextInt(201) + 100); // -300 to -100
+            // Negative range: -150 to -100
+            offsetX = -(random.nextInt(51) + 100); // -150 to -100
         }
         
-        // Generate random offset for Z: either [-300, -100] or [100, 300]
+        // Generate random offset for Z: either [-150, -100] or [100, 150]
         int offsetZ;
         if (random.nextBoolean()) {
-            // Positive range: 100 to 300
-            offsetZ = random.nextInt(201) + 100; // 100-300
+            // Positive range: 100 to 150
+            offsetZ = random.nextInt(51) + 100; // 100-150
         } else {
-            // Negative range: -300 to -100
-            offsetZ = -(random.nextInt(201) + 100); // -300 to -100
+            // Negative range: -150 to -100
+            offsetZ = -(random.nextInt(51) + 100); // -150 to -100
         }
         
-        // Calculate actual distance for logging
-        int distance = (int) Math.sqrt(offsetX * offsetX + offsetZ * offsetZ);
-        
-        // Apply offset to original coordinates
+        // Apply offset to the original coordinates
         int randomizedX = targetX + offsetX;
         int randomizedZ = targetZ + offsetZ;
         
-        // Create teleportation data with randomized coordinates
-        TeleportationData data = new TeleportationData(player, randomizedX, randomizedZ);
-        data.originalX = targetX; // Keep original coordinates for reference
-        data.originalZ = targetZ;
-        activeTeleportations.put(playerId, data);
+        // Log the coordinates for debugging
+        LOGGER.info("Teleporting from original coordinates {}, {} to randomized coordinates {}, {} (offset: {}, {})",
+            targetX, targetZ, randomizedX, randomizedZ, offsetX, offsetZ);
+        
+        // Clear any existing teleportation for this player
+        UUID playerId = player.getUUID();
+        resetTeleportationState(playerId);
+        
+        // Store original position for alternative attempts if needed
+        BlockPos playerPos = player.blockPosition();
+        
+        // Start teleportation process with randomized coordinates
+        TeleportationData teleportData = new TeleportationData(player, randomizedX, randomizedZ);
+        teleportData.originalX = targetX; // Keep original coordinates for reference
+        teleportData.originalZ = targetZ;
+        activeTeleportations.put(playerId, teleportData);
+        
+        // Notify player
+        player.displayClientMessage(
+            Component.translatable("item.iska_utils.portable_dislocator.message.teleporting"), 
+            true);
     }
     
     /**
      * Handles pending teleportation process
      */
-    private static void handlePendingTeleportation(Player player, Level level) {
+    public static void handlePendingTeleportation(Player player, Level level) {
         UUID playerId = player.getUUID();
         TeleportationData data = activeTeleportations.get(playerId);
         
@@ -259,16 +427,29 @@ public class PortableDislocatorItem extends Item {
         
         data.ticksWaiting++;
         
-        // Silent waiting - no logs
+        // Log progress every second (20 ticks)
+        if (data.ticksWaiting % 20 == 0) {
+            LOGGER.info("Waiting for teleportation: player={}, target={},{}, attempt={}, waiting={}",
+                player.getName().getString(), data.targetX, data.targetZ, data.attemptCount, data.ticksWaiting);
+        }
         
         // Timeout after max wait time
         if (data.ticksWaiting > MAX_WAIT_TICKS) {
+            LOGGER.info("Teleportation timed out after {} ticks, attempt {} of {}",
+                data.ticksWaiting, data.attemptCount, MAX_ATTEMPTS);
+                
             // Try another attempt if we haven't exceeded max attempts
             if (data.attemptCount < MAX_ATTEMPTS) {
                 attemptNewTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1);
             } else {
-                // All attempts failed, give up silently
+                // All attempts failed, give up
                 resetTeleportationState(playerId);
+                
+                // Notify player about the failure
+                player.displayClientMessage(
+                    Component.translatable("item.iska_utils.portable_dislocator.message.failed")
+                        .withStyle(ChatFormatting.RED), 
+                    true);
             }
             return;
         }
@@ -401,51 +582,38 @@ public class PortableDislocatorItem extends Item {
     private static void attemptNewTeleportation(Player player, int originalX, int originalZ, int attemptNumber) {
         UUID playerId = player.getUUID();
         
-        // Generate new coordinates with varying distance based on attempt number
+        // Generate new coordinates with the same fixed distance range for all attempts
         java.util.Random random = new java.util.Random();
         
-        // Adjust range based on attempt number for better success chance
-        int minRange, maxRange;
-        switch (attemptNumber) {
-            case 2:
-                minRange = 50; maxRange = 200; // Smaller range for second attempt
-                break;
-            case 3:
-                minRange = 25; maxRange = 150; // Even smaller for third attempt
-                break;
-            case 4:
-                minRange = 10; maxRange = 100; // Very small for fourth attempt
-                break;
-            case 5:
-                minRange = 5; maxRange = 50; // Minimal range for final attempt
-                break;
-            default:
-                minRange = 100; maxRange = 300; // Default range
-                break;
-        }
+        // Fixed range for all attempts: 100-150 blocks
+        int minRange = 100;
+        int maxRange = 150;
         
-        // Generate random offset for X: either [-maxRange, -minRange] or [minRange, maxRange]
+        // Generate random offset for X: either [-150, -100] or [100, 150]
         int offsetX;
         if (random.nextBoolean()) {
-            // Positive range
+            // Positive range: 100 to 150
             offsetX = random.nextInt(maxRange - minRange + 1) + minRange;
         } else {
-            // Negative range
+            // Negative range: -150 to -100
             offsetX = -(random.nextInt(maxRange - minRange + 1) + minRange);
         }
         
-        // Generate random offset for Z: either [-maxRange, -minRange] or [minRange, maxRange]
+        // Generate random offset for Z: either [-150, -100] or [100, 150]
         int offsetZ;
         if (random.nextBoolean()) {
-            // Positive range
+            // Positive range: 100 to 150
             offsetZ = random.nextInt(maxRange - minRange + 1) + minRange;
         } else {
-            // Negative range
+            // Negative range: -150 to -100
             offsetZ = -(random.nextInt(maxRange - minRange + 1) + minRange);
         }
         
         int newX = originalX + offsetX;
         int newZ = originalZ + offsetZ;
+        
+        LOGGER.info("Retry attempt {}: Teleporting to new coordinates {}, {} (offset {}, {} from original)",
+            attemptNumber, newX, newZ, offsetX, offsetZ);
         
         // Create new teleportation data for this attempt
         TeleportationData newData = new TeleportationData(player, newX, newZ);
@@ -456,7 +624,11 @@ public class PortableDislocatorItem extends Item {
         // Store the new attempt
         activeTeleportations.put(playerId, newData);
         
-        // Silent retry - no notification
+        // Notify player about the retry
+        player.displayClientMessage(
+            Component.translatable("item.iska_utils.portable_dislocator.message.retry", attemptNumber)
+                .withStyle(ChatFormatting.YELLOW), 
+            true);
     }
     
     /**
@@ -753,27 +925,30 @@ public class PortableDislocatorItem extends Item {
     /**
      * Handles the activation of the Portable Dislocator
      */
-    private static void handleDislocatorActivation(Player player, String source) {
+    public static void handleDislocatorActivation(Player player, String source) {
+        LOGGER.info("handleDislocatorActivation called from {} for player {}", source, player.getName().getString());
         
         // Prevent activation if already teleporting
         UUID playerId = player.getUUID();
         TeleportationData data = activeTeleportations.get(playerId);
         if (data != null) {
+            LOGGER.info("Aborting activation: teleportation already in progress");
             return;
         }
         
         // Find the Portable Dislocator
         ItemStack dislocatorStack = findPortableDislocator(player);
         if (dislocatorStack == null) {
+            LOGGER.info("Aborting activation: no dislocator found for player {}", player.getName().getString());
             return; // No dislocator found
+        } else {
+            LOGGER.info("Found dislocator in {}: {}", source, dislocatorStack);
         }
         
         // Check energy requirements
         PortableDislocatorItem dislocator = (PortableDislocatorItem) dislocatorStack.getItem();
-        if (!dislocator.hasEnoughEnergy(dislocatorStack)) {
-            // Silent failure - insufficient energy
-            return;
-        }
+        
+        // We no longer check energy here as it will be checked in startServerTeleportation
         
         // Check if the player has a compass in hand
         ItemStack mainHand = player.getMainHandItem();
@@ -818,10 +993,8 @@ public class PortableDislocatorItem extends Item {
             pendingRequests.put(player.getUUID(), request);
             // Silent request - no feedback
         } else {
-            // Server side - consume energy and start teleportation
-            if (dislocator.consumeEnergyForTeleportation(dislocatorStack)) {
-                startServerTeleportation(player, coordinates.getLeft(), coordinates.getRight());
-            }
+            // Server side - start teleportation (energy check is inside)
+            startServerTeleportation(player, coordinates.getLeft(), coordinates.getRight());
         }
     }
     
@@ -981,12 +1154,12 @@ public class PortableDislocatorItem extends Item {
      * If consumption is exactly 0, disable energy system completely
      */
     public boolean canStoreEnergy() {
-        // If consumption is exactly 0, disable energy system completely
-        if (Config.portableDislocatorEnergyConsume == 0) {
+        // If capacity is 0, disable energy system completely
+        if (Config.portableDislocatorEnergyCapacity == 0) {
             return false;
         }
         
-        return Config.portableDislocatorEnergyCapacity > 0;
+        return true;
     }
     
     /**
@@ -1088,12 +1261,53 @@ public class PortableDislocatorItem extends Item {
     }
     
     /**
+     * Checks if player has enough XP for teleportation
+     * @param player The player
+     * @return true if player has enough XP or no XP is required
+     */
+    public boolean hasEnoughXp(Player player) {
+        if (Config.portableDislocatorXpConsume <= 0) {
+            return true; // No XP required
+        }
+        
+        return player.totalExperience >= Config.portableDislocatorXpConsume || 
+               player.experienceLevel > 0;
+    }
+    
+    /**
+     * Consumes XP from player for teleportation
+     * @param player The player
+     * @return true if XP was consumed or no XP is required, false if insufficient XP
+     */
+    public boolean consumeXpForTeleportation(Player player) {
+        if (Config.portableDislocatorXpConsume <= 0) {
+            return true; // No XP required
+        }
+        
+        if (player.getAbilities().instabuild) {
+            return true; // Creative mode - no XP consumption
+        }
+        
+        int xpToConsume = Config.portableDislocatorXpConsume;
+        
+        // Verifichiamo se il giocatore ha abbastanza esperienza (punti totali o livelli convertibili)
+        // L'XP totale è in punti, quindi controlliamo sia quello che i livelli
+        if (player.totalExperience >= xpToConsume || player.experienceLevel > 0) {
+            // Lasciamo che Minecraft gestisca la conversione tra livelli e punti
+            player.giveExperiencePoints(-xpToConsume);
+            return true;
+        }
+        
+        return false; // Insufficient XP
+    }
+    
+    /**
      * Finds the Portable Dislocator in player's inventory or curios
      * @param player The player to check
      * @return ItemStack of the Portable Dislocator if found, null otherwise
      */
     public static ItemStack findPortableDislocator(Player player) {
-        // Check hands first
+        // Check hands first (highest priority)
         ItemStack mainHand = player.getMainHandItem();
         if (mainHand.getItem() instanceof PortableDislocatorItem) {
             return mainHand;
@@ -1104,7 +1318,15 @@ public class PortableDislocatorItem extends Item {
             return offHand;
         }
         
-        // Check inventory
+        // If Curios is loaded, check Curios slots (second priority)
+        if (ModUtils.isCuriosLoaded()) {
+            ItemStack curioDislocator = checkCuriosSlots(player);
+            if (curioDislocator != null) {
+                return curioDislocator;
+            }
+        }
+        
+        // Check player inventory (lowest priority)
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
             if (stack.getItem() instanceof PortableDislocatorItem) {
@@ -1112,8 +1334,44 @@ public class PortableDislocatorItem extends Item {
             }
         }
         
-        // TODO: Check Curios slots if needed
-        
         return null;
+    }
+    
+    /**
+     * Uses reflection to check if the Portable Dislocator is equipped in a Curios slot
+     */
+    private static ItemStack checkCuriosSlots(Player player) {
+        try {
+            // Approccio alternativo che usa getCuriosHandler invece di getAllEquipped
+            Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
+            
+            // Ottiene l'handler delle Curios per il player
+            Method getCuriosHandlerMethod = curioApiClass.getMethod("getCuriosHelper");
+            Object curiosHelper = getCuriosHandlerMethod.invoke(null);
+            
+            Method getEquippedCurios = curiosHelper.getClass().getMethod("getEquippedCurios", LivingEntity.class);
+            Object equippedCurios = getEquippedCurios.invoke(curiosHelper, player);
+            
+            if (equippedCurios instanceof Iterable<?> items) {
+                for (Object itemPair : items) {
+                    // Extract stack from each pair using getRight method
+                    Method getStackMethod = itemPair.getClass().getMethod("getRight");
+                    ItemStack stack = (ItemStack) getStackMethod.invoke(itemPair);
+                    
+                    if (stack.getItem() instanceof PortableDislocatorItem) {
+                        return stack;
+                    }
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            // Se c'è un errore di reflection, log e continua
+            LOGGER.warn("Error checking Curios slots: {}", e.getMessage());
+            if (LOGGER.isDebugEnabled()) {
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
 } 

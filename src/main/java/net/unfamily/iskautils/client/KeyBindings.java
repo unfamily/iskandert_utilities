@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
@@ -20,22 +21,25 @@ import org.slf4j.LoggerFactory;
 /**
  * Manages keybindings for the mod
  */
+@OnlyIn(Dist.CLIENT)
+@EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class KeyBindings {
     private static final Logger LOGGER = LoggerFactory.getLogger(KeyBindings.class);
-    
-    public static final String KEY_CATEGORY_ISKA_UTILS = "key.category.iska_utils";
-    public static final String KEY_VECTOR_VERTICAL = "key.iska_utils.vector_vertical";
-    public static final String KEY_VECTOR_HORIZONTAL = "key.iska_utils.vector_horizontal";
-    public static final String KEY_VECTOR_HOVER = "key.iska_utils.vector_hover";
-    public static final String KEY_VECTOR_VERTICAL_DECREASE = "key.iska_utils.vector_vertical_decrease";
-    public static final String KEY_VECTOR_HORIZONTAL_DECREASE = "key.iska_utils.vector_horizontal_decrease";
-    public static final String KEY_PORTABLE_DISLOCATOR = "key.iska_utils.portable_dislocator";
 
+    private static final String KEY_CATEGORY_ISKA_UTILS = "key.categories.iska_utils";
+    private static final String KEY_VECTOR_VERTICAL = "key.iska_utils.vector_vertical";
+    private static final String KEY_VECTOR_HORIZONTAL = "key.iska_utils.vector_horizontal";
+    private static final String KEY_VECTOR_HOVER = "key.iska_utils.vector_hover";
+    private static final String KEY_VECTOR_VERTICAL_DECREASE = "key.iska_utils.vector_vertical_decrease";
+    private static final String KEY_VECTOR_HORIZONTAL_DECREASE = "key.iska_utils.vector_horizontal_decrease";
+    private static final String KEY_PORTABLE_DISLOCATOR = "key.iska_utils.portable_dislocator";
+
+    // Vector Charm keys
     public static final KeyMapping VECTOR_VERTICAL_KEY = new KeyMapping(
             KEY_VECTOR_VERTICAL,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_V,  // V key for vertical adjustment (increase)
+            GLFW.GLFW_KEY_C,  // Default: C for climb/vertical
             KEY_CATEGORY_ISKA_UTILS
     );
 
@@ -43,7 +47,7 @@ public class KeyBindings {
             KEY_VECTOR_HORIZONTAL,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_N,  // N key for horizontal adjustment (increase)
+            GLFW.GLFW_KEY_V,  // Default: V for velocity/horizontal
             KEY_CATEGORY_ISKA_UTILS
     );
 
@@ -51,7 +55,7 @@ public class KeyBindings {
             KEY_VECTOR_HOVER,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_H,  // H key for hover
+            GLFW.GLFW_KEY_H,  // Default: H for hover
             KEY_CATEGORY_ISKA_UTILS
     );
 
@@ -59,7 +63,7 @@ public class KeyBindings {
             KEY_VECTOR_VERTICAL_DECREASE,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_C,  // C key for vertical adjustment (decrease)
+            GLFW.GLFW_KEY_Z,  // Z key for decreasing vertical force
             KEY_CATEGORY_ISKA_UTILS
     );
 
@@ -67,36 +71,36 @@ public class KeyBindings {
             KEY_VECTOR_HORIZONTAL_DECREASE,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_B,  // B key for horizontal adjustment (decrease)
+            GLFW.GLFW_KEY_X,  // X key for decreasing horizontal force
             KEY_CATEGORY_ISKA_UTILS
     );
 
+    // Portable Dislocator key
     public static final KeyMapping PORTABLE_DISLOCATOR_KEY = new KeyMapping(
             KEY_PORTABLE_DISLOCATOR,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_Y,  // Y key for dislocator (G is reserved for future use)
+            GLFW.GLFW_KEY_P,  // P key for dislocator
             KEY_CATEGORY_ISKA_UTILS
     );
 
     /**
      * Registers key bindings
      */
-    @EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
-    public static class KeybindHandler {
-        @SubscribeEvent
-        public static void registerKeyBindings(RegisterKeyMappingsEvent event) {
-            event.register(VECTOR_VERTICAL_KEY);
-            event.register(VECTOR_HORIZONTAL_KEY);
-            event.register(VECTOR_HOVER_KEY);
-            event.register(VECTOR_VERTICAL_DECREASE_KEY);
-            event.register(VECTOR_HORIZONTAL_DECREASE_KEY);
-            event.register(PORTABLE_DISLOCATOR_KEY);
-        }
+    @SubscribeEvent
+    public static void registerKeys(RegisterKeyMappingsEvent event) {
+        event.register(VECTOR_VERTICAL_KEY);
+        event.register(VECTOR_HORIZONTAL_KEY);
+        event.register(VECTOR_HOVER_KEY);
+        event.register(VECTOR_VERTICAL_DECREASE_KEY);
+        event.register(VECTOR_HORIZONTAL_DECREASE_KEY);
+        event.register(PORTABLE_DISLOCATOR_KEY);
+        LOGGER.info("Registered all key mappings");
     }
 
     /**
-     * Handles key presses and displays messages to the client
+     * Handles Vector Charm key events and displays messages to the client
+     * Chiamato da ClientEvents.checkKeysInClientThread()
      */
     public static void checkKeys() {
         // Check if the player has pressed Vector Charm keys
@@ -111,8 +115,6 @@ public class KeyBindings {
                 VectorCharmData.setVerticalFactorToPlayer(player, nextFactor);
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
-                // Singleton no longer needed - using persistent data only
-                
                 // Send message to player
                 player.displayClientMessage(Component.translatable("message.iska_utils.vector_vertical_factor", 
                                      Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
@@ -125,8 +127,6 @@ public class KeyBindings {
                 byte nextFactor = (byte) ((currentFactor + 1) % 6); // 0-5 (None, Slow, Moderate, Fast, Extreme, Ultra)
                 VectorCharmData.setHorizontalFactorToPlayer(player, nextFactor);
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
-                
-                // Singleton no longer needed - using persistent data only
                 
                 // Send message to player
                 player.displayClientMessage(Component.translatable("message.iska_utils.vector_horizontal_factor", 
@@ -146,26 +146,16 @@ public class KeyBindings {
                     // If in hover mode, disable it and restore previous value
                     byte restoredFactor = VectorCharmData.disableHoverModeFromPlayer(player);
                     
-                    // Singleton no longer needed - using persistent data only
-                    
                     // Send message to player
                     player.displayClientMessage(Component.translatable("message.iska_utils.vector_hover_mode.off"), true);
                 } else {
                     // Otherwise, activate hover mode
                     VectorCharmData.setVerticalFactorToPlayer(player, hoverFactor);
                     
-                    // Singleton no longer needed - using persistent data only
-                    
                     // Send message to player
                     player.displayClientMessage(Component.translatable("message.iska_utils.vector_hover_mode.hover"), true);
                 }
             }
-
-            // Key for Portable Dislocator
-            // Note: Now handled in PortableDislocatorItem tick methods
-            // if (PORTABLE_DISLOCATOR_KEY.consumeClick()) {
-            //     handlePortableDislocatorActivation(player);
-            // }
             
             // Key for vertical adjustment decrease
             if (VECTOR_VERTICAL_DECREASE_KEY.consumeClick()) {
@@ -174,8 +164,6 @@ public class KeyBindings {
                 byte nextFactor = (byte) ((currentFactor - 1 + 6) % 6); // 0-5 (None, Slow, Moderate, Fast, Extreme, Ultra)
                 VectorCharmData.setVerticalFactorToPlayer(player, nextFactor);
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
-                
-                // Singleton no longer needed - using persistent data only
                 
                 // Send message to player
                 player.displayClientMessage(Component.translatable("message.iska_utils.vector_vertical_factor", 
@@ -190,12 +178,18 @@ public class KeyBindings {
                 VectorCharmData.setHorizontalFactorToPlayer(player, nextFactor);
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
-                // Singleton no longer needed - using persistent data only
-                
                 // Send message to player
                 player.displayClientMessage(Component.translatable("message.iska_utils.vector_horizontal_factor", 
                                      Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
             }
         }
+    }
+    
+    /**
+     * Controlla se il tasto del dislocatore è stato premuto e consuma l'evento
+     * @return true se il tasto è stato premuto, false altrimenti
+     */
+    public static boolean consumeDislocatorKeyClick() {
+        return PORTABLE_DISLOCATOR_KEY.consumeClick();
     }
 } 

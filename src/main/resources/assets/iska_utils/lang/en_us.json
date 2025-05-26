@@ -25,6 +25,10 @@
   "block.iska_utils.iska_utils_slowness": "Slowness Trap Plate",
   "block.iska_utils.iska_utils_poison": "Poison Trap Plate",
   "block.iska_utils.iska_utils_weakness": "Weakness Trap Plate",
+  "block.iska_utils.iska_utils_damage": "Damage Trap Plate",
+  "block.iska_utils.iska_utils_improved_damage": "Improved Damage Trap Plate",
+  "block.iska_utils.iska_utils_fire": "Fire Trap Plate",
+  "block.iska_utils.iska_utils_freeze": "Freeze Trap Plate",
   
   "creativetab.iska_utils.tab": "Iska's Utilities",
   
@@ -55,9 +59,19 @@
   "message.iska_utils.vector_hover_mode.hover": "Vector Charm mode: hover",
   "message.iska_utils.vector_hover_mode.off": "Vector Charm mode: default",
   
-  "item.iska_utils.portable_dislocator.tooltip.main": "Press %s to teleport near compass coordinates (100-300 blocks away)",
-  "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Teleports near compass coordinates (100-300 blocks away)",
+  "item.iska_utils.portable_dislocator.tooltip.main": "Press %s to teleport near compass coordinates (100-150 blocks away)",
+  "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Teleports near compass coordinates (100-150 blocks away)",
   "item.iska_utils.portable_dislocator.tooltip.compasses": "Works with Nature's Compass and Explorer's Compass",
+  "item.iska_utils.portable_dislocator.tooltip.energy": "Energy: ",
+  "item.iska_utils.portable_dislocator.tooltip.xp_backup": "Alternatively consumes %d XP if out of energy",
+  "item.iska_utils.portable_dislocator.tooltip.consumes_xp": "Consumes %d XP per teleportation",
+  "item.iska_utils.portable_dislocator.message.teleporting": "Preparing teleportation...",
+  "item.iska_utils.portable_dislocator.message.no_energy": "Not enough energy for teleportation!",
+  "item.iska_utils.portable_dislocator.message.no_xp": "Not enough XP for teleportation!",
+  "item.iska_utils.portable_dislocator.message.used_xp": "Used %d XP for teleportation",
+  "item.iska_utils.portable_dislocator.message.used_both": "Used %d RF and %d XP for teleportation",
+  "item.iska_utils.portable_dislocator.message.retry": "Destination unsafe, trying another location (attempt %d)...",
+  "item.iska_utils.portable_dislocator.message.failed": "Failed to find safe teleportation destination after multiple attempts",
   
   "curios.identifier.charm": "Charm",
   "curios.identifier.curio": "Curio"

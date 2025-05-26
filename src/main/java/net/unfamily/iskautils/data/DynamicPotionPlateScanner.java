@@ -2,10 +2,10 @@ package net.unfamily.iskautils.data;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -19,46 +19,22 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * Scans datapack files during mod initialization to discover potion plates
- * that need to be registered before the RegisterEvent fires
+ * Scans external configuration files for potion plates that need to be registered
+ * Now supports array format with overwritable parameters
  */
 public class DynamicPotionPlateScanner {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
-    // Map of discovered plate configurations
+    // Map of discovered plate configurations with merge support
     private static final Map<String, PotionPlateConfig> DISCOVERED_CONFIGS = new HashMap<>();
-    
-    /**
-     * Scans for potion plate configurations in the mod's resources
-     * This is called during mod initialization, before RegisterEvent
-     */
-    public static void scanForPotionPlates() {
-        LOGGER.info("Scanning for dynamic potion plate configurations...");
-        
-        try {
-            // First, scan for iska_utils namespace configurations in mod resources
-            scanModResources();
-            
-            // In development environment, also scan the source directory
-            scanDevelopmentResources();
-            
-            LOGGER.info("Found {} potion plate configurations to register dynamically", DISCOVERED_CONFIGS.size());
-            
-        } catch (Exception e) {
-            LOGGER.error("Error scanning for potion plate configurations: {}", e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
-        }
-    }
     
     /**
      * Scans external scripts directory for potion plate configurations
      * This is called during mod initialization, before RegisterEvent
      */
     public static void scanConfigDirectory() {
-        LOGGER.info("Scanning external scripts directory for potion plate configurations...");
+        LOGGER.info("Scanning external scripts directory for iska utils plate configurations...");
         
         try {
             // Get the configured external scripts path
@@ -68,13 +44,16 @@ public class DynamicPotionPlateScanner {
             }
             
             // Create external scripts directory if it doesn't exist
-            Path configPath = Paths.get(externalScriptsBasePath, "potion_plates");
+            Path configPath = Paths.get(externalScriptsBasePath, "iska_utils_plates");
             if (!Files.exists(configPath)) {
                 Files.createDirectories(configPath);
                 LOGGER.info("Created external scripts directory: {}", configPath.toAbsolutePath());
                 
                 // Create a README file to explain the directory
                 createConfigReadme(configPath, externalScriptsBasePath);
+                
+                // Generate default configuration files
+                generateDefaultConfigurations(configPath);
                 return;
             }
             
@@ -85,11 +64,36 @@ public class DynamicPotionPlateScanner {
             
             LOGGER.info("Scanning external scripts directory: {}", configPath.toAbsolutePath());
             
+            // Always check and regenerate README if missing or outdated
+            Path readmePath = configPath.resolve("README.md");
+            if (!Files.exists(readmePath) || !isReadmeUpToDate(readmePath)) {
+                LOGGER.info("README.md missing or outdated, regenerating...");
+                createConfigReadme(configPath, externalScriptsBasePath);
+            }
+            
+            // Check if iska_utils.json exists and if it's overwritable
+            Path iskaUtilsFile = configPath.resolve("iska_utils.json");
+            if (Files.exists(iskaUtilsFile)) {
+                if (shouldRegenerateIskaUtils(iskaUtilsFile)) {
+                    LOGGER.info("iska_utils.json has overwritable=true, regenerating with defaults...");
+                    generateIskaUtilsPlates(configPath);
+                }
+            } else {
+                // If iska_utils.json doesn't exist, generate it
+                LOGGER.info("iska_utils.json not found, generating default configuration...");
+                generateIskaUtilsPlates(configPath);
+            }
+            
+            // Clear previous configurations
+            DISCOVERED_CONFIGS.clear();
+            
             // Scan all JSON files in the external scripts directory recursively
+            // Files are processed in alphabetical order for consistent override behavior
             try (Stream<Path> files = Files.walk(configPath)) {
                 files.filter(Files::isRegularFile)
                      .filter(path -> path.toString().endsWith(".json"))
                      .filter(path -> !path.getFileName().toString().startsWith("."))
+                     .sorted() // Ensure consistent processing order
                      .forEach(DynamicPotionPlateScanner::scanConfigFile);
             }
             
@@ -104,183 +108,216 @@ public class DynamicPotionPlateScanner {
     }
     
     /**
+     * Checks if the README file is up to date by looking for a version marker
+     */
+    private static boolean isReadmeUpToDate(Path readmePath) {
+        try {
+            String content = Files.readString(readmePath);
+            // Check for version marker - if it contains the current format markers, it's up to date
+            return content.contains("## Array Format:") && 
+                   content.contains("- `delay`: Delay between applications in ticks") &&
+                   content.contains("## Overwritable System:");
+        } catch (Exception e) {
+            LOGGER.debug("Error reading README file for version check: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Checks if iska_utils.json should be regenerated based on its overwritable flag
+     */
+    private static boolean shouldRegenerateIskaUtils(Path iskaUtilsFile) {
+        try {
+            try (InputStream inputStream = Files.newInputStream(iskaUtilsFile);
+                 InputStreamReader reader = new InputStreamReader(inputStream)) {
+                
+                JsonElement jsonElement = GSON.fromJson(reader, JsonElement.class);
+                if (jsonElement != null && jsonElement.isJsonObject()) {
+                    JsonObject json = jsonElement.getAsJsonObject();
+                    
+                    // Check if overwritable field exists and is true
+                    if (json.has("overwritable")) {
+                        return json.get("overwritable").getAsBoolean();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Error reading iska_utils.json for overwritable check: {}", e.getMessage());
+        }
+        
+        // Default to false if we can't read the file or field doesn't exist
+        return false;
+    }
+    
+    /**
      * Creates a README file in the external scripts directory to explain its purpose
      */
     private static void createConfigReadme(Path configPath, String externalScriptsBasePath) {
         try {
             Path readmePath = configPath.resolve("README.md");
-            String readmeContent = "# Iska Utils - Dynamic Potion Plates Configuration\n" +
+            String readmeContent = "# Iska Utils - Dynamic Plates Configuration\n" +
                 "\n" +
-                "This directory allows you to create custom potion plates that will be registered as real blocks in the game.\n" +
+                "This directory allows you to create custom plates that will be registered as real blocks in the game.\n" +
                 "\n" +
-                "## Location: " + externalScriptsBasePath + "/potion_plates/\n" +
+                "## Location: " + externalScriptsBasePath + "/iska_utils_plates/\n" +
                 "\n" +
-                "This directory is organized under KubeJS external scripts to keep all custom configurations in one place,\n" +
-                "avoiding cluttering the config directory with hundreds of mod-specific folders.\n" +
+                "## Supported Plate Types:\n" +
                 "\n" +
-                "You can configure the base path in the mod's config file (iska_utils-common.toml):\n" +
-                "external_scripts_path = \"" + externalScriptsBasePath + "\"\n" +
-                "\n" +
-                "## How to use:\n" +
-                "\n" +
-                "1. Create JSON files in this directory (or subdirectories)\n" +
-                "2. Each JSON file represents one potion plate configuration\n" +
-                "3. The filename (without .json) will be used as the plate ID\n" +
-                "4. Restart the game to load new configurations\n" +
-                "\n" +
-                "## JSON Format:\n" +
-                "\n" +
+                "### 1. Effect Plates (Potion Effects)\n" +
                 "```json\n" +
                 "{\n" +
-                "  \"type\": \"iska_utils:potion_plate\",\n" +
-                "  \"effect\": \"minecraft:speed\",\n" +
-                "  \"amplifier\": 1,\n" +
-                "  \"duration\": 300,\n" +
-                "  \"affects_players\": true,\n" +
-                "  \"affects_mobs\": false,\n" +
-                "  \"hide_particles\": false\n" +
-                "}\n" +
-                "```\n" +
-                "\n" +
-                "## Fields:\n" +
-                "\n" +
-                "- `type`: Must be \"iska_utils:potion_plate\"\n" +
-                "- `effect`: The potion effect ID (e.g., \"minecraft:speed\", \"minecraft:slowness\")\n" +
-                "- `amplifier`: Effect amplifier (0 = level I, 1 = level II, etc.) [optional, default: 0]\n" +
-                "- `duration`: Effect duration in ticks (20 ticks = 1 second) [optional, default: 200]\n" +
-                "- `affects_players`: Whether the plate affects players [optional, default: true]\n" +
-                "- `affects_mobs`: Whether the plate affects mobs [optional, default: true]\n" +
-                "- `hide_particles`: Whether to hide potion particles [optional, default: false]\n" +
-                "\n" +
-                "## Examples:\n" +
-                "\n" +
-                "### Speed Plate (speed_boost.json):\n" +
-                "```json\n" +
-                "{\n" +
-                "  \"type\": \"iska_utils:potion_plate\",\n" +
-                "  \"effect\": \"minecraft:speed\",\n" +
-                "  \"amplifier\": 2,\n" +
-                "  \"duration\": 600,\n" +
-                "  \"affects_players\": true,\n" +
-                "  \"affects_mobs\": false\n" +
-                "}\n" +
-                "```\n" +
-                "\n" +
-                "### Healing Plate (healing_pad.json):\n" +
-                "```json\n" +
-                "{\n" +
-                "  \"type\": \"iska_utils:potion_plate\",\n" +
-                "  \"effect\": \"minecraft:instant_health\",\n" +
-                "  \"amplifier\": 1,\n" +
-                "  \"duration\": 1,\n" +
+                "  \"plate_type\": \"effect\",\n" +
+                "  \"id\": \"iska_utils-slowness\",\n" +
+                "  \"effect\": \"minecraft:slowness\",\n" +
+                "  \"amplifier\": 0,\n" +
+                "  \"duration\": 100,\n" +
+                "  \"delay\": 40,\n" +
                 "  \"affects_players\": true,\n" +
                 "  \"affects_mobs\": true,\n" +
                 "  \"hide_particles\": true\n" +
                 "}\n" +
                 "```\n" +
                 "\n" +
-                "## Organization Tips:\n" +
+                "### 2. Damage Plates\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"plate_type\": \"damage\",\n" +
+                "  \"id\": \"iska_utils-damage\",\n" +
+                "  \"damage_type\": \"minecraft:cactus\",\n" +
+                "  \"damage\": 2.0,\n" +
+                "  \"delay\": 20,\n" +
+                "  \"affects_players\": true,\n" +
+                "  \"affects_mobs\": true\n" +
+                "}\n" +
+                "```\n" +
                 "\n" +
-                "- You can create subdirectories to organize plates by category\n" +
-                "- Example: `combat/`, `utility/`, `movement/`, etc.\n" +
-                "- All JSON files will be scanned recursively\n" +
+                "### 3. Special Plates (Fire, Freeze, etc.)\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"plate_type\": \"special\",\n" +
+                "  \"id\": \"iska_utils-fire\",\n" +
+                "  \"apply\": \"fire\",\n" +
+                "  \"duration\": 100,\n" +
+                "  \"delay\": 40,\n" +
+                "  \"affects_players\": true,\n" +
+                "  \"affects_mobs\": true\n" +
+                "}\n" +
+                "```\n" +
+                "\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"plate_type\": \"special\",\n" +
+                "  \"id\": \"iska_utils-freeze\",\n" +
+                "  \"apply\": \"freeze\",\n" +
+                "  \"duration\": 100,\n" +
+                "  \"delay\": 40,\n" +
+                "  \"affects_players\": true,\n" +
+                "  \"affects_mobs\": true\n" +
+                "}\n" +
+                "```\n" +
+                "\n" +
+                "## Array Format:\n" +
+                "\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"type\": \"iska_utils:plates\",\n" +
+                "  \"overwritable\": true,\n" +
+                "  \"plates\": [\n" +
+                "    {\n" +
+                "      \"plate_type\": \"effect\",\n" +
+                "      \"id\": \"iska_utils-slowness\",\n" +
+                "      \"effect\": \"minecraft:slowness\",\n" +
+                "      \"amplifier\": 0,\n" +
+                "      \"duration\": 100,\n" +
+                "      \"delay\": 40,\n" +
+                "      \"affects_players\": true,\n" +
+                "      \"affects_mobs\": true,\n" +
+                "      \"hide_particles\": true\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"plate_type\": \"damage\",\n" +
+                "      \"id\": \"iska_utils-damage\",\n" +
+                "      \"damage_type\": \"minecraft:cactus\",\n" +
+                "      \"damage\": 2.0,\n" +
+                "      \"delay\": 20,\n" +
+                "      \"affects_players\": true,\n" +
+                "      \"affects_mobs\": true\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"plate_type\": \"special\",\n" +
+                "      \"id\": \"iska_utils-fire\",\n" +
+                "      \"apply\": \"fire\",\n" +
+                "      \"duration\": 100,\n" +
+                "      \"delay\": 40,\n" +
+                "      \"affects_players\": true,\n" +
+                "      \"affects_mobs\": true\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "```\n" +
+                "\n" +
+                "## Common Fields:\n" +
+                "\n" +
+                "- `type`: Must be **\"iska_utils:plates\"**\n" +
+                "- `overwritable`: Whether ALL plates in this file can be overwritten [**required**]\n" +
+                "- `plates`: Array of plate configurations\n" +
+                "- `plate_type`: Type of plate (\"effect\", \"damage\", \"special\")\n" +
+                "- `id`: Unique identifier for the plate [**required**]\n" +
+                "- `delay`: Delay between applications in ticks [optional]\n" +
+                "  - Effect/Special plates: minimum 40 ticks (2 seconds), default 40\n" +
+                "  - Damage plates: minimum 1 tick, default 20 (1 second)\n" +
+                "- `affects_players`: Whether affects players [optional, default: true]\n" +
+                "- `affects_mobs`: Whether affects mobs [optional, default: true]\n" +
+                "\n" +
+                "## Effect Plate Fields:\n" +
+                "- `effect`: The potion effect ID [**required**]\n" +
+                "- `amplifier`: Effect amplifier (0 = level I) [optional, default: 0]\n" +
+                "- `duration`: Effect duration in ticks [optional, default: 100]\n" +
+                "- `hide_particles`: Whether to hide particles [optional, default: false]\n" +
+                "\n" +
+                "## Damage Plate Fields:\n" +
+                "- `damage_type`: Damage source type [**required**]\n" +
+                "  - Examples: \"minecraft:cactus\", \"minecraft:magic\", \"minecraft:generic\", \"minecraft:player_attack\"\n" +
+                "- `damage`: Damage amount (hearts) [**required**]\n" +
+                "\n" +
+                "## Special Plate Fields:\n" +
+                "- `apply`: Special effect type [**required**]\n" +
+                "  - \"fire\": Sets entity on fire\n" +
+                "  - \"freeze\": Freezes entity (powder snow effect)\n" +
+                "- `duration`: Effect duration in ticks [**required**]\n" +
+                "\n" +
+                "## Overwritable System:\n" +
+                "\n" +
+                "- Files are processed in alphabetical order\n" +
+                "- If `overwritable: true`, ALL plates in this file CAN BE overwritten by later files\n" +
+                "- If `overwritable: false`, ALL plates in this file CANNOT BE overwritten by later files\n" +
+                "- When a plate with the same ID is found in multiple files:\n" +
+                "  - If the existing plate has `overwritable: true`, it gets replaced by the new plate\n" +
+                "  - If the existing plate has `overwritable: false`, the new plate gets skipped and existing remains\n" +
                 "\n" +
                 "## Notes:\n" +
                 "\n" +
-                "- Plate IDs must be unique across all files\n" +
-                "- Invalid configurations will be logged and skipped\n" +
-                "- Changes require a game restart\n" +
-                "- Plates will appear in the Iska Utils creative tab\n" +
-                "- Use `/give @p iska_utils:<plate_id>` to get plates in-game\n" +
-                "- This system works independently of KubeJS scripts\n";
+                "- **Plate IDs must be unique** across all files\n" +
+                "- **Changes require a game restart**\n" +
+                "- Use `/give @p iska_utils:<plate_id>` to get plates in-game\n";
             
             Files.writeString(readmePath, readmeContent);
             LOGGER.info("Created README file: {}", readmePath);
             
         } catch (Exception e) {
-            LOGGER.warn("Could not create README file: {}", e.getMessage());
+            LOGGER.warn("Failed to create README file: {}", e.getMessage());
         }
     }
     
     /**
-     * Scans mod resources for iska_utils potion plate configurations
-     */
-    private static void scanModResources() {
-        try {
-            ClassLoader classLoader = DynamicPotionPlateScanner.class.getClassLoader();
-            
-            // Try to load known iska_utils configurations first
-            String[] knownConfigs = {
-                "slowness_trap.json",
-                "poison_trap.json", 
-                "weakness_trap.json"
-            };
-            
-            for (String configFile : knownConfigs) {
-                String resourcePath = "data/iska_utils/potion_plates/" + configFile;
-                try (InputStream inputStream = classLoader.getResourceAsStream(resourcePath)) {
-                    if (inputStream != null) {
-                        String plateId = configFile.replace(".json", "");
-                        PotionPlateConfig config = parseConfigFromStream(plateId, inputStream);
-                        if (config != null && config.isValid()) {
-                            DISCOVERED_CONFIGS.put(plateId, config);
-                            LOGGER.debug("Loaded iska_utils potion plate config: {} -> {}", configFile, plateId);
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.warn("Error loading iska_utils config {}: {}", configFile, e.getMessage());
-                }
-            }
-            
-            LOGGER.debug("Mod resources scanning completed. Found {} iska_utils configurations", DISCOVERED_CONFIGS.size());
-            
-        } catch (Exception e) {
-            LOGGER.warn("Error scanning mod resources: {}", e.getMessage());
-        }
-    }
-    
-    /**
-     * Scans development resources (only works in development environment)
-     */
-    private static void scanDevelopmentResources() {
-        try {
-            // Try to scan the development resources directory
-            Path resourcesPath = Paths.get("src/main/resources/data/iska_utils/potion_plates");
-            
-            if (Files.exists(resourcesPath) && Files.isDirectory(resourcesPath)) {
-                LOGGER.info("Scanning development resources directory: {}", resourcesPath);
-                
-                try (Stream<Path> files = Files.walk(resourcesPath)) {
-                    files.filter(Files::isRegularFile)
-                         .filter(path -> path.toString().endsWith(".json"))
-                         .filter(path -> !path.getFileName().toString().equals("README.md"))
-                         .filter(path -> !path.getFileName().toString().startsWith("."))
-                         .forEach(DynamicPotionPlateScanner::scanConfigFile);
-                }
-                
-                LOGGER.info("Development scanning completed. Found {} configurations", DISCOVERED_CONFIGS.size());
-            } else {
-                LOGGER.debug("Development resources directory not found: {}", resourcesPath);
-            }
-            
-        } catch (Exception e) {
-            LOGGER.debug("Development resources not available (normal in production): {}", e.getMessage());
-        }
-    }
-    
-    /**
-     * Scans a single configuration file
+     * Scans a single configuration file for potion plates
      */
     private static void scanConfigFile(Path configFile) {
         try {
-            String plateId = extractPlateIdFromPath(configFile.toString());
+            LOGGER.debug("Scanning config file: {}", configFile);
             
             try (InputStream inputStream = Files.newInputStream(configFile)) {
-                PotionPlateConfig config = parseConfigFromStream(plateId, inputStream);
-                if (config != null && config.isValid()) {
-                    DISCOVERED_CONFIGS.put(plateId, config);
-                    LOGGER.debug("Discovered potion plate config from file: {} -> {}", configFile, plateId);
-                }
+                parseConfigFromStream(configFile.toString(), inputStream);
             }
             
         } catch (Exception e) {
@@ -291,47 +328,166 @@ public class DynamicPotionPlateScanner {
     /**
      * Parses a configuration from an input stream
      */
-    private static PotionPlateConfig parseConfigFromStream(String defaultPlateId, InputStream inputStream) {
+    private static void parseConfigFromStream(String filePath, InputStream inputStream) {
         try (InputStreamReader reader = new InputStreamReader(inputStream)) {
             JsonElement jsonElement = GSON.fromJson(reader, JsonElement.class);
             if (jsonElement != null && jsonElement.isJsonObject()) {
-                return parseConfig(defaultPlateId, jsonElement.getAsJsonObject());
+                parseConfigFile(filePath, jsonElement.getAsJsonObject());
             }
         } catch (Exception e) {
-            LOGGER.error("Error parsing config for {}: {}", defaultPlateId, e.getMessage());
+            LOGGER.error("Error parsing config file {}: {}", filePath, e.getMessage());
         }
-        return null;
     }
     
     /**
-     * Parses a JSON object into a PotionPlateConfig (simplified version of PotionPlateLoader logic)
+     * Parses a configuration file JSON object
      */
-    private static PotionPlateConfig parseConfig(String defaultPlateId, JsonObject json) {
+    private static void parseConfigFile(String filePath, JsonObject json) {
         try {
-            // Required type field
+            // Check for required type field
             String type = getRequiredString(json, "type");
-            if (!"iska_utils:potion_plate".equals(type)) {
-                LOGGER.error("Invalid type '{}' in config {}. Expected 'iska_utils:potion_plate'", type, defaultPlateId);
+            
+            // Support both old and new formats for backward compatibility
+            boolean isNewFormat = "iska_utils:plates".equals(type);
+            boolean isOldFormat = "iska_utils:potion_plates".equals(type);
+            
+            if (!isNewFormat && !isOldFormat) {
+                LOGGER.error("Invalid type '{}' in config file {}. Expected 'iska_utils:plates' or 'iska_utils:potion_plates'", type, filePath);
+                return;
+            }
+            
+            // Get the overwritable flag at array level (new format)
+            boolean arrayOverwritable = json.has("overwritable") ? json.get("overwritable").getAsBoolean() : true;
+            
+            // Get the plates array (new format) or potion_plates array (old format)
+            String arrayFieldName = isNewFormat ? "plates" : "potion_plates";
+            if (!json.has(arrayFieldName) || !json.get(arrayFieldName).isJsonArray()) {
+                LOGGER.error("Missing or invalid '{}' array in config file {}", arrayFieldName, filePath);
+                return;
+            }
+            
+            JsonArray platesArray = json.getAsJsonArray(arrayFieldName);
+            int processedCount = 0;
+            int errorCount = 0;
+            
+            for (JsonElement element : platesArray) {
+                if (!element.isJsonObject()) {
+                    LOGGER.warn("Skipping non-object element in {} array in file {}", arrayFieldName, filePath);
+                    errorCount++;
+                    continue;
+                }
+                
+                try {
+                    PotionPlateConfig config = parseConfig(element.getAsJsonObject(), isNewFormat, arrayOverwritable);
+                    if (config != null && config.isValid()) {
+                        processConfig(config);
+                        processedCount++;
+                    } else {
+                        LOGGER.error("Invalid plate configuration in file {}", filePath);
+                        errorCount++;
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error parsing plate in file {}: {}", filePath, e.getMessage());
+                    errorCount++;
+                }
+            }
+            
+            LOGGER.info("Processed file {}: {} configurations loaded, {} errors", filePath, processedCount, errorCount);
+            
+        } catch (Exception e) {
+            LOGGER.error("Error parsing config file {}: {}", filePath, e.getMessage());
+        }
+    }
+    
+    /**
+     * Processes a single configuration, handling merging with existing configs
+     */
+    private static void processConfig(PotionPlateConfig config) {
+        String plateId = config.getPlateId();
+        
+        if (DISCOVERED_CONFIGS.containsKey(plateId)) {
+            PotionPlateConfig existingConfig = DISCOVERED_CONFIGS.get(plateId);
+            
+            // If existing config is overwritable, it can be replaced by the new one
+            if (existingConfig.isOverwritable()) {
+                DISCOVERED_CONFIGS.put(plateId, config);
+                LOGGER.debug("Replaced configuration for plate {}: existing config was overwritable, replaced with new config", plateId);
+            } else {
+                // Keep existing configuration - existing config is not overwritable
+                LOGGER.info("Skipping configuration for plate {}: existing config is not overwritable, keeping existing", plateId);
+            }
+        } else {
+            // New configuration - always add it regardless of overwritable flag
+            DISCOVERED_CONFIGS.put(plateId, config);
+            LOGGER.debug("Added new configuration for plate {}", plateId);
+        }
+    }
+    
+    /**
+     * Parses a JSON object into a PotionPlateConfig
+     */
+    private static PotionPlateConfig parseConfig(JsonObject json, boolean isNewFormat, boolean arrayOverwritable) {
+        try {
+            // Get plate type (required in new format)
+            String plateTypeStr = json.has("plate_type") ? getRequiredString(json, "plate_type") : "effect";
+            PotionPlateType plateType = PotionPlateType.fromString(plateTypeStr);
+            
+            // Required plate ID
+            String plateId = json.has("id") ? getRequiredString(json, "id") : null;
+            
+            // Common optional fields with defaults
+            boolean affectsPlayers = json.has("affects_players") ? json.get("affects_players").getAsBoolean() : true;
+            boolean affectsMobs = json.has("affects_mobs") ? json.get("affects_mobs").getAsBoolean() : true;
+            
+            // Validate common fields
+            if (!affectsPlayers && !affectsMobs) {
+                LOGGER.error("Config {} affects neither players nor mobs, this is invalid", plateId);
                 return null;
             }
             
-            // Required fields
+            // Parse based on plate type
+            switch (plateType) {
+                case EFFECT:
+                    return parseEffectPlate(json, plateId, arrayOverwritable, affectsPlayers, affectsMobs);
+                case DAMAGE:
+                    return parseDamagePlate(json, plateId, arrayOverwritable, affectsPlayers, affectsMobs);
+                case SPECIAL:
+                    return parseSpecialPlate(json, plateId, arrayOverwritable, affectsPlayers, affectsMobs);
+                default:
+                    LOGGER.error("Unknown plate type: {}", plateTypeStr);
+                    return null;
+            }
+            
+        } catch (Exception e) {
+            LOGGER.error("Error parsing config: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Parses an effect plate configuration
+     */
+    private static PotionPlateConfig parseEffectPlate(JsonObject json, String plateId, boolean arrayOverwritable, 
+                                                     boolean affectsPlayers, boolean affectsMobs) {
+        try {
+            // Required effect field
             String effectId = getRequiredString(json, "effect");
             
-            // Optional plate ID - if not specified, use the filename
-            String plateId = json.has("id") ? getRequiredString(json, "id") : defaultPlateId;
+            // Generate plate ID if not specified
+            if (plateId == null) {
+                plateId = generatePlateId(effectId);
+            }
             
             // Validate plate ID format
             if (!isValidResourceLocationPath(plateId)) {
-                LOGGER.error("Invalid plate ID '{}' in config {}. IDs must contain only lowercase letters, numbers, underscore, hyphen, and dots.", plateId, defaultPlateId);
+                LOGGER.error("Invalid plate ID '{}'. IDs must contain only lowercase letters, numbers, underscore, hyphen, and dots.", plateId);
                 return null;
             }
             
             // Optional fields with defaults
             int amplifier = json.has("amplifier") ? json.get("amplifier").getAsInt() : 0;
-            int duration = json.has("duration") ? json.get("duration").getAsInt() : 200;
-            boolean affectsPlayers = json.has("affects_players") ? json.get("affects_players").getAsBoolean() : true;
-            boolean affectsMobs = json.has("affects_mobs") ? json.get("affects_mobs").getAsBoolean() : true;
+            int duration = json.has("duration") ? json.get("duration").getAsInt() : 100;
+            int delay = json.has("delay") ? json.get("delay").getAsInt() : 40; // Default 2 seconds
             boolean hideParticles = json.has("hide_particles") ? json.get("hide_particles").getAsBoolean() : false;
             
             // Validate values
@@ -341,28 +497,126 @@ public class DynamicPotionPlateScanner {
             if (duration < 60) {
                 duration = 60;
             }
-            if (!affectsPlayers && !affectsMobs) {
-                LOGGER.error("Config {} affects neither players nor mobs, this is invalid", plateId);
-                return null;
+            if (delay < 40) {
+                LOGGER.warn("Delay {} ticks for effect plate {} is below minimum of 40 ticks (2 seconds). Setting to 40.", delay, plateId);
+                delay = 40;
             }
             
-            return new PotionPlateConfig(plateId, effectId, amplifier, duration, affectsPlayers, affectsMobs, hideParticles);
+            return new PotionPlateConfig(plateId, effectId, amplifier, duration, delay, affectsPlayers, affectsMobs, hideParticles, arrayOverwritable);
             
         } catch (Exception e) {
-            LOGGER.error("Error parsing config for plate {}: {}", defaultPlateId, e.getMessage());
+            LOGGER.error("Error parsing effect plate: {}", e.getMessage());
             return null;
         }
     }
     
     /**
-     * Extracts plate ID from file path
+     * Parses a damage plate configuration
      */
-    private static String extractPlateIdFromPath(String path) {
-        String fileName = path.substring(path.lastIndexOf('/') + 1);
-        if (fileName.endsWith(".json")) {
-            fileName = fileName.substring(0, fileName.length() - 5);
+    private static PotionPlateConfig parseDamagePlate(JsonObject json, String plateId, boolean arrayOverwritable,
+                                                     boolean affectsPlayers, boolean affectsMobs) {
+        try {
+            // Required damage fields
+            String damageType = getRequiredString(json, "damage_type");
+            float damageAmount = json.get("damage").getAsFloat();
+            
+            // Optional delay field with default
+            int delay = json.has("delay") ? json.get("delay").getAsInt() : 20; // Default 1 second for damage plates
+            
+            // Generate plate ID if not specified
+            if (plateId == null) {
+                plateId = "iska_utils-damage";
+            }
+            
+            // Validate plate ID format
+            if (!isValidResourceLocationPath(plateId)) {
+                LOGGER.error("Invalid plate ID '{}'. IDs must contain only lowercase letters, numbers, underscore, hyphen, and dots.", plateId);
+                return null;
+            }
+            
+            // Validate values
+            if (damageAmount <= 0) {
+                LOGGER.error("Damage amount must be positive, got: {}", damageAmount);
+                return null;
+            }
+            if (delay < 1) {
+                LOGGER.warn("Delay {} ticks for damage plate {} is below minimum of 1 tick. Setting to 1.", delay, plateId);
+                delay = 1;
+            }
+            
+            return new PotionPlateConfig(plateId, damageType, damageAmount, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+            
+        } catch (Exception e) {
+            LOGGER.error("Error parsing damage plate: {}", e.getMessage());
+            return null;
         }
-        return fileName;
+    }
+    
+    /**
+     * Parses a special plate configuration (fire, freeze, etc.)
+     */
+    private static PotionPlateConfig parseSpecialPlate(JsonObject json, String plateId, boolean arrayOverwritable,
+                                                      boolean affectsPlayers, boolean affectsMobs) {
+        try {
+            // Required special fields
+            String applyType = getRequiredString(json, "apply");
+            
+            // Duration is required for all special plates
+            if (!json.has("duration")) {
+                throw new RuntimeException("Missing required field: duration");
+            }
+            int duration = json.get("duration").getAsInt();
+            
+            // Optional delay field with default
+            int delay = json.has("delay") ? json.get("delay").getAsInt() : 40; // Default 2 seconds for special plates
+            
+            // Ensure delay is at least 40 ticks (2 seconds) for all special plates
+            if (delay < 40) {
+                LOGGER.warn("Delay {} ticks for special plate {} is below minimum of 40 ticks (2 seconds). Setting to 40.", delay, plateId);
+                delay = 40;
+            }
+            
+            // Generate plate ID if not specified
+            if (plateId == null) {
+                plateId = "iska_utils-" + applyType;
+            }
+            
+            // Validate plate ID format
+            if (!isValidResourceLocationPath(plateId)) {
+                LOGGER.error("Invalid plate ID '{}'. IDs must contain only lowercase letters, numbers, underscore, hyphen, and dots.", plateId);
+                return null;
+            }
+            
+            // Validate duration for all special types
+            if (duration <= 0) {
+                LOGGER.error("Duration must be positive for special plates, got: {}", duration);
+                return null;
+            }
+            
+            // Create appropriate special plate based on apply type
+            switch (applyType.toLowerCase()) {
+                case "fire":
+                    return new PotionPlateConfig(plateId, duration, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+                case "freeze":
+                    return PotionPlateConfig.createFreezePlate(plateId, duration, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+                default:
+                    LOGGER.error("Unknown special apply type: {}", applyType);
+                    return null;
+            }
+            
+        } catch (Exception e) {
+            LOGGER.error("Error parsing special plate: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Generates a plate ID from an effect ID
+     */
+    private static String generatePlateId(String effectId) {
+        // Convert "minecraft:slowness" to "iska_utils-slowness"
+        String effectName = effectId.contains(":") ? effectId.split(":", 2)[1] : effectId;
+        return "iska_utils-" + effectName;
     }
     
     /**
@@ -441,5 +695,107 @@ public class DynamicPotionPlateScanner {
      */
     public static void clearDiscovered() {
         DISCOVERED_CONFIGS.clear();
+    }
+    
+    /**
+     * Generates default potion plate configurations based on the original internal configs
+     */
+    private static void generateDefaultConfigurations(Path configPath) {
+        try {
+            LOGGER.info("Generating default potion plate configurations...");
+            
+            // Generate single iska_utils configuration file
+            generateIskaUtilsPlates(configPath);
+            
+            LOGGER.info("Default configuration files generated successfully");
+            
+        } catch (Exception e) {
+            LOGGER.error("Failed to generate default configurations: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Generates the main iska_utils plates configuration file
+     */
+    private static void generateIskaUtilsPlates(Path configPath) throws IOException {
+        String content = "{\n" +
+            "  \"type\": \"iska_utils:plates\",\n" +
+            "  \"overwritable\": true,\n" +
+            "  \"plates\": [\n" +
+            "    {\n" +
+            "      \"plate_type\": \"effect\",\n" +
+            "      \"id\": \"iska_utils-slowness\",\n" +
+            "      \"effect\": \"minecraft:slowness\",\n" +
+            "      \"amplifier\": 0,\n" +
+            "      \"duration\": 100,\n" +
+            "      \"delay\": 40,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"hide_particles\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"plate_type\": \"effect\",\n" +
+            "      \"id\": \"iska_utils-weakness\",\n" +
+            "      \"effect\": \"minecraft:weakness\",\n" +
+            "      \"amplifier\": 0,\n" +
+            "      \"duration\": 100,\n" +
+            "      \"delay\": 40,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"hide_particles\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"plate_type\": \"effect\",\n" +
+            "      \"id\": \"iska_utils-poison\",\n" +
+            "      \"effect\": \"minecraft:poison\",\n" +
+            "      \"amplifier\": 0,\n" +
+            "      \"duration\": 100,\n" +
+            "      \"delay\": 40,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"hide_particles\": false\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"plate_type\": \"damage\",\n" +
+            "      \"id\": \"iska_utils-damage\",\n" +
+            "      \"damage_type\": \"minecraft:cactus\",\n" +
+            "      \"damage\": 1.0,\n" +
+            "      \"delay\": 10,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"plate_type\": \"damage\",\n" +
+            "      \"id\": \"iska_utils-improved_damage\",\n" +
+            "      \"damage_type\": \"minecraft:player_attack\",\n" +
+            "      \"damage\": 2.0,\n" +
+            "      \"delay\": 10,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"plate_type\": \"special\",\n" +
+            "      \"id\": \"iska_utils-fire\",\n" +
+            "      \"apply\": \"fire\",\n" +
+            "      \"duration\": 100,\n" +
+            "      \"delay\": 40,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"plate_type\": \"special\",\n" +
+            "      \"id\": \"iska_utils-freeze\",\n" +
+            "      \"apply\": \"freeze\",\n" +
+            "      \"duration\": 100,\n" +
+            "      \"delay\": 40,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}";
+        
+        Path filePath = configPath.resolve("iska_utils.json");
+        Files.writeString(filePath, content);
+        LOGGER.info("Generated default iska_utils plates configuration: {}", filePath);
     }
 } 

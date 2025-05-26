@@ -60,13 +60,10 @@ public class IskaUtils {
         // IMPORTANT: This must happen BEFORE registering the DeferredRegisters
         // to ensure blocks are available when registries are built
         
-        // Scan for potion plate configurations in our mod resources
-        DynamicPotionPlateScanner.scanForPotionPlates();
-        
         // Scan for external configurations in config directory (before registry freeze)
         DynamicPotionPlateScanner.scanConfigDirectory();
         
-        // Register discovered dynamic potion plates from our mod AND config directory
+        // Register discovered dynamic potion plates from external configurations
         PotionPlateRegistry.registerDiscoveredBlocks();
         
         // Register blocks and items

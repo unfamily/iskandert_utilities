@@ -31,15 +31,10 @@ public class CuriosIntegration {
      * Uses FMLCommonSetupEvent which is a valid event for the mod bus
      */
     private static void setupCurios(FMLCommonSetupEvent event) {
-        // The specific event must be a subclass of IModBusEvent
-        // LOGGER.info("Setting up Curios integration...");
-        
         // Register Vector Charm as curio
         VectorCharmCurioHandler.register();
         
         // Register Portable Dislocator as curio
         PortableDislocatorCurioHandler.register();
-        
-        // LOGGER.info("Vector Charm and Portable Dislocator will be available as curios when Curios is present");
     }
 } 

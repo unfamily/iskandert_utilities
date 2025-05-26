@@ -62,14 +62,16 @@ public class Config
 
     // Vector Charm energy configuration
     private static final ModConfigSpec.IntValue VECTOR_CHARM_ENERGY_CAPACITY = BUILDER
-            .comment("Energy capacity of the Vector Charm in RF/FE")
-            .defineInRange("102_vectorCharmEnergyCapacity", 1000000, 0, Integer.MAX_VALUE);
+            .comment("Energy capacity of the Vector Charm in RF/FE",
+                    "Recommended value: 1000000, but set to 0 to disable energy consumption")
+            .defineInRange("102_vectorCharmEnergyCapacity", 0, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends Integer>> VECTOR_CHARM_ENERGY_CONSUME = BUILDER
             .comment("Energy consumed per tick by the Vector Charm when active in RF/FE",
-                     "Array with 7 values for: [none, slow, moderate, fast, extreme, ultra, hover]")
+                     "Array with 7 values for: [none, slow, moderate, fast, extreme, ultra, hover]",
+                     "Recommended values: [0, 5, 15, 30, 50, 100, 3], but set to 0 to disable energy consumption")
             .defineList("103_vectorCharmEnergyConsume", 
-                       java.util.Arrays.asList(0, 5, 15, 30, 50, 100, 3), 
+                       java.util.Arrays.asList(0, 0, 0, 0, 0, 0, 0), 
                        obj -> obj instanceof Integer && (Integer) obj >= 0);
 
     static {
@@ -80,21 +82,42 @@ public class Config
     }
 
     private static final ModConfigSpec.IntValue HELLFIRE_IGNITER_CONSUME = BUILDER
-            .comment("Amount of energy consumed by the Hellfire Igniter")
-            .defineInRange("000_hellfireIgniterConsume", 10, 0, Integer.MAX_VALUE);
+            .comment("Amount of energy consumed by the Hellfire Igniter",
+                    "Recommended value: 10, but set to 0 to disable energy consumption")
+            .defineInRange("000_hellfireIgniterConsume", 0, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue HELLFIRE_IGNITER_BUFFER = BUILDER
-            .comment("Quantity of energy the Hellfire Igniter can be stored")
-            .defineInRange("001_hellfireIgniterBuffer", 1000, 0, Integer.MAX_VALUE);
+            .comment("Quantity of energy the Hellfire Igniter can be stored",
+                    "Recommended value: 1000, but set to 0 to disable energy consumption")
+            .defineInRange("001_hellfireIgniterBuffer", 0, 0, Integer.MAX_VALUE);
 
     // Portable Dislocator energy configuration
     private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CAPACITY = BUILDER
-            .comment("Energy capacity of the Portable Dislocator in RF/FE")
-            .defineInRange("100_portableDislocatorEnergyCapacity", 50000, 0, Integer.MAX_VALUE);
+            .comment("Energy capacity of the Portable Dislocator in RF/FE",
+                    "Recommended value: 5000, but set to 0 to disable energy consumption")
+            .defineInRange("100_portableDislocatorEnergyCapacity", 5000, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CONSUME = BUILDER
-            .comment("Energy consumed per teleportation by the Portable Dislocator in RF/FE")
-            .defineInRange("100_portableDislocatorEnergyConsume", 1000, 0, Integer.MAX_VALUE);
+            .comment("Energy consumed per teleportation by the Portable Dislocator in RF/FE",
+                    "Recommended value: 1000 or 100, but set to 0 to disable energy consumption")
+            .defineInRange("100_portableDislocatorEnergyConsume", 100, 0, Integer.MAX_VALUE);
+            
+    // Portable Dislocator experience configuration
+    private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_XP_CONSUME = BUILDER
+            .comment("Experience points consumed per teleportation by the Portable Dislocator when energy is not available",
+                    "Set to 0 to disable experience consumption")
+            .defineInRange("101_portableDislocatorXpConsume", 10, 0, Integer.MAX_VALUE);
+            
+    // Portable Dislocator resource priority configuration
+    private static final ModConfigSpec.BooleanValue PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY = BUILDER
+            .comment("If true, energy will be consumed before XP when both are available",
+                    "If both this and prioritizeXp are true, both resources will be consumed")
+            .define("102_portableDislocatorPrioritizeEnergy", true);
+            
+    private static final ModConfigSpec.BooleanValue PORTABLE_DISLOCATOR_PRIORITIZE_XP = BUILDER
+            .comment("If true, XP will be consumed before energy when both are available",
+                    "If both this and prioritizeEnergy are true, both resources will be consumed")
+            .define("103_portableDislocatorPrioritizeXp", false);
 
     static {
         BUILDER.pop(); // End of general_utilities category
@@ -134,6 +157,9 @@ public class Config
     public static java.util.List<Integer> vectorCharmEnergyConsume;
     public static int portableDislocatorEnergyCapacity;
     public static int portableDislocatorEnergyConsume;
+    public static int portableDislocatorXpConsume;
+    public static boolean portableDislocatorPrioritizeEnergy;
+    public static boolean portableDislocatorPrioritizeXp;
     public static String externalScriptsPath;
 
     @SubscribeEvent
@@ -155,6 +181,9 @@ public class Config
         hellfireIgniterBuffer = HELLFIRE_IGNITER_BUFFER.get();
         portableDislocatorEnergyCapacity = PORTABLE_DISLOCATOR_ENERGY_CAPACITY.get();
         portableDislocatorEnergyConsume = PORTABLE_DISLOCATOR_ENERGY_CONSUME.get();
+        portableDislocatorXpConsume = PORTABLE_DISLOCATOR_XP_CONSUME.get();
+        portableDislocatorPrioritizeEnergy = PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY.get();
+        portableDislocatorPrioritizeXp = PORTABLE_DISLOCATOR_PRIORITIZE_XP.get();
         externalScriptsPath = EXTERNAL_SCRIPTS_PATH.get();
     }
 }

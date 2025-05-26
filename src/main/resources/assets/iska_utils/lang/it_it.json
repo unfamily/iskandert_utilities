@@ -25,6 +25,10 @@
   "block.iska_utils.iska_utils_slowness": "Piastra Trappola Lentezza",
   "block.iska_utils.iska_utils_poison": "Piastra Trappola Veleno",
   "block.iska_utils.iska_utils_weakness": "Piastra Trappola Debolezza",
+  "block.iska_utils.iska_utils_damage": "Piastra Trappola Danno",
+  "block.iska_utils.iska_utils_improved_damage": "Piastra Trappola Danno Migliorata",
+  "block.iska_utils.iska_utils_fire": "Piastra Trappola Fuoco",
+  "block.iska_utils.iska_utils_freeze": "Piastra Trappola Gelo",
 
   "creativetab.iska_utils.tab": "Utilità di Iska",
 
@@ -55,9 +59,19 @@
   "message.iska_utils.vector_hover_mode.hover": "Modalità Amuleto Vettoriale: fluttuazione",
   "message.iska_utils.vector_hover_mode.off": "Modalità Amuleto Vettoriale: default",
 
-  "item.iska_utils.portable_dislocator.tooltip.main": "Premi %s per teletrasportarti vicino alle coordinate della bussola (100-300 blocchi)",
-  "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Teletrasporta vicino alle coordinate della bussola (100-300 blocchi)",
-  "item.iska_utils.portable_dislocator.tooltip.compasses": "Funziona con Bussola della Natura e Bussola dell'Esploratore",
+  "item.iska_utils.portable_dislocator.tooltip.main": "Premi %s per teletrasportarti vicino alle coordinate della bussola (da 100 a 150 blocchi di distanza)",
+  "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Ti teletrasporta vicino alle coordinate della bussola (da 100 a 150 blocchi di distanza)",
+  "item.iska_utils.portable_dislocator.tooltip.compasses": "Funziona con la Bussola Naturale e la Bussola dell'Esploratore",
+  "item.iska_utils.portable_dislocator.tooltip.energy": "Energia: ",
+  "item.iska_utils.portable_dislocator.tooltip.xp_backup": "In alternativa consuma %d XP se l'energia è esaurita",
+  "item.iska_utils.portable_dislocator.tooltip.consumes_xp": "Consuma %d XP per teletrasporto",
+  "item.iska_utils.portable_dislocator.message.teleporting": "Preparazione teletrasporto...",
+  "item.iska_utils.portable_dislocator.message.no_energy": "Energia insufficiente per il teletrasporto!",
+  "item.iska_utils.portable_dislocator.message.no_xp": "XP insufficiente per il teletrasporto!",
+  "item.iska_utils.portable_dislocator.message.used_xp": "Usati %d XP per il teletrasporto",
+  "item.iska_utils.portable_dislocator.message.used_both": "Usati %d RF e %d XP per il teletrasporto",
+  "item.iska_utils.portable_dislocator.message.retry": "Destinazione non sicura, provo un'altra posizione (tentativo %d)...",
+  "item.iska_utils.portable_dislocator.message.failed": "Impossibile trovare una destinazione sicura dopo diversi tentativi",
 
   "curios.identifier.charm": "Amuleto",
   "curios.identifier.curio": "Ninnolo"

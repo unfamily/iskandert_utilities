@@ -350,30 +350,28 @@ public class VectorCharmItem extends Item {
      */
     private static ItemStack checkCuriosSlots(Player player, int speedLevel) {
         try {
-            // Use reflection to access Curios API
+            // Approccio alternativo che usa getCuriosHandler invece di getAllEquipped
             Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
             
-            // Try to find Vector Charm through getAllEquipped
-            try {
-                Method getAllEquippedMethod = curioApiClass.getMethod("getAllEquipped", LivingEntity.class);
-                if (getAllEquippedMethod != null) {
-                    Object allEquipped = getAllEquippedMethod.invoke(null, player);
-                    if (allEquipped instanceof Iterable<?> items) {
-                        for (Object itemPair : items) {
-                            // Extract stack from each pair
-                            Method getStackMethod = itemPair.getClass().getMethod("getRight");
-                            ItemStack stack = (ItemStack) getStackMethod.invoke(itemPair);
-                            
-                            if (stack.getItem() instanceof VectorCharmItem charm) {
-                                if (charm.hasEnoughEnergy(stack, speedLevel)) {
-                                    return stack;
-                                }
-                            }
+            // Ottiene l'handler delle Curios per il player
+            Method getCuriosHandlerMethod = curioApiClass.getMethod("getCuriosHelper");
+            Object curiosHelper = getCuriosHandlerMethod.invoke(null);
+            
+            Method getEquippedCurios = curiosHelper.getClass().getMethod("getEquippedCurios", LivingEntity.class);
+            Object equippedCurios = getEquippedCurios.invoke(curiosHelper, player);
+            
+            if (equippedCurios instanceof Iterable<?> items) {
+                for (Object itemPair : items) {
+                    // Extract stack from each pair
+                    Method getStackMethod = itemPair.getClass().getMethod("getRight");
+                    ItemStack stack = (ItemStack) getStackMethod.invoke(itemPair);
+                    
+                    if (stack.getItem() instanceof VectorCharmItem charm) {
+                        if (charm.hasEnoughEnergy(stack, speedLevel)) {
+                            return stack;
                         }
                     }
                 }
-            } catch (Exception e) {
-                // LOGGER.warn("Could not use getAllEquipped method: {}", e.getMessage());
             }
             
             return null;
@@ -460,16 +458,20 @@ public class VectorCharmItem extends Item {
         if (ModUtils.isCuriosLoaded()) {
             try {
                 Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-                Method getAllEquippedMethod = curioApiClass.getMethod("getAllEquipped", LivingEntity.class);
-                if (getAllEquippedMethod != null) {
-                    Object allEquipped = getAllEquippedMethod.invoke(null, player);
-                    if (allEquipped instanceof Iterable<?> items) {
-                        for (Object itemPair : items) {
-                            Method getStackMethod = itemPair.getClass().getMethod("getRight");
-                            ItemStack curioStack = (ItemStack) getStackMethod.invoke(itemPair);
-                            if (curioStack == stack) {
-                                return "Curios";
-                            }
+                
+                // Ottiene l'handler delle Curios per il player
+                Method getCuriosHandlerMethod = curioApiClass.getMethod("getCuriosHelper");
+                Object curiosHelper = getCuriosHandlerMethod.invoke(null);
+                
+                Method getEquippedCurios = curiosHelper.getClass().getMethod("getEquippedCurios", LivingEntity.class);
+                Object equippedCurios = getEquippedCurios.invoke(curiosHelper, player);
+                
+                if (equippedCurios instanceof Iterable<?> items) {
+                    for (Object itemPair : items) {
+                        Method getStackMethod = itemPair.getClass().getMethod("getRight");
+                        ItemStack curioStack = (ItemStack) getStackMethod.invoke(itemPair);
+                        if (curioStack == stack) {
+                            return "Curios";
                         }
                     }
                 }

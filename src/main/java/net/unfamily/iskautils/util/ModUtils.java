@@ -30,13 +30,7 @@ public class ModUtils {
      * @return true if Curios is loaded
      */
     public static boolean isCuriosLoaded() {
-        boolean loaded = ModList.get().isLoaded(CURIOS_MOD_ID);
-        if (loaded) {
-            // LOGGER.debug("Curios mod is loaded");
-        } else {
-            // LOGGER.debug("Curios mod is not loaded");
-        }
-        return loaded;
+        return ModList.get().isLoaded(CURIOS_MOD_ID);
     }
     
     /**
