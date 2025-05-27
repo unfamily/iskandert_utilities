@@ -62,6 +62,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE_STAIRS.get());
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE_WALL.get());
                                 pOutput.accept(ModItems.PLATE_BASE_BLOCK.get());
+                                pOutput.accept(ModItems.RAFT.get());
                             }).build());
 
     public static void register(IEventBus eventBus) {

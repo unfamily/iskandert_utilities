@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.util.ModUtils;
+import net.unfamily.iskautils.block.ModBlocks;
 
 import java.lang.reflect.Method;
 import java.util.regex.Matcher;
@@ -500,8 +501,32 @@ public class PortableDislocatorItem extends Item {
                             data.loadedChunk = chunkPos;
                             data.chunkLevel = serverLevel;
                             
+                            // Verifichiamo se ci troviamo sopra all'acqua o se c'è una raft
+                            BlockPos waterCheckPos = new BlockPos(data.targetX, safeY - 1, data.targetZ);
+                            BlockPos raftCheckPos = new BlockPos(data.targetX, safeY, data.targetZ);
+                            BlockState belowState = level.getBlockState(waterCheckPos);
+                            BlockState currentState = level.getBlockState(raftCheckPos);
+                            
+                            boolean isWater = belowState.is(net.minecraft.world.level.block.Blocks.WATER) ||
+                                             belowState.getFluidState().is(net.minecraft.world.level.material.Fluids.WATER) ||
+                                             belowState.getFluidState().is(net.minecraft.world.level.material.Fluids.FLOWING_WATER);
+                            boolean isRaft = currentState.is(ModBlocks.RAFT.get());
+                            
+                            // Offset Y per posizionare il giocatore correttamente
+                            double yOffset = 0;
+                            int teleportY = safeY;
+                            
+                            if (isRaft) {
+                                // Se c'è una raft, posiziona il giocatore sopra di essa
+                                yOffset = 0.6;
+                                teleportY = safeY; // La raft è alla stessa Y del safeY
+                            } else if (isWater) {
+                                // Se c'è acqua, posiziona il giocatore alla Y originale
+                                yOffset = 0;
+                            }
+                            
                             // Teleport to safe position
-                            player.teleportTo(data.targetX + 0.5, safeY, data.targetZ + 0.5);
+                            player.teleportTo(data.targetX + 0.5, teleportY + yOffset, data.targetZ + 0.5);
                             player.setDeltaMovement(0, 0, 0);
                             
                             // Silent success - no feedback
@@ -887,24 +912,30 @@ public class PortableDislocatorItem extends Item {
     }
     
     /**
-     * Prepares the ground for teleportation, placing cobblestone if needed
+     * Prepares the ground for teleportation, placing raft if needed
      */
     private static void prepareGround(Level level, int x, int finalY, int z) {
         BlockPos groundPos = new BlockPos(x, finalY - 1, z);
         BlockState groundState = level.getBlockState(groundPos);
         
-        // If ground is water, replace it with cobblestone
+        // If ground is water, place a raft
         if (!groundState.isSolid() && !groundState.isAir()) {
             boolean isLiquid = !groundState.getFluidState().isEmpty();
             if (isLiquid) {
-                // Only replace water with cobblestone - other liquids should not reach this point
+                // Only replace water with raft - other liquids should not reach this point
                 boolean isWater = groundState.is(net.minecraft.world.level.block.Blocks.WATER) ||
                                  groundState.getFluidState().is(net.minecraft.world.level.material.Fluids.WATER) ||
                                  groundState.getFluidState().is(net.minecraft.world.level.material.Fluids.FLOWING_WATER);
                 
                 if (isWater) {
-                    // Replace water with cobblestone
-                    level.setBlock(groundPos, net.minecraft.world.level.block.Blocks.COBBLESTONE.defaultBlockState(), 3);
+                    // Piazziamo la raft un blocco più in alto rispetto all'acqua
+                    BlockPos raftPos = new BlockPos(x, finalY, z);
+                    // Controlliamo che ci sia spazio per la raft
+                    if (level.getBlockState(raftPos).isAir()) {
+                        level.setBlock(raftPos, ModBlocks.RAFT.get().defaultBlockState(), 3);
+                    }
+                    
+                    // Note: L'offset Y verrà gestito direttamente nel metodo handlePendingTeleportation
                 }
                 // Note: Other liquids (lava, etc.) should not reach this point due to hasValidGround check
             }

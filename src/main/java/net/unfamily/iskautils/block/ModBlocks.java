@@ -117,8 +117,8 @@ public class ModBlocks {
             .mapColor(MapColor.WOOD)
             .strength(0.5f, 1.0f)
             .sound(SoundType.WOOD)
-            .noOcclusion()
-            .isViewBlocking((state, level, pos) -> false);
+            .dynamicShape()
+            .isSuffocating((state, level, pos) -> false);
             
     public static final DeferredBlock<RaftBlock> RAFT = BLOCKS.register("raft",
             () -> new RaftBlock(RAFT_PROPERTIES));
