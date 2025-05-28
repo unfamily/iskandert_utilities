@@ -22,79 +22,79 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * Carica macro di comandi da file JSON esterni
+ * Loads command macros from external JSON files
  */
 public class MacroLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
-    // Memorizza i file con overwritable=false per evitare che vengano sovrascritti
+    // Stores files with overwritable=false to prevent them from being overwritten
     private static final Map<String, Boolean> PROTECTED_MACROS = new HashMap<>();
     
     /**
-     * Scansiona la directory di configurazione per le macro di comandi
+     * Scans the configuration directory for command macros
      */
     public static void scanConfigDirectory() {
-        LOGGER.info("Scansione della directory di configurazione per le macro di comandi...");
+        LOGGER.info("Scanning configuration directory for command macros...");
         
         try {
-            // Ottieni il percorso configurato per gli script esterni
+            // Get the configured path for external scripts
             String externalScriptsBasePath = net.unfamily.iskautils.Config.externalScriptsPath;
             if (externalScriptsBasePath == null || externalScriptsBasePath.trim().isEmpty()) {
-                externalScriptsBasePath = "kubejs/external_scripts"; // percorso predefinito
+                externalScriptsBasePath = "kubejs/external_scripts"; // default path
             }
             
-            // Crea la directory per le macro di comandi se non esiste
+            // Create directory for command macros if it doesn't exist
             Path configPath = Paths.get(externalScriptsBasePath, "iska_utils_macros");
             if (!Files.exists(configPath)) {
                 Files.createDirectories(configPath);
-                LOGGER.info("Creata directory per le macro di comandi: {}", configPath.toAbsolutePath());
+                LOGGER.info("Created directory for command macros: {}", configPath.toAbsolutePath());
                 
-                // Crea un file README per spiegare la directory
+                // Create a README file to explain the directory
                 createReadme(configPath);
                 
-                // Genera configurazioni predefinite
+                // Generate default configurations
                 generateDefaultConfigurations(configPath);
                 return;
             }
             
             if (!Files.isDirectory(configPath)) {
-                LOGGER.warn("Il percorso per le macro esiste ma non è una directory: {}", configPath);
+                LOGGER.warn("The path for macros exists but is not a directory: {}", configPath);
                 return;
             }
             
-            LOGGER.info("Scansione della directory per le macro: {}", configPath.toAbsolutePath());
+            LOGGER.info("Scanning directory for macros: {}", configPath.toAbsolutePath());
             
-            // Verifica e rigenera README se mancante
+            // Verify and regenerate README if missing
             Path readmePath = configPath.resolve("README.md");
             if (!Files.exists(readmePath)) {
-                LOGGER.info("README.md mancante, generazione in corso...");
+                LOGGER.info("README.md missing, generating...");
                 createReadme(configPath);
             }
             
-            // Pulisce le protezioni precedenti
+            // Clear previous protections
             PROTECTED_MACROS.clear();
             
-            // Verifica se il file default_commands_macro.json esiste e controlla se è overwritable
+            // Check if default_commands_macro.json exists and check if it's overwritable
             Path defaultCommandsFile = configPath.resolve("default_commands_macro.json");
             if (!Files.exists(defaultCommandsFile) || shouldRegenerateDefaultCommandsMacro(defaultCommandsFile)) {
-                LOGGER.info("Generazione o rigenerazione del file default_commands_macro.json");
+                LOGGER.info("Generating or regenerating default_commands_macro.json file");
                 generateDefaultCommandsMacro(configPath);
             }
             
-            // Scansiona tutti i file JSON nella directory
+            // Scan all JSON files in the directory
             try (Stream<Path> files = Files.walk(configPath)) {
                 files.filter(Files::isRegularFile)
                      .filter(path -> path.toString().endsWith(".json"))
                      .filter(path -> !path.getFileName().toString().startsWith("."))
-                     .sorted() // Elaborazione in ordine alfabetico
+                     .sorted() // Process in alphabetical order
                      .forEach(MacroLoader::scanConfigFile);
             }
             
-            LOGGER.info("Scansione della directory delle macro completata");
+            LOGGER.info("Macro directory scan completed");
             
         } catch (Exception e) {
-            LOGGER.error("Errore durante la scansione della directory delle macro: {}", e.getMessage());
+            LOGGER.error("Error scanning macro directory: {}", e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
@@ -102,7 +102,7 @@ public class MacroLoader {
     }
     
     /**
-     * Controlla se il file default_commands_macro.json dovrebbe essere rigenerato
+     * Checks if the default_commands_macro.json file should be regenerated
      */
     private static boolean shouldRegenerateDefaultCommandsMacro(Path filePath) {
         try {
@@ -113,22 +113,22 @@ public class MacroLoader {
                 if (jsonElement != null && jsonElement.isJsonObject()) {
                     JsonObject json = jsonElement.getAsJsonObject();
                     
-                    // Controlla se il campo overwritable esiste ed è true
+                    // Check if the overwritable field exists and is true
                     if (json.has("overwritable")) {
                         return json.get("overwritable").getAsBoolean();
                     }
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("Errore nella lettura del file default_commands_macro.json: {}", e.getMessage());
+            LOGGER.warn("Error reading default_commands_macro.json file: {}", e.getMessage());
         }
         
-        // Se non è possibile leggere il file o non ha il campo overwritable, rigeneralo
+        // If the file can't be read or doesn't have the overwritable field, regenerate it
         return true;
     }
     
     /**
-     * Crea un file README nella directory di configurazione
+     * Creates a README file in the configuration directory
      */
     private static void createReadme(Path configPath) {
         try {
@@ -155,12 +155,26 @@ public class MacroLoader {
                 "      ]\n" +
                 "    },\n" +
                 "    {\n" +
+                "      \"command\": \"echo\",\n" +
+                "      \"level\": 0,\n" +
+                "      \"parameters\": [\n" +
+                "        {\n" +
+                "          \"type\": \"string\",\n" +
+                "          \"required\": true\n" +
+                "        }\n" +
+                "      ],\n" +
+                "      \"do\": [\n" +
+                "        {\"execute\": \"say #0\"}\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
                 "      \"command\": \"spawnmob\",\n" +
                 "      \"level\": 0,\n" +
                 "      \"stages_logic\": \"OR\",\n" +
                 "      \"stages\": [\n" +
-                "        {\"stage\": \"example_stage_0\"},\n" +
-                "        {\"stage\": \"example_stage_1\"}\n" +
+                "        {\"stage\": \"example_stage_0\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"nether\", \"stage_type\": \"dimension\", \"is\": true},\n" +
+                "        {\"stage\": \"locked_stage\", \"stage_type\": \"player\", \"is\": false}\n" +
                 "      ],\n" +
                 "      \"parameters\": [\n" +
                 "        {\n" +
@@ -192,9 +206,17 @@ public class MacroLoader {
                 "- `level`: Required permission level (0-4) [optional, default: 0]\n" +
                 "  - 0: Any player\n" +
                 "  - 1-4: OP level required\n" +
+                "- `usage`: Help text or syntax description shown when listing commands or on error [optional]\n" +
+                "  - Example: `\"/echo <message> - Broadcasts a message to all players\"`\n" +
+                "  - If not provided, defaults to `/<command_name>`\n" +
                 "- `stages_logic`: Logic for stage requirements evaluation: \"AND\" (all required) or \"OR\" (any one required) [optional, default: AND]\n" +
+                "  - `AND`: All stages must be satisfied\n" +
+                "  - `OR`: At least one stage must be satisfied\n" +
+                "  - `DEF`: Deferred evaluation - stages are defined per action, not at macro level\n" +
                 "- `stages`: Array of game stages that must be unlocked to use this macro [optional]\n" +
-                "  - `{\"stage\": \"stage_id\"}`: ID of a required game stage\n" +
+                "  - `{\"stage\": \"stage_id\", \"stage_type\": \"player\", \"is\": true}`: ID of a required game stage and its type\n" +
+                "    - `stage_type` can be: \"player\" (default), \"world\", or \"dimension\"\n" +
+                "    - `is`: Whether the stage must be present (`true`, default) or absent (`false`)\n" +
                 "- `parameters`: Array of parameter definitions for the command [optional]\n" +
                 "  - `type`: Type of parameter (`string`, `word`, `int`, `float`, `double`, `boolean`, `target`, `static`) [**required**]\n" +
                 "  - `required`: Whether the parameter is required (true) or optional (false) [optional, default: true]\n" +
@@ -218,15 +240,29 @@ public class MacroLoader {
                 "For example, `#0` refers to the first parameter, `#1` to the second, etc.\n" +
                 "\n" +
                 "### Game Stages\n" +
-                "The game stages system allows you to lock macros behind progression milestones. This system will integrate with other\n" +
-                "features in the mod (implemented in a future update). When implemented, players will need to unlock the required\n" +
-                "stages to use stage-restricted macros.\n" +
+                "The game stages system allows you to lock macros behind progression milestones. There are three types of stages:\n" +
+                "\n" +
+                "- **Player Stages**: Related to individual player progression (default type)\n" +
+                "- **World Stages**: Related to global world state or events\n" +
+                "- **Dimension Stages**: Related to specific dimensions (like Nether or End)\n" +
+                "\n" +
+                "You can specify the stage type using the `stage_type` field in each stage requirement.\n" +
+                "\n" +
+                "Additionally, you can use the `is` field to create negative requirements:\n" +
+                "- `\"is\": true` (default): The player/world/dimension MUST have the specified stage\n" +
+                "- `\"is\": false`: The player/world/dimension MUST NOT have the specified stage\n" +
+                "\n" +
+                "This allows you to create conditions like \"player must have stage A but must not have stage B\".\n" +
+                "\n" +
+                "The system will be fully implemented in future updates. When implemented, players will need to satisfy\n" +
+                "all the stage requirements to use stage-restricted macros.\n" +
                 "\n" +
                 "## Notes\n" +
                 "\n" +
                 "- Commands are executed in the context of the player who triggered the macro\n" +
                 "- Changes require a game restart to apply\n" +
                 "- For security reasons, macros are limited to players with the appropriate permission level\n" +
+                "- The `usage` field provides better command documentation and error messages\n" +
                 "- When macros with the same command name are found in multiple files:\n" +
                 "  - If a file has `overwritable: false`, its macros cannot be overwritten\n" +
                 "  - If a file has `overwritable: true` or no overwritable field, its macros can be overwritten by later files\n" +
@@ -253,6 +289,52 @@ public class MacroLoader {
                 "### Progression-Based Commands\n" +
                 "Commands that are only available once players have reached certain milestones or completed specific quests.\n" +
                 "\n" +
+                "### Per-Action Stage Requirements\n" +
+                "Example using the `DEF` stages logic for per-action stage requirements:\n" +
+                "\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"command\": \"progression_test\",\n" +
+                "  \"level\": 0,\n" +
+                "  \"usage\": \"/progression_test - Tests stage-based progression\",\n" +
+                "  \"stages_logic\": \"DEF\",\n" +
+                "  \"do\": [\n" +
+                "    {\n" +
+                "      \"execute\": \"say This action is available to everyone\"\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"execute\": \"say This action requires the player to have unlocked the beginning stage\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"beginning\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"execute\": \"say This action requires the player to be in the nether\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"nether\", \"stage_type\": \"dimension\", \"is\": true}\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"execute\": \"say This action requires the player to NOT have the locked_stage\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"locked_stage\", \"stage_type\": \"player\", \"is\": false}\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"execute\": \"say This action requires multiple conditions\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"advanced\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"locked_stage\", \"stage_type\": \"player\", \"is\": false},\n" +
+                "        {\"stage\": \"event_active\", \"stage_type\": \"world\", \"is\": true}\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "```\n" +
+                "\n" +
+                "In this example, each action has its own stage requirements. If a player doesn't meet the requirements for a specific action, \n" +
+                "that action is skipped, but the rest of the actions will still be evaluated and potentially executed.\n" +
+                "\n" +
                 "### Time Cycle Demonstration\n" +
                 "A macro that cycles through different times of day with delays between changes.\n" +
                 "\n" +
@@ -260,19 +342,21 @@ public class MacroLoader {
                 "A macro that changes weather conditions with appropriate timing.\n";
             
             Files.writeString(readmePath, readmeContent);
-            LOGGER.info("Creato file README: {}", readmePath);
+            LOGGER.info("Created README file: {}", readmePath);
             
         } catch (Exception e) {
-            LOGGER.warn("Impossibile creare il file README: {}", e.getMessage());
+            LOGGER.warn("Unable to create README file: {}", e.getMessage());
         }
     }
     
     /**
-     * Scansiona un singolo file di configurazione
+     * Scans a single configuration file
      */
     private static void scanConfigFile(Path configFile) {
         try {
-            LOGGER.debug("Scansione del file di configurazione: {}", configFile);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Scanning configuration file: {}", configFile);
+            }
             String macroId = configFile.getFileName().toString();
             
             try (InputStream inputStream = Files.newInputStream(configFile)) {
@@ -280,7 +364,7 @@ public class MacroLoader {
             }
             
         } catch (Exception e) {
-            LOGGER.error("Errore durante la scansione del file {}: {}", configFile, e.getMessage());
+            LOGGER.error("Error scanning file {}: {}", configFile, e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
@@ -288,7 +372,7 @@ public class MacroLoader {
     }
     
     /**
-     * Analizza la configurazione da un input stream
+     * Parses configuration from an input stream
      */
     private static void parseConfigFromStream(String macroId, String filePath, InputStream inputStream) {
         try (InputStreamReader reader = new InputStreamReader(inputStream)) {
@@ -296,10 +380,10 @@ public class MacroLoader {
             if (jsonElement != null && jsonElement.isJsonObject()) {
                 parseConfigJson(macroId, filePath, jsonElement.getAsJsonObject());
             } else {
-                LOGGER.error("Il file {} non contiene un oggetto JSON valido", filePath);
+                LOGGER.error("File {} does not contain a valid JSON object", filePath);
             }
         } catch (Exception e) {
-            LOGGER.error("Errore nell'analisi del file {}: {}", filePath, e.getMessage());
+            LOGGER.error("Error parsing file {}: {}", filePath, e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
@@ -307,34 +391,34 @@ public class MacroLoader {
     }
     
     /**
-     * Analizza un oggetto JSON di configurazione
+     * Parses a configuration JSON object
      */
     private static void parseConfigJson(String macroId, String filePath, JsonObject json) {
         try {
-            // Verifica il tipo di configurazione
+            // Check configuration type
             if (!json.has("type")) {
-                LOGGER.warn("File {} non ha il campo 'type', ignorato", filePath);
+                LOGGER.warn("File {} has no 'type' field, ignored", filePath);
                 return;
             }
             
             String type = json.get("type").getAsString();
             
-            // Verifica che il tipo sia corretto
+            // Verify that the type is correct
             if (!"iska_utils:commands_macro".equals(type)) {
-                LOGGER.warn("Tipo non supportato '{}' nel file {}. Deve essere 'iska_utils:commands_macro'", type, filePath);
+                LOGGER.warn("Unsupported type '{}' in file {}. Must be 'iska_utils:commands_macro'", type, filePath);
                 return;
             }
             
-            // Verifica overwritable flag
+            // Check overwritable flag
             boolean overwritable = true;
             if (json.has("overwritable")) {
                 overwritable = json.get("overwritable").getAsBoolean();
             }
             
-            // Elabora l'array di comandi
+            // Process the commands array
             if (json.has("commands") && json.get("commands").isJsonArray()) {
                 JsonArray macrosArray = json.get("commands").getAsJsonArray();
-                LOGGER.info("Trovate {} macro nel file {}", macrosArray.size(), filePath);
+                LOGGER.info("Found {} macros in file {}", macrosArray.size(), filePath);
                 
                 for (int i = 0; i < macrosArray.size(); i++) {
                     JsonElement macroElem = macrosArray.get(i);
@@ -342,15 +426,15 @@ public class MacroLoader {
                         JsonObject macroObj = macroElem.getAsJsonObject();
                         processMacroJson(macroObj, overwritable);
                     } else {
-                        LOGGER.warn("Elemento {} nell'array 'commands' non è un oggetto JSON valido in {}", i, filePath);
+                        LOGGER.warn("Element {} in 'commands' array is not a valid JSON object in {}", i, filePath);
                     }
                 }
             } else {
-                LOGGER.warn("File commands_macro {} non ha un array 'commands' valido", filePath);
+                LOGGER.warn("Commands macro file {} does not have a valid 'commands' array", filePath);
             }
             
         } catch (Exception e) {
-            LOGGER.error("Errore nell'analisi del file {}: {}", filePath, e.getMessage());
+            LOGGER.error("Error parsing file {}: {}", filePath, e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
@@ -358,55 +442,57 @@ public class MacroLoader {
     }
     
     /**
-     * Elabora un singolo oggetto JSON di macro
+     * Processes a single macro JSON object
      */
     private static void processMacroJson(JsonObject json, boolean overwritable) {
         try {
-            // Verifica i campi obbligatori
+            // Check required fields
             if (!json.has("command") || !json.has("do")) {
-                LOGGER.warn("Macro non valida: mancano campi obbligatori 'command' o 'do'");
+                LOGGER.warn("Invalid macro: missing required fields 'command' or 'do'");
                 return;
             }
             
             String macroId = json.get("command").getAsString();
             
-            // Controlla se questa macro è protetta (definita in un file non sovrascrivibile)
+            // Check if this macro is protected (defined in a non-overwritable file)
             if (PROTECTED_MACROS.containsKey(macroId) && PROTECTED_MACROS.get(macroId)) {
-                LOGGER.debug("Macro '{}' protetta, ignoro nuova definizione", macroId);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Macro '{}' is protected, ignoring new definition", macroId);
+                }
                 return;
             }
             
-            // Memorizza lo stato di protezione
+            // Store protection status
             PROTECTED_MACROS.put(macroId, !overwritable);
             
-            // Crea la definizione della macro dal JSON
+            // Create macro definition from JSON
             MacroCommand.MacroDefinition macro = MacroCommand.MacroDefinition.fromJson(json);
             
-            // Registra la macro
+            // Register the macro
             MacroCommand.registerMacro(macroId, macro);
             
         } catch (Exception e) {
-            LOGGER.error("Errore nell'elaborazione della macro: {}", e.getMessage());
+            LOGGER.error("Error processing macro: {}", e.getMessage());
         }
     }
     
     /**
-     * Genera configurazioni di macro predefinite
+     * Generates default macro configurations
      */
     private static void generateDefaultConfigurations(Path configPath) {
         try {
-            // Crea il file default_commands_macro.json
+            // Create the default_commands_macro.json file
             generateDefaultCommandsMacro(configPath);
         } catch (Exception e) {
-            LOGGER.error("Errore nella generazione delle configurazioni predefinite: {}", e.getMessage());
+            LOGGER.error("Error generating default configurations: {}", e.getMessage());
         }
     }
     
     /**
-     * Genera il file default_commands_macro.json
+     * Generates the default_commands_macro.json file
      */
     private static void generateDefaultCommandsMacro(Path configPath) throws IOException {
-        // Semplifichiamo ulteriormente e assicuriamoci che il formato sia corretto
+        // Simplify and include only the reloader command
         String content = "{\n" +
             "  \"type\": \"iska_utils:commands_macro\",\n" +
             "  \"overwritable\": true,\n" +
@@ -415,52 +501,11 @@ public class MacroLoader {
             "      \"command\": \"reloader\",\n" +
             "      \"level\": 2,\n" +
             "      \"do\": [\n" +
-            "        {\"execute\": \"say Inizio ricarica script e configurazioni...\"},\n" +
             "        {\"execute\": \"kubejs reload server-scripts\"},\n" +
-            "        {\"delay\": 60},\n" +
             "        {\"execute\": \"reload\"},\n" +
-            "        {\"delay\": 60},\n" +
+            "        {\"delay\": 20},\n" +
             "        {\"execute\": \"custommachinery reload\"},\n" +
-            "        {\"execute\": \"say Ricarica completata!\"}\n" +
-            "      ]\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"command\": \"echo\",\n" +
-            "      \"level\": 0,\n" +
-            "      \"parameters\": [\n" +
-            "        {\n" +
-            "          \"type\": \"string\",\n" +
-            "          \"required\": true\n" +
-            "        }\n" +
-            "      ],\n" +
-            "      \"do\": [\n" +
-            "        {\"execute\": \"say #0\"}\n" +
-            "      ]\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"command\": \"spawnmob\",\n" +
-            "      \"level\": 0,\n" +
-            "      \"stages_logic\": \"OR\",\n" +
-            "      \"stages\": [\n" +
-            "        {\"stage\": \"example_stage_0\"},\n" +
-            "        {\"stage\": \"example_stage_1\"},\n" +
-            "        {\"stage\": \"example_stage_2\"}\n" +
-            "      ],\n" +
-            "      \"parameters\": [\n" +
-            "        {\n" +
-            "          \"type\": \"static\",\n" +
-            "          \"list\": [\n" +
-            "            {\"declare\": \"zombie\"},\n" +
-            "            {\"declare\": \"skeleton\"},\n" +
-            "            {\"declare\": \"creeper\"},\n" +
-            "            {\"declare\": \"spider\"},\n" +
-            "            {\"declare\": \"enderman\"},\n" +
-            "            {\"declare\": \"villager\"}\n" +
-            "          ]\n" +
-            "        }\n" +
-            "      ],\n" +
-            "      \"do\": [\n" +
-            "        {\"execute\": \"execute at @s run summon minecraft:#0 ~ ~ ~\"}\n" +
+            "        {\"execute\": \"say Reload complete!\"}\n" +
             "      ]\n" +
             "    }\n" +
             "  ]\n" +
@@ -468,146 +513,73 @@ public class MacroLoader {
         
         Path filePath = configPath.resolve("default_commands_macro.json");
         Files.writeString(filePath, content);
-        LOGGER.info("Generato file default_commands_macro.json: {}", filePath);
-        
-        // Aggiungi anche un file di test più semplice per debugging
-        String simpleContent = "{\n" +
-            "  \"type\": \"iska_utils:commands_macro\",\n" +
-            "  \"overwritable\": true,\n" +
-            "  \"commands\": [\n" +
-            "    {\n" +
-            "      \"command\": \"test1\",\n" +
-            "      \"level\": 0,\n" +
-            "      \"do\": [{\"execute\": \"say Test 1 executed\"}]\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"command\": \"test2\",\n" +
-            "      \"level\": 0,\n" +
-            "      \"do\": [{\"execute\": \"say Test 2 executed\"}]\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"command\": \"spawn\",\n" +
-            "      \"level\": 0,\n" +
-            "      \"parameters\": [\n" +
-            "        {\n" +
-            "          \"type\": \"static\",\n" +
-            "          \"list\": [\n" +
-            "            {\"declare\": \"zombie\"},\n" +
-            "            {\"declare\": \"skeleton\"},\n" +
-            "            {\"declare\": \"creeper\"}\n" +
-            "          ]\n" +
-            "        }\n" +
-            "      ],\n" +
-            "      \"do\": [\n" +
-            "        {\"execute\": \"execute at @s run summon minecraft:zombie ~ ~ ~\"},\n" +
-            "        {\"execute\": \"say Hai evocato uno zombie!\"}\n" +
-            "      ]\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"command\": \"spawn_skeleton\",\n" +
-            "      \"level\": 0,\n" +
-            "      \"do\": [\n" +
-            "        {\"execute\": \"execute at @s run summon minecraft:skeleton ~ ~ ~\"},\n" +
-            "        {\"execute\": \"say Hai evocato uno scheletro!\"}\n" +
-            "      ]\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"command\": \"spawn_creeper\",\n" +
-            "      \"level\": 0,\n" +
-            "      \"do\": [\n" +
-            "        {\"execute\": \"execute at @s run summon minecraft:creeper ~ ~ ~\"},\n" +
-            "        {\"execute\": \"say Hai evocato un creeper!\"}\n" +
-            "      ]\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}";
-        
-        Path testFilePath = configPath.resolve("test_macros.json");
-        Files.writeString(testFilePath, simpleContent);
-        LOGGER.info("Generato file di test: {}", testFilePath);
-        
-        // Crea un file di istruzioni addizionale in formato .txt che descrive il file default e avvisa l'utente
-        Path instructionsPath = configPath.resolve("INSTRUCTIONS.txt");
-        String instructionsContent = 
-            "DEFAULT COMMANDS MACRO INSTRUCTIONS\n" +
-            "----------------------------------\n\n" +
-            "The file 'default_commands_macro.json' contains example macros that are automatically generated.\n" +
-            "If you want to keep your changes to this file, open it and set \"overwritable\": false.\n" +
-            "Otherwise, it will be regenerated each time the game starts.\n\n" +
-            "Best practice: Instead of editing the default file, create your own files with custom macros.\n\n" +
-            "For complete documentation, please refer to the README.md file in this directory.";
-        
-        Files.writeString(instructionsPath, instructionsContent);
+        LOGGER.info("Generated default_commands_macro.json file: {}", filePath);
     }
 
     /**
-     * Ricarica tutte le macro da disco
-     * Questo metodo può essere chiamato quando viene eseguito il comando /reload
+     * Reloads all macros from configuration files
      */
     public static void reloadAllMacros() {
-        LOGGER.info("Ricaricamento delle macro dei comandi...");
+        LOGGER.info("Reloading all command macros...");
         
         try {
-            // Pulisci le definizioni esistenti
-            List<String> existingMacros = new ArrayList<>();
-            MacroCommand.getAvailableMacros().forEach(existingMacros::add);
-            
-            LOGGER.info("Eliminazione di {} macro esistenti", existingMacros.size());
-            
-            // Elimina le macro esistenti
-            for (String macroId : existingMacros) {
-                MacroCommand.unregisterMacro(macroId);
-                LOGGER.debug("Eliminata macro: {}", macroId);
+            // Save protected macros (overwritable=false)
+            Map<String, MacroCommand.MacroDefinition> protectedMacros = new HashMap<>();
+            for (String macroId : MacroCommand.getAvailableMacros()) {
+                if (PROTECTED_MACROS.getOrDefault(macroId, false)) {
+                    protectedMacros.put(macroId, MacroCommand.getMacro(macroId));
+                }
             }
             
-            // Pulisci la mappa di protezione
+            // Remove all non-protected macros (create a copy of the list to avoid ConcurrentModificationException)
+            List<String> macroIds = new ArrayList<>();
+            MacroCommand.getAvailableMacros().forEach(macroIds::add);
+            
+            for (String macroId : macroIds) {
+                if (!PROTECTED_MACROS.getOrDefault(macroId, false)) {
+                    MacroCommand.unregisterMacro(macroId);
+                }
+            }
+            
+            // Clear previous protections
             PROTECTED_MACROS.clear();
             
-            // Effettua una nuova scansione della directory
-            scanConfigDirectory();
-            
-            // Conta le macro disponibili dopo la ricarica
-            final int[] macroCount = {0};
-            MacroCommand.getAvailableMacros().forEach(macro -> macroCount[0]++);
-            
-            LOGGER.info("Ricaricamento macro completato. Macro disponibili: {}", macroCount[0]);
-            
-            // Riregistra i comandi con il CommandDispatcher se siamo in un server attivo
-            net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                try {
-                    // Ottieni il CommandDispatcher
-                    com.mojang.brigadier.CommandDispatcher<net.minecraft.commands.CommandSourceStack> dispatcher = 
-                        server.getCommands().getDispatcher();
-                    
-                    // Prima rimuovi tutti i nodi dei comandi delle macro
-                    // per evitare conflitti di registrazione
-                    LOGGER.info("Pulizia dei comandi esistenti dal dispatcher...");
-                    
-                    // Richiedi al server di ricostruire il dispatcher
-                    LOGGER.info("Server attivo trovato, riregistrazione dei comandi macro...");
-                    
-                    // Registra tutte le macro disponibili
-                    ExecuteMacroCommand.register(dispatcher);
-                    
-                    // Sincronizza i comandi con i client connessi
-                    LOGGER.info("Sincronizzazione dei comandi con i client...");
-                    for (ServerPlayer serverPlayer : server.getPlayerList().getPlayers()) {
-                        server.getCommands().sendCommands(serverPlayer);
-                    }
-                    
-                    LOGGER.info("Comandi aggiornati e sincronizzati sul server");
-                } catch (Exception e) {
-                    LOGGER.error("Errore durante la sincronizzazione dei comandi: {}", e.getMessage());
-                    if (LOGGER.isDebugEnabled()) {
-                        e.printStackTrace();
-                    }
-                }
-            } else {
-                LOGGER.warn("Server non trovato, impossibile riregistrare i comandi macro");
+            // Reload configurations
+            String externalScriptsBasePath = net.unfamily.iskautils.Config.externalScriptsPath;
+            if (externalScriptsBasePath == null || externalScriptsBasePath.trim().isEmpty()) {
+                externalScriptsBasePath = "kubejs/external_scripts"; // default path
             }
+            
+            Path configPath = Paths.get(externalScriptsBasePath, "iska_utils_macros");
+            if (Files.exists(configPath) && Files.isDirectory(configPath)) {
+                try (Stream<Path> files = Files.walk(configPath)) {
+                    files.filter(Files::isRegularFile)
+                         .filter(path -> path.toString().endsWith(".json"))
+                         .filter(path -> !path.getFileName().toString().startsWith("."))
+                         .sorted() // Process in alphabetical order
+                         .forEach(MacroLoader::scanConfigFile);
+                }
+            }
+            
+            // Restore protected macros that might have been overwritten
+            for (Map.Entry<String, MacroCommand.MacroDefinition> entry : protectedMacros.entrySet()) {
+                String macroId = entry.getKey();
+                PROTECTED_MACROS.put(macroId, true); // Mark as protected
+                if (!MacroCommand.hasMacro(macroId)) {
+                    MacroCommand.registerMacro(macroId, entry.getValue());
+                }
+            }
+            
+            // Count available macros
+            int macroCount = 0;
+            for (String macro : MacroCommand.getAvailableMacros()) {
+                macroCount++;
+            }
+            
+            LOGGER.info("Macro reload completed. {} macros available.", macroCount);
+            
         } catch (Exception e) {
-            LOGGER.error("Errore durante il ricaricamento delle macro: {}", e.getMessage());
+            LOGGER.error("Error reloading macros: {}", e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }

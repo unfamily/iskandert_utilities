@@ -43,6 +43,12 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.common.NeoForge;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)
@@ -153,8 +159,9 @@ public class IskaUtils {
         public static void onServerStarting(ServerStartingEvent event) {
             VectorCharmData.getInstance();
             
-            // Registra il comando per eseguire le macro
-            ExecuteMacroCommand.register(event.getServer().getCommands().getDispatcher());
+            // La registrazione dei comandi avviene ora tramite RegisterCommandsEvent
+            // quindi non è più necessario farlo qui
+            // ExecuteMacroCommand.register(event.getServer().getCommands().getDispatcher());
         }
 
         @SubscribeEvent
@@ -219,5 +226,12 @@ public class IskaUtils {
                 }
             }
         }
+    }
+
+    /**
+     * Creates a text component from a string
+     */
+    public static Component component(String text) {
+        return Component.literal(text);
     }
 }

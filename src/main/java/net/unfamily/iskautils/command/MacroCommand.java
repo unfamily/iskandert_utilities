@@ -20,6 +20,7 @@ import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.unfamily.iskautils.stage.StageRegistry;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -37,99 +38,103 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Sistema per eseguire macro di comandi con ritardi
+ * System for executing command macros with delays
  */
 public class MacroCommand {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    // Thread pool per l'esecuzione programmata dei comandi
+    // Thread pool for scheduled command execution
     private static final ScheduledExecutorService COMMAND_EXECUTOR = Executors.newScheduledThreadPool(2);
     
-    // Comandi attivi: UUID del giocatore -> future per possibile cancellazione
+    // Active commands: Player UUID -> future for possible cancellation
     private static final Map<UUID, ScheduledFuture<?>> ACTIVE_COMMANDS = new ConcurrentHashMap<>();
     
-    // Registro delle macro disponibili
+    // Registry of available macros
     private static final Map<String, MacroDefinition> MACRO_REGISTRY = new HashMap<>();
     
-    // Pattern per trovare i parametri nei comandi (es. #0, #1, ecc.)
+    // Pattern to find parameters in commands (e.g. #0, #1, etc.)
     private static final Pattern PARAMETER_PATTERN = Pattern.compile("#(\\d+)");
     
-    // Eccezione per permessi mancanti
+    // Exception for missing permissions
     public static final SimpleCommandExceptionType ERROR_PERMISSION = new SimpleCommandExceptionType(
             Component.translatable("commands.iska_utils.macro.no_permission"));
     
     /**
-     * Registra una nuova macro di comandi
+     * Registers a new command macro
      */
     public static void registerMacro(String id, MacroDefinition macro) {
         MACRO_REGISTRY.put(id, macro);
-        LOGGER.info("Registrata macro di comandi: {} con {} azioni", id, macro.actions.size());
+        LOGGER.info("Registered command macro: {} with {} actions", id, macro.actions.size());
     }
     
     /**
-     * Elimina una macro dal registro
+     * Removes a macro from the registry
      */
     public static void unregisterMacro(String id) {
         MACRO_REGISTRY.remove(id);
     }
     
     /**
-     * Verifica se esiste una macro con l'ID specificato
+     * Checks if a macro with the specified ID exists
      */
     public static boolean hasMacro(String id) {
         return MACRO_REGISTRY.containsKey(id);
     }
     
     /**
-     * Ottiene una macro dal registro
+     * Gets a macro from the registry
      */
     public static MacroDefinition getMacro(String id) {
         return MACRO_REGISTRY.get(id);
     }
     
     /**
-     * Ottiene la lista di tutte le macro disponibili
+     * Gets the list of all available macros
      */
     public static Iterable<String> getAvailableMacros() {
         return MACRO_REGISTRY.keySet();
     }
     
     /**
-     * Registra un comando nel dispatcher per una macro
+     * Registers a command in the dispatcher for a macro
      */
     public static void registerCommand(CommandDispatcher<CommandSourceStack> dispatcher, String macroId, MacroDefinition macro) {
         if (macro.hasParameters()) {
-            // Macro con parametri
+            // Macro with parameters
             registerParameterizedCommand(dispatcher, macroId, macro);
         } else {
-            // Macro senza parametri (semplice)
+            // Macro without parameters (simple)
             dispatcher.register(Commands.literal(macroId)
                 .requires(source -> source.hasPermission(0))
                 .executes(context -> executeMacro(context, macroId, new Object[0])));
             
-            LOGGER.debug("Registrato comando /{}", macroId);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Registered command /{}", macroId);
+            }
         }
     }
     
     /**
-     * Registra un comando con parametri
+     * Registers a parameterized command
      */
     private static void registerParameterizedCommand(CommandDispatcher<CommandSourceStack> dispatcher, String macroId, MacroDefinition macro) {
         LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal(macroId)
             .requires(source -> source.hasPermission(0));
         
-        // Costruisci la struttura degli argomenti
+        // Build the argument structure
         ArgumentBuilder<CommandSourceStack, ?> argumentBuilder = buildArgumentTree(command, macro.parameters, 0, args -> {
             return executeMacro(args, macroId, extractParameterValues(args, macro.parameters));
         });
         
-        // Registra il comando
+        // Register the command
         dispatcher.register((LiteralArgumentBuilder<CommandSourceStack>) argumentBuilder);
-        LOGGER.debug("Registrato comando parametrizzato /{} con {} parametri", macroId, macro.parameters.size());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Registered parameterized command /{} with {} parameters", macroId, macro.parameters.size());
+        }
     }
     
     /**
-     * Costruisce ricorsivamente l'albero degli argomenti per il comando
+     * Recursively builds the argument tree for the command
      */
     private static ArgumentBuilder<CommandSourceStack, ?> buildArgumentTree(
             ArgumentBuilder<CommandSourceStack, ?> builder, 
@@ -138,14 +143,14 @@ public class MacroCommand {
             Command<CommandSourceStack> executor) {
         
         if (index >= parameters.size()) {
-            // Fine dei parametri, aggiungi l'executor
+            // End of parameters, add the executor
             return builder.executes(executor);
         }
         
         ParameterDefinition param = parameters.get(index);
         String paramName = "param" + index;
         
-        // Crea l'argomento basato sul tipo
+        // Create the argument based on type
         RequiredArgumentBuilder<CommandSourceStack, ?> argBuilder;
         if ("static".equals(param.type.toLowerCase()) && param.staticValues != null && !param.staticValues.isEmpty()) {
             argBuilder = createArgumentForType(paramName, param.type, param.staticValues);
@@ -153,22 +158,22 @@ public class MacroCommand {
             argBuilder = createArgumentForType(paramName, param.type);
         }
         
-        // Aggiungi i parametri rimanenti
+        // Add the remaining parameters
         ArgumentBuilder<CommandSourceStack, ?> nextBuilder = buildArgumentTree(argBuilder, parameters, index + 1, executor);
         
         if (!param.required) {
-            // Se il parametro è opzionale, aggiungi anche un esecutore al livello corrente
+            // If the parameter is optional, also add an executor at the current level
             builder.executes(ctx -> executeMacro(ctx, 
                     getCommandName(builder), 
                     extractParameterValues(ctx, parameters.subList(0, index))));
         }
         
-        // Collega il parametro corrente al builder
+        // Connect the current parameter to the builder
         return builder.then(nextBuilder);
     }
     
     /**
-     * Estrae il nome del comando da un builder
+     * Extracts the command name from a builder
      */
     private static String getCommandName(ArgumentBuilder<CommandSourceStack, ?> builder) {
         if (builder instanceof LiteralArgumentBuilder) {
@@ -179,7 +184,7 @@ public class MacroCommand {
     }
     
     /**
-     * Crea un argomento Brigadier in base al tipo specificato
+     * Creates a Brigadier argument based on the specified type
      */
     @SuppressWarnings("unchecked")
     private static RequiredArgumentBuilder<CommandSourceStack, ?> createArgumentForType(String name, String type, List<String> staticValues) {
@@ -196,37 +201,39 @@ public class MacroCommand {
             case "boolean":
                 return Commands.argument(name, BoolArgumentType.bool());
             case "target":
-                return Commands.argument(name, EntityArgument.players());
+                return Commands.argument(name, EntityArgument.player());
             case "static":
-                // Utilizza StringArgumentType.word() e poi restringe i valori con suggests()
-                RequiredArgumentBuilder<CommandSourceStack, String> builder = 
-                    Commands.argument(name, StringArgumentType.word());
+                // For static values, we use a word argument with suggestions
+                RequiredArgumentBuilder<CommandSourceStack, String> arg = Commands.argument(name, StringArgumentType.word());
                 
+                // Add suggestions
                 if (staticValues != null && !staticValues.isEmpty()) {
-                    builder.suggests((context, suggestionsBuilder) -> {
+                    arg.suggests((context, builder) -> {
                         for (String value : staticValues) {
-                            if (value.startsWith(suggestionsBuilder.getRemaining().toLowerCase())) {
-                                suggestionsBuilder.suggest(value);
+                            if (value.startsWith(builder.getRemaining().toLowerCase())) {
+                                builder.suggest(value);
                             }
                         }
-                        return suggestionsBuilder.buildFuture();
+                        return builder.buildFuture();
                     });
                 }
                 
-                return builder;
+                return arg;
             default:
-                // Default a stringa per tipi non riconosciuti
-                LOGGER.warn("Tipo di parametro non riconosciuto: {}, uso String come default", type);
+                // Default to string for unknown types
                 return Commands.argument(name, StringArgumentType.string());
         }
     }
     
+    /**
+     * Overload for createArgumentForType without static values
+     */
     private static RequiredArgumentBuilder<CommandSourceStack, ?> createArgumentForType(String name, String type) {
         return createArgumentForType(name, type, null);
     }
     
     /**
-     * Estrae i valori dei parametri dal contesto del comando
+     * Extracts parameter values from the command context
      */
     private static Object[] extractParameterValues(CommandContext<CommandSourceStack> context, List<ParameterDefinition> parameters) {
         Object[] values = new Object[parameters.size()];
@@ -239,7 +246,11 @@ public class MacroCommand {
                 switch (param.type.toLowerCase()) {
                     case "string":
                     case "word":
+                    case "static": // Treat static parameters as normal strings
                         values[i] = StringArgumentType.getString(context, paramName);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Extracted parameter {}: '{}' (type: {})", paramName, values[i], param.type);
+                        }
                         break;
                     case "int":
                         values[i] = IntegerArgumentType.getInteger(context, paramName);
@@ -252,14 +263,17 @@ public class MacroCommand {
                         values[i] = BoolArgumentType.getBool(context, paramName);
                         break;
                     case "target":
-                        values[i] = EntityArgument.getPlayers(context, paramName);
+                        values[i] = EntityArgument.getPlayer(context, paramName);
                         break;
                     default:
-                        // Default a null per tipi non riconosciuti
-                        values[i] = null;
+                        values[i] = StringArgumentType.getString(context, paramName);
+                        break;
                 }
             } catch (Exception e) {
-                // Parametro non presente (probabilmente opzionale)
+                // Parameter not provided or invalid
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Could not extract parameter {}: {}", paramName, e.getMessage());
+                }
                 values[i] = null;
             }
         }
@@ -272,53 +286,104 @@ public class MacroCommand {
      */
     public static int executeMacro(CommandContext<CommandSourceStack> context, String macroId, Object[] paramValues) throws CommandSyntaxException {
         if (!MACRO_REGISTRY.containsKey(macroId)) {
-            LOGGER.warn("Tentativo di eseguire una macro inesistente: {}", macroId);
+            LOGGER.warn("Attempt to execute non-existent macro: {}", macroId);
             return 0;
         }
         
         MacroDefinition macro = MACRO_REGISTRY.get(macroId);
         
-        // Ottieni il giocatore che ha eseguito il comando
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        
-        // Verifica se il giocatore ha il livello di permesso richiesto
-        if (macro.level > 0 && player.getServer() != null && !player.hasPermissions(macro.level)) {
-            LOGGER.debug("Il giocatore {} non ha i permessi necessari (livello {}) per la macro {}", 
-                player.getName().getString(), macro.level, macroId);
-            throw ERROR_PERMISSION.create();
-        }
-        
-        // Verifica degli stages (implementazione futura)
-        if (macro.hasStageRequirements() && !macro.checkStages(player)) {
-            LOGGER.debug("Il giocatore {} non ha gli stages necessari per la macro {}", 
-                player.getName().getString(), macroId);
-            // Qui in futuro si potrà lanciare un'eccezione appropriata o gestire diversamente
+        // Check if context.getSource() is null
+        CommandSourceStack source = context.getSource();
+        if (source == null) {
+            LOGGER.error("CommandSourceStack is null during execution of macro {}", macroId);
             return 0;
         }
         
-        // Esegui la macro con i parametri
-        return executeMacroWithParams(macroId, player, paramValues) ? 1 : 0;
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (CommandSyntaxException e) {
+            source.sendFailure(Component.literal("§cThis command must be executed by a player"));
+            return 0;
+        }
+        
+        // Check permission level
+        if (!source.hasPermission(macro.getLevel())) {
+            source.sendFailure(Component.literal("§cYou don't have permission to use this command"));
+            return 0;
+        }
+        
+        // Check required stages
+        if (macro.hasStageRequirements() && !macro.checkStages(player)) {
+            source.sendFailure(Component.literal("§cYou don't have the required stages to use this command"));
+            LOGGER.debug("Player {} does not have the required stages to execute macro {}", 
+                player.getName().getString(), macroId);
+            return 0;
+        }
+        
+        return executeActions(player, macro, paramValues);
     }
     
     /**
-     * Esegue una macro di comandi per un giocatore
+     * Executes a macro's actions for a player
+     */
+    private static int executeActions(ServerPlayer player, MacroDefinition macro, Object[] paramValues) {
+        int successCount = 0;
+        
+        for (MacroAction action : macro.getActions()) {
+            String command = action.getCommand();
+            
+            // Replace parameters if any
+            if (macro.getParameters() != null && !macro.getParameters().isEmpty()) {
+                for (int i = 0; i < macro.getParameters().size() && i < paramValues.length; i++) {
+                    ParameterDefinition param = macro.getParameters().get(i);
+                    command = command.replace("{" + param.getType() + "}", String.valueOf(paramValues[i]));
+                }
+            }
+            
+            // Execute the command
+            try {
+                if (player.getServer() != null) {
+                    player.getServer().getCommands().performPrefixedCommand(
+                            player.getServer().createCommandSourceStack().withEntity(player),
+                            command
+                    );
+                    successCount++;
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error executing command: {}", command, e);
+            }
+        }
+        
+        return successCount;
+    }
+    
+    /**
+     * Executes a command macro for a player
      */
     public static boolean executeMacro(String macroId, ServerPlayer player) {
         if (!MACRO_REGISTRY.containsKey(macroId)) {
-            LOGGER.warn("Tentativo di eseguire una macro inesistente: {}", macroId);
+            LOGGER.warn("Attempt to execute non-existent macro: {}", macroId);
             return false;
         }
         
         MacroDefinition macro = MACRO_REGISTRY.get(macroId);
         
-        // Verifica se il giocatore ha il livello di permesso richiesto
+        // Check if player has required permission level
         if (macro.level > 0 && player.getServer() != null && !player.hasPermissions(macro.level)) {
-            LOGGER.debug("Il giocatore {} non ha i permessi necessari (livello {}) per la macro {}", 
+            LOGGER.debug("Player {} does not have required permission level {} for macro {}", 
                 player.getName().getString(), macro.level, macroId);
             return false;
         }
         
-        // Esegui la macro senza parametri
+        // Check required stages
+        if (macro.hasStageRequirements() && !macro.checkStages(player)) {
+            LOGGER.debug("Player {} does not have the required stages to execute macro {}", 
+                player.getName().getString(), macroId);
+            return false;
+        }
+        
+        // Execute macro without parameters
         return executeMacroWithParams(macroId, player, new Object[0]);
     }
     
@@ -358,6 +423,16 @@ public class MacroCommand {
         
         MacroAction action = actions.get(index);
         
+        // Check action-specific stage requirements if any
+        if (action.hasStageRequirements() && !checkActionStages(player, action.getStageRequirements())) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Action at index {} skipped due to stage requirements not met", index);
+            }
+            // Skip this action and move to the next
+            scheduleNextAction(player, level, actions, paramValues, index + 1);
+            return;
+        }
+        
         if (action.type == MacroActionType.EXECUTE) {
             // Sostituisci i parametri nel comando
             String commandWithParams = replaceParameters(action.command, paramValues);
@@ -384,159 +459,126 @@ public class MacroCommand {
     }
     
     /**
-     * Sostituisce i riferimenti ai parametri in un comando
+     * Checks if all stage requirements for an action are met
+     */
+    private static boolean checkActionStages(ServerPlayer player, List<StageRequirement> requirements) {
+        if (requirements == null || requirements.isEmpty()) {
+            return true; // No requirements to check
+        }
+        
+        // All action stage requirements must be met (AND logic)
+        for (StageRequirement requirement : requirements) {
+            MacroDefinition dummyMacro = new MacroDefinition("dummy", null, null, 0);
+            if (!dummyMacro.checkSingleStage(player, requirement)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Replaces parameter references in a command
      */
     private static String replaceParameters(String command, Object[] paramValues) {
         if (paramValues == null || paramValues.length == 0) {
             return command;
         }
         
-        LOGGER.debug("Sostituzione parametri nel comando: '{}' con valori: {}", command, paramValues);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Replacing parameters in command: '{}' with values: {}", command, paramValues);
+        }
         
-        // Pattern migliorato che cattura tutti i casi: #0, minecraft:#0, etc.
-        // Questo pattern matcha #n sia da solo che all'interno di una stringa più complessa
-        final Pattern enhancedPattern = Pattern.compile("([\\w-]+:)?#(\\d+)");
-        Matcher enhancedMatcher = enhancedPattern.matcher(command);
-        StringBuffer result = new StringBuffer();
-        
-        while (enhancedMatcher.find()) {
-            String prefix = enhancedMatcher.group(1) != null ? enhancedMatcher.group(1) : "";
-            int paramIndex = Integer.parseInt(enhancedMatcher.group(2));
-            
-            if (paramIndex < paramValues.length && paramValues[paramIndex] != null) {
-                String paramValue = formatParameterValue(paramValues[paramIndex]);
-                // Se c'è un prefisso (come 'minecraft:'), lo manteniamo
-                String replacement = prefix + paramValue;
-                enhancedMatcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
-                LOGGER.debug("Sostituito parametro '{}#{}' con '{}'", prefix, paramIndex, replacement);
+        // Replace simple patterns (#0, #1, etc.) first
+        String workingCommand = command;
+        for (int i = 0; i < paramValues.length; i++) {
+            if (paramValues[i] != null) {
+                String pattern = "#" + i;
+                String value = formatParameterValue(paramValues[i]);
+                workingCommand = workingCommand.replace(pattern, value);
             }
         }
         
-        enhancedMatcher.appendTail(result);
-        String finalCommand = result.toString();
-        
-        // Verifica che la sostituzione sia avvenuta per tutti i parametri
-        if (command.contains("#") && finalCommand.contains("#")) {
-            // Alcuni parametri potrebbero non essere stati sostituiti
-            // Tentiamo con il pattern originale come fallback
-            Matcher originalMatcher = PARAMETER_PATTERN.matcher(finalCommand);
-            StringBuffer secondResult = new StringBuffer();
-            
-            while (originalMatcher.find()) {
-                int paramIndex = Integer.parseInt(originalMatcher.group(1));
-                if (paramIndex < paramValues.length && paramValues[paramIndex] != null) {
-                    String replacement = formatParameterValue(paramValues[paramIndex]);
-                    originalMatcher.appendReplacement(secondResult, Matcher.quoteReplacement(replacement));
-                    LOGGER.debug("Fallback: sostituito parametro #{} con '{}'", paramIndex, replacement);
-                }
-            }
-            
-            originalMatcher.appendTail(secondResult);
-            finalCommand = secondResult.toString();
-        }
-        
-        LOGGER.debug("Comando risultante dopo sostituzione: '{}'", finalCommand);
-        return finalCommand;
+        return workingCommand;
     }
     
     /**
-     * Formatta un valore di parametro per l'inclusione in un comando
+     * Formats a parameter value for inclusion in a command
      */
     private static String formatParameterValue(Object value) {
         if (value == null) {
             return "";
         } else if (value instanceof EntitySelector) {
-            return "@s"; // Sostituisci con selettore appropriato
+            return "@s"; // For entity selectors, use the current player
         } else {
-            String valueStr = value.toString();
-            
-            // Se il valore è usato in un pattern come minecraft:#0, rimuovi 'minecraft:' per evitare problemi
-            if (valueStr.length() > 0) {
-                return valueStr;
-            } else {
-                return "";
-            }
+            return value.toString();
         }
     }
     
     /**
-     * Pianifica la prossima azione nella sequenza
+     * Schedules the next action in a sequence
      */
     private static void scheduleNextAction(ServerPlayer player, ServerLevel level, List<MacroAction> actions, 
                                           Object[] paramValues, int nextIndex) {
         if (nextIndex >= actions.size()) {
-            // Fine della sequenza
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Macro execution completed for player {}", player.getName().getString());
+            }
             ACTIVE_COMMANDS.remove(player.getUUID());
             return;
         }
         
-        // Ritardo minimo tra i comandi per sicurezza (1 tick)
-        UUID playerUUID = player.getUUID();
-        ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
-            executeActionSequence(player, level, actions, paramValues, nextIndex);
-        }, 50, TimeUnit.MILLISECONDS);
+        MacroAction action = actions.get(nextIndex);
         
-        // Memorizza il future per potenziale cancellazione
-        ACTIVE_COMMANDS.put(playerUUID, future);
+        if (action.getType() == MacroActionType.DELAY) {
+            int delayTicks = action.getDelayTicks();
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Scheduling delay of {} ticks for player {}", delayTicks, player.getName().getString());
+            }
+            
+            // Schedule next action after the delay
+            ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
+                executeActionSequence(player, level, actions, paramValues, nextIndex + 1);
+            }, delayTicks * 50L, TimeUnit.MILLISECONDS); // Convert ticks to ms (1 tick = 50ms)
+            
+            ACTIVE_COMMANDS.put(player.getUUID(), future);
+        } else {
+            // Execute the next action immediately
+            executeActionSequence(player, level, actions, paramValues, nextIndex);
+        }
     }
     
     /**
-     * Esegue un singolo comando
+     * Executes a single command
      */
     private static void executeCommand(ServerPlayer player, ServerLevel level, String command) {
         try {
             if (player.getServer() != null) {
-                // Se dopo la sostituzione dei parametri ci sono ancora pattern #n,
-                // lo segnaliamo ma procediamo comunque con l'esecuzione
-                if (command.matches(".*#\\d+.*")) {
-                    LOGGER.warn("Possibile problema di sostituzione parametri nel comando: {}", command);
-                }
-                
-                // Gestione speciale per comandi critici
+                // Special handling for critical commands
                 if (command.trim().equals("reload")) {
-                    LOGGER.info("Rilevato comando 'reload' in una macro, viene eseguito in modo sicuro");
+                    LOGGER.info("Detected 'reload' command in a macro, executing safely");
                     
-                    // Esegui il comando reload in modo sicuro
+                    // Execute the reload command safely
                     CommandSourceStack source = player.createCommandSourceStack();
                     try {
                         player.getServer().getCommands().performPrefixedCommand(source, command);
-                        LOGGER.info("Comando reload eseguito con successo, ricaricamento macro in corso...");
-                        
-                        // Schedula la ricarica delle macro dopo un ritardo per evitare conflitti
-                        // Aumentiamo il ritardo a 2 secondi per assicurarsi che tutti i processi di reload siano completati
-                        COMMAND_EXECUTOR.schedule(() -> {
-                            try {
-                                LOGGER.info("Esecuzione ricaricamento macro programmato dopo reload...");
-                                net.unfamily.iskautils.command.MacroLoader.reloadAllMacros();
-                                
-                                // Ottieni una reference al server e forza la sincronizzazione dei comandi
-                                net.minecraft.server.MinecraftServer server = player.getServer();
-                                if (server != null) {
-                                    LOGGER.info("Sincronizzazione forzata dei comandi con i client dopo reload...");
-                                    for (ServerPlayer serverPlayer : server.getPlayerList().getPlayers()) {
-                                        server.getCommands().sendCommands(serverPlayer);
-                                    }
-                                }
-                            } catch (Exception e) {
-                                LOGGER.error("Errore nel ricaricamento delle macro dopo reload: {}", e.getMessage());
-                                e.printStackTrace();
-                            }
-                        }, 2000, TimeUnit.MILLISECONDS);
                     } catch (Exception e) {
-                        LOGGER.error("Errore nell'esecuzione del comando reload: {}", e.getMessage());
+                        LOGGER.error("Error executing 'reload' command: {}", e.getMessage());
                     }
                 } else {
-                    // Esecuzione normale per altri comandi
+                    // Regular command execution
                     CommandSourceStack source = player.createCommandSourceStack();
                     player.getServer().getCommands().performPrefixedCommand(source, command);
                     
-                    LOGGER.debug("Eseguito comando '{}' per il giocatore {} nella posizione {}", 
-                        command, player.getName().getString(), player.blockPosition());
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Executed command: '{}' as player: {}", command, player.getName().getString());
+                    }
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Errore nell'esecuzione del comando '{}' per il giocatore {}: {}", 
-                command, player.getName().getString(), e.getMessage());
+            LOGGER.error("Error executing command '{}': {}", command, e.getMessage());
+            if (LOGGER.isDebugEnabled()) {
+                e.printStackTrace();
+            }
         }
     }
     
@@ -556,82 +598,93 @@ public class MacroCommand {
     }
     
     /**
-     * Definizione di una macro di comandi
+     * Definition of a command macro
      */
     public static class MacroDefinition {
         private final String id;
         private final List<MacroAction> actions;
         private final List<ParameterDefinition> parameters;
         private final int level;
-        private final List<String> requiredStages;
+        private final List<StageRequirement> requiredStages;
         private final StagesLogic stagesLogic;
         
         /**
-         * Costruttore per una nuova definizione di macro
-         * @param id Identificatore della macro
-         * @param actions Lista di azioni da eseguire
-         * @param parameters Lista di parametri
-         * @param level Livello di permesso richiesto
-         * @param requiredStages Lista di stages richiesti
-         * @param stagesLogic Logica di valutazione degli stages (AND/OR)
+         * Complete constructor with all fields
          */
         public MacroDefinition(String id, List<MacroAction> actions, List<ParameterDefinition> parameters, 
-                              int level, List<String> requiredStages, StagesLogic stagesLogic) {
+                              int level, List<StageRequirement> requiredStages, StagesLogic stagesLogic) {
             this.id = id;
-            this.actions = new ArrayList<>(actions);
-            this.parameters = parameters != null ? new ArrayList<>(parameters) : new ArrayList<>();
-            this.level = Math.max(0, level);
-            this.requiredStages = requiredStages != null ? new ArrayList<>(requiredStages) : new ArrayList<>();
+            this.actions = actions;
+            this.parameters = parameters != null ? parameters : new ArrayList<>();
+            this.level = level;
+            this.requiredStages = requiredStages != null ? requiredStages : new ArrayList<>();
             this.stagesLogic = stagesLogic != null ? stagesLogic : StagesLogic.AND;
         }
         
         /**
-         * Costruttore semplificato senza stages
+         * Simplified constructor without stages and usage
          */
         public MacroDefinition(String id, List<MacroAction> actions, List<ParameterDefinition> parameters, int level) {
-            this(id, actions, parameters, level, null, null);
+            this(id, actions, parameters, level, null, StagesLogic.AND);
         }
         
         /**
-         * Crea una macro da un oggetto JSON
+         * Creates a macro definition from a JSON object
          */
         public static MacroDefinition fromJson(JsonObject json) {
-            String id = json.has("command") ? json.get("command").getAsString() : 
-                        json.has("id") ? json.get("id").getAsString() : "unnamed_macro";
-                
-            int level = json.has("level") ? json.get("level").getAsInt() : 0;
+            String id = json.get("command").getAsString();
             
-            List<MacroAction> actions = new ArrayList<>();
-            List<ParameterDefinition> parameters = new ArrayList<>();
-            List<String> stages = new ArrayList<>();
-            StagesLogic stagesLogic = StagesLogic.AND; // Default a AND
-            
-            // Parsing della logica degli stages
-            if (json.has("stages_logic")) {
-                String logicStr = json.get("stages_logic").getAsString();
-                if ("OR".equalsIgnoreCase(logicStr)) {
-                    stagesLogic = StagesLogic.OR;
-                }
+            // Extract command level (permission)
+            int level = 0;
+            if (json.has("level")) {
+                level = json.get("level").getAsInt();
             }
             
-            // Parsing degli stages richiesti
+            // Extract required stages
+            List<StageRequirement> requiredStages = new ArrayList<>();
+            StagesLogic stagesLogic = StagesLogic.AND; // Default AND
+            
             if (json.has("stages") && json.get("stages").isJsonArray()) {
                 JsonArray stagesArray = json.get("stages").getAsJsonArray();
-                
                 for (JsonElement stageElem : stagesArray) {
                     if (stageElem.isJsonObject()) {
                         JsonObject stageObj = stageElem.getAsJsonObject();
                         if (stageObj.has("stage")) {
-                            stages.add(stageObj.get("stage").getAsString());
+                            String stageId = stageObj.get("stage").getAsString();
+                            String stageType = "player"; // Default to player if not specified
+                            boolean isRequired = true;   // Default to true (stage must be present)
+                            
+                            if (stageObj.has("stage_type")) {
+                                stageType = stageObj.get("stage_type").getAsString();
+                            }
+                            
+                            if (stageObj.has("is")) {
+                                isRequired = stageObj.get("is").getAsBoolean();
+                            }
+                            
+                            requiredStages.add(new StageRequirement(stageId, StageType.fromString(stageType), isRequired));
                         }
                     }
                 }
             }
             
-            // Parsing dei parametri
+            // Extract stages logic
+            if (json.has("stages_logic")) {
+                String logicStr = json.get("stages_logic").getAsString().toUpperCase();
+                try {
+                    stagesLogic = StagesLogic.valueOf(logicStr);
+                } catch (IllegalArgumentException e) {
+                    // If invalid, default to AND
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Invalid stages_logic value: {}, using AND", logicStr);
+                    }
+                }
+            }
+            
+            // Extract parameters
+            List<ParameterDefinition> parameters = new ArrayList<>();
             if (json.has("parameters") && json.get("parameters").isJsonArray()) {
                 JsonArray paramsArray = json.get("parameters").getAsJsonArray();
-                
                 for (int i = 0; i < paramsArray.size(); i++) {
                     JsonElement paramElem = paramsArray.get(i);
                     if (paramElem.isJsonObject()) {
@@ -640,48 +693,73 @@ public class MacroCommand {
                         String type = paramObj.has("type") ? paramObj.get("type").getAsString() : "string";
                         boolean required = !paramObj.has("required") || paramObj.get("required").getAsBoolean();
                         
-                        // Gestione parametri di tipo static con lista di valori
-                        if ("static".equals(type.toLowerCase()) && paramObj.has("list") && paramObj.get("list").isJsonArray()) {
-                            List<String> staticValues = new ArrayList<>();
-                            JsonArray valuesArray = paramObj.get("list").getAsJsonArray();
-                            
-                            for (JsonElement valueElem : valuesArray) {
-                                if (valueElem.isJsonObject() && valueElem.getAsJsonObject().has("declare")) {
-                                    staticValues.add(valueElem.getAsJsonObject().get("declare").getAsString());
+                        // For static parameters, extract the list of allowed values
+                        List<String> staticValues = null;
+                        if ("static".equals(type) && paramObj.has("list") && paramObj.get("list").isJsonArray()) {
+                            staticValues = new ArrayList<>();
+                            JsonArray listArray = paramObj.get("list").getAsJsonArray();
+                            for (JsonElement valueElem : listArray) {
+                                if (valueElem.isJsonObject() && ((JsonObject)valueElem).has("declare")) {
+                                    staticValues.add(((JsonObject)valueElem).get("declare").getAsString());
                                 }
                             }
-                            
-                            parameters.add(new ParameterDefinition(type, required, staticValues));
-                        } else {
-                            parameters.add(new ParameterDefinition(type, required));
                         }
+                        
+                        parameters.add(new ParameterDefinition(type, required, staticValues));
                     }
                 }
             }
             
-            // Parsing delle azioni dalla proprietà "do"
+            // Extract actions
+            List<MacroAction> actions = new ArrayList<>();
             if (json.has("do") && json.get("do").isJsonArray()) {
-                JsonArray actionsArray = json.get("do").getAsJsonArray();
-                
-                for (JsonElement actionElem : actionsArray) {
+                JsonArray doArray = json.get("do").getAsJsonArray();
+                for (JsonElement actionElem : doArray) {
                     if (actionElem.isJsonObject()) {
                         JsonObject actionObj = actionElem.getAsJsonObject();
                         
-                        // Controlla il tipo di azione
+                        // Extract stage requirements for this action if available
+                        List<StageRequirement> actionStages = null;
+                        if (stagesLogic == StagesLogic.DEF && actionObj.has("stages") && actionObj.get("stages").isJsonArray()) {
+                            actionStages = new ArrayList<>();
+                            JsonArray stagesArray = actionObj.get("stages").getAsJsonArray();
+                            
+                            for (JsonElement stageElem : stagesArray) {
+                                if (stageElem.isJsonObject()) {
+                                    JsonObject stageObj = stageElem.getAsJsonObject();
+                                    if (stageObj.has("stage")) {
+                                        String stageId = stageObj.get("stage").getAsString();
+                                        String stageType = "player"; // Default
+                                        boolean isRequired = true;   // Default
+                                        
+                                        if (stageObj.has("stage_type")) {
+                                            stageType = stageObj.get("stage_type").getAsString();
+                                        }
+                                        
+                                        if (stageObj.has("is")) {
+                                            isRequired = stageObj.get("is").getAsBoolean();
+                                        }
+                                        
+                                        actionStages.add(new StageRequirement(stageId, StageType.fromString(stageType), isRequired));
+                                    }
+                                }
+                            }
+                        }
+                        
                         if (actionObj.has("execute")) {
-                            // Esecuzione del comando
+                            // Command execution action
                             String command = actionObj.get("execute").getAsString();
-                            actions.add(new MacroAction(MacroActionType.EXECUTE, command, 0));
+                            actions.add(new MacroAction(MacroActionType.EXECUTE, command, 0, actionStages));
                         } else if (actionObj.has("delay")) {
-                            // Ritardo in tick
-                            int delayTicks = actionObj.get("delay").getAsInt();
-                            actions.add(new MacroAction(MacroActionType.DELAY, "", delayTicks));
+                            // Delay action
+                            int ticks = actionObj.get("delay").getAsInt();
+                            actions.add(new MacroAction(MacroActionType.DELAY, null, ticks, actionStages));
                         }
                     }
                 }
             }
             
-            return new MacroDefinition(id, actions, parameters, level, stages, stagesLogic);
+            return new MacroDefinition(id, actions, parameters, level, requiredStages, stagesLogic);
         }
         
         public String getId() {
@@ -689,19 +767,19 @@ public class MacroCommand {
         }
         
         public List<MacroAction> getActions() {
-            return new ArrayList<>(actions);
+            return actions;
         }
         
         public List<ParameterDefinition> getParameters() {
-            return new ArrayList<>(parameters);
+            return parameters;
         }
         
         public int getLevel() {
             return level;
         }
         
-        public List<String> getRequiredStages() {
-            return new ArrayList<>(requiredStages);
+        public List<StageRequirement> getRequiredStages() {
+            return requiredStages;
         }
         
         public StagesLogic getStagesLogic() {
@@ -709,34 +787,146 @@ public class MacroCommand {
         }
         
         public boolean hasStageRequirements() {
-            return !requiredStages.isEmpty();
+            return requiredStages != null && !requiredStages.isEmpty();
         }
         
         public boolean hasParameters() {
-            return !parameters.isEmpty();
+            return parameters != null && !parameters.isEmpty();
         }
         
         /**
-         * Verifica se il giocatore ha sbloccato gli stages necessari
-         * Questa è solo la struttura, l'implementazione effettiva sarà aggiunta in futuro
+         * Checks if the player has the required stages to use this macro
          */
         public boolean checkStages(ServerPlayer player) {
-            // Implementazione futura: verificare se il giocatore ha gli stages richiesti
-            // Per ora, restituisce sempre true
-            return true;
+            if (!hasStageRequirements()) {
+                return true; // No stage requirements
+            }
+            
+            // If using DEF logic, stage checks are deferred to individual actions
+            if (stagesLogic == StagesLogic.DEF) {
+                return true;
+            }
+            
+            // TODO: Implement full game stages system
+            // This is a placeholder implementation that distinguishes between stage types
+            
+            if (stagesLogic == StagesLogic.AND) {
+                // All stages must be satisfied
+                for (StageRequirement requirement : requiredStages) {
+                    if (!checkSingleStage(player, requirement)) {
+                        return false;
+                    }
+                }
+                return true;
+            } else { // OR logic
+                // At least one stage must be satisfied (OR logic)
+                for (StageRequirement requirement : requiredStages) {
+                    if (checkSingleStage(player, requirement)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        
+        /**
+         * Checks if a single stage requirement is satisfied
+         */
+        public boolean checkSingleStage(ServerPlayer player, StageRequirement requirement) {
+            boolean hasStage = false; // Whether the player/world/dimension has the stage
+            
+            // Use the StageRegistry to check stages
+            StageRegistry registry = StageRegistry.getInstance(player.getServer());
+            
+            switch (requirement.getType()) {
+                case PLAYER:
+                    // Check if player has unlocked the stage
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Checking player stage: {} (required: {})", 
+                                    requirement.getStageId(), requirement.isRequired());
+                    }
+                    hasStage = registry.hasPlayerStage(player, requirement.getStageId());
+                    break;
+                    
+                case WORLD:
+                    // Check if the world has the required stage
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Checking world stage: {} (required: {})", 
+                                    requirement.getStageId(), requirement.isRequired());
+                    }
+                    hasStage = registry.hasWorldStage(requirement.getStageId());
+                    break;
+                    
+                default:
+                    hasStage = true;
+                    break;
+            }
+            
+            // If the stage is required (is=true), player must have it
+            // If the stage is not required (is=false), player must NOT have it
+            return requirement.isRequired() ? hasStage : !hasStage;
         }
     }
     
     /**
-     * Enum per la logica di valutazione degli stages
+     * Type of stage requirement
      */
-    public enum StagesLogic {
-        AND, // Tutti gli stages sono necessari
-        OR   // Almeno uno degli stages è necessario
+    public enum StageType {
+        PLAYER,    // Stage related to player progression
+        WORLD;     // Stage related to world state
+        
+        public static StageType fromString(String type) {
+            try {
+                return valueOf(type.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("Invalid stage type: {}, using PLAYER as default", type);
+                return PLAYER;
+            }
+        }
     }
     
     /**
-     * Definizione di un parametro per una macro
+     * Represents a stage requirement for a macro
+     */
+    public static class StageRequirement {
+        private final String stageId;
+        private final StageType type;
+        private final boolean required; // true = stage must be present, false = stage must be absent
+        
+        public StageRequirement(String stageId, StageType type, boolean required) {
+            this.stageId = stageId;
+            this.type = type != null ? type : StageType.PLAYER;
+            this.required = required;
+        }
+        
+        public StageRequirement(String stageId, StageType type) {
+            this(stageId, type, true); // Default is that the stage is required
+        }
+        
+        public String getStageId() {
+            return stageId;
+        }
+        
+        public StageType getType() {
+            return type;
+        }
+        
+        public boolean isRequired() {
+            return required;
+        }
+    }
+    
+    /**
+     * Logic for evaluating stage requirements
+     */
+    public enum StagesLogic {
+        AND,  // All stages are required
+        OR,   // At least one stage is required
+        DEF   // Deferred to individual actions
+    }
+    
+    /**
+     * Parameter definition for command macros
      */
     public static class ParameterDefinition {
         private final String type;
@@ -748,9 +938,9 @@ public class MacroCommand {
         }
         
         public ParameterDefinition(String type, boolean required, List<String> staticValues) {
-            this.type = type;
+            this.type = type.toLowerCase();
             this.required = required;
-            this.staticValues = staticValues != null ? new ArrayList<>(staticValues) : null;
+            this.staticValues = staticValues;
         }
         
         public String getType() {
@@ -762,22 +952,28 @@ public class MacroCommand {
         }
         
         public List<String> getStaticValues() {
-            return staticValues != null ? new ArrayList<>(staticValues) : null;
+            return staticValues;
         }
     }
     
     /**
-     * Rappresenta un'azione all'interno di una macro
+     * Action to execute in a macro
      */
     public static class MacroAction {
         private final MacroActionType type;
         private final String command;
         private final int delayTicks;
+        private final List<StageRequirement> stageRequirements;
         
-        public MacroAction(MacroActionType type, String command, int delayTicks) {
+        public MacroAction(MacroActionType type, String command, int delayTicks, List<StageRequirement> stageRequirements) {
             this.type = type;
             this.command = command;
             this.delayTicks = delayTicks;
+            this.stageRequirements = stageRequirements != null ? stageRequirements : new ArrayList<>();
+        }
+        
+        public MacroAction(MacroActionType type, String command, int delayTicks) {
+            this(type, command, delayTicks, null);
         }
         
         public MacroActionType getType() {
@@ -791,10 +987,18 @@ public class MacroCommand {
         public int getDelayTicks() {
             return delayTicks;
         }
+        
+        public List<StageRequirement> getStageRequirements() {
+            return stageRequirements;
+        }
+        
+        public boolean hasStageRequirements() {
+            return stageRequirements != null && !stageRequirements.isEmpty();
+        }
     }
     
     /**
-     * Enum per i tipi di azioni nelle macro
+     * Type of action in a macro
      */
     public enum MacroActionType {
         EXECUTE,
