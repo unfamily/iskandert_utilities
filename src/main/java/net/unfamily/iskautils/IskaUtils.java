@@ -35,6 +35,14 @@ import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.unfamily.iskautils.block.PotionPlateBlock;
 import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
 import net.unfamily.iskautils.data.DynamicPotionPlateModelLoader;
+import net.unfamily.iskautils.command.MacroLoader;
+import net.unfamily.iskautils.command.MacroCommand;
+import net.unfamily.iskautils.command.ExecuteMacroCommand;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.profiling.ProfilerFiller;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)
@@ -93,6 +101,9 @@ public class IskaUtils {
     private void commonSetup(final FMLCommonSetupEvent event) {
         // Register network messages
         ModMessages.register();
+        
+        // Scansiona e carica le macro di comandi
+        MacroLoader.scanConfigDirectory();
     }
     
     /**
@@ -141,17 +152,60 @@ public class IskaUtils {
         @SubscribeEvent
         public static void onServerStarting(ServerStartingEvent event) {
             VectorCharmData.getInstance();
+            
+            // Registra il comando per eseguire le macro
+            ExecuteMacroCommand.register(event.getServer().getCommands().getDispatcher());
         }
 
         @SubscribeEvent
         public static void onServerStopping(ServerStoppingEvent event) {
             // For now, data is only stored in memory
+            
+            // Arresta l'executor service delle macro
+            MacroCommand.shutdown();
         }
         
         @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.LOWEST)
         public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
             // Server is fully started, all external datapacks should be loaded by now
             LOGGER.info("Server fully started, all external datapacks should be available");
+            
+            // Ricarica le macro per assicurarsi che tutti i comandi siano registrati
+            // Questo garantisce che i comandi siano disponibili anche se non viene eseguito /reload
+            try {
+                MacroLoader.reloadAllMacros();
+            } catch (Exception e) {
+                LOGGER.error("Errore nel caricamento delle macro all'avvio del server: {}", e.getMessage());
+            }
+        }
+        
+        @SubscribeEvent
+        public static void onAddReloadListener(net.neoforged.neoforge.event.AddReloadListenerEvent event) {
+            LOGGER.info("Registrazione del listener per il ricaricamento delle macro...");
+            
+            // Aggiungi un ReloadListener che ricarica le macro quando viene chiamato il comando /reload
+            event.addListener(new PreparableReloadListener() {
+                @Override
+                public CompletableFuture<Void> reload(
+                        PreparableReloadListener.PreparationBarrier preparationBarrier,
+                        ResourceManager resourceManager,
+                        ProfilerFiller preparationsProfiler,
+                        ProfilerFiller reloadProfiler,
+                        Executor backgroundExecutor,
+                        Executor gameExecutor) {
+                    
+                    return CompletableFuture.runAsync(() -> {
+                        LOGGER.info("Server reload rilevato, ricarico le macro dei comandi...");
+                        // Ricarica le macro dei comandi
+                        MacroLoader.reloadAllMacros();
+                    }, gameExecutor).thenCompose(preparationBarrier::wait);
+                }
+                
+                @Override
+                public String getName() {
+                    return "IskaUtils Macro Commands";
+                }
+            });
         }
         
         @SubscribeEvent

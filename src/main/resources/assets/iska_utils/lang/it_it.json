@@ -75,5 +75,10 @@
   "item.iska_utils.portable_dislocator.message.failed": "Impossibile trovare una destinazione sicura dopo diversi tentativi",
 
   "curios.identifier.charm": "Amuleto",
-  "curios.identifier.curio": "Ninnolo"
+  "curios.identifier.curio": "Ninnolo",
+  
+  "commands.iska_utils.macro.no_permission": "Non hai i permessi necessari per eseguire questa macro",
+  "commands.iska_utils.macro.success": "Esecuzione della macro avviata",
+  "commands.iska_utils.macro.failed": "Impossibile eseguire la macro",
+  "commands.iska_utils.macro.missing_parameter": "Parametro obbligatorio mancante"
 }

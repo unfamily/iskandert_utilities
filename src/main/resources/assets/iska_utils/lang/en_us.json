@@ -75,5 +75,10 @@
   "item.iska_utils.portable_dislocator.message.failed": "Failed to find safe teleportation destination after multiple attempts",
   
   "curios.identifier.charm": "Charm",
-  "curios.identifier.curio": "Curio"
+  "curios.identifier.curio": "Curio",
+  
+  "commands.iska_utils.macro.no_permission": "You don't have the required permission level to execute this macro",
+  "commands.iska_utils.macro.success": "Macro execution started",
+  "commands.iska_utils.macro.failed": "Failed to execute macro",
+  "commands.iska_utils.macro.missing_parameter": "Missing required parameter"
 }
