@@ -43,12 +43,6 @@ public class StageItemHandler {
         ITEM_RESTRICTIONS.clear();
         
         try {
-            if (!Files.exists(configPath)) {
-                Files.createDirectories(configPath);
-                // Create an example file
-                createExampleFile(configPath);
-            }
-            
             Files.list(configPath)
                 .filter(path -> path.toString().endsWith(".json") && !path.getFileName().toString().equals("example.json"))
                 .forEach(path -> {
@@ -70,42 +64,7 @@ public class StageItemHandler {
             LOGGER.error("Error loading item restrictions: {}", e.getMessage());
         }
     }
-    
-    /**
-     * Creates an example file for restrictions
-     */
-    private static void createExampleFile(Path directory) throws IOException {
-        Path examplePath = directory.resolve("example.json");
-        
-        if (!Files.exists(examplePath)) {
-            // Use correct JSON as example
-            String exampleJson = "{\n" +
-                "  \"type\": \"iska_utils:stage_item\",\n" +
-                "  \"overwritable\": true,\n" +
-                "  \"restrictions\": [\n" +
-                "    {\n" +
-                "      \"stages_logic\": \"AND\",\n" +
-                "      \"stages\": [\n" +
-                "          {\"stage_type\": \"player\", \"stage\": \"curio_basic\", \"is\": false},\n" +
-                "          {\"stage_type\": \"world\", \"stage\": \"curio_dim_nether\", \"is\": false}\n" +
-                "      ],\n" +
-                "      \"containers_whitelist\": true,\n" +
-                "      \"containers_list\": [\n" +
-                "        \"top.theillusivec4.curios.common.inventory.container.CuriosContainer\"\n" +
-                "      ],\n" +
-                "      \"items\":[\n" +
-                "        \"minecraft:structure_void\",\n" +
-                "        \"#minecraft:trim_templates\"\n" +
-                "      ],\n" +
-                "      \"consequence\":\"drop\"\n" +
-                "    }\n" +
-                "  ]\n" +
-                "}";
-            
-            Files.writeString(examplePath, exampleJson);
-            LOGGER.info("Created example item restriction file: {}", examplePath);
-        }
-    }
+
     
     /**
      * Checks a container when opened by a player
@@ -156,10 +115,6 @@ public class StageItemHandler {
                         case "delete":
                             player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
                                 "message.iska_utils.item_restriction.deleted"), true);
-                            break;
-                        case "return":
-                            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                                "message.iska_utils.item_restriction.returned"), true);
                             break;
                     }
                 }
@@ -305,15 +260,6 @@ public class StageItemHandler {
                     // Delete the item
                     container.slots.get(slot).set(ItemStack.EMPTY);
                     break;
-                    
-                case "return":
-                    // Return item to player inventory if possible
-                    if (!player.getInventory().add(stack)) {
-                        player.drop(stack, false);
-                    }
-                    container.slots.get(slot).set(ItemStack.EMPTY);
-                    break;
-                    
                 default:
                     // Default does nothing
                     break;

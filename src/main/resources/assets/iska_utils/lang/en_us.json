@@ -83,5 +83,8 @@
   "commands.iska_utils.macro.failed": "Failed to execute macro",
   "commands.iska_utils.macro.missing_parameter": "Missing required parameter",
 
-  "item.iska_utils.iska_utils_world_init": "World Initializer"
+  "item.iska_utils.iska_utils_world_init": "World Initializer",
+
+  "message.iska_utils.item_restriction.dropped": "§4Stage restriction: invalid items in inventory dropped",
+  "message.iska_utils.item_restriction.deleted": "§4Stage restriction: invalid items in inventory deleted"
 }

@@ -35,7 +35,7 @@ public class StageItemManager {
         try {
             // Load item restrictions using configured path
             Path externalScriptsPath = Paths.get(Config.externalScriptsPath);
-            Path stageItemsPath = externalScriptsPath.resolve("stage_items");
+            Path stageItemsPath = externalScriptsPath.resolve("iska_utils_stage_items");
             ensureDirectoryExists(stageItemsPath);
             createReadmeFile(stageItemsPath);
             
@@ -87,7 +87,7 @@ public class StageItemManager {
                 "      ],\n" +
                 "      \"items\":[\n" +
                 "        \"minecraft:example_item\",\n" +
-                "        \"#minecraft:example_tag\"\n" +
+                "        \"#c:example_tag\"\n" +
                 "      ],\n" +
                 "      \"consequence\":\"drop\"\n" +
                 "    }\n" +
@@ -114,7 +114,7 @@ public class StageItemManager {
                 "        {\n" +
                 "          \"conditions\":[0],\n" +
                 "          \"containers_list\": [\n" +
-                "              \"net.minecraft.world.inventory.CraftingMenu\"\n" +
+                "              \"net.namespace.inventory.container.ExampleCraftingContainer\"\n" +
                 "          ],\n" +
                 "          \"items\":[\n" +
                 "            \"minecraft:diamond_sword\"\n" +
@@ -124,7 +124,7 @@ public class StageItemManager {
                 "        {\n" +
                 "          \"conditions\":[1],\n" +
                 "          \"containers_list\": [\n" +
-                "              \"net.minecraft.world.inventory.EnderChestMenu\"\n" +
+                "              \"net.namespace.inventory.container.ExampleChestContainer\"\n" +
                 "          ],\n" +
                 "          \"items\":[\n" +
                 "            \"minecraft:nether_star\"\n" +
@@ -150,7 +150,6 @@ public class StageItemManager {
                 "## Possible Consequences\n\n" +
                 "- `drop`: Drops the item on the ground\n" +
                 "- `delete`: Completely removes the item\n" +
-                "- `return`: Attempts to return the item to the player's inventory, or drops it if there's no space\n\n" +
                 
                 "## Reloading Configurations\n\n" +
                 "Configurations are loaded at server startup and can be reloaded using the `/reload` command.\n\n" +
@@ -189,7 +188,7 @@ public class StageItemManager {
     public static void reloadItemRestrictions() {
         try {
             Path externalScriptsPath = Paths.get(Config.externalScriptsPath);
-            Path stageItemsPath = externalScriptsPath.resolve("stage_items");
+            Path stageItemsPath = externalScriptsPath.resolve("iska_utils_stage_items");
             ensureDirectoryExists(stageItemsPath);
             StageItemHandler.loadItemRestrictions(stageItemsPath);
             LOGGER.info("Item restrictions reloaded (path: {})", stageItemsPath);
