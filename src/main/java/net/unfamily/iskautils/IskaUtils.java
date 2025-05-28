@@ -24,7 +24,9 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.ClientEvents;
+import net.unfamily.iskautils.command.CommandItemLoader;
 import net.unfamily.iskautils.data.VectorCharmData;
+import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
@@ -80,6 +82,12 @@ public class IskaUtils {
         // Register discovered dynamic potion plates from external configurations
         PotionPlateRegistry.registerDiscoveredBlocks();
         
+        // ===== COMMAND ITEM SYSTEM =====
+        // Carica e inizializza gli item di comando prima della registrazione
+        // per evitare errori "Cannot register new entries to DeferredRegister after RegisterEvent has been fired"
+        CommandItemLoader.scanConfigDirectory();
+        CommandItemRegistry.initializeItems();
+        
         // Register blocks and items
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
@@ -89,6 +97,9 @@ public class IskaUtils {
         // Register dynamic potion plate blocks and items
         PotionPlateRegistry.POTION_PLATES.register(modEventBus);
         PotionPlateRegistry.POTION_PLATE_ITEMS.register(modEventBus);
+        
+        // Register Command Items system
+        CommandItemRegistry.register(modEventBus);
         
         // Register Curios integration if it's installed
         if (ModUtils.isCuriosLoaded()) {
@@ -108,8 +119,11 @@ public class IskaUtils {
         // Register network messages
         ModMessages.register();
         
-        // Scansiona e carica le macro di comandi
+        // Scan and load command macros
         MacroLoader.scanConfigDirectory();
+        
+        // Gli item di comando sono già stati inizializzati nel costruttore
+        // Non chiamare più CommandItemRegistry.initializeItems() qui
     }
     
     /**
@@ -159,16 +173,14 @@ public class IskaUtils {
         public static void onServerStarting(ServerStartingEvent event) {
             VectorCharmData.getInstance();
             
-            // La registrazione dei comandi avviene ora tramite RegisterCommandsEvent
-            // quindi non è più necessario farlo qui
-            // ExecuteMacroCommand.register(event.getServer().getCommands().getDispatcher());
+            // Commands registration happens via RegisterCommandsEvent
         }
 
         @SubscribeEvent
         public static void onServerStopping(ServerStoppingEvent event) {
             // For now, data is only stored in memory
             
-            // Arresta l'executor service delle macro
+            // Shutdown the macro executor service
             MacroCommand.shutdown();
         }
         
@@ -177,20 +189,26 @@ public class IskaUtils {
             // Server is fully started, all external datapacks should be loaded by now
             LOGGER.info("Server fully started, all external datapacks should be available");
             
-            // Ricarica le macro per assicurarsi che tutti i comandi siano registrati
-            // Questo garantisce che i comandi siano disponibili anche se non viene eseguito /reload
+            // Reload macros to ensure all commands are registered
             try {
                 MacroLoader.reloadAllMacros();
             } catch (Exception e) {
-                LOGGER.error("Errore nel caricamento delle macro all'avvio del server: {}", e.getMessage());
+                LOGGER.error("Error loading macros at server startup: {}", e.getMessage());
+            }
+            
+            // Reload command item definitions
+            try {
+                CommandItemRegistry.reloadDefinitions();
+            } catch (Exception e) {
+                LOGGER.error("Error loading command item definitions at server startup: {}", e.getMessage());
             }
         }
         
         @SubscribeEvent
         public static void onAddReloadListener(net.neoforged.neoforge.event.AddReloadListenerEvent event) {
-            LOGGER.info("Registrazione del listener per il ricaricamento delle macro...");
+            LOGGER.info("Registering reload listeners for macros and command items...");
             
-            // Aggiungi un ReloadListener che ricarica le macro quando viene chiamato il comando /reload
+            // Add a ReloadListener that reloads macros and command item definitions when /reload command is executed
             event.addListener(new PreparableReloadListener() {
                 @Override
                 public CompletableFuture<Void> reload(
@@ -202,15 +220,17 @@ public class IskaUtils {
                         Executor gameExecutor) {
                     
                     return CompletableFuture.runAsync(() -> {
-                        LOGGER.info("Server reload rilevato, ricarico le macro dei comandi...");
-                        // Ricarica le macro dei comandi
+                        LOGGER.info("Server reload detected, reloading macros and command item definitions...");
+                        // Reload command macros
                         MacroLoader.reloadAllMacros();
+                        // Reload command item definitions
+                        CommandItemRegistry.reloadDefinitions();
                     }, gameExecutor).thenCompose(preparationBarrier::wait);
                 }
                 
                 @Override
                 public String getName() {
-                    return "IskaUtils Macro Commands";
+                    return "IskaUtils Commands and Items";
                 }
             });
         }

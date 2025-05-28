@@ -206,9 +206,6 @@ public class MacroLoader {
                 "- `level`: Required permission level (0-4) [optional, default: 0]\n" +
                 "  - 0: Any player\n" +
                 "  - 1-4: OP level required\n" +
-                "- `usage`: Help text or syntax description shown when listing commands or on error [optional]\n" +
-                "  - Example: `\"/echo <message> - Broadcasts a message to all players\"`\n" +
-                "  - If not provided, defaults to `/<command_name>`\n" +
                 "- `stages_logic`: Logic for stage requirements evaluation: \"AND\" (all required) or \"OR\" (any one required) [optional, default: AND]\n" +
                 "  - `AND`: All stages must be satisfied\n" +
                 "  - `OR`: At least one stage must be satisfied\n" +
@@ -296,7 +293,6 @@ public class MacroLoader {
                 "{\n" +
                 "  \"command\": \"progression_test\",\n" +
                 "  \"level\": 0,\n" +
-                "  \"usage\": \"/progression_test - Tests stage-based progression\",\n" +
                 "  \"stages_logic\": \"DEF\",\n" +
                 "  \"do\": [\n" +
                 "    {\n" +
@@ -504,7 +500,7 @@ public class MacroLoader {
             "        {\"execute\": \"kubejs reload server-scripts\"},\n" +
             "        {\"execute\": \"reload\"},\n" +
             "        {\"delay\": 20},\n" +
-            "        {\"execute\": \"custommachinery reload\"},\n" +
+            "        {\"execute\": \"iska_utils_stage list all\"},\n" +
             "        {\"execute\": \"say Reload complete!\"}\n" +
             "      ]\n" +
             "    }\n" +

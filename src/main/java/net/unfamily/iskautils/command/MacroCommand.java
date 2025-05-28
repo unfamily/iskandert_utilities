@@ -841,19 +841,11 @@ public class MacroCommand {
             switch (requirement.getType()) {
                 case PLAYER:
                     // Check if player has unlocked the stage
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Checking player stage: {} (required: {})", 
-                                    requirement.getStageId(), requirement.isRequired());
-                    }
                     hasStage = registry.hasPlayerStage(player, requirement.getStageId());
                     break;
                     
                 case WORLD:
                     // Check if the world has the required stage
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Checking world stage: {} (required: {})", 
-                                    requirement.getStageId(), requirement.isRequired());
-                    }
                     hasStage = registry.hasWorldStage(requirement.getStageId());
                     break;
                     

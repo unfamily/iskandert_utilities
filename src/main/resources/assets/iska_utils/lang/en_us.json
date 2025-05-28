@@ -80,5 +80,7 @@
   "commands.iska_utils.macro.no_permission": "You don't have the required permission level to execute this macro",
   "commands.iska_utils.macro.success": "Macro execution started",
   "commands.iska_utils.macro.failed": "Failed to execute macro",
-  "commands.iska_utils.macro.missing_parameter": "Missing required parameter"
+  "commands.iska_utils.macro.missing_parameter": "Missing required parameter",
+
+  "item.iska_utils.iska_utils_world_init": "World Initializer"
 }

@@ -80,5 +80,7 @@
   "commands.iska_utils.macro.no_permission": "Non hai i permessi necessari per eseguire questa macro",
   "commands.iska_utils.macro.success": "Esecuzione della macro avviata",
   "commands.iska_utils.macro.failed": "Impossibile eseguire la macro",
-  "commands.iska_utils.macro.missing_parameter": "Parametro obbligatorio mancante"
+  "commands.iska_utils.macro.missing_parameter": "Parametro obbligatorio mancante",
+
+  "item.iska_utils.iska_utils_world_init": "Inizializzatore del Mondo"
 }
