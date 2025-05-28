@@ -38,9 +38,6 @@ public class PotionPlateConfig {
     // Freeze-specific fields
     private final int freezeDuration;
     
-    // Cobweb-specific fields
-    private boolean cobwebEffect;
-    
     // Visibility and behavior configuration
     private boolean creativeTabVisible;
     private boolean playerShiftDisable;
@@ -71,7 +68,6 @@ public class PotionPlateConfig {
         this.damageAmount = 0.0f;
         this.fireDuration = 0;
         this.freezeDuration = 0;
-        this.cobwebEffect = false;
         
         // Default values for visibility and behavior
         this.creativeTabVisible = true;
@@ -101,7 +97,6 @@ public class PotionPlateConfig {
         this.hideParticles = false;
         this.fireDuration = 0;
         this.freezeDuration = 0;
-        this.cobwebEffect = false;
         
         // Default values for visibility and behavior
         this.creativeTabVisible = true;
@@ -131,7 +126,6 @@ public class PotionPlateConfig {
         this.damageType = "";
         this.damageAmount = 0.0f;
         this.freezeDuration = 0;
-        this.cobwebEffect = false;
         
         // Default values for visibility and behavior
         this.creativeTabVisible = true;
@@ -144,16 +138,6 @@ public class PotionPlateConfig {
     public static PotionPlateConfig createFreezePlate(String plateId, int freezeDuration, int delay,
                                                      boolean affectsPlayers, boolean affectsMobs, boolean overwritable) {
         return new PotionPlateConfig(plateId, PotionPlateType.SPECIAL, freezeDuration, delay, affectsPlayers, affectsMobs, overwritable);
-    }
-    
-    /**
-     * Creates a new PotionPlateConfig for a cobweb-type plate (special)
-     */
-    public static PotionPlateConfig createCobwebPlate(String plateId, int delay,
-                                                    boolean affectsPlayers, boolean affectsMobs, boolean overwritable) {
-        PotionPlateConfig config = new PotionPlateConfig(plateId, PotionPlateType.SPECIAL, 0, delay, affectsPlayers, affectsMobs, overwritable);
-        config.cobwebEffect = true;
-        return config;
     }
     
     private PotionPlateConfig(String plateId, PotionPlateType plateType, int freezeDuration, int delay,
@@ -336,13 +320,6 @@ public class PotionPlateConfig {
     }
     
     /**
-     * Whether this plate has cobweb effect (for special plates)
-     */
-    public boolean hasCobwebEffect() {
-        return cobwebEffect;
-    }
-    
-    /**
      * Whether this plate should be visible in the creative tab
      */
     public boolean isCreativeTabVisible() {
@@ -444,7 +421,7 @@ public class PotionPlateConfig {
                 return damageType != null && !damageType.isEmpty() && damageAmount > 0.0f;
                 
             case SPECIAL:
-                return fireDuration > 0 || freezeDuration > 0 || cobwebEffect;
+                return fireDuration > 0 || freezeDuration > 0;
                 
             default:
                 return false;
@@ -514,11 +491,6 @@ public class PotionPlateConfig {
                     other.overwritable
                 );
                 
-                // Special handling for cobweb effect
-                if (other.hasCobwebEffect() || hasCobwebEffect()) {
-                    mergedSpecialConfig.cobwebEffect = true;
-                }
-                
                 // Copy visibility and behavior settings
                 mergedSpecialConfig.setCreativeTabVisible(other.isCreativeTabVisible());
                 mergedSpecialConfig.setPlayerShiftDisable(other.isPlayerShiftDisable());
@@ -553,9 +525,6 @@ public class PotionPlateConfig {
                 }
                 if (freezeDuration > 0) {
                     sb.append(", freeze=").append(freezeDuration).append(" ticks");
-                }
-                if (cobwebEffect) {
-                    sb.append(", cobweb=true");
                 }
                 break;
         }

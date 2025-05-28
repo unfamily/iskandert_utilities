@@ -1,6 +1,6 @@
 {
   "type": "minecraft:block",
-  "random_sequence": "iska_utils:blocks/raft",
+  "random_sequence": "iska_utils:blocks/iska_utils_poison",
   "pools": [
     {
       "rolls": 1.0,
@@ -8,7 +8,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "iska_utils:raft"
+          "name": "iska_utils:iska_utils_cobweb"
         }
       ],
       "conditions": [

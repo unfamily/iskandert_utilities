@@ -465,7 +465,7 @@ public class MacroLoader {
             MacroCommand.MacroDefinition macro = MacroCommand.MacroDefinition.fromJson(json);
             
             // Register the macro
-            MacroCommand.registerMacro(macroId, macro);
+            MacroCommand.registerMacro(macro.getId(), macro);
             
         } catch (Exception e) {
             LOGGER.error("Error processing macro: {}", e.getMessage());

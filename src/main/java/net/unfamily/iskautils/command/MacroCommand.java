@@ -455,6 +455,49 @@ public class MacroCommand {
             
             // Memorizza il future per potenziale cancellazione
             ACTIVE_COMMANDS.put(playerUUID, future);
+        } else if (action.type == MacroActionType.IF) {
+            // Handle IF blocks by checking conditions and executing sub-actions if conditions are met
+            List<Integer> indices = action.getConditionIndices();
+            List<MacroAction> subActions = action.getSubActions();
+            
+            // Get current macro for this player
+            UUID playerUUID = player.getUUID();
+            String currentMacroId = "unknown"; // Default
+            
+            // Try to find the current macro being executed
+            for (String macroId : MACRO_REGISTRY.keySet()) {
+                MacroDefinition macro = MACRO_REGISTRY.get(macroId);
+                if (macro != null && macro.getActions().contains(action)) {
+                    currentMacroId = macroId;
+                    
+                    // Check if conditions are met
+                    if (checkConditionsByIndices(player, indices, macro.getRequiredStages(), macro.getStagesLogic())) {
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("IF conditions met in macro {}, executing sub-actions", currentMacroId);
+                        }
+                        
+                        // Create a new future to execute the sub-actions
+                        ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
+                            // Execute sub-actions as a separate sequence
+                            executeActionSequence(player, level, subActions, paramValues, 0);
+                            
+                            // After sub-actions, continue with the next action in the main sequence
+                            scheduleNextAction(player, level, actions, paramValues, index + 1);
+                        }, 0, TimeUnit.MILLISECONDS);
+                        
+                        ACTIVE_COMMANDS.put(playerUUID, future);
+                        return; // Exit early as we've scheduled the next actions
+                    }
+                    
+                    break; // Found the macro, no need to continue searching
+                }
+            }
+            
+            // If conditions are not met or macro not found, continue with next action
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("IF conditions not met in macro {}, skipping sub-actions", currentMacroId);
+            }
+            scheduleNextAction(player, level, actions, paramValues, index + 1);
         }
     }
     
@@ -672,7 +715,13 @@ public class MacroCommand {
             if (json.has("stages_logic")) {
                 String logicStr = json.get("stages_logic").getAsString().toUpperCase();
                 try {
-                    stagesLogic = StagesLogic.valueOf(logicStr);
+                    if (logicStr.equals("DEF")) {
+                        // Retrocompatibilità: tratta DEF come DEF_AND
+                        stagesLogic = StagesLogic.DEF_AND;
+                        LOGGER.warn("Stage logic 'DEF' is deprecated, please use 'DEF_AND' instead for macro {}", id);
+                    } else {
+                        stagesLogic = StagesLogic.valueOf(logicStr);
+                    }
                 } catch (IllegalArgumentException e) {
                     // If invalid, default to AND
                     if (LOGGER.isDebugEnabled()) {
@@ -720,7 +769,8 @@ public class MacroCommand {
                         
                         // Extract stage requirements for this action if available
                         List<StageRequirement> actionStages = null;
-                        if (stagesLogic == StagesLogic.DEF && actionObj.has("stages") && actionObj.get("stages").isJsonArray()) {
+                        if ((stagesLogic == StagesLogic.DEF_AND || stagesLogic == StagesLogic.DEF_OR) && 
+                            actionObj.has("stages") && actionObj.get("stages").isJsonArray()) {
                             actionStages = new ArrayList<>();
                             JsonArray stagesArray = actionObj.get("stages").getAsJsonArray();
                             
@@ -754,6 +804,44 @@ public class MacroCommand {
                             // Delay action
                             int ticks = actionObj.get("delay").getAsInt();
                             actions.add(new MacroAction(MacroActionType.DELAY, null, ticks, actionStages));
+                        } else if (actionObj.has("if") && actionObj.get("if").isJsonArray()) {
+                            // If condition block
+                            JsonArray ifArray = actionObj.get("if").getAsJsonArray();
+                            
+                            if (ifArray.size() > 0 && ifArray.get(0).isJsonObject()) {
+                                JsonObject conditionsObj = ifArray.get(0).getAsJsonObject();
+                                List<Integer> indices = new ArrayList<>();
+                                
+                                // Parse conditions array with indices
+                                if (conditionsObj.has("conditions") && conditionsObj.get("conditions").isJsonArray()) {
+                                    JsonArray conditionsArray = conditionsObj.getAsJsonArray("conditions");
+                                    
+                                    for (JsonElement indexElement : conditionsArray) {
+                                        if (indexElement.isJsonPrimitive()) {
+                                            indices.add(indexElement.getAsInt());
+                                        }
+                                    }
+                                }
+                                
+                                // Process sub-actions (all elements after the first one)
+                                List<MacroAction> subActions = new ArrayList<>();
+                                for (int i = 1; i < ifArray.size(); i++) {
+                                    if (ifArray.get(i).isJsonObject()) {
+                                        JsonObject subActionObj = ifArray.get(i).getAsJsonObject();
+                                        
+                                        if (subActionObj.has("execute")) {
+                                            String command = subActionObj.get("execute").getAsString();
+                                            subActions.add(new MacroAction(MacroActionType.EXECUTE, command, 0, null));
+                                        } else if (subActionObj.has("delay")) {
+                                            int ticks = subActionObj.get("delay").getAsInt();
+                                            subActions.add(new MacroAction(MacroActionType.DELAY, null, ticks, null));
+                                        }
+                                    }
+                                }
+                                
+                                // Create if action with sub-actions
+                                actions.add(new MacroAction(MacroActionType.IF, null, 0, actionStages, indices, subActions));
+                            }
                         }
                     }
                 }
@@ -802,8 +890,8 @@ public class MacroCommand {
                 return true; // No stage requirements
             }
             
-            // If using DEF logic, stage checks are deferred to individual actions
-            if (stagesLogic == StagesLogic.DEF) {
+            // If using DEF_AND or DEF_OR logic, stage checks are deferred to individual actions
+            if (stagesLogic == StagesLogic.DEF_AND || stagesLogic == StagesLogic.DEF_OR) {
                 return true;
             }
             
@@ -825,38 +913,17 @@ public class MacroCommand {
                         return true;
                     }
                 }
-                return false;
+                return requiredStages.isEmpty(); // Empty list means no requirements
             }
         }
         
         /**
-         * Checks if a single stage requirement is satisfied
+         * Checks if a single stage requirement is satisfied using the first macro available
          */
         public boolean checkSingleStage(ServerPlayer player, StageRequirement requirement) {
-            boolean hasStage = false; // Whether the player/world/dimension has the stage
-            
-            // Use the StageRegistry to check stages
-            StageRegistry registry = StageRegistry.getInstance(player.getServer());
-            
-            switch (requirement.getType()) {
-                case PLAYER:
-                    // Check if player has unlocked the stage
-                    hasStage = registry.hasPlayerStage(player, requirement.getStageId());
-                    break;
-                    
-                case WORLD:
-                    // Check if the world has the required stage
-                    hasStage = registry.hasWorldStage(requirement.getStageId());
-                    break;
-                    
-                default:
-                    hasStage = true;
-                    break;
-            }
-            
-            // If the stage is required (is=true), player must have it
-            // If the stage is not required (is=false), player must NOT have it
-            return requirement.isRequired() ? hasStage : !hasStage;
+            // Create a dummy MacroDefinition to use its checkSingleStage method
+            MacroDefinition dummyMacro = new MacroDefinition("dummy", null, null, 0);
+            return dummyMacro.checkSingleStage(player, requirement);
         }
     }
     
@@ -914,7 +981,8 @@ public class MacroCommand {
     public enum StagesLogic {
         AND,  // All stages are required
         OR,   // At least one stage is required
-        DEF   // Deferred to individual actions
+        DEF_AND, // Deferred evaluation with array indices referring to stages list (AND logic)
+        DEF_OR  // Deferred evaluation with array indices referring to stages list (OR logic)
     }
     
     /**
@@ -957,15 +1025,27 @@ public class MacroCommand {
         private final int delayTicks;
         private final List<StageRequirement> stageRequirements;
         
+        // For IF actions
+        private final List<Integer> conditionIndices;
+        private final List<MacroAction> subActions;
+        
         public MacroAction(MacroActionType type, String command, int delayTicks, List<StageRequirement> stageRequirements) {
+            this(type, command, delayTicks, stageRequirements, null, null);
+        }
+        
+        public MacroAction(MacroActionType type, String command, int delayTicks) {
+            this(type, command, delayTicks, null, null, null);
+        }
+        
+        public MacroAction(MacroActionType type, String command, int delayTicks, 
+                          List<StageRequirement> stageRequirements,
+                          List<Integer> conditionIndices, List<MacroAction> subActions) {
             this.type = type;
             this.command = command;
             this.delayTicks = delayTicks;
             this.stageRequirements = stageRequirements != null ? stageRequirements : new ArrayList<>();
-        }
-        
-        public MacroAction(MacroActionType type, String command, int delayTicks) {
-            this(type, command, delayTicks, null);
+            this.conditionIndices = conditionIndices != null ? conditionIndices : new ArrayList<>();
+            this.subActions = subActions != null ? subActions : new ArrayList<>();
         }
         
         public MacroActionType getType() {
@@ -987,6 +1067,78 @@ public class MacroCommand {
         public boolean hasStageRequirements() {
             return stageRequirements != null && !stageRequirements.isEmpty();
         }
+        
+        public List<Integer> getConditionIndices() {
+            return conditionIndices;
+        }
+        
+        public List<MacroAction> getSubActions() {
+            return subActions;
+        }
+        
+        public boolean hasSubActions() {
+            return subActions != null && !subActions.isEmpty();
+        }
+        
+        /**
+         * Checks if the conditions specified by indices are met
+         * 
+         * @param player The player to check conditions for
+         * @param macro The macro definition
+         * @return true if conditions are met based on the logic
+         */
+        public boolean checkConditionsByIndices(ServerPlayer player, MacroDefinition macro) {
+            if (conditionIndices.isEmpty()) {
+                return true;
+            }
+            
+            List<StageRequirement> allStages = macro.getRequiredStages();
+            
+            // For DEF_AND logic, all conditions must be met
+            if (macro.getStagesLogic() == StagesLogic.DEF_AND) {
+                for (Integer index : conditionIndices) {
+                    if (index < 0 || index >= allStages.size()) {
+                        // Invalid index
+                        return false;
+                    }
+                    
+                    StageRequirement condition = allStages.get(index);
+                    if (!macro.checkSingleStage(player, condition)) {
+                        return false;
+                    }
+                }
+                return true;
+            } 
+            // For DEF_OR logic, at least one condition must be met
+            else if (macro.getStagesLogic() == StagesLogic.DEF_OR) {
+                for (Integer index : conditionIndices) {
+                    if (index < 0 || index >= allStages.size()) {
+                        // Skip invalid index
+                        continue;
+                    }
+                    
+                    StageRequirement condition = allStages.get(index);
+                    if (macro.checkSingleStage(player, condition)) {
+                        return true;
+                    }
+                }
+                return conditionIndices.isEmpty(); // Return true only if no conditions
+            }
+            
+            // Default to AND logic for any other case
+            for (Integer index : conditionIndices) {
+                if (index < 0 || index >= allStages.size()) {
+                    // Invalid index
+                    return false;
+                }
+                
+                StageRequirement condition = allStages.get(index);
+                if (!macro.checkSingleStage(player, condition)) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
     
     /**
@@ -994,6 +1146,70 @@ public class MacroCommand {
      */
     public enum MacroActionType {
         EXECUTE,
-        DELAY
+        DELAY,
+        IF      // Conditional action block
+    }
+    
+    /**
+     * Checks conditions based on indices for IF statements
+     */
+    private static boolean checkConditionsByIndices(ServerPlayer player, List<Integer> indices, List<StageRequirement> allStages, StagesLogic logic) {
+        if (indices == null || indices.isEmpty()) {
+            return true;
+        }
+        
+        // For DEF_AND logic, all conditions must be met
+        if (logic == StagesLogic.DEF_AND) {
+            for (Integer index : indices) {
+                if (index < 0 || index >= allStages.size()) {
+                    // Invalid index
+                    return false;
+                }
+                
+                StageRequirement condition = allStages.get(index);
+                if (!checkSingleStage(player, condition)) {
+                    return false;
+                }
+            }
+            return true;
+        } 
+        // For DEF_OR logic, at least one condition must be met
+        else if (logic == StagesLogic.DEF_OR) {
+            for (Integer index : indices) {
+                if (index < 0 || index >= allStages.size()) {
+                    // Skip invalid index
+                    continue;
+                }
+                
+                StageRequirement condition = allStages.get(index);
+                if (checkSingleStage(player, condition)) {
+                    return true;
+                }
+            }
+            return indices.isEmpty(); // Return true only if no conditions
+        }
+        
+        // Default to AND logic for any other case
+        for (Integer index : indices) {
+            if (index < 0 || index >= allStages.size()) {
+                // Invalid index
+                return false;
+            }
+            
+            StageRequirement condition = allStages.get(index);
+            if (!checkSingleStage(player, condition)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Checks if a single stage requirement is satisfied using the first macro available
+     */
+    private static boolean checkSingleStage(ServerPlayer player, StageRequirement requirement) {
+        // Create a dummy MacroDefinition to use its checkSingleStage method
+        MacroDefinition dummyMacro = new MacroDefinition("dummy", null, null, 0);
+        return dummyMacro.checkSingleStage(player, requirement);
     }
 } 

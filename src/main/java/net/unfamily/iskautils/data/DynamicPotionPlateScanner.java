@@ -220,7 +220,7 @@ public class DynamicPotionPlateScanner {
                 "- `damage_type`: The damage type to apply, e.g., `minecraft:generic` [required]\n" +
                 "- `damage`: The amount of damage to apply [required]\n\n" +
                 "### Special Plate Fields\n" +
-                "- `apply`: Special effect type (`fire`, `freeze`, or `cobweb`) [required]\n" +
+                "- `apply`: Special effect type (`fire`, `freeze`) [required]\n" +
                 "- `duration`: Duration in ticks (20 ticks = 1 second) [required]\n\n" +
                 "## Notes\n\n" +
                 "- You can place potion plates like regular blocks. Entities standing on the plate will receive the configured effect.\n" +
@@ -549,9 +549,6 @@ public class DynamicPotionPlateScanner {
                 case "freeze":
                     config = PotionPlateConfig.createFreezePlate(plateId, duration, delay, affectsPlayers, affectsMobs, arrayOverwritable);
                     break;
-                case "cobweb":
-                    config = PotionPlateConfig.createCobwebPlate(plateId, delay, affectsPlayers, affectsMobs, arrayOverwritable);
-                    break;
                 default:
                     LOGGER.error("Unknown special apply type: {}", applyType);
                     return null;
@@ -735,17 +732,6 @@ public class DynamicPotionPlateScanner {
             "      \"id\": \"iska_utils-freeze\",\n" +
             "      \"apply\": \"freeze\",\n" +
             "      \"duration\": 100,\n" +
-            "      \"delay\": 40,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"plate_type\": \"special\",\n" +
-            "      \"id\": \"iska_utils-cobweb\",\n" +
-            "      \"apply\": \"cobweb\",\n" +
-            "      \"duration\": 40,\n" +
             "      \"delay\": 40,\n" +
             "      \"affects_players\": true,\n" +
             "      \"affects_mobs\": true,\n" +

@@ -124,6 +124,9 @@ public class IskaUtils {
         
         // Gli item di comando sono già stati inizializzati nel costruttore
         // Non chiamare più CommandItemRegistry.initializeItems() qui
+        
+        // Inizializza il sistema di stage degli item
+        net.unfamily.iskautils.iska_utils_stages.StageItemManager.initialize(event);
     }
     
     /**
@@ -225,6 +228,8 @@ public class IskaUtils {
                         MacroLoader.reloadAllMacros();
                         // Reload command item definitions
                         CommandItemRegistry.reloadDefinitions();
+                        // Reload stage item restrictions
+                        net.unfamily.iskautils.iska_utils_stages.StageItemManager.reloadItemRestrictions();
                     }, gameExecutor).thenCompose(preparationBarrier::wait);
                 }
                 

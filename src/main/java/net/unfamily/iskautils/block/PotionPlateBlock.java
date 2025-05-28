@@ -3,14 +3,22 @@ package net.unfamily.iskautils.block;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.data.PotionPlateConfig;
 import net.unfamily.iskautils.data.PotionPlateType;
 import org.slf4j.Logger;
@@ -72,16 +80,15 @@ public class PotionPlateBlock extends VectorBlock {
                 return;
             }
             
-            // Check cooldown - only apply effect every 3 seconds per entity
+            // Check cooldown for effects - only apply every x seconds per entity
             UUID entityId = entity.getUUID();
             long currentTime = level.getGameTime();
             Long lastApplication = EFFECT_COOLDOWNS.get(entityId);
             
-            // Special handling for freezing effect and cobweb effect - don't use regular cooldown
+            // Special handling for freezing effect - don't use regular cooldown
             // to better simulate continuous behavior
             boolean isFreezePlate = config.getPlateType() == PotionPlateType.SPECIAL && config.getFreezeDuration() > 0;
-            boolean isCobwebPlate = config.getPlateType() == PotionPlateType.SPECIAL && config.hasCobwebEffect();
-            boolean isSpecialContinuousEffect = isFreezePlate || isCobwebPlate;
+            boolean isSpecialContinuousEffect = isFreezePlate;
             
             if (!isSpecialContinuousEffect && lastApplication != null && (currentTime - lastApplication) < config.getDelay()) {
                 // Still in cooldown, don't apply effect
@@ -267,5 +274,34 @@ public class PotionPlateBlock extends VectorBlock {
     @Override
     public String toString() {
         return String.format("PotionPlateBlock{config=%s}", config);
+    }
+
+    @Override
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        // Usa la forma standard del VectorBlock
+        Direction facing = state.getValue(FACING);
+        boolean vertical = state.getValue(VERTICAL);
+        
+        // Check if this is a vertical placement
+        if (vertical) {
+            // Return the appropriate shape based on the facing direction
+            return switch (facing) {
+                case NORTH -> SHAPE_VERTICAL_NORTH;
+                case SOUTH -> SHAPE_VERTICAL_SOUTH;
+                case EAST -> SHAPE_VERTICAL_EAST;
+                case WEST -> SHAPE_VERTICAL_WEST;
+                default -> SHAPE_HORIZONTAL; // Fallback
+            };
+        } else {
+            // Horizontal placement
+            return SHAPE_HORIZONTAL;
+        }
+    }
+    
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        // Per tutti i tipi di piastre, compresa quella cobweb, non creiamo collisione fisica
+        // in modo che le entità possano attraversare il blocco e attivare entityInside
+        return Shapes.empty();
     }
 } 

@@ -128,10 +128,9 @@ public class Config
 
     // Dynamic Potion Plates configuration
     private static final ModConfigSpec.ConfigValue<String> EXTERNAL_SCRIPTS_PATH = BUILDER
-            .comment("Path to the external scripts directory for custom potion plates",
+            .comment("Path to the external scripts directory for custom potion plates and stage items",
                     "Default: 'kubejs/external_scripts'",
-                    "The system will look for potion plates in: <path>/potion_plates/",
-                    "You can use relative paths from the game directory or absolute paths")
+                    "The system will look for any scripts of this mod: <path>/potion_plates/")
             .define("000_external_scripts_path", "kubejs/external_scripts");
 
     static {
