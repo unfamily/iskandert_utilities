@@ -155,69 +155,10 @@ public class DynamicPotionPlateScanner {
     private static void createConfigReadme(Path configPath, String externalScriptsBasePath) {
         try {
             Path readmePath = configPath.resolve("README.md");
-            String readmeContent = "# Iska Utils - Dynamic Plates Configuration\n" +
-                "\n" +
-                "This directory allows you to create custom plates that will be registered as real blocks in the game.\n" +
-                "\n" +
-                "## Location: " + externalScriptsBasePath + "/iska_utils_plates/\n" +
-                "\n" +
-                "## Supported Plate Types:\n" +
-                "\n" +
-                "### 1. Effect Plates (Potion Effects)\n" +
-                "```json\n" +
-                "{\n" +
-                "  \"plate_type\": \"effect\",\n" +
-                "  \"id\": \"iska_utils-slowness\",\n" +
-                "  \"effect\": \"minecraft:slowness\",\n" +
-                "  \"amplifier\": 0,\n" +
-                "  \"duration\": 100,\n" +
-                "  \"delay\": 40,\n" +
-                "  \"affects_players\": true,\n" +
-                "  \"affects_mobs\": true,\n" +
-                "  \"hide_particles\": true\n" +
-                "}\n" +
-                "```\n" +
-                "\n" +
-                "### 2. Damage Plates\n" +
-                "```json\n" +
-                "{\n" +
-                "  \"plate_type\": \"damage\",\n" +
-                "  \"id\": \"iska_utils-damage\",\n" +
-                "  \"damage_type\": \"minecraft:cactus\",\n" +
-                "  \"damage\": 2.0,\n" +
-                "  \"delay\": 20,\n" +
-                "  \"affects_players\": true,\n" +
-                "  \"affects_mobs\": true\n" +
-                "}\n" +
-                "```\n" +
-                "\n" +
-                "### 3. Special Plates (Fire, Freeze, etc.)\n" +
-                "```json\n" +
-                "{\n" +
-                "  \"plate_type\": \"special\",\n" +
-                "  \"id\": \"iska_utils-fire\",\n" +
-                "  \"apply\": \"fire\",\n" +
-                "  \"duration\": 100,\n" +
-                "  \"delay\": 40,\n" +
-                "  \"affects_players\": true,\n" +
-                "  \"affects_mobs\": true\n" +
-                "}\n" +
-                "```\n" +
-                "\n" +
-                "```json\n" +
-                "{\n" +
-                "  \"plate_type\": \"special\",\n" +
-                "  \"id\": \"iska_utils-freeze\",\n" +
-                "  \"apply\": \"freeze\",\n" +
-                "  \"duration\": 100,\n" +
-                "  \"delay\": 40,\n" +
-                "  \"affects_players\": true,\n" +
-                "  \"affects_mobs\": true\n" +
-                "}\n" +
-                "```\n" +
-                "\n" +
-                "## Array Format:\n" +
-                "\n" +
+            
+            String readmeContent = "# Iska Utils - Potion Plates\n\n" +
+                "This directory contains configuration files for custom potion effect plates.\n\n" +
+                "## Configuration Format\n\n" +
                 "```json\n" +
                 "{\n" +
                 "  \"type\": \"iska_utils:plates\",\n" +
@@ -225,87 +166,81 @@ public class DynamicPotionPlateScanner {
                 "  \"plates\": [\n" +
                 "    {\n" +
                 "      \"plate_type\": \"effect\",\n" +
-                "      \"id\": \"iska_utils-slowness\",\n" +
-                "      \"effect\": \"minecraft:slowness\",\n" +
+                "      \"id\": \"iska_utils-poison\",\n" +
+                "      \"effect\": \"minecraft:poison\",\n" +
                 "      \"amplifier\": 0,\n" +
                 "      \"duration\": 100,\n" +
                 "      \"delay\": 40,\n" +
+                "      \"hide_particles\": false,\n" +
                 "      \"affects_players\": true,\n" +
                 "      \"affects_mobs\": true,\n" +
-                "      \"hide_particles\": true\n" +
+                "      \"creative_tab\": true,\n" +
+                "      \"player_shift_disable\": true\n" +
                 "    },\n" +
                 "    {\n" +
                 "      \"plate_type\": \"damage\",\n" +
                 "      \"id\": \"iska_utils-damage\",\n" +
-                "      \"damage_type\": \"minecraft:cactus\",\n" +
+                "      \"damage_type\": \"minecraft:generic\",\n" +
                 "      \"damage\": 2.0,\n" +
                 "      \"delay\": 20,\n" +
                 "      \"affects_players\": true,\n" +
-                "      \"affects_mobs\": true\n" +
+                "      \"affects_mobs\": true,\n" +
+                "      \"creative_tab\": true,\n" +
+                "      \"player_shift_disable\": true\n" +
                 "    },\n" +
                 "    {\n" +
                 "      \"plate_type\": \"special\",\n" +
                 "      \"id\": \"iska_utils-fire\",\n" +
                 "      \"apply\": \"fire\",\n" +
-                "      \"duration\": 100,\n" +
+                "      \"duration\": 60,\n" +
                 "      \"delay\": 40,\n" +
                 "      \"affects_players\": true,\n" +
-                "      \"affects_mobs\": true\n" +
+                "      \"affects_mobs\": true,\n" +
+                "      \"creative_tab\": true,\n" +
+                "      \"player_shift_disable\": true\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}\n" +
-                "```\n" +
-                "\n" +
-                "## Common Fields:\n" +
-                "\n" +
-                "- `type`: Must be **\"iska_utils:plates\"**\n" +
-                "- `overwritable`: Whether ALL plates in this file can be overwritten [**required**]\n" +
-                "- `plates`: Array of plate configurations\n" +
-                "- `plate_type`: Type of plate (\"effect\", \"damage\", \"special\")\n" +
-                "- `id`: Unique identifier for the plate [**required**]\n" +
-                "- `delay`: Delay between applications in ticks [optional]\n" +
-                "  - Effect/Special plates: minimum 40 ticks (2 seconds), default 40\n" +
-                "  - Damage plates: minimum 1 tick, default 20 (1 second)\n" +
-                "- `affects_players`: Whether affects players [optional, default: true]\n" +
-                "- `affects_mobs`: Whether affects mobs [optional, default: true]\n" +
-                "\n" +
-                "## Effect Plate Fields:\n" +
-                "- `effect`: The potion effect ID [**required**]\n" +
-                "- `amplifier`: Effect amplifier (0 = level I) [optional, default: 0]\n" +
-                "- `duration`: Effect duration in ticks [optional, default: 100]\n" +
-                "- `hide_particles`: Whether to hide particles [optional, default: false]\n" +
-                "\n" +
-                "## Damage Plate Fields:\n" +
-                "- `damage_type`: Damage source type [**required**]\n" +
-                "  - Examples: \"minecraft:cactus\", \"minecraft:magic\", \"minecraft:generic\", \"minecraft:player_attack\"\n" +
-                "- `damage`: Damage amount (hearts) [**required**]\n" +
-                "\n" +
-                "## Special Plate Fields:\n" +
-                "- `apply`: Special effect type [**required**]\n" +
-                "  - \"fire\": Sets entity on fire\n" +
-                "  - \"freeze\": Freezes entity (powder snow effect)\n" +
-                "- `duration`: Effect duration in ticks [**required**]\n" +
-                "\n" +
-                "## Overwritable System:\n" +
-                "\n" +
-                "- Files are processed in alphabetical order\n" +
-                "- If `overwritable: true`, ALL plates in this file CAN BE overwritten by later files\n" +
-                "- If `overwritable: false`, ALL plates in this file CANNOT BE overwritten by later files\n" +
-                "- When a plate with the same ID is found in multiple files:\n" +
-                "  - If the existing plate has `overwritable: true`, it gets replaced by the new plate\n" +
-                "  - If the existing plate has `overwritable: false`, the new plate gets skipped and existing remains\n" +
-                "\n" +
-                "## Notes:\n" +
-                "\n" +
-                "- **Plate IDs must be unique** across all files\n" +
-                "- **Changes require a game restart**\n" +
-                "- Use `/give @p iska_utils:<plate_id>` to get plates in-game\n";
+                "```\n\n" +
+                "## Fields\n\n" +
+                "### General Fields (all plate types)\n" +
+                "- `plate_type`: The type of plate (`effect`, `damage`, or `special`) [required]\n" +
+                "- `id`: Unique identifier for the plate [optional, auto-generated if not provided]\n" +
+                "- `affects_players`: Whether this plate affects players [optional, default: true]\n" +
+                "- `affects_mobs`: Whether this plate affects non-player entities [optional, default: true]\n" +
+                "- `delay`: Delay in ticks between applying effects (20 ticks = 1 second) [optional, type-specific defaults]\n" +
+                "- `creative_tab`: Whether this plate should appear in the creative tab [optional, default: true]\n" +
+                "- `player_shift_disable`: Whether players can avoid the effect by sneaking [optional, default: true]\n\n" +
+                "### Effect Plate Fields\n" +
+                "- `effect`: The effect to apply, e.g., `minecraft:poison` [required]\n" +
+                "- `amplifier`: The amplifier (level) of the effect, starting at 0 [optional, default: 0]\n" +
+                "- `duration`: Duration in ticks (20 ticks = 1 second) [optional, default: 100, minimum: 60]\n" +
+                "- `hide_particles`: Whether to hide the effect particles [optional, default: false]\n\n" +
+                "### Damage Plate Fields\n" +
+                "- `damage_type`: The damage type to apply, e.g., `minecraft:generic` [required]\n" +
+                "- `damage`: The amount of damage to apply [required]\n\n" +
+                "### Special Plate Fields\n" +
+                "- `apply`: Special effect type (`fire`, `freeze`, or `cobweb`) [required]\n" +
+                "- `duration`: Duration in ticks (20 ticks = 1 second) [required]\n\n" +
+                "## Notes\n\n" +
+                "- You can place potion plates like regular blocks. Entities standing on the plate will receive the configured effect.\n" +
+                "- If a plate configuration with the same ID is found in multiple files, the behavior depends on the `overwritable` flag:\n" +
+                "  - If a plate configuration has `overwritable: false`, it cannot be overwritten by other configurations\n" +
+                "  - If a plate configuration has `overwritable: true`, it can be overwritten by configurations loaded later\n" +
+                "  - The global `overwritable` flag applies to all plates in a file if not specified individually\n" +
+                "- Plates are sorted alphabetically by ID for registration purposes.\n" +
+                "- When `player_shift_disable` is true, players can avoid the effect by sneaking (shift key)\n" +
+                "- When `creative_tab` is false, the plate won't appear in creative tabs but can still be used with commands\n\n" +
+                "## Example File Locations\n\n" +
+                "- KubeJS: `" + externalScriptsBasePath + "/iska_utils_plates/custom_plates.json`\n" +
+                "- Default plates: `" + externalScriptsBasePath + "/iska_utils_plates/iska_utils_plates.json`\n\n" +
+                "Changes require a game restart to apply.";
             
-            Files.writeString(readmePath, readmeContent);
-            LOGGER.info("Created README file: {}", readmePath);
+            Files.write(readmePath, readmeContent.getBytes());
+            LOGGER.info("Created README.md file at {}", readmePath);
             
-        } catch (Exception e) {
-            LOGGER.warn("Failed to create README file: {}", e.getMessage());
+        } catch (IOException e) {
+            LOGGER.error("Failed to create README.md file: {}", e.getMessage());
         }
     }
     
@@ -489,6 +424,8 @@ public class DynamicPotionPlateScanner {
             int duration = json.has("duration") ? json.get("duration").getAsInt() : 100;
             int delay = json.has("delay") ? json.get("delay").getAsInt() : 40; // Default 2 seconds
             boolean hideParticles = json.has("hide_particles") ? json.get("hide_particles").getAsBoolean() : false;
+            boolean creativeTabVisible = json.has("creative_tab") ? json.get("creative_tab").getAsBoolean() : true;
+            boolean playerShiftDisable = json.has("player_shift_disable") ? json.get("player_shift_disable").getAsBoolean() : true;
             
             // Validate values
             if (amplifier < 0) {
@@ -502,7 +439,10 @@ public class DynamicPotionPlateScanner {
                 delay = 40;
             }
             
-            return new PotionPlateConfig(plateId, effectId, amplifier, duration, delay, affectsPlayers, affectsMobs, hideParticles, arrayOverwritable);
+            PotionPlateConfig config = new PotionPlateConfig(plateId, effectId, amplifier, duration, delay, affectsPlayers, affectsMobs, hideParticles, arrayOverwritable);
+            config.setCreativeTabVisible(creativeTabVisible);
+            config.setPlayerShiftDisable(playerShiftDisable);
+            return config;
             
         } catch (Exception e) {
             LOGGER.error("Error parsing effect plate: {}", e.getMessage());
@@ -522,6 +462,8 @@ public class DynamicPotionPlateScanner {
             
             // Optional delay field with default
             int delay = json.has("delay") ? json.get("delay").getAsInt() : 20; // Default 1 second for damage plates
+            boolean creativeTabVisible = json.has("creative_tab") ? json.get("creative_tab").getAsBoolean() : true;
+            boolean playerShiftDisable = json.has("player_shift_disable") ? json.get("player_shift_disable").getAsBoolean() : true;
             
             // Generate plate ID if not specified
             if (plateId == null) {
@@ -544,7 +486,10 @@ public class DynamicPotionPlateScanner {
                 delay = 1;
             }
             
-            return new PotionPlateConfig(plateId, damageType, damageAmount, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+            PotionPlateConfig config = new PotionPlateConfig(plateId, damageType, damageAmount, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+            config.setCreativeTabVisible(creativeTabVisible);
+            config.setPlayerShiftDisable(playerShiftDisable);
+            return config;
             
         } catch (Exception e) {
             LOGGER.error("Error parsing damage plate: {}", e.getMessage());
@@ -569,6 +514,8 @@ public class DynamicPotionPlateScanner {
             
             // Optional delay field with default
             int delay = json.has("delay") ? json.get("delay").getAsInt() : 40; // Default 2 seconds for special plates
+            boolean creativeTabVisible = json.has("creative_tab") ? json.get("creative_tab").getAsBoolean() : true;
+            boolean playerShiftDisable = json.has("player_shift_disable") ? json.get("player_shift_disable").getAsBoolean() : true;
             
             // Ensure delay is at least 40 ticks (2 seconds) for all special plates
             if (delay < 40) {
@@ -594,15 +541,26 @@ public class DynamicPotionPlateScanner {
             }
             
             // Create appropriate special plate based on apply type
+            PotionPlateConfig config;
             switch (applyType.toLowerCase()) {
                 case "fire":
-                    return new PotionPlateConfig(plateId, duration, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+                    config = new PotionPlateConfig(plateId, duration, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+                    break;
                 case "freeze":
-                    return PotionPlateConfig.createFreezePlate(plateId, duration, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+                    config = PotionPlateConfig.createFreezePlate(plateId, duration, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+                    break;
+                case "cobweb":
+                    config = PotionPlateConfig.createCobwebPlate(plateId, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+                    break;
                 default:
                     LOGGER.error("Unknown special apply type: {}", applyType);
                     return null;
             }
+            
+            // Apply additional settings
+            config.setCreativeTabVisible(creativeTabVisible);
+            config.setPlayerShiftDisable(playerShiftDisable);
+            return config;
             
         } catch (Exception e) {
             LOGGER.error("Error parsing special plate: {}", e.getMessage());
@@ -715,35 +673,15 @@ public class DynamicPotionPlateScanner {
     }
     
     /**
-     * Generates the main iska_utils plates configuration file
+     * Generates the iska_utils_plates.json file
      */
     private static void generateIskaUtilsPlates(Path configPath) throws IOException {
-        String content = "{\n" +
+        Path iskaUtilsFile = configPath.resolve("iska_utils_plates.json");
+        
+        String iskaUtilsContent = "{\n" +
             "  \"type\": \"iska_utils:plates\",\n" +
             "  \"overwritable\": true,\n" +
             "  \"plates\": [\n" +
-            "    {\n" +
-            "      \"plate_type\": \"effect\",\n" +
-            "      \"id\": \"iska_utils-slowness\",\n" +
-            "      \"effect\": \"minecraft:slowness\",\n" +
-            "      \"amplifier\": 0,\n" +
-            "      \"duration\": 100,\n" +
-            "      \"delay\": 40,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"hide_particles\": true\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"plate_type\": \"effect\",\n" +
-            "      \"id\": \"iska_utils-weakness\",\n" +
-            "      \"effect\": \"minecraft:weakness\",\n" +
-            "      \"amplifier\": 0,\n" +
-            "      \"duration\": 100,\n" +
-            "      \"delay\": 40,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"hide_particles\": true\n" +
-            "    },\n" +
             "    {\n" +
             "      \"plate_type\": \"effect\",\n" +
             "      \"id\": \"iska_utils-poison\",\n" +
@@ -751,36 +689,46 @@ public class DynamicPotionPlateScanner {
             "      \"amplifier\": 0,\n" +
             "      \"duration\": 100,\n" +
             "      \"delay\": 40,\n" +
+            "      \"hide_particles\": false,\n" +
             "      \"affects_players\": true,\n" +
             "      \"affects_mobs\": true,\n" +
-            "      \"hide_particles\": false\n" +
+            "      \"creative_tab\": true,\n" +
+            "      \"player_shift_disable\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"plate_type\": \"effect\",\n" +
+            "      \"id\": \"iska_utils-slowness\",\n" +
+            "      \"effect\": \"minecraft:slowness\",\n" +
+            "      \"amplifier\": 0,\n" +
+            "      \"duration\": 200,\n" +
+            "      \"delay\": 40,\n" +
+            "      \"hide_particles\": false,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"creative_tab\": true,\n" +
+            "      \"player_shift_disable\": true\n" +
             "    },\n" +
             "    {\n" +
             "      \"plate_type\": \"damage\",\n" +
             "      \"id\": \"iska_utils-damage\",\n" +
-            "      \"damage_type\": \"minecraft:cactus\",\n" +
-            "      \"damage\": 1.0,\n" +
-            "      \"delay\": 10,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"plate_type\": \"damage\",\n" +
-            "      \"id\": \"iska_utils-improved_damage\",\n" +
-            "      \"damage_type\": \"minecraft:player_attack\",\n" +
+            "      \"damage_type\": \"minecraft:generic\",\n" +
             "      \"damage\": 2.0,\n" +
-            "      \"delay\": 10,\n" +
+            "      \"delay\": 20,\n" +
             "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"creative_tab\": true,\n" +
+            "      \"player_shift_disable\": true\n" +
             "    },\n" +
             "    {\n" +
             "      \"plate_type\": \"special\",\n" +
             "      \"id\": \"iska_utils-fire\",\n" +
             "      \"apply\": \"fire\",\n" +
-            "      \"duration\": 100,\n" +
+            "      \"duration\": 60,\n" +
             "      \"delay\": 40,\n" +
             "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"creative_tab\": true,\n" +
+            "      \"player_shift_disable\": true\n" +
             "    },\n" +
             "    {\n" +
             "      \"plate_type\": \"special\",\n" +
@@ -789,13 +737,25 @@ public class DynamicPotionPlateScanner {
             "      \"duration\": 100,\n" +
             "      \"delay\": 40,\n" +
             "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"creative_tab\": true,\n" +
+            "      \"player_shift_disable\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"plate_type\": \"special\",\n" +
+            "      \"id\": \"iska_utils-cobweb\",\n" +
+            "      \"apply\": \"cobweb\",\n" +
+            "      \"duration\": 40,\n" +
+            "      \"delay\": 40,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"creative_tab\": true,\n" +
+            "      \"player_shift_disable\": true\n" +
             "    }\n" +
             "  ]\n" +
-            "}";
+            "}\n";
         
-        Path filePath = configPath.resolve("iska_utils.json");
-        Files.writeString(filePath, content);
-        LOGGER.info("Generated default iska_utils plates configuration: {}", filePath);
+        Files.write(iskaUtilsFile, iskaUtilsContent.getBytes());
+        LOGGER.info("Generated default iska_utils_plates.json file");
     }
 } 

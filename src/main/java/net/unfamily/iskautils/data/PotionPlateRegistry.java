@@ -95,14 +95,25 @@ public class PotionPlateRegistry {
         DeferredHolder<Block, PotionPlateBlock> blockHolder = POTION_PLATES.register(blockName, 
             () -> new PotionPlateBlock(POTION_PLATE_PROPERTIES, config));
         
-        // Register the item
+        // Decide whether to register the item in the creative tabs
+        Item.Properties itemProperties;
+        if (config.isCreativeTabVisible()) {
+            // Use default properties (visible in creative tabs)
+            itemProperties = POTION_PLATE_ITEM_PROPERTIES;
+        } else {
+            // Create new properties instance without any creative tab registration
+            itemProperties = new Item.Properties();
+        }
+        
+        // Register the item with appropriate properties
         DeferredHolder<Item, BlockItem> itemHolder = POTION_PLATE_ITEMS.register(blockName,
-            () -> new BlockItem(blockHolder.get(), POTION_PLATE_ITEM_PROPERTIES));
+            () -> new BlockItem(blockHolder.get(), itemProperties));
         
         REGISTERED_BLOCKS.put(plateId, blockHolder);
         REGISTERED_ITEMS.put(plateId, itemHolder);
         
-        LOGGER.debug("Registered potion plate: {} -> {} (block and item)", plateId, blockName);
+        LOGGER.debug("Registered potion plate: {} -> {} (block and item, creative tab: {})", 
+            plateId, blockName, config.isCreativeTabVisible());
     }
     
     /**

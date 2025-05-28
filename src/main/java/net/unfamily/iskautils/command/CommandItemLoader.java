@@ -149,191 +149,147 @@ public class CommandItemLoader {
     private static void createReadme(Path configPath) {
         try {
             Path readmePath = configPath.resolve("README.md");
-            String readmeContent = "# Iska Utils - Command Items\n" +
-                "\n" +
-                "This directory allows you to create special command items that can perform actions automatically.\n" +
-                "\n" +
-                "## Format\n" +
-                "\n" +
+            
+            String readmeContent = "# Command Items - External Configuration\n\n" +
+                "This directory contains configuration files for command items that perform automated actions.\n\n" +
+                "## Format\n\n" +
+                "The format is JSON with the following structure:\n\n" +
                 "```json\n" +
                 "{\n" +
-                "  \"type\": \"iska_utils:command_item\",\n" +
-                "  \"overwritable\": true,\n" +
-                "  \"items\": [\n" +
+                "  \"id\": \"unique-item-id\",\n" +
+                "  \"creative_tab\": true,\n" +
+                "  \"stack_size\": 64,\n" +
+                "  \"is_foil\": false,\n" +
+                "  \"cooldown\": 20,\n" +
+                "  \"stages_logic\": \"AND\",\n" +
+                "  \"stages\": [\n" +
                 "    {\n" +
-                "      \"id\": \"iska_utils-world_init\",\n" +
-                "      \"creative_tab\": false,\n" +
-                "      \"stages_logic\": \"AND\",\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage_type\": \"world\", \"stage\": \"initialized\", \"is\": false}\n" +
-                "      ],\n" +
-                "      \"cooldown\": 10,\n" +
-                "      \"do\": [\n" +
-                "        {\n" +
-                "          \"onFirstTick\": [\n" +
-                "            {\"execute\": \"kubejs reload server-scripts\"},\n" +
-                "            {\"execute\": \"reload\"},\n" +
-                "            {\"delay\": 20},\n" +
-                "            {\"execute\": \"custommachinery reload\"},\n" +
-                "            {\"item\": \"delete_all\"}\n" +
-                "          ],\n" +
-                "          \"onTick\": [],\n" +
-                "          \"onUse\": []\n" +
-                "        }\n" +
-                "      ]\n" +
+                "      \"stage_type\": \"player\",\n" +
+                "      \"stage\": \"some_stage\",\n" +
+                "      \"is\": true\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"do\": [\n" +
+                "    {\n" +
+                "      \"when\": \"first_tick\",\n" +
+                "      \"action\": \"execute\",\n" +
+                "      \"command\": \"say Hello World!\"\n" +
                 "    },\n" +
                 "    {\n" +
-                "      \"id\": \"iska_utils-per_action_stages\",\n" +
-                "      \"creative_tab\": true,\n" +
-                "      \"stages_logic\": \"DEF\",\n" +
-                "      \"cooldown\": 10,\n" +
-                "      \"do\": [\n" +
-                "        {\n" +
-                "          \"onUse\": [\n" +
-                "            {\n" +
-                "              \"execute\": \"say This action is available to everyone\"\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"execute\": \"say This action requires the player to have the 'beginner' stage\",\n" +
-                "              \"stages\": [\n" +
-                "                {\"stage_type\": \"player\", \"stage\": \"beginner\", \"is\": true}\n" +
-                "              ]\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"execute\": \"say This action requires the player to be in the nether\",\n" +
-                "              \"stages\": [\n" +
-                "                {\"stage_type\": \"dimension\", \"stage\": \"the_nether\", \"is\": true}\n" +
-                "              ]\n" +
-                "            }\n" +
-                "          ]\n" +
-                "        }\n" +
-                "      ]\n" +
+                "      \"when\": \"tick\",\n" +
+                "      \"action\": \"execute\",\n" +
+                "      \"command\": \"say Tick!\"\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"when\": \"use\",\n" +
+                "      \"action\": \"execute\",\n" +
+                "      \"command\": \"say Used!\"\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"when\": \"first_tick\",\n" +
+                "      \"action\": \"item\",\n" +
+                "      \"item_action\": \"consume\"\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}\n" +
-                "```\n" +
-                "\n" +
-                "## Fields\n" +
-                "\n" +
-                "### File Fields\n" +
-                "- `type`: Must be **\"iska_utils:command_item\"** [**required**]\n" +
-                "- `overwritable`: If true, this file can be overwritten by automatic updates [default: true]\n" +
-                "- `items`: Array of command item definitions [**required**]\n" +
-                "\n" +
-                "### Item Fields\n" +
-                "- `id`: Unique identifier for this command item [**required**]\n" +
-                "- `creative_tab`: Whether to show this item in the creative tab [default: true]\n" +
-                "- `stages_logic`: How to evaluate stages (`AND`, `OR`, or `DEF`) [default: `AND`]\n" +
-                "  - `AND`: All stages must be satisfied\n" +
-                "  - `OR`: At least one stage must be satisfied\n" +
-                "  - `DEF`: Deferred evaluation - stages are defined per action, not at item level\n" +
-                "- `stages`: Array of stage conditions that must be met for the item to activate\n" +
-                "- `cooldown`: Cooldown in ticks between activation attempts [default: 0]\n" +
-                "- `do`: Array of actions to perform when conditions are met [**required**]\n" +
-                "\n" +
+                "```\n\n" +
+                "## Fields\n\n" +
+                "### General Fields\n" +
+                "- `id`: Unique identifier for the command item (required)\n" +
+                "- `creative_tab\": Whether the item should appear in the creative tab (optional, default: true)\n" +
+                "- `stack_size\": Maximum stack size for this item (optional, default: 64, range: 1-64)\n" +
+                "- `is_foil\": Whether the item should have an enchantment glint (optional, default: false)\n" +
+                "- `cooldown\": Cooldown in ticks (20 ticks = 1 second) between actions (optional, default: 0)\n" +
+                "- `stages_logic\": Logic for evaluating stages (optional, values: \"AND\", \"OR\", \"DEF\", default: \"AND\")\n" +
+                "  - \"AND\": All stages must be satisfied\n" +
+                "  - \"OR\": At least one stage must be satisfied\n" +
+                "  - \"DEF\": Stages are defined per action, not at item level\n" +
+                "- `stages\": List of stage conditions that must be met for the item to function\n\n" +
+                
+                "### Special Stage System for DEF Logic\n" +
+                "When using `stages_logic: \"DEF\"`, you can create a special initialization system:\n\n" +
+                "1. Include a stage called `initialized` in your item definition:\n" +
+                "```json\n" +
+                "\"stages\": [\n" +
+                "  {\n" +
+                "    \"stage_type\": \"player\",\n" +
+                "    \"stage\": \"initialized\",\n" +
+                "    \"is\": true\n" +
+                "  }\n" +
+                "]\n" +
+                "```\n\n" +
+                
+                "2. In your first_tick actions, set this stage:\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"when\": \"first_tick\",\n" +
+                "  \"action\": \"execute\",\n" +
+                "  \"command\": \"iska_utils_stage player initialized true\"\n" +
+                "}\n" +
+                "```\n\n" +
+                
+                "3. The system will automatically check if the item has been initialized.\n" +
+                "   If not, it will be removed from inventory after the first tick.\n" +
+                "   This is useful for one-time use items that should be removed if their\n" +
+                "   initialization fails for any reason.\n\n" +
+                
+                "### Stage Condition Fields\n" +
+                "- `stage_type\": Type of stage, e.g., \"player\" or \"world\" (optional, default: \"player\")\n" +
+                "- `stage\": Name of the stage (required)\n" +
+                "- `is\": Whether the stage should be set (true) or not set (false) (optional, default: true)\n\n" +
+                
                 "### Action Fields\n" +
-                "- `onFirstTick`: Array of actions to perform on the first tick when this item enters inventory\n" +
-                "- `onTick`: Array of actions to perform on every tick (subject to cooldown) while in inventory\n" +
-                "- `onUse`: Array of actions to perform when the item is right-clicked to use\n" +
-                "- `onFinishUse`: Array of actions to perform when the player finishes using the item\n" +
-                "- `onUseOn`: Array of actions to perform when the item is used on a block\n" +
-                "- `onHitEntity`: Array of actions to perform when the player hits an entity with the item\n" +
-                "- `onSwing`: Array of actions to perform when the player swings the item\n" +
-                "- `onDrop`: Array of actions to perform when the player drops the item\n" +
-                "- `onReleaseUsing`: Array of actions to perform when the player stops using the item before use duration ends\n" +
-                "\n" +
-                "### Command Actions\n" +
-                "- `execute`: Execute a command\n" +
-                "- `delay`: Wait specified ticks before next action\n" +
-                "- `item`: What to do with the item (`delete_all`, `delete`, `drop_all`, `drop`, `consume`, `damage`)\n" +
-                "- `stages`: Array of stage conditions that must be met for this specific action (used with DEF logic)\n" +
-                "\n" +
-                "## Examples\n" +
-                "\n" +
-                "### World Initialization Item\n" +
-                "A world initialization item that runs reload commands when first obtained and then removes itself:\n" +
+                "- `when\": When the action should trigger (required, values: \"first_tick\", \"tick\", \"use\", \"finish_use\", \"use_on\", \"hit\", \"swing\", \"drop\", \"release\")\n" +
+                "- `action\": Type of action (required, values: \"execute\", \"delay\", \"item\")\n" +
+                "- `command\": Command to execute (required for \"execute\" action)\n" +
+                "- `delay\": Delay in ticks before executing the next action (required for \"delay\" action)\n" +
+                "- `item_action\": Item action to perform (required for \"item\" action, values: \"consume\", \"delete\", \"delete_all\", \"drop\", \"drop_all\", \"damage\")\n" +
+                "- `stages\": Action-specific stages that must be met for this action to trigger (used with \"DEF\" stages_logic)\n\n" +
+                
+                "## Example: World Initialization Item\n\n" +
                 "```json\n" +
                 "{\n" +
-                "  \"type\": \"iska_utils:command_item\",\n" +
-                "  \"items\": [\n" +
+                "  \"id\": \"world_init\",\n" +
+                "  \"creative_tab\": true,\n" +
+                "  \"stack_size\": 1,\n" +
+                "  \"stages_logic\": \"DEF\",\n" +
+                "  \"stages\": [\n" +
                 "    {\n" +
-                "      \"id\": \"iska_utils-world_init\",\n" +
-                "      \"creative_tab\": false,\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage_type\": \"world\", \"stage\": \"initialized\", \"is\": false}\n" +
-                "      ],\n" +
-                "      \"do\": [\n" +
-                "        {\n" +
-                "          \"onFirstTick\": [\n" +
-                "            {\"execute\": \"kubejs reload server-scripts\"},\n" +
-                "            {\"execute\": \"reload\"},\n" +
-                "            {\"delay\": 20},\n" +
-                "            {\"execute\": \"custommachinery reload\"},\n" +
-                "            {\"item\": \"delete_all\"}\n" +
-                "          ]\n" +
-                "        }\n" +
-                "      ]\n" +
+                "      \"stage_type\": \"world\",\n" +
+                "      \"stage\": \"initialized\",\n" +
+                "      \"is\": true\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"do\": [\n" +
+                "    {\n" +
+                "      \"when\": \"first_tick\",\n" +
+                "      \"action\": \"execute\",\n" +
+                "      \"command\": \"iska_utils_stage world initialized true\"\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"when\": \"first_tick\",\n" +
+                "      \"action\": \"execute\",\n" +
+                "      \"command\": \"say World initialized!\"\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"when\": \"first_tick\",\n" +
+                "      \"action\": \"item\",\n" +
+                "      \"item_action\": \"consume\"\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}\n" +
-                "```\n" +
-                "\n" +
-                "### Per-Action Stage Requirements\n" +
-                "An item that demonstrates using different stage requirements for each action:\n" +
-                "```json\n" +
-                "{\n" +
-                "  \"type\": \"iska_utils:command_item\",\n" +
-                "  \"items\": [\n" +
-                "    {\n" +
-                "      \"id\": \"iska_utils-progression_test\",\n" +
-                "      \"creative_tab\": true,\n" +
-                "      \"stages_logic\": \"DEF\",\n" +
-                "      \"do\": [\n" +
-                "        {\n" +
-                "          \"onUse\": [\n" +
-                "            {\n" +
-                "              \"execute\": \"say This action is available to everyone\"\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"execute\": \"say This action requires the player to have unlocked the beginning stage\",\n" +
-                "              \"stages\": [\n" +
-                "                {\"stage_type\": \"player\", \"stage\": \"beginning\", \"is\": true}\n" +
-                "              ]\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"execute\": \"say This action requires the player to be in the nether\",\n" +
-                "              \"stages\": [\n" +
-                "                {\"stage_type\": \"dimension\", \"stage\": \"nether\", \"is\": true}\n" +
-                "              ]\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"execute\": \"say This action requires the player to NOT have the locked_stage\",\n" +
-                "              \"stages\": [\n" +
-                "                {\"stage_type\": \"player\", \"stage\": \"locked_stage\", \"is\": false}\n" +
-                "              ]\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"execute\": \"say This action requires multiple conditions\",\n" +
-                "              \"stages\": [\n" +
-                "                {\"stage_type\": \"player\", \"stage\": \"advanced\", \"is\": true},\n" +
-                "                {\"stage_type\": \"player\", \"stage\": \"locked_stage\", \"is\": false},\n" +
-                "                {\"stage_type\": \"world\", \"stage\": \"event_active\", \"is\": true}\n" +
-                "              ]\n" +
-                "            }\n" +
-                "          ]\n" +
-                "        }\n" +
-                "      ]\n" +
-                "    }\n" +
-                "  ]\n" +
-                "}\n" +
-                "```\n";
+                "```\n\n" +
+                
+                "## Notes\n\n" +
+                "- Command items are loaded during game startup from JSON files in this directory.\n" +
+                "- Changes require a game restart to take effect.\n" +
+                "- You can create as many command item configurations as needed.\n";
             
-            Files.writeString(readmePath, readmeContent);
-            if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("Created README.md file in command items directory");
-            }
+            Files.write(readmePath, readmeContent.getBytes());
+            LOGGER.info("Created README.md file at {}", readmePath);
+            
         } catch (IOException e) {
-            LOGGER.error("Error creating README.md file: {}", e.getMessage());
+            LOGGER.error("Failed to create README.md file: {}", e.getMessage());
         }
     }
     
@@ -452,6 +408,19 @@ public class CommandItemLoader {
                 definition.setCreativeTabVisible(itemJson.get("creative_tab").getAsBoolean());
             }
             
+            // Parse max stack size
+            if (itemJson.has("stack_size")) {
+                int stackSize = itemJson.get("stack_size").getAsInt();
+                if (stackSize < 1) stackSize = 1;
+                if (stackSize > 64) stackSize = 64;
+                definition.setMaxStackSize(stackSize);
+            }
+            
+            // Parse glowing/foil effect
+            if (itemJson.has("is_foil")) {
+                definition.setGlowing(itemJson.get("is_foil").getAsBoolean());
+            }
+            
             // Parse stages logic
             if (itemJson.has("stages_logic")) {
                 String logic = itemJson.get("stages_logic").getAsString().toUpperCase();
@@ -459,8 +428,15 @@ public class CommandItemLoader {
                     case "OR":
                         definition.setStagesLogic(CommandItemDefinition.StagesLogic.OR);
                         break;
-                    case "DEF":
-                        definition.setStagesLogic(CommandItemDefinition.StagesLogic.DEF);
+                    case "DEF_AND":
+                        definition.setStagesLogic(CommandItemDefinition.StagesLogic.DEF_AND);
+                        break;
+                    case "DEF_OR":
+                        definition.setStagesLogic(CommandItemDefinition.StagesLogic.DEF_OR);
+                        break;
+                    case "DEF": // Retrocompatibilità: tratta DEF come DEF_AND
+                        definition.setStagesLogic(CommandItemDefinition.StagesLogic.DEF_AND);
+                        LOGGER.warn("Stage logic 'DEF' is deprecated, please use 'DEF_AND' instead for item {}", itemId);
                         break;
                     default:
                         definition.setStagesLogic(CommandItemDefinition.StagesLogic.AND);
@@ -726,6 +702,46 @@ public class CommandItemLoader {
                         return null;
                 }
             }
+            // If condition
+            else if (actionJson.has("if") && actionJson.get("if").isJsonArray()) {
+                action.setType(CommandItemAction.ActionType.IF);
+                JsonArray ifArray = actionJson.getAsJsonArray("if");
+                
+                // The first element contains the conditions
+                if (ifArray.size() > 0 && ifArray.get(0).isJsonObject()) {
+                    JsonObject conditionsObj = ifArray.get(0).getAsJsonObject();
+                    
+                    // Parse conditions array which contains indices to stages
+                    if (conditionsObj.has("conditions") && conditionsObj.get("conditions").isJsonArray()) {
+                        JsonArray conditionsArray = conditionsObj.getAsJsonArray("conditions");
+                        List<Integer> indices = new ArrayList<>();
+                        
+                        for (JsonElement indexElement : conditionsArray) {
+                            if (indexElement.isJsonPrimitive()) {
+                                indices.add(indexElement.getAsInt());
+                            }
+                        }
+                        
+                        action.setConditionIndices(indices);
+                    }
+                }
+                
+                // Process sub-actions (all elements after the first one)
+                for (int i = 1; i < ifArray.size(); i++) {
+                    if (ifArray.get(i).isJsonObject()) {
+                        JsonObject subActionJson = ifArray.get(i).getAsJsonObject();
+                        CommandItemAction subAction = parseItemAction(subActionJson);
+                        if (subAction != null) {
+                            action.addSubAction(subAction);
+                        }
+                    }
+                }
+                
+                if (action.getSubActions().isEmpty()) {
+                    LOGGER.warn("No valid sub-actions found in 'if' block");
+                    return null;
+                }
+            }
             // Unknown action
             else {
                 LOGGER.warn("Unknown command item action type: {}", actionJson);
@@ -754,43 +770,47 @@ public class CommandItemLoader {
      * Generate default command item definition file
      */
     private static void generateDefaultCommandItems(Path configPath) throws IOException {
+        // Create default example item configuration
         Path defaultItemsPath = configPath.resolve("default_command_items.json");
         
-        // Default items definition based on the example
-        String defaultItemsJson = "{\n" +
+        String defaultItemsContent = "{\n" +
             "  \"type\": \"iska_utils:command_item\",\n" +
             "  \"overwritable\": true,\n" +
             "  \"items\": [\n" +
             "    {\n" +
             "      \"id\": \"iska_utils-world_init\",\n" +
             "      \"creative_tab\": false,\n" +
-            "      \"stages_logic\": \"AND\",\n" +
-            "      \"stages\": [\n" +
-            "        {\"stage_type\": \"world\", \"stage\": \"initialized\", \"is\": false}\n" +
-            "      ],\n" +
+            "      \"stages_logic\": \"DEF_AND\",\n" +
             "      \"cooldown\": 10,\n" +
+            "      \"stages\": [\n" +
+            "          {\"stage_type\": \"world\", \"stage\": \"initialized\", \"is\": false},\n" +
+            "          {\"stage_type\": \"world\", \"stage\": \"initialized\", \"is\": true}\n" +
+            "      ],\n" +
             "      \"do\": [\n" +
             "        {\n" +
-            "          \"onFirstTick\": [\n" +
-            "            {\"execute\": \"iska_utils_stage add world initialized\"},\n" +
-            "            {\"execute\": \"kubejs reload server-scripts\"},\n" +
-            "            {\"execute\": \"reload\"},\n" +
-            "            {\"delay\": 20},\n" +
-            "            {\"execute\": \"custommachinery reload\"},\n" +
-            "            {\"item\": \"delete_all\"}\n" +
-            "          ],\n" +
             "          \"onTick\": [\n" +
-            "            {\"item\": \"delete_all\"}\n" +
-            "          ],\n" +
-            "          \"onUse\": []\n" +
+            "            {\"if\": [\n" +
+            "                {\"conditions\":[0]},\n" +
+            "                {\"execute\": \"iska_utils_stage add world initialized\"},\n" +
+            "                {\"execute\": \"kubejs reload server-scripts\"},\n" +
+            "                {\"execute\": \"reload\"},\n" +
+            "                {\"delay\": 20},\n" +
+            "                {\"execute\": \"custommachinery reload\"},\n" +
+            "                {\"item\": \"delete_all\"}\n" +
+            "            ]},\n" +
+            "            {\"if\": [\n" +
+            "                {\"conditions\":[1]},\n" +
+            "                {\"item\": \"delete_all\"}\n" +
+            "            ]}\n" +
+            "          ]\n" +
             "        }\n" +
             "      ]\n" +
             "    }\n" +
             "  ]\n" +
             "}";
         
-        Files.writeString(defaultItemsPath, defaultItemsJson);
-        LOGGER.info("Generated default command items definition file");
+        Files.write(defaultItemsPath, defaultItemsContent.getBytes());
+        LOGGER.info("Created example command item configuration at {}", defaultItemsPath);
     }
     
     /**

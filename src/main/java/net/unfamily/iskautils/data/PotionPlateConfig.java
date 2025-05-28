@@ -41,6 +41,10 @@ public class PotionPlateConfig {
     // Cobweb-specific fields
     private boolean cobwebEffect;
     
+    // Visibility and behavior configuration
+    private boolean creativeTabVisible;
+    private boolean playerShiftDisable;
+    
     // Cached effect holder for performance
     private Holder<MobEffect> cachedEffect;
     
@@ -68,6 +72,10 @@ public class PotionPlateConfig {
         this.fireDuration = 0;
         this.freezeDuration = 0;
         this.cobwebEffect = false;
+        
+        // Default values for visibility and behavior
+        this.creativeTabVisible = true;
+        this.playerShiftDisable = true;
     }
     
     /**
@@ -94,6 +102,10 @@ public class PotionPlateConfig {
         this.fireDuration = 0;
         this.freezeDuration = 0;
         this.cobwebEffect = false;
+        
+        // Default values for visibility and behavior
+        this.creativeTabVisible = true;
+        this.playerShiftDisable = true;
     }
     
     /**
@@ -120,6 +132,10 @@ public class PotionPlateConfig {
         this.damageAmount = 0.0f;
         this.freezeDuration = 0;
         this.cobwebEffect = false;
+        
+        // Default values for visibility and behavior
+        this.creativeTabVisible = true;
+        this.playerShiftDisable = true;
     }
     
     /**
@@ -160,6 +176,10 @@ public class PotionPlateConfig {
         this.damageType = null;
         this.damageAmount = 0.0f;
         this.fireDuration = 0;
+        
+        // Default values for visibility and behavior
+        this.creativeTabVisible = true;
+        this.playerShiftDisable = true;
     }
     
     // Backward compatibility constructors
@@ -267,28 +287,28 @@ public class PotionPlateConfig {
     }
     
     /**
-     * Whether this plate affects mobs/entities
+     * Whether this plate affects mobs
      */
     public boolean affectsMobs() {
         return affectsMobs;
     }
     
     /**
-     * Whether this plate hides particles for effects
+     * Whether to hide particles for this plate's effect
      */
     public boolean hideParticles() {
         return hideParticles;
     }
     
     /**
-     * Whether this configuration can be overwritten by subsequent configurations
+     * Whether this configuration can be overwritten by other configurations
      */
     public boolean isOverwritable() {
         return overwritable;
     }
     
     /**
-     * Gets the damage type for damage plates
+     * Gets the damage type ID for damage plates
      */
     public String getDamageType() {
         return damageType;
@@ -302,29 +322,56 @@ public class PotionPlateConfig {
     }
     
     /**
-     * Gets the fire duration for fire plates
+     * Gets the fire duration in ticks for fire plates
      */
     public int getFireDuration() {
         return fireDuration;
     }
     
     /**
-     * Gets the freeze duration for freeze plates
+     * Gets the freeze duration in ticks for freeze plates
      */
     public int getFreezeDuration() {
         return freezeDuration;
     }
     
     /**
-     * Checks if this plate has the cobweb effect
+     * Whether this plate has cobweb effect (for special plates)
      */
     public boolean hasCobwebEffect() {
         return cobwebEffect;
     }
     
     /**
-     * Gets the MobEffect holder, caching it for performance
-     * Only valid for EFFECT plates
+     * Whether this plate should be visible in the creative tab
+     */
+    public boolean isCreativeTabVisible() {
+        return creativeTabVisible;
+    }
+    
+    /**
+     * Sets whether this plate should be visible in the creative tab
+     */
+    public void setCreativeTabVisible(boolean visible) {
+        this.creativeTabVisible = visible;
+    }
+    
+    /**
+     * Whether shift (sneaking) should disable this plate's effect for players
+     */
+    public boolean isPlayerShiftDisable() {
+        return playerShiftDisable;
+    }
+    
+    /**
+     * Sets whether shift (sneaking) should disable this plate's effect for players
+     */
+    public void setPlayerShiftDisable(boolean disable) {
+        this.playerShiftDisable = disable;
+    }
+    
+    /**
+     * Gets the effect for this configuration
      */
     public Holder<MobEffect> getEffect() {
         if (plateType != PotionPlateType.EFFECT) {
@@ -359,6 +406,16 @@ public class PotionPlateConfig {
     }
     
     /**
+     * Checks if a player shifting should prevent the effect
+     * 
+     * @param player The player entity
+     * @return true if the effect should be prevented due to shifting, false otherwise
+     */
+    public boolean shouldShiftPreventEffect(Player player) {
+        return playerShiftDisable && player.isShiftKeyDown();
+    }
+    
+    /**
      * Creates a MobEffectInstance for this configuration
      * Only valid for EFFECT plates
      */
@@ -379,115 +436,136 @@ public class PotionPlateConfig {
      * Validates this configuration
      */
     public boolean isValid() {
-        // Basic validation
-        if (plateId == null || plateId.isEmpty() || !affectsPlayers && !affectsMobs) {
-            return false;
-        }
-        
-        // Type-specific validation
         switch (plateType) {
             case EFFECT:
-                return effectId != null && !effectId.isEmpty() && getEffect() != null;
+                return effectId != null && !effectId.isEmpty() && duration > 0;
+                
             case DAMAGE:
-                return damageType != null && !damageType.isEmpty() && damageAmount > 0;
+                return damageType != null && !damageType.isEmpty() && damageAmount > 0.0f;
+                
             case SPECIAL:
-                return (fireDuration > 0) || (freezeDuration > 0) || cobwebEffect;
+                return fireDuration > 0 || freezeDuration > 0 || cobwebEffect;
+                
             default:
                 return false;
         }
     }
     
     /**
-     * Creates a merged configuration from this one and another, respecting overwritable flags
-     * If this configuration has overwritable=true for a field, it can be overwritten by the other config
-     * If this configuration has overwritable=false, it keeps its values
+     * Merges this configuration with another one, preferring the other's values where available
      */
     public PotionPlateConfig mergeWith(PotionPlateConfig other) {
-        if (!this.plateId.equals(other.plateId)) {
-            throw new IllegalArgumentException("Cannot merge configurations with different plate IDs: " + 
-                this.plateId + " vs " + other.plateId);
+        if (other == null) {
+            return this;
         }
         
-        // Use other's values only if this config is overwritable for that field
-        String mergedEffectId = this.overwritable ? other.effectId : this.effectId;
-        int mergedAmplifier = this.overwritable ? other.amplifier : this.amplifier;
-        int mergedDuration = this.overwritable ? other.duration : this.duration;
-        int mergedDelay = this.overwritable ? other.delay : this.delay;
-        boolean mergedAffectsPlayers = this.overwritable ? other.affectsPlayers : this.affectsPlayers;
-        boolean mergedAffectsMobs = this.overwritable ? other.affectsMobs : this.affectsMobs;
-        boolean mergedHideParticles = this.overwritable ? other.hideParticles : this.hideParticles;
-        
-        // Damage fields
-        String mergedDamageType = this.overwritable ? other.damageType : this.damageType;
-        float mergedDamageAmount = this.overwritable ? other.damageAmount : this.damageAmount;
-        
-        // Special fields
-        int mergedFireDuration = this.overwritable ? other.fireDuration : this.fireDuration;
-        int mergedFreezeDuration = this.overwritable ? other.freezeDuration : this.freezeDuration;
-        boolean mergedCobwebEffect = this.overwritable ? other.cobwebEffect : this.cobwebEffect;
-        
-        // The merged config inherits the overwritable flag from the other config
-        boolean mergedOverwritable = other.overwritable;
-        
-        // Create appropriate constructor based on plate type
-        PotionPlateType mergedType = this.overwritable ? other.plateType : this.plateType;
-        
-        switch (mergedType) {
-            case EFFECT:
-                return new PotionPlateConfig(plateId, mergedEffectId, mergedAmplifier, mergedDuration, mergedDelay,
-                        mergedAffectsPlayers, mergedAffectsMobs, mergedHideParticles, mergedOverwritable);
-            case DAMAGE:
-                return new PotionPlateConfig(plateId, mergedDamageType, mergedDamageAmount, mergedDelay,
-                        mergedAffectsPlayers, mergedAffectsMobs, mergedOverwritable);
-            case SPECIAL:
-                if (mergedFireDuration > 0) {
-                    return new PotionPlateConfig(plateId, mergedFireDuration, mergedDelay,
-                            mergedAffectsPlayers, mergedAffectsMobs, mergedOverwritable);
-                } else if (mergedFreezeDuration > 0) {
-                    return createFreezePlate(plateId, mergedFreezeDuration, mergedDelay,
-                            mergedAffectsPlayers, mergedAffectsMobs, mergedOverwritable);
-                } else if (mergedCobwebEffect) {
-                    return createCobwebPlate(plateId, mergedDelay,
-                            mergedAffectsPlayers, mergedAffectsMobs, mergedOverwritable);
-                } else {
-                    // Fallback to empty special plate
-                    PotionPlateConfig config = new PotionPlateConfig(plateId, PotionPlateType.SPECIAL, 0, mergedDelay,
-                            mergedAffectsPlayers, mergedAffectsMobs, mergedOverwritable);
-                    return config;
-                }
-            default:
-                // Fallback to effect type
-                return new PotionPlateConfig(plateId, mergedEffectId, mergedAmplifier, mergedDuration, mergedDelay,
-                        mergedAffectsPlayers, mergedAffectsMobs, mergedHideParticles, mergedOverwritable);
+        if (!plateId.equals(other.plateId)) {
+            throw new IllegalArgumentException("Cannot merge configurations with different plate IDs");
         }
-    }
-
-    @Override
-    public String toString() {
+        
+        if (plateType != other.plateType) {
+            throw new IllegalArgumentException("Cannot merge configurations with different plate types");
+        }
+        
         switch (plateType) {
             case EFFECT:
-                return String.format("PotionPlateConfig{plateId='%s', type=EFFECT, effect='%s', amplifier=%d, duration=%d, players=%b, mobs=%b, particles=%b, overwritable=%b}",
-                        plateId, effectId, amplifier, duration, affectsPlayers, affectsMobs, hideParticles, overwritable);
+                PotionPlateConfig mergedEffectConfig = new PotionPlateConfig(
+                    plateId,
+                    other.effectId != null ? other.effectId : effectId,
+                    other.amplifier,
+                    other.duration,
+                    other.delay,
+                    other.affectsPlayers,
+                    other.affectsMobs,
+                    other.hideParticles,
+                    other.overwritable
+                );
+                
+                // Copy visibility and behavior settings
+                mergedEffectConfig.setCreativeTabVisible(other.isCreativeTabVisible());
+                mergedEffectConfig.setPlayerShiftDisable(other.isPlayerShiftDisable());
+                
+                return mergedEffectConfig;
+                
             case DAMAGE:
-                return String.format("PotionPlateConfig{plateId='%s', type=DAMAGE, damageType='%s', damage=%.1f, players=%b, mobs=%b, overwritable=%b}",
-                        plateId, damageType, damageAmount, affectsPlayers, affectsMobs, overwritable);
+                PotionPlateConfig mergedDamageConfig = new PotionPlateConfig(
+                    plateId,
+                    other.damageType != null ? other.damageType : damageType,
+                    other.damageAmount,
+                    other.delay,
+                    other.affectsPlayers,
+                    other.affectsMobs,
+                    other.overwritable
+                );
+                
+                // Copy visibility and behavior settings
+                mergedDamageConfig.setCreativeTabVisible(other.isCreativeTabVisible());
+                mergedDamageConfig.setPlayerShiftDisable(other.isPlayerShiftDisable());
+                
+                return mergedDamageConfig;
+                
+            case SPECIAL:
+                PotionPlateConfig mergedSpecialConfig = new PotionPlateConfig(
+                    plateId,
+                    Math.max(other.fireDuration, fireDuration),
+                    other.delay,
+                    other.affectsPlayers,
+                    other.affectsMobs,
+                    other.overwritable
+                );
+                
+                // Special handling for cobweb effect
+                if (other.hasCobwebEffect() || hasCobwebEffect()) {
+                    mergedSpecialConfig.cobwebEffect = true;
+                }
+                
+                // Copy visibility and behavior settings
+                mergedSpecialConfig.setCreativeTabVisible(other.isCreativeTabVisible());
+                mergedSpecialConfig.setPlayerShiftDisable(other.isPlayerShiftDisable());
+                
+                return mergedSpecialConfig;
+                
+            default:
+                return this;
+        }
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("PotionPlateConfig{");
+        sb.append("id='").append(plateId).append('\'');
+        sb.append(", type=").append(plateType);
+        
+        switch (plateType) {
+            case EFFECT:
+                sb.append(", effect='").append(effectId).append('\'');
+                sb.append(", amplifier=").append(amplifier);
+                sb.append(", duration=").append(duration).append(" ticks");
+                break;
+            case DAMAGE:
+                sb.append(", damageType='").append(damageType).append('\'');
+                sb.append(", amount=").append(damageAmount);
+                break;
             case SPECIAL:
                 if (fireDuration > 0) {
-                    return String.format("PotionPlateConfig{plateId='%s', type=SPECIAL, fire=%d, players=%b, mobs=%b, overwritable=%b}",
-                            plateId, fireDuration, affectsPlayers, affectsMobs, overwritable);
-                } else if (freezeDuration > 0) {
-                    return String.format("PotionPlateConfig{plateId='%s', type=SPECIAL, freeze=%d, players=%b, mobs=%b, overwritable=%b}",
-                            plateId, freezeDuration, affectsPlayers, affectsMobs, overwritable);
-                } else if (cobwebEffect) {
-                    return String.format("PotionPlateConfig{plateId='%s', type=SPECIAL, cobweb=true, players=%b, mobs=%b, overwritable=%b}",
-                            plateId, affectsPlayers, affectsMobs, overwritable);
-                } else {
-                    return String.format("PotionPlateConfig{plateId='%s', type=SPECIAL, unknown, players=%b, mobs=%b, overwritable=%b}",
-                            plateId, affectsPlayers, affectsMobs, overwritable);
+                    sb.append(", fire=").append(fireDuration).append(" ticks");
                 }
-            default:
-                return String.format("PotionPlateConfig{plateId='%s', type=UNKNOWN, overwritable=%b}",
-                        plateId, overwritable);
+                if (freezeDuration > 0) {
+                    sb.append(", freeze=").append(freezeDuration).append(" ticks");
+                }
+                if (cobwebEffect) {
+                    sb.append(", cobweb=true");
+                }
+                break;
         }
+        
+        sb.append(", delay=").append(delay).append(" ticks");
+        sb.append(", affectsPlayers=").append(affectsPlayers);
+        sb.append(", affectsMobs=").append(affectsMobs);
+        sb.append(", creativeTabVisible=").append(creativeTabVisible);
+        sb.append(", playerShiftDisable=").append(playerShiftDisable);
+        sb.append('}');
+        return sb.toString();
     }
 } 

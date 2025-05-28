@@ -10,6 +10,8 @@ public class CommandItemDefinition {
     private String id;
     private int cooldown;
     private boolean creativeTabVisible = true;
+    private int maxStackSize = 64;
+    private boolean isGlowing = false;
     
     private final List<CommandItemAction> firstTickActions = new ArrayList<>();
     private final List<CommandItemAction> tickActions = new ArrayList<>();
@@ -30,7 +32,8 @@ public class CommandItemDefinition {
     public enum StagesLogic {
         AND, // All stages must be satisfied
         OR,  // At least one stage must be satisfied
-        DEF  // Deferred evaluation - stages are defined per action, not at item level
+        DEF_AND, // Deferred evaluation with array indices referring to stages list (AND logic)
+        DEF_OR  // Deferred evaluation with array indices referring to stages list (OR logic)
     }
     
     /**
@@ -80,6 +83,34 @@ public class CommandItemDefinition {
      */
     public boolean isCreativeTabVisible() {
         return creativeTabVisible;
+    }
+    
+    /**
+     * Sets the maximum stack size for this item
+     */
+    public void setMaxStackSize(int maxStackSize) {
+        this.maxStackSize = maxStackSize;
+    }
+    
+    /**
+     * Gets the maximum stack size for this item
+     */
+    public int getMaxStackSize() {
+        return maxStackSize;
+    }
+    
+    /**
+     * Sets whether this item should have an enchantment glint
+     */
+    public void setGlowing(boolean glowing) {
+        this.isGlowing = glowing;
+    }
+    
+    /**
+     * Checks if this item should have an enchantment glint
+     */
+    public boolean isGlowing() {
+        return isGlowing;
     }
     
     /**
@@ -250,8 +281,9 @@ public class CommandItemDefinition {
      * @return true if all stage requirements are met, false otherwise
      */
     public boolean checkAllStages(net.minecraft.server.level.ServerPlayer player) {
-        // If using DEF logic, stages are checked per action, not here
-        if (stagesLogic == StagesLogic.DEF) {
+        // If using DEF, DEF_AND or DEF_OR logic, stages are checked per action, not here
+        if (stagesLogic == StagesLogic.DEF_AND || 
+            stagesLogic == StagesLogic.DEF_OR) {
             return true;
         }
         

@@ -67,8 +67,8 @@ public class PotionPlateBlock extends VectorBlock {
                 return;
             }
             
-            // If player is sneaking (shift), don't apply effect
-            if (entity instanceof Player player && player.isShiftKeyDown()) {
+            // If player is sneaking (shift), check if shift disables this plate
+            if (entity instanceof Player player && config.shouldShiftPreventEffect(player)) {
                 return;
             }
             

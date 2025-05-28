@@ -20,6 +20,8 @@ import net.unfamily.iskautils.command.CommandItemDefinition;
 import org.slf4j.Logger;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -29,7 +31,29 @@ import java.util.function.Consumer;
 public class CommandItem extends Item {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Map<UUID, Map<String, Long>> PLAYER_COOLDOWNS = new HashMap<>();
-    private static final Map<UUID, Set<String>> PROCESSED_FIRST_TICK = new HashMap<>();
+    
+    // Per tenere traccia degli ItemStack già processati usiamo una combinazione di UUID del player e hash dello stack
+    private static final Map<UUID, Set<Integer>> FIRST_TICK_PROCESSED = new HashMap<>();
+    
+    // Delayed action queue system
+    private static class DelayedAction {
+        final ServerPlayer player;
+        final CommandItemAction action;
+        final ItemStack stack;
+        final int slot;
+        final long executeAtTick;
+        
+        DelayedAction(ServerPlayer player, CommandItemAction action, ItemStack stack, int slot, long executeAtTick) {
+            this.player = player;
+            this.action = action;
+            this.stack = stack;
+            this.slot = slot;
+            this.executeAtTick = executeAtTick;
+        }
+    }
+    
+    // Queue for delayed actions - CopyOnWriteArrayList è intrinsecamente thread-safe
+    private static final Map<UUID, CopyOnWriteArrayList<DelayedAction>> DELAYED_ACTIONS = new ConcurrentHashMap<>();
     
     // Fixed definition assigned at registration
     private final CommandItemDefinition definition;
@@ -63,6 +87,42 @@ public class CommandItem extends Item {
     }
     
     @Override
+    public boolean isFoil(ItemStack stack) {
+        return definition.isGlowing() || super.isFoil(stack);
+    }
+    
+    /**
+     * Genera un hash univoco per l'ItemStack per tener traccia dei processati
+     */
+    private int getItemStackHash(ItemStack stack) {
+        if (stack.isEmpty()) return 0;
+        
+        // Combinazione di item e count (ignoriamo il tag per semplicità)
+        int hash = stack.getItem().hashCode();
+        hash = 31 * hash + stack.getCount();
+        return hash;
+    }
+    
+    /**
+     * Controlla se un ItemStack è già stato processato
+     */
+    private boolean isItemStackProcessed(UUID playerUuid, ItemStack stack) {
+        Set<Integer> processedItems = FIRST_TICK_PROCESSED.get(playerUuid);
+        if (processedItems == null) return false;
+        
+        int stackHash = getItemStackHash(stack);
+        return processedItems.contains(stackHash);
+    }
+    
+    /**
+     * Marca un ItemStack come processato
+     */
+    private void markItemStackProcessed(UUID playerUuid, ItemStack stack) {
+        int stackHash = getItemStackHash(stack);
+        FIRST_TICK_PROCESSED.computeIfAbsent(playerUuid, k -> new HashSet<>()).add(stackHash);
+    }
+    
+    @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
         super.inventoryTick(stack, level, entity, slot, selected);
         
@@ -71,31 +131,70 @@ public class CommandItem extends Item {
             return;
         }
         
-        // Get the player's UUID
-        UUID playerUuid = player.getUUID();
+        // Process delayed actions for this player
+        processDelayedActions(player, level);
         
         // Check if conditions are met
         if (!areConditionsMet(player)) {
             return;
         }
         
-        // Check if we've already processed first tick actions for this item
-        boolean processedFirstTick = hasProcessedFirstTick(playerUuid, definition.getId());
+        UUID playerUuid = player.getUUID();
         
-        // Process first tick actions if it's the first time
+        // Check if first tick actions have been processed for this specific itemstack
+        boolean processedFirstTick = isItemStackProcessed(playerUuid, stack);
+        
         if (!processedFirstTick) {
-            // Mark as processed
-            markAsProcessedFirstTick(playerUuid, definition.getId());
-            
-            // Execute first tick actions
+            // Prima volta che vediamo questo item - eseguiamo le azioni di first tick
             if (!definition.getFirstTickActions().isEmpty()) {
                 LOGGER.debug("Executing first tick actions for command item {} for player {}", 
                         definition.getId(), player.getName().getString());
-                executeActions(player, definition.getFirstTickActions(), stack, slot);
+                
+                // Esegui le azioni del primo tick
+                executeFirstTickActions(player, definition.getFirstTickActions(), stack, slot);
+                
+                // Se l'item è stato consumato, non continuare
+                if (stack.isEmpty()) {
+                    return;
+                }
+                
+                // Mark as processed solo se l'item esiste ancora
+                markItemStackProcessed(playerUuid, stack);
+            } else {
+                // Se non ci sono azioni first tick, marca comunque come processato
+                markItemStackProcessed(playerUuid, stack);
             }
-            
-            // Don't return here to allow regular tick actions to also execute
-            // in the same tick if needed
+        } else {
+            // Item già processato in tick precedente - controlla se ha lo stage "initialized"
+            // Se non ha lo stage, elimina l'item
+            if ((definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
+                definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) &&
+                // Non applicare questa logica all'item world_init che ha la sua logica speciale
+                !definition.getId().equals("iska_utils-world_init")) {
+                boolean hasInitializedStage = false;
+                
+                // Cerca tra tutti gli stage se esiste uno con "initialized" o simile
+                for (CommandItemDefinition.StageCondition stage : definition.getStages()) {
+                    if (stage.getStage().equals("initialized") && 
+                        stage.shouldBeSet() && 
+                        definition.checkSingleStage(player, stage)) {
+                        hasInitializedStage = true;
+                        break;
+                    }
+                }
+                
+                // Se non ha stage "initialized", elimina l'item
+                if (!hasInitializedStage) {
+                    LOGGER.debug("Item {} non inizializzato, verrà eliminato", definition.getId());
+                    // Elimina l'item dall'inventario
+                    if (slot >= 0) {
+                        player.getInventory().setItem(slot, ItemStack.EMPTY);
+                    } else {
+                        stack.setCount(0);
+                    }
+                    return;
+                }
+            }
         }
         
         // Check cooldown for regular tick actions
@@ -111,6 +210,126 @@ public class CommandItem extends Item {
             
             // Update cooldown
             updateCooldown(playerUuid, definition.getId());
+        }
+    }
+    
+    /**
+     * Esegue solo le azioni del primo tick con attenzione speciale
+     */
+    private void executeFirstTickActions(ServerPlayer player, List<CommandItemAction> actions, ItemStack stack, int slot) {
+        for (CommandItemAction action : actions) {
+            if (stack.isEmpty()) {
+                // Item consumed in a previous action
+                break;
+            }
+            
+            // Check if this action has its own stage requirements (for DEF logic)
+            if ((definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
+                 definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) &&
+                !action.getStages().isEmpty() &&
+                !action.checkActionStages(player, definition)) {
+                // Skip this action if its requirements are not met
+                LOGGER.debug("Skipping action due to stage requirements not met");
+                continue;
+            }
+            
+            // Caso speciale per azioni IF
+            if (action.getType() == CommandItemAction.ActionType.IF) {
+                // Check if conditions are met based on the indices
+                if (action.checkConditionsByIndices(player, definition)) {
+                    // Cerchiamo azioni di consumo prioritarie nei sub-actions
+                    boolean hasConsumed = false;
+                    for (CommandItemAction subAction : action.getSubActions()) {
+                        if (subAction.getType() == CommandItemAction.ActionType.ITEM) {
+                            CommandItemAction.ItemActionType itemAction = subAction.getItemAction();
+                            if (itemAction == CommandItemAction.ItemActionType.DELETE || 
+                                itemAction == CommandItemAction.ItemActionType.CONSUME) {
+                                LOGGER.debug("First tick IF: eseguo subito l'azione di consumo dell'item");
+                                processItemAction(player, itemAction, stack, slot);
+                                hasConsumed = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Se l'item è stato consumato, interrompi ulteriore elaborazione
+                    if (hasConsumed && stack.isEmpty()) {
+                        return;
+                    }
+                    
+                    // Esegui tutte le altre sub-actions
+                    for (CommandItemAction subAction : action.getSubActions()) {
+                        if (stack.isEmpty()) {
+                            // Item consumed in a previous action
+                            break;
+                        }
+                        
+                        // Salta le azioni di consumo che abbiamo già eseguito
+                        if (subAction.getType() == CommandItemAction.ActionType.ITEM) {
+                            CommandItemAction.ItemActionType itemAction = subAction.getItemAction();
+                            if ((itemAction == CommandItemAction.ItemActionType.DELETE || 
+                                itemAction == CommandItemAction.ItemActionType.CONSUME) && 
+                                hasConsumed) {
+                                continue;
+                            }
+                        }
+                        
+                        executeAction(player, subAction, stack, slot);
+                    }
+                    continue; // Abbiamo gestito l'azione IF, passa alla prossima
+                }
+            }
+            
+            // Dai precedenza alle azioni di tipo ITEM DELETE/CONSUME
+            if (action.getType() == CommandItemAction.ActionType.ITEM) {
+                CommandItemAction.ItemActionType itemAction = action.getItemAction();
+                if (itemAction == CommandItemAction.ItemActionType.DELETE || 
+                    itemAction == CommandItemAction.ItemActionType.CONSUME) {
+                    
+                    LOGGER.debug("First tick: eseguo subito l'azione di consumo dell'item");
+                    processItemAction(player, itemAction, stack, slot);
+                    // Se l'item è stato consumato, interrompi ulteriore elaborazione
+                    if (stack.isEmpty()) {
+                        return;
+                    }
+                }
+            }
+            
+            // Execute the action (or queue it if it's a delay)
+            executeAction(player, action, stack, slot);
+        }
+    }
+    
+    /**
+     * Processes all pending delayed actions for a player
+     */
+    private void processDelayedActions(ServerPlayer player, Level level) {
+        UUID playerUuid = player.getUUID();
+        CopyOnWriteArrayList<DelayedAction> actions = DELAYED_ACTIONS.get(playerUuid);
+        
+        if (actions == null || actions.isEmpty()) {
+            return;
+        }
+        
+        long currentTick = level.getGameTime();
+        List<DelayedAction> actionsToRemove = new ArrayList<>();
+        
+        // CopyOnWriteArrayList permette iterazione sicura anche durante la rimozione
+        for (DelayedAction action : actions) {
+            if (currentTick >= action.executeAtTick) {
+                executeAction(action.player, action.action, action.stack, action.slot);
+                actionsToRemove.add(action);
+            }
+        }
+        
+        // Rimuove le azioni completate (CopyOnWriteArrayList gestisce la concorrenza)
+        if (!actionsToRemove.isEmpty()) {
+            actions.removeAll(actionsToRemove);
+            
+            // Rimuove la lista se vuota
+            if (actions.isEmpty()) {
+                DELAYED_ACTIONS.remove(playerUuid);
+            }
         }
     }
     
@@ -163,7 +382,8 @@ public class CommandItem extends Item {
             }
             
             // Check if this action has its own stage requirements (for DEF logic)
-            if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF &&
+            if ((definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
+                 definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) &&
                 !action.getStages().isEmpty() &&
                 !action.checkActionStages(player, definition)) {
                 // Skip this action if its requirements are not met
@@ -171,28 +391,81 @@ public class CommandItem extends Item {
                 continue;
             }
             
-            switch (action.getType()) {
-                case EXECUTE:
-                    executeCommand(player, action.getCommand());
-                    break;
-                    
-                case DELAY:
-                    // Delays are not fully implemented in this simple version
-                    // Would require a more complex scheduler
-                    LOGGER.debug("Delay actions are not yet fully implemented");
-                    break;
-                    
-                case ITEM:
-                    if (processItemAction(player, action.getItemAction(), stack, slot)) {
-                        // The item was consumed or modified
-                        break;
+            // Execute the action (or queue it if it's a delay)
+            executeAction(player, action, stack, slot);
+        }
+    }
+    
+    /**
+     * Executes a single action
+     */
+    private void executeAction(ServerPlayer player, CommandItemAction action, ItemStack stack, int slot) {
+        switch (action.getType()) {
+            case EXECUTE:
+                executeCommand(player, action.getCommand());
+                break;
+                
+            case DELAY:
+                queueDelayedAction(player, action, stack, slot);
+                break;
+                
+            case ITEM:
+                processItemAction(player, action.getItemAction(), stack, slot);
+                break;
+                
+            case IF:
+                // Check if conditions are met based on the indices
+                if (action.checkConditionsByIndices(player, definition)) {
+                    // Execute all sub-actions if conditions are met
+                    for (CommandItemAction subAction : action.getSubActions()) {
+                        if (stack.isEmpty()) {
+                            // Item consumed in a previous action
+                            break;
+                        }
+                        executeAction(player, subAction, stack, slot);
                     }
-                    break;
-                    
-                default:
-                    LOGGER.warn("Unknown action type: {}", action.getType());
-                    break;
-            }
+                } else if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Skipping IF block actions because conditions are not met");
+                }
+                break;
+                
+            default:
+                LOGGER.warn("Unknown action type: {}", action.getType());
+                break;
+        }
+    }
+    
+    /**
+     * Queues an action to be executed after the specified delay
+     */
+    private void queueDelayedAction(ServerPlayer player, CommandItemAction action, ItemStack stack, int slot) {
+        int delayTicks = action.getDelay();
+        if (delayTicks <= 0) {
+            LOGGER.warn("Invalid delay value: {}", delayTicks);
+            return;
+        }
+        
+        UUID playerUuid = player.getUUID();
+        long currentTick = player.level().getGameTime();
+        long executeAtTick = currentTick + delayTicks;
+        
+        // Create delayed action
+        DelayedAction delayedAction = new DelayedAction(
+            player, 
+            action, 
+            stack.copy(), // Create a copy of the stack to prevent issues if original is modified
+            slot,
+            executeAtTick
+        );
+        
+        // Add to queue (CopyOnWriteArrayList è già thread-safe)
+        CopyOnWriteArrayList<DelayedAction> actions = DELAYED_ACTIONS.computeIfAbsent(
+            playerUuid, k -> new CopyOnWriteArrayList<>());
+        actions.add(delayedAction);
+        
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Queued delayed action for player {} to execute in {} ticks (at tick {})",
+                player.getName().getString(), delayTicks, executeAtTick);
         }
     }
     
@@ -313,61 +586,38 @@ public class CommandItem extends Item {
      * Checks if an item is on cooldown for a player
      */
     private boolean isOnCooldown(UUID playerUuid, String itemId) {
-        // Get cooldowns for this player
-        Map<String, Long> cooldowns = PLAYER_COOLDOWNS.getOrDefault(playerUuid, new HashMap<>());
-        
-        // Check if the item is on cooldown
-        if (cooldowns.containsKey(itemId)) {
-            long lastUsed = cooldowns.get(itemId);
-            long currentTime = System.currentTimeMillis();
-            
-            // Convert cooldown from ticks to milliseconds (1 tick = 50 ms)
-            long cooldownMs = definition.getCooldown() * 50L;
-            
-            return (currentTime - lastUsed) < cooldownMs;
+        Map<String, Long> cooldowns = PLAYER_COOLDOWNS.get(playerUuid);
+        if (cooldowns == null) {
+            return false;
         }
         
-        return false;
+        Long lastUse = cooldowns.get(itemId);
+        if (lastUse == null) {
+            return false;
+        }
+        
+        long currentTime = System.currentTimeMillis();
+        int cooldownMillis = definition.getCooldown() * 50; // Convert ticks to milliseconds
+        
+        return currentTime - lastUse < cooldownMillis;
     }
     
     /**
      * Updates the cooldown for an item
      */
     private void updateCooldown(UUID playerUuid, String itemId) {
-        // Get cooldowns for this player
-        Map<String, Long> cooldowns = PLAYER_COOLDOWNS.computeIfAbsent(playerUuid, k -> new HashMap<>());
-        
-        // Update the last use time
-        cooldowns.put(itemId, System.currentTimeMillis());
+        PLAYER_COOLDOWNS.computeIfAbsent(playerUuid, k -> new HashMap<>())
+                .put(itemId, System.currentTimeMillis());
     }
     
     /**
-     * Checks if the first tick has been processed for an item
-     */
-    private boolean hasProcessedFirstTick(UUID playerUuid, String itemId) {
-        // Get processed items for this player
-        Set<String> processed = PROCESSED_FIRST_TICK.getOrDefault(playerUuid, new HashSet<>());
-        
-        // Check if the item has been processed
-        return processed.contains(itemId);
-    }
-    
-    /**
-     * Marks an item as processed for the first tick
-     */
-    private void markAsProcessedFirstTick(UUID playerUuid, String itemId) {
-        // Get processed items for this player
-        Set<String> processed = PROCESSED_FIRST_TICK.computeIfAbsent(playerUuid, k -> new HashSet<>());
-        
-        // Mark the item as processed
-        processed.add(itemId);
-    }
-    
-    /**
-     * Clears player data when they disconnect or are removed
+     * Clears all data associated with a player (called when they disconnect)
      */
     public static void clearPlayerData(UUID playerUuid) {
+        if (playerUuid == null) return;
+        
         PLAYER_COOLDOWNS.remove(playerUuid);
-        PROCESSED_FIRST_TICK.remove(playerUuid);
+        DELAYED_ACTIONS.remove(playerUuid);
+        FIRST_TICK_PROCESSED.remove(playerUuid);
     }
 } 

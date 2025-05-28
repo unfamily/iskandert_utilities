@@ -98,7 +98,8 @@ public class CommandItemRegistry {
         String registryName = id.replace("-", "_").toLowerCase();
         
         // Crea le proprietà dell'item
-        Item.Properties properties = new Item.Properties();
+        Item.Properties properties = new Item.Properties()
+                .stacksTo(definition.getMaxStackSize());
         
         // Registra l'item
         DeferredHolder<Item, CommandItem> registeredItem = ITEMS.register(
@@ -107,7 +108,8 @@ public class CommandItemRegistry {
         // Memorizza nel registry
         REGISTERED_ITEMS.put(id, registeredItem);
         
-        LOGGER.info("Registrato item di comando: {} (registryName: {})", id, registryName);
+        LOGGER.info("Registrato item di comando: {} (registryName: {}, stackSize: {})",
+                id, registryName, definition.getMaxStackSize());
     }
     
     /**

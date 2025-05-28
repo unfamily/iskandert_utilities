@@ -28,7 +28,8 @@ public class CommandItemAction {
     public enum ActionType {
         EXECUTE,    // Execute a command
         DELAY,      // Wait for a delay
-        ITEM        // Perform an action on the item (consume, drop, etc.)
+        ITEM,       // Perform an action on the item (consume, drop, etc.)
+        IF          // Conditional action with sub-actions
     }
     
     /**
@@ -48,6 +49,10 @@ public class CommandItemAction {
     private int delay;
     private ItemActionType itemAction;
     private List<CommandItemDefinition.StageCondition> stages = new ArrayList<>();
+    
+    // For IF action type
+    private List<Integer> conditionIndices = new ArrayList<>();
+    private List<CommandItemAction> subActions = new ArrayList<>();
     
     /**
      * Creates a new action
@@ -134,6 +139,34 @@ public class CommandItemAction {
     }
     
     /**
+     * Sets the condition indices for IF action type
+     */
+    public void setConditionIndices(List<Integer> indices) {
+        this.conditionIndices = indices;
+    }
+    
+    /**
+     * Gets the condition indices for IF action type
+     */
+    public List<Integer> getConditionIndices() {
+        return conditionIndices;
+    }
+    
+    /**
+     * Adds a sub-action for IF action type
+     */
+    public void addSubAction(CommandItemAction subAction) {
+        this.subActions.add(subAction);
+    }
+    
+    /**
+     * Gets the sub-actions for IF action type
+     */
+    public List<CommandItemAction> getSubActions() {
+        return subActions;
+    }
+    
+    /**
      * Checks if all stage requirements for this action are met
      * 
      * @param player The player to check stages for
@@ -149,6 +182,66 @@ public class CommandItemAction {
         // Check all stages for this action (using AND logic within the action)
         for (CommandItemDefinition.StageCondition stage : stages) {
             if (!definition.checkSingleStage(player, stage)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Checks if the conditions specified by indices are met using AND logic
+     * 
+     * @param player The player to check conditions for
+     * @param definition The command item definition
+     * @return true if all conditions are met
+     */
+    public boolean checkConditionsByIndices(net.minecraft.server.level.ServerPlayer player, CommandItemDefinition definition) {
+        if (conditionIndices.isEmpty()) {
+            return true;
+        }
+        
+        List<CommandItemDefinition.StageCondition> allStages = definition.getStages();
+        
+        // For DEF_AND logic, all conditions must be met
+        if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND) {
+            for (Integer index : conditionIndices) {
+                if (index < 0 || index >= allStages.size()) {
+                    // Invalid index
+                    return false;
+                }
+                
+                CommandItemDefinition.StageCondition condition = allStages.get(index);
+                if (!definition.checkSingleStage(player, condition)) {
+                    return false;
+                }
+            }
+            return true;
+        } 
+        // For DEF_OR logic, at least one condition must be met
+        else if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) {
+            for (Integer index : conditionIndices) {
+                if (index < 0 || index >= allStages.size()) {
+                    // Skip invalid index
+                    continue;
+                }
+                
+                CommandItemDefinition.StageCondition condition = allStages.get(index);
+                if (definition.checkSingleStage(player, condition)) {
+                    return true;
+                }
+            }
+            return conditionIndices.isEmpty(); // Return true only if no conditions
+        }
+        
+        // Default to AND logic for any other case
+        for (Integer index : conditionIndices) {
+            if (index < 0 || index >= allStages.size()) {
+                // Invalid index
+                return false;
+            }
+            
+            CommandItemDefinition.StageCondition condition = allStages.get(index);
+            if (!definition.checkSingleStage(player, condition)) {
                 return false;
             }
         }
