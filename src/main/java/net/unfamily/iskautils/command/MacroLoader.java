@@ -203,10 +203,11 @@ public class MacroLoader {
                 "- `level`: Required permission level (0-4) [optional, default: 0]\n" +
                 "  - 0: Any player\n" +
                 "  - 1-4: OP level required\n" +
-                "- `stages_logic`: Logic for stage requirements evaluation: \"AND\" (all required) or \"OR\" (any one required) [optional, default: AND]\n" +
+                "- `stages_logic`: Logic for stage requirements evaluation [optional, default: AND]\n" +
                 "  - `AND`: All stages must be satisfied\n" +
                 "  - `OR`: At least one stage must be satisfied\n" +
-                "  - `DEF`: Deferred evaluation - stages are defined per action, not at macro level\n" +
+                "  - `DEF_AND`: Deferred evaluation where all per-action stages must be satisfied (AND logic)\n" +
+                "  - `DEF_OR`: Deferred evaluation where at least one per-action stage must be satisfied (OR logic)\n" +
                 "- `stages`: Array of game stages that must be unlocked to use this macro [optional]\n" +
                 "  - `{\"stage\": \"stage_id\", \"stage_type\": \"player\", \"is\": true}`: ID of a required game stage and its type\n" +
                 "    - `stage_type` can be: \"player\" (default), \"world\", or \"dimension\"\n" +
@@ -283,50 +284,97 @@ public class MacroLoader {
                 "### Progression-Based Commands\n" +
                 "Commands that are only available once players have reached certain milestones or completed specific quests.\n" +
                 "\n" +
-                "### Per-Action Stage Requirements\n" +
-                "Example using the `DEF` stages logic for per-action stage requirements:\n" +
+                "### Per-Action Stage Requirements with DEF_AND and DEF_OR\n" +
+                "\n" +
+                "#### DEF_AND Example\n" +
+                "Using `DEF_AND` means each action requires ALL of its stage conditions to be met:\n" +
                 "\n" +
                 "```json\n" +
                 "{\n" +
-                "  \"command\": \"progression_test\",\n" +
+                "  \"command\": \"dungeon_rewards\",\n" +
                 "  \"level\": 0,\n" +
-                "  \"stages_logic\": \"DEF\",\n" +
+                "  \"stages_logic\": \"DEF_AND\",\n" +
                 "  \"do\": [\n" +
                 "    {\n" +
-                "      \"execute\": \"say This action is available to everyone\"\n" +
+                "      \"execute\": \"say Welcome to the dungeon rewards system!\"\n" +
                 "    },\n" +
                 "    {\n" +
-                "      \"execute\": \"say This action requires the player to have unlocked the beginning stage\",\n" +
+                "      \"execute\": \"give @s minecraft:diamond 5\",\n" +
                 "      \"stages\": [\n" +
-                "        {\"stage\": \"beginning\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "        {\"stage\": \"dungeon_boss_defeated\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"dungeon_curse\", \"stage_type\": \"player\", \"is\": false}\n" +
                 "      ]\n" +
                 "    },\n" +
                 "    {\n" +
-                "      \"execute\": \"say This action requires the player to be in the nether\",\n" +
+                "      \"execute\": \"give @s minecraft:netherite_ingot 1\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"dungeon_secret_found\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"dungeon_boss_defeated\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"execute\": \"effect give @s minecraft:strength 300 1\",\n" +
                 "      \"stages\": [\n" +
                 "        {\"stage\": \"nether\", \"stage_type\": \"dimension\", \"is\": true}\n" +
-                "      ]\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"execute\": \"say This action requires the player to NOT have the locked_stage\",\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage\": \"locked_stage\", \"stage_type\": \"player\", \"is\": false}\n" +
-                "      ]\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"execute\": \"say This action requires multiple conditions\",\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage\": \"advanced\", \"stage_type\": \"player\", \"is\": true},\n" +
-                "        {\"stage\": \"locked_stage\", \"stage_type\": \"player\", \"is\": false},\n" +
-                "        {\"stage\": \"event_active\", \"stage_type\": \"world\", \"is\": true}\n" +
                 "      ]\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}\n" +
                 "```\n" +
                 "\n" +
-                "In this example, each action has its own stage requirements. If a player doesn't meet the requirements for a specific action, \n" +
-                "that action is skipped, but the rest of the actions will still be evaluated and potentially executed.\n" +
+                "In this example:\n" +
+                "- The first action always executes (no stage requirements)\n" +
+                "- The second action only executes if the player has the \"dungeon_boss_defeated\" stage AND does NOT have the \"dungeon_curse\" stage\n" +
+                "- The third action only executes if the player has BOTH \"dungeon_secret_found\" AND \"dungeon_boss_defeated\" stages\n" +
+                "- The fourth action only executes if the player is in the nether dimension\n" +
+                "\n" +
+                "#### DEF_OR Example\n" +
+                "Using `DEF_OR` means each action requires ANY of its stage conditions to be met:\n" +
+                "\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"command\": \"guild_benefits\",\n" +
+                "  \"level\": 0,\n" +
+                "  \"stages_logic\": \"DEF_OR\",\n" +
+                "  \"do\": [\n" +
+                "    {\n" +
+                "      \"execute\": \"say Guild Benefits System Activated!\"\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"execute\": \"effect give @s minecraft:regeneration 60 1\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"guild_healer\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"health_potion_crafted\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"execute\": \"effect give @s minecraft:resistance 60 1\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"guild_tank\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"nether_fortress_visited\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"endgame\", \"stage_type\": \"world\", \"is\": true}\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"execute\": \"effect give @s minecraft:strength 60 1\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"guild_warrior\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"dragon_defeated\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "```\n" +
+                "\n" +
+                "In this example:\n" +
+                "- The first action always executes (no stage requirements)\n" +
+                "- The second action executes if the player has EITHER \"guild_healer\" OR \"health_potion_crafted\" stages\n" +
+                "- The third action executes if the player has ANY of: \"guild_tank\" OR \"nether_fortress_visited\" OR if the world has the \"endgame\" stage\n" +
+                "- The fourth action executes if the player has EITHER \"guild_warrior\" OR \"dragon_defeated\" stages\n" +
+                "\n" +
+                "The key difference between these examples is how the stage conditions are evaluated for each action:\n" +
+                "- With `DEF_AND`, each action requires ALL of its conditions to be met\n" +
+                "- With `DEF_OR`, each action requires ANY ONE of its conditions to be met\n" +
                 "\n" +
                 "### Time Cycle Demonstration\n" +
                 "A macro that cycles through different times of day with delays between changes.\n" +
