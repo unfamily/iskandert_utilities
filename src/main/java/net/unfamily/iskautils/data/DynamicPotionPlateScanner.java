@@ -730,6 +730,17 @@ public class DynamicPotionPlateScanner {
             "      \"player_shift_disable\": true\n" +
             "    },\n" +
             "    {\n" +
+            "      \"plate_type\": \"damage\",\n" +
+            "      \"id\": \"iska_utils-improved_damage\",\n" +
+            "      \"damage_type\": \"minecraft:player\",\n" +
+            "      \"damage\": 2.0,\n" +
+            "      \"delay\": 20,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"creative_tab\": true,\n" +
+            "      \"player_shift_disable\": true\n" +
+            "    },\n" +
+            "    {\n" +
             "      \"plate_type\": \"special\",\n" +
             "      \"id\": \"iska_utils-fire\",\n" +
             "      \"apply\": \"fire\",\n" +
