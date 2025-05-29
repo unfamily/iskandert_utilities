@@ -317,8 +317,17 @@ public class CommandItem extends Item {
         // CopyOnWriteArrayList permette iterazione sicura anche durante la rimozione
         for (DelayedAction action : actions) {
             if (currentTick >= action.executeAtTick) {
-                executeAction(action.player, action.action, action.stack, action.slot);
-                actionsToRemove.add(action);
+                try {
+                    // Esegui l'azione pianificata
+                    LOGGER.debug("Executing delayed action for player {} scheduled for tick {} (current tick: {})",
+                            player.getName().getString(), action.executeAtTick, currentTick);
+                    executeAction(action.player, action.action, action.stack, action.slot);
+                } catch (Exception e) {
+                    LOGGER.error("Error executing delayed action: {}", e.getMessage());
+                } finally {
+                    // Aggiungi sempre all'elenco delle azioni da rimuovere, anche in caso di errore
+                    actionsToRemove.add(action);
+                }
             }
         }
         
@@ -416,13 +425,10 @@ public class CommandItem extends Item {
             case IF:
                 // Check if conditions are met based on the indices
                 if (action.checkConditionsByIndices(player, definition)) {
-                    // Execute all sub-actions if conditions are met
-                    for (CommandItemAction subAction : action.getSubActions()) {
-                        if (stack.isEmpty()) {
-                            // Item consumed in a previous action
-                            break;
-                        }
-                        executeAction(player, subAction, stack, slot);
+                    // Execute all sub-actions if conditions are met, but handle delays specially
+                    List<CommandItemAction> subActions = action.getSubActions();
+                    if (!subActions.isEmpty()) {
+                        executeIfActionsWithDelays(player, subActions, stack, slot);
                     }
                 } else if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Skipping IF block actions because conditions are not met");
@@ -432,6 +438,95 @@ public class CommandItem extends Item {
             default:
                 LOGGER.warn("Unknown action type: {}", action.getType());
                 break;
+        }
+    }
+    
+    /**
+     * Esegue le azioni di un blocco IF gestendo correttamente i delay
+     * in modo che le azioni successive a un delay vengano eseguite dopo il ritardo
+     */
+    private void executeIfActionsWithDelays(ServerPlayer player, List<CommandItemAction> actions, ItemStack stack, int slot) {
+        // Se non ci sono azioni, esci
+        if (actions.isEmpty()) {
+            return;
+        }
+        
+        // Inizia con l'esecuzione delle azioni fino al primo delay
+        int i = 0;
+        for (; i < actions.size(); i++) {
+            CommandItemAction currentAction = actions.get(i);
+            
+            // Se troviamo un delay, interrompiamo il ciclo qui
+            if (currentAction.getType() == CommandItemAction.ActionType.DELAY) {
+                break;
+            }
+            
+            // Esegui l'azione corrente
+            if (stack.isEmpty()) {
+                // Item consumed in a previous action
+                return;
+            }
+            executeAction(player, currentAction, stack, slot);
+        }
+        
+        // Se abbiamo finito le azioni o l'item è stato consumato, esci
+        if (i >= actions.size() || stack.isEmpty()) {
+            return;
+        }
+        
+        // Abbiamo trovato un delay, prendiamo il resto delle azioni
+        CommandItemAction delayAction = actions.get(i);
+        List<CommandItemAction> remainingActions = actions.subList(i + 1, actions.size());
+        
+        // Se non ci sono azioni rimanenti dopo il delay, esegui solo il delay
+        if (remainingActions.isEmpty()) {
+            executeAction(player, delayAction, stack, slot);
+            return;
+        }
+        
+        // Creiamo un'azione IF ritardata con le azioni rimanenti
+        CommandItemAction delayedIfAction = new CommandItemAction();
+        delayedIfAction.setType(CommandItemAction.ActionType.IF);
+        
+        // Impostiamo le stesse condizioni dell'azione IF originale
+        // (per semplicità, assumiamo che sia sempre vera a questo punto)
+        List<Integer> emptyConditions = new ArrayList<>();
+        delayedIfAction.setConditionIndices(emptyConditions);
+        
+        // Aggiungiamo tutte le azioni rimanenti come sub-actions
+        for (CommandItemAction remainingAction : remainingActions) {
+            delayedIfAction.addSubAction(remainingAction);
+        }
+        
+        // Ora eseguiamo l'azione di delay, che metterà in coda l'azione IF ritardata
+        int delayTicks = delayAction.getDelay();
+        UUID playerUuid = player.getUUID();
+        long currentTick = player.level().getGameTime();
+        
+        // Assicuriamoci che il ritardo sia almeno di 1 tick
+        if (delayTicks < 1) {
+            delayTicks = 1;
+        }
+        
+        long executeAtTick = currentTick + delayTicks;
+        
+        // Create delayed action with our new IF action
+        DelayedAction delayedAction = new DelayedAction(
+            player, 
+            delayedIfAction, 
+            stack.copy(), // Create a copy of the stack to prevent issues if original is modified
+            slot,
+            executeAtTick
+        );
+        
+        // Add to queue (CopyOnWriteArrayList è già thread-safe)
+        CopyOnWriteArrayList<DelayedAction> delayedActions = DELAYED_ACTIONS.computeIfAbsent(
+            playerUuid, k -> new CopyOnWriteArrayList<>());
+        delayedActions.add(delayedAction);
+        
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Queued delayed IF action for player {} to execute in {} ticks (current: {}, target: {}) with {} remaining actions",
+                player.getName().getString(), delayTicks, currentTick, executeAtTick, remainingActions.size());
         }
     }
     
@@ -447,6 +542,12 @@ public class CommandItem extends Item {
         
         UUID playerUuid = player.getUUID();
         long currentTick = player.level().getGameTime();
+        
+        // Assicuriamoci che il ritardo sia almeno di 1 tick
+        if (delayTicks < 1) {
+            delayTicks = 1;
+        }
+        
         long executeAtTick = currentTick + delayTicks;
         
         // Create delayed action
@@ -464,8 +565,8 @@ public class CommandItem extends Item {
         actions.add(delayedAction);
         
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Queued delayed action for player {} to execute in {} ticks (at tick {})",
-                player.getName().getString(), delayTicks, executeAtTick);
+            LOGGER.debug("Queued delayed action for player {} to execute in {} ticks (current: {}, target: {})",
+                player.getName().getString(), delayTicks, currentTick, executeAtTick);
         }
     }
     

@@ -788,16 +788,16 @@ public class CommandItemLoader {
             "          \"onTick\": [\n" +
             "            {\"if\": [\n" +
             "                {\"conditions\":[0]},\n" +
+            "                {\"execute\": \"iska_utils_stage add world initialized\"},\n" +
+            "                {\"item\": \"delete_all\"},\n" +
             "                {\"execute\": \"title @a times 20 100 40\"},\n" +
             "                {\"execute\": \"title @a subtitle {\\\"text\\\":\\\"please stand still and do nothing.\\\",\\\"color\\\":\\\"dark_red\\\"}\"},\n" +
             "                {\"execute\": \"title @a title {\\\"text\\\":\\\"World Initialization:\\\",\\\"color\\\":\\\"dark_red\\\"}\"},\n" +
-            "                {\"delay\": 60},\n" +
-            "                {\"execute\": \"iska_utils_stage add world initialized\"},\n" +
+            "                {\"delay\": 160},\n" +
             "                {\"execute\": \"kubejs reload server-scripts\"},\n" +
             "                {\"execute\": \"reload\"},\n" +
-            "                {\"delay\": 20},\n" +
+            "                {\"delay\": 180},\n" +
             "                {\"execute\": \"custommachinery reload\"},\n" +
-            "                {\"item\": \"delete_all\"},\n" +
             "                {\"execute\": \"title @a times 20 100 40\"},\n" +
             "                {\"execute\": \"title @a subtitle {\\\"text\\\":\\\"completed, apologies for the wait\\\",\\\"color\\\":\\\"dark_green\\\"}\"},\n" +
             "                {\"execute\": \"title @a title {\\\"text\\\":\\\"World Initialization:\\\",\\\"color\\\":\\\"dark_green\\\"}\"},\n" +

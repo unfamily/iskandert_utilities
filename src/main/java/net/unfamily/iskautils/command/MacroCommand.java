@@ -445,11 +445,23 @@ public class MacroCommand {
         } else if (action.type == MacroActionType.DELAY) {
             // Pianifica la prossima azione con ritardo
             int delayTicks = action.delayTicks;
-            long delayMillis = (long) delayTicks * 50; // 1 tick = ~50ms
+            
+            // Usiamo esattamente 50ms per tick, ma aggiungiamo un piccolo margine 
+            // per assicurare che il ritardo minimo sia rispettato
+            long delayMillis = (long) delayTicks * 50 + 5; 
+            
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Scheduling delay of {} ticks ({} ms) for player {}", 
+                    delayTicks, delayMillis, player.getName().getString());
+            }
             
             UUID playerUUID = player.getUUID();
             ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
                 // Dopo il ritardo, esegui la prossima azione
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Executing action after delay of {} ticks for player {}", 
+                        delayTicks, player.getName().getString());
+                }
                 executeActionSequence(player, level, actions, paramValues, index + 1);
             }, delayMillis, TimeUnit.MILLISECONDS);
             
@@ -476,16 +488,33 @@ public class MacroCommand {
                             LOGGER.debug("IF conditions met in macro {}, executing sub-actions", currentMacroId);
                         }
                         
-                        // Create a new future to execute the sub-actions
-                        ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
-                            // Execute sub-actions as a separate sequence
-                            executeActionSequence(player, level, subActions, paramValues, 0);
+                        // Verifica se nelle sub-actions ci sono delay
+                        if (containsDelayAction(subActions)) {
+                            // Se ci sono delay, esegui le sub-actions in modo speciale
+                            // usando una nuova versione che gestisce i delay correttamente
+                            ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
+                                // Esegui le sub-actions con gestione speciale dei delay
+                                executeActionSequenceWithDelayHandling(player, level, subActions, paramValues, 0, () -> {
+                                    // Quando tutte le sub-actions (inclusi delay) sono completate, 
+                                    // continua con la prossima azione nella sequenza principale
+                                    scheduleNextAction(player, level, actions, paramValues, index + 1);
+                                });
+                            }, 0, TimeUnit.MILLISECONDS);
                             
-                            // After sub-actions, continue with the next action in the main sequence
-                            scheduleNextAction(player, level, actions, paramValues, index + 1);
-                        }, 0, TimeUnit.MILLISECONDS);
+                            ACTIVE_COMMANDS.put(playerUUID, future);
+                        } else {
+                            // Nessun delay nelle sub-actions, possiamo usare il metodo normale
+                            ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
+                                // Execute sub-actions as a separate sequence
+                                executeActionSequence(player, level, subActions, paramValues, 0);
+                                
+                                // After sub-actions, continue with the next action in the main sequence
+                                scheduleNextAction(player, level, actions, paramValues, index + 1);
+                            }, 0, TimeUnit.MILLISECONDS);
+                            
+                            ACTIVE_COMMANDS.put(playerUUID, future);
+                        }
                         
-                        ACTIVE_COMMANDS.put(playerUUID, future);
                         return; // Exit early as we've scheduled the next actions
                     }
                     
@@ -574,14 +603,23 @@ public class MacroCommand {
         
         if (action.getType() == MacroActionType.DELAY) {
             int delayTicks = action.getDelayTicks();
+            
+            // Aggiungiamo un piccolo margine per garantire che il ritardo minimo sia rispettato
+            long delayMillis = (long) delayTicks * 50L + 5L;
+            
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Scheduling delay of {} ticks for player {}", delayTicks, player.getName().getString());
+                LOGGER.debug("Scheduling delay of {} ticks ({} ms) for player {}", 
+                    delayTicks, delayMillis, player.getName().getString());
             }
             
             // Schedule next action after the delay
             ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Executing action after delay of {} ticks for player {}", 
+                        delayTicks, player.getName().getString());
+                }
                 executeActionSequence(player, level, actions, paramValues, nextIndex + 1);
-            }, delayTicks * 50L, TimeUnit.MILLISECONDS); // Convert ticks to ms (1 tick = 50ms)
+            }, delayMillis, TimeUnit.MILLISECONDS);
             
             ACTIVE_COMMANDS.put(player.getUUID(), future);
         } else {
@@ -638,6 +676,193 @@ public class MacroCommand {
             COMMAND_EXECUTOR.shutdownNow();
             Thread.currentThread().interrupt();
         }
+    }
+    
+    /**
+     * Verifica se una lista di azioni contiene almeno un'azione di tipo DELAY
+     */
+    private static boolean containsDelayAction(List<MacroAction> actions) {
+        for (MacroAction action : actions) {
+            if (action.getType() == MacroActionType.DELAY) {
+                return true;
+            }
+            // Controlla ricorsivamente anche nelle sub-actions dei blocchi IF
+            if (action.getType() == MacroActionType.IF && action.hasSubActions()) {
+                if (containsDelayAction(action.getSubActions())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Versione speciale di executeActionSequence che gestisce correttamente i delay
+     * anche all'interno dei blocchi IF
+     * 
+     * @param callback Una funzione da chiamare quando tutte le azioni sono state completate
+     */
+    private static void executeActionSequenceWithDelayHandling(ServerPlayer player, ServerLevel level, 
+                                                 List<MacroAction> actions, Object[] paramValues, 
+                                                 int index, Runnable callback) {
+        if (index >= actions.size() || player.isRemoved() || !player.isAlive()) {
+            // Fine della sequenza o giocatore non più valido
+            if (callback != null) {
+                callback.run();
+            }
+            return;
+        }
+        
+        MacroAction action = actions.get(index);
+        
+        // Check action-specific stage requirements if any
+        if (action.hasStageRequirements() && !checkActionStages(player, action.getStageRequirements())) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Action at index {} skipped due to stage requirements not met", index);
+            }
+            // Skip this action and move to the next
+            executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
+            return;
+        }
+        
+        if (action.type == MacroActionType.EXECUTE) {
+            // Sostituisci i parametri nel comando
+            String commandWithParams = replaceParameters(action.command, paramValues);
+            
+            // Esegui il comando immediatamente
+            executeCommand(player, level, commandWithParams);
+            
+            // Passa alla prossima azione
+            executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
+        } else if (action.type == MacroActionType.DELAY) {
+            // Gestione speciale del delay - attendi prima di eseguire la prossima azione
+            int delayTicks = action.delayTicks;
+            
+            // Usiamo esattamente 50ms per tick, ma aggiungiamo un piccolo margine 
+            // per assicurare che il ritardo minimo sia rispettato
+            long delayMillis = (long) delayTicks * 50 + 5; 
+            
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Special handling: Scheduling delay of {} ticks ({} ms) for player {}", 
+                    delayTicks, delayMillis, player.getName().getString());
+            }
+            
+            UUID playerUUID = player.getUUID();
+            ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
+                // Dopo il ritardo, esegui la prossima azione
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Special handling: Executing action after delay of {} ticks for player {}", 
+                        delayTicks, player.getName().getString());
+                }
+                executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
+            }, delayMillis, TimeUnit.MILLISECONDS);
+            
+            // Memorizza il future per potenziale cancellazione
+            ACTIVE_COMMANDS.put(playerUUID, future);
+        } else if (action.type == MacroActionType.IF) {
+            // Gestione dei blocchi IF
+            List<Integer> indices = action.getConditionIndices();
+            List<MacroAction> subActions = action.getSubActions();
+            UUID playerUUID = player.getUUID();
+            
+            // Cerca di trovare la macro corrente
+            MacroDefinition currentMacro = null;
+            for (String macroId : MACRO_REGISTRY.keySet()) {
+                MacroDefinition macro = MACRO_REGISTRY.get(macroId);
+                if (macro != null && macro.getActions().contains(action)) {
+                    currentMacro = macro;
+                    break;
+                }
+            }
+            
+            if (currentMacro != null && checkConditionsByIndices(player, indices, 
+                    currentMacro.getRequiredStages(), currentMacro.getStagesLogic())) {
+                // Condizioni soddisfatte, esegui sub-actions
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Special handling: IF conditions met, executing sub-actions");
+                }
+                
+                // Esegui le sub-actions e poi passa alla prossima azione principale
+                executeActionSequenceWithDelayHandling(player, level, subActions, paramValues, 0, () -> {
+                    // Dopo che tutte le sub-actions sono completate, continua con la prossima azione
+                    executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
+                });
+            } else {
+                // Condizioni non soddisfatte o macro non trovata, salta le sub-actions
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Special handling: IF conditions not met, skipping sub-actions");
+                }
+                // Passa alla prossima azione
+                executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
+            }
+        } else {
+            // Tipo di azione sconosciuto, salta e passa alla prossima
+            LOGGER.warn("Unknown action type: {}, skipping", action.type);
+            executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
+        }
+    }
+    
+    /**
+     * Checks conditions based on indices for IF statements
+     */
+    private static boolean checkConditionsByIndices(ServerPlayer player, List<Integer> indices, List<StageRequirement> allStages, StagesLogic logic) {
+        if (indices == null || indices.isEmpty()) {
+            return true;
+        }
+        
+        // For DEF_AND logic, all conditions must be met
+        if (logic == StagesLogic.DEF_AND) {
+            for (Integer index : indices) {
+                if (index < 0 || index >= allStages.size()) {
+                    // Invalid index
+                    return false;
+                }
+                
+                StageRequirement condition = allStages.get(index);
+                if (!checkSingleStage(player, condition)) {
+                    return false;
+                }
+            }
+            return true;
+        } 
+        // For DEF_OR logic, at least one condition must be met
+        else if (logic == StagesLogic.DEF_OR) {
+            for (Integer index : indices) {
+                if (index < 0 || index >= allStages.size()) {
+                    // Skip invalid index
+                    continue;
+                }
+                
+                StageRequirement condition = allStages.get(index);
+                if (checkSingleStage(player, condition)) {
+                    return true;
+                }
+            }
+            return indices.isEmpty(); // Return true only if no conditions
+        }
+        
+        // Default to AND logic for any other case
+        for (Integer index : indices) {
+            if (index < 0 || index >= allStages.size()) {
+                // Invalid index
+                return false;
+            }
+            
+            StageRequirement condition = allStages.get(index);
+            if (!checkSingleStage(player, condition)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Checks if a single stage requirement is satisfied using the first macro available
+     */
+    private static boolean checkSingleStage(ServerPlayer player, StageRequirement requirement) {
+        // Create a dummy MacroDefinition to use its checkSingleStage method
+        MacroDefinition dummyMacro = new MacroDefinition("dummy", null, null, 0);
+        return dummyMacro.checkSingleStage(player, requirement);
     }
     
     /**
@@ -1148,68 +1373,5 @@ public class MacroCommand {
         EXECUTE,
         DELAY,
         IF      // Conditional action block
-    }
-    
-    /**
-     * Checks conditions based on indices for IF statements
-     */
-    private static boolean checkConditionsByIndices(ServerPlayer player, List<Integer> indices, List<StageRequirement> allStages, StagesLogic logic) {
-        if (indices == null || indices.isEmpty()) {
-            return true;
-        }
-        
-        // For DEF_AND logic, all conditions must be met
-        if (logic == StagesLogic.DEF_AND) {
-            for (Integer index : indices) {
-                if (index < 0 || index >= allStages.size()) {
-                    // Invalid index
-                    return false;
-                }
-                
-                StageRequirement condition = allStages.get(index);
-                if (!checkSingleStage(player, condition)) {
-                    return false;
-                }
-            }
-            return true;
-        } 
-        // For DEF_OR logic, at least one condition must be met
-        else if (logic == StagesLogic.DEF_OR) {
-            for (Integer index : indices) {
-                if (index < 0 || index >= allStages.size()) {
-                    // Skip invalid index
-                    continue;
-                }
-                
-                StageRequirement condition = allStages.get(index);
-                if (checkSingleStage(player, condition)) {
-                    return true;
-                }
-            }
-            return indices.isEmpty(); // Return true only if no conditions
-        }
-        
-        // Default to AND logic for any other case
-        for (Integer index : indices) {
-            if (index < 0 || index >= allStages.size()) {
-                // Invalid index
-                return false;
-            }
-            
-            StageRequirement condition = allStages.get(index);
-            if (!checkSingleStage(player, condition)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    /**
-     * Checks if a single stage requirement is satisfied using the first macro available
-     */
-    private static boolean checkSingleStage(ServerPlayer player, StageRequirement requirement) {
-        // Create a dummy MacroDefinition to use its checkSingleStage method
-        MacroDefinition dummyMacro = new MacroDefinition("dummy", null, null, 0);
-        return dummyMacro.checkSingleStage(player, requirement);
     }
 } 

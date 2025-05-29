@@ -488,12 +488,12 @@ public class StageItemHandler {
             serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable(
                 "message.iska_utils.item_restriction.blocked"), true);
                 
-            // Add a visual effect at player position for feedback
-            serverPlayer.level().levelEvent(
-                1041, // 1041 is a good particle effect for blocking
-                serverPlayer.blockPosition(),
-                0
-            );
+            // Invia un pacchetto al client per bloccare l'interazione
+            serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket(
+                serverPlayer.blockPosition(), level.getBlockState(serverPlayer.blockPosition())));
+                
+            // Aggiorna lo stato dell'inventario per evitare desync
+            serverPlayer.inventoryMenu.broadcastChanges();
         }
         
         return shouldBlock;
@@ -524,11 +524,22 @@ public class StageItemHandler {
             serverPlayer.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
                 .setBaseValue(0);
             
+            // Invia un pacchetto al client per sincronizzare lo stato
+            serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket(
+                serverPlayer.getId(), serverPlayer.getEntityData().getNonDefaultValues()));
+                
+            // Aggiorna lo stato dell'inventario per evitare desync
+            serverPlayer.inventoryMenu.broadcastChanges();
+            
             // Schedule task to reset damage after this tick
             serverPlayer.level().getServer().tell(new net.minecraft.server.TickTask(0, () -> {
                 // Reset attack damage to default (1.0)
                 serverPlayer.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
                     .setBaseValue(1.0);
+                    
+                // Risincronizzo con il client dopo il reset
+                serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket(
+                    serverPlayer.getId(), serverPlayer.getEntityData().getNonDefaultValues()));
             }));
         }
         
