@@ -694,6 +694,19 @@ public class DynamicPotionPlateScanner {
             "    },\n" +
             "    {\n" +
             "      \"plate_type\": \"effect\",\n" +
+            "      \"id\": \"iska_utils-weakness\",\n" +
+            "      \"effect\": \"minecraft:weakness\",\n" +
+            "      \"amplifier\": 0,\n" +
+            "      \"duration\": 100,\n" +
+            "      \"delay\": 40,\n" +
+            "      \"hide_particles\": false,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"creative_tab\": true,\n" +
+            "      \"player_shift_disable\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"plate_type\": \"effect\",\n" +
             "      \"id\": \"iska_utils-slowness\",\n" +
             "      \"effect\": \"minecraft:slowness\",\n" +
             "      \"amplifier\": 0,\n" +

@@ -7,12 +7,7 @@
   ],
   "key": {
    "A": {
-    "item": "minecraft:potion",
-    "components": {
-      "minecraft:potion_contents": {
-        "potion": "minecraft:weakness"
-      }
-    }
+    "item": "minecraft:oxidized_copper_grate"
    },
    "B": {
     "item": "iska_utils:plate_base_block"
