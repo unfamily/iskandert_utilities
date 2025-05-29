@@ -149,7 +149,7 @@ public class CommandItemLoader {
             
             String readmeContent = "# Command Items - External Configuration\n\n" +
                 "This directory contains configuration files for command items that perform automated actions.\n\n" +
-                "## Format\n\n" +
+                 "## Format\n\n" +
                 "The format is JSON with the following structure:\n\n" +
                 "```json\n" +
                 "{\n" +
@@ -168,24 +168,15 @@ public class CommandItemLoader {
                 "  ],\n" +
                 "  \"do\": [\n" +
                 "    {\n" +
-                "      \"when\": \"first_tick\",\n" +
-                "      \"action\": \"execute\",\n" +
-                "      \"command\": \"say Hello World!\"\n" +
+                "      \"onUse\": [\n" +
+                "        {\"execute\": \"say Hello World!\"}\n" +
+                "      ]\n" +
                 "    },\n" +
                 "    {\n" +
-                "      \"when\": \"tick\",\n" +
-                "      \"action\": \"execute\",\n" +
-                "      \"command\": \"say Tick!\"\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"when\": \"use\",\n" +
-                "      \"action\": \"execute\",\n" +
-                "      \"command\": \"say Used!\"\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"when\": \"first_tick\",\n" +
-                "      \"action\": \"item\",\n" +
-                "      \"item_action\": \"consume\"\n" +
+                "      \"onTick\": [\n" +
+                "        {\"delay\": 20},\n" +
+                "        {\"execute\": \"say Tick!\"}\n" +
+                "      ]\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}\n" +
@@ -193,18 +184,19 @@ public class CommandItemLoader {
                 "## Fields\n\n" +
                 "### General Fields\n" +
                 "- `id`: Unique identifier for the command item (required)\n" +
-                "- `creative_tab\": Whether the item should appear in the creative tab (optional, default: true)\n" +
-                "- `stack_size\": Maximum stack size for this item (optional, default: 64, range: 1-64)\n" +
-                "- `is_foil\": Whether the item should have an enchantment glint (optional, default: false)\n" +
-                "- `cooldown\": Cooldown in ticks (20 ticks = 1 second) between actions (optional, default: 0)\n" +
-                "- `stages_logic\": Logic for evaluating stages (optional, values: \"AND\", \"OR\", \"DEF\", default: \"AND\")\n" +
+                "- `creative_tab`: Whether the item should appear in the creative tab (optional, default: true)\n" +
+                "- `stack_size`: Maximum stack size for this item (optional, default: 64, range: 1-64)\n" +
+                "- `is_foil`: Whether the item should have an enchantment glint (optional, default: false)\n" +
+                "- `cooldown`: Cooldown in ticks (20 ticks = 1 second) between actions (optional, default: 0)\n" +
+                "- `stages_logic`: Logic for evaluating stages (optional, values: \"AND\", \"OR\", \"DEF_AND\", \"DEF_OR\", default: \"AND\")\n" +
                 "  - \"AND\": All stages must be satisfied\n" +
                 "  - \"OR\": At least one stage must be satisfied\n" +
-                "  - \"DEF\": Stages are defined per action, not at item level\n" +
-                "- `stages\": List of stage conditions that must be met for the item to function\n\n" +
+                "  - \"DEF_AND\": Stages are defined per action with AND logic\n" +
+                "  - \"DEF_OR\": Stages are defined per action with OR logic\n" +
+                "- `stages`: List of stage conditions that must be met for the item to function\n\n" +
                 
                 "### Special Stage System for DEF Logic\n" +
-                "When using `stages_logic: \"DEF\"`, you can create a special initialization system:\n\n" +
+                "When using `stages_logic: \"DEF_AND\"` or `stages_logic: \"DEF_OR\"`, you can create a special initialization system:\n\n" +
                 "1. Include a stage called `initialized` in your item definition:\n" +
                 "```json\n" +
                 "\"stages\": [\n" +
@@ -216,12 +208,12 @@ public class CommandItemLoader {
                 "]\n" +
                 "```\n\n" +
                 
-                "2. In your first_tick actions, set this stage:\n" +
+                "2. In your tick actions, set this stage:\n" +
                 "```json\n" +
                 "{\n" +
-                "  \"when\": \"first_tick\",\n" +
-                "  \"action\": \"execute\",\n" +
-                "  \"command\": \"iska_utils_stage player initialized true\"\n" +
+                "  \"onTick\": [\n" +
+                "    {\"execute\": \"iska_utils_stage add player initialized true\"}\n" +
+                "  ]\n" +
                 "}\n" +
                 "```\n\n" +
                 
@@ -230,26 +222,52 @@ public class CommandItemLoader {
                 "   This is useful for one-time use items that should be removed if their\n" +
                 "   initialization fails for any reason.\n\n" +
                 
+                "### Item Properties\n" +
+                "- `stack_size`: The number of items in the stack (optional, default: 64)\n" +
+                "- `is_foil`: Whether the item is a foil (optional, default: false)\n" +
+                "- `cooldown`: The cooldown in ticks (20 ticks = 1 second) between actions (optional, default: 0)\n" +
+                "\n" +
+
                 "### Stage Condition Fields\n" +
-                "- `stage_type\": Type of stage, e.g., \"player\" or \"world\" (optional, default: \"player\")\n" +
-                "- `stage\": Name of the stage (required)\n" +
-                "- `is\": Whether the stage should be set (true) or not set (false) (optional, default: true)\n\n" +
+                "- `stage_type`: Type of stage, e.g., \"player\" or \"world\" (optional, default: \"player\")\n" +
+                "- `stage`: Name of the stage (required)\n" +
+                "- `is`: Whether the stage should be set (true) or not set (false) (optional, default: true)\n\n" +
                 
-                "### Action Fields\n" +
-                "- `when\": When the action should trigger (required, values: \"first_tick\", \"tick\", \"use\", \"finish_use\", \"use_on\", \"hit\", \"swing\", \"drop\", \"release\")\n" +
-                "- `action\": Type of action (required, values: \"execute\", \"delay\", \"item\")\n" +
-                "- `command\": Command to execute (required for \"execute\" action)\n" +
-                "- `delay\": Delay in ticks before executing the next action (required for \"delay\" action)\n" +
-                "- `item_action\": Item action to perform (required for \"item\" action, values: \"consume\", \"delete\", \"delete_all\", \"drop\", \"drop_all\", \"damage\")\n" +
-                "- `stages\": Action-specific stages that must be met for this action to trigger (used with \"DEF\" stages_logic)\n\n" +
+                "### Action Blocks\n" +
+                "- `onTick`: Actions to perform every tick\n" +
+                "- `onUse`: Actions to perform when the item is used\n" +
+                "- `onFinishUse`: Actions to perform when the item use is finished\n" +
+                "- `onUseOn`: Actions to perform when the item is used on a block\n" +
+                "- `onHitEntity`: Actions to perform when the item hits an entity\n" +
+                "- `onSwing`: Actions to perform when the item is swung\n" +
+                "- `onDrop`: Actions to perform when the item is dropped\n" +
+                "- `onReleaseUsing`: Actions to perform when the use is released\n\n" +
                 
+                "### Action Types\n" +
+                "- `execute`: Execute a command (e.g., `{\"execute\": \"say Hello World!\"}`)\n" +
+                "- `delay`: Delay next actions by ticks (e.g., `{\"delay\": 20}`)\n" +
+                "- `item`: Perform an item action (e.g., `{\"item\": \"consume\"}`)\n" +
+                "- `if`: Conditional execution based on stage conditions (see example below)\n\n" +
+                
+                "### Item Action Values\n" +
+                "- `consume`: Consume one item from the stack\n" +
+                "- `delete`: Delete the item in hand\n" +
+                "- `delete_all`: Delete all items of this type in inventory\n" +
+                "- `drop`: Drop the item in hand\n" +
+                "- `drop_all`: Drop all items of this type in inventory\n" +
+                "- `damage`: Damage the item\n\n" +
+                
+                "## Important Notes\n\n" +
+                "- **Final Actions**: The actions like `drop`, `drop_all`, `delete` and `delete_all` must always be the last in a command block to ensure the correct execution of subsequent commands.\n\n" +
+                "- **Logical Spinlocks**: Stages can be used to create logical spinlocks, as demonstrated in the World Initializer example.\n\n" +
+               
                 "## Example: World Initialization Item\n\n" +
                 "```json\n" +
                 "{\n" +
                 "  \"id\": \"world_init\",\n" +
                 "  \"creative_tab\": true,\n" +
                 "  \"stack_size\": 1,\n" +
-                "  \"stages_logic\": \"DEF\",\n" +
+                "  \"stages_logic\": \"DEF_AND\",\n" +
                 "  \"stages\": [\n" +
                 "    {\n" +
                 "      \"stage_type\": \"world\",\n" +
@@ -259,20 +277,25 @@ public class CommandItemLoader {
                 "  ],\n" +
                 "  \"do\": [\n" +
                 "    {\n" +
-                "      \"when\": \"first_tick\",\n" +
-                "      \"action\": \"execute\",\n" +
-                "      \"command\": \"iska_utils_stage world initialized true\"\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"when\": \"first_tick\",\n" +
-                "      \"action\": \"execute\",\n" +
-                "      \"command\": \"say World initialized!\"\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"when\": \"first_tick\",\n" +
-                "      \"action\": \"item\",\n" +
-                "      \"item_action\": \"consume\"\n" +
+                "      \"onTick\": [\n" +
+                "        {\"execute\": \"iska_utils_stage add world initialized true\"},\n" +
+                "        {\"execute\": \"say World initialized!\"},\n" +
+                "        {\"item\": \"consume\"}\n" +
+                "      ]\n" +
                 "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "```\n\n" +
+                
+                "## Conditional Example with IF\n\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"onTick\": [\n" +
+                "    {\"if\": [\n" +
+                "        {\"conditions\":[0,1]},\n" +
+                "        {\"execute\": \"say Condition met!\"},\n" +
+                "        {\"item\": \"delete_all\"}\n" +
+                "    ]}\n" +
                 "  ]\n" +
                 "}\n" +
                 "```\n\n" +
@@ -489,21 +512,6 @@ public class CommandItemLoader {
      * Process action definitions for a command item
      */
     private static void processActionDefinition(CommandItemDefinition definition, JsonObject actionJson) {
-        // Process onFirstTick actions
-        if (actionJson.has("onFirstTick") && actionJson.get("onFirstTick").isJsonArray()) {
-            JsonArray actionsArray = actionJson.getAsJsonArray("onFirstTick");
-            for (JsonElement actionElement : actionsArray) {
-                if (actionElement.isJsonObject()) {
-                    JsonObject action = actionElement.getAsJsonObject();
-                    CommandItemAction itemAction = parseItemAction(action);
-                    if (itemAction != null) {
-                        // Parse action-specific stages if present
-                        parseActionStages(action, itemAction);
-                        definition.addFirstTickAction(itemAction);
-                    }
-                }
-            }
-        }
         
         // Process onTick actions
         if (actionJson.has("onTick") && actionJson.get("onTick").isJsonArray()) {
@@ -777,9 +785,12 @@ public class CommandItemLoader {
             "    {\n" +
             "      \"id\": \"iska_utils-world_init\",\n" +
             "      \"creative_tab\": false,\n" +
+            "      \"stack_size\": 1,\n" +
+            "      \"is_foil\": false,\n" +
             "      \"stages_logic\": \"DEF_AND\",\n" +
             "      \"cooldown\": 10,\n" +
             "      \"stages\": [\n" +
+            "          {\"stage_type\": \"world\", \"stage\": \"initializing\", \"is\": false},\n" +
             "          {\"stage_type\": \"world\", \"stage\": \"initialized\", \"is\": false},\n" +
             "          {\"stage_type\": \"world\", \"stage\": \"initialized\", \"is\": true}\n" +
             "      ],\n" +
@@ -787,24 +798,26 @@ public class CommandItemLoader {
             "        {\n" +
             "          \"onTick\": [\n" +
             "            {\"if\": [\n" +
-            "                {\"conditions\":[0]},\n" +
-            "                {\"execute\": \"iska_utils_stage add world initialized\"},\n" +
-            "                {\"item\": \"delete_all\"},\n" +
+            "                {\"conditions\":[0,1]},\n" +
+            "                {\"execute\": \"iska_utils_stage add world initializing true\"},\n" +
             "                {\"execute\": \"title @a times 20 100 40\"},\n" +
             "                {\"execute\": \"title @a subtitle {\\\"text\\\":\\\"please stand still and do nothing.\\\",\\\"color\\\":\\\"dark_red\\\"}\"},\n" +
             "                {\"execute\": \"title @a title {\\\"text\\\":\\\"World Initialization:\\\",\\\"color\\\":\\\"dark_red\\\"}\"},\n" +
             "                {\"delay\": 160},\n" +
             "                {\"execute\": \"kubejs reload server-scripts\"},\n" +
             "                {\"execute\": \"reload\"},\n" +
-            "                {\"delay\": 180},\n" +
+            "                {\"delay\": 20},\n" +
             "                {\"execute\": \"custommachinery reload\"},\n" +
             "                {\"execute\": \"title @a times 20 100 40\"},\n" +
             "                {\"execute\": \"title @a subtitle {\\\"text\\\":\\\"completed, apologies for the wait\\\",\\\"color\\\":\\\"dark_green\\\"}\"},\n" +
             "                {\"execute\": \"title @a title {\\\"text\\\":\\\"World Initialization:\\\",\\\"color\\\":\\\"dark_green\\\"}\"},\n" +
-            "                {\"execute\": \"title @a times 20 100 20\"}\n" +   
+            "                {\"execute\": \"title @a times 20 100 20\"},\n" +   
+            "                {\"execute\": \"iska_utils_stage add world initialized true\"},\n" +
+            "                {\"execute\": \"iska_utils_stage remove world initializing true\"},\n" +
+            "                {\"item\": \"delete_all\"}\n" +
             "            ]},\n" +
             "            {\"if\": [\n" +
-            "                {\"conditions\":[1]},\n" +
+            "                {\"conditions\":[0,2]},\n" +
             "                {\"item\": \"delete_all\"}\n" +
             "            ]}\n" +
             "          ]\n" +
@@ -813,8 +826,6 @@ public class CommandItemLoader {
             "    }\n" +
             "  ]\n" +
             "}";
-
-
         
         Files.write(defaultItemsPath, defaultItemsContent.getBytes());
         LOGGER.info("Created example command item configuration at {}", defaultItemsPath);
