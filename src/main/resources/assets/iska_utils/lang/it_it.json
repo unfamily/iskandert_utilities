@@ -86,5 +86,6 @@
   "item.iska_utils.iska_utils_world_init": "Inizializzatore del Mondo",
 
   "message.iska_utils.item_restriction.dropped": "§4Restrizione di stage: oggetti non validi nell'inventario rilasciati",
-  "message.iska_utils.item_restriction.deleted": "§4Restrizione di stage: oggetti non validi nell'inventario eliminati"
+  "message.iska_utils.item_restriction.deleted": "§4Restrizione di stage: oggetti non validi nell'inventario eliminati",
+  "message.iska_utils.item_restriction.blocked": "§4Restrizione di stage: oggetti non validi nell'inventario bloccati"
 }

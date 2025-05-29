@@ -74,13 +74,10 @@ public class CommandItemLoader {
                 LOGGER.debug("Scanning directory for command item definitions: {}", configPath.toAbsolutePath());
             }
             
-            // Verify and regenerate README if missing
-            Path readmePath = configPath.resolve("README.md");
-            if (!Files.exists(readmePath)) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("README.md missing, generating...");
-                }
-                createReadme(configPath);
+            // Always regenerate README
+            createReadme(configPath);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Updated README.md");
             }
             
             // Clear previous protections and definitions
@@ -791,12 +788,20 @@ public class CommandItemLoader {
             "          \"onTick\": [\n" +
             "            {\"if\": [\n" +
             "                {\"conditions\":[0]},\n" +
+            "                {\"execute\": \"title @a times 20 100 40\"},\n" +
+            "                {\"execute\": \"title @a subtitle {\\\"text\\\":\\\"please stand still and do nothing.\\\",\\\"color\\\":\\\"dark_red\\\"}\"},\n" +
+            "                {\"execute\": \"title @a title {\\\"text\\\":\\\"World Initialization:\\\",\\\"color\\\":\\\"dark_red\\\"}\"},\n" +
+            "                {\"delay\": 60},\n" +
             "                {\"execute\": \"iska_utils_stage add world initialized\"},\n" +
             "                {\"execute\": \"kubejs reload server-scripts\"},\n" +
             "                {\"execute\": \"reload\"},\n" +
             "                {\"delay\": 20},\n" +
             "                {\"execute\": \"custommachinery reload\"},\n" +
-            "                {\"item\": \"delete_all\"}\n" +
+            "                {\"item\": \"delete_all\"},\n" +
+            "                {\"execute\": \"title @a times 20 100 40\"},\n" +
+            "                {\"execute\": \"title @a subtitle {\\\"text\\\":\\\"completed, apologies for the wait\\\",\\\"color\\\":\\\"dark_green\\\"}\"},\n" +
+            "                {\"execute\": \"title @a title {\\\"text\\\":\\\"World Initialization:\\\",\\\"color\\\":\\\"dark_green\\\"}\"},\n" +
+            "                {\"execute\": \"title @a times 20 100 20\"}\n" +   
             "            ]},\n" +
             "            {\"if\": [\n" +
             "                {\"conditions\":[1]},\n" +
@@ -808,6 +813,8 @@ public class CommandItemLoader {
             "    }\n" +
             "  ]\n" +
             "}";
+
+
         
         Files.write(defaultItemsPath, defaultItemsContent.getBytes());
         LOGGER.info("Created example command item configuration at {}", defaultItemsPath);

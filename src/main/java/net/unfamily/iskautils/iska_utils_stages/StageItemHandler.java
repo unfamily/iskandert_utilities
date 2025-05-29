@@ -8,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
@@ -115,6 +116,12 @@ public class StageItemHandler {
                         case "delete":
                             player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
                                 "message.iska_utils.item_restriction.deleted"), true);
+                            break;
+                        case "block":
+                        case "block_drop":
+                        case "block_delete":
+                            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                                "message.iska_utils.item_restriction.blocked"), true);
                             break;
                     }
                 }
@@ -260,6 +267,27 @@ public class StageItemHandler {
                     // Delete the item
                     container.slots.get(slot).set(ItemStack.EMPTY);
                     break;
+                    
+                case "block_drop":
+                    // Block usage, drop if not in container context
+                    if (!rule.otherCase.isEmpty()) {
+                        player.drop(stack, false);
+                        container.slots.get(slot).set(ItemStack.EMPTY);
+                    }
+                    break;
+                    
+                case "block_delete":
+                    // Block usage, delete if not in container context
+                    if (!rule.otherCase.isEmpty()) {
+                        container.slots.get(slot).set(ItemStack.EMPTY);
+                    }
+                    break;
+                    
+                case "block":
+                    // Just block usage (no item removal)
+                    // This is handled elsewhere for non-container contexts
+                    break;
+                    
                 default:
                     // Default does nothing
                     break;
@@ -386,6 +414,24 @@ public class StageItemHandler {
                                     }
                                 }
                                 
+                                // Parse container whitelist
+                                String ifContainerWhitelistKey = "containers_whitelist";
+                                if (ifObj.has(ifContainerWhitelistKey)) {
+                                    ifRule.containersWhitelist = ifObj.get(ifContainerWhitelistKey).getAsBoolean();
+                                } else {
+                                    ifRule.containersWhitelist = true; // Default
+                                }
+                                
+                                // Parse other case
+                                if (ifObj.has("other_case") && ifObj.get("other_case").isJsonArray()) {
+                                    for (JsonElement otherCaseElement : ifObj.getAsJsonArray("other_case")) {
+                                        if (otherCaseElement.isJsonPrimitive()) {
+                                            String otherCase = otherCaseElement.getAsString();
+                                            ifRule.otherCase.add(otherCase);
+                                        }
+                                    }
+                                }
+                                
                                 // Parse item list
                                 if (ifObj.has("items") && ifObj.get("items").isJsonArray()) {
                                     for (JsonElement itemElement : ifObj.getAsJsonArray("items")) {
@@ -404,12 +450,216 @@ public class StageItemHandler {
                         }
                     }
                     
+                    // Parse other case
+                    if (ruleObj.has("other_case") && ruleObj.get("other_case").isJsonArray()) {
+                        for (JsonElement otherCaseElement : ruleObj.getAsJsonArray("other_case")) {
+                            if (otherCaseElement.isJsonPrimitive()) {
+                                String otherCase = otherCaseElement.getAsString();
+                                rule.otherCase.add(otherCase);
+                            }
+                        }
+                    }
+                    
                     restriction.restrictions.add(rule);
                 }
             }
         }
         
         return restriction;
+    }
+    
+    /**
+     * Checks if an item should be blocked for right-click usage
+     * @return true if the item should be blocked, false otherwise
+     */
+    public static boolean shouldBlockRightClick(Player player, ItemStack itemStack) {
+        if (!(player instanceof ServerPlayer) || player.level().isClientSide() || itemStack.isEmpty()) {
+            return false;
+        }
+        
+        ServerPlayer serverPlayer = (ServerPlayer) player;
+        Level level = player.level();
+        
+        boolean shouldBlock = checkOtherCaseRestriction(serverPlayer, level, itemStack, "right_click");
+        
+        // If we should block, provide visual feedback to the player
+        if (shouldBlock) {
+            // Display a message to the player
+            serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                "message.iska_utils.item_restriction.blocked"), true);
+                
+            // Add a visual effect at player position for feedback
+            serverPlayer.level().levelEvent(
+                1041, // 1041 is a good particle effect for blocking
+                serverPlayer.blockPosition(),
+                0
+            );
+        }
+        
+        return shouldBlock;
+    }
+    
+    /**
+     * Checks if an item should be blocked for left-click usage
+     * @return true if the item should be blocked, false otherwise
+     */
+    public static boolean shouldBlockLeftClick(Player player, ItemStack itemStack) {
+        if (!(player instanceof ServerPlayer) || player.level().isClientSide() || itemStack.isEmpty()) {
+            return false;
+        }
+        
+        ServerPlayer serverPlayer = (ServerPlayer) player;
+        Level level = player.level();
+        
+        boolean shouldBlock = checkOtherCaseRestriction(serverPlayer, level, itemStack, "left_click");
+        
+        // If we should block, ensure the item attack damage is set to 0
+        if (shouldBlock) {
+            // Display a message to the player
+            serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                "message.iska_utils.item_restriction.blocked"), true);
+                
+            // Set attack damage to 0 to prevent damage
+            // This is a temporary effect for this specific interaction
+            serverPlayer.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
+                .setBaseValue(0);
+            
+            // Schedule task to reset damage after this tick
+            serverPlayer.level().getServer().tell(new net.minecraft.server.TickTask(0, () -> {
+                // Reset attack damage to default (1.0)
+                serverPlayer.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
+                    .setBaseValue(1.0);
+            }));
+        }
+        
+        return shouldBlock;
+    }
+    
+    /**
+     * Checks if an item should be restricted in main hand
+     * @return the consequence to apply, or null if no restriction
+     */
+    public static String checkMainHandRestriction(Player player, ItemStack itemStack) {
+        if (!(player instanceof ServerPlayer) || player.level().isClientSide() || itemStack.isEmpty()) {
+            return null;
+        }
+        
+        ServerPlayer serverPlayer = (ServerPlayer) player;
+        Level level = player.level();
+        
+        return getOtherCaseConsequence(serverPlayer, level, itemStack, "main_hand");
+    }
+    
+    /**
+     * Checks if an item should be restricted in off hand
+     * @return the consequence to apply, or null if no restriction
+     */
+    public static String checkOffHandRestriction(Player player, ItemStack itemStack) {
+        if (!(player instanceof ServerPlayer) || player.level().isClientSide() || itemStack.isEmpty()) {
+            return null;
+        }
+        
+        ServerPlayer serverPlayer = (ServerPlayer) player;
+        Level level = player.level();
+        
+        return getOtherCaseConsequence(serverPlayer, level, itemStack, "off_hand");
+    }
+    
+    /**
+     * Checks if a specific other_case restriction applies
+     * @return true if restricted, false otherwise
+     */
+    private static boolean checkOtherCaseRestriction(ServerPlayer player, Level level, ItemStack itemStack, String otherCaseType) {
+        String consequence = getOtherCaseConsequence(player, level, itemStack, otherCaseType);
+        return consequence != null;
+    }
+    
+    /**
+     * Gets the consequence to apply for a specific other_case
+     * @return the consequence string or null if no restriction applies
+     */
+    private static String getOtherCaseConsequence(ServerPlayer player, Level level, ItemStack itemStack, String otherCaseType) {
+        Item item = itemStack.getItem();
+        
+        for (StageItemRestriction restriction : ITEM_RESTRICTIONS.values()) {
+            for (StageItemRule rule : restriction.restrictions) {
+                // Check if this rule has other_case and if it includes the current type
+                if (rule.otherCase.contains(otherCaseType)) {
+                    // Check stage conditions
+                    boolean stageConditionsMet = checkStageConditions(rule, player, level);
+                    
+                    if (!stageConditionsMet) {
+                        continue;
+                    }
+                    
+                    // Check if item is affected
+                    if (isItemAffected(item, rule.items)) {
+                        return rule.consequence;
+                    }
+                }
+                
+                // If using DEF_OR or DEF_AND, check if conditions
+                if (("DEF_OR".equals(rule.stagesLogic) || "DEF_AND".equals(rule.stagesLogic)) 
+                        && rule.ifConditions != null && !rule.ifConditions.isEmpty()) {
+                    
+                    for (StageItemIfRule ifRule : rule.ifConditions) {
+                        if (ifRule.otherCase.contains(otherCaseType)) {
+                            // Check if conditions are met
+                            if (checkIfRuleConditions(ifRule, rule.stages, player, level)) {
+                                // Check if item is affected
+                                if (isItemAffected(item, ifRule.items)) {
+                                    return ifRule.consequence;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Applies a consequence to a player's hand item
+     * @param hand The hand holding the item
+     * @param consequence The consequence to apply
+     * @return true if the item was affected, false otherwise
+     */
+    public static boolean applyHandConsequence(ServerPlayer player, InteractionHand hand, String consequence) {
+        if (consequence == null) {
+            return false;
+        }
+        
+        ItemStack stack = player.getItemInHand(hand).copy();
+        if (stack.isEmpty()) {
+            return false;
+        }
+        
+        switch (consequence.toLowerCase()) {
+            case "drop":
+            case "block_drop":
+                player.drop(stack, false);
+                player.setItemInHand(hand, ItemStack.EMPTY);
+                player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.iska_utils.item_restriction.dropped"), true);
+                return true;
+                
+            case "delete":
+            case "block_delete":
+                player.setItemInHand(hand, ItemStack.EMPTY);
+                player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.iska_utils.item_restriction.deleted"), true);
+                return true;
+                
+            case "block":
+                player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.iska_utils.item_restriction.blocked"), true);
+                return true;
+                
+            default:
+                return false;
+        }
     }
     
     // Classes to represent JSON structures
@@ -433,6 +683,7 @@ public class StageItemHandler {
         public List<String> items = new ArrayList<>();
         public String consequence = "drop";
         public List<StageItemIfRule> ifConditions = new ArrayList<>();
+        public List<String> otherCase = new ArrayList<>();
     }
     
     /**
@@ -443,6 +694,8 @@ public class StageItemHandler {
         public List<String> containersList = new ArrayList<>();
         public List<String> items = new ArrayList<>();
         public String consequence = "drop";
+        public boolean containersWhitelist = true;
+        public List<String> otherCase = new ArrayList<>();
     }
     
     /**

@@ -65,12 +65,9 @@ public class MacroLoader {
             
             LOGGER.info("Scanning directory for macros: {}", configPath.toAbsolutePath());
             
-            // Verify and regenerate README if missing
-            Path readmePath = configPath.resolve("README.md");
-            if (!Files.exists(readmePath)) {
-                LOGGER.info("README.md missing, generating...");
-                createReadme(configPath);
-            }
+            // Always regenerate README
+            createReadme(configPath);
+            LOGGER.info("Updated README.md");
             
             // Clear previous protections
             PROTECTED_MACROS.clear();
