@@ -5,8 +5,16 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.logging.LogUtils;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.unfamily.iskautils.IskaUtils;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -24,6 +32,7 @@ import java.util.stream.Stream;
 /**
  * Loads command macros from external JSON files
  */
+@EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class MacroLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -72,11 +81,17 @@ public class MacroLoader {
             // Clear previous protections
             PROTECTED_MACROS.clear();
             
-            // Check if default_commands_macro.json exists and check if it's overwritable
+            // Always check and regenerate default_commands_macro.json if needed
             Path defaultCommandsFile = configPath.resolve("default_commands_macro.json");
-            if (!Files.exists(defaultCommandsFile) || shouldRegenerateDefaultCommandsMacro(defaultCommandsFile)) {
-                LOGGER.info("Generating or regenerating default_commands_macro.json file");
+            if (!Files.exists(defaultCommandsFile)) {
+                LOGGER.info("Generating default_commands_macro.json file");
                 generateDefaultCommandsMacro(configPath);
+            } else {
+                // Check if the file has overwritable: true
+                if (shouldRegenerateDefaultCommandsMacro(defaultCommandsFile)) {
+                    LOGGER.info("Regenerating default_commands_macro.json file (overwritable: true)");
+                    generateDefaultCommandsMacro(configPath);
+                }
             }
             
             // Scan all JSON files in the directory
@@ -110,17 +125,29 @@ public class MacroLoader {
                 if (jsonElement != null && jsonElement.isJsonObject()) {
                     JsonObject json = jsonElement.getAsJsonObject();
                     
-                    // Check if the overwritable field exists and is true
+                    // Check if the overwritable field exists
                     if (json.has("overwritable")) {
-                        return json.get("overwritable").getAsBoolean();
+                        // If overwritable is true, regenerate the file
+                        boolean overwritable = json.get("overwritable").getAsBoolean();
+                        if (overwritable) {
+                            LOGGER.debug("Found default_commands_macro.json with overwritable: true, will regenerate");
+                            return true;
+                        } else {
+                            LOGGER.debug("Found default_commands_macro.json with overwritable: false, will not regenerate");
+                            return false;
+                        }
                     }
+                    
+                    // If no overwritable field, default to true (regenerate)
+                    LOGGER.debug("Found default_commands_macro.json without overwritable field, assuming true");
+                    return true;
                 }
             }
         } catch (Exception e) {
             LOGGER.warn("Error reading default_commands_macro.json file: {}", e.getMessage());
         }
         
-        // If the file can't be read or doesn't have the overwritable field, regenerate it
+        // If the file can't be read or isn't valid JSON, regenerate it
         return true;
     }
     
@@ -167,12 +194,6 @@ public class MacroLoader {
                 "    {\n" +
                 "      \"command\": \"spawnmob\",\n" +
                 "      \"level\": 0,\n" +
-                "      \"stages_logic\": \"OR\",\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage\": \"example_stage_0\", \"stage_type\": \"player\", \"is\": true},\n" +
-                "        {\"stage\": \"nether\", \"stage_type\": \"dimension\", \"is\": true},\n" +
-                "        {\"stage\": \"locked_stage\", \"stage_type\": \"player\", \"is\": false}\n" +
-                "      ],\n" +
                 "      \"parameters\": [\n" +
                 "        {\n" +
                 "          \"type\": \"static\",\n" +
@@ -184,7 +205,38 @@ public class MacroLoader {
                 "        }\n" +
                 "      ],\n" +
                 "      \"do\": [\n" +
-                "        {\"execute\": \"execute at @s run summon minecraft:#0 ~ ~ ~\"}\n" +
+                "        {\"execute\": \"summon minecraft:#0 ~ ~ ~\"}\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"command\": \"staged_example\",\n" +
+                "      \"level\": 0,\n" +
+                "      \"stages_logic\": \"AND\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"example_stage_0\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "      ],\n" +
+                "      \"do\": [\n" +
+                "        {\"execute\": \"say example_stage_0\"}\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"command\": \"staged_def\",\n" +
+                "      \"level\": 0,\n" +
+                "      \"stages_logic\": \"DEF_AND\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"example_stage_0\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"example_stage_1\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"example_stage_2\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "      ],\n" +
+                "      \"do\": [\n" +
+                "        {\"if\": [\n" +
+                "            {\"conditions\": [0, 2]},\n" +
+                "            {\"execute\": \"say example_stage_0_and_2\"}\n" +
+                "        ]},\n" +
+                "        {\"if\": [\n" +
+                "            {\"conditions\": [1, 2]},\n" +
+                "            {\"execute\": \"say example_stage_1_and_2\"}\n" +
+                "        ]}\n" +
                 "      ]\n" +
                 "    }\n" +
                 "  ]\n" +
@@ -220,6 +272,7 @@ public class MacroLoader {
                 "- `do`: Array of actions to execute in sequence [**required**]\n" +
                 "  - `{\"execute\": \"command\"}`: Execute a server command\n" +
                 "  - `{\"delay\": ticks}`: Wait for specified ticks (20 ticks = 1 second)\n" +
+                "  - `{\"if\": [ {\"conditions\": [0, 1]}, {\"execute\": \"command\"} ]}`: Conditional execution based on stage indices\n" +
                 "\n" +
                 "### Parameter Types\n" +
                 "- `string`: Any text (greedily captures all remaining text)\n" +
@@ -233,6 +286,7 @@ public class MacroLoader {
                 "### Parameter Usage in Commands\n" +
                 "Parameters can be used in commands using `#index` notation where index is the parameter's position (0-based).\n" +
                 "For example, `#0` refers to the first parameter, `#1` to the second, etc.\n" +
+                "You can escape the # character by using ##, which will be converted to a single # in the command.\n" +
                 "\n" +
                 "### Game Stages\n" +
                 "The game stages system allows you to lock macros behind progression milestones. There are three types of stages:\n" +
@@ -249,15 +303,29 @@ public class MacroLoader {
                 "\n" +
                 "This allows you to create conditions like \"player must have stage A but must not have stage B\".\n" +
                 "\n" +
-                "The system will be fully implemented in future updates. When implemented, players will need to satisfy\n" +
-                "all the stage requirements to use stage-restricted macros.\n" +
+                "### Conditional Execution with IF\n" +
+                "The IF action type allows you to conditionally execute commands based on specific stage conditions.\n" +
+                "When using `DEF_AND` or `DEF_OR` stage logic, you can use the `if` action type in your `do` array:\n" +
+                "\n" +
+                "```json\n" +
+                "{\"if\": [\n" +
+                "    {\"conditions\": [0, 2]},\n" +
+                "    {\"execute\": \"say condition met\"}\n" +
+                "]}\n" +
+                "```\n" +
+                "\n" +
+                "The `conditions` array contains indices that refer to the stages defined in the command's `stages` array.\n" +
+                "In the example above, the command will execute only if stages at index 0 and 2 are satisfied.\n" +
+                "\n" +
+                "With `DEF_AND` logic, ALL specified conditions must be met.\n" +
+                "With `DEF_OR` logic, ANY ONE of the specified conditions must be met.\n" +
                 "\n" +
                 "## Notes\n" +
                 "\n" +
                 "- Commands are executed in the context of the player who triggered the macro\n" +
+                "- If executed by a command block, the position of the command block is used\n" +
                 "- Changes require a game restart to apply\n" +
                 "- For security reasons, macros are limited to players with the appropriate permission level\n" +
-                "- The `usage` field provides better command documentation and error messages\n" +
                 "- When macros with the same command name are found in multiple files:\n" +
                 "  - If a file has `overwritable: false`, its macros cannot be overwritten\n" +
                 "  - If a file has `overwritable: true` or no overwritable field, its macros can be overwritten by later files\n" +
@@ -294,28 +362,25 @@ public class MacroLoader {
                 "  \"command\": \"dungeon_rewards\",\n" +
                 "  \"level\": 0,\n" +
                 "  \"stages_logic\": \"DEF_AND\",\n" +
+                "  \"stages\": [\n" +
+                "    {\"stage\": \"dungeon_boss_defeated\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "    {\"stage\": \"dungeon_curse\", \"stage_type\": \"player\", \"is\": false},\n" +
+                "    {\"stage\": \"dungeon_secret_found\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "  ],\n" +
                 "  \"do\": [\n" +
                 "    {\n" +
                 "      \"execute\": \"say Welcome to the dungeon rewards system!\"\n" +
                 "    },\n" +
                 "    {\n" +
-                "      \"execute\": \"give @s minecraft:diamond 5\",\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage\": \"dungeon_boss_defeated\", \"stage_type\": \"player\", \"is\": true},\n" +
-                "        {\"stage\": \"dungeon_curse\", \"stage_type\": \"player\", \"is\": false}\n" +
+                "      \"if\": [\n" +
+                "        {\"conditions\": [0, 1]},\n" +
+                "        {\"execute\": \"give @s minecraft:diamond 5\"}\n" +
                 "      ]\n" +
                 "    },\n" +
                 "    {\n" +
-                "      \"execute\": \"give @s minecraft:netherite_ingot 1\",\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage\": \"dungeon_secret_found\", \"stage_type\": \"player\", \"is\": true},\n" +
-                "        {\"stage\": \"dungeon_boss_defeated\", \"stage_type\": \"player\", \"is\": true}\n" +
-                "      ]\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"execute\": \"effect give @s minecraft:strength 300 1\",\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage\": \"nether\", \"stage_type\": \"dimension\", \"is\": true}\n" +
+                "      \"if\": [\n" +
+                "        {\"conditions\": [0, 2]},\n" +
+                "        {\"execute\": \"give @s minecraft:netherite_ingot 1\"}\n" +
                 "      ]\n" +
                 "    }\n" +
                 "  ]\n" +
@@ -323,10 +388,9 @@ public class MacroLoader {
                 "```\n" +
                 "\n" +
                 "In this example:\n" +
-                "- The first action always executes (no stage requirements)\n" +
-                "- The second action only executes if the player has the \"dungeon_boss_defeated\" stage AND does NOT have the \"dungeon_curse\" stage\n" +
-                "- The third action only executes if the player has BOTH \"dungeon_secret_found\" AND \"dungeon_boss_defeated\" stages\n" +
-                "- The fourth action only executes if the player is in the nether dimension\n" +
+                "- The first action always executes (no conditions)\n" +
+                "- The second action only executes if conditions 0 and 1 are met (player has beaten the boss AND does NOT have the curse)\n" +
+                "- The third action only executes if conditions 0 and 2 are met (player has beaten the boss AND found the secret)\n" +
                 "\n" +
                 "#### DEF_OR Example\n" +
                 "Using `DEF_OR` means each action requires ANY of its stage conditions to be met:\n" +
@@ -336,30 +400,31 @@ public class MacroLoader {
                 "  \"command\": \"guild_benefits\",\n" +
                 "  \"level\": 0,\n" +
                 "  \"stages_logic\": \"DEF_OR\",\n" +
+                "  \"stages\": [\n" +
+                "    {\"stage\": \"guild_healer\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "    {\"stage\": \"guild_tank\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "    {\"stage\": \"guild_warrior\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "  ],\n" +
                 "  \"do\": [\n" +
                 "    {\n" +
                 "      \"execute\": \"say Guild Benefits System Activated!\"\n" +
                 "    },\n" +
                 "    {\n" +
-                "      \"execute\": \"effect give @s minecraft:regeneration 60 1\",\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage\": \"guild_healer\", \"stage_type\": \"player\", \"is\": true},\n" +
-                "        {\"stage\": \"health_potion_crafted\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "      \"if\": [\n" +
+                "        {\"conditions\": [0]},\n" +
+                "        {\"execute\": \"effect give @s minecraft:regeneration 60 1\"}\n" +
                 "      ]\n" +
                 "    },\n" +
                 "    {\n" +
-                "      \"execute\": \"effect give @s minecraft:resistance 60 1\",\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage\": \"guild_tank\", \"stage_type\": \"player\", \"is\": true},\n" +
-                "        {\"stage\": \"nether_fortress_visited\", \"stage_type\": \"player\", \"is\": true},\n" +
-                "        {\"stage\": \"endgame\", \"stage_type\": \"world\", \"is\": true}\n" +
+                "      \"if\": [\n" +
+                "        {\"conditions\": [1]},\n" +
+                "        {\"execute\": \"effect give @s minecraft:resistance 60 1\"}\n" +
                 "      ]\n" +
                 "    },\n" +
                 "    {\n" +
-                "      \"execute\": \"effect give @s minecraft:strength 60 1\",\n" +
-                "      \"stages\": [\n" +
-                "        {\"stage\": \"guild_warrior\", \"stage_type\": \"player\", \"is\": true},\n" +
-                "        {\"stage\": \"dragon_defeated\", \"stage_type\": \"player\", \"is\": true}\n" +
+                "      \"if\": [\n" +
+                "        {\"conditions\": [2]},\n" +
+                "        {\"execute\": \"effect give @s minecraft:strength 60 1\"}\n" +
                 "      ]\n" +
                 "    }\n" +
                 "  ]\n" +
@@ -367,10 +432,10 @@ public class MacroLoader {
                 "```\n" +
                 "\n" +
                 "In this example:\n" +
-                "- The first action always executes (no stage requirements)\n" +
-                "- The second action executes if the player has EITHER \"guild_healer\" OR \"health_potion_crafted\" stages\n" +
-                "- The third action executes if the player has ANY of: \"guild_tank\" OR \"nether_fortress_visited\" OR if the world has the \"endgame\" stage\n" +
-                "- The fourth action executes if the player has EITHER \"guild_warrior\" OR \"dragon_defeated\" stages\n" +
+                "- The first action always executes (no conditions)\n" +
+                "- The second action executes if the player has the \"guild_healer\" stage\n" +
+                "- The third action executes if the player has the \"guild_tank\" stage\n" +
+                "- The fourth action executes if the player has the \"guild_warrior\" stage\n" +
                 "\n" +
                 "The key difference between these examples is how the stage conditions are evaluated for each action:\n" +
                 "- With `DEF_AND`, each action requires ALL of its conditions to be met\n" +
@@ -545,8 +610,7 @@ public class MacroLoader {
             "        {\"execute\": \"kubejs reload server-scripts\"},\n" +
             "        {\"execute\": \"reload\"},\n" +
             "        {\"delay\": 20},\n" +
-            "        {\"execute\": \"iska_utils_stage list all\"},\n" +
-            "        {\"execute\": \"say Reload complete!\"}\n" +
+            "        {\"execute\": \"custommachinery reload\"}\n" +
             "      ]\n" +
             "    }\n" +
             "  ]\n" +
@@ -558,7 +622,7 @@ public class MacroLoader {
     }
 
     /**
-     * Reloads all macros from configuration files
+     * Reloads all macros from configuration files and registers commands
      */
     public static void reloadAllMacros() {
         LOGGER.info("Reloading all command macros...");
@@ -619,10 +683,66 @@ public class MacroLoader {
             
             LOGGER.info("Macro reload completed. {} macros available.", macroCount);
             
+            // Registra i comandi se il server è attivo
+            registerCommandsIfServerAvailable();
+            
         } catch (Exception e) {
             LOGGER.error("Error reloading macros: {}", e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Registra i comandi per tutti i macro nel CommandDispatcher se il server è disponibile
+     */
+    private static void registerCommandsIfServerAvailable() {
+        try {
+            // Ottiene il server
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            if (server == null) {
+                LOGGER.debug("Server not available, commands will be registered when the server starts");
+                return;
+            }
+            
+            // Ottiene il CommandDispatcher
+            CommandDispatcher<CommandSourceStack> dispatcher = server.getCommands().getDispatcher();
+            if (dispatcher == null) {
+                LOGGER.error("CommandDispatcher not available");
+                return;
+            }
+            
+            // Registra i comandi per tutti i macro
+            for (String macroId : MacroCommand.getAvailableMacros()) {
+                MacroCommand.MacroDefinition macro = MacroCommand.getMacro(macroId);
+                if (macro != null) {
+                    MacroCommand.registerCommand(dispatcher, macroId, macro);
+                    LOGGER.debug("Registered command for macro: {}", macroId);
+                }
+            }
+            
+            LOGGER.info("Registered all macro commands in the dispatcher");
+        } catch (Exception e) {
+            LOGGER.error("Error registering commands: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Registra i comandi quando viene caricato il server
+     */
+    @SubscribeEvent
+    public static void onRegisterCommands(RegisterCommandsEvent event) {
+        LOGGER.info("Registering commands for all macros...");
+        
+        CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
+        
+        // Registra i comandi per tutti i macro
+        for (String macroId : MacroCommand.getAvailableMacros()) {
+            MacroCommand.MacroDefinition macro = MacroCommand.getMacro(macroId);
+            if (macro != null) {
+                MacroCommand.registerCommand(dispatcher, macroId, macro);
+                LOGGER.debug("Registered command for macro: {}", macroId);
             }
         }
     }

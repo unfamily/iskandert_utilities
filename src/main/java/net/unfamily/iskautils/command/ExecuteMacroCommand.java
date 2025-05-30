@@ -36,12 +36,8 @@ public class ExecuteMacroCommand {
         for (String macroId : MacroCommand.getAvailableMacros()) {
             MacroCommand.MacroDefinition macro = MacroCommand.getMacro(macroId);
             if (macro != null) {
-                int permissionLevel = macro.getLevel();
-                dispatcher.register(
-                    Commands.literal(macroId)
-                        .requires(source -> source.hasPermission(permissionLevel))
-                        .executes(context -> executeMacroDirectly(context, macroId, false))
-                );
+                MacroCommand.registerCommand(dispatcher, macroId, macro);
+                LOGGER.debug("Registered command /{} using MacroCommand.registerCommand", macroId);
             }
         }
         

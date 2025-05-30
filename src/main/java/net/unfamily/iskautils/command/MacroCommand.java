@@ -20,6 +20,7 @@ import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.MinecraftServer;
 import net.unfamily.iskautils.stage.StageRegistry;
 import org.slf4j.Logger;
 
@@ -282,7 +283,7 @@ public class MacroCommand {
     }
     
     /**
-     * Esegue una macro di comandi per un giocatore
+     * Executes a macro of commands for a command source (player or command block)
      */
     public static int executeMacro(CommandContext<CommandSourceStack> context, String macroId, Object[] paramValues) throws CommandSyntaxException {
         if (!MACRO_REGISTRY.containsKey(macroId)) {
@@ -299,63 +300,170 @@ public class MacroCommand {
             return 0;
         }
         
-        ServerPlayer player;
+        // Verifies if the source is a player
+        ServerPlayer player = null;
         try {
             player = source.getPlayerOrException();
         } catch (CommandSyntaxException e) {
-            source.sendFailure(Component.literal("§cThis command must be executed by a player"));
-            return 0;
+            // The source is not a player, it could be a command block or the server
+            // We continue execution without a player
+            LOGGER.debug("Macro {} executed by a non-player source", macroId);
         }
         
         // Check permission level
         if (!source.hasPermission(macro.getLevel())) {
-            source.sendFailure(Component.literal("§cYou don't have permission to use this command"));
+            if (player != null) {
+                source.sendFailure(Component.literal("§cYou don't have permission to use this command"));
+            } else {
+                LOGGER.warn("Command source doesn't have permission to execute macro {}", macroId);
+            }
             return 0;
         }
         
-        // Check required stages
-        if (macro.hasStageRequirements() && !macro.checkStages(player)) {
+        // Check required stages only for players
+        if (player != null && macro.hasStageRequirements() && !macro.checkStages(player)) {
             source.sendFailure(Component.literal("§cYou don't have the required stages to use this command"));
             LOGGER.debug("Player {} does not have the required stages to execute macro {}", 
                 player.getName().getString(), macroId);
             return 0;
         }
         
-        return executeActions(player, macro, paramValues);
+        // Execute the macro actions
+        return executeActions(source, player, macro, paramValues);
     }
     
     /**
-     * Executes a macro's actions for a player
+     * Executes a macro's actions for a command source
      */
-    private static int executeActions(ServerPlayer player, MacroDefinition macro, Object[] paramValues) {
+    private static int executeActions(CommandSourceStack source, ServerPlayer player, MacroDefinition macro, Object[] paramValues) {
         int successCount = 0;
+        MinecraftServer server = source.getServer();
+        
+        if (server == null) {
+            LOGGER.error("Server is null during execution of macro");
+            return 0;
+        }
         
         for (MacroAction action : macro.getActions()) {
-            String command = action.getCommand();
-            
-            // Replace parameters if any
-            if (macro.getParameters() != null && !macro.getParameters().isEmpty()) {
-                for (int i = 0; i < macro.getParameters().size() && i < paramValues.length; i++) {
-                    ParameterDefinition param = macro.getParameters().get(i);
-                    command = command.replace("{" + param.getType() + "}", String.valueOf(paramValues[i]));
+            // For IF actions, check conditions first
+            if (action.getType() == MacroActionType.IF) {
+                // Check the conditions - skip for non-player sources when stage conditions are present
+                if (player == null && macro.hasStageRequirements()) {
+                    LOGGER.debug("Skipping IF block with stage conditions for non-player source");
+                    continue;
                 }
+                
+                if (player != null && !checkIfConditions(player, action, macro)) {
+                    continue; // Skip this action if conditions aren't met
+                }
+                
+                // Execute sub-actions if conditions are met
+                for (MacroAction subAction : action.getSubActions()) {
+                    String command = subAction.getCommand();
+                    
+                    // Replace parameters if any
+                    if (paramValues != null && paramValues.length > 0) {
+                        command = replaceParameters(command, paramValues);
+                    }
+                    
+                    // Execute the command
+                    try {
+                        if (server != null && subAction.getType() == MacroActionType.EXECUTE) {
+                            // Prepare the CommandSourceStack with appropriate position
+                            executeCommandWithSource(source, player, server, command);
+                            successCount++;
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error("Error executing command: {}", command, e);
+                    }
+                }
+                continue;
             }
             
-            // Execute the command
-            try {
-                if (player.getServer() != null) {
-                    player.getServer().getCommands().performPrefixedCommand(
-                            player.getServer().createCommandSourceStack().withEntity(player),
-                            command
-                    );
-                    successCount++;
+            // For regular execute actions
+            if (action.getType() == MacroActionType.EXECUTE) {
+                String command = action.getCommand();
+                
+                // Replace parameters if any
+                if (paramValues != null && paramValues.length > 0) {
+                    command = replaceParameters(command, paramValues);
                 }
-            } catch (Exception e) {
-                LOGGER.error("Error executing command: {}", command, e);
+                
+                // Execute the command
+                try {
+                    if (server != null) {
+                        // Prepare the CommandSourceStack with appropriate position
+                        executeCommandWithSource(source, player, server, command);
+                        successCount++;
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error executing command: {}", command, e);
+                }
             }
         }
         
         return successCount;
+    }
+    
+    /**
+     * Executes a command with the appropriate source stack
+     */
+    private static void executeCommandWithSource(CommandSourceStack originalSource, ServerPlayer player, MinecraftServer server, String command) {
+        try {
+            // Special handling for critical commands
+            if (command.trim().equals("reload")) {
+                LOGGER.info("Detected 'reload' command in a macro, executing safely");
+                
+                try {
+                    server.getCommands().performPrefixedCommand(originalSource, command);
+                } catch (Exception e) {
+                    LOGGER.error("Error executing 'reload' command: {}", e.getMessage());
+                }
+                return;
+            }
+            
+            // Prepare the CommandSourceStack with appropriate position
+            CommandSourceStack source;
+            
+            if (player != null) {
+                // If player source, use player position
+                source = player.createCommandSourceStack()
+                    .withPosition(player.position())       // Set player position
+                    .withEntity(player)                    // Set player entity
+                    .withRotation(player.getRotationVector()); // Set player rotation
+                
+                server.getCommands().performPrefixedCommand(source, command);
+                
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Executed command: '{}' as player: {} at position: {}", 
+                        command, player.getName().getString(), player.position());
+                }
+            } else {
+                // Not a player source, use original position if available or (0,0,0)
+                net.minecraft.world.phys.Vec3 position = originalSource.getPosition();
+                
+                // If source is a command block, use that position
+                if (position.x() == 0 && position.y() == 0 && position.z() == 0) {
+                    // Seems to be default position, use (0,0,0) as fallback
+                    LOGGER.debug("Using default position (0,0,0) for command: {}", command);
+                } else {
+                    LOGGER.debug("Using command block/entity position: {} for command: {}", position, command);
+                }
+                
+                // Use original source
+                server.getCommands().performPrefixedCommand(originalSource, command);
+                
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Executed command: '{}' as non-player source at position: {}", 
+                        command, originalSource.getPosition());
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error executing command '{}': {}", command, e.getMessage());
+            if (LOGGER.isDebugEnabled()) {
+                e.printStackTrace();
+            }
+        }
     }
     
     /**
@@ -388,12 +496,12 @@ public class MacroCommand {
     }
     
     /**
-     * Esegue una macro di comandi con parametri
+     * Executes a command macro with parameters
      */
     private static boolean executeMacroWithParams(String macroId, ServerPlayer player, Object[] paramValues) {
         MacroDefinition macro = MACRO_REGISTRY.get(macroId);
         
-        // Annulla qualsiasi sequenza di comandi attiva per questo giocatore
+        // Cancel any active command sequence for this player
         UUID playerUUID = player.getUUID();
         ScheduledFuture<?> activeFuture = ACTIVE_COMMANDS.get(playerUUID);
         if (activeFuture != null && !activeFuture.isDone()) {
@@ -401,7 +509,7 @@ public class MacroCommand {
             ACTIVE_COMMANDS.remove(playerUUID);
         }
         
-        // Avvia la sequenza di comandi
+        // Start the command sequence
         if (player.level() instanceof ServerLevel serverLevel) {
             executeActionSequence(player, serverLevel, macro.actions, paramValues, 0);
             return true;
@@ -411,12 +519,12 @@ public class MacroCommand {
     }
     
     /**
-     * Esegue una sequenza di azioni con ritardi
+     * Executes a sequence of actions with delays
      */
     private static void executeActionSequence(ServerPlayer player, ServerLevel level, List<MacroAction> actions, 
                                              Object[] paramValues, int index) {
         if (index >= actions.size() || player.isRemoved() || !player.isAlive()) {
-            // Fine della sequenza o giocatore non più valido
+            // End of sequence or player no longer valid
             ACTIVE_COMMANDS.remove(player.getUUID());
             return;
         }
@@ -434,20 +542,20 @@ public class MacroCommand {
         }
         
         if (action.type == MacroActionType.EXECUTE) {
-            // Sostituisci i parametri nel comando
+            // Replace parameters in the command
             String commandWithParams = replaceParameters(action.command, paramValues);
             
-            // Esegui il comando immediatamente
+            // Execute the command immediately
             executeCommand(player, level, commandWithParams);
             
-            // Pianifica la prossima azione
+            // Schedule the next action
             scheduleNextAction(player, level, actions, paramValues, index + 1);
         } else if (action.type == MacroActionType.DELAY) {
-            // Pianifica la prossima azione con ritardo
+            // Schedule the next action with delay
             int delayTicks = action.delayTicks;
             
-            // Usiamo esattamente 50ms per tick, ma aggiungiamo un piccolo margine 
-            // per assicurare che il ritardo minimo sia rispettato
+            // We use exactly 50ms per tick, but add a small margin 
+            // to ensure the minimum delay is respected
             long delayMillis = (long) delayTicks * 50 + 5; 
             
             if (LOGGER.isDebugEnabled()) {
@@ -457,7 +565,7 @@ public class MacroCommand {
             
             UUID playerUUID = player.getUUID();
             ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
-                // Dopo il ritardo, esegui la prossima azione
+                // After the delay, execute the next action
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Executing action after delay of {} ticks for player {}", 
                         delayTicks, player.getName().getString());
@@ -465,7 +573,7 @@ public class MacroCommand {
                 executeActionSequence(player, level, actions, paramValues, index + 1);
             }, delayMillis, TimeUnit.MILLISECONDS);
             
-            // Memorizza il future per potenziale cancellazione
+            // Remember the future for potential cancellation
             ACTIVE_COMMANDS.put(playerUUID, future);
         } else if (action.type == MacroActionType.IF) {
             // Handle IF blocks by checking conditions and executing sub-actions if conditions are met
@@ -488,22 +596,22 @@ public class MacroCommand {
                             LOGGER.debug("IF conditions met in macro {}, executing sub-actions", currentMacroId);
                         }
                         
-                        // Verifica se nelle sub-actions ci sono delay
+                        // Verify if there are delays in sub-actions
                         if (containsDelayAction(subActions)) {
-                            // Se ci sono delay, esegui le sub-actions in modo speciale
-                            // usando una nuova versione che gestisce i delay correttamente
+                            // If there are delays, execute sub-actions in a special way
+                            // using a new version that handles delays correctly
                             ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
-                                // Esegui le sub-actions con gestione speciale dei delay
+                                // Execute sub-actions with special delay handling
                                 executeActionSequenceWithDelayHandling(player, level, subActions, paramValues, 0, () -> {
-                                    // Quando tutte le sub-actions (inclusi delay) sono completate, 
-                                    // continua con la prossima azione nella sequenza principale
+                                    // When all sub-actions (including delays) are completed, 
+                                    // continue with the next action in the main sequence
                                     scheduleNextAction(player, level, actions, paramValues, index + 1);
                                 });
                             }, 0, TimeUnit.MILLISECONDS);
                             
                             ACTIVE_COMMANDS.put(playerUUID, future);
                         } else {
-                            // Nessun delay nelle sub-actions, possiamo usare il metodo normale
+                            // No delays in sub-actions, we can use the normal method
                             ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
                                 // Execute sub-actions as a separate sequence
                                 executeActionSequence(player, level, subActions, paramValues, 0);
@@ -531,17 +639,18 @@ public class MacroCommand {
     }
     
     /**
-     * Checks if all stage requirements for an action are met
+     * Checks stage conditions for an action
      */
     private static boolean checkActionStages(ServerPlayer player, List<StageRequirement> requirements) {
         if (requirements == null || requirements.isEmpty()) {
             return true; // No requirements to check
         }
         
-        // All action stage requirements must be met (AND logic)
+        // Since we can't use MacroDefinition's method directly from a static context,
+        // we implement the same logic here
         for (StageRequirement requirement : requirements) {
-            MacroDefinition dummyMacro = new MacroDefinition("dummy", null, null, 0);
-            if (!dummyMacro.checkSingleStage(player, requirement)) {
+            boolean hasStage = checkPlayerHasStage(player, requirement);
+            if (!hasStage) {
                 return false;
             }
         }
@@ -549,10 +658,58 @@ public class MacroCommand {
     }
     
     /**
-     * Replaces parameter references in a command
+     * Static version of the stage checking logic
+     */
+    private static boolean checkPlayerHasStage(ServerPlayer player, StageRequirement requirement) {
+        // Get game stages for the player
+        boolean hasStage = false;
+        
+        // Use StageRegistry to check if player has the stage
+        if (requirement.getType() == StageType.PLAYER) {
+            try {
+                // Try to use actual stage registry
+                hasStage = StageRegistry.playerHasStage(player, requirement.getStageId());
+                
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Checking stage '{}' for player {}: {}", 
+                        requirement.getStageId(), player.getName().getString(), hasStage);
+                }
+            } catch (Exception e) {
+                // Fallback to debug mode or if StageRegistry is not available
+                LOGGER.warn("Error checking stage status: {}", e.getMessage());
+                // In development/testing mode, always return false for easier debugging
+                hasStage = false;
+            }
+        } else if (requirement.getType() == StageType.WORLD) {
+            try {
+                // Try to use actual stage registry for world stages
+                hasStage = StageRegistry.worldHasStage(player.level(), requirement.getStageId());
+                
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Checking world stage '{}': {}", requirement.getStageId(), hasStage);
+                }
+            } catch (Exception e) {
+                // Fallback to debug mode or if StageRegistry is not available
+                LOGGER.warn("Error checking world stage status: {}", e.getMessage());
+                hasStage = false;
+            }
+        }
+        
+        // Check if the player has the stage or not, based on whether it's required or not
+        return hasStage == requirement.isRequired();
+    }
+    
+    /**
+     * Replaces parameter references in a command.
+     * Supports parameter substitution using #0, #1, etc.
+     * Also supports escaping the # character using ##, which is converted to a single #.
+     *
+     * @param command The command string to process
+     * @param paramValues The parameter values to substitute
+     * @return The command string with parameters substituted
      */
     private static String replaceParameters(String command, Object[] paramValues) {
-        if (paramValues == null || paramValues.length == 0) {
+        if (command == null || paramValues == null || paramValues.length == 0) {
             return command;
         }
         
@@ -568,6 +725,13 @@ public class MacroCommand {
                 String value = formatParameterValue(paramValues[i]);
                 workingCommand = workingCommand.replace(pattern, value);
             }
+        }
+        
+        // Replace ## with # (escape character handling)
+        workingCommand = workingCommand.replace("##", "#");
+        
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Command after parameter replacement: '{}'", workingCommand);
         }
         
         return workingCommand;
@@ -604,7 +768,7 @@ public class MacroCommand {
         if (action.getType() == MacroActionType.DELAY) {
             int delayTicks = action.getDelayTicks();
             
-            // Aggiungiamo un piccolo margine per garantire che il ritardo minimo sia rispettato
+            // Add a small margin to ensure the minimum delay is respected
             long delayMillis = (long) delayTicks * 50L + 5L;
             
             if (LOGGER.isDebugEnabled()) {
@@ -634,26 +798,11 @@ public class MacroCommand {
     private static void executeCommand(ServerPlayer player, ServerLevel level, String command) {
         try {
             if (player.getServer() != null) {
-                // Special handling for critical commands
-                if (command.trim().equals("reload")) {
-                    LOGGER.info("Detected 'reload' command in a macro, executing safely");
-                    
-                    // Execute the reload command safely
-                    CommandSourceStack source = player.createCommandSourceStack();
-                    try {
-                        player.getServer().getCommands().performPrefixedCommand(source, command);
-                    } catch (Exception e) {
-                        LOGGER.error("Error executing 'reload' command: {}", e.getMessage());
-                    }
-                } else {
-                    // Regular command execution
-                    CommandSourceStack source = player.createCommandSourceStack();
-                    player.getServer().getCommands().performPrefixedCommand(source, command);
-                    
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Executed command: '{}' as player: {}", command, player.getName().getString());
-                    }
-                }
+                // Create the CommandSourceStack from the player
+                CommandSourceStack source = player.createCommandSourceStack();
+                
+                // Use the new method to execute the command
+                executeCommandWithSource(source, player, player.getServer(), command);
             }
         } catch (Exception e) {
             LOGGER.error("Error executing command '{}': {}", command, e.getMessage());
@@ -664,7 +813,7 @@ public class MacroCommand {
     }
     
     /**
-     * Arresta l'executor service
+     * Stops the executor service
      */
     public static void shutdown() {
         try {
@@ -679,14 +828,14 @@ public class MacroCommand {
     }
     
     /**
-     * Verifica se una lista di azioni contiene almeno un'azione di tipo DELAY
+     * Checks if a list of actions contains at least one action of type DELAY
      */
     private static boolean containsDelayAction(List<MacroAction> actions) {
         for (MacroAction action : actions) {
             if (action.getType() == MacroActionType.DELAY) {
                 return true;
             }
-            // Controlla ricorsivamente anche nelle sub-actions dei blocchi IF
+            // Check recursively also in sub-actions of IF blocks
             if (action.getType() == MacroActionType.IF && action.hasSubActions()) {
                 if (containsDelayAction(action.getSubActions())) {
                     return true;
@@ -697,16 +846,15 @@ public class MacroCommand {
     }
     
     /**
-     * Versione speciale di executeActionSequence che gestisce correttamente i delay
-     * anche all'interno dei blocchi IF
+     * Special version of executeActionSequence that handles delays correctly
      * 
-     * @param callback Una funzione da chiamare quando tutte le azioni sono state completate
+     * @param callback A function to call when all actions are completed
      */
     private static void executeActionSequenceWithDelayHandling(ServerPlayer player, ServerLevel level, 
                                                  List<MacroAction> actions, Object[] paramValues, 
                                                  int index, Runnable callback) {
         if (index >= actions.size() || player.isRemoved() || !player.isAlive()) {
-            // Fine della sequenza o giocatore non più valido
+            // End of sequence or player no longer valid
             if (callback != null) {
                 callback.run();
             }
@@ -726,20 +874,20 @@ public class MacroCommand {
         }
         
         if (action.type == MacroActionType.EXECUTE) {
-            // Sostituisci i parametri nel comando
+            // Replace parameters in the command
             String commandWithParams = replaceParameters(action.command, paramValues);
             
-            // Esegui il comando immediatamente
+            // Execute the command immediately
             executeCommand(player, level, commandWithParams);
             
-            // Passa alla prossima azione
+            // Pass to the next action
             executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
         } else if (action.type == MacroActionType.DELAY) {
-            // Gestione speciale del delay - attendi prima di eseguire la prossima azione
+            // Special handling for delay - wait before executing the next action
             int delayTicks = action.delayTicks;
             
-            // Usiamo esattamente 50ms per tick, ma aggiungiamo un piccolo margine 
-            // per assicurare che il ritardo minimo sia rispettato
+            // We use exactly 50ms per tick, but add a small margin 
+            // to ensure the minimum delay is respected
             long delayMillis = (long) delayTicks * 50 + 5; 
             
             if (LOGGER.isDebugEnabled()) {
@@ -749,7 +897,7 @@ public class MacroCommand {
             
             UUID playerUUID = player.getUUID();
             ScheduledFuture<?> future = COMMAND_EXECUTOR.schedule(() -> {
-                // Dopo il ritardo, esegui la prossima azione
+                // After the delay, execute the next action
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Special handling: Executing action after delay of {} ticks for player {}", 
                         delayTicks, player.getName().getString());
@@ -757,15 +905,15 @@ public class MacroCommand {
                 executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
             }, delayMillis, TimeUnit.MILLISECONDS);
             
-            // Memorizza il future per potenziale cancellazione
+            // Remember the future for potential cancellation
             ACTIVE_COMMANDS.put(playerUUID, future);
         } else if (action.type == MacroActionType.IF) {
-            // Gestione dei blocchi IF
+            // Special handling for IF blocks
             List<Integer> indices = action.getConditionIndices();
             List<MacroAction> subActions = action.getSubActions();
             UUID playerUUID = player.getUUID();
             
-            // Cerca di trovare la macro corrente
+            // Try to find the current macro
             MacroDefinition currentMacro = null;
             for (String macroId : MACRO_REGISTRY.keySet()) {
                 MacroDefinition macro = MACRO_REGISTRY.get(macroId);
@@ -777,26 +925,26 @@ public class MacroCommand {
             
             if (currentMacro != null && checkConditionsByIndices(player, indices, 
                     currentMacro.getRequiredStages(), currentMacro.getStagesLogic())) {
-                // Condizioni soddisfatte, esegui sub-actions
+                // Conditions met, execute sub-actions
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Special handling: IF conditions met, executing sub-actions");
                 }
                 
-                // Esegui le sub-actions e poi passa alla prossima azione principale
+                // Execute sub-actions and then pass to the next main action
                 executeActionSequenceWithDelayHandling(player, level, subActions, paramValues, 0, () -> {
-                    // Dopo che tutte le sub-actions sono completate, continua con la prossima azione
+                    // After all sub-actions are completed, continue with the next action
                     executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
                 });
             } else {
-                // Condizioni non soddisfatte o macro non trovata, salta le sub-actions
+                // Conditions not met or macro not found, skip sub-actions
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Special handling: IF conditions not met, skipping sub-actions");
                 }
-                // Passa alla prossima azione
+                // Pass to the next action
                 executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
             }
         } else {
-            // Tipo di azione sconosciuto, salta e passa alla prossima
+            // Unknown action type, skip and pass to the next
             LOGGER.warn("Unknown action type: {}, skipping", action.type);
             executeActionSequenceWithDelayHandling(player, level, actions, paramValues, index + 1, callback);
         }
@@ -815,14 +963,23 @@ public class MacroCommand {
             for (Integer index : indices) {
                 if (index < 0 || index >= allStages.size()) {
                     // Invalid index
+                    LOGGER.warn("Invalid stage condition index: {} (max: {})", index, allStages.size() - 1);
                     return false;
                 }
                 
                 StageRequirement condition = allStages.get(index);
-                if (!checkSingleStage(player, condition)) {
+                boolean hasStage = checkPlayerHasStage(player, condition);
+                
+                if (!hasStage) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("DEF_AND condition not met for stage index {}: {}", 
+                            index, condition.getStageId());
+                    }
                     return false;
                 }
             }
+            
+            // All conditions met
             return true;
         } 
         // For DEF_OR logic, at least one condition must be met
@@ -834,7 +991,7 @@ public class MacroCommand {
                 }
                 
                 StageRequirement condition = allStages.get(index);
-                if (checkSingleStage(player, condition)) {
+                if (checkPlayerHasStage(player, condition)) {
                     return true;
                 }
             }
@@ -849,7 +1006,7 @@ public class MacroCommand {
             }
             
             StageRequirement condition = allStages.get(index);
-            if (!checkSingleStage(player, condition)) {
+            if (!checkPlayerHasStage(player, condition)) {
                 return false;
             }
         }
@@ -857,12 +1014,98 @@ public class MacroCommand {
     }
     
     /**
-     * Checks if a single stage requirement is satisfied using the first macro available
+     * Checks if all required conditions are met for an if action
      */
-    private static boolean checkSingleStage(ServerPlayer player, StageRequirement requirement) {
-        // Create a dummy MacroDefinition to use its checkSingleStage method
-        MacroDefinition dummyMacro = new MacroDefinition("dummy", null, null, 0);
-        return dummyMacro.checkSingleStage(player, requirement);
+    private static boolean checkDeferredStageConditions(ServerPlayer player, List<Integer> conditionIndices, MacroDefinition macro) {
+        if (!macro.hasStageRequirements() || macro.getRequiredStages().isEmpty()) {
+            return true; // No requirements to check
+        }
+        
+        List<StageRequirement> allStages = macro.getRequiredStages();
+        
+        if (macro.getStagesLogic() == StagesLogic.DEF_AND) {
+            // All specified conditions must be met
+            for (Integer index : conditionIndices) {
+                if (index < 0 || index >= allStages.size()) {
+                    // Invalid index
+                    LOGGER.warn("Invalid stage condition index: {} (max: {})", index, allStages.size() - 1);
+                    return false;
+                }
+                
+                StageRequirement requirement = allStages.get(index);
+                boolean hasStage = checkPlayerHasStage(player, requirement);
+                
+                if (!hasStage) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("DEF_AND condition not met for stage index {}: {}", 
+                            index, requirement.getStageId());
+                    }
+                    return false;
+                }
+            }
+            
+            // All conditions met
+            return true;
+        } else if (macro.getStagesLogic() == StagesLogic.DEF_OR) {
+            // At least one condition must be met
+            for (Integer index : conditionIndices) {
+                if (index < 0 || index >= allStages.size()) {
+                    // Invalid index
+                    LOGGER.warn("Invalid stage condition index: {} (max: {})", index, allStages.size() - 1);
+                    continue; // Skip this invalid index
+                }
+                
+                StageRequirement requirement = allStages.get(index);
+                boolean hasStage = checkPlayerHasStage(player, requirement);
+                
+                if (hasStage) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("DEF_OR condition met for stage index {}: {}", 
+                            index, requirement.getStageId());
+                    }
+                    return true;
+                }
+            }
+            
+            // No conditions met
+            return false;
+        }
+        
+        // Unsupported logic type
+        LOGGER.warn("Unsupported stages logic for deferred conditions: {}", macro.getStagesLogic());
+        return false;
+    }
+    
+    /**
+     * Checks if the conditions for an if action are met
+     */
+    private static boolean checkIfConditions(ServerPlayer player, MacroAction action, MacroDefinition macro) {
+        List<Integer> conditionIndices = action.getConditionIndices();
+        
+        if (conditionIndices == null || conditionIndices.isEmpty()) {
+            // No conditions specified, so they're "met" by default
+            return true;
+        }
+        
+        return checkDeferredStageConditions(player, conditionIndices, macro);
+    }
+    
+    /**
+     * Process a single JSON 'if' condition with stage indices
+     */
+    private static List<Integer> parseConditionIndices(JsonObject conditionObj) {
+        List<Integer> indices = new ArrayList<>();
+        
+        if (conditionObj.has("conditions") && conditionObj.get("conditions").isJsonArray()) {
+            JsonArray indexArray = conditionObj.get("conditions").getAsJsonArray();
+            for (JsonElement indexElem : indexArray) {
+                if (indexElem.isJsonPrimitive() && indexElem.getAsJsonPrimitive().isNumber()) {
+                    indices.add(indexElem.getAsInt());
+                }
+            }
+        }
+        
+        return indices;
     }
     
     /**
@@ -941,7 +1184,7 @@ public class MacroCommand {
                 String logicStr = json.get("stages_logic").getAsString().toUpperCase();
                 try {
                     if (logicStr.equals("DEF")) {
-                        // Retrocompatibilità: tratta DEF come DEF_AND
+                        // Retrocompatibility: treat DEF as DEF_AND
                         stagesLogic = StagesLogic.DEF_AND;
                         LOGGER.warn("Stage logic 'DEF' is deprecated, please use 'DEF_AND' instead for macro {}", id);
                     } else {
@@ -1032,40 +1275,54 @@ public class MacroCommand {
                         } else if (actionObj.has("if") && actionObj.get("if").isJsonArray()) {
                             // If condition block
                             JsonArray ifArray = actionObj.get("if").getAsJsonArray();
-                            
-                            if (ifArray.size() > 0 && ifArray.get(0).isJsonObject()) {
-                                JsonObject conditionsObj = ifArray.get(0).getAsJsonObject();
-                                List<Integer> indices = new ArrayList<>();
+                            if (ifArray.size() >= 2 && ifArray.get(0).isJsonObject()) {
+                                JsonObject conditionObj = ifArray.get(0).getAsJsonObject();
                                 
-                                // Parse conditions array with indices
-                                if (conditionsObj.has("conditions") && conditionsObj.get("conditions").isJsonArray()) {
-                                    JsonArray conditionsArray = conditionsObj.getAsJsonArray("conditions");
+                                // Extract condition indices
+                                List<Integer> conditionIndices = new ArrayList<>();
+                                if (conditionObj.has("conditions") && conditionObj.get("conditions").isJsonArray()) {
+                                    JsonArray conditionsArray = conditionObj.get("conditions").getAsJsonArray();
                                     
                                     for (JsonElement indexElement : conditionsArray) {
                                         if (indexElement.isJsonPrimitive()) {
-                                            indices.add(indexElement.getAsInt());
+                                            conditionIndices.add(indexElement.getAsInt());
                                         }
                                     }
                                 }
                                 
-                                // Process sub-actions (all elements after the first one)
+                                // Extract sub-actions
                                 List<MacroAction> subActions = new ArrayList<>();
                                 for (int i = 1; i < ifArray.size(); i++) {
                                     if (ifArray.get(i).isJsonObject()) {
                                         JsonObject subActionObj = ifArray.get(i).getAsJsonObject();
                                         
                                         if (subActionObj.has("execute")) {
+                                            // Sub-action: execute command
                                             String command = subActionObj.get("execute").getAsString();
-                                            subActions.add(new MacroAction(MacroActionType.EXECUTE, command, 0, null));
+                                            subActions.add(new MacroAction(MacroActionType.EXECUTE, command, 0));
                                         } else if (subActionObj.has("delay")) {
+                                            // Sub-action: delay
                                             int ticks = subActionObj.get("delay").getAsInt();
-                                            subActions.add(new MacroAction(MacroActionType.DELAY, null, ticks, null));
+                                            subActions.add(new MacroAction(MacroActionType.DELAY, null, ticks));
                                         }
+                                        // Potentially add other action types here
                                     }
                                 }
                                 
-                                // Create if action with sub-actions
-                                actions.add(new MacroAction(MacroActionType.IF, null, 0, actionStages, indices, subActions));
+                                if (!subActions.isEmpty()) {
+                                    // Create and add the IF action
+                                    MacroAction ifAction = new MacroAction(
+                                        MacroActionType.IF,
+                                        null,
+                                        0,
+                                        actionStages,
+                                        conditionIndices,
+                                        subActions
+                                    );
+                                    actions.add(ifAction);
+                                } else {
+                                    LOGGER.warn("No valid sub-actions found in 'if' block");
+                                }
                             }
                         }
                     }
@@ -1120,13 +1377,11 @@ public class MacroCommand {
                 return true;
             }
             
-            // TODO: Implement full game stages system
-            // This is a placeholder implementation that distinguishes between stage types
-            
             if (stagesLogic == StagesLogic.AND) {
                 // All stages must be satisfied
                 for (StageRequirement requirement : requiredStages) {
-                    if (!checkSingleStage(player, requirement)) {
+                    boolean hasStage = playerHasStage(player, requirement);
+                    if (!hasStage) {
                         return false;
                     }
                 }
@@ -1134,7 +1389,8 @@ public class MacroCommand {
             } else { // OR logic
                 // At least one stage must be satisfied (OR logic)
                 for (StageRequirement requirement : requiredStages) {
-                    if (checkSingleStage(player, requirement)) {
+                    boolean hasStage = playerHasStage(player, requirement);
+                    if (hasStage) {
                         return true;
                     }
                 }
@@ -1143,12 +1399,46 @@ public class MacroCommand {
         }
         
         /**
-         * Checks if a single stage requirement is satisfied using the first macro available
+         * Utility method to check if a player has a specific stage
+         * This prevents the infinite recursion issue by directly checking stages here
          */
-        public boolean checkSingleStage(ServerPlayer player, StageRequirement requirement) {
-            // Create a dummy MacroDefinition to use its checkSingleStage method
-            MacroDefinition dummyMacro = new MacroDefinition("dummy", null, null, 0);
-            return dummyMacro.checkSingleStage(player, requirement);
+        public boolean playerHasStage(ServerPlayer player, StageRequirement requirement) {
+            // Get game stages for the player
+            boolean hasStage = false;
+            
+            // Use StageRegistry to check if player has the stage
+            if (requirement.getType() == StageType.PLAYER) {
+                try {
+                    // Try to use actual stage registry
+                    hasStage = StageRegistry.playerHasStage(player, requirement.getStageId());
+                    
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Checking stage '{}' for player {}: {}", 
+                            requirement.getStageId(), player.getName().getString(), hasStage);
+                    }
+                } catch (Exception e) {
+                    // Fallback to debug mode or if StageRegistry is not available
+                    LOGGER.warn("Error checking stage status: {}", e.getMessage());
+                    // In development/testing mode, always return false for easier debugging
+                    hasStage = false;
+                }
+            } else if (requirement.getType() == StageType.WORLD) {
+                try {
+                    // Try to use actual stage registry for world stages
+                    hasStage = StageRegistry.worldHasStage(player.level(), requirement.getStageId());
+                    
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Checking world stage '{}': {}", requirement.getStageId(), hasStage);
+                    }
+                } catch (Exception e) {
+                    // Fallback to debug mode or if StageRegistry is not available
+                    LOGGER.warn("Error checking world stage status: {}", e.getMessage());
+                    hasStage = false;
+                }
+            }
+            
+            // Check if the player has the stage or not, based on whether it's required or not
+            return hasStage == requirement.isRequired();
         }
     }
     
@@ -1324,45 +1614,53 @@ public class MacroCommand {
                 for (Integer index : conditionIndices) {
                     if (index < 0 || index >= allStages.size()) {
                         // Invalid index
+                        LOGGER.warn("Invalid stage condition index: {} (max: {})", index, allStages.size() - 1);
                         return false;
                     }
                     
-                    StageRequirement condition = allStages.get(index);
-                    if (!macro.checkSingleStage(player, condition)) {
+                    StageRequirement requirement = allStages.get(index);
+                    boolean hasStage = checkPlayerHasStage(player, requirement);
+                    
+                    if (!hasStage) {
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("DEF_AND condition not met for stage index {}: {}", 
+                                index, requirement.getStageId());
+                        }
                         return false;
                     }
                 }
+                
+                // All conditions met
                 return true;
             } 
             // For DEF_OR logic, at least one condition must be met
             else if (macro.getStagesLogic() == StagesLogic.DEF_OR) {
                 for (Integer index : conditionIndices) {
                     if (index < 0 || index >= allStages.size()) {
-                        // Skip invalid index
-                        continue;
+                        // Invalid index
+                        LOGGER.warn("Invalid stage condition index: {} (max: {})", index, allStages.size() - 1);
+                        continue; // Skip this invalid index
                     }
                     
-                    StageRequirement condition = allStages.get(index);
-                    if (macro.checkSingleStage(player, condition)) {
+                    StageRequirement requirement = allStages.get(index);
+                    boolean hasStage = checkPlayerHasStage(player, requirement);
+                    
+                    if (hasStage) {
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("DEF_OR condition met for stage index {}: {}", 
+                                index, requirement.getStageId());
+                        }
                         return true;
                     }
                 }
-                return conditionIndices.isEmpty(); // Return true only if no conditions
+                
+                // No conditions met
+                return false;
             }
             
-            // Default to AND logic for any other case
-            for (Integer index : conditionIndices) {
-                if (index < 0 || index >= allStages.size()) {
-                    // Invalid index
-                    return false;
-                }
-                
-                StageRequirement condition = allStages.get(index);
-                if (!macro.checkSingleStage(player, condition)) {
-                    return false;
-                }
-            }
-            return true;
+            // Unsupported logic type
+            LOGGER.warn("Unsupported stages logic for deferred conditions: {}", macro.getStagesLogic());
+            return false;
         }
     }
     
