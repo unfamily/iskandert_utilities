@@ -64,6 +64,10 @@ public class MacroLoader {
                 
                 // Generate default configurations
                 generateDefaultConfigurations(configPath);
+                
+                // Generate index file
+                IndexGenerator.generateIndex();
+                
                 return;
             }
             
@@ -77,6 +81,9 @@ public class MacroLoader {
             // Always regenerate README
             createReadme(configPath);
             LOGGER.info("Updated README.md");
+            
+            // Generate index file
+            IndexGenerator.generateIndex();
             
             // Clear previous protections
             PROTECTED_MACROS.clear();
@@ -160,6 +167,8 @@ public class MacroLoader {
             String readmeContent = "# Iska Utils - Command Macros\n" +
                 "\n" +
                 "This directory allows you to create command macros that can be executed directly in the game.\n" +
+                "\n"+
+                "All commands are reloadable by /reload or better verison provided by this mod\n/reloader, so you can modify them at any time, if you change a default generated file set overwritable to false in the file.\n" +
                 "\n" +
                 "## Format\n" +
                 "\n" +
@@ -296,6 +305,85 @@ public class MacroLoader {
                 "- **Dimension Stages**: Related to specific dimensions (like Nether or End)\n" +
                 "\n" +
                 "You can specify the stage type using the `stage_type` field in each stage requirement.\n" +
+                "\n" +
+                "### Sub-Command Implementation\n" +
+                "You can implement sub-commands using the static parameter type and conditional execution with stages. Here's a complete example of how to create a powerful recursive sub-command system:\n" +
+                "\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"type\": \"iska_utils:commands_macro\",\n" +
+                "  \"overwritable\": false,\n" +
+                "  \"commands\": [\n" +
+                "    {\n" +
+                "      \"command\": \"sub_command\",\n" +
+                "      \"level\": 0,\n" +
+                "      \"stages_logic\": \"DEF_AND\",\n" +
+                "      \"stages\": [\n" +
+                "        {\"stage\": \"sub_command_condition_0\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"sub_command_condition_1\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "        {\"stage\": \"sub_command_condition_2\", \"stage_type\": \"player\", \"is\": true},\n" +
+                "\n" +
+                "        {\"stage\": \"sub_command_condition_0\", \"stage_type\": \"player\", \"is\": false},\n" +
+                "        {\"stage\": \"sub_command_condition_1\", \"stage_type\": \"player\", \"is\": false},\n" +
+                "        {\"stage\": \"sub_command_condition_2\", \"stage_type\": \"player\", \"is\": false}\n" +
+                "      ],\n" +
+                "      \"parameters\": [\n" +
+                "          {\n" +
+                "            \"type\": \"static\",\n" +
+                "            \"list\": [\n" +
+                "              {\"declare\": \"condition_0\"},\n" +
+                "              {\"declare\": \"condition_1\"},\n" +
+                "              {\"declare\": \"condition_2\"}\n" +
+                "            ]\n" +
+                "          }\n" +
+                "        ],\n" +
+                "\n" +
+                "      \"do\": [\n" +
+                "      {\"if\": [\n" +
+                "        {\"conditions\":[3,4,5]},\n" +
+                "        {\"execute\": \"iska_utils_stage add player @s sub_command_#0 true\"},\n" +
+                "        {\"delay\": 5},\n" +
+                "        {\"execute\": \"sub_commad #0\"}\n" +
+                "      ]},\n" +
+                "        {\"if\": [\n" +
+                "            {\"conditions\": [0]},\n" +
+                "            {\"execute\": \"tellraw @s \\\"condition_0\\\"\"},\n" +
+                "            {\"execute\": \"iska_utils_stage remove player @s sub_command_#0 true\"}\n" +
+                "        ]},\n" +
+                "        {\"if\": [\n" +
+                "            {\"conditions\": [1]},\n" +
+                "            {\"execute\": \"tellraw @s \\\"condition_1\\\"\"},\n" +
+                "            {\"execute\": \"iska_utils_stage remove player @s sub_command_#0 true\"}\n" +
+                "        ]},\n" +
+                "        {\"if\": [\n" +
+                "            {\"conditions\": [2]},\n" +
+                "            {\"execute\": \"tellraw @s \\\"condition_1\\\"\"},\n" +
+                "            {\"execute\": \"iska_utils_stage remove player @s sub_command_#0 true\"}\n" +
+                "        ]}\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "```\n" +
+                "\n" +
+                "This advanced pattern works by:\n" +
+                "1. Defining a command with a static parameter that offers multiple sub-command options (`condition_0`, `condition_1`, `condition_2`)\n" +
+                "2. Using the `DEF_AND` stages logic for deferred evaluation of conditions\n" +
+                "3. Leveraging both positive and negative stage conditions:\n" +
+                "   - Indexes 0-2: Positive conditions checking if stages are present\n" +
+                "   - Indexes 3-5: Negative conditions checking if stages are absent\n" +
+                "4. Using recursion for efficient handling:\n" +
+                "   - The first `if` block checks if no stages are active (negative conditions)\n" +
+                "   - It then adds the appropriate stage and recursively calls itself\n" +
+                "   - On the second call, one of the positive condition blocks will match\n" +
+                "   - The matching block executes its command and cleans up by removing the stage\n" +
+                "\n" +
+                "The key advantages of this approach:\n" +
+                "- Clean recursive implementation that separates stage setting from execution\n" +
+                "- Only one stage is active at a time, preventing conflicts\n" +
+                "- Tab completion for sub-commands comes built-in\n" +
+                "- Easy to add new sub-commands by extending the static list and adding corresponding conditions\n" +
+                "- Each sub-command has its own dedicated code block for maximum flexibility\n" +
                 "\n" +
                 "Additionally, you can use the `is` field to create negative requirements:\n" +
                 "- `\"is\": true` (default): The player/world/dimension MUST have the specified stage\n" +
