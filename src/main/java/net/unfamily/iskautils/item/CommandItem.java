@@ -165,33 +165,19 @@ public class CommandItem extends Item {
                 markItemStackProcessed(playerUuid, stack);
             }
         } else {
-            // Item già processato in tick precedente - controlla se ha lo stage "initialized"
-            // Se non ha lo stage, elimina l'item
-            if ((definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
-                definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) &&
-                // Non applicare questa logica all'item world_init che ha la sua logica speciale
-                !definition.getId().equals("iska_utils-world_init")) {
-                boolean hasInitializedStage = false;
-                
-                // Cerca tra tutti gli stage se esiste uno con "initialized" o simile
-                for (CommandItemDefinition.StageCondition stage : definition.getStages()) {
-                    if (stage.getStage().equals("initialized") && 
-                        stage.shouldBeSet() && 
-                        definition.checkSingleStage(player, stage)) {
-                        hasInitializedStage = true;
-                        break;
-                    }
-                }
-                
-                // Se non ha stage "initialized", elimina l'item
-                if (!hasInitializedStage) {
-                    LOGGER.debug("Item {} non inizializzato, verrà eliminato", definition.getId());
-                    // Elimina l'item dall'inventario
-                    if (slot >= 0) {
-                        player.getInventory().setItem(slot, ItemStack.EMPTY);
-                    } else {
-                        stack.setCount(0);
-                    }
+            // Per le logiche DEF_AND e DEF_OR, gli stage vengono controllati per ogni azione
+            // e non è necessario un controllo globale qui
+            if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
+                definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) {
+                // Nessun controllo necessario, prosegui
+            } 
+            // Per le logiche AND e OR, controlliamo che tutti gli stage richiesti siano soddisfatti
+            else if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.AND || 
+                     definition.getStagesLogic() == CommandItemDefinition.StagesLogic.OR) {
+                // Usiamo il metodo areConditionsMet che abbiamo già chiamato sopra
+                // Questo è solo un controllo extra nel caso in cui gli stage siano cambiati
+                if (!areConditionsMet(player)) {
+                    LOGGER.debug("Item {} stages no longer met, skipping tick actions", definition.getId());
                     return;
                 }
             }
@@ -217,10 +203,44 @@ public class CommandItem extends Item {
      * Esegue solo le azioni del primo tick con attenzione speciale
      */
     private void executeFirstTickActions(ServerPlayer player, List<CommandItemAction> actions, ItemStack stack, int slot) {
+        boolean itemDeleted = false;
+        boolean hasExplicitDeleteAction = false;
+        
+        // Verifica preventiva se ci sono azioni di delete/consume
         for (CommandItemAction action : actions) {
-            if (stack.isEmpty()) {
-                // Item consumed in a previous action
-                break;
+            if (action.getType() == CommandItemAction.ActionType.ITEM) {
+                CommandItemAction.ItemActionType itemAction = action.getItemAction();
+                if (itemAction == CommandItemAction.ItemActionType.DELETE || 
+                    itemAction == CommandItemAction.ItemActionType.CONSUME ||
+                    itemAction == CommandItemAction.ItemActionType.DELETE_ALL) {
+                    hasExplicitDeleteAction = true;
+                    break;
+                }
+            } else if (action.getType() == CommandItemAction.ActionType.IF) {
+                // Controlla anche nelle sub-actions
+                for (CommandItemAction subAction : action.getSubActions()) {
+                    if (subAction.getType() == CommandItemAction.ActionType.ITEM) {
+                        CommandItemAction.ItemActionType itemAction = subAction.getItemAction();
+                        if (itemAction == CommandItemAction.ItemActionType.DELETE || 
+                            itemAction == CommandItemAction.ItemActionType.CONSUME ||
+                            itemAction == CommandItemAction.ItemActionType.DELETE_ALL) {
+                            hasExplicitDeleteAction = true;
+                            break;
+                        }
+                    }
+                }
+                if (hasExplicitDeleteAction) break;
+            }
+        }
+        
+        LOGGER.debug("First tick actions for item {}: has explicit delete action = {}", 
+                definition.getId(), hasExplicitDeleteAction);
+        
+        for (CommandItemAction action : actions) {
+            if (stack.isEmpty() && !itemDeleted) {
+                // Item consumed in a previous action, mark as deleted but continue
+                itemDeleted = true;
+                LOGGER.debug("Item consumed in previous first tick action, continuing with remaining actions");
             }
             
             // Check if this action has its own stage requirements (for DEF logic)
@@ -236,7 +256,11 @@ public class CommandItem extends Item {
             // Caso speciale per azioni IF
             if (action.getType() == CommandItemAction.ActionType.IF) {
                 // Check if conditions are met based on the indices
-                if (action.checkConditionsByIndices(player, definition)) {
+                boolean conditionsMet = action.checkConditionsByIndices(player, definition);
+                LOGGER.debug("IF condition check result for conditions {}: {}", 
+                    action.getConditionIndices(), conditionsMet);
+                    
+                if (conditionsMet) {
                     // Cerchiamo azioni di consumo prioritarie nei sub-actions
                     boolean hasConsumed = false;
                     for (CommandItemAction subAction : action.getSubActions()) {
@@ -245,23 +269,22 @@ public class CommandItem extends Item {
                             if (itemAction == CommandItemAction.ItemActionType.DELETE || 
                                 itemAction == CommandItemAction.ItemActionType.CONSUME) {
                                 LOGGER.debug("First tick IF: eseguo subito l'azione di consumo dell'item");
-                                processItemAction(player, itemAction, stack, slot);
-                                hasConsumed = true;
+                                if (!stack.isEmpty()) {
+                                    processItemAction(player, itemAction, stack, slot);
+                                    hasConsumed = true;
+                                }
                                 break;
                             }
                         }
                     }
                     
-                    // Se l'item è stato consumato, interrompi ulteriore elaborazione
-                    if (hasConsumed && stack.isEmpty()) {
-                        return;
-                    }
+                    boolean subActionItemDeleted = itemDeleted || (hasConsumed && stack.isEmpty());
                     
                     // Esegui tutte le altre sub-actions
                     for (CommandItemAction subAction : action.getSubActions()) {
-                        if (stack.isEmpty()) {
-                            // Item consumed in a previous action
-                            break;
+                        if (stack.isEmpty() && !subActionItemDeleted) {
+                            subActionItemDeleted = true;
+                            LOGGER.debug("Subaction detected item was consumed, continuing with remaining subactions");
                         }
                         
                         // Salta le azioni di consumo che abbiamo già eseguito
@@ -274,7 +297,12 @@ public class CommandItem extends Item {
                             }
                         }
                         
-                        executeAction(player, subAction, stack, slot);
+                        // Execute the action based on type and item availability
+                        if (!stack.isEmpty() || subAction.getType() == CommandItemAction.ActionType.EXECUTE) {
+                            executeAction(player, subAction, stack, slot);
+                        } else {
+                            LOGGER.debug("Skipping subaction that requires item because item was already deleted");
+                        }
                     }
                     continue; // Abbiamo gestito l'azione IF, passa alla prossima
                 }
@@ -287,16 +315,27 @@ public class CommandItem extends Item {
                     itemAction == CommandItemAction.ItemActionType.CONSUME) {
                     
                     LOGGER.debug("First tick: eseguo subito l'azione di consumo dell'item");
-                    processItemAction(player, itemAction, stack, slot);
-                    // Se l'item è stato consumato, interrompi ulteriore elaborazione
-                    if (stack.isEmpty()) {
-                        return;
+                    if (!stack.isEmpty()) {
+                        processItemAction(player, itemAction, stack, slot);
+                        if (stack.isEmpty()) {
+                            itemDeleted = true;
+                            LOGGER.debug("Item deleted by first tick action, continuing with remaining actions");
+                        }
                     }
                 }
             }
             
-            // Execute the action (or queue it if it's a delay)
-            executeAction(player, action, stack, slot);
+            // Execute the action based on type and item availability
+            if (!stack.isEmpty() || action.getType() == CommandItemAction.ActionType.EXECUTE) {
+                executeAction(player, action, stack, slot);
+            } else {
+                LOGGER.debug("Skipping action that requires item because item was already deleted");
+            }
+        }
+        
+        // Se l'item è stato cancellato ma non c'erano azioni esplicite di delete, ripristina l'item
+        if (stack.isEmpty() && !hasExplicitDeleteAction && !itemDeleted) {
+            LOGGER.debug("Item was unexpectedly deleted without explicit delete action, this is a bug!");
         }
     }
     
@@ -321,9 +360,26 @@ public class CommandItem extends Item {
                     // Esegui l'azione pianificata
                     LOGGER.debug("Executing delayed action for player {} scheduled for tick {} (current tick: {})",
                             player.getName().getString(), action.executeAtTick, currentTick);
-                    executeAction(action.player, action.action, action.stack, action.slot);
+                    
+                    // Possiamo eseguire l'azione indipendentemente dallo stato dell'item
+                    // per i tipi di azione EXECUTE e IF
+                    ItemStack stack = action.stack;
+                    if (action.action.getType() == CommandItemAction.ActionType.EXECUTE || 
+                        action.action.getType() == CommandItemAction.ActionType.IF) {
+                        // Eseguiamo queste azioni anche se l'item è stato consumato
+                        LOGGER.debug("Executing delayed {} action even if item might be gone", action.action.getType());
+                        executeAction(action.player, action.action, stack, action.slot);
+                    } else if (!stack.isEmpty()) {
+                        // Per altri tipi di azione, verifichiamo che l'item esista ancora
+                        executeAction(action.player, action.action, stack, action.slot);
+                    } else {
+                        LOGGER.debug("Skipping delayed action of type {} because item is gone", action.action.getType());
+                    }
                 } catch (Exception e) {
                     LOGGER.error("Error executing delayed action: {}", e.getMessage());
+                    if (LOGGER.isDebugEnabled()) {
+                        e.printStackTrace();
+                    }
                 } finally {
                     // Aggiungi sempre all'elenco delle azioni da rimuovere, anche in caso di errore
                     actionsToRemove.add(action);
@@ -376,18 +432,66 @@ public class CommandItem extends Item {
      * Checks if all conditions are met for this command item
      */
     private boolean areConditionsMet(ServerPlayer player) {
-        // Use the definition's checkAllStages method
-        return definition.checkAllStages(player);
+        // Per le logiche DEF, il controllo viene fatto per ogni azione
+        // quindi qui ritorniamo semplicemente true
+        if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
+            definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) {
+            LOGGER.debug("Item {} uses DEF logic, stage checks will be done per action", definition.getId());
+            return true;
+        }
+        
+        // Altrimenti usiamo il checkAllStages del definition
+        boolean result = definition.checkAllStages(player);
+        
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Item {} stage check result: {} (logic: {})", 
+                definition.getId(), result, definition.getStagesLogic());
+            
+            // Log dettagliato di tutti gli stage
+            List<CommandItemDefinition.StageCondition> stages = definition.getStages();
+            if (!stages.isEmpty()) {
+                for (int i = 0; i < stages.size(); i++) {
+                    CommandItemDefinition.StageCondition stage = stages.get(i);
+                    boolean stageResult = definition.checkSingleStage(player, stage);
+                    LOGGER.debug("Stage[{}]: {}.{} should be {} = {}", 
+                        i, stage.getStageType(), stage.getStage(), stage.shouldBeSet(), stageResult);
+                }
+            } else {
+                LOGGER.debug("Item has no stages defined, always active");
+            }
+        }
+        
+        return result;
     }
     
     /**
      * Executes a list of actions
      */
     private void executeActions(ServerPlayer player, List<CommandItemAction> actions, ItemStack stack, int slot) {
-        for (CommandItemAction action : actions) {
-            if (stack.isEmpty()) {
-                // Item consumed in a previous action
-                break;
+        boolean itemDeleted = false;
+        
+        LOGGER.debug("Executing {} actions for player {} with item {}", actions.size(), player.getName().getString(), definition.getId());
+        
+        // Debug: mostriamo gli indici di tutte le azioni IF
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("All IF blocks in actions list:");
+            for (int i = 0; i < actions.size(); i++) {
+                CommandItemAction action = actions.get(i);
+                if (action.getType() == CommandItemAction.ActionType.IF) {
+                    LOGGER.debug("  IF block {} with conditions {}", i, action.getConditionIndices());
+                }
+            }
+        }
+        
+        // Per ogni azione, eseguiamo un controllo aggiornato delle condizioni (per azioni IF)
+        // e poi eseguiamo l'azione
+        for (int actionIndex = 0; actionIndex < actions.size(); actionIndex++) {
+            CommandItemAction action = actions.get(actionIndex);
+            
+            if (stack.isEmpty() && !itemDeleted) {
+                // Item consumed in a previous action, mark as deleted but continue
+                itemDeleted = true;
+                LOGGER.debug("Item consumed in previous action, continuing with remaining actions");
             }
             
             // Check if this action has its own stage requirements (for DEF logic)
@@ -400,8 +504,78 @@ public class CommandItem extends Item {
                 continue;
             }
             
-            // Execute the action (or queue it if it's a delay)
-            executeAction(player, action, stack, slot);
+            // Debug per il tipo di azione
+            LOGGER.debug("Processing action of type: {}", action.getType());
+            
+            // Se l'azione è di tipo IF, eseguiamo un controllo aggiornato delle condizioni
+            if (action.getType() == CommandItemAction.ActionType.IF) {
+                // Ricontrolliamo le condizioni per assicurarci che siano ancora valide
+                // Questo è importante specialmente per azioni consecutive che potrebbero
+                // modificare gli stessi stage
+                boolean conditionsMet = action.checkConditionsByIndices(player, definition);
+                LOGGER.debug("Checking IF action at index {} with conditions {}: {}", 
+                    actionIndex, action.getConditionIndices(), conditionsMet);
+                
+                if (conditionsMet) {
+                    // Execute the IF block with its sub-actions
+                    if (!action.getSubActions().isEmpty()) {
+                        LOGGER.debug("Executing IF block with {} sub-actions", action.getSubActions().size());
+                        
+                        // Per le azioni di delay, dovremo gestirle separatamente
+                        boolean hasDelay = false;
+                        int delayIndex = -1;
+                        for (int i = 0; i < action.getSubActions().size(); i++) {
+                            if (action.getSubActions().get(i).getType() == CommandItemAction.ActionType.DELAY) {
+                                hasDelay = true;
+                                delayIndex = i;
+                                break;
+                            }
+                        }
+                        
+                        if (hasDelay) {
+                            // Se c'è un delay, usa executeIfActionsWithDelays che gestisce i delay correttamente
+                            LOGGER.debug("IF block has DELAY at index {}, using special handling", delayIndex);
+                            executeIfActionsWithDelays(player, action.getSubActions(), stack, slot);
+                        } else {
+                            // Se non ci sono delay, esegui tutte le sub-actions immediatamente
+                            LOGGER.debug("IF block has no DELAY, executing all sub-actions immediately");
+                            for (CommandItemAction subAction : action.getSubActions()) {
+                                if (!stack.isEmpty() || subAction.getType() == CommandItemAction.ActionType.EXECUTE || subAction.getType() == CommandItemAction.ActionType.IF) {
+                                    executeAction(player, subAction, stack, slot);
+                                } else {
+                                    LOGGER.debug("Skipping sub-action that requires item because item is gone");
+                                }
+                            }
+                        }
+                        
+                        // Check if stack is now empty
+                        if (!itemDeleted && stack.isEmpty()) {
+                            itemDeleted = true;
+                            LOGGER.debug("Item deleted during IF block execution, marking as deleted");
+                        }
+                    }
+                } else {
+                    LOGGER.debug("Skipping IF block at index {} because conditions are not met", actionIndex);
+                }
+                
+                // Continua con la prossima azione
+                continue;
+            }
+            
+            // Per altri tipi di azione, usa la logica normale
+            if (!stack.isEmpty() || action.getType() == CommandItemAction.ActionType.EXECUTE || action.getType() == CommandItemAction.ActionType.IF) {
+                // All EXECUTE and IF actions can be executed even after item deletion
+                executeAction(player, action, stack, slot);
+                // Check if this action deleted the item
+                if (!itemDeleted && stack.isEmpty() && action.getType() == CommandItemAction.ActionType.ITEM) {
+                    itemDeleted = true;
+                    LOGGER.debug("Item deleted by action, continuing with remaining actions");
+                }
+            } else if (itemDeleted && action.getType() == CommandItemAction.ActionType.ITEM) {
+                // Skip item actions if item is deleted
+                LOGGER.debug("Skipping item action because item was already deleted: {}", 
+                    action.getItemAction() != null ? action.getItemAction().name() : "unknown");
+            }
         }
     }
     
@@ -424,10 +598,14 @@ public class CommandItem extends Item {
                 
             case IF:
                 // Check if conditions are met based on the indices
-                if (action.checkConditionsByIndices(player, definition)) {
+                boolean conditionsMet = action.checkConditionsByIndices(player, definition);
+                LOGGER.debug("Checking IF condition: {} = {}", action.getConditionIndices(), conditionsMet);
+                
+                if (conditionsMet) {
                     // Execute all sub-actions if conditions are met, but handle delays specially
                     List<CommandItemAction> subActions = action.getSubActions();
                     if (!subActions.isEmpty()) {
+                        LOGGER.debug("Executing IF block with {} sub-actions", subActions.size());
                         executeIfActionsWithDelays(player, subActions, stack, slot);
                     }
                 } else if (LOGGER.isDebugEnabled()) {
@@ -451,6 +629,30 @@ public class CommandItem extends Item {
             return;
         }
         
+        boolean itemDeleted = false;
+        boolean hasExplicitDeleteAction = false;
+        
+        // Controlla se ci sono azioni di cancellazione
+        for (CommandItemAction action : actions) {
+            if (action.getType() == CommandItemAction.ActionType.ITEM) {
+                CommandItemAction.ItemActionType itemAction = action.getItemAction();
+                if (itemAction == CommandItemAction.ItemActionType.DELETE || 
+                    itemAction == CommandItemAction.ItemActionType.CONSUME ||
+                    itemAction == CommandItemAction.ItemActionType.DELETE_ALL) {
+                    hasExplicitDeleteAction = true;
+                    LOGGER.debug("IF block contains explicit delete action: {}", itemAction);
+                    break;
+                }
+            }
+        }
+        
+        // Debug per tutte le azioni del blocco IF
+        LOGGER.debug("Executing IF block with {} actions", actions.size());
+        for (int i = 0; i < actions.size(); i++) {
+            CommandItemAction currentAction = actions.get(i);
+            LOGGER.debug("IF sub-action {}: type={}", i, currentAction.getType());
+        }
+        
         // Inizia con l'esecuzione delle azioni fino al primo delay
         int i = 0;
         for (; i < actions.size(); i++) {
@@ -458,19 +660,40 @@ public class CommandItem extends Item {
             
             // Se troviamo un delay, interrompiamo il ciclo qui
             if (currentAction.getType() == CommandItemAction.ActionType.DELAY) {
+                LOGGER.debug("Found DELAY action in IF block at position {}, will handle remaining actions after delay", i);
                 break;
             }
             
-            // Esegui l'azione corrente
-            if (stack.isEmpty()) {
-                // Item consumed in a previous action
-                return;
+            // Verifica se l'item è stato eliminato
+            if (stack.isEmpty() && !itemDeleted) {
+                itemDeleted = true;
+                LOGGER.debug("Item deleted during IF action execution, continuing with remaining actions");
             }
-            executeAction(player, currentAction, stack, slot);
+            
+            // Execute the action based on type and item availability
+            if (!stack.isEmpty() || currentAction.getType() == CommandItemAction.ActionType.EXECUTE || currentAction.getType() == CommandItemAction.ActionType.IF) {
+                executeAction(player, currentAction, stack, slot);
+                
+                // Se questa azione ha eliminato l'item, aggiorna lo stato
+                if (!itemDeleted && stack.isEmpty() && 
+                    currentAction.getType() == CommandItemAction.ActionType.ITEM && 
+                    (currentAction.getItemAction() == CommandItemAction.ItemActionType.DELETE || 
+                     currentAction.getItemAction() == CommandItemAction.ItemActionType.CONSUME)) {
+                    itemDeleted = true;
+                    LOGGER.debug("Item explicitly deleted by IF subaction");
+                }
+            } else {
+                LOGGER.debug("Skipping IF action that requires item because item was already deleted");
+            }
         }
         
-        // Se abbiamo finito le azioni o l'item è stato consumato, esci
-        if (i >= actions.size() || stack.isEmpty()) {
+        // Se l'item è stato cancellato senza azioni esplicite di delete, potrebbe essere un bug
+        if (stack.isEmpty() && !hasExplicitDeleteAction && !itemDeleted) {
+            LOGGER.debug("Item was unexpectedly deleted in IF block without explicit delete action, this might be a bug!");
+        }
+        
+        // Se abbiamo finito le azioni, esci
+        if (i >= actions.size()) {
             return;
         }
         
@@ -589,15 +812,27 @@ public class CommandItem extends Item {
      * @return true if the item was consumed
      */
     private boolean processItemAction(ServerPlayer player, CommandItemAction.ItemActionType actionType, ItemStack stack, int slot) {
+        // Check if the stack is empty before executing DELETE/CONSUME/DELETE_ALL actions
+        if (stack == null || stack.isEmpty()) {
+            if (actionType == CommandItemAction.ItemActionType.DELETE || 
+                actionType == CommandItemAction.ItemActionType.CONSUME ||
+                actionType == CommandItemAction.ItemActionType.DELETE_ALL) {
+                LOGGER.debug("Attempt to delete an already empty item ignored for action type: {}", actionType);
+                return false;
+            }
+        }
+        
         switch (actionType) {
             case DELETE:
             case CONSUME:
                 // Consume the item (remove from inventory)
                 if (slot >= 0) {
                     player.getInventory().setItem(slot, ItemStack.EMPTY);
+                    LOGGER.debug("Item consumed from slot {}", slot);
                 } else {
                     // If it's in offhand or elsewhere, consume it directly
                     stack.shrink(1);
+                    LOGGER.debug("Item shrunk by 1");
                 }
                 return true;
                 
@@ -628,34 +863,66 @@ public class CommandItem extends Item {
                 return stack.isEmpty();
                 
             case DELETE_ALL:
+                // Check if there are actually items to remove
+                boolean itemsFound = false;
+                int itemCount = 0;
+                String currentItemId = definition.getId();
+                
+                // Check if there are items of this type in inventory
+                for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                    ItemStack invStack = player.getInventory().getItem(i);
+                    if (!invStack.isEmpty() && invStack.getItem() instanceof CommandItem) {
+                        CommandItem cmdItem = (CommandItem) invStack.getItem();
+                        // Solo gli item con lo stesso ID specifico
+                        if (cmdItem.getDefinitionId().equals(currentItemId)) {
+                            itemsFound = true;
+                            itemCount += invStack.getCount();
+                        }
+                    }
+                }
+                
+                if (!itemsFound) {
+                    LOGGER.debug("Attempt to delete all items but no items found");
+                    return false;
+                }
+                
                 // Remove all items of this type from inventory
                 int removed = 0;
                 
                 // Search in all inventory slots
                 for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
                     ItemStack invStack = player.getInventory().getItem(i);
-                    if (invStack.getItem() == this) {
-                        removed += invStack.getCount();
-                        player.getInventory().setItem(i, ItemStack.EMPTY);
+                    if (!invStack.isEmpty() && invStack.getItem() instanceof CommandItem) {
+                        CommandItem cmdItem = (CommandItem) invStack.getItem();
+                        // Solo gli item con lo stesso ID specifico
+                        if (cmdItem.getDefinitionId().equals(currentItemId)) {
+                            removed += invStack.getCount();
+                            player.getInventory().setItem(i, ItemStack.EMPTY);
+                        }
                     }
                 }
                 
-                LOGGER.debug("Removed {} command items {} from player inventory", 
-                        removed, definition.getId());
+                LOGGER.debug("Removed {} command items {} from player inventory (found: {})", 
+                        removed, definition.getId(), itemCount);
                 return true;
                 
             case DROP_ALL:
                 // Drop all items of this type from inventory
                 int dropped = 0;
+                String dropItemId = definition.getId();
                 
                 // Search in all inventory slots
                 for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
                     ItemStack invStack = player.getInventory().getItem(i);
-                    if (invStack.getItem() == this) {
-                        ItemStack toDrop = invStack.copy();
-                        dropped += toDrop.getCount();
-                        player.getInventory().setItem(i, ItemStack.EMPTY);
-                        spawnItemEntity(player, toDrop);
+                    if (!invStack.isEmpty() && invStack.getItem() instanceof CommandItem) {
+                        CommandItem cmdItem = (CommandItem) invStack.getItem();
+                        // Solo gli item con lo stesso ID specifico
+                        if (cmdItem.getDefinitionId().equals(dropItemId)) {
+                            ItemStack toDrop = invStack.copy();
+                            dropped += toDrop.getCount();
+                            player.getInventory().setItem(i, ItemStack.EMPTY);
+                            spawnItemEntity(player, toDrop);
+                        }
                     }
                 }
                 
