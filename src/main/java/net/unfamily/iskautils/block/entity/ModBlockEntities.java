@@ -12,6 +12,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 
+import java.util.function.Supplier;
+
 public class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, IskaUtils.MOD_ID);
@@ -21,6 +23,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("hellfire_igniter", () ->
                     BlockEntityType.Builder.of(HellfireIgniterBlockEntity::new,
                             ModBlocks.HELLFIRE_IGNITER.get()).build(null));
+
+    public static final Supplier<BlockEntityType<RubberLogBlockEntity>> RUBBER_LOG = 
+            BLOCK_ENTITIES.register("rubber_log", 
+                    () -> BlockEntityType.Builder.of(RubberLogBlockEntity::new, 
+                            ModBlocks.RUBBER_LOG.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);

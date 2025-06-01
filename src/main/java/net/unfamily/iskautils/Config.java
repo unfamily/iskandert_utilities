@@ -119,6 +119,27 @@ public class Config
                     "If both this and prioritizeEnergy are true, both resources will be consumed")
             .define("103_portableDislocatorPrioritizeXp", false);
 
+    // Rubber tree sap refill configuration
+    private static final ModConfigSpec.IntValue RUBBER_SAP_MIN_REFILL_TIME = BUILDER
+            .comment("Minimum time in ticks for rubber log to refill with sap",
+                    "Default: 6000 (5 minutes)")
+            .defineInRange("200_rubberSapMinRefillTime", 6000, 0, Integer.MAX_VALUE);
+            
+    private static final ModConfigSpec.IntValue RUBBER_SAP_MAX_REFILL_TIME = BUILDER
+            .comment("Maximum time in ticks for rubber log to refill with sap",
+                    "Default: 18000 (15 minutes)")
+            .defineInRange("201_rubberSapMaxRefillTime", 18000, 0, Integer.MAX_VALUE);
+            
+    private static final ModConfigSpec.DoubleValue RUBBER_SAP_DROP_CHANCE = BUILDER
+            .comment("Chance (0.0-1.0) for rubber logs to drop sap when broken",
+                    "Default: 0.25 (25%)")
+            .defineInRange("202_rubberSapDropChance", 0.25, 0.0, 1.0);
+            
+    private static final ModConfigSpec.DoubleValue RUBBER_SAP_LOG_CHANCE = BUILDER
+            .comment("Chance (0.0-1.0) for each log block in a rubber tree to have sap",
+                    "Default: 0.25 (25%)")
+            .defineInRange("203_rubberSapLogChance", 0.25, 0.0, 1.0);
+
     static {
         BUILDER.pop(); // End of general_utilities category
         
@@ -159,6 +180,10 @@ public class Config
     public static int portableDislocatorXpConsume;
     public static boolean portableDislocatorPrioritizeEnergy;
     public static boolean portableDislocatorPrioritizeXp;
+    public static int rubberSapMinRefillTime;
+    public static int rubberSapMaxRefillTime;
+    public static double rubberSapDropChance;
+    public static double rubberSapLogChance;
     public static String externalScriptsPath;
 
     @SubscribeEvent
@@ -183,6 +208,10 @@ public class Config
         portableDislocatorXpConsume = PORTABLE_DISLOCATOR_XP_CONSUME.get();
         portableDislocatorPrioritizeEnergy = PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY.get();
         portableDislocatorPrioritizeXp = PORTABLE_DISLOCATOR_PRIORITIZE_XP.get();
+        rubberSapMinRefillTime = RUBBER_SAP_MIN_REFILL_TIME.get();
+        rubberSapMaxRefillTime = RUBBER_SAP_MAX_REFILL_TIME.get();
+        rubberSapDropChance = RUBBER_SAP_DROP_CHANCE.get();
+        rubberSapLogChance = RUBBER_SAP_LOG_CHANCE.get();
         externalScriptsPath = EXTERNAL_SCRIPTS_PATH.get();
     }
 }

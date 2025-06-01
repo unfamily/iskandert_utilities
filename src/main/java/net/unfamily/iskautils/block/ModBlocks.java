@@ -10,14 +10,17 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.standard.*;
 import net.unfamily.iskautils.block.player.*;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SaplingBlock;
 import net.unfamily.iskautils.block.PlateBaseBlock;
 import net.unfamily.iskautils.block.SmoothBlackstoneWallBlock;
 import net.unfamily.iskautils.block.PotionPlateBlock;
 import net.unfamily.iskautils.block.RaftBlock;
+import net.unfamily.iskautils.block.RubberSaplingBlock;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -107,6 +110,39 @@ public class ModBlocks {
             () -> new StairBlock(SMOOTH_BLACKSTONE.get().defaultBlockState(), SMOOTH_BLACKSTONE_PROPERTIES));
     public static final DeferredBlock<Block> SMOOTH_BLACKSTONE_WALL = BLOCKS.register("smooth_blackstone_wall",
             () -> new SmoothBlackstoneWallBlock(SMOOTH_BLACKSTONE_PROPERTIES));
+
+    // ===== RUBBER TREE BLOCKS =====
+    private static final BlockBehaviour.Properties RUBBER_LOG_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
+            .strength(2.0f)
+            .sound(SoundType.WOOD)
+            .randomTicks(); // Per il rifornimento della linfa
+            
+    private static final BlockBehaviour.Properties RUBBER_LEAVES_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.PLANT)
+            .strength(0.2f)
+            .sound(SoundType.GRASS)
+            .noOcclusion()
+            .isValidSpawn((state, level, pos, type) -> false)
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false);
+    
+    private static final BlockBehaviour.Properties RUBBER_SAPLING_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.PLANT)
+            .noCollission()
+            .randomTicks()
+            .instabreak()
+            .sound(SoundType.GRASS)
+            .pushReaction(PushReaction.DESTROY);
+            
+    public static final DeferredBlock<RubberLogBlock> RUBBER_LOG = BLOCKS.register("rubber_log",
+            () -> new RubberLogBlock(RUBBER_LOG_PROPERTIES));
+            
+    public static final DeferredBlock<LeavesBlock> RUBBER_LEAVES = BLOCKS.register("rubber_leaves",
+            () -> new LeavesBlock(RUBBER_LEAVES_PROPERTIES));
+            
+    public static final DeferredBlock<RubberSaplingBlock> RUBBER_SAPLING = BLOCKS.register("rubber_sapling",
+            () -> new RubberSaplingBlock(RUBBER_SAPLING_PROPERTIES));
 
     // ===== PLATE BASE BLOCK (vector type, texture above and below plate_base) =====
     public static final DeferredBlock<PlateBaseBlock> PLATE_BASE_BLOCK = BLOCKS.register("plate_base_block",

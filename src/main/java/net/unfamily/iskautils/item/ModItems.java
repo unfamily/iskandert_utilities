@@ -9,6 +9,7 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
+import net.unfamily.iskautils.item.custom.TreeTapItem;  
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,34 @@ public class ModItems {
     // Registered as a Curio when Curios is available
     public static final DeferredItem<Item> PORTABLE_DISLOCATOR = ITEMS.register("portable_dislocator",
             () -> new PortableDislocatorItem(new Item.Properties().stacksTo(1)));
+            
+    // ===== RUBBER TREE ITEMS =====
+    
+    // Sap item dropped from rubber logs
+    public static final DeferredItem<Item> SAP = ITEMS.register("sap",
+            () -> new Item(ITEM_PROPERTIES));
+            
+    // Rubber item created from sap
+    public static final DeferredItem<Item> RUBBER = ITEMS.register("rubber",
+            () -> new Item(ITEM_PROPERTIES));
+            
+    // Tree tap for collecting sap
+    public static final DeferredItem<Item> TREE_TAP = ITEMS.register("treetap",
+            () -> new TreeTapItem(new Item.Properties().durability(64)));
+            
+    // Electric tree tap for collecting sap (no durability)
+    public static final DeferredItem<Item> ELECTRIC_TREE_TAP = ITEMS.register("electric_treetap",
+            () -> new TreeTapItem(new Item.Properties().stacksTo(1)));
+            
+    // Rubber tree blocks
+    public static final DeferredItem<Item> RUBBER_LOG = ITEMS.register("rubber_log",
+            () -> new BlockItem(ModBlocks.RUBBER_LOG.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_LEAVES = ITEMS.register("rubber_leaves",
+            () -> new BlockItem(ModBlocks.RUBBER_LEAVES.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_SAPLING = ITEMS.register("rubber_sapling",
+            () -> new BlockItem(ModBlocks.RUBBER_SAPLING.get(), ITEM_PROPERTIES));
 
     // ===== STANDARD VECTOR PLATE ITEMS =====
     

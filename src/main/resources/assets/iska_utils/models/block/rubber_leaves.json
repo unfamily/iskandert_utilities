@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/leaves",
+  "textures": {
+    "all": "iska_utils:block/rubber_leaves"
+  }
+} 
