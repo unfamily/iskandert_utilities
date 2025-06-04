@@ -7,6 +7,16 @@
   "item.iska_utils.ultra_module": "Modulo Vettoriale Ultra",
   "item.iska_utils.vector_charm": "Amuleto Vettoriale",
   "item.iska_utils.portable_dislocator": "Dislocatore Portatile",
+  "item.iska_utils.sap": "Linfa di Gomma",
+  "item.iska_utils.rubber": "Gomma",
+  "item.iska_utils.treetap": "Estrattore di Linfa",
+  "item.iska_utils.electric_treetap": "Estrattore di Linfa Elettrico",
+  
+  "block.iska_utils.rubber_log": "Tronco di Gomma",
+  "block.iska_utils.rubber_log_empty": "Tronco di Gomma",
+  "block.iska_utils.rubber_log_filled": "Tronco di Gomma",
+  "block.iska_utils.rubber_leaves": "Foglie di Gomma",
+  "block.iska_utils.rubber_sapling": "Arboscello di Gomma",
   
   "block.iska_utils.slow_vect": "Piastra Vettoriale Lenta per Mob",
   "block.iska_utils.moderate_vect": "Piastra Vettoriale Moderata per Mob",
@@ -33,6 +43,7 @@
   "block.iska_utils.iska_utils_cobweb": "Piastra Trappola Ragnatela",
 
   "creativetab.iska_utils.tab": "Utilità di Iska",
+  "itemGroup.iska_utils.command_items": "Oggetti di Comando di Iska",
 
   "block.iska_utils.smooth_blackstone": "Pietra Nera Levigata",
   "block.iska_utils.smooth_blackstone_slab": "Lastra di Pietra Nera Levigata",
@@ -40,6 +51,7 @@
   "block.iska_utils.smooth_blackstone_wall": "Muretto di Pietra Nera Levigata",
   "block.iska_utils.plate_base_block": "Piastra Base",
   
+  "key.categories.iska_utils": "Utilità di Iska",
   "key.category.iska_utils": "Utilità di Iska",
   "key.iska_utils.vector_vertical": "Impostazione Verticale Amuleto Vettoriale",
   "key.iska_utils.vector_horizontal": "Impostazione Orizzontale Amuleto Vettoriale",

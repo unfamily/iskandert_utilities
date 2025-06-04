@@ -64,15 +64,9 @@ public class CommandItemRegistry {
      * Event handler per aggiungere item ai tab creativi
      */
     private static void onBuildCreativeModeTabContents(BuildCreativeModeTabContentsEvent event) {
-        // Gestisce solo il nostro tab
-        if (event.getTabKey() == COMMAND_ITEMS_TAB.getKey()) {
-            // Aggiunge tutti gli item di comando visibili al tab
-            for (DeferredHolder<Item, CommandItem> item : REGISTERED_ITEMS.values()) {
-                if (item.get().getDefinition().isCreativeTabVisible()) {
-                    event.accept(item.get());
-                }
-            }
-        }
+        // Non aggiungiamo più elementi al tab dei command item poiché ora
+        // sono tutti visualizzati nel tab principale di IskaUtils
+        // Il tab viene comunque mantenuto per compatibilità, ma vuoto
     }
     
     /**

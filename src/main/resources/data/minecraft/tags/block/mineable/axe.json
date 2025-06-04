@@ -1,6 +1,9 @@
 {
   "replace": false,
   "values": [
-    "iska_utils:raft"
+    "iska_utils:raft",
+    "iska_utils:rubber_log",
+    "iska_utils:rubber_log_filled",
+    "iska_utils:rubber_log_empty"
   ]
 } 

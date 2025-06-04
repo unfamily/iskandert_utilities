@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "iska_utils:item/electric_treetap"
+    "layer0": "iska_utils:item/treetap_electric"
   }
 } 

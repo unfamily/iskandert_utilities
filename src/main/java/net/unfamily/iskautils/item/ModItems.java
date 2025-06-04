@@ -74,6 +74,12 @@ public class ModItems {
     public static final DeferredItem<Item> RUBBER_LOG = ITEMS.register("rubber_log",
             () -> new BlockItem(ModBlocks.RUBBER_LOG.get(), ITEM_PROPERTIES));
             
+    public static final DeferredItem<Item> RUBBER_LOG_FILLED = ITEMS.register("rubber_log_filled",
+            () -> new BlockItem(ModBlocks.RUBBER_LOG_FILLED.get(), new Item.Properties().stacksTo(64)));
+            
+    public static final DeferredItem<Item> RUBBER_LOG_EMPTY = ITEMS.register("rubber_log_empty",
+            () -> new BlockItem(ModBlocks.RUBBER_LOG_EMPTY.get(), new Item.Properties().stacksTo(64)));
+            
     public static final DeferredItem<Item> RUBBER_LEAVES = ITEMS.register("rubber_leaves",
             () -> new BlockItem(ModBlocks.RUBBER_LEAVES.get(), ITEM_PROPERTIES));
             

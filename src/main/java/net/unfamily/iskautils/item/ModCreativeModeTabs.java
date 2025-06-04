@@ -35,6 +35,26 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.EXTREME_MODULE.get());
                                 pOutput.accept(ModItems.ULTRA_MODULE.get());
                                 
+                                // Rubber Tree Items
+                                pOutput.accept(ModItems.SAP.get());
+                                pOutput.accept(ModItems.RUBBER.get());
+                                pOutput.accept(ModItems.TREE_TAP.get());
+                                pOutput.accept(ModItems.ELECTRIC_TREE_TAP.get());
+                                pOutput.accept(ModItems.RUBBER_LOG.get());
+                                pOutput.accept(ModItems.RUBBER_LEAVES.get());
+                                pOutput.accept(ModItems.RUBBER_SAPLING.get());
+                                
+                                // Command Items
+                                // Aggiungiamo tutti gli oggetti di comando visibili al tab principale
+                                Map<String, DeferredHolder<Item, CommandItem>> commandItems = 
+                                    CommandItemRegistry.getAllItems();
+                                for (DeferredHolder<Item, CommandItem> itemHolder : commandItems.values()) {
+                                    CommandItem item = itemHolder.get();
+                                    if (item.getDefinition().isCreativeTabVisible()) {
+                                        pOutput.accept(item);
+                                    }
+                                }
+                                
                                 // Standard Vector Plates
                                 pOutput.accept(ModItems.SLOW_VECT.get());
                                 pOutput.accept(ModItems.MODERATE_VECT.get());

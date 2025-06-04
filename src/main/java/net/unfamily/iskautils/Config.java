@@ -118,30 +118,37 @@ public class Config
             .comment("If true, XP will be consumed before energy when both are available",
                     "If both this and prioritizeEnergy are true, both resources will be consumed")
             .define("103_portableDislocatorPrioritizeXp", false);
-
-    // Rubber tree sap refill configuration
-    private static final ModConfigSpec.IntValue RUBBER_SAP_MIN_REFILL_TIME = BUILDER
-            .comment("Minimum time in ticks for rubber log to refill with sap",
-                    "Default: 6000 (5 minutes)")
-            .defineInRange("200_rubberSapMinRefillTime", 6000, 0, Integer.MAX_VALUE);
             
-    private static final ModConfigSpec.IntValue RUBBER_SAP_MAX_REFILL_TIME = BUILDER
-            .comment("Maximum time in ticks for rubber log to refill with sap",
-                    "Default: 18000 (15 minutes)")
-            .defineInRange("201_rubberSapMaxRefillTime", 18000, 0, Integer.MAX_VALUE);
-            
-    private static final ModConfigSpec.DoubleValue RUBBER_SAP_DROP_CHANCE = BUILDER
-            .comment("Chance (0.0-1.0) for rubber logs to drop sap when broken",
-                    "Default: 0.25 (25%)")
-            .defineInRange("202_rubberSapDropChance", 0.25, 0.0, 1.0);
-            
-    private static final ModConfigSpec.DoubleValue RUBBER_SAP_LOG_CHANCE = BUILDER
-            .comment("Chance (0.0-1.0) for each log block in a rubber tree to have sap",
-                    "Default: 0.25 (25%)")
-            .defineInRange("203_rubberSapLogChance", 0.25, 0.0, 1.0);
-
     static {
         BUILDER.pop(); // End of general_utilities category
+        
+        // === Rubber Tree Configuration ===
+        BUILDER.comment("Rubber Tree Configuration").push("rubber_tree");
+    }
+    
+    public static final ModConfigSpec.IntValue MIN_SAP_REFILL_TIME = BUILDER
+            .comment("Minimum time in ticks for a rubber log to refill with sap (1 tick = 1/20 second)")
+            .defineInRange("000_minSapRefillTime", 600, 0, Integer.MAX_VALUE);
+            
+    public static final ModConfigSpec.IntValue MAX_SAP_REFILL_TIME = BUILDER
+            .comment("Maximum time in ticks for a rubber log to refill with sap (1 tick = 1/20 second)")
+            .defineInRange("001_maxSapRefillTime", 1800, 0, Integer.MAX_VALUE);
+
+
+    static {
+        BUILDER.pop(); // End of rubber_tree category
+        
+        // Category for Development/Advanced Configuration
+        BUILDER.comment("Tweaks Configuration").push("tweaks");
+        }
+ 
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>>  sticky_fluids = BUILDER
+            .comment("List of fluids that should be sticky")
+            .defineList("000_sticky_fluids", java.util.Arrays.asList("#c:oil"), obj -> obj instanceof String);
+
+            
+    static {
+        BUILDER.pop(); // pop rubber_sap category
         
         // Category for Development/Advanced Configuration
         BUILDER.comment("Development and Advanced Configuration").push("dev");
@@ -180,11 +187,8 @@ public class Config
     public static int portableDislocatorXpConsume;
     public static boolean portableDislocatorPrioritizeEnergy;
     public static boolean portableDislocatorPrioritizeXp;
-    public static int rubberSapMinRefillTime;
-    public static int rubberSapMaxRefillTime;
-    public static double rubberSapDropChance;
-    public static double rubberSapLogChance;
     public static String externalScriptsPath;
+    public static java.util.List<String> stickyFluids;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -208,10 +212,12 @@ public class Config
         portableDislocatorXpConsume = PORTABLE_DISLOCATOR_XP_CONSUME.get();
         portableDislocatorPrioritizeEnergy = PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY.get();
         portableDislocatorPrioritizeXp = PORTABLE_DISLOCATOR_PRIORITIZE_XP.get();
-        rubberSapMinRefillTime = RUBBER_SAP_MIN_REFILL_TIME.get();
-        rubberSapMaxRefillTime = RUBBER_SAP_MAX_REFILL_TIME.get();
-        rubberSapDropChance = RUBBER_SAP_DROP_CHANCE.get();
-        rubberSapLogChance = RUBBER_SAP_LOG_CHANCE.get();
         externalScriptsPath = EXTERNAL_SCRIPTS_PATH.get();
+        stickyFluids = new java.util.ArrayList<>(sticky_fluids.get());
+    }
+    
+    @SubscribeEvent
+    static void onReload(final ModConfigEvent.Reloading event) {
+        onLoad(event);
     }
 }

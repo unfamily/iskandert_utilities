@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "iska_utils:block/rubber_log_world"
+    }
+  }
+} 

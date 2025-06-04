@@ -1,7 +1,12 @@
 {
-  "parent": "minecraft:block/cube_column",
+  "parent": "minecraft:block/cube",
   "textures": {
-    "end": "iska_utils:block/rubber_log_top",
-    "side": "iska_utils:block/rubber_log_empty"
+    "particle": "iska_utils:block/rubber_log",
+    "north": "iska_utils:block/rubber_log_empty",
+    "south": "iska_utils:block/rubber_log",
+    "east": "iska_utils:block/rubber_log",
+    "west": "iska_utils:block/rubber_log",
+    "up": "iska_utils:block/rubber_log_top",
+    "down": "iska_utils:block/rubber_log_top"
   }
 } 

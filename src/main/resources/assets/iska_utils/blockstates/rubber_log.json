@@ -1,129 +1,15 @@
 {
   "variants": {
-    "axis=y,has_sap=false": {
+    "axis=x": {
+      "model": "iska_utils:block/rubber_log_horizontal",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
       "model": "iska_utils:block/rubber_log"
     },
-    "axis=z,has_sap=false": {
-      "model": "iska_utils:block/rubber_log",
-      "x": 90
-    },
-    "axis=x,has_sap=false": {
-      "model": "iska_utils:block/rubber_log",
-      "x": 90,
-      "y": 90
-    },
-    
-    "axis=y,has_sap=true,sap_filled=false,facing=north": {
-      "model": "iska_utils:block/rubber_log_empty",
-      "y": 0
-    },
-    "axis=y,has_sap=true,sap_filled=false,facing=east": {
-      "model": "iska_utils:block/rubber_log_empty",
-      "y": 90
-    },
-    "axis=y,has_sap=true,sap_filled=false,facing=south": {
-      "model": "iska_utils:block/rubber_log_empty",
-      "y": 180
-    },
-    "axis=y,has_sap=true,sap_filled=false,facing=west": {
-      "model": "iska_utils:block/rubber_log_empty",
-      "y": 270
-    },
-    
-    "axis=y,has_sap=true,sap_filled=true,facing=north": {
-      "model": "iska_utils:block/rubber_log_filled",
-      "y": 0
-    },
-    "axis=y,has_sap=true,sap_filled=true,facing=east": {
-      "model": "iska_utils:block/rubber_log_filled",
-      "y": 90
-    },
-    "axis=y,has_sap=true,sap_filled=true,facing=south": {
-      "model": "iska_utils:block/rubber_log_filled",
-      "y": 180
-    },
-    "axis=y,has_sap=true,sap_filled=true,facing=west": {
-      "model": "iska_utils:block/rubber_log_filled",
-      "y": 270
-    },
-    
-    "axis=z,has_sap=true,sap_filled=false,facing=north": {
-      "model": "iska_utils:block/rubber_log_empty_horizontal",
-      "x": 90
-    },
-    "axis=z,has_sap=true,sap_filled=false,facing=east": {
-      "model": "iska_utils:block/rubber_log_empty_horizontal",
-      "x": 90,
-      "y": 90
-    },
-    "axis=z,has_sap=true,sap_filled=false,facing=south": {
-      "model": "iska_utils:block/rubber_log_empty_horizontal",
-      "x": 90,
-      "y": 180
-    },
-    "axis=z,has_sap=true,sap_filled=false,facing=west": {
-      "model": "iska_utils:block/rubber_log_empty_horizontal",
-      "x": 90,
-      "y": 270
-    },
-    
-    "axis=z,has_sap=true,sap_filled=true,facing=north": {
-      "model": "iska_utils:block/rubber_log_filled_horizontal",
-      "x": 90
-    },
-    "axis=z,has_sap=true,sap_filled=true,facing=east": {
-      "model": "iska_utils:block/rubber_log_filled_horizontal",
-      "x": 90,
-      "y": 90
-    },
-    "axis=z,has_sap=true,sap_filled=true,facing=south": {
-      "model": "iska_utils:block/rubber_log_filled_horizontal",
-      "x": 90,
-      "y": 180
-    },
-    "axis=z,has_sap=true,sap_filled=true,facing=west": {
-      "model": "iska_utils:block/rubber_log_filled_horizontal",
-      "x": 90,
-      "y": 270
-    },
-    
-    "axis=x,has_sap=true,sap_filled=false,facing=north": {
-      "model": "iska_utils:block/rubber_log_empty_horizontal",
-      "x": 90,
-      "y": 90
-    },
-    "axis=x,has_sap=true,sap_filled=false,facing=east": {
-      "model": "iska_utils:block/rubber_log_empty_horizontal",
-      "x": 90,
-      "y": 180
-    },
-    "axis=x,has_sap=true,sap_filled=false,facing=south": {
-      "model": "iska_utils:block/rubber_log_empty_horizontal",
-      "x": 90,
-      "y": 270
-    },
-    "axis=x,has_sap=true,sap_filled=false,facing=west": {
-      "model": "iska_utils:block/rubber_log_empty_horizontal",
-      "x": 90
-    },
-    
-    "axis=x,has_sap=true,sap_filled=true,facing=north": {
-      "model": "iska_utils:block/rubber_log_filled_horizontal",
-      "x": 90,
-      "y": 90
-    },
-    "axis=x,has_sap=true,sap_filled=true,facing=east": {
-      "model": "iska_utils:block/rubber_log_filled_horizontal",
-      "x": 90,
-      "y": 180
-    },
-    "axis=x,has_sap=true,sap_filled=true,facing=south": {
-      "model": "iska_utils:block/rubber_log_filled_horizontal",
-      "x": 90,
-      "y": 270
-    },
-    "axis=x,has_sap=true,sap_filled=true,facing=west": {
-      "model": "iska_utils:block/rubber_log_filled_horizontal",
+    "axis=z": {
+      "model": "iska_utils:block/rubber_log_horizontal",
       "x": 90
     }
   }

@@ -23,11 +23,12 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("hellfire_igniter", () ->
                     BlockEntityType.Builder.of(HellfireIgniterBlockEntity::new,
                             ModBlocks.HELLFIRE_IGNITER.get()).build(null));
-
-    public static final Supplier<BlockEntityType<RubberLogBlockEntity>> RUBBER_LOG = 
-            BLOCK_ENTITIES.register("rubber_log", 
-                    () -> BlockEntityType.Builder.of(RubberLogBlockEntity::new, 
-                            ModBlocks.RUBBER_LOG.get()).build(null));
+                            
+    // BlockEntity per il nuovo blocco di legno di gomma vuoto
+    public static final Supplier<BlockEntityType<RubberLogEmptyBlockEntity>> RUBBER_LOG_EMPTY = 
+            BLOCK_ENTITIES.register("rubber_log_empty", 
+                    () -> BlockEntityType.Builder.of(RubberLogEmptyBlockEntity::new, 
+                            ModBlocks.RUBBER_LOG_EMPTY.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);

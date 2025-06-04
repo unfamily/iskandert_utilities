@@ -7,6 +7,16 @@
   "item.iska_utils.ultra_module": "Ultra Vector Module",
   "item.iska_utils.vector_charm": "Vector Charm",
   "item.iska_utils.portable_dislocator": "Portable Dislocator",
+  "item.iska_utils.sap": "Rubber Sap",
+  "item.iska_utils.rubber": "Rubber",
+  "item.iska_utils.treetap": "Tree Tap",
+  "item.iska_utils.electric_treetap": "Electric Tree Tap",
+  
+  "block.iska_utils.rubber_log": "Rubber Log",
+  "block.iska_utils.rubber_log_empty": "Rubber Log",
+  "block.iska_utils.rubber_log_filled": "Rubber Log",
+  "block.iska_utils.rubber_leaves": "Rubber Leaves",
+  "block.iska_utils.rubber_sapling": "Rubber Sapling",
   
   "block.iska_utils.slow_vect": "Mobfarm Slow Vector Plate",
   "block.iska_utils.moderate_vect": "Mobfarm Moderate Vector Plate",
@@ -33,6 +43,7 @@
   "block.iska_utils.iska_utils_cobweb": "Cobweb Trap Plate",
   
   "creativetab.iska_utils.tab": "Iska's Utilities",
+  "itemGroup.iska_utils.command_items": "Iska's Command Items",
   
   "block.iska_utils.smooth_blackstone": "Smooth Blackstone",
   "block.iska_utils.smooth_blackstone_slab": "Smooth Blackstone Slab",
@@ -40,6 +51,7 @@
   "block.iska_utils.smooth_blackstone_wall": "Smooth Blackstone Wall",
   "block.iska_utils.plate_base_block": "Plate Base",
   
+  "key.categories.iska_utils": "Iska's Utilities",
   "key.category.iska_utils": "Iska's Utilities",
   "key.iska_utils.vector_vertical": "Vector Charm Vertical Setting",
   "key.iska_utils.vector_horizontal": "Vector Charm Horizontal Setting",

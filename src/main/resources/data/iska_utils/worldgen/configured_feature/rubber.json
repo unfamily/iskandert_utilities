@@ -2,7 +2,7 @@
   "type": "minecraft:tree",
   "config": {
     "ignore_vines": true,
-    "force_dirt": false,
+    "force_dirt": true,
     "dirt_provider": {
       "type": "minecraft:simple_state_provider",
       "state": {
@@ -19,26 +19,54 @@
       "type": "minecraft:weighted_state_provider",
       "entries": [
         {
-          "weight": 3,
+          "weight": 100,
           "data": {
             "Name": "iska_utils:rubber_log",
             "Properties": {
               "axis": "y",
-              "has_sap": "false",
-              "sap_filled": "false",
               "facing": "north"
             }
           }
         },
         {
-          "weight": 1,
+          "weight": 25,
           "data": {
-            "Name": "iska_utils:rubber_log",
+            "Name": "iska_utils:rubber_log_filled",
             "Properties": {
               "axis": "y",
               "has_sap": "true",
               "sap_filled": "true",
               "facing": "north"
+            }
+          }
+        },
+        {
+          "weight": 25,
+          "data": {
+            "Name": "iska_utils:rubber_log_filled",
+            "Properties": {
+              "axis": "y",
+              "facing": "west"
+            }
+          }
+        },
+        {
+          "weight": 25,
+          "data": {
+            "Name": "iska_utils:rubber_log_filled",
+            "Properties": {
+              "axis": "y",
+              "facing": "east"
+            }
+          }
+        },
+        {
+          "weight": 25,
+          "data": {
+            "Name": "iska_utils:rubber_log_filled",
+            "Properties": {
+              "axis": "y",
+              "facing": "south"
             }
           }
         }

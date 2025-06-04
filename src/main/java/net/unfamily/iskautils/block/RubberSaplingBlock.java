@@ -1,44 +1,39 @@
 package net.unfamily.iskautils.block;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SaplingBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.unfamily.iskautils.worldgen.ModConfiguredFeatures;
-import net.unfamily.iskautils.worldgen.ModPlacedFeatures;
+import net.unfamily.iskautils.worldgen.tree.ModTreeGrowers;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Una classe personalizzata per il germoglio dell'albero di gomma.
- * Implementazione semplificata che non richiede TreeGrower/AbstractTreeGrower.
+ * Classe per il germoglio dell'albero di gomma.
+ * Estende SaplingBlock per utilizzare il sistema standard di crescita degli alberi di Minecraft.
  */
 public class RubberSaplingBlock extends SaplingBlock {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RubberSaplingBlock.class);
+    public static final MapCodec<RubberSaplingBlock> CODEC = simpleCodec(RubberSaplingBlock::new);
     
     public RubberSaplingBlock(Properties properties) {
-        // Usiamo un dummy TreeGrower nullo poiché sovrascriviamo il metodo advanceTree
-        super(null, properties);
+        super(ModTreeGrowers.RUBBER, properties);
+        LOGGER.debug("RubberSaplingBlock creato con TreeGrower: {}", ModTreeGrowers.RUBBER);
     }
     
     @Override
-    public void advanceTree(ServerLevel level, BlockPos pos, BlockState state, RandomSource random) {
-        // La logica per far crescere l'albero qui
-        // Invece di usare TreeGrower, usiamo direttamente il PlacedFeature dell'albero
-        if (state.getValue(STAGE) == 0) {
-            // Non è ancora pronto, imposta solo lo stadio a 1
-            level.setBlock(pos, state.setValue(STAGE, 1), 4);
-        } else {
-            // È pronto per crescere, prova a generare l'albero
-            // Rimuove il sapling
-            level.removeBlock(pos, false);
-            
-            // Prova a posizionare l'albero
-            if (!ModPlacedFeatures.placeRubberTree(level, level.getChunkSource().getGenerator(), pos, random)) {
-                // Se fallisce, rimetti il sapling
-                level.setBlock(pos, state, 4);
-            }
-        }
+    public @NotNull MapCodec<? extends SaplingBlock> codec() {
+        return CODEC;
+    }
+    
+    @Override
+    protected boolean mayPlaceOn(BlockState state, BlockGetter level, BlockPos pos) {
+        // Verifica che il terreno sotto sia valido (non acqua o lava)
+        return state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) || 
+               state.is(Blocks.COARSE_DIRT) || state.is(Blocks.PODZOL) || 
+               state.is(Blocks.FARMLAND);
     }
 } 

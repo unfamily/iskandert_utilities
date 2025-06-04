@@ -21,6 +21,15 @@ import net.unfamily.iskautils.block.SmoothBlackstoneWallBlock;
 import net.unfamily.iskautils.block.PotionPlateBlock;
 import net.unfamily.iskautils.block.RaftBlock;
 import net.unfamily.iskautils.block.RubberSaplingBlock;
+import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.world.level.block.FenceBlock;
+import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.ButtonBlock;
+import net.minecraft.world.level.block.PressurePlateBlock;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.TrapDoorBlock;
+import net.minecraft.world.level.block.state.properties.BlockSetType;
+import net.minecraft.world.level.block.state.properties.WoodType;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -115,8 +124,13 @@ public class ModBlocks {
     private static final BlockBehaviour.Properties RUBBER_LOG_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.WOOD)
             .strength(2.0f)
-            .sound(SoundType.WOOD)
-            .randomTicks(); // Per il rifornimento della linfa
+            .sound(SoundType.WOOD);
+            
+            
+    private static final BlockBehaviour.Properties RUBBER_LOG_SAP_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
+            .strength(2.0f)
+            .sound(SoundType.WOOD);
             
     private static final BlockBehaviour.Properties RUBBER_LEAVES_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.PLANT)
@@ -135,14 +149,38 @@ public class ModBlocks {
             .sound(SoundType.GRASS)
             .pushReaction(PushReaction.DESTROY);
             
+    // Proprietà dei blocchi di legno, per riutilizzo
+    private static final BlockBehaviour.Properties RUBBER_WOOD_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
+            .strength(2.0f)
+            .sound(SoundType.WOOD);
+            
+    private static final BlockBehaviour.Properties RUBBER_PLANKS_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
+            .strength(2.0f, 3.0f)
+            .sound(SoundType.WOOD);
+            
+    // Standard placeable block (visible in the creative tab)
     public static final DeferredBlock<RubberLogBlock> RUBBER_LOG = BLOCKS.register("rubber_log",
             () -> new RubberLogBlock(RUBBER_LOG_PROPERTIES));
+            
+    // Filled block with sap
+    public static final DeferredBlock<RubberLogFilledBlock> RUBBER_LOG_FILLED = BLOCKS.register("rubber_log_filled",
+            () -> new RubberLogFilledBlock(RUBBER_LOG_SAP_PROPERTIES));
+            
+    // Empty block with sap
+    public static final DeferredBlock<RubberLogEmptyBlock> RUBBER_LOG_EMPTY = BLOCKS.register("rubber_log_empty",
+            () -> new RubberLogEmptyBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.WOOD)
+                    .strength(2.0f)
+                    .sound(SoundType.WOOD)));
             
     public static final DeferredBlock<LeavesBlock> RUBBER_LEAVES = BLOCKS.register("rubber_leaves",
             () -> new LeavesBlock(RUBBER_LEAVES_PROPERTIES));
             
     public static final DeferredBlock<RubberSaplingBlock> RUBBER_SAPLING = BLOCKS.register("rubber_sapling",
             () -> new RubberSaplingBlock(RUBBER_SAPLING_PROPERTIES));
+
 
     // ===== PLATE BASE BLOCK (vector type, texture above and below plate_base) =====
     public static final DeferredBlock<PlateBaseBlock> PLATE_BASE_BLOCK = BLOCKS.register("plate_base_block",

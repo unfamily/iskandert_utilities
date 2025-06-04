@@ -72,6 +72,7 @@ public class IskaUtils {
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         
+        
         // ===== DYNAMIC POTION PLATE SYSTEM =====
         // IMPORTANT: This must happen BEFORE registering the DeferredRegisters
         // to ensure blocks are available when registries are built
@@ -159,6 +160,8 @@ public class IskaUtils {
             // Register CUTOUT rendering for the slow_vect block
             event.enqueueWork(() -> {
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.SLOW_VECT.get(), RenderType.cutout());
+                // Aggiungi RenderType cutout per il rubber_sapling
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.RUBBER_SAPLING.get(), RenderType.cutout());
             });
         }
         

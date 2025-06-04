@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "iska_utils:block/rubber_log_empty"
+    },
+    "facing=east": {
+      "model": "iska_utils:block/rubber_log_empty",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "iska_utils:block/rubber_log_empty",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "iska_utils:block/rubber_log_empty",
+      "y": 270
+    }
+  }
+} 
