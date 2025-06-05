@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    " BA"
+  ],
+  "key": {
+    "A": {
+      "tag": "minecraft:planks/rubber"
+    },
+    "B": {
+      "tag": "c:rubber_sap"
+    }
+  },
+  "result": {
+    "id": "iska_utils:treetap",
+    "count": 1
+  }
+} 
