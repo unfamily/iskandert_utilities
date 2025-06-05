@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "tag": "minecraft:rubber_logs"
+    }
+  ],
+  "result": {
+    "id": "iska_utils:rubber_planks",
+    "count": 4
+  }
+} 
