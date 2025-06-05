@@ -8,6 +8,7 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
+import net.unfamily.iskautils.item.custom.ElectricTreeTapItem;
 
 @EventBusSubscriber(modid = IskaUtils.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public class ModItemCapabilities {
@@ -40,6 +41,20 @@ public class ModItemCapabilities {
                     return null;
                 },
                 ModItems.PORTABLE_DISLOCATOR.get()
+        );
+        
+        // Register energy capability for Electric TreeTap
+        event.registerItem(
+                Capabilities.EnergyStorage.ITEM,
+                (stack, context) -> {
+                    if (stack.getItem() instanceof ElectricTreeTapItem treeTap) {
+                        if (treeTap.canStoreEnergy()) {
+                            return new ElectricTreeTapEnergyStorage(treeTap, stack);
+                        }
+                    }
+                    return null;
+                },
+                ModItems.ELECTRIC_TREE_TAP.get()
         );
     }
     
@@ -156,6 +171,64 @@ public class ModItemCapabilities {
         @Override
         public boolean canReceive() {
             return dislocator.canStoreEnergy();
+        }
+    }
+    
+    /**
+     * Energy storage implementation for Electric TreeTap
+     */
+    public static class ElectricTreeTapEnergyStorage implements IEnergyStorage {
+        private final ElectricTreeTapItem treeTap;
+        private final net.minecraft.world.item.ItemStack stack;
+        
+        public ElectricTreeTapEnergyStorage(ElectricTreeTapItem treeTap, net.minecraft.world.item.ItemStack stack) {
+            this.treeTap = treeTap;
+            this.stack = stack;
+        }
+        
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int currentEnergy = treeTap.getEnergyStored(stack);
+            int maxEnergy = treeTap.getMaxEnergyStored(stack);
+            int energyToReceive = Math.min(maxReceive, maxEnergy - currentEnergy);
+            
+            if (!simulate && energyToReceive > 0) {
+                treeTap.setEnergyStored(stack, currentEnergy + energyToReceive);
+            }
+            
+            return energyToReceive;
+        }
+        
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            int currentEnergy = treeTap.getEnergyStored(stack);
+            int energyToExtract = Math.min(maxExtract, currentEnergy);
+            
+            if (!simulate && energyToExtract > 0) {
+                treeTap.setEnergyStored(stack, currentEnergy - energyToExtract);
+            }
+            
+            return energyToExtract;
+        }
+        
+        @Override
+        public int getEnergyStored() {
+            return treeTap.getEnergyStored(stack);
+        }
+        
+        @Override
+        public int getMaxEnergyStored() {
+            return treeTap.getMaxEnergyStored(stack);
+        }
+        
+        @Override
+        public boolean canExtract() {
+            return false; // Electric TreeTap doesn't allow energy extraction
+        }
+        
+        @Override
+        public boolean canReceive() {
+            return treeTap.canStoreEnergy();
         }
     }
 } 

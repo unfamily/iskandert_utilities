@@ -9,8 +9,8 @@
   "item.iska_utils.portable_dislocator": "Portable Dislocator",
   "item.iska_utils.sap": "Rubber Sap",
   "item.iska_utils.rubber": "Rubber",
-  "item.iska_utils.treetap": "Tree Tap",
-  "item.iska_utils.electric_treetap": "Electric Tree Tap",
+  "item.iska_utils.treetap": "Treetap",
+  "item.iska_utils.electric_treetap": "Electric Treetap",
   
   "block.iska_utils.rubber_log": "Rubber Log",
   "block.iska_utils.stripped_rubber_log": "Stripped Rubber Log",
@@ -37,6 +37,7 @@
   
   "block.iska_utils.hellfire_igniter": "Hellfire Igniter",
   "block.iska_utils.raft": "Raft Bridge",
+  "block.iska_utils.rubber_sap_extractor": "Rubber Sap Extractor",
   
   "block.iska_utils.iska_utils_slowness": "Slowness Trap Plate",
   "block.iska_utils.iska_utils_poison": "Poison Trap Plate",
@@ -104,5 +105,8 @@
 
   "message.iska_utils.item_restriction.dropped": "§4Stage restriction: invalid items in inventory dropped",
   "message.iska_utils.item_restriction.deleted": "§4Stage restriction: invalid items in inventory deleted",
-  "message.iska_utils.item_restriction.blocked": "§4Stage restriction: invalid items in inventory blocked"
+  "message.iska_utils.item_restriction.blocked": "§4Stage restriction: invalid items in inventory blocked",
+
+  "item.iska_utils.electric_treetap.tooltip.energy": "Energy: ",
+  "item.iska_utils.electric_treetap.message.no_energy": "Not enough energy to use the Electric Treetap!"
 }

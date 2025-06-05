@@ -54,6 +54,14 @@ public class ModBlocks {
             .requiresCorrectToolForDrops()
             .lightLevel((state) -> state.getValue(HellfireIgniterBlock.POWERED) ? 7 : 0);
     
+    // Properties for Rubber Sap Extractor
+    private static final BlockBehaviour.Properties RUBBER_SAP_EXTRACTOR_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.STONE)
+            .strength(3.5f, 6.0f)
+            .sound(SoundType.COPPER)
+            .requiresCorrectToolForDrops()
+            .lightLevel((state) -> state.getValue(RubberSapExtractorBlock.POWERED) ? 7 : 0);
+    
     // ===== STANDARD VECTOR PLATES (DON'T AFFECT PLAYERS) =====
     
     // Slow Vector Plate (slowest)
@@ -103,6 +111,10 @@ public class ModBlocks {
     // Hellfire Igniter (creates fire when activated by redstone)
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
             () -> new HellfireIgniterBlock(HELLFIRE_PROPERTIES));
+            
+    // Rubber Sap Extractor (automatically extracts sap from rubber logs)
+    public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",
+            () -> new RubberSapExtractorBlock(RUBBER_SAP_EXTRACTOR_PROPERTIES));
 
     // ===== SMOOTH BLACKSTONE =====
     private static final BlockBehaviour.Properties SMOOTH_BLACKSTONE_PROPERTIES = BlockBehaviour.Properties.of()

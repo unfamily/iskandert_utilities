@@ -9,7 +9,8 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
-import net.unfamily.iskautils.item.custom.TreeTapItem;  
+import net.unfamily.iskautils.item.custom.TreeTapItem;
+import net.unfamily.iskautils.item.custom.ElectricTreeTapItem;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public class ModItems {
             
     // Electric tree tap for collecting sap (no durability)
     public static final DeferredItem<Item> ELECTRIC_TREE_TAP = ITEMS.register("electric_treetap",
-            () -> new TreeTapItem(new Item.Properties().stacksTo(1)));
+            () -> new ElectricTreeTapItem(new Item.Properties().stacksTo(1)));
             
     // Rubber tree blocks
     public static final DeferredItem<Item> RUBBER_LOG = ITEMS.register("rubber_log",
@@ -155,6 +156,10 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.PLATE_BASE_BLOCK.get(), ITEM_PROPERTIES));
     public static final DeferredItem<Item> RAFT = ITEMS.register("raft",
             () -> new BlockItem(ModBlocks.RAFT.get(), ITEM_PROPERTIES));
+
+    // ===== UTILITY BLOCKS =====
+    public static final DeferredItem<Item> RUBBER_SAP_EXTRACTOR = ITEMS.register("rubber_sap_extractor", 
+            () -> new BlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), ITEM_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

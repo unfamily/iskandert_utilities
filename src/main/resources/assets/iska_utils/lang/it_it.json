@@ -10,7 +10,7 @@
   "item.iska_utils.sap": "Linfa di Gomma",
   "item.iska_utils.rubber": "Gomma",
   "item.iska_utils.treetap": "Estrattore di Linfa",
-  "item.iska_utils.electric_treetap": "Estrattore di Linfa Elettrico",
+  "item.iska_utils.electric_treetap": "Spillatore Elettrico",
   
   "block.iska_utils.rubber_log": "Tronco di Gomma",
   "block.iska_utils.stripped_rubber_log": "Tronco di Gomma Scortecciato",
@@ -35,8 +35,9 @@
   "block.iska_utils.player_extreme_vect": "Piastra Vettoriale Estrema per Giocatori",
   "block.iska_utils.player_ultra_vect": "Piastra Vettoriale Ultra per Giocatori",
   
-  "block.iska_utils.hellfire_igniter":"Innesco Infernale",
+  "block.iska_utils.hellfire_igniter": "Innesco Infernale",
   "block.iska_utils.raft": "Ponte a Zattera",
+  "block.iska_utils.rubber_sap_extractor": "Estrattore di Linfa",
 
   "block.iska_utils.iska_utils_slowness": "Piastra Trappola Lentezza",
   "block.iska_utils.iska_utils_poison": "Piastra Trappola Veleno",
@@ -104,5 +105,8 @@
 
   "message.iska_utils.item_restriction.dropped": "§4Restrizione di stage: oggetti non validi nell'inventario rilasciati",
   "message.iska_utils.item_restriction.deleted": "§4Restrizione di stage: oggetti non validi nell'inventario eliminati",
-  "message.iska_utils.item_restriction.blocked": "§4Restrizione di stage: oggetti non validi nell'inventario bloccati"
+  "message.iska_utils.item_restriction.blocked": "§4Restrizione di stage: oggetti non validi nell'inventario bloccati",
+
+  "item.iska_utils.electric_treetap.tooltip.energy": "Energia: ",
+  "item.iska_utils.electric_treetap.message.no_energy": "Energia insufficiente per usare lo Spillatore Elettrico!"
 }

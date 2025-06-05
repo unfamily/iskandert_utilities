@@ -48,6 +48,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.STRIPPED_RUBBER_WOOD.get());
                                 pOutput.accept(ModItems.RUBBER_PLANKS.get());
                                 pOutput.accept(ModItems.RUBBER_BLOCK.get());
+                                pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
 
                                 //not inxeding this items in the creative tab
                                 //pOutput.accept(ModItems.RUBBER_LOG_FILLED.get());

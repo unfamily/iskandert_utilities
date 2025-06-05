@@ -30,6 +30,12 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(RubberLogEmptyBlockEntity::new, 
                             ModBlocks.RUBBER_LOG_EMPTY.get()).build(null));
 
+    // BlockEntity per il RubberSapExtractor
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RubberSapExtractorBlockEntity>> RUBBER_SAP_EXTRACTOR =
+            BLOCK_ENTITIES.register("rubber_sap_extractor", () ->
+                    BlockEntityType.Builder.of(RubberSapExtractorBlockEntity::new,
+                            ModBlocks.RUBBER_SAP_EXTRACTOR.get()).build(null));
+
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }
@@ -45,6 +51,18 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof HellfireIgniterBlockEntity hellfireEntity) {
                             return hellfireEntity.getEnergyStorage();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register energy capability for RubberSapExtractor
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    RUBBER_SAP_EXTRACTOR.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof RubberSapExtractorBlockEntity extractorEntity) {
+                            return extractorEntity.getEnergyStorage();
                         }
                         return null;
                     }

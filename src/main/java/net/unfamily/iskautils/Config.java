@@ -134,6 +134,25 @@ public class Config
             .comment("Maximum time in ticks for a rubber log to refill with sap (1 tick = 1/20 second)")
             .defineInRange("001_maxSapRefillTime", 1800, 0, Integer.MAX_VALUE);
 
+    public static final ModConfigSpec.IntValue ELECTRIC_TREETAP_ENERGY_CONSUME = BUILDER
+            .comment("Amount of energy consumed by the Electric Treetap")
+            .defineInRange("002_electricTreetapEnergyConsume", 10, 0, Integer.MAX_VALUE);
+
+    public static final ModConfigSpec.IntValue ELECTRIC_TREETAP_ENERGY_BUFFER = BUILDER
+            .comment("Amount of energy the Electric Treetap can be stored")
+            .defineInRange("003_electricTreetapEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
+
+    public static final ModConfigSpec.IntValue RUBBER_SAP_EXTRACTOR_ENERGY_CONSUME = BUILDER
+            .comment("Amount of energy consumed by the Rubber Sap Extractor per operation")
+            .defineInRange("004_rubberSapExtractorEnergyConsume", 10, 0, Integer.MAX_VALUE);
+
+    public static final ModConfigSpec.IntValue RUBBER_SAP_EXTRACTOR_ENERGY_BUFFER = BUILDER
+            .comment("Amount of energy the Rubber Sap Extractor can store")
+            .defineInRange("005_rubberSapExtractorEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
+
+    public static final ModConfigSpec.IntValue RUBBER_SAP_EXTRACTOR_SPEED = BUILDER
+            .comment("Speed of the Rubber Sap Extractor in ticks (lower is faster)")
+            .defineInRange("006_rubberSapExtractorSpeed", 200, 1, Integer.MAX_VALUE);
 
     static {
         BUILDER.pop(); // End of rubber_tree category
@@ -189,6 +208,11 @@ public class Config
     public static boolean portableDislocatorPrioritizeXp;
     public static String externalScriptsPath;
     public static java.util.List<String> stickyFluids;
+    public static int electricTreetapEnergyConsume;
+    public static int electricTreetapEnergyBuffer;
+    public static int rubberSapExtractorEnergyConsume;
+    public static int rubberSapExtractorEnergyBuffer;
+    public static int rubberSapExtractorSpeed;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -214,6 +238,11 @@ public class Config
         portableDislocatorPrioritizeXp = PORTABLE_DISLOCATOR_PRIORITIZE_XP.get();
         externalScriptsPath = EXTERNAL_SCRIPTS_PATH.get();
         stickyFluids = new java.util.ArrayList<>(sticky_fluids.get());
+        electricTreetapEnergyConsume = ELECTRIC_TREETAP_ENERGY_CONSUME.get();
+        electricTreetapEnergyBuffer = ELECTRIC_TREETAP_ENERGY_BUFFER.get();
+        rubberSapExtractorEnergyConsume = RUBBER_SAP_EXTRACTOR_ENERGY_CONSUME.get();
+        rubberSapExtractorEnergyBuffer = RUBBER_SAP_EXTRACTOR_ENERGY_BUFFER.get();
+        rubberSapExtractorSpeed = RUBBER_SAP_EXTRACTOR_SPEED.get();
     }
     
     @SubscribeEvent
