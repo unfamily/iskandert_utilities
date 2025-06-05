@@ -3,6 +3,9 @@
   "values": [
     "iska_utils:rubber_log",
     "iska_utils:rubber_log_filled",
-    "iska_utils:rubber_log_empty"
+    "iska_utils:rubber_log_empty",
+    "iska_utils:stripped_rubber_log",
+    "iska_utils:rubber_wood",
+    "iska_utils:stripped_rubber_wood"
   ]
 } 
