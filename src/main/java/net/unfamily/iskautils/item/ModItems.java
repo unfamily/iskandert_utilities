@@ -74,6 +74,18 @@ public class ModItems {
     public static final DeferredItem<Item> RUBBER_LOG = ITEMS.register("rubber_log",
             () -> new BlockItem(ModBlocks.RUBBER_LOG.get(), ITEM_PROPERTIES));
             
+    public static final DeferredItem<Item> STRIPPED_RUBBER_LOG = ITEMS.register("stripped_rubber_log",
+            () -> new BlockItem(ModBlocks.STRIPPED_RUBBER_LOG.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_WOOD = ITEMS.register("rubber_wood",
+            () -> new BlockItem(ModBlocks.RUBBER_WOOD.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> STRIPPED_RUBBER_WOOD = ITEMS.register("stripped_rubber_wood",
+            () -> new BlockItem(ModBlocks.STRIPPED_RUBBER_WOOD.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_PLANKS = ITEMS.register("rubber_planks",
+            () -> new BlockItem(ModBlocks.RUBBER_PLANKS.get(), ITEM_PROPERTIES));
+            
     public static final DeferredItem<Item> RUBBER_LOG_FILLED = ITEMS.register("rubber_log_filled",
             () -> new BlockItem(ModBlocks.RUBBER_LOG_FILLED.get(), new Item.Properties().stacksTo(64)));
             
@@ -85,6 +97,9 @@ public class ModItems {
             
     public static final DeferredItem<Item> RUBBER_SAPLING = ITEMS.register("rubber_sapling",
             () -> new BlockItem(ModBlocks.RUBBER_SAPLING.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> RUBBER_BLOCK = ITEMS.register("rubber_block",
+            () -> new BlockItem(ModBlocks.RUBBER_BLOCK.get(), ITEM_PROPERTIES));
 
     // ===== STANDARD VECTOR PLATE ITEMS =====
     

@@ -13,10 +13,15 @@
   "item.iska_utils.electric_treetap": "Estrattore di Linfa Elettrico",
   
   "block.iska_utils.rubber_log": "Tronco di Gomma",
+  "block.iska_utils.stripped_rubber_log": "Tronco di Gomma Scortecciato",
   "block.iska_utils.rubber_log_empty": "Tronco di Gomma",
   "block.iska_utils.rubber_log_filled": "Tronco di Gomma",
   "block.iska_utils.rubber_leaves": "Foglie di Gomma",
   "block.iska_utils.rubber_sapling": "Arboscello di Gomma",
+  "block.iska_utils.rubber_wood": "Legno di Gomma",
+  "block.iska_utils.stripped_rubber_wood": "Legno di Gomma Scortecciato",
+  "block.iska_utils.rubber_planks": "Assi di Gomma",
+  "block.iska_utils.rubber_block": "Blocco di Gomma",
   
   "block.iska_utils.slow_vect": "Piastra Vettoriale Lenta per Mob",
   "block.iska_utils.moderate_vect": "Piastra Vettoriale Moderata per Mob",

@@ -164,6 +164,22 @@ public class ModBlocks {
     public static final DeferredBlock<RubberLogBlock> RUBBER_LOG = BLOCKS.register("rubber_log",
             () -> new RubberLogBlock(RUBBER_LOG_PROPERTIES));
             
+    // Stripped Rubber Log
+    public static final DeferredBlock<StrippedRubberLogBlock> STRIPPED_RUBBER_LOG = BLOCKS.register("stripped_rubber_log",
+            () -> new StrippedRubberLogBlock(RUBBER_LOG_PROPERTIES));
+            
+    // Rubber Wood (6 faces with bark)
+    public static final DeferredBlock<RubberWoodBlock> RUBBER_WOOD = BLOCKS.register("rubber_wood",
+            () -> new RubberWoodBlock(RUBBER_WOOD_PROPERTIES));
+
+    // Stripped Rubber Wood (6 faces without bark)
+    public static final DeferredBlock<StrippedRubberWoodBlock> STRIPPED_RUBBER_WOOD = BLOCKS.register("stripped_rubber_wood",
+            () -> new StrippedRubberWoodBlock(RUBBER_WOOD_PROPERTIES));
+
+    // Rubber Planks
+    public static final DeferredBlock<RubberPlanksBlock> RUBBER_PLANKS = BLOCKS.register("rubber_planks",
+            () -> new RubberPlanksBlock(RUBBER_PLANKS_PROPERTIES));
+            
     // Filled block with sap
     public static final DeferredBlock<RubberLogFilledBlock> RUBBER_LOG_FILLED = BLOCKS.register("rubber_log_filled",
             () -> new RubberLogFilledBlock(RUBBER_LOG_SAP_PROPERTIES));
@@ -181,6 +197,12 @@ public class ModBlocks {
     public static final DeferredBlock<RubberSaplingBlock> RUBBER_SAPLING = BLOCKS.register("rubber_sapling",
             () -> new RubberSaplingBlock(RUBBER_SAPLING_PROPERTIES));
 
+    // Rubber Block
+    public static final DeferredBlock<Block> RUBBER_BLOCK = BLOCKS.register("rubber_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(2.0f)
+                    .sound(SoundType.SHROOMLIGHT)));
 
     // ===== PLATE BASE BLOCK (vector type, texture above and below plate_base) =====
     public static final DeferredBlock<PlateBaseBlock> PLATE_BASE_BLOCK = BLOCKS.register("plate_base_block",

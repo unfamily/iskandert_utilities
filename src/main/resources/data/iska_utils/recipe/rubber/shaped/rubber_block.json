@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    "AAA",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "item": "iska_utils:rubber"
+    }
+  },
+  "result": {
+    "id": "iska_utils:rubber_block",
+    "count": 1
+  }
+} 

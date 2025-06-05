@@ -13,10 +13,15 @@
   "item.iska_utils.electric_treetap": "Electric Tree Tap",
   
   "block.iska_utils.rubber_log": "Rubber Log",
+  "block.iska_utils.stripped_rubber_log": "Stripped Rubber Log",
+  "block.iska_utils.rubber_wood": "Rubber Wood",
+  "block.iska_utils.stripped_rubber_wood": "Stripped Rubber Wood",
+  "block.iska_utils.rubber_planks": "Rubber Planks",
   "block.iska_utils.rubber_log_empty": "Rubber Log",
   "block.iska_utils.rubber_log_filled": "Rubber Log",
   "block.iska_utils.rubber_leaves": "Rubber Leaves",
   "block.iska_utils.rubber_sapling": "Rubber Sapling",
+  "block.iska_utils.rubber_block": "Rubber Block",
   
   "block.iska_utils.slow_vect": "Mobfarm Slow Vector Plate",
   "block.iska_utils.moderate_vect": "Mobfarm Moderate Vector Plate",

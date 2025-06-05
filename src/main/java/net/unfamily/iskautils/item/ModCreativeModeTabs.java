@@ -41,8 +41,17 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.TREE_TAP.get());
                                 pOutput.accept(ModItems.ELECTRIC_TREE_TAP.get());
                                 pOutput.accept(ModItems.RUBBER_LOG.get());
+                                pOutput.accept(ModItems.STRIPPED_RUBBER_LOG.get());
                                 pOutput.accept(ModItems.RUBBER_LEAVES.get());
                                 pOutput.accept(ModItems.RUBBER_SAPLING.get());
+                                pOutput.accept(ModItems.RUBBER_WOOD.get());
+                                pOutput.accept(ModItems.STRIPPED_RUBBER_WOOD.get());
+                                pOutput.accept(ModItems.RUBBER_PLANKS.get());
+                                pOutput.accept(ModItems.RUBBER_BLOCK.get());
+
+                                //not inxeding this items in the creative tab
+                                //pOutput.accept(ModItems.RUBBER_LOG_FILLED.get());
+                                //pOutput.accept(ModItems.RUBBER_LOG_EMPTY.get());
                                 
                                 // Command Items
                                 // Aggiungiamo tutti gli oggetti di comando visibili al tab principale

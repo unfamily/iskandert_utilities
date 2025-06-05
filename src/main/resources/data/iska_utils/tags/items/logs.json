@@ -1,9 +1,0 @@
-{
-  "replace": false,
-  "values": [
-    "iska_utils:rubber_log",
-    "iska_utils:rubber_log_world",
-    "iska_utils:rubber_log_filled",
-    "iska_utils:rubber_log_empty"
-  ]
-} 
