@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
     {
-      "tag": "minecraft:rubber_logs"
+      "tag": "iska_utils:rubber_logs"
     }
   ],
   "result": {
