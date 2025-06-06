@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AA",
+    "AA",
+    "AA"
+  ],
+  "key": {
+    "A": {
+      "item": "iska_utils:rubber_planks"  
+    }
+  },
+  "result": {
+    "id": "iska_utils:rubber_door",
+    "count": 3
+  }
+} 

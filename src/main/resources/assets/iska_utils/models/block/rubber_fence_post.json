@@ -1,0 +1,6 @@
+{
+  "parent": "block/fence_post",
+  "textures": {
+    "texture": "iska_utils:block/rubber_planks"
+  }
+} 

@@ -1,0 +1,6 @@
+{
+  "parent": "block/pressure_plate_down",
+  "textures": {
+    "texture": "iska_utils:block/rubber_planks"
+  }
+} 

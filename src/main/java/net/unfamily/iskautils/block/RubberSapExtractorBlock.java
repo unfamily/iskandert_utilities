@@ -37,8 +37,7 @@ import net.unfamily.iskautils.item.ModItems;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Il Rubber Sap Extractor è un macchinario che estrae automaticamente
- * la linfa dai tronchi di gomma pieni (RubberLogFilled)
+ * The Rubber Sap Extractor is a machine that automatically extracts sap from filled rubber logs (RubberLogFilled)
  */
 public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implements EntityBlock {
     
@@ -46,20 +45,25 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final MapCodec<RubberSapExtractorBlock> CODEC = simpleCodec(RubberSapExtractorBlock::new);
     
-    // VoxelShape per la hitbox del blocco (corpo principale)
+    // VoxelShape for the block hitbox (main body)
     private static final VoxelShape BASE_SHAPE = Block.box(0, 0, 0, 16, 16, 16);
     
-    // VoxelShape per l'estensione superiore (tubo)
+    // VoxelShape for the upper extension (pipe)
     private static final VoxelShape PIPE_NORTH = Block.box(5, 16, 0, 11, 27, 16);
     private static final VoxelShape PIPE_SOUTH = Block.box(5, 16, 0, 11, 27, 16);
     private static final VoxelShape PIPE_WEST = Block.box(0, 16, 5, 16, 27, 11);
     private static final VoxelShape PIPE_EAST = Block.box(0, 16, 5, 16, 27, 11);
     
-    // VoxelShape combinati
+    // combined VoxelShape
     private static final VoxelShape SHAPE_NORTH = Shapes.or(BASE_SHAPE, PIPE_NORTH);
     private static final VoxelShape SHAPE_SOUTH = Shapes.or(BASE_SHAPE, PIPE_SOUTH);
     private static final VoxelShape SHAPE_WEST = Shapes.or(BASE_SHAPE, PIPE_WEST);
     private static final VoxelShape SHAPE_EAST = Shapes.or(BASE_SHAPE, PIPE_EAST);
+
+    @Override
+	public VoxelShape getVisualShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+		return Shapes.empty();
+	}
     
     public RubberSapExtractorBlock(Properties properties) {
         super(properties);
@@ -87,12 +91,17 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
 
 	@Override
 	public int getLightBlock(BlockState state, BlockGetter worldIn, BlockPos pos) {
-		return 15;
+		return 0;
 	}
     
+	@Override
+	public boolean propagatesSkylightDown(BlockState state, BlockGetter reader, BlockPos pos) {
+		return true;
+	}
+
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // Il blocco deve affacciarsi nella direzione opposta a quella in cui il giocatore sta guardando
+        // the block must face the opposite direction to the player
         return this.defaultBlockState()
             .setValue(FACING, context.getHorizontalDirection().getOpposite())
             .setValue(POWERED, Boolean.FALSE);
@@ -115,7 +124,7 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
     }
 
     /**
-     * Gestisce il click destro sul blocco
+     * Handles the right click on the block
      */
     @Override   
     public InteractionResult useWithoutItem(BlockState blockstate, Level world, BlockPos pos, Player entity, BlockHitResult hit) {
@@ -124,19 +133,22 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
         }
         
         if (world.getBlockEntity(pos) instanceof RubberSapExtractorBlockEntity blockEntity) {
-            // Verifichiamo se c'è del sap da estrarre
-            ItemStack sapStack = blockEntity.removeItem(0, 1);
+            ItemStack sapStack = blockEntity.getItem(0);
             if (!sapStack.isEmpty()) {
-                // Creiamo un'entità per il sap estratto
                 double x = pos.getX() + 0.5;
                 double y = pos.getY() + 0.5;
                 double z = pos.getZ() + 0.5;
                 
-                ItemEntity itemEntity = new ItemEntity(world, x, y, z, sapStack);
+                // create an item entity for the whole sap stack
+                ItemStack droppedStack = sapStack.copy();
+                ItemEntity itemEntity = new ItemEntity(world, x, y, z, droppedStack);
                 itemEntity.setDefaultPickUpDelay();
                 world.addFreshEntity(itemEntity);
                 
-                // Suono di estrazione
+                // remove all sap from inventory
+                blockEntity.removeItem(0, sapStack.getCount());
+                
+                // extraction sound
                 world.playSound(null, pos, SoundEvents.COPPER_BREAK, SoundSource.BLOCKS, 0.5f, 1.0f);
                 
                 return InteractionResult.CONSUME;
@@ -145,6 +157,8 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
         
         return InteractionResult.PASS;
     }
+    
+
     
     @Nullable
     @Override
@@ -169,7 +183,7 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
         return expectedType == actualType ? (BlockEntityTicker<A>) ticker : null;
     }
     
-    // Quando il blocco riceve un segnale di redstone
+    // when the block receives a redstone signal
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
         super.neighborChanged(state, level, pos, block, fromPos, isMoving);
@@ -177,11 +191,11 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
         if (!level.isClientSide()) {
             boolean isPowered = level.hasNeighborSignal(pos);
             
-            // Se lo stato di powered è cambiato
+            // if the powered state has changed
             if (isPowered != state.getValue(POWERED)) {
                 level.setBlock(pos, state.setValue(POWERED, isPowered), Block.UPDATE_ALL);
                 
-                // Aggiorna il BlockEntity
+                // update the BlockEntity
                 if (level.getBlockEntity(pos) instanceof RubberSapExtractorBlockEntity blockEntity) {
                     blockEntity.onPoweredStateChanged(isPowered);
                 }
@@ -192,12 +206,12 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
-            // Rilascia gli item dall'inventario quando il blocco viene distrutto
+            // release items from inventory when the block is destroyed
             if (level.getBlockEntity(pos) instanceof RubberSapExtractorBlockEntity blockEntity) {
                 for (int i = 0; i < blockEntity.getItems().size(); i++) {
                     ItemStack stack = blockEntity.getItems().get(i);
                     if (!stack.isEmpty()) {
-                        // Crea un'entità item nel mondo
+                        // create an item entity in the world
                         double x = pos.getX() + 0.5;
                         double y = pos.getY() + 0.5;
                         double z = pos.getZ() + 0.5;

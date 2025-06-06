@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ABA",
+    "ABA"
+  ],
+  "key": {
+    "A": {
+      "item": "iska_utils:rubber_planks"  
+    },
+    "B": {
+      "tag": "c:rods/wooden"
+    }
+  },
+  "result": {
+    "id": "iska_utils:rubber_fence",
+    "count": 3
+  }
+} 

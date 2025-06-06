@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    " BA"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "c:rubber"
+    }
+  },
+  "result": {
+    "id": "iska_utils:treetap",
+    "count": 1
+  }
+} 

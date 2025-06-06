@@ -26,19 +26,15 @@ import net.unfamily.iskautils.block.RubberLogFilledBlock;
 import net.unfamily.iskautils.block.RubberSapExtractorBlock;
 import net.unfamily.iskautils.item.ModItems;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RubberSapExtractorBlockEntity extends BlockEntity implements WorldlyContainer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RubberSapExtractorBlockEntity.class);
-    
-    // Inventario: slot 0 per output (sap)
+    // Inventory: slot 0 for output (sap)
     private final NonNullList<ItemStack> items = NonNullList.withSize(1, ItemStack.EMPTY);
     
-    // Energia
+    // Energy
     private final EnergyStorageImpl energyStorage;
     
-    // Contatori e stato
+    // Counters and state
     private int extractionProgress = 0;
     private int extractionTime = Config.rubberSapExtractorSpeed;
     private boolean isPowered = false;
@@ -49,55 +45,55 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     }
     
     /**
-     * Metodo principale chiamato ad ogni tick del server
+     * Main method called at each server tick
      */
     public static void serverTick(Level level, BlockPos pos, BlockState state, RubberSapExtractorBlockEntity blockEntity) {
-        // Se il blocco è spento (redstone disabilitata), non fare nulla
+        // if the block is powered
         if (state.getValue(RubberSapExtractorBlock.POWERED)) {
             return;
         }
         
-        // Controllo se c'è energia sufficiente
+        // check if there is enough energy
         if (blockEntity.energyStorage.getEnergyStored() < Config.rubberSapExtractorEnergyConsume) {
             return;
         }
         
-        // Solo procedi se c'è spazio nell'inventario di output
+        // only proceed if there is space in the output inventory
         if (blockEntity.isFull()) {
             return;
         }
         
-        // Se non stiamo già estraendo, cerca un blocco riempito
+        // if we are not already extracting, search for a filled log
         if (blockEntity.extractionProgress == 0) {
-            // Ottieni la direzione in cui è rivolto l'estrattore
+            // get the direction in which the extractor is facing
             Direction facing = state.getValue(RubberSapExtractorBlock.FACING);
             
-            // Controlla i blocchi dietro l'estrattore
+            // check the blocks behind the extractor
             Direction opposite = facing.getOpposite();
             BlockPos checkPos = pos.relative(opposite);
             
-            // Funzione per trovare un blocco di rubber log pieno
+            // function to find a filled rubber log block
             BlockPos filledLogPos = blockEntity.findFilledRubberLog(level, checkPos, opposite);
             
-            // Se è stato trovato un blocco pieno, inizia l'estrazione
+            // if a filled log block was found, start the extraction
             if (filledLogPos != null) {
                 blockEntity.extractionProgress = 1;
                 blockEntity.setChanged();
             }
         } 
-        // Se stiamo già estraendo, continua il processo
+        // if we are already extracting, continue the process
         else {
             blockEntity.extractionProgress++;
             
-            // Quando il processo è completato
-            if (blockEntity.extractionProgress >= blockEntity.extractionTime) {
-                // Estrai un sap
+            // reduce the extraction time to make it faster
+            if (blockEntity.extractionProgress >= (blockEntity.extractionTime / 4)) {
+                // extract sap
                 blockEntity.extractSap();
                 
-                // Consuma energia
+                // consume energy
                 blockEntity.energyStorage.extractEnergy(Config.rubberSapExtractorEnergyConsume, false);
                 
-                // Resetta il progresso
+                // reset progress
                 blockEntity.extractionProgress = 0;
                 blockEntity.setChanged();
             }
@@ -105,80 +101,75 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     }
     
     /**
-     * Cerca un blocco di rubber log pieno, verificando prima dietro al blocco e poi salendo
-     * @param level Il mondo
-     * @param startPos Posizione di partenza
-     * @param searchDirection Direzione in cui continuare a cercare
-     * @return La posizione del blocco pieno trovato, o null se non trovato
+     * Searches for a filled rubber log block, checking first behind the block and then going up
+     * @param level The world
+     * @param startPos Starting position
+     * @param searchDirection Direction to continue searching
+     * @return The position of the found filled block, or null if not found
      */
     private BlockPos findFilledRubberLog(Level level, BlockPos startPos, Direction searchDirection) {
         BlockPos currentPos = startPos;
         
-        // Prima controlla se il blocco dietro è un log di rubber pieno
+        // First check if the block behind is a filled rubber log
         BlockState state = level.getBlockState(currentPos);
         if (state.is(ModBlocks.RUBBER_LOG_FILLED.get())) {
             return currentPos;
         }
         
-        // Se è un log di rubber vuoto o un log normale, continua a salire
+        // If it's an empty rubber log or a normal log, continue going up
         if (state.is(ModBlocks.RUBBER_LOG_EMPTY.get()) || state.is(ModBlocks.RUBBER_LOG.get())) {
-            // Continua a salire finché non troviamo un blocco pieno o usciamo dalla colonna di rubber log
+            // Continue going up until we find a filled block or exit the rubber log column
             BlockPos abovePos = currentPos;
-            int maxChecks = 10; // Limite per evitare loop infiniti
+            int maxChecks = 10; // Limit to avoid infinite loops
             
             for (int i = 0; i < maxChecks; i++) {
                 abovePos = abovePos.above();
                 BlockState aboveState = level.getBlockState(abovePos);
                 
-                // Se troviamo un blocco pieno, lo restituiamo
+                // If we find a filled block, return it
                 if (aboveState.is(ModBlocks.RUBBER_LOG_FILLED.get())) {
                     return abovePos;
                 }
                 
-                // Se non è un blocco di rubber log, usciamo dal ciclo
+                // If it's not a rubber log, exit the loop
                 if (!aboveState.is(ModBlocks.RUBBER_LOG_EMPTY.get()) && !aboveState.is(ModBlocks.RUBBER_LOG.get())) {
                     break;
                 }
             }
         }
         
-        // Nessun blocco pieno trovato
+        // No filled block found
         return null;
     }
     
     /**
-     * Estrae un sap dal blocco pieno e lo aggiunge all'inventario
+     * Extracts sap from the filled log and adds it to the inventory
      */
     private void extractSap() {
         if (this.level == null) return;
         
-        // Ottieni la direzione in cui è rivolto l'estrattore
+        // get the direction in which the extractor is facing
         BlockState blockState = this.level.getBlockState(this.getBlockPos());
         if (!blockState.hasProperty(RubberSapExtractorBlock.FACING)) return;
         
         Direction facing = blockState.getValue(RubberSapExtractorBlock.FACING);
         
-        // Controlla i blocchi dietro l'estrattore
+        // check the blocks behind the extractor
         Direction opposite = facing.getOpposite();
         BlockPos checkPos = this.getBlockPos().relative(opposite);
         
-        // Cerca un blocco di rubber log pieno
+        // search for a filled rubber log block
         BlockPos filledLogPos = findFilledRubberLog(this.level, checkPos, opposite);
         
+        // add sap only if a replaceable block is found
         if (filledLogPos != null) {
-            // Aggiungi un sap all'inventario
-            ItemStack sapStack = new ItemStack(ModItems.SAP.get());
-            if (items.get(0).isEmpty()) {
-                items.set(0, sapStack);
-            } else {
-                items.get(0).grow(1);
-            }
-            
-            // Converti il blocco pieno in vuoto preservando tutte le proprietà
+            // get the state of the filled log before modifying it
             BlockState filledLogState = this.level.getBlockState(filledLogPos);
+            
+            // convert the filled log to empty preserving all properties
             BlockState emptyLogState = ModBlocks.RUBBER_LOG_EMPTY.get().defaultBlockState();
             
-            // Preserva solo la proprietà AXIS che è quella che determina l'orientamento
+            // preserve the orientation (AXIS) if present
             if (filledLogState.hasProperty(BlockStateProperties.AXIS) && 
                 emptyLogState.hasProperty(BlockStateProperties.AXIS)) {
                 emptyLogState = emptyLogState.setValue(
@@ -187,17 +178,37 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
                 );
             }
             
-            // Imposta il blocco come vuoto
+            // preserve the original block direction (FACING)
+            if (filledLogState.hasProperty(RubberLogFilledBlock.FACING) && 
+                emptyLogState.hasProperty(RubberLogEmptyBlock.FACING)) {
+                emptyLogState = emptyLogState.setValue(
+                    RubberLogEmptyBlock.FACING, 
+                    filledLogState.getValue(RubberLogFilledBlock.FACING)
+                );
+            }
+            
+            // set the block as empty
             this.level.setBlock(filledLogPos, emptyLogState, Block.UPDATE_ALL);
             
-            // Notifico il cambiamento
-            LOGGER.debug("Converted filled rubber log to empty at {}", filledLogPos);
+            // add ONE sap to the inventory up to the max stack size
+            ItemStack sapStack = new ItemStack(ModItems.SAP.get());
+            int maxStackSize = sapStack.getMaxStackSize();
+            
+            if (items.get(0).isEmpty()) {
+                sapStack.setCount(1);
+                items.set(0, sapStack);
+            } else {
+                ItemStack existingStack = items.get(0);
+                if (existingStack.getCount() < maxStackSize) {
+                    existingStack.grow(1);
+                }
+            }
         }
     }
     
     /**
-     * Verifica se l'inventario di output è pieno
-     * @return true se l'inventario è pieno
+     * Checks if the output inventory is full
+     * @return true if the inventory is full
      */
     private boolean isFull() {
         ItemStack stack = items.get(0);
@@ -205,7 +216,7 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     }
     
     /**
-     * Chiamato quando lo stato powered del blocco cambia
+     * Called when the powered state of the block changes
      */
     public void onPoweredStateChanged(boolean powered) {
         this.isPowered = powered;
@@ -213,8 +224,8 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     }
     
     /**
-     * Restituisce la lista degli item contenuti
-     * @return lista degli item nel contenitore
+     * Returns the list of items contained
+     * @return list of items in the container
      */
     public NonNullList<ItemStack> getItems() {
         return this.items;
@@ -224,13 +235,13 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
         super.saveAdditional(tag, provider);
         
-        // Salva l'inventario
+        // save the inventory
         ContainerHelper.saveAllItems(tag, this.items, provider);
         
-        // Salva lo stato di estrazione
+        // save the extraction state
         tag.putInt("ExtractionProgress", this.extractionProgress);
         
-        // Salva energia
+        // save energy
         tag.putInt("Energy", this.energyStorage.getEnergyStored());
     }
     
@@ -238,13 +249,13 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
         
-        // Carica l'inventario 
+        // load the inventory 
         ContainerHelper.loadAllItems(tag, this.items, provider);
         
-        // Carica lo stato di estrazione
+        // load the extraction state
         this.extractionProgress = tag.getInt("ExtractionProgress");
         
-        // Carica energia
+        // load energy
         this.energyStorage.setEnergy(tag.getInt("Energy"));
     }
     
@@ -262,7 +273,7 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     }
     
     /**
-     * Ottiene lo storage di energia
+     * Gets the energy storage
      */
     public IEnergyStorage getEnergyStorage() {
         return this.energyStorage;
@@ -341,11 +352,11 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     
     @Override
     public boolean canPlaceItemThroughFace(int slot, ItemStack stack, @Nullable Direction direction) {
-        return false; // Non accettiamo input
+        return false; // we don't accept input
     }
     
     @Override
     public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction direction) {
-        return direction == Direction.DOWN && slot == 0; // Solo output dal basso
+        return direction == Direction.DOWN && slot == 0; // only output from the bottom
     }
 } 

@@ -9,6 +9,14 @@
     "iska_utils:rubber_log_empty",
     "iska_utils:rubber_wood",
     "iska_utils:stripped_rubber_wood",
-    "iska_utils:rubber_planks"
+    "iska_utils:rubber_planks",
+    "iska_utils:rubber_fence",
+    "iska_utils:rubber_fence_gate",
+    "iska_utils:rubber_stairs",
+    "iska_utils:rubber_slab",
+    "iska_utils:rubber_trapdoor",
+    "iska_utils:rubber_door",
+    "iska_utils:rubber_pressure_plate",
+    "iska_utils:rubber_button"
   ]
 } 

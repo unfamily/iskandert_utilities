@@ -101,6 +101,31 @@ public class ModItems {
 
     public static final DeferredItem<Item> RUBBER_BLOCK = ITEMS.register("rubber_block",
             () -> new BlockItem(ModBlocks.RUBBER_BLOCK.get(), ITEM_PROPERTIES));
+            
+    // Rubber block variants
+    public static final DeferredItem<Item> RUBBER_STAIRS = ITEMS.register("rubber_stairs",
+            () -> new BlockItem(ModBlocks.RUBBER_STAIRS.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_SLAB = ITEMS.register("rubber_slab",
+            () -> new BlockItem(ModBlocks.RUBBER_SLAB.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_FENCE = ITEMS.register("rubber_fence",
+            () -> new BlockItem(ModBlocks.RUBBER_FENCE.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_FENCE_GATE = ITEMS.register("rubber_fence_gate",
+            () -> new BlockItem(ModBlocks.RUBBER_FENCE_GATE.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_BUTTON = ITEMS.register("rubber_button",
+            () -> new BlockItem(ModBlocks.RUBBER_BUTTON.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_PRESSURE_PLATE = ITEMS.register("rubber_pressure_plate",
+            () -> new BlockItem(ModBlocks.RUBBER_PRESSURE_PLATE.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_DOOR = ITEMS.register("rubber_door",
+            () -> new BlockItem(ModBlocks.RUBBER_DOOR.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> RUBBER_TRAPDOOR = ITEMS.register("rubber_trapdoor",
+            () -> new BlockItem(ModBlocks.RUBBER_TRAPDOOR.get(), ITEM_PROPERTIES));
 
     // ===== STANDARD VECTOR PLATE ITEMS =====
     

@@ -50,6 +50,16 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_BLOCK.get());
                                 pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
 
+                                // Rubber Wood Variants
+                                pOutput.accept(ModItems.RUBBER_STAIRS.get());
+                                pOutput.accept(ModItems.RUBBER_SLAB.get());
+                                pOutput.accept(ModItems.RUBBER_FENCE.get());
+                                pOutput.accept(ModItems.RUBBER_FENCE_GATE.get());
+                                pOutput.accept(ModItems.RUBBER_BUTTON.get());
+                                pOutput.accept(ModItems.RUBBER_PRESSURE_PLATE.get());
+                                pOutput.accept(ModItems.RUBBER_DOOR.get());
+                                pOutput.accept(ModItems.RUBBER_TRAPDOOR.get());
+
                                 //not inxeding this items in the creative tab
                                 //pOutput.accept(ModItems.RUBBER_LOG_FILLED.get());
                                 //pOutput.accept(ModItems.RUBBER_LOG_EMPTY.get());

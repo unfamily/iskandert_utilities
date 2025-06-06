@@ -6,6 +6,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
 import java.util.List;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
 
 /**
  * Blocco di assi di legno di gomma.
@@ -21,6 +24,11 @@ public class RubberPlanksBlock extends Block {
     public MapCodec<? extends Block> codec() {
         return CODEC;
     }
+
+	@Override
+	public int getFlammability(BlockState state, BlockGetter world, BlockPos pos, Direction face) {
+		return 20;
+	}
     
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {

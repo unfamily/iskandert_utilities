@@ -1,0 +1,7 @@
+{
+  "parent": "block/template_orientable_trapdoor_open",
+  "textures": {
+    "texture": "iska_utils:block/rubber_trapdoor"
+  },
+  "render_type": "minecraft:cutout"
+} 

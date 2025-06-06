@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
@@ -83,5 +84,10 @@ public class RubberLogEmptyBlock extends HorizontalDirectionalBlock implements E
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new RubberLogEmptyBlockEntity(pos, state);
+    }
+
+    @Override
+    public int getFlammability(BlockState state, BlockGetter world, BlockPos pos, Direction face) {
+        return 5;
     }
 } 

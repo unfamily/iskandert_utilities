@@ -1,0 +1,6 @@
+{
+  "parent": "block/button_inventory",
+  "textures": {
+    "texture": "iska_utils:block/rubber_planks"
+  }
+} 

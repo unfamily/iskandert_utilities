@@ -60,7 +60,8 @@ public class ModBlocks {
             .strength(3.5f, 6.0f)
             .sound(SoundType.COPPER)
             .requiresCorrectToolForDrops()
-            .lightLevel((state) -> state.getValue(RubberSapExtractorBlock.POWERED) ? 7 : 0);
+            .lightLevel((state) -> state.getValue(HellfireIgniterBlock.POWERED) ? 7 : 3)
+            .noOcclusion();
     
     // ===== STANDARD VECTOR PLATES (DON'T AFFECT PLAYERS) =====
     
@@ -161,7 +162,7 @@ public class ModBlocks {
             .sound(SoundType.GRASS)
             .pushReaction(PushReaction.DESTROY);
             
-    // Proprietà dei blocchi di legno, per riutilizzo
+    // properties for rubber wood blocks, for reuse
     private static final BlockBehaviour.Properties RUBBER_WOOD_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.WOOD)
             .strength(2.0f)
@@ -204,7 +205,7 @@ public class ModBlocks {
                     .sound(SoundType.WOOD)));
             
     public static final DeferredBlock<LeavesBlock> RUBBER_LEAVES = BLOCKS.register("rubber_leaves",
-            () -> new LeavesBlock(RUBBER_LEAVES_PROPERTIES));
+            () -> new RubberLeavesBlock(RUBBER_LEAVES_PROPERTIES));
             
     public static final DeferredBlock<RubberSaplingBlock> RUBBER_SAPLING = BLOCKS.register("rubber_sapling",
             () -> new RubberSaplingBlock(RUBBER_SAPLING_PROPERTIES));
@@ -215,6 +216,41 @@ public class ModBlocks {
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(2.0f)
                     .sound(SoundType.SHROOMLIGHT)));
+                    
+    // ===== RUBBER WOOD VARIANTS =====
+    // Stairs, slabs, fences, fence gates, buttons, pressure plates, doors, trapdoors
+    
+    // Rubber Stairs
+    public static final DeferredBlock<RubberStairsBlock> RUBBER_STAIRS = BLOCKS.register("rubber_stairs",
+            () -> new RubberStairsBlock(RUBBER_PLANKS.get().defaultBlockState(), RUBBER_PLANKS_PROPERTIES));
+            
+    // Rubber Slab
+    public static final DeferredBlock<RubberSlabBlock> RUBBER_SLAB = BLOCKS.register("rubber_slab",
+            () -> new RubberSlabBlock(RUBBER_PLANKS_PROPERTIES));
+            
+    // Rubber Fence
+    public static final DeferredBlock<RubberFenceBlock> RUBBER_FENCE = BLOCKS.register("rubber_fence",
+            () -> new RubberFenceBlock(RUBBER_PLANKS_PROPERTIES));
+            
+    // Rubber Fence Gate
+    public static final DeferredBlock<RubberFenceGateBlock> RUBBER_FENCE_GATE = BLOCKS.register("rubber_fence_gate",
+            () -> new RubberFenceGateBlock(RUBBER_PLANKS_PROPERTIES));
+            
+    // Rubber Button
+    public static final DeferredBlock<RubberButtonBlock> RUBBER_BUTTON = BLOCKS.register("rubber_button",
+            () -> new RubberButtonBlock(RUBBER_PLANKS_PROPERTIES.noCollission()));
+            
+    // Rubber Pressure Plate
+    public static final DeferredBlock<RubberPressurePlateBlock> RUBBER_PRESSURE_PLATE = BLOCKS.register("rubber_pressure_plate",
+            () -> new RubberPressurePlateBlock(RUBBER_PLANKS_PROPERTIES.noCollission()));
+            
+    // Rubber Door
+    public static final DeferredBlock<RubberDoorBlock> RUBBER_DOOR = BLOCKS.register("rubber_door",
+            () -> new RubberDoorBlock(RUBBER_PLANKS_PROPERTIES.noOcclusion()));
+            
+    // Rubber Trapdoor
+    public static final DeferredBlock<RubberTrapDoorBlock> RUBBER_TRAPDOOR = BLOCKS.register("rubber_trapdoor",
+            () -> new RubberTrapDoorBlock(RUBBER_PLANKS_PROPERTIES.noOcclusion()));
 
     // ===== PLATE BASE BLOCK (vector type, texture above and below plate_base) =====
     public static final DeferredBlock<PlateBaseBlock> PLATE_BASE_BLOCK = BLOCKS.register("plate_base_block",

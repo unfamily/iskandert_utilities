@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ACA",
+    "DBD",
+    "ACA"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:ingots/copper"
+    },
+    "B": {
+      "item": "iska_utils:electric_treetap"
+    },
+    "C": {
+      "item": "minecraft:redstone_lamp"
+    },
+    "D": {
+      "tag": "c:ingots/netherite"
+    }
+  },
+  "result": {
+    "id": "iska_utils:rubber_sap_extractor",
+    "count": 1
+  }
+} 

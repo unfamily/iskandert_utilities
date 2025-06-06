@@ -32,6 +32,7 @@ import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.util.ModUtils;
+import net.unfamily.iskautils.util.ModWoodTypes;
 import net.unfamily.iskautils.data.PotionPlateLoader;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.unfamily.iskautils.block.PotionPlateBlock;
@@ -119,6 +120,9 @@ public class IskaUtils {
     private void commonSetup(final FMLCommonSetupEvent event) {
         // Register network messages
         ModMessages.register();
+        
+        // Register wood types
+        ModWoodTypes.register();
         
         // Scan and load command macros
         MacroLoader.scanConfigDirectory();
