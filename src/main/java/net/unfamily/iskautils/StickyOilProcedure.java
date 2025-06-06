@@ -43,11 +43,11 @@ public class StickyOilProcedure {
 			boolean matched = false;
 			
 			if (stickyFluid.startsWith("#")) {
-				// È un tag
+				// It's a tag
 				String tagName = stickyFluid.substring(1);
 				matched = currentFluidState.is(FluidTags.create(ResourceLocation.parse(tagName)));
 			} else {
-				// È un ID di fluido
+				// It's a fluid ID
 				matched = currentFluidState.toString().contains(stickyFluid);
 			}
 			

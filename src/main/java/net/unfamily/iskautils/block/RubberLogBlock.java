@@ -11,8 +11,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
 
 /**
- * Blocco di legno di gomma standard.
- * Visibile nel creative tab e piazzabile dal giocatore.
+ * Standard rubber wood block.
+ * Visible in the creative tab and placeable by the player.
  */
 public class RubberLogBlock extends RotatedPillarBlock {
     public static final MapCodec<RubberLogBlock> CODEC = simpleCodec(RubberLogBlock::new);

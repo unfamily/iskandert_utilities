@@ -17,9 +17,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.block.RubberLogEmptyBlock;
 import net.unfamily.iskautils.block.RubberLogFilledBlock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -27,8 +26,6 @@ import java.util.List;
  * Electric Tree Tap - Electric variant of the TreeTap that consumes energy
  */
 public class ElectricTreeTapItem extends TreeTapItem {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElectricTreeTapItem.class);
-    
     // Energy storage tag
     private static final String ENERGY_TAG = "Energy";
 
@@ -67,11 +64,11 @@ public class ElectricTreeTapItem extends TreeTapItem {
         ItemStack itemStack = context.getItemInHand();
         InteractionHand hand = context.getHand();
 
-        // Check if the block is a filled rubber log
-        if (state.is(ModBlocks.RUBBER_LOG_FILLED.get())) {
-            // Verifichiamo l'energia disponibile
+        // Check if the block is a filled or empty rubber log
+        if (state.is(ModBlocks.RUBBER_LOG_FILLED.get()) || state.is(ModBlocks.RUBBER_LOG_EMPTY.get())) {
+            // Check if we have enough energy
             if (!level.isClientSide() && requiresEnergyToFunction() && !hasEnoughEnergy(itemStack)) {
-                // Non abbastanza energia, non possiamo usare il treetap
+                // Not enough energy, can't use the treetap
                 if (player != null) {
                     player.displayClientMessage(
                         Component.translatable("item.iska_utils.electric_treetap.message.no_energy"),
@@ -80,10 +77,10 @@ public class ElectricTreeTapItem extends TreeTapItem {
                 return InteractionResult.FAIL;
             }
             
-            // Usa il TreeTap standard
+            // Use the standard TreeTap
             InteractionResult result = super.useOn(context);
             
-            // Se l'operazione ha avuto successo, consumiamo energia
+            // If the operation was successful, consume energy
             if (result.consumesAction() && !level.isClientSide()) {
                 consumeEnergyForOperation(itemStack);
             }

@@ -3,8 +3,6 @@ package net.unfamily.iskautils.worldgen.tree;
 import net.minecraft.world.level.block.grower.TreeGrower;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.worldgen.ModConfiguredFeatures;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
@@ -12,8 +10,6 @@ import java.util.Optional;
  * Class that contains all the TreeGrower used in the mod. 
  */
 public class ModTreeGrowers {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ModTreeGrowers.class);
-    
     /**
      * TreeGrower for the rubber tree (rubber tree).
      * Note: the TreeGrower class is final, so we cannot extend it or override it.

@@ -15,16 +15,12 @@ import net.unfamily.iskautils.block.ModBlockEntities;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.RubberLogEmptyBlock;
 import net.unfamily.iskautils.block.RubberLogFilledBlock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** 
  * BlockEntity for the empty rubber log block.
  * Handles the timer for the sap refill.
  */
 public class RubberLogEmptyBlockEntity extends BlockEntity {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RubberLogEmptyBlockEntity.class);
-    
     private int refillTimer;    // Timer for the sap refill, decremented at each tick
 
     public RubberLogEmptyBlockEntity(BlockPos pos, BlockState state) {
@@ -32,7 +28,14 @@ public class RubberLogEmptyBlockEntity extends BlockEntity {
         RandomSource random = RandomSource.create();
         this.refillTimer = Config.MIN_SAP_REFILL_TIME.get() + 
                 random.nextInt(Config.MAX_SAP_REFILL_TIME.get() - Config.MIN_SAP_REFILL_TIME.get());
-        LOGGER.debug("Created new RubberLogEmptyBlockEntity with refill timer: {}", this.refillTimer);
+    }
+
+    /**
+     * Gets the current refill timer value.
+     * @return Current refill timer in ticks
+     */
+    public int getRefillTime() {
+        return this.refillTimer;
     }
 
     /**
@@ -42,7 +45,6 @@ public class RubberLogEmptyBlockEntity extends BlockEntity {
     public void setRefillTime(int ticks) {
         this.refillTimer = ticks;
         this.setChanged();
-        LOGGER.debug("Set refill timer to {} for block at {}", ticks, this.getBlockPos());
     }
     
     /**
@@ -54,7 +56,6 @@ public class RubberLogEmptyBlockEntity extends BlockEntity {
         if (this.refillTimer > 0) {
             this.refillTimer--;
             this.setChanged();
-            LOGGER.debug("Timer decremented to {} for block at {}", this.refillTimer, this.getBlockPos());
         }
         return this.refillTimer <= 0;
     }
@@ -72,7 +73,6 @@ public class RubberLogEmptyBlockEntity extends BlockEntity {
                     .setValue(RubberLogFilledBlock.FACING, facing);
             
             level.setBlock(pos, filledState, Block.UPDATE_ALL);
-            LOGGER.debug("Filled block with sap at {}", pos);
         }
     }
 

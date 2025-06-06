@@ -21,18 +21,15 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.RubberLogEmptyBlockEntity;
 import net.unfamily.iskautils.item.ModItems;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 /**
- * Blocco di legno di gomma con sap pieno.
- * Direzionale verso i 4 punti cardinali.
- * Quando cliccato con un treetap, rilascia sap e diventa un blocco vuoto.
+ * Rubber wood block with full sap.
+ * Directional towards the 4 cardinal points.
+ * When clicked with a treetap, releases sap and becomes an empty block.
  */
 public class RubberLogFilledBlock extends HorizontalDirectionalBlock {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RubberLogFilledBlock.class);
     public static final MapCodec<RubberLogFilledBlock> CODEC = simpleCodec(RubberLogFilledBlock::new);
     
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
@@ -58,34 +55,34 @@ public class RubberLogFilledBlock extends HorizontalDirectionalBlock {
     }
     
     /**
-     * Implementazione alternativa utilizzando un metodo non ereditato ma nostro personalizzato
-     * Verrà chiamato dal TreeTapItem invece di usare il metodo use standard
+     * Alternative implementation using our custom method instead of the standard use method.
+     * Will be called by TreeTapItem instead of using the standard use method.
      */
     public InteractionResult onTapWithTreeTap(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand) {
         ItemStack itemInHand = player.getItemInHand(hand);
         
-        // Solo sul server
+        // Only on server
         if (!level.isClientSide()) {
-            // Danneggia il treetap se è danneggiabile e non siamo in creative
+            // Damage the treetap if it's damageable and we're not in creative mode
             if (itemInHand.isDamageableItem() && !player.getAbilities().instabuild) {
-                // Danneggia l'item di 1
+                // Damage the item by 1
                 int newDamage = itemInHand.getDamageValue() + 1;
                 if (newDamage >= itemInHand.getMaxDamage()) {
-                    // Se l'oggetto si romperebbe, rimuovilo
+                    // If the item would break, remove it
                     itemInHand.setCount(0);
                 } else {
-                    // Altrimenti aggiungi danno
+                    // Otherwise add damage
                     itemInHand.setDamageValue(newDamage);
                 }
             }
             
-            // Rilascia un sap
+            // Release a sap
             ItemStack sapStack = new ItemStack(ModItems.SAP.get());
             if (!player.getInventory().add(sapStack)) {
                 player.drop(sapStack, false);
             }
             
-            // Converti in un blocco vuoto
+            // Convert to an empty block
             int refillTime = Config.MIN_SAP_REFILL_TIME.get() + 
                     level.getRandom().nextInt(Config.MAX_SAP_REFILL_TIME.get() - Config.MIN_SAP_REFILL_TIME.get());
                     
@@ -95,7 +92,7 @@ public class RubberLogFilledBlock extends HorizontalDirectionalBlock {
                     
             level.setBlock(pos, emptyState, Block.UPDATE_ALL);
             
-            // Ottieni il blocco entità e imposta il tempo di ricarica
+            // Get the block entity and set the refill time
             if (level.getBlockEntity(pos) instanceof RubberLogEmptyBlockEntity blockEntity) {
                 blockEntity.setRefillTime(refillTime);
             }
