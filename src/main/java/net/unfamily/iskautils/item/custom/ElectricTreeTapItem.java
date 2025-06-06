@@ -41,8 +41,8 @@ public class ElectricTreeTapItem extends TreeTapItem {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
-        // Energy information
-        if (canStoreEnergy()) {
+        // Energy information - only show if energy is enabled
+        if (canStoreEnergy() && requiresEnergyToFunction()) {
             int energy = getEnergyStored(stack);
             int maxEnergy = getMaxEnergyStored(stack);
             float percentage = (float) energy / Math.max(1, maxEnergy) * 100f;
@@ -105,7 +105,11 @@ public class ElectricTreeTapItem extends TreeTapItem {
      * Check if the item requires energy to function
      */
     public boolean requiresEnergyToFunction() {
-        return Config.electricTreetapEnergyConsume > 0 && canStoreEnergy();
+        if (Config.electricTreetapEnergyConsume <= 0) {
+            return false;
+        }
+        
+        return canStoreEnergy();
     }
     
     /**
@@ -153,7 +157,8 @@ public class ElectricTreeTapItem extends TreeTapItem {
         }
         
         int currentEnergy = getEnergyStored(stack);
-        return currentEnergy >= Config.electricTreetapEnergyConsume;
+        int requiredEnergy = Math.min(Config.electricTreetapEnergyConsume, getMaxEnergyStored(stack));
+        return currentEnergy >= requiredEnergy;
     }
     
     /**
@@ -166,7 +171,7 @@ public class ElectricTreeTapItem extends TreeTapItem {
             return true; // No energy required
         }
         
-        int consumption = Config.electricTreetapEnergyConsume;
+        int consumption = Math.min(Config.electricTreetapEnergyConsume, getMaxEnergyStored(stack));
         if (consumption <= 0) {
             return true; // No consumption
         }

@@ -1,0 +1,23 @@
+{
+    "type": "minecraft:block",
+    "pools": [
+        {
+            "rolls": 1,
+            "conditions": [
+                {
+                    "condition": "minecraft:block_state_property",
+                    "block": "iska_utils:rubber_door",
+                    "properties": {
+                        "half": "lower"
+                    }
+                }
+            ],
+            "entries": [
+                {
+                    "type": "minecraft:item",
+                    "name": "iska_utils:rubber_door"
+                }
+            ]
+        }
+    ]
+} 

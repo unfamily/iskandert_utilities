@@ -1,0 +1,29 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "oritech"
+    }
+  ],
+    "type": "oritech:centrifuge_fluid",
+    "fluidInput": {
+      "amount": 250,
+      "fluid": "#c:oil"
+    },
+    "fluidOutput": {
+      "amount": 0,
+      "fluid": "minecraft:empty"
+    },
+    "ingredients": [
+      {
+        "tag": "c:rubber_sap"
+      }
+    ],
+    "results": [
+      {
+        "id": "iska_utils:tar_slimeball",
+        "count": 1
+      }
+    ],
+    "time": 60
+  }

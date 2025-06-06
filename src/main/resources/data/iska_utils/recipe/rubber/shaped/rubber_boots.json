@@ -1,9 +1,8 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "AAA",
-    "AAA",
-    "AAA"
+    "A A",
+    "A A"
   ],
   "key": {
     "A": {
@@ -11,7 +10,7 @@
     }
   },
   "result": {
-    "id": "iska_utils:rubber_block",
+    "id": "iska_utils:rubber_boots",
     "count": 1
   }
 } 

@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "tag": "c:storage_blocks/tar_slime"
+    }
+  ],
+  "result": {
+    "id": "iska_utils:tar_slimeball",
+    "count": 9
+  }
+} 

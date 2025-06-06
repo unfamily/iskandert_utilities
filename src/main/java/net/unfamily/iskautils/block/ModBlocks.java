@@ -211,8 +211,8 @@ public class ModBlocks {
             () -> new RubberSaplingBlock(RUBBER_SAPLING_PROPERTIES));
 
     // Rubber Block
-    public static final DeferredBlock<Block> RUBBER_BLOCK = BLOCKS.register("rubber_block",
-            () -> new Block(BlockBehaviour.Properties.of()
+    public static final DeferredBlock<RubberBlock> RUBBER_BLOCK = BLOCKS.register("rubber_block",
+            () -> new RubberBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(2.0f)
                     .sound(SoundType.SHROOMLIGHT)));
@@ -266,6 +266,16 @@ public class ModBlocks {
             
     public static final DeferredBlock<RaftBlock> RAFT = BLOCKS.register("raft",
             () -> new RaftBlock(RAFT_PROPERTIES));
+
+    // ===== TAR BLOCK =====
+    public static final DeferredBlock<TarSlimeBlock> TAR_SLIME_BLOCK = BLOCKS.register("tar_slime_block",
+            () -> new TarSlimeBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(0.5f, 1.0f)
+                    .sound(SoundType.SLIME_BLOCK)
+                    .friction(0.8f)
+                    .jumpFactor(0.5f)
+                    .noOcclusion()));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

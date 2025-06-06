@@ -34,6 +34,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.FAST_MODULE.get());
                                 pOutput.accept(ModItems.EXTREME_MODULE.get());
                                 pOutput.accept(ModItems.ULTRA_MODULE.get());
+                                pOutput.accept(ModItems.RUBBER_BOOTS.get());
                                 
                                 // Rubber Tree Items
                                 pOutput.accept(ModItems.SAP.get());
@@ -63,6 +64,10 @@ public class ModCreativeModeTabs {
                                 //not inxeding this items in the creative tab
                                 //pOutput.accept(ModItems.RUBBER_LOG_FILLED.get());
                                 //pOutput.accept(ModItems.RUBBER_LOG_EMPTY.get());
+
+                                // Tar
+                                pOutput.accept(ModItems.TAR_SLIME_BLOCK.get());
+                                pOutput.accept(ModItems.TAR_SLIMEBALL.get());
                                 
                                 // Command Items
                                 // Aggiungiamo tutti gli oggetti di comando visibili al tab principale

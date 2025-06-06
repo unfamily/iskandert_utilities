@@ -12,6 +12,7 @@
   "item.iska_utils.treetap": "Estrattore di Linfa Manuale",
   "item.iska_utils.electric_treetap": "Estrattore di Linfa Elettrico",
   
+  "item.iska_utils.rubber_boots": "Stivali di Gomma",
   "block.iska_utils.rubber_log": "Tronco di Caucciù",
   "block.iska_utils.stripped_rubber_log": "Tronco di Caucciù Scortecciato",
   "block.iska_utils.rubber_log_empty": "Tronco di Caucciù",
@@ -31,6 +32,8 @@
   "block.iska_utils.rubber_pressure_plate": "Piastra di Caucciù",
   "block.iska_utils.rubber_button": "Pulsante di Caucciù",
 
+  "block.iska_utils.tar_slime_block": "Blocco di Gelatina Catramosa",
+  "item.iska_utils.tar_slimeball": "Gelatina Catramosa",
 
   "block.iska_utils.slow_vect": "Piastra Vettoriale Lenta per Mob",
   "block.iska_utils.moderate_vect": "Piastra Vettoriale Moderata per Mob",

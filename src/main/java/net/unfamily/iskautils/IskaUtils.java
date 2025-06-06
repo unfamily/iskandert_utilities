@@ -52,6 +52,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.NeoForge;
+import net.unfamily.iskautils.item.custom.RubberBootsItem;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)
@@ -115,6 +116,7 @@ public class IskaUtils {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             ClientEvents.shutdown();
         }));
+
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {

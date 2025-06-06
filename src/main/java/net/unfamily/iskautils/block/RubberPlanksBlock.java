@@ -10,9 +10,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
 
-/**
- * Blocco di assi di legno di gomma.
- */
 public class RubberPlanksBlock extends Block {
     public static final MapCodec<RubberPlanksBlock> CODEC = simpleCodec(RubberPlanksBlock::new);
     

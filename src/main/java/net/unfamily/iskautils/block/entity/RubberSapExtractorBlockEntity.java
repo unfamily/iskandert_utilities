@@ -41,7 +41,8 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     
     public RubberSapExtractorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.RUBBER_SAP_EXTRACTOR.get(), pos, state);
-        this.energyStorage = new EnergyStorageImpl(Config.rubberSapExtractorEnergyBuffer);
+        int maxEnergy = Config.rubberSapExtractorEnergyConsume <= 0 ? 0 : Config.rubberSapExtractorEnergyBuffer;
+        this.energyStorage = new EnergyStorageImpl(maxEnergy);
     }
     
     /**
@@ -53,9 +54,13 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
             return;
         }
         
-        // check if there is enough energy
-        if (blockEntity.energyStorage.getEnergyStored() < Config.rubberSapExtractorEnergyConsume) {
-            return;
+        // Check if energy system is enabled
+        int energyRequired = getEnergyRequired();
+        if (energyRequired > 0) {
+            // check if there is enough energy
+            if (blockEntity.energyStorage.getEnergyStored() < energyRequired) {
+                return;
+            }
         }
         
         // only proceed if there is space in the output inventory
@@ -86,18 +91,40 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
             blockEntity.extractionProgress++;
             
             // reduce the extraction time to make it faster
-            if (blockEntity.extractionProgress >= (blockEntity.extractionTime / 4)) {
+            if (blockEntity.extractionProgress >= (blockEntity.extractionTime)) {
                 // extract sap
                 blockEntity.extractSap();
                 
-                // consume energy
-                blockEntity.energyStorage.extractEnergy(Config.rubberSapExtractorEnergyConsume, false);
+                // consume energy if required
+                int energyConsumption = getEnergyRequired();
+                if (energyConsumption > 0) {
+                    blockEntity.energyStorage.extractEnergy(energyConsumption, false);
+                }
                 
                 // reset progress
                 blockEntity.extractionProgress = 0;
                 blockEntity.setChanged();
             }
         }
+    }
+    
+    /**
+     * Get the energy required for operation
+     * @return Energy required, or 0 if energy system is disabled
+     */
+    private static int getEnergyRequired() {
+        // Se l'energia richiesta è a 0, l'energia storabile è a 0 automaticamente
+        if (Config.rubberSapExtractorEnergyConsume <= 0) {
+            return 0;
+        }
+        
+        // Se l'energia storabile è a 0 il consumo elettrico è disattivato
+        if (Config.rubberSapExtractorEnergyBuffer <= 0) {
+            return 0;
+        }
+        
+        // Se l'energia richiesta è maggiore di quella massima storabile, l'energia richiesta è = a quella massima storabile
+        return Math.min(Config.rubberSapExtractorEnergyConsume, Config.rubberSapExtractorEnergyBuffer);
     }
     
     /**

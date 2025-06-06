@@ -12,6 +12,7 @@
   "item.iska_utils.treetap": "Treetap",
   "item.iska_utils.electric_treetap": "Electric Treetap",
   
+  "item.iska_utils.rubber_boots": "Rubber Boots",
   "block.iska_utils.rubber_log": "Rubber Log",
   "block.iska_utils.stripped_rubber_log": "Stripped Rubber Log",
   "block.iska_utils.rubber_wood": "Rubber Wood",
@@ -30,6 +31,9 @@
   "block.iska_utils.rubber_door": "Rubber Door",
   "block.iska_utils.rubber_pressure_plate": "Rubber Pressure Plate",
   "block.iska_utils.rubber_button": "Rubber Button",
+  
+  "block.iska_utils.tar_slime_block": "Tar Slime Block",
+  "item.iska_utils.tar_slimeball": "Tar Slimeball",
   
   "block.iska_utils.slow_vect": "Mobfarm Slow Vector Plate",
   "block.iska_utils.moderate_vect": "Mobfarm Moderate Vector Plate",

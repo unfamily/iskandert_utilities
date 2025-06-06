@@ -14,6 +14,7 @@ import net.unfamily.iskautils.item.custom.ElectricTreeTapItem;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.unfamily.iskautils.item.custom.RubberBootsItem;
 
 public class ModItems {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModItems.class);
@@ -182,6 +183,18 @@ public class ModItems {
     public static final DeferredItem<Item> RAFT = ITEMS.register("raft",
             () -> new BlockItem(ModBlocks.RAFT.get(), ITEM_PROPERTIES));
 
+    // ===== TAR =====
+    public static final DeferredItem<Item> TAR_SLIME_BLOCK = ITEMS.register("tar_slime_block",
+            () -> new BlockItem(ModBlocks.TAR_SLIME_BLOCK.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> TAR_SLIMEBALL = ITEMS.register("tar_slimeball",
+            () -> new Item(ITEM_PROPERTIES));
+
+    // ===== RUBBER ARMOR =====
+    public static final DeferredItem<Item> RUBBER_BOOTS = ITEMS.register("rubber_boots",
+            () -> new RubberBootsItem(new Item.Properties().durability(256)));
+
+            
     // ===== UTILITY BLOCKS =====
     public static final DeferredItem<Item> RUBBER_SAP_EXTRACTOR = ITEMS.register("rubber_sap_extractor", 
             () -> new BlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), ITEM_PROPERTIES));

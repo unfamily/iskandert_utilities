@@ -1,0 +1,32 @@
+{
+    "type": "minecraft:block",
+    "random_sequence": "iska_utils:blocks/smooth_blackstone_slab",
+    "pools": [
+      {
+        "rolls": 1.0,
+        "bonus_rolls": 0.0,
+        "entries": [
+          {
+            "type": "minecraft:item",
+            "functions": [
+              {
+                "function": "minecraft:set_count",
+                "conditions": [
+                  {
+                    "condition": "minecraft:block_state_property",
+                    "block": "iska_utils:rubber_slab",
+                    "properties": {
+                      "type": "double"
+                    }
+                  }
+                ],
+                "count": 2.0,
+                "add": false
+              }
+            ],
+            "name": "iska_utils:rubber_slab"
+          }
+        ]
+      }
+    ]
+  } 

@@ -2,18 +2,16 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     "AAA",
-    " BA"
+    "AAA",
+    "AAA"
   ],
   "key": {
     "A": {
-      "tag": "c:ingots/iron"
-    },
-    "B": {
-      "tag": "c:plastic_or_rubber"
+      "tag": "c:tar_slimeballs"
     }
   },
   "result": {
-    "id": "iska_utils:electric_treetap",
+    "id": "iska_utils:tar_slime_block",
     "count": 1
   }
 } 

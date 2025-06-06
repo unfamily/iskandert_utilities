@@ -118,6 +118,11 @@ public class Config
             .comment("If true, XP will be consumed before energy when both are available",
                     "If both this and prioritizeEnergy are true, both resources will be consumed")
             .define("103_portableDislocatorPrioritizeXp", false);
+
+    private static final ModConfigSpec.IntValue RUBBER_SAP_EXTRACTOR_SPEED = BUILDER
+            .comment("Speed of the Rubber Sap Extractor in ticks (lower is faster)")
+            .defineInRange("200_rubberSapExtractorSpeed", 10, 1, Integer.MAX_VALUE);
+
             
     static {
         BUILDER.pop(); // End of general_utilities category
@@ -140,7 +145,7 @@ public class Config
 
     public static final ModConfigSpec.IntValue ELECTRIC_TREETAP_ENERGY_BUFFER = BUILDER
             .comment("Amount of energy the Electric Treetap can be stored")
-            .defineInRange("003_electricTreetapEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
+            .defineInRange("003_electricTreetapEnergyBuffer", 1000, 0, Integer.MAX_VALUE);
 
     public static final ModConfigSpec.IntValue RUBBER_SAP_EXTRACTOR_ENERGY_CONSUME = BUILDER
             .comment("Amount of energy consumed by the Rubber Sap Extractor per operation")
@@ -150,9 +155,6 @@ public class Config
             .comment("Amount of energy the Rubber Sap Extractor can store")
             .defineInRange("005_rubberSapExtractorEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
 
-    public static final ModConfigSpec.IntValue RUBBER_SAP_EXTRACTOR_SPEED = BUILDER
-            .comment("Speed of the Rubber Sap Extractor in ticks (lower is faster)")
-            .defineInRange("006_rubberSapExtractorSpeed", 200, 1, Integer.MAX_VALUE);
 
     static {
         BUILDER.pop(); // End of rubber_tree category
@@ -238,10 +240,34 @@ public class Config
         portableDislocatorPrioritizeXp = PORTABLE_DISLOCATOR_PRIORITIZE_XP.get();
         externalScriptsPath = EXTERNAL_SCRIPTS_PATH.get();
         stickyFluids = new java.util.ArrayList<>(sticky_fluids.get());
+        // Electric Treetap logic
         electricTreetapEnergyConsume = ELECTRIC_TREETAP_ENERGY_CONSUME.get();
         electricTreetapEnergyBuffer = ELECTRIC_TREETAP_ENERGY_BUFFER.get();
+        
+        // If the energy required is 0, the energy stored is 0 automatically
+        if (electricTreetapEnergyConsume <= 0) {
+            electricTreetapEnergyBuffer = 0;
+        }
+        
+        // If the energy stored is 0, the energy consumption is disabled
+        if (electricTreetapEnergyBuffer <= 0) {
+            electricTreetapEnergyConsume = 0;
+        }
+        
+        // Rubber Sap Extractor logic
         rubberSapExtractorEnergyConsume = RUBBER_SAP_EXTRACTOR_ENERGY_CONSUME.get();
         rubberSapExtractorEnergyBuffer = RUBBER_SAP_EXTRACTOR_ENERGY_BUFFER.get();
+        
+        // If the energy required is 0, the energy stored is 0 automatically
+        if (rubberSapExtractorEnergyConsume <= 0) {
+            rubberSapExtractorEnergyBuffer = 0;
+        }
+        
+        // If the energy stored is 0, the energy consumption is disabled
+        if (rubberSapExtractorEnergyBuffer <= 0) {
+            rubberSapExtractorEnergyConsume = 0;
+        }
+        
         rubberSapExtractorSpeed = RUBBER_SAP_EXTRACTOR_SPEED.get();
     }
     

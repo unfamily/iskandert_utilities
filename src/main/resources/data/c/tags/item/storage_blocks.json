@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "iska_utils:rubber_block"
+    "iska_utils:rubber_block",
+    "iska_utils:tar_slime_block"
   ]
 } 

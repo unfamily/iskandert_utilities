@@ -1,0 +1,12 @@
+{
+    "type": "minecraft:smelting",
+    "ingredient": {
+        "tag": "c:tar_slimeballs"
+    },
+    "result": {
+        "id": "iska_utils:rubber",
+        "count": 5
+    },
+    "experience": 0.3,
+    "cookingtime": 200
+}
