@@ -1,0 +1,7 @@
+{
+  "parent": "iska_utils:block/template_weather_detector",
+  "textures": {
+    "side": "iska_utils:block/weather_detector_side",
+    "top": "iska_utils:block/weather_detector_rain_top"
+  }
+}

@@ -60,6 +60,8 @@
   "block.iska_utils.iska_utils_freeze": "Piastra Trappola Gelo",
   "block.iska_utils.iska_utils_cobweb": "Piastra Trappola Ragnatela",
 
+  "block.iska_utils.weather_detector": "Rilevatore del Meteo",
+
   "creativetab.iska_utils.tab": "Utilità di Iska",
   "itemGroup.iska_utils.command_items": "Oggetti di Comando di Iska",
 
@@ -120,5 +122,11 @@
   "message.iska_utils.item_restriction.blocked": "§4Restrizione di stage: oggetti non validi nell'inventario bloccati",
 
   "item.iska_utils.electric_treetap.tooltip.energy": "Energia: ",
-  "item.iska_utils.electric_treetap.message.no_energy": "Energia insufficiente per usare lo Spillatore Elettrico!"
+  "item.iska_utils.electric_treetap.message.no_energy": "Energia insufficiente per usare lo Spillatore Elettrico!",
+
+  "item.iska_utils.rubber_chunk": "Cumulo di Gomma",
+  "item.iska_utils.plastic_ingot": "Lingotto di Plastica",
+
+  "advancements.iska_utils.sticky_oil.title": "Situazione Viscosa",
+  "advancements.iska_utils.sticky_oil.descr": "Sei impantanato nel petrolio!"
 }

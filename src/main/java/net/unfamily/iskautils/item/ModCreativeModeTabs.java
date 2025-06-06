@@ -38,6 +38,7 @@ public class ModCreativeModeTabs {
                                 
                                 // Rubber Tree Items
                                 pOutput.accept(ModItems.SAP.get());
+                                pOutput.accept(ModItems.RUBBER_CHUNK.get());
                                 pOutput.accept(ModItems.RUBBER.get());
                                 pOutput.accept(ModItems.TREE_TAP.get());
                                 pOutput.accept(ModItems.ELECTRIC_TREE_TAP.get());
@@ -50,6 +51,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_PLANKS.get());
                                 pOutput.accept(ModItems.RUBBER_BLOCK.get());
                                 pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
+                                pOutput.accept(ModItems.PLASTIC_INGOT.get());
 
                                 // Rubber Wood Variants
                                 pOutput.accept(ModItems.RUBBER_STAIRS.get());
@@ -108,6 +110,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE_WALL.get());
                                 pOutput.accept(ModItems.PLATE_BASE_BLOCK.get());
                                 pOutput.accept(ModItems.RAFT.get());
+                                pOutput.accept(ModItems.WEATHER_DETECTOR.get());
                             }).build());
 
     public static void register(IEventBus eventBus) {

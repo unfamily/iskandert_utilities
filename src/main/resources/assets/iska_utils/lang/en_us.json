@@ -59,6 +59,8 @@
   "block.iska_utils.iska_utils_fire": "Fire Trap Plate",
   "block.iska_utils.iska_utils_freeze": "Freeze Trap Plate",
   "block.iska_utils.iska_utils_cobweb": "Cobweb Trap Plate",
+
+  "block.iska_utils.weather_detector": "Weather Detector",
   
   "creativetab.iska_utils.tab": "Iska's Utilities",
   "itemGroup.iska_utils.command_items": "Iska's Command Items",
@@ -120,5 +122,11 @@
   "message.iska_utils.item_restriction.blocked": "§4Stage restriction: invalid items in inventory blocked",
 
   "item.iska_utils.electric_treetap.tooltip.energy": "Energy: ",
-  "item.iska_utils.electric_treetap.message.no_energy": "Not enough energy to use the Electric Treetap!"
+  "item.iska_utils.electric_treetap.message.no_energy": "Not enough energy to use the Electric Treetap!",
+
+  "item.iska_utils.rubber_chunk": "Rubber Chunk",
+  "item.iska_utils.plastic_ingot": "Plastic Ingot",
+
+  "advancements.iska_utils.sticky_oil.title": "Sticky Situation",
+  "advancements.iska_utils.sticky_oil.descr": "You're stuck in Crude Oil!"
 }

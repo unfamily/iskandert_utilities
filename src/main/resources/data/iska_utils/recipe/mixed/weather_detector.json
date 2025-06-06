@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    "BBB",
+    "CCC"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:glass_blocks/colorless"
+    },
+    "B": {
+      "tag": "c:plastics"
+    },
+    "C": {
+      "tag": "c:ingots/copper"
+    }
+  },
+  "result": {
+    "id": "iska_utils:weather_detector",
+    "count": 1
+  }
+} 

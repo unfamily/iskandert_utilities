@@ -277,6 +277,13 @@ public class ModBlocks {
                     .jumpFactor(0.5f)
                     .noOcclusion()));
 
+    // ===== WEATHER DETECTOR =====
+    public static final DeferredBlock<WeatherDetectorBlock> WEATHER_DETECTOR = BLOCKS.register("weather_detector",
+            () -> new WeatherDetectorBlock(BlockBehaviour.Properties.of()
+                    .strength(0.5f, 1.0f)
+                    .sound(SoundType.COPPER)
+                    .noOcclusion()));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

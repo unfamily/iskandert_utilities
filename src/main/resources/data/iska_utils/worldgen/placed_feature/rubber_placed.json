@@ -7,7 +7,7 @@
         "type": "minecraft:weighted_list",
         "distribution": [
           {
-            "weight": 9,
+            "weight": 3,
             "data": 1
           },
           {
@@ -30,7 +30,7 @@
     },
     {
       "type": "minecraft:rarity_filter",
-      "chance": 7
+      "chance": 50
     },
     {
       "type": "minecraft:biome"

@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.unfamily.iskautils.item.custom.RubberBootsItem;
 
+
 public class ModItems {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModItems.class);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(IskaUtils.MOD_ID);
@@ -60,6 +61,14 @@ public class ModItems {
     public static final DeferredItem<Item> SAP = ITEMS.register("sap",
             () -> new Item(ITEM_PROPERTIES));
             
+    // Rubber chunk item created from rubber
+    public static final DeferredItem<Item> RUBBER_CHUNK = ITEMS.register("rubber_chunk",
+            () -> new Item(ITEM_PROPERTIES));
+            
+    // Plastic sheet item created from rubber
+    public static final DeferredItem<Item> PLASTIC_INGOT = ITEMS.register("plastic_ingot",
+            () -> new Item(ITEM_PROPERTIES));
+
     // Rubber item created from sap
     public static final DeferredItem<Item> RUBBER = ITEMS.register("rubber",
             () -> new Item(ITEM_PROPERTIES));
@@ -198,6 +207,9 @@ public class ModItems {
     // ===== UTILITY BLOCKS =====
     public static final DeferredItem<Item> RUBBER_SAP_EXTRACTOR = ITEMS.register("rubber_sap_extractor", 
             () -> new BlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> WEATHER_DETECTOR = ITEMS.register("weather_detector",
+            () -> new BlockItem(ModBlocks.WEATHER_DETECTOR.get(), ITEM_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

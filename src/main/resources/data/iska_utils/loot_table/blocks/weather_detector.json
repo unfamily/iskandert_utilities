@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "random_sequence": "iska_utils:blocks/weather_detector",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "iska_utils:weather_detector"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    }
+  ]
+} 

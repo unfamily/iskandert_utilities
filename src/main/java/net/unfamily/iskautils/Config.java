@@ -167,6 +167,10 @@ public class Config
             .comment("List of fluids that should be sticky")
             .defineList("000_sticky_fluids", java.util.Arrays.asList("#c:oil"), obj -> obj instanceof String);
 
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>>  crude_oils = BUILDER
+            .comment("List of fluids that should be crude oil")
+            .defineList("001_crude_oils", java.util.Arrays.asList("#c:oil"), obj -> obj instanceof String);
+
             
     static {
         BUILDER.pop(); // pop rubber_sap category
@@ -215,6 +219,7 @@ public class Config
     public static int rubberSapExtractorEnergyConsume;
     public static int rubberSapExtractorEnergyBuffer;
     public static int rubberSapExtractorSpeed;
+    public static java.util.List<String> crudeOils;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -240,6 +245,7 @@ public class Config
         portableDislocatorPrioritizeXp = PORTABLE_DISLOCATOR_PRIORITIZE_XP.get();
         externalScriptsPath = EXTERNAL_SCRIPTS_PATH.get();
         stickyFluids = new java.util.ArrayList<>(sticky_fluids.get());
+        crudeOils = new java.util.ArrayList<>(crude_oils.get());
         // Electric Treetap logic
         electricTreetapEnergyConsume = ELECTRIC_TREETAP_ENERGY_CONSUME.get();
         electricTreetapEnergyBuffer = ELECTRIC_TREETAP_ENERGY_BUFFER.get();
