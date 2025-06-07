@@ -215,7 +215,7 @@ public class ModBlocks {
             () -> new RubberBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(2.0f)
-                    .sound(SoundType.SHROOMLIGHT)));
+                    .sound(SoundType.TUFF)));
                     
     // ===== RUBBER WOOD VARIANTS =====
     // Stairs, slabs, fences, fence gates, buttons, pressure plates, doors, trapdoors
