@@ -7,10 +7,10 @@
   ],
   "key": {
     "A": {
-      "tag": "c:glass_blocks/colorless"
+      "tag": "c:plastics"
     },
     "B": {
-      "tag": "c:plastics"
+      "tag": "c:gems/quartz"
     },
     "C": {
       "tag": "c:ingots/copper"
