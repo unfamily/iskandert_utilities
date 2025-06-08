@@ -53,6 +53,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.NeoForge;
 import net.unfamily.iskautils.item.custom.RubberBootsItem;
+import net.minecraft.server.MinecraftServer;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)
@@ -201,6 +202,16 @@ public class IskaUtils {
             // Server is fully started, all external datapacks should be loaded by now
             LOGGER.info("Server fully started, all external datapacks should be available");
             
+            // Clean up any scanner markers that might be leftover from previous session
+            try {
+                if (event.getServer().overworld() != null) {
+                    net.unfamily.iskautils.item.custom.ScannerItem.cleanupAllMarkers(event.getServer().overworld());
+                    LOGGER.info("Cleaned up all scanner markers");
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error cleaning up scanner markers: {}", e.getMessage());
+            }
+            
             // Reload macros to ensure all commands are registered
             try {
                 MacroLoader.reloadAllMacros();
@@ -233,6 +244,18 @@ public class IskaUtils {
                     
                     return CompletableFuture.runAsync(() -> {
                         LOGGER.info("Server reload detected, reloading macros and command item definitions...");
+                        
+                        // Clean up any scanner markers
+                        try {
+                            MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+                            if (server != null && server.overworld() != null) {
+                                net.unfamily.iskautils.item.custom.ScannerItem.cleanupAllMarkers(server.overworld());
+                                LOGGER.info("Cleaned up all scanner markers during reload");
+                            }
+                        } catch (Exception e) {
+                            LOGGER.error("Error cleaning up scanner markers during reload: {}", e.getMessage());
+                        }
+                        
                         // Reload command macros
                         MacroLoader.reloadAllMacros();
                         // Reload command item definitions

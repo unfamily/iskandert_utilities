@@ -128,5 +128,12 @@
   "item.iska_utils.plastic_ingot": "Plastic Ingot",
 
   "advancements.iska_utils.sticky_oil.title": "Sticky Situation",
-  "advancements.iska_utils.sticky_oil.descr": "You're stuck in Crude Oil!"
+  "advancements.iska_utils.sticky_oil.descr": "You're stuck in Crude Oil!",
+
+  "item.iska_utils.scanner": "Scanner",
+  "item.iska_utils.scanner.target_set": "Target block set: %s",
+  "item.iska_utils.scanner.no_target": "No target block set. Use Shift+right click on a block to set it.",
+  "item.iska_utils.scanner.scan_started": "Scanning for %s started...",
+  "item.iska_utils.scanner.found_blocks": "Found %s blocks of %s in the area.",
+  "item.iska_utils.scanner.interrupted": "Clearing visual markers..."
 }

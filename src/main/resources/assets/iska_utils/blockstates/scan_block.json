@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "iska_utils:block/scan_block" }
+  }
+} 

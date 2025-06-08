@@ -284,6 +284,15 @@ public class ModBlocks {
                     .sound(SoundType.COPPER)
                     .noOcclusion()));
 
+    // ===== DEV BLOCKS =====
+    // SCAN BLOCK
+    public static final DeferredBlock<Block> SCAN_BLOCK = BLOCKS.register("scan_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(0.5f, 1.0f)
+                    .sound(SoundType.GLASS)
+                    .noOcclusion()));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

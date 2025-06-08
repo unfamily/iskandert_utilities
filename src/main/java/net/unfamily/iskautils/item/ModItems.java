@@ -11,6 +11,7 @@ import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import net.unfamily.iskautils.item.custom.TreeTapItem;
 import net.unfamily.iskautils.item.custom.ElectricTreeTapItem;
+import net.unfamily.iskautils.item.custom.ScannerItem;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,10 @@ public class ModItems {
     // Registered as a Curio when Curios is available
     public static final DeferredItem<Item> PORTABLE_DISLOCATOR = ITEMS.register("portable_dislocator",
             () -> new PortableDislocatorItem(new Item.Properties().stacksTo(1)));
+    
+    // Scanner - Custom item for scanning specific blocks in an area
+    public static final DeferredItem<Item> SCANNER = ITEMS.register("scanner",
+            () -> new ScannerItem());
             
     // ===== RUBBER TREE ITEMS =====
     
@@ -210,6 +215,10 @@ public class ModItems {
 
     public static final DeferredItem<Item> WEATHER_DETECTOR = ITEMS.register("weather_detector",
             () -> new BlockItem(ModBlocks.WEATHER_DETECTOR.get(), ITEM_PROPERTIES));
+
+    // ===== DEV BLOCKS =====
+    public static final DeferredItem<Item> SCAN_BLOCK = ITEMS.register("scan_block",
+            () -> new BlockItem(ModBlocks.SCAN_BLOCK.get(), ITEM_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

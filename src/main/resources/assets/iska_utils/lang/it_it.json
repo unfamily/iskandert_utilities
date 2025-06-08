@@ -128,5 +128,12 @@
   "item.iska_utils.plastic_ingot": "Lingotto di Plastica",
 
   "advancements.iska_utils.sticky_oil.title": "Situazione Viscosa",
-  "advancements.iska_utils.sticky_oil.descr": "Sei impantanato nel petrolio!"
+  "advancements.iska_utils.sticky_oil.descr": "Sei impantanato nel petrolio!",
+
+  "item.iska_utils.scanner": "Scanner",
+  "item.iska_utils.scanner.target_set": "Blocco target impostato: %s",
+  "item.iska_utils.scanner.no_target": "Nessun blocco target impostato. Usa Shift+click destro su un blocco per impostarlo.",
+  "item.iska_utils.scanner.scan_started": "Scansione per %s iniziata...",
+  "item.iska_utils.scanner.found_blocks": "Trovati %s blocchi di %s nell'area.",
+  "item.iska_utils.scanner.interrupted": "Rimozione dei marker visivi..."
 }
