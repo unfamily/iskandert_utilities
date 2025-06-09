@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "mode=0": {
+      "model": "iska_utils:block/weather_alterer_sunny"
+    },
+    "mode=1": {
+      "model": "iska_utils:block/weather_alterer_rain"
+    },
+    "mode=2": {
+      "model": "iska_utils:block/weather_alterer_storm"
+    }
+  }
+}

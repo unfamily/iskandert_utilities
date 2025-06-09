@@ -117,6 +117,7 @@ public class ModBlocks {
     public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",
             () -> new RubberSapExtractorBlock(RUBBER_SAP_EXTRACTOR_PROPERTIES));
 
+
     // ===== SMOOTH BLACKSTONE =====
     private static final BlockBehaviour.Properties SMOOTH_BLACKSTONE_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.COLOR_BLACK)
@@ -292,6 +293,15 @@ public class ModBlocks {
                     .strength(0.5f, 1.0f)
                     .sound(SoundType.GLASS)
                     .noOcclusion()));
+
+    // Weather Alterer Block
+    public static final DeferredBlock<WeatherAltererBlock> WEATHER_ALTERER = BLOCKS.register("weather_alterer",
+        () -> new WeatherAltererBlock(BlockBehaviour.Properties.of()
+            .strength(3.5F)
+            .requiresCorrectToolForDrops()
+            .sound(SoundType.COPPER)
+            .lightLevel((state) -> 3)
+            .noOcclusion()));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

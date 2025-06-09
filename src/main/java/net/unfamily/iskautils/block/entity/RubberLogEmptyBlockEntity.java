@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.block.ModBlockEntities;
+import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.RubberLogEmptyBlock;
 import net.unfamily.iskautils.block.RubberLogFilledBlock;

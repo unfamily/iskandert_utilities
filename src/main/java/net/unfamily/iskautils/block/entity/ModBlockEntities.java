@@ -11,6 +11,10 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.block.entity.HellfireIgniterBlockEntity;
+import net.unfamily.iskautils.block.entity.RubberLogEmptyBlockEntity;
+import net.unfamily.iskautils.block.entity.RubberSapExtractorBlockEntity;
+import net.unfamily.iskautils.block.entity.WeatherAltererBlockEntity;
 
 import java.util.function.Supplier;
 
@@ -35,6 +39,12 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("rubber_sap_extractor", () ->
                     BlockEntityType.Builder.of(RubberSapExtractorBlockEntity::new,
                             ModBlocks.RUBBER_SAP_EXTRACTOR.get()).build(null));
+
+    // Registra il Weather Alterer Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WeatherAltererBlockEntity>> WEATHER_ALTERER_BE =
+            BLOCK_ENTITIES.register("weather_alterer_block_entity", () ->
+                    BlockEntityType.Builder.of(WeatherAltererBlockEntity::new, 
+                            ModBlocks.WEATHER_ALTERER.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
@@ -63,6 +73,18 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof RubberSapExtractorBlockEntity extractorEntity) {
                             return extractorEntity.getEnergyStorage();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register energy capability for WeatherAlterer
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    WEATHER_ALTERER_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof WeatherAltererBlockEntity weatherAltererEntity) {
+                            return weatherAltererEntity.getEnergyStorage();
                         }
                         return null;
                     }

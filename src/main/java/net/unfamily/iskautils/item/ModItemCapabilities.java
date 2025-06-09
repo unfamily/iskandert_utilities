@@ -9,6 +9,7 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import net.unfamily.iskautils.item.custom.ElectricTreeTapItem;
+import net.unfamily.iskautils.item.custom.ScannerItem;
 
 @EventBusSubscriber(modid = IskaUtils.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public class ModItemCapabilities {
@@ -55,6 +56,20 @@ public class ModItemCapabilities {
                     return null;
                 },
                 ModItems.ELECTRIC_TREE_TAP.get()
+        );
+        
+        // Register energy capability for Scanner
+        event.registerItem(
+                Capabilities.EnergyStorage.ITEM,
+                (stack, context) -> {
+                    if (stack.getItem() instanceof ScannerItem scanner) {
+                        if (scanner.canStoreEnergy()) {
+                            return new ScannerEnergyStorage(scanner, stack);
+                        }
+                    }
+                    return null;
+                },
+                ModItems.SCANNER.get()
         );
     }
     
@@ -229,6 +244,64 @@ public class ModItemCapabilities {
         @Override
         public boolean canReceive() {
             return treeTap.canStoreEnergy();
+        }
+    }
+    
+    /**
+     * Energy storage implementation for Scanner
+     */
+    public static class ScannerEnergyStorage implements IEnergyStorage {
+        private final ScannerItem scanner;
+        private final net.minecraft.world.item.ItemStack stack;
+        
+        public ScannerEnergyStorage(ScannerItem scanner, net.minecraft.world.item.ItemStack stack) {
+            this.scanner = scanner;
+            this.stack = stack;
+        }
+        
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int currentEnergy = scanner.getEnergyStored(stack);
+            int maxEnergy = scanner.getMaxEnergyStored(stack);
+            int energyToReceive = Math.min(maxReceive, maxEnergy - currentEnergy);
+            
+            if (!simulate && energyToReceive > 0) {
+                scanner.setEnergyStored(stack, currentEnergy + energyToReceive);
+            }
+            
+            return energyToReceive;
+        }
+        
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            int currentEnergy = scanner.getEnergyStored(stack);
+            int energyToExtract = Math.min(maxExtract, currentEnergy);
+            
+            if (!simulate && energyToExtract > 0) {
+                scanner.setEnergyStored(stack, currentEnergy - energyToExtract);
+            }
+            
+            return energyToExtract;
+        }
+        
+        @Override
+        public int getEnergyStored() {
+            return scanner.getEnergyStored(stack);
+        }
+        
+        @Override
+        public int getMaxEnergyStored() {
+            return scanner.getMaxEnergyStored(stack);
+        }
+        
+        @Override
+        public boolean canExtract() {
+            return false; // Scanner doesn't allow energy extraction
+        }
+        
+        @Override
+        public boolean canReceive() {
+            return scanner.canStoreEnergy();
         }
     }
 } 

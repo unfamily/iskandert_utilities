@@ -111,6 +111,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.PLATE_BASE_BLOCK.get());
                                 pOutput.accept(ModItems.RAFT.get());
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());
+                                pOutput.accept(ModItems.WEATHER_ALTERER.get());
 
                                 // Scanner
                                 pOutput.accept(ModItems.SCANNER.get());

@@ -19,6 +19,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.ChatFormatting;
 
 /**
  * The Weather Detector is a block that emits a redstone signal based on the weather
@@ -79,6 +83,18 @@ public class WeatherDetectorBlock extends Block {
         
         // Sound when changing the mode
         level.playSound(null, pos, SoundEvents.WOODEN_BUTTON_CLICK_ON, SoundSource.BLOCKS, 0.3F, 0.6F);
+        
+        // Colored feedback message based on the new mode using vanilla format
+        Component modeMessage = switch (newMode) {
+            case 0 -> Component.translatable("block.iska_utils.weather_detector.mode.sunny").withStyle(ChatFormatting.YELLOW);
+            case 1 -> Component.translatable("block.iska_utils.weather_detector.mode.rain").withStyle(ChatFormatting.GRAY);
+            case 2 -> Component.translatable("block.iska_utils.weather_detector.mode.storm").withStyle(ChatFormatting.BLUE);
+            case 3 -> Component.translatable("block.iska_utils.weather_detector.mode.both").withStyle(ChatFormatting.DARK_PURPLE);
+            default -> Component.translatable("block.iska_utils.weather_detector.mode.unknown");
+        };
+        
+        // Send the feedback message to the player in the action bar
+        player.displayClientMessage(modeMessage, true);
         
         // Force an update of the redstone signal
         level.updateNeighborsAt(pos, this);

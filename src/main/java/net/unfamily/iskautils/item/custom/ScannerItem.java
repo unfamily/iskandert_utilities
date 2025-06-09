@@ -118,7 +118,7 @@ public class ScannerItem extends Item {
         ItemStack stack = super.getDefaultInstance();
         if (canStoreEnergy()) {
             CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-            tag.putInt(ENERGY_TAG, Config.scannerEnergyBuffer);
+            tag.putInt(ENERGY_TAG, 0);
             stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
         return stack;
@@ -977,7 +977,7 @@ public class ScannerItem extends Item {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         
         if (canStoreEnergy() && !tag.contains(ENERGY_TAG)) {
-            tag.putInt(ENERGY_TAG, Config.scannerEnergyBuffer);
+            tag.putInt(ENERGY_TAG, 0);
             stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
         

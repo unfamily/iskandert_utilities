@@ -107,6 +107,14 @@ public class Config
             .comment("Experience points consumed per teleportation by the Portable Dislocator when energy is not available",
                     "Set to 0 to disable experience consumption")
             .defineInRange("101_portableDislocatorXpConsume", 10, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue WEATHER_ALTERER_ENERGY_BUFFER = BUILDER
+            .comment("Energy capacity of the Weather Alterer in RF/FE")
+            .defineInRange("200_weatherAltererEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue WEATHER_ALTERER_ENERGY_CONSUME = BUILDER
+            .comment("Energy consumed per tick by the Weather Alterer in RF/FE")
+            .defineInRange("201_weatherAltererEnergyConsume", 1000, 0, Integer.MAX_VALUE);
             
     // Portable Dislocator resource priority configuration
     private static final ModConfigSpec.BooleanValue PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY = BUILDER
@@ -257,6 +265,8 @@ public class Config
     public static int scannerMaxBlocks;
     public static int scannerEnergyConsume;
     public static int scannerEnergyBuffer;
+    public static int weatherAltererEnergyBuffer;
+    public static int weatherAltererEnergyConsume;
 
 
     @SubscribeEvent
@@ -287,6 +297,8 @@ public class Config
         // Electric Treetap logic
         electricTreetapEnergyConsume = ELECTRIC_TREETAP_ENERGY_CONSUME.get();
         electricTreetapEnergyBuffer = ELECTRIC_TREETAP_ENERGY_BUFFER.get();
+        weatherAltererEnergyBuffer = WEATHER_ALTERER_ENERGY_BUFFER.get();
+        weatherAltererEnergyConsume = WEATHER_ALTERER_ENERGY_CONSUME.get();
         
         // If the energy required is 0, the energy stored is 0 automatically
         if (electricTreetapEnergyConsume <= 0) {
@@ -296,6 +308,11 @@ public class Config
         // If the energy stored is 0, the energy consumption is disabled
         if (electricTreetapEnergyBuffer <= 0) {
             electricTreetapEnergyConsume = 0;
+        }
+
+        // If the energy buffer is less than the energy consume, set the energy consume to the energy buffer
+        if(electricTreetapEnergyBuffer < electricTreetapEnergyConsume) {
+            electricTreetapEnergyConsume = electricTreetapEnergyBuffer;
         }
         
         // Rubber Sap Extractor logic
@@ -311,6 +328,12 @@ public class Config
         if (rubberSapExtractorEnergyBuffer <= 0) {
             rubberSapExtractorEnergyConsume = 0;
         }
+
+        // If the energy buffer is less than the energy consume, set the energy consume to the energy buffer
+        if(rubberSapExtractorEnergyBuffer < rubberSapExtractorEnergyConsume) {
+            rubberSapExtractorEnergyConsume = rubberSapExtractorEnergyBuffer;
+        }
+
         
         rubberSapExtractorSpeed = RUBBER_SAP_EXTRACTOR_SPEED.get();
         
@@ -329,6 +352,32 @@ public class Config
         if (scannerEnergyBuffer <= 0) {
             scannerEnergyConsume = 0;
         }
+        
+        // If the energy buffer is less than the energy consume, set the energy consume to the energy buffer
+        if(scannerEnergyBuffer < scannerEnergyConsume) {
+            scannerEnergyConsume = scannerEnergyBuffer;
+        }
+
+        // Weather Alterer logic
+        weatherAltererEnergyBuffer = WEATHER_ALTERER_ENERGY_BUFFER.get();
+        weatherAltererEnergyConsume = WEATHER_ALTERER_ENERGY_CONSUME.get();
+
+        // If the energy required is 0, the energy stored is 0 automatically
+        if (weatherAltererEnergyConsume <= 0) {
+            weatherAltererEnergyBuffer = 0;
+        }
+        
+        // If the energy stored is 0, the energy consumption is disabled
+        if (weatherAltererEnergyBuffer <= 0) {
+            weatherAltererEnergyConsume = 0;
+        }
+        
+        // If the energy buffer is less than the energy consume, set the energy consume to the energy buffer
+        if(weatherAltererEnergyBuffer < weatherAltererEnergyConsume) {
+            weatherAltererEnergyConsume = weatherAltererEnergyBuffer;
+        }
+        
+        
     }
     
     @SubscribeEvent

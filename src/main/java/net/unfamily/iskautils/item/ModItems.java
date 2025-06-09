@@ -218,6 +218,9 @@ public class ModItems {
 
     public static final DeferredItem<Item> WEATHER_DETECTOR = ITEMS.register("weather_detector",
             () -> new BlockItem(ModBlocks.WEATHER_DETECTOR.get(), ITEM_PROPERTIES));
+            
+public static final DeferredItem<Item> WEATHER_ALTERER = ITEMS.register("weather_alterer",
+            () -> new BlockItem(ModBlocks.WEATHER_ALTERER.get(), new Item.Properties()));
 
     // ===== DEV BLOCKS =====
     public static final DeferredItem<Item> SCAN_BLOCK = ITEMS.register("scan_block",

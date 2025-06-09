@@ -31,6 +31,7 @@
   "block.iska_utils.rubber_door": "Rubber Door",
   "block.iska_utils.rubber_pressure_plate": "Rubber Pressure Plate",
   "block.iska_utils.rubber_button": "Rubber Button",
+  "block.iska_utils.weather_alterer": "Weather Alterer",
   
   "block.iska_utils.tar_slime_block": "Tar Slime Block",
   "item.iska_utils.tar_slimeball": "Tar Slimeball",
@@ -61,9 +62,10 @@
   "block.iska_utils.iska_utils_cobweb": "Cobweb Trap Plate",
 
   "block.iska_utils.weather_detector": "Weather Detector",
+  "block.iska_utils.weather_alterer": "Weather Alterer",
   
-  "creativetab.iska_utils.tab": "Iska's Utilities",
-  "itemGroup.iska_utils.command_items": "Iska's Command Items",
+  "creativetab.iska_utils.tab": "Iskandert's Utilities",
+  "itemGroup.iska_utils.command_items": "Iskandert's Command Items",
   
   "block.iska_utils.smooth_blackstone": "Smooth Blackstone",
   "block.iska_utils.smooth_blackstone_slab": "Smooth Blackstone Slab",
@@ -71,8 +73,8 @@
   "block.iska_utils.smooth_blackstone_wall": "Smooth Blackstone Wall",
   "block.iska_utils.plate_base_block": "Plate Base",
   
-  "key.categories.iska_utils": "Iska's Utilities",
-  "key.category.iska_utils": "Iska's Utilities",
+  "key.categories.iska_utils": "Iskandert's Utilities",
+  "key.category.iska_utils": "Iskandert's Utilities",
   "key.iska_utils.vector_vertical": "Vector Charm Vertical Setting",
   "key.iska_utils.vector_horizontal": "Vector Charm Horizontal Setting",
   "key.iska_utils.vector_hover": "Vector Charm Hover Mode Toggle",
@@ -141,5 +143,16 @@
   "item.iska_utils.scanner.target_reset": "Scanner reset",
   "item.iska_utils.scanner.found_mobs": "Found %s mobs in the area.",
   "item.iska_utils.scanner.no_energy": "Not enough energy to use the Scanner!",
-  "item.iska_utils.scanner.tooltip.energy": "Energy: "
+  "item.iska_utils.scanner.tooltip.energy": "Energy: ",
+
+  "block.iska_utils.weather_detector.mode.sunny": "Weather Detector set to Sunny mode",
+  "block.iska_utils.weather_detector.mode.rain": "Weather Detector set to Rain mode",
+  "block.iska_utils.weather_detector.mode.storm": "Weather Detector set to Storm mode",
+  "block.iska_utils.weather_detector.mode.both": "Weather Detector set to Rain or Storm mode",
+  "block.iska_utils.weather_detector.mode.unknown": "Error: the weather detector has not been set correctly",
+
+  "block.iska_utils.weather_alterer.mode.sunny": "Weather Alterer set to Sunny mode",
+  "block.iska_utils.weather_alterer.mode.rain": "Weather Alterer set to Rain mode",
+  "block.iska_utils.weather_alterer.mode.storm": "Weather Alterer set to Storm mode",
+  "block.iska_utils.weather_alterer.mode.unknown": "Error: the weather alterer has not been set correctly"
 }
