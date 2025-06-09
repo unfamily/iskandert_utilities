@@ -512,13 +512,17 @@ public class ScannerItem extends Item {
         int maxBlocksScan = Config.scannerMaxBlocks;
         int maxTTL = Config.scannerMaxTTL;
         
-        // Scan in a radius of 2 chunks
+        // Determina il numero di chunk da scansionare in base al raggio configurato
+        // Ogni chunk è 16x16 blocchi, quindi calcoliamo quanti chunk dobbiamo controllare
+        int chunkRadius = Math.max(1, scanRange / 16);
+        
+        // Scan in a radius based on the configured scan range
         int markersFound = 0;
         boolean limitReached = false;
         
         scanLoop:
-        for (int chunkX = playerChunkPos.x - 1; chunkX <= playerChunkPos.x + 1; chunkX++) {
-            for (int chunkZ = playerChunkPos.z - 1; chunkZ <= playerChunkPos.z + 1; chunkZ++) {
+        for (int chunkX = playerChunkPos.x - chunkRadius; chunkX <= playerChunkPos.x + chunkRadius; chunkX++) {
+            for (int chunkZ = playerChunkPos.z - chunkRadius; chunkZ <= playerChunkPos.z + chunkRadius; chunkZ++) {
                 ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
                 
                 // Check if chunk is loaded
@@ -874,10 +878,16 @@ public class ScannerItem extends Item {
         
         // Scan in a radius
         int markersFound = 0;
+        
+        double scanRangeSquared = scanRange * scanRange;
         List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(
             LivingEntity.class, 
             player.getBoundingBox().inflate(scanRange),
-            entity -> BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString().equals(targetMobId)
+            entity -> {
+                double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
+                return distanceSq <= scanRangeSquared && 
+                       BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString().equals(targetMobId);
+            }
         );
         
         for (LivingEntity entity : nearbyEntities) {
