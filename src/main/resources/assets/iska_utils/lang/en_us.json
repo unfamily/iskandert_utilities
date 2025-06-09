@@ -31,7 +31,6 @@
   "block.iska_utils.rubber_door": "Rubber Door",
   "block.iska_utils.rubber_pressure_plate": "Rubber Pressure Plate",
   "block.iska_utils.rubber_button": "Rubber Button",
-  "block.iska_utils.weather_alterer": "Weather Alterer",
   
   "block.iska_utils.tar_slime_block": "Tar Slime Block",
   "item.iska_utils.tar_slimeball": "Tar Slimeball",
@@ -63,6 +62,7 @@
 
   "block.iska_utils.weather_detector": "Weather Detector",
   "block.iska_utils.weather_alterer": "Weather Alterer",
+  "block.iska_utils.time_alterer": "Time Alterer",
   
   "creativetab.iska_utils.tab": "Iskandert's Utilities",
   "itemGroup.iska_utils.command_items": "Iskandert's Command Items",
@@ -154,5 +154,22 @@
   "block.iska_utils.weather_alterer.mode.sunny": "Weather Alterer set to Sunny mode",
   "block.iska_utils.weather_alterer.mode.rain": "Weather Alterer set to Rain mode",
   "block.iska_utils.weather_alterer.mode.storm": "Weather Alterer set to Storm mode",
-  "block.iska_utils.weather_alterer.mode.unknown": "Error: the weather alterer has not been set correctly"
+  "block.iska_utils.weather_alterer.mode.unknown": "Error: the weather alterer has not been set correctly",
+
+  "block.iska_utils.time_alterer.mode.day": "Time Alterer set to Day mode",
+  "block.iska_utils.time_alterer.mode.night": "Time Alterer set to Night mode",
+  "block.iska_utils.time_alterer.mode.noon": "Time Alterer set to Noon mode",
+  "block.iska_utils.time_alterer.mode.midnight": "Time Alterer set to Midnight mode",
+  "block.iska_utils.time_alterer.mode.unknown": "Error: the time alterer has not been set correctly",
+
+  "item.iska_utils.necromantic_crystal_heart": "Necromantic Crystal Heart",
+  "tooltip.iska_utils.necromantic_crystal_heart.desc": "A dark heart that will not let you perish easily...",
+  "tooltip.iska_utils.necromantic_crystal_heart.desc_unused": "A dark heart that will not let you perish easily...\nonce he prevents lethal damage, the subsequent blows will be more painful...\nsleep to lose his hex...\nor you'll get to such a level of pain that you can't stand it....",
+  "death.attack.iska_utils.necromantic_debt": "%1$s paid the ultimate price for necromantic debt",
+  "death.attack.iska_utils.necromantic_debt.player": "%1$s's soul was claimed due to %2$s's necromantic debt",
+  "message.iska_utils.necromantic_heart.equip": "You feel the dark energy of the Necromantic Heart flow through you...",
+  "message.iska_utils.necromantic_heart.unequip": "The grip of the Necromantic Heart releases you...",
+  "message.iska_utils.necromantic_heart.saved": "The Necromantic Heart saves you from death, but your debt increases to %s!",
+  "message.iska_utils.necromantic_heart.danger": "Warning: Your necromantic debt is dangerously high!",
+  "message.iska_utils.necromantic_heart.sleep_reset": "A peaceful sleep has cleared your necromantic debt of %s"
 }

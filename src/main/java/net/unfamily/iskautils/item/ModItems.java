@@ -55,6 +55,7 @@ public class ModItems {
     // Registered as a Curio when Curios is available
     public static final DeferredItem<Item> PORTABLE_DISLOCATOR = ITEMS.register("portable_dislocator",
             () -> new PortableDislocatorItem(new Item.Properties().stacksTo(1)));
+            
     
     // Scanner - Custom item for scanning specific blocks in an area
     public static final DeferredItem<Item> SCANNER = ITEMS.register("scanner",
@@ -219,8 +220,11 @@ public class ModItems {
     public static final DeferredItem<Item> WEATHER_DETECTOR = ITEMS.register("weather_detector",
             () -> new BlockItem(ModBlocks.WEATHER_DETECTOR.get(), ITEM_PROPERTIES));
             
-public static final DeferredItem<Item> WEATHER_ALTERER = ITEMS.register("weather_alterer",
-            () -> new BlockItem(ModBlocks.WEATHER_ALTERER.get(), new Item.Properties()));
+    public static final DeferredItem<Item> WEATHER_ALTERER = ITEMS.register("weather_alterer",
+            () -> new BlockItem(ModBlocks.WEATHER_ALTERER.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> TIME_ALTERER = ITEMS.register("time_alterer",
+            () -> new BlockItem(ModBlocks.TIME_ALTERER.get(), ITEM_PROPERTIES));
 
     // ===== DEV BLOCKS =====
     public static final DeferredItem<Item> SCAN_BLOCK = ITEMS.register("scan_block",

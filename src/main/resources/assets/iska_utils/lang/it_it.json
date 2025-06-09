@@ -62,6 +62,7 @@
 
   "block.iska_utils.weather_detector": "Rilevatore del Meteo",
   "block.iska_utils.weather_alterer": "Alteratore del Meteo",
+  "block.iska_utils.time_alterer": "Alteratore del Tempo",
 
   "creativetab.iska_utils.tab": "Utilità di Iskandert",
   "itemGroup.iska_utils.command_items": "Oggetti di Comando di Iskandert",
@@ -154,6 +155,22 @@
   "block.iska_utils.weather_alterer.mode.sunny": "Alteratore del Meteo impostato in modalità Sole",
   "block.iska_utils.weather_alterer.mode.rain": "Alteratore del Meteo impostato in modalità Pioggia",
   "block.iska_utils.weather_alterer.mode.storm": "Alteratore del Meteo impostato in modalità Temporale",
-  "block.iska_utils.weather_alterer.mode.unknown": "Errore: il alteratore del meteo non è stato impostato correttamente"
+  "block.iska_utils.weather_alterer.mode.unknown": "Errore: il alteratore del meteo non è stato impostato correttamente",
 
+  "block.iska_utils.time_alterer.mode.day": "Alteratore del Tempo impostato in modalità Giorno",
+  "block.iska_utils.time_alterer.mode.night": "Alteratore del Tempo impostato in modalità Notte",
+  "block.iska_utils.time_alterer.mode.noon": "Alteratore del Tempo impostato in modalità Mezzogiorno",
+  "block.iska_utils.time_alterer.mode.midnight": "Alteratore del Tempo impostato in modalità Mezzanotte",
+  "block.iska_utils.time_alterer.mode.unknown": "Errore: il alteratore del tempo non è stato impostato correttamente",
+
+  "item.iska_utils.necromantic_crystal_heart": "Cuore di Cristallo Necromantico",
+  "tooltip.iska_utils.necromantic_crystal_heart.desc": "Un cuore oscuro che non ti lascerà perire facilmente...",
+  "tooltip.iska_utils.necromantic_crystal_heart.desc_unused": "Un cuore oscuro che non ti lascerà perire facilmente...\npreviene i danni letali, i colpi successivi saranno più dolorosi...\nriposa per perdere il suo maleficio...\noppure  arriverà a un livello tale di dolore che non puoi sopportare....",
+  "death.attack.iska_utils.necromantic_debt": "%1$s ha pagato il prezzo finale del debito necromantico",
+  "death.attack.iska_utils.necromantic_debt.player": "%1$s ha avuto l'anima reclamata a causa del debito necromantico di %2$s",
+  "message.iska_utils.necromantic_heart.equip": "Senti l'energia oscura del Cuore Necromantico fluire attraverso di te...",
+  "message.iska_utils.necromantic_heart.unequip": "La stretta del Cuore Necromantico ti lascia andare...",
+  "message.iska_utils.necromantic_heart.saved": "Il Cuore Necromantico ti salva dalla morte, ma il tuo debito aumenta a %s!",
+  "message.iska_utils.necromantic_heart.danger": "Attenzione: Il tuo debito necromantico è pericolosamente alto!",
+  "message.iska_utils.necromantic_heart.sleep_reset": "Un sonno pacifico ha cancellato il tuo debito necromantico di %s"
 }

@@ -5,11 +5,11 @@
   ],
   "key": {
     "A": {
-      "item": "iska_utils:smooth_blackstone_slab"
+      "tag": "c:stones"
     }
   },
   "result": {
     "id": "iska_utils:plate_base_block",
-    "count": 9
+    "count": 3
   }
 } 

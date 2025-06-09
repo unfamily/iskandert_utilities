@@ -8,6 +8,8 @@
     "iska_utils:hellfire_igniter",
     "iska_utils:rubber_block",
     "iska_utils:rubber_sap_extractor",
-    "iska_utils:weather_detector"
+    "iska_utils:weather_detector",
+    "iska_utils:time_alterer",
+    "iska_utils:weather_alterer"
   ]
 } 

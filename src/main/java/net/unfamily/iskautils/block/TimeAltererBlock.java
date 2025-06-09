@@ -24,32 +24,33 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
-import net.unfamily.iskautils.block.entity.WeatherAltererBlockEntity;
+import net.unfamily.iskautils.block.entity.TimeAltererBlockEntity;
 import net.unfamily.iskautils.Config;
 
 import javax.annotation.Nullable;
 
 /**
- * The Weather Alterer is a block that can change the weather when powered by redstone
- * It has three modes that change with the right click:
- * 0 = sunny (sun) - changes weather to clear/sunny
- * 1 = rain (rain) - changes weather to rain
- * 2 = storm (storm) - changes weather to thunderstorm
+ * The Time Alterer is a block that can change the time when powered by redstone
+ * It has four modes that change with the right click:
+ * 0 = day - sets time to day
+ * 1 = night - sets time to night
+ * 2 = noon - sets time to noon
+ * 3 = midnight - sets time to midnight
  */
-public class WeatherAltererBlock extends Block implements EntityBlock {
+public class TimeAltererBlock extends Block implements EntityBlock {
     
-    // Property that represents the mode of the block (0=sun, 1=rain, 2=storm)
-    public static final IntegerProperty MODE = IntegerProperty.create("mode", 0, 2);
+    // Property that represents the mode of the block (0=day, 1=night, 2=noon, 3=midnight)
+    public static final IntegerProperty MODE = IntegerProperty.create("mode", 0, 3);
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-    public static final MapCodec<WeatherAltererBlock> CODEC = simpleCodec(WeatherAltererBlock::new);
+    public static final MapCodec<TimeAltererBlock> CODEC = simpleCodec(TimeAltererBlock::new);
     
 
     @Override
-    public MapCodec<? extends WeatherAltererBlock> codec() {
+    public MapCodec<? extends TimeAltererBlock> codec() {
         return CODEC;
     }
     
-    public WeatherAltererBlock(Properties properties) {
+    public TimeAltererBlock(Properties properties) {
         super(properties);
         // Register default states
         this.registerDefaultState(this.stateDefinition.any()
@@ -80,8 +81,8 @@ public class WeatherAltererBlock extends Block implements EntityBlock {
         // Get the current mode
         int currentMode = state.getValue(MODE);
         
-        // Calculate the new mode (cycle between 0, 1, 2)
-        int newMode = (currentMode + 1) % 3;
+        // Calculate the new mode (cycle between 0, 1, 2, 3)
+        int newMode = (currentMode + 1) % 4;
         
         // Update the block state
         level.setBlock(pos, state.setValue(MODE, newMode), Block.UPDATE_ALL);
@@ -91,10 +92,11 @@ public class WeatherAltererBlock extends Block implements EntityBlock {
         
         // Colored feedback message based on the new mode using vanilla format
         Component modeMessage = switch (newMode) {
-            case 0 -> Component.translatable("block.iska_utils.weather_alterer.mode.sunny").withStyle(ChatFormatting.YELLOW);
-            case 1 -> Component.translatable("block.iska_utils.weather_alterer.mode.rain").withStyle(ChatFormatting.WHITE);
-            case 2 -> Component.translatable("block.iska_utils.weather_alterer.mode.storm").withStyle(ChatFormatting.BLUE);
-            default -> Component.translatable("block.iska_utils.weather_alterer.mode.unknown").withStyle(ChatFormatting.DARK_RED);
+            case 0 -> Component.translatable("block.iska_utils.time_alterer.mode.day").withStyle(ChatFormatting.WHITE);
+            case 1 -> Component.translatable("block.iska_utils.time_alterer.mode.night").withStyle(ChatFormatting.BLUE);
+            case 2 -> Component.translatable("block.iska_utils.time_alterer.mode.noon").withStyle(ChatFormatting.YELLOW);
+            case 3 -> Component.translatable("block.iska_utils.time_alterer.mode.midnight").withStyle(ChatFormatting.DARK_PURPLE);
+            default -> Component.translatable("block.iska_utils.time_alterer.mode.unknown").withStyle(ChatFormatting.DARK_RED);
         };
         
         // Send the feedback message to the player in the action bar
@@ -108,14 +110,14 @@ public class WeatherAltererBlock extends Block implements EntityBlock {
         if (!level.isClientSide) {
             boolean isPowered = level.hasNeighborSignal(pos);
             
-            // Only trigger weather change on rising edge (from unpowered to powered)
+            // Only trigger time change on rising edge (from unpowered to powered)
             if (isPowered && !state.getValue(POWERED)) {
                 level.setBlock(pos, state.setValue(POWERED, true), Block.UPDATE_ALL);
                 
-                // Directly activate the weather changer when powered, like HellfireIgniter
+                // Directly activate the time changer when powered, like HellfireIgniter
                 BlockEntity blockEntity = level.getBlockEntity(pos);
-                if (blockEntity instanceof WeatherAltererBlockEntity weatherAlterer) {
-                    weatherAlterer.activateWeatherChange();
+                if (blockEntity instanceof TimeAltererBlockEntity timeAlterer) {
+                    timeAlterer.activateTimeChange();
                 }
                 
             } else if (!isPowered && state.getValue(POWERED)) {
@@ -128,7 +130,7 @@ public class WeatherAltererBlock extends Block implements EntityBlock {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new WeatherAltererBlockEntity(pos, state);
+        return new TimeAltererBlockEntity(pos, state);
     }
 
     @Nullable
@@ -136,8 +138,8 @@ public class WeatherAltererBlock extends Block implements EntityBlock {
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
         return createTickerHelper(
                 blockEntityType,
-                ModBlockEntities.WEATHER_ALTERER_BE.get(),
-                WeatherAltererBlockEntity::tick
+                ModBlockEntities.TIME_ALTERER_BE.get(),
+                TimeAltererBlockEntity::tick
         );
     }
 

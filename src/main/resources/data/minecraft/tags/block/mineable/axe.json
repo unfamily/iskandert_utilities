@@ -17,6 +17,9 @@
     "iska_utils:rubber_trapdoor",
     "iska_utils:rubber_door",
     "iska_utils:rubber_pressure_plate",
-    "iska_utils:rubber_button"
+    "iska_utils:rubber_button",
+    "iska_utils:time_alterer",
+    "iska_utils:weather_alterer",
+    "iska_utils:weather_detector"
   ]
 } 

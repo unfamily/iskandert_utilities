@@ -110,11 +110,19 @@ public class Config
 
     private static final ModConfigSpec.IntValue WEATHER_ALTERER_ENERGY_BUFFER = BUILDER
             .comment("Energy capacity of the Weather Alterer in RF/FE")
-            .defineInRange("200_weatherAltererEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
+            .defineInRange("200_weatherAltererEnergyBuffer", 100000, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue WEATHER_ALTERER_ENERGY_CONSUME = BUILDER
             .comment("Energy consumed per tick by the Weather Alterer in RF/FE")
-            .defineInRange("201_weatherAltererEnergyConsume", 1000, 0, Integer.MAX_VALUE);
+            .defineInRange("201_weatherAltererEnergyConsume", 5000, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue TIME_ALTERER_ENERGY_BUFFER = BUILDER
+            .comment("Energy capacity of the Time Alterer in RF/FE")
+            .defineInRange("202_timeAltererEnergyBuffer", 100000, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue TIME_ALTERER_ENERGY_CONSUME = BUILDER
+            .comment("Energy consumed per tick by the Time Alterer in RF/FE")
+            .defineInRange("203_timeAltererEnergyConsume", 5000, 0, Integer.MAX_VALUE);
             
     // Portable Dislocator resource priority configuration
     private static final ModConfigSpec.BooleanValue PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY = BUILDER
@@ -267,7 +275,8 @@ public class Config
     public static int scannerEnergyBuffer;
     public static int weatherAltererEnergyBuffer;
     public static int weatherAltererEnergyConsume;
-
+    public static int timeAltererEnergyBuffer;
+    public static int timeAltererEnergyConsume;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -299,7 +308,9 @@ public class Config
         electricTreetapEnergyBuffer = ELECTRIC_TREETAP_ENERGY_BUFFER.get();
         weatherAltererEnergyBuffer = WEATHER_ALTERER_ENERGY_BUFFER.get();
         weatherAltererEnergyConsume = WEATHER_ALTERER_ENERGY_CONSUME.get();
-        
+        timeAltererEnergyBuffer = TIME_ALTERER_ENERGY_BUFFER.get();
+        timeAltererEnergyConsume = TIME_ALTERER_ENERGY_CONSUME.get();
+
         // If the energy required is 0, the energy stored is 0 automatically
         if (electricTreetapEnergyConsume <= 0) {
             electricTreetapEnergyBuffer = 0;
@@ -377,6 +388,24 @@ public class Config
             weatherAltererEnergyConsume = weatherAltererEnergyBuffer;
         }
         
+        // Time Alterer logic
+        timeAltererEnergyBuffer = TIME_ALTERER_ENERGY_BUFFER.get();
+        timeAltererEnergyConsume = TIME_ALTERER_ENERGY_CONSUME.get();
+
+        // If the energy required is 0, the energy stored is 0 automatically
+        if (timeAltererEnergyConsume <= 0) {
+            timeAltererEnergyBuffer = 0;
+        }
+        
+        // If the energy stored is 0, the energy consumption is disabled
+        if (timeAltererEnergyBuffer <= 0) {
+            timeAltererEnergyConsume = 0;
+        }
+
+        // If the energy buffer is less than the energy consume, set the energy consume to the energy buffer
+        if(timeAltererEnergyBuffer < timeAltererEnergyConsume) {
+            timeAltererEnergyConsume = timeAltererEnergyBuffer;
+        }
         
     }
     

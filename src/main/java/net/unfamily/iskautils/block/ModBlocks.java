@@ -13,23 +13,7 @@ import net.unfamily.iskautils.block.player.*;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
-import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.SaplingBlock;
-import net.unfamily.iskautils.block.PlateBaseBlock;
-import net.unfamily.iskautils.block.SmoothBlackstoneWallBlock;
-import net.unfamily.iskautils.block.PotionPlateBlock;
-import net.unfamily.iskautils.block.RaftBlock;
-import net.unfamily.iskautils.block.RubberSaplingBlock;
-import net.minecraft.world.level.block.RotatedPillarBlock;
-import net.minecraft.world.level.block.FenceBlock;
-import net.minecraft.world.level.block.FenceGateBlock;
-import net.minecraft.world.level.block.ButtonBlock;
-import net.minecraft.world.level.block.PressurePlateBlock;
-import net.minecraft.world.level.block.DoorBlock;
-import net.minecraft.world.level.block.TrapDoorBlock;
-import net.minecraft.world.level.block.state.properties.BlockSetType;
-import net.minecraft.world.level.block.state.properties.WoodType;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -297,9 +281,16 @@ public class ModBlocks {
     // Weather Alterer Block
     public static final DeferredBlock<WeatherAltererBlock> WEATHER_ALTERER = BLOCKS.register("weather_alterer",
         () -> new WeatherAltererBlock(BlockBehaviour.Properties.of()
-            .strength(3.5F)
-            .requiresCorrectToolForDrops()
+            .strength(0.5F)
             .sound(SoundType.COPPER)
+            .lightLevel((state) -> 3)
+            .noOcclusion()));
+
+    // Time Alterer Block
+    public static final DeferredBlock<TimeAltererBlock> TIME_ALTERER = BLOCKS.register("time_alterer",
+        () -> new TimeAltererBlock(BlockBehaviour.Properties.of()
+            .strength(0.5F)
+            .sound(SoundType.TRIAL_SPAWNER)
             .lightLevel((state) -> 3)
             .noOcclusion()));
 

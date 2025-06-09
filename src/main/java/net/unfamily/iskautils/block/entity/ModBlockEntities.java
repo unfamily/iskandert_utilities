@@ -15,6 +15,7 @@ import net.unfamily.iskautils.block.entity.HellfireIgniterBlockEntity;
 import net.unfamily.iskautils.block.entity.RubberLogEmptyBlockEntity;
 import net.unfamily.iskautils.block.entity.RubberSapExtractorBlockEntity;
 import net.unfamily.iskautils.block.entity.WeatherAltererBlockEntity;
+import net.unfamily.iskautils.block.entity.TimeAltererBlockEntity;
 
 import java.util.function.Supplier;
 
@@ -45,6 +46,12 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("weather_alterer_block_entity", () ->
                     BlockEntityType.Builder.of(WeatherAltererBlockEntity::new, 
                             ModBlocks.WEATHER_ALTERER.get()).build(null));
+
+    // Registra il Time Alterer Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TimeAltererBlockEntity>> TIME_ALTERER_BE =
+            BLOCK_ENTITIES.register("time_alterer_block_entity", () ->
+                    BlockEntityType.Builder.of(TimeAltererBlockEntity::new, 
+                            ModBlocks.TIME_ALTERER.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
@@ -85,6 +92,18 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof WeatherAltererBlockEntity weatherAltererEntity) {
                             return weatherAltererEntity.getEnergyStorage();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register energy capability for TimeAlterer
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    TIME_ALTERER_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof TimeAltererBlockEntity timeAltererEntity) {
+                            return timeAltererEntity.getEnergyStorage();
                         }
                         return null;
                     }

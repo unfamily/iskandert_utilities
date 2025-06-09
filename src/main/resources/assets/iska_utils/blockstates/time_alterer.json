@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "mode=0": {
+      "model": "iska_utils:block/time_alterer_day"
+    },
+    "mode=1": {
+      "model": "iska_utils:block/time_alterer_night"
+    },
+    "mode=2": {
+      "model": "iska_utils:block/time_alterer_noon"
+    },
+    "mode=3": {
+      "model": "iska_utils:block/time_alterer_midnight"
+    }
+  }
+}

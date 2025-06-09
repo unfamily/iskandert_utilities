@@ -8,7 +8,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -112,9 +111,11 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RAFT.get());
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());
                                 pOutput.accept(ModItems.WEATHER_ALTERER.get());
+                                pOutput.accept(ModItems.TIME_ALTERER.get());
 
                                 // Scanner
                                 pOutput.accept(ModItems.SCANNER.get());
+
 
                             }).build());
 

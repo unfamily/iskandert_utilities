@@ -36,5 +36,6 @@ public class CuriosIntegration {
         
         // Register Portable Dislocator as curio
         PortableDislocatorCurioHandler.register();
+        
     }
 } 

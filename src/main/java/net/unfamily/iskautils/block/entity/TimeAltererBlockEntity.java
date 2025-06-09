@@ -14,11 +14,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.block.WeatherAltererBlock;
+import net.unfamily.iskautils.block.TimeAltererBlock;
 
 import java.util.List;
 
-public class WeatherAltererBlockEntity extends BlockEntity {
+public class TimeAltererBlockEntity extends BlockEntity {
     private static final String ENERGY_TAG = "Energy";
     private static final String ACTIVE_MODE_TAG = "ActiveMode";
     
@@ -27,78 +27,52 @@ public class WeatherAltererBlockEntity extends BlockEntity {
     // Energy storage for NeoForge Energy API
     private final EnergyStorageImpl energyStorage;
     
-    public WeatherAltererBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.WEATHER_ALTERER_BE.get(), pos, state);
-        this.energyStorage = new EnergyStorageImpl(Config.weatherAltererEnergyBuffer);
+    public TimeAltererBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.TIME_ALTERER_BE.get(), pos, state);
+        this.energyStorage = new EnergyStorageImpl(Config.timeAltererEnergyBuffer);
         // Start with 0 energy
         this.energyStorage.setEnergy(0);
     }
 
     /**
-     * Executes weather change
-     * @return true if weather was actually changed, false if already in desired state
+     * Executes time change
+     * @return true if time was actually changed
      */
-    private boolean executeWeatherChange(int mode) {
+    private boolean executeTimeChange(int mode) {
         if (!(level instanceof ServerLevel serverLevel)) {
             return false;
         }
         
-        // Check if weather is already in the desired state
-        boolean isRaining = serverLevel.isRaining();
-        boolean isThundering = serverLevel.isThundering();
-        
-        // If weather is already in the desired state, don't change it
+        // Set time based on mode
+        // Minecraft day is 24000 ticks
+        // 0 = day (1000)
+        // 1 = night (13000)
+        // 2 = noon (6000)
+        // 3 = midnight (18000)
+        long newTime;
         switch (mode) {
-            case 0: // Sunny
-                if (!isRaining) {
-                    return false; // Already sunny
-                }
-                break;
-            case 1: // Rain
-                if (isRaining && !isThundering) {
-                    return false; // Already raining but not thundering
-                }
-                break;
-            case 2: // Storm
-                if (isThundering) {
-                    return false; // Already storming
-                }
-                break;
+            case 0 -> newTime = 1000;     // Day
+            case 1 -> newTime = 13000;    // Night
+            case 2 -> newTime = 6000;     // Noon
+            case 3 -> newTime = 18000;    // Midnight
+            default -> newTime = 0;       // Should never happen
         }
         
-        // Duration of the weather (in ticks, 24000 = 1 minecraft day)
-        int weatherDuration = 24000;
+        // Set the time
+        serverLevel.setDayTime(newTime);
         
-        // Change weather based on mode
-        switch (mode) {
-            case 0 -> { // Sunny
-                if (serverLevel.isRaining()) {
-                    serverLevel.setWeatherParameters(weatherDuration, 0, false, false);
-                }
-            }
-            case 1 -> { // Rain
-                if (!serverLevel.isRaining() || serverLevel.isThundering()) {
-                    serverLevel.setWeatherParameters(0, weatherDuration, true, false);
-                }
-            }
-            case 2 -> { // Storm
-                if (!serverLevel.isThundering()) {
-                    serverLevel.setWeatherParameters(0, weatherDuration, true, true);
-                }
-            }
-        }
-        
-        return true; // Weather was changed
+        return true; // Time was changed
     }
     
     /**
-     * Plays the appropriate sound for weather change
+     * Plays the appropriate sound for time change
      */
-    private void playWeatherChangeSound(int mode) {
+    private void playTimeChangeSound(int mode) {
         switch (mode) {
-            case 0 -> level.playSound(null, worldPosition, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0F, 1.0F);
-            case 1 -> level.playSound(null, worldPosition, SoundEvents.WEATHER_RAIN, SoundSource.BLOCKS, 1.0F, 1.0F);
-            case 2 -> level.playSound(null, worldPosition, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.BLOCKS, 1.0F, 1.0F);
+            case 0 -> level.playSound(null, worldPosition, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0F, 1.0F);       // Day - bright sound
+            case 1 -> level.playSound(null, worldPosition, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.0F, 0.8F);     // Night - darker sound
+            case 2 -> level.playSound(null, worldPosition, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.2F);  // Noon - high pitch
+            case 3 -> level.playSound(null, worldPosition, SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.BLOCKS, 1.0F, 0.5F);  // Midnight - creepy sound
         }
     }
     
@@ -122,36 +96,36 @@ public class WeatherAltererBlockEntity extends BlockEntity {
     }
     
     /**
-     * Called when the block receives a redstone signal, similar to HellfireIgniter
+     * Called when the block receives a redstone signal
      */
-    public void activateWeatherChange() {
+    public void activateTimeChange() {
         if (level == null || level.isClientSide) {
             return;
         }
         
         // Get the current mode from blockstate
-        int mode = this.getBlockState().getValue(WeatherAltererBlock.MODE);
+        int mode = this.getBlockState().getValue(TimeAltererBlock.MODE);
         
         // Check if there's enough energy
-        int energyRequired = Config.weatherAltererEnergyConsume;
+        int energyRequired = Config.timeAltererEnergyConsume;
         if (energyRequired > 0 && this.energyStorage.getEnergyStored() < energyRequired) {
             // Not enough energy, simply return without any feedback
             return;
         }
         
-        // Check if weather needs to be changed
-        boolean weatherChanged = executeWeatherChange(mode);
+        // Change time
+        boolean timeChanged = executeTimeChange(mode);
         
-        // Only consume energy if weather was actually changed
-        if (weatherChanged) {
+        // Only consume energy if time was actually changed
+        if (timeChanged) {
             // Consume energy
             this.energyStorage.extractEnergy(energyRequired, false);
             
             // Set active mode
             this.activeMode = mode;
             
-            // Play weather change sound
-            playWeatherChangeSound(mode);
+            // Play time change sound
+            playTimeChangeSound(mode);
             
             this.setChanged();
         }
@@ -163,7 +137,7 @@ public class WeatherAltererBlockEntity extends BlockEntity {
      * @return Amount of energy actually added
      */
     public int rechargeEnergy(int amount) {
-        int maxBuffer = Config.weatherAltererEnergyBuffer;
+        int maxBuffer = Config.timeAltererEnergyBuffer;
         if (maxBuffer <= 0 || amount <= 0) {
             return 0;
         }
@@ -191,14 +165,14 @@ public class WeatherAltererBlockEntity extends BlockEntity {
      * Gets the maximum energy capacity
      */
     public int getMaxEnergyStored() {
-        return Config.weatherAltererEnergyBuffer;
+        return Config.timeAltererEnergyBuffer;
     }
     
     /**
-     * Checks if the block has enough energy for weather change
+     * Checks if the block has enough energy for time change
      */
     public boolean hasEnoughEnergy() {
-        return this.energyStorage.getEnergyStored() >= Config.weatherAltererEnergyConsume;
+        return this.energyStorage.getEnergyStored() >= Config.timeAltererEnergyConsume;
     }
     
     /**
@@ -230,13 +204,13 @@ public class WeatherAltererBlockEntity extends BlockEntity {
     /**
      * Ticker method that handles block entity updates
      */
-    public static void tick(Level level, BlockPos blockPos, BlockState blockState, WeatherAltererBlockEntity blockEntity) {
+    public static void tick(Level level, BlockPos blockPos, BlockState blockState, TimeAltererBlockEntity blockEntity) {
         if (level.isClientSide) {
             return;
         }
         
         // If the block is inactive but was active before, reset the active mode
-        if (!blockState.getValue(WeatherAltererBlock.POWERED) && blockEntity.activeMode != -1) {
+        if (!blockState.getValue(TimeAltererBlock.POWERED) && blockEntity.activeMode != -1) {
             // Play deactivation sound
             level.playSound(null, blockPos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.0F, 1.0F);
             
