@@ -132,8 +132,14 @@
 
   "item.iska_utils.scanner": "Scanner",
   "item.iska_utils.scanner.target_set": "Target block set: %s",
-  "item.iska_utils.scanner.no_target": "No target block set. Use Shift+right click on a block to set it.",
+  "item.iska_utils.scanner.no_target": "No target set. Use Shift+right click on a block or hit a mob to set it.",
   "item.iska_utils.scanner.scan_started": "Scanning for %s started...",
   "item.iska_utils.scanner.found_blocks": "Found %s blocks of %s in the area.",
-  "item.iska_utils.scanner.interrupted": "Clearing visual markers..."
+  "item.iska_utils.scanner.interrupted": "Clearing visual markers...",
+  "item.iska_utils.scanner.mob_target_set": "Mob target set: %s",
+  "item.iska_utils.scanner.mob_target_cleared": "Mob target cleared",
+  "item.iska_utils.scanner.target_reset": "Scanner reset",
+  "item.iska_utils.scanner.found_mobs": "Found %s mobs in the area.",
+  "item.iska_utils.scanner.no_energy": "Not enough energy to use the Scanner!",
+  "item.iska_utils.scanner.tooltip.energy": "Energy: "
 }

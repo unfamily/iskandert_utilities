@@ -17,8 +17,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
-import net.unfamily.iskautils.block.RubberLogEmptyBlock;
-import net.unfamily.iskautils.block.RubberLogFilledBlock;
 
 import java.util.List;
 

@@ -58,7 +58,10 @@ public class ModItems {
     
     // Scanner - Custom item for scanning specific blocks in an area
     public static final DeferredItem<Item> SCANNER = ITEMS.register("scanner",
-            () -> new ScannerItem());
+            () -> {
+                ScannerItem scanner = new ScannerItem();
+                return scanner;
+            });
             
     // ===== RUBBER TREE ITEMS =====
     

@@ -176,10 +176,41 @@ public class Config
         BUILDER.pop(); // pop rubber_sap category
         
         // Category for Development/Advanced Configuration
+        BUILDER.comment("Scanner Configuration").push("scanner");
+    }
+
+    // Scanner configuration
+    private static final ModConfigSpec.IntValue SCANNER_MAX_TTL = BUILDER
+            .comment("Maximum time to live for scanner markers in ticks (1 second = 20 ticks)")
+            .defineInRange("000_scannerMaxTTL", 600, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue SCANNER_SCAN_RANGE = BUILDER
+            .comment("Maximum scan range in blocks")
+            .defineInRange("001_scannerScanRange", 128, 1, 512);
+
+    private static final ModConfigSpec.IntValue SCANNER_SCAN_DURATION = BUILDER
+            .comment("Duration in ticks needed to hold the scanner for scanning (1 second = 20 ticks)")
+            .defineInRange("002_scannerScanDuration", 60, 1, 200);
+
+    private static final ModConfigSpec.IntValue SCANNER_MAX_BLOCKS = BUILDER
+            .comment("Maximum number of blocks that can be scanned at once")
+            .defineInRange("003_scannerMaxBlocks", 512, 1, Integer.MAX_VALUE);
+
+    // Scanner energy configuration
+    private static final ModConfigSpec.IntValue SCANNER_ENERGY_CONSUME = BUILDER
+            .comment("Amount of energy consumed per scan operation by the Scanner")
+            .defineInRange("004_scannerEnergyConsume", 50, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue SCANNER_ENERGY_BUFFER = BUILDER
+            .comment("Energy capacity of the Scanner in RF/FE")
+            .defineInRange("005_scannerEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
+
+    static {
+        BUILDER.pop(); // End of scanner category
         BUILDER.comment("Development and Advanced Configuration").push("dev");
     }
 
-    // Dynamic Potion Plates configuration
+    // External Scripts configuration
     private static final ModConfigSpec.ConfigValue<String> EXTERNAL_SCRIPTS_PATH = BUILDER
             .comment("Path to the external scripts directory for custom potion plates and stage items",
                     "Default: 'kubejs/external_scripts'",
@@ -220,6 +251,13 @@ public class Config
     public static int rubberSapExtractorEnergyBuffer;
     public static int rubberSapExtractorSpeed;
     public static java.util.List<String> crudeOils;
+    public static int scannerMaxTTL;
+    public static int scannerScanRange;
+    public static int scannerScanDuration;
+    public static int scannerMaxBlocks;
+    public static int scannerEnergyConsume;
+    public static int scannerEnergyBuffer;
+
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -275,6 +313,22 @@ public class Config
         }
         
         rubberSapExtractorSpeed = RUBBER_SAP_EXTRACTOR_SPEED.get();
+        
+        scannerMaxTTL = SCANNER_MAX_TTL.get();
+        scannerScanRange = SCANNER_SCAN_RANGE.get();
+        scannerScanDuration = SCANNER_SCAN_DURATION.get();
+        scannerMaxBlocks = SCANNER_MAX_BLOCKS.get();
+        scannerEnergyConsume = SCANNER_ENERGY_CONSUME.get();
+        scannerEnergyBuffer = SCANNER_ENERGY_BUFFER.get();
+        
+        // Scanner energy logic
+        if (scannerEnergyConsume <= 0) {
+            scannerEnergyBuffer = 0;
+        }
+        
+        if (scannerEnergyBuffer <= 0) {
+            scannerEnergyConsume = 0;
+        }
     }
     
     @SubscribeEvent

@@ -132,8 +132,14 @@
 
   "item.iska_utils.scanner": "Scanner",
   "item.iska_utils.scanner.target_set": "Blocco target impostato: %s",
-  "item.iska_utils.scanner.no_target": "Nessun blocco target impostato. Usa Shift+click destro su un blocco per impostarlo.",
+  "item.iska_utils.scanner.no_target": "Nessun  target impostato. Usa Shift+click destro su un blocco o colpisci un mob per impostarlo.",
   "item.iska_utils.scanner.scan_started": "Scansione per %s iniziata...",
   "item.iska_utils.scanner.found_blocks": "Trovati %s blocchi di %s nell'area.",
-  "item.iska_utils.scanner.interrupted": "Rimozione dei marker visivi..."
+  "item.iska_utils.scanner.interrupted": "Rimozione dei marker visivi...",
+  "item.iska_utils.scanner.mob_target_set": "Mob target impostato: %s",
+  "item.iska_utils.scanner.mob_target_cleared": "Mob target rimosso",
+  "item.iska_utils.scanner.target_reset": "Scanner resettato",
+  "item.iska_utils.scanner.found_mobs": "Trovati %s mob nell'area.",
+  "item.iska_utils.scanner.no_energy": "Energia insufficiente per usare lo Scanner!",
+  "item.iska_utils.scanner.tooltip.energy": "Energia: "
 }

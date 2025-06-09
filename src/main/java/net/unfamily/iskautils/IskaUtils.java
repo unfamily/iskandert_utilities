@@ -19,8 +19,9 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.ClientEvents;
@@ -30,29 +31,22 @@ import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
+import net.unfamily.iskautils.item.custom.ScannerItem;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ModWoodTypes;
-import net.unfamily.iskautils.data.PotionPlateLoader;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.unfamily.iskautils.block.PotionPlateBlock;
 import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
 import net.unfamily.iskautils.data.DynamicPotionPlateModelLoader;
 import net.unfamily.iskautils.command.MacroLoader;
 import net.unfamily.iskautils.command.MacroCommand;
-import net.unfamily.iskautils.command.ExecuteMacroCommand;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.NeoForge;
-import net.unfamily.iskautils.item.custom.RubberBootsItem;
 import net.minecraft.server.MinecraftServer;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
@@ -121,6 +115,8 @@ public class IskaUtils {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
+        LOGGER.info("IskaUtils common setup");
+        
         // Register network messages
         ModMessages.register();
         
@@ -135,6 +131,9 @@ public class IskaUtils {
         
         // Inizializza il sistema di stage degli item
         net.unfamily.iskautils.iska_utils_stages.StageItemManager.initialize(event);
+
+        // Registra eventi per chunk unload che rimuovono i marker dello scanner
+        NeoForge.EVENT_BUS.addListener(this::onChunkUnload);
     }
     
     /**
@@ -201,6 +200,10 @@ public class IskaUtils {
         public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
             // Server is fully started, all external datapacks should be loaded by now
             LOGGER.info("Server fully started, all external datapacks should be available");
+            
+            // Initialize a new session ID for markers
+            net.unfamily.iskautils.util.SessionVariables.resetScannerSessionId();
+            LOGGER.info("Initialized new scanner session ID: {}", net.unfamily.iskautils.util.SessionVariables.getScannerSessionId());
             
             // Clean up any scanner markers that might be leftover from previous session
             try {
@@ -282,6 +285,19 @@ public class IskaUtils {
                     PotionPlateBlock.cleanupCooldowns(event.getServer().overworld());
                 }
             }
+        }
+    }
+
+    /**
+     * Gestisce l'evento di unload di un chunk per rimuovere i marker dello scanner
+     */
+    private void onChunkUnload(ChunkEvent.Unload event) {
+        if (event.getChunk() instanceof net.minecraft.world.level.chunk.LevelChunk levelChunk && !levelChunk.getLevel().isClientSide()) {
+            net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) levelChunk.getLevel();
+            net.minecraft.world.level.ChunkPos chunkPos = levelChunk.getPos();
+            
+            // Chiama il metodo statico di ScannerItem per rimuovere i marker in questo chunk
+            ScannerItem.removeMarkersInChunk(level, chunkPos);
         }
     }
 
