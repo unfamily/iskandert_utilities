@@ -8,3 +8,4 @@ At the moment it only adds:
 - Infernal Igniter: consumes some energy to create fire around itself; you can turn off or adjust from config the energy consumption.
 - Portable Dislocator: allow to teleport with nature's compass and explorer's compass
 - JSON scripting system.
+
