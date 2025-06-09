@@ -68,21 +68,21 @@ public class ClearMarkers {
 			// Tieni presente che NON possiamo usare tag=!session_xyz perché questo potrebbe includere entità che non hanno affatto il tag
 			String listCommand = String.format("execute as @e[type=block_display,tag=temp_scan] unless entity @s[tag=%s] run tag @s add scan_cleanup", sessionTag);
 			serverLevel.getServer().getCommands().performPrefixedCommand(
-				serverLevel.getServer().createCommandSourceStack(),
+				serverLevel.getServer().createCommandSourceStack().withSuppressedOutput(),
 				listCommand
 			);
 			
 			// Ora rimuovi dal team tutte le entità marcate per la pulizia
 			String teamLeaveCommand = "team leave @e[type=block_display,tag=scan_cleanup]";
 			serverLevel.getServer().getCommands().performPrefixedCommand(
-				serverLevel.getServer().createCommandSourceStack(),
+				serverLevel.getServer().createCommandSourceStack().withSuppressedOutput(),
 				teamLeaveCommand
 			);
 			
 			// Infine, uccidi tutte le entità marcate per la pulizia
 			String killCommand = "kill @e[type=block_display,tag=scan_cleanup]";
 			serverLevel.getServer().getCommands().performPrefixedCommand(
-				serverLevel.getServer().createCommandSourceStack(),
+				serverLevel.getServer().createCommandSourceStack().withSuppressedOutput(),
 				killCommand
 			);
 			

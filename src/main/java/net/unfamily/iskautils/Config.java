@@ -202,7 +202,7 @@ public class Config
 
     private static final ModConfigSpec.IntValue SCANNER_SCAN_RANGE = BUILDER
             .comment("Maximum scan range in blocks")
-            .defineInRange("001_scannerScanRange", 128, 1, 512);
+            .defineInRange("001_scannerScanRange", 128, 1, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue SCANNER_SCAN_DURATION = BUILDER
             .comment("Duration in ticks needed to hold the scanner for scanning (1 second = 20 ticks)")
