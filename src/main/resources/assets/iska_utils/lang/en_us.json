@@ -166,5 +166,7 @@
   "tooltip.iska_utils.necrotic_crystal_heart.desc0": "§5A dark heart that won't let you perish easily...",
   "tooltip.iska_utils.necrotic_crystal_heart.desc1": "Your wounds will become deeper and deeper...",
   "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Only a good sleep will heal you...",
-  "tooltip.iska_utils.necrotic_crystal_heart.desc3": "Or you will be consumed by pain..."
+  "tooltip.iska_utils.necrotic_crystal_heart.desc3": "Or you will be consumed by pain...",
+  "tooltip.iska_utils.necrotic_crystal_heart.artifacts_required": "§4Artifacts mod is required to use this item",
+  "tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded": "§4Mimic droppable"
 }

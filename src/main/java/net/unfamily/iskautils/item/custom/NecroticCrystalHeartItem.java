@@ -13,6 +13,8 @@ import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.stage.StageRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.neoforged.fml.ModList;
+import net.unfamily.iskautils.Config;
 
 import java.util.List;
 
@@ -39,6 +41,14 @@ public class NecroticCrystalHeartItem extends Item {
         tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc1").getString()));
         tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc2").getString()));
         tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc3").getString()));
+        
+        if (Config.artifactsInfo) {
+            if (!isArtifactsLoaded()) {
+                tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_required").getString()));
+            } else {
+                tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded").getString()));
+            }
+        }
     }
     
     /**
@@ -78,5 +88,9 @@ public class NecroticCrystalHeartItem extends Item {
         if (entity instanceof Player player) {
             StageRegistry.addPlayerStage(player, "necro_crystal_heart_equip");
         }
+    }
+
+    private boolean isArtifactsLoaded() {
+        return net.neoforged.fml.ModList.get().isLoaded("artifacts");
     }
 } 

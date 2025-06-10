@@ -230,6 +230,11 @@ public class Config
                     "The system will look for any scripts of this mod: <path>/potion_plates/")
             .define("000_external_scripts_path", "kubejs/external_scripts");
 
+    private static final ModConfigSpec.BooleanValue ARTIFACTS_INFO= BUILDER
+            .comment("If true, the mod will show the artifacts info in the tooltip of the Necrotic Crystal Heart",
+                    "If false, the mod will not show the artifacts info in the tooltip of the Necrotic Crystal Heart")
+            .define("001_artifacts_info", true);
+
     static {
         BUILDER.pop(); // End of dev category
     }
@@ -273,6 +278,7 @@ public class Config
     public static int weatherAltererEnergyConsume;
     public static int timeAltererEnergyBuffer;
     public static int timeAltererEnergyConsume;
+    public static boolean artifactsInfo;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -306,6 +312,7 @@ public class Config
         weatherAltererEnergyConsume = WEATHER_ALTERER_ENERGY_CONSUME.get();
         timeAltererEnergyBuffer = TIME_ALTERER_ENERGY_BUFFER.get();
         timeAltererEnergyConsume = TIME_ALTERER_ENERGY_CONSUME.get();
+        artifactsInfo = ARTIFACTS_INFO.get();
 
         // If the energy required is 0, the energy stored is 0 automatically
         if (electricTreetapEnergyConsume <= 0) {

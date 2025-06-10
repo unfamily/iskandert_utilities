@@ -33,7 +33,6 @@ import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
 import net.unfamily.iskautils.item.custom.ScannerItem;
-import net.unfamily.iskautils.loot.ModLootModifiers;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ModWoodTypes;
@@ -105,9 +104,6 @@ public class IskaUtils {
         if (ModUtils.isCuriosLoaded()) {
             CuriosIntegration.register(modEventBus);
         }
-        
-        // Register loot modifiers
-        ModLootModifiers.register(modEventBus);
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
