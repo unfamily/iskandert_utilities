@@ -83,7 +83,8 @@ public class NecroticCrystalHeartCurioHandler {
         if (!(entity instanceof Player)) {
             return false;
         }
-        
+
+
         LOGGER.debug("Controllo se il cuore è equipaggiato");
 
         ListTag inventory[] = new ListTag[512];
