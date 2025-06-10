@@ -15,8 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.neoforged.fml.ModList;
 import net.unfamily.iskautils.Config;
+import java.lang.reflect.Method;
 
 import java.util.List;
+import java.lang.Class;
 
 /**
  * The Necrotic Crystal Heart is an item that, when worn as a curio,
@@ -86,7 +88,19 @@ public class NecroticCrystalHeartItem extends Item {
         super.inventoryTick(stack, level, entity, slotId, isSelected);
         
         if (entity instanceof Player player) {
-            StageRegistry.addPlayerStage(player, "necro_crystal_heart_equip");
+            // verify if the item is in the vanilla inventory
+            boolean isInVanillaInventory = false;
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                if (player.getInventory().getItem(i) == stack) {
+                    isInVanillaInventory = true;
+                    break;
+                }
+            }
+            
+            // if the item is not in the vanilla inventory, add the stage
+            if (!isInVanillaInventory) {
+                StageRegistry.addPlayerStage(player, "necro_crystal_heart_equip");
+            }
         }
     }
 
