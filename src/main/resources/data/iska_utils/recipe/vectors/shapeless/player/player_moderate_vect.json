@@ -3,9 +3,6 @@
   "ingredients": [
     {
       "item": "iska_utils:moderate_vect"
-    },
-    {
-      "item": "minecraft:diamond"
     }
   ],
   "result": {
