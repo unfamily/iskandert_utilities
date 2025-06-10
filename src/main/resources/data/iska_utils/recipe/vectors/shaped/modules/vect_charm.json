@@ -7,13 +7,13 @@
   ],
   "key": {
     "C": {
-      "tag": "c:gems/diamond"
+      "tag": "c:storage_blocks/diamond"
     },
     "B": {
       "item": "iska_utils:ultra_module"
     },
     "A": {
-      "tag": "c:gems/emerald"
+      "tag": "c:storage_blocks/emerald"
     }
   },
   "result": {
