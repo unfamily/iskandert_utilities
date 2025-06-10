@@ -6,6 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.custom.NecroticCrystalHeartCurioHandler;
 import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.stage.StageRegistry;
@@ -15,7 +16,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Handler per intercettare gli eventi di danno e gestire il Necrotic Crystal Heart.
  */
-@EventBusSubscriber
+@EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class NecroticEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NecroticEventHandler.class);
 
@@ -33,8 +34,17 @@ public class NecroticEventHandler {
         
         // Verifica se l'entità è un giocatore
         if (entity instanceof Player player && !entity.level().isClientSide()) {
-            // Controlla se il giocatore ha lo stage necro_crystal_equip impostato a true
-            if (StageRegistry.playerHasStage(player, NecroticCrystalHeartCurioHandler.STAGE_NECRO_CRYSTAL_EQUIP)) {
+            LOGGER.info("[NecroticEventHandler] Evento danno ricevuto per il giocatore: {} - Danno: {}", 
+                     player.getName().getString(), event.getAmount());
+            
+            // Controlla sia lo stage che l'NBT
+            boolean hasStage = StageRegistry.playerHasStage(player, NecroticCrystalHeartCurioHandler.STAGE_NECRO_CRYSTAL_EQUIP);
+            boolean hasNbtFlag = NecroticCrystalHeartCurioHandler.isNecroticHeartEquipped(player);
+            
+            LOGGER.info("[NecroticEventHandler] Controllo protezione - Stage: {}, NBT: {}", hasStage, hasNbtFlag);
+            
+            // Se uno dei due è true, proteggi dal danno
+            if (hasStage || hasNbtFlag) {
                 // Annulla completamente il danno
                 event.setCanceled(true);
                 // In alternativa, imposta il danno a 0
@@ -43,8 +53,14 @@ public class NecroticEventHandler {
                 // Rimuove lo stage per il prossimo danno
                 StageRegistry.removePlayerStage(player, NecroticCrystalHeartCurioHandler.STAGE_NECRO_CRYSTAL_EQUIP);
                 
-                // Debug log
-                LOGGER.debug("Danno annullato per il giocatore {} grazie al Necrotic Crystal Heart", 
+                // Rimuove anche il flag NBT
+                NecroticCrystalHeartCurioHandler.setNecroticHeartEquipped(player, false);
+                
+                // Log info invece di debug per verificare che viene effettivamente chiamato
+                LOGGER.info("[NecroticEventHandler] Danno annullato per il giocatore {} grazie al Necrotic Crystal Heart", 
+                        player.getName().getString());
+            } else {
+                LOGGER.info("[NecroticEventHandler] Giocatore {} non ha protezione attiva", 
                         player.getName().getString());
             }
         }

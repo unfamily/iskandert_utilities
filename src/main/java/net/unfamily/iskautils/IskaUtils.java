@@ -208,7 +208,8 @@ public class IskaUtils {
             // Clean up any scanner markers that might be leftover from previous session
             try {
                 if (event.getServer().overworld() != null) {
-                    net.unfamily.iskautils.item.custom.ScannerItem.cleanupAllMarkers(event.getServer().overworld());
+                    // La funzionalità cleanupAllMarkers è stata rimossa
+                    // net.unfamily.iskautils.item.custom.ScannerItem.cleanupAllMarkers(event.getServer().overworld());
                     LOGGER.info("Cleaned up all scanner markers");
                 }
             } catch (Exception e) {
@@ -252,7 +253,8 @@ public class IskaUtils {
                         try {
                             MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
                             if (server != null && server.overworld() != null) {
-                                net.unfamily.iskautils.item.custom.ScannerItem.cleanupAllMarkers(server.overworld());
+                                // La funzionalità cleanupAllMarkers è stata rimossa
+                                // net.unfamily.iskautils.item.custom.ScannerItem.cleanupAllMarkers(server.overworld());
                                 LOGGER.info("Cleaned up all scanner markers during reload");
                             }
                         } catch (Exception e) {
@@ -296,8 +298,8 @@ public class IskaUtils {
             net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) levelChunk.getLevel();
             net.minecraft.world.level.ChunkPos chunkPos = levelChunk.getPos();
             
-            // Chiama il metodo statico di ScannerItem per rimuovere i marker in questo chunk
-            ScannerItem.removeMarkersInChunk(level, chunkPos);
+            // La funzionalità removeMarkersInChunk è stata rimossa
+            // ScannerItem.removeMarkersInChunk(level, chunkPos);
         }
     }
 

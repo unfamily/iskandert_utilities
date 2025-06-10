@@ -195,10 +195,7 @@ public class Config
         BUILDER.comment("Scanner Configuration").push("scanner");
     }
 
-    // Scanner configuration
-    private static final ModConfigSpec.IntValue SCANNER_MAX_TTL = BUILDER
-            .comment("Maximum time to live for scanner markers in ticks (1 second = 20 ticks)")
-            .defineInRange("000_scannerMaxTTL", 600, 0, Integer.MAX_VALUE);
+    //removed TTL from scanner config is hardcoded now
 
     private static final ModConfigSpec.IntValue SCANNER_SCAN_RANGE = BUILDER
             .comment("Maximum scan range in blocks")
@@ -267,7 +264,6 @@ public class Config
     public static int rubberSapExtractorEnergyBuffer;
     public static int rubberSapExtractorSpeed;
     public static java.util.List<String> crudeOils;
-    public static int scannerMaxTTL;
     public static int scannerScanRange;
     public static int scannerScanDuration;
     public static int scannerMaxBlocks;
@@ -348,7 +344,6 @@ public class Config
         
         rubberSapExtractorSpeed = RUBBER_SAP_EXTRACTOR_SPEED.get();
         
-        scannerMaxTTL = SCANNER_MAX_TTL.get();
         scannerScanRange = SCANNER_SCAN_RANGE.get();
         scannerScanDuration = SCANNER_SCAN_DURATION.get();
         scannerMaxBlocks = SCANNER_MAX_BLOCKS.get();

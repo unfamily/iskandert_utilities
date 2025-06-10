@@ -9,6 +9,10 @@ import org.slf4j.Logger;
 
 /**
  * Eventi per lo scanner di blocchi
+ * Ora gestisce solo l'aggiornamento del TTL, rimuovendo le funzionalità:
+ * - removeMarkersInChunk (rimozione marker per chunk)
+ * - cleanupAllMarkers (pulizia all'avvio del server)
+ * - removeMarker (rimozione singoli marker)
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class ScannerEvents {
@@ -16,6 +20,7 @@ public class ScannerEvents {
     
     /**
      * Gestisce il tick lato server
+     * Aggiorna solo il TTL dei marker attivi
      */
     @SubscribeEvent
     public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
