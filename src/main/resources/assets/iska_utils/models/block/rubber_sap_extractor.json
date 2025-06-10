@@ -65,8 +65,8 @@
 		},
 		{
 			"name": "pipe_final",
-			"from": [5, 21, 13.9],
-			"to": [11, 27, 15.9],
+			"from": [5, 21, 14],
+			"to": [11, 27, 16.1],
 			"rotation": {"angle": 0, "axis": "y", "origin": [7, 23, 14]},
 			"faces": {
 				"north": {"uv": [5, 1, 11, 7], "texture": "#3"},
