@@ -27,11 +27,13 @@ import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.ClientEvents;
 import net.unfamily.iskautils.command.CommandItemLoader;
 import net.unfamily.iskautils.data.VectorCharmData;
+import net.unfamily.iskautils.events.LootEvents;
 import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
 import net.unfamily.iskautils.item.custom.ScannerItem;
+import net.unfamily.iskautils.loot.ModLootModifiers;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ModWoodTypes;
@@ -103,6 +105,9 @@ public class IskaUtils {
         if (ModUtils.isCuriosLoaded()) {
             CuriosIntegration.register(modEventBus);
         }
+        
+        // Register loot modifiers
+        ModLootModifiers.register(modEventBus);
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
@@ -134,6 +139,10 @@ public class IskaUtils {
 
         // Registra eventi per chunk unload che rimuovono i marker dello scanner
         NeoForge.EVENT_BUS.addListener(this::onChunkUnload);
+        
+        // Registro l'handler degli eventi dei loot table
+        LOGGER.info("Registrando l'handler degli eventi dei loot table...");
+        NeoForge.EVENT_BUS.register(LootEvents.class);
     }
     
     /**

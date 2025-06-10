@@ -809,6 +809,7 @@ public class ScannerItem extends Item {
         return canStoreEnergy();
     }
     
+
     /**
      * Gets the energy stored in the ItemStack
      */
@@ -817,8 +818,7 @@ public class ScannerItem extends Item {
             return 0;
         }
         
-        // Ensure the energy tag exists
-        CompoundTag tag = ensureEnergyTag(stack);
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         return tag.getInt(ENERGY_TAG);
     }
     
@@ -830,12 +830,12 @@ public class ScannerItem extends Item {
             return;
         }
         
-        // Ensure the energy tag exists
-        CompoundTag tag = ensureEnergyTag(stack);
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         int maxCapacity = Config.scannerEnergyBuffer;
-        tag.putInt(ENERGY_TAG, 0);
+        tag.putInt(ENERGY_TAG, Math.max(0, Math.min(energy, maxCapacity)));
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
+    
     
     /**
      * Ensures that the energy tag exists in the ItemStack's NBT

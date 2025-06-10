@@ -37,6 +37,8 @@ public class NecroticCrystalHeartItem extends Item {
         
         tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc0").getString()));
         tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc1").getString()));
+        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc2").getString()));
+        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc3").getString()));
     }
     
     /**
