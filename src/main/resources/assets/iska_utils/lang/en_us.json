@@ -76,8 +76,8 @@
   
   "key.categories.iska_utils": "Iskandert's Utilities",
   "key.category.iska_utils": "Iskandert's Utilities",
-  "key.iska_utils.vector_vertical": "Vector Charm Vertical Setting",
-  "key.iska_utils.vector_horizontal": "Vector Charm Horizontal Setting",
+  "key.iska_utils.vector_vertical": "Vector Charm Vertical Setting (Increase)",
+  "key.iska_utils.vector_horizontal": "Vector Charm Horizontal Setting (Increase)",
   "key.iska_utils.vector_hover": "Vector Charm Hover Mode Toggle",
   "key.iska_utils.vector_vertical_decrease": "Vector Charm Vertical Setting (Decrease)",
   "key.iska_utils.vector_horizontal_decrease": "Vector Charm Horizontal Setting (Decrease)",
