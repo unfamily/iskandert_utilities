@@ -11,7 +11,7 @@
   "item.iska_utils.rubber": "Rubber",
   "item.iska_utils.treetap": "Treetap",
   "item.iska_utils.electric_treetap": "Electric Treetap",
-  "item.iska_utils.necrotic_crystal_heart": "Necrotic Crystal Heart",
+  "item.iska_utils.necrotic_crystal_heart": "Necromantic Crystal Heart",
   
   "item.iska_utils.rubber_boots": "Rubber Boots",
   "block.iska_utils.rubber_log": "Rubber Log",
@@ -163,6 +163,8 @@
   "block.iska_utils.time_alterer.mode.midnight": "Time Alterer set to Midnight mode",
   "block.iska_utils.time_alterer.mode.unknown": "Error: the time alterer has not been set correctly",
 
-  "tooltip.iska_utils.necrotic_crystal_heart.desc": "A dark heart that will not let you perish easily...",
-  "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Reduces incoming damage by 25% when equipped as a charm"
+  "tooltip.iska_utils.necrotic_crystal_heart.desc0": "§5A dark heart that won't let you perish easily...",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc1": "Your wounds will become deeper and deeper...",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Only a good sleep will heal you...",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc3": "Or you will be consumed by pain..."
 }

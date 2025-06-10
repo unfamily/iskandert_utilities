@@ -10,70 +10,71 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.util.ModUtils;
+import net.unfamily.iskautils.stage.StageRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 /**
- * Il Necrotic Crystal Heart è un item che, quando indossato come curio,
- * intercetta gli eventi di danno e può modificarne il comportamento.
- * Blocca completamente tutti i danni quando è equipaggiato.
+ * The Necrotic Crystal Heart is an item that, when worn as a curio,
+ * intercepts damage events and can modify their behavior.
+ * Completely blocks all damage when equipped.
  */
 public class NecroticCrystalHeartItem extends Item {
     private static final Logger LOGGER = LoggerFactory.getLogger(NecroticCrystalHeartItem.class);
     
-    // Impostazione per la riduzione del danno
-    private static final float DAMAGE_REDUCTION = 0.0f; // Riduzione completa (0% del danno originale)
+    // Damage reduction setting
+    private static final float DAMAGE_REDUCTION = 0.0f; // Complete reduction (0% of original damage)
     
     public NecroticCrystalHeartItem(Properties properties) {
         super(properties);
     }
     
     @Override
-    public boolean isFoil(ItemStack stack) {
-        // Aggiungi l'effetto 'incantato' al cuore
-        return true;
-    }
-    
-    @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
-        tooltipComponents.add(Component.literal("§5Protegge dai danni quando equipaggiato"));
-        tooltipComponents.add(Component.literal("§7Nessun consumo di energia richiesto"));
+        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc0").getString()));
+        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc1").getString()));
     }
     
     /**
-     * Gestisce la logica quando un'entità che indossa il cuore subisce danno.
-     * Questo metodo è chiamato dall'handler degli eventi quando viene rilevato che
-     * l'entità che subisce danno indossa il Necrotic Crystal Heart.
+     * Handles logic when an entity wearing the heart takes damage.
+     * This method is called by the event handler when it detects that
+     * the entity taking damage is wearing the Necrotic Crystal Heart.
      * 
-     * @param stack Lo stack dell'item
-     * @param entity L'entità che indossa il cuore
-     * @param damageAmount La quantità di danno originale
-     * @return La nuova quantità di danno da applicare, o -1 per annullare l'evento
+     * @param stack The item stack
+     * @param entity The entity wearing the heart
+     * @param damageAmount The original damage amount
+     * @return The new damage amount to apply, or -1 to cancel the event
      */
     public static float onDamageReceived(ItemStack stack, LivingEntity entity, float damageAmount) {
         if (entity instanceof Player player) {
-            // Riduce il danno in base alla costante DAMAGE_REDUCTION (0% = nessun danno)
+            // Reduce damage based on DAMAGE_REDUCTION constant (0% = no damage)
             float reducedDamage = damageAmount * DAMAGE_REDUCTION;
             
-            // Visualizza messaggio di protezione
+            // Display protection message
             if (player.level().isClientSide) {
                 player.displayClientMessage(
-                    Component.literal("§5Il Necrotic Crystal Heart ti ha protetto!"), 
+                    Component.literal("§5The Necrotic Crystal Heart protected you!"), 
                     true // actionbar
                 );
             }
             
-            LOGGER.debug("Necrotic Crystal Heart ha ridotto il danno da {} a {} per {}", 
-                    damageAmount, reducedDamage, player.getName().getString());
-            
             return reducedDamage;
         }
         
-        // Per entità non giocatore, lascia il danno invariato
+        // For non-player entities, leave damage unchanged
         return damageAmount;
+    }
+
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
+        super.inventoryTick(stack, level, entity, slotId, isSelected);
+        
+        if (entity instanceof Player player) {
+            StageRegistry.addPlayerStage(player, "necro_crystal_heart_equip");
+        }
     }
 } 

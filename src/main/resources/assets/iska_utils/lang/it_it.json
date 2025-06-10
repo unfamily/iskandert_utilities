@@ -11,7 +11,7 @@
   "item.iska_utils.rubber": "Gomma",
   "item.iska_utils.treetap": "Estrattore di Linfa Manuale",
   "item.iska_utils.electric_treetap": "Estrattore di Linfa Elettrico",
-  "item.iska_utils.necrotic_crystal_heart": "Cuore di Cristallo Necrotico",
+  "item.iska_utils.necrotic_crystal_heart": "Cuore di Cristallo Necromantico",
   
   "item.iska_utils.rubber_boots": "Stivali di Gomma",
   "block.iska_utils.rubber_log": "Tronco di Caucciù",
@@ -164,6 +164,8 @@
   "block.iska_utils.time_alterer.mode.midnight": "Alteratore del Tempo impostato in modalità Mezzanotte",
   "block.iska_utils.time_alterer.mode.unknown": "Errore: il alteratore del tempo non è stato impostato correttamente",
 
-  "tooltip.iska_utils.necrotic_crystal_heart.desc": "Un cuore oscuro che non ti lascerà perire facilmente...",
-  "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Riduce il danno ricevuto del 25% quando equipaggiato come amuleto"
+  "tooltip.iska_utils.necrotic_crystal_heart.desc0": "§5Un cuore oscuro che non ti lascerà perire facilmente...",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc1": "Le tue ferite diventeranno sempre più profonde...",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Solo un sano riposo ti guarirà...",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc3": "Oppure verrai consumato dal dolore..."
 }

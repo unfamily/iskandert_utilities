@@ -354,6 +354,9 @@ public class StageRegistry {
                 ListTag stagesList = getStagesList();
                 stagesList.add(StringTag.valueOf(stage));
                 saveStagesList(stagesList);
+                LOGGER.debug("[PlayerStageData] Stage {} aggiunto al giocatore {}", stage, player.getName().getString());
+            } else {
+                LOGGER.debug("[PlayerStageData] Stage {} già presente per il giocatore {}", stage, player.getName().getString());
             }
         }
         
@@ -363,15 +366,19 @@ public class StageRegistry {
         public void removeStage(String stage) {
             ListTag stagesList = getStagesList();
             ListTag newList = new ListTag();
+            boolean removed = false;
             
             for (int i = 0; i < stagesList.size(); i++) {
                 String current = stagesList.getString(i);
                 if (!current.equals(stage)) {
                     newList.add(StringTag.valueOf(current));
+                } else {
+                    removed = true;
                 }
             }
             
             saveStagesList(newList);
+            LOGGER.debug("[PlayerStageData] Stage {} rimosso dal giocatore {}: {}", stage, player.getName().getString(), removed);
         }
         
         /**
@@ -380,7 +387,9 @@ public class StageRegistry {
         private ListTag getStagesList() {
             CompoundTag persistentData = player.getPersistentData();
             CompoundTag iskaData = persistentData.getCompound("iskautils");
-            return iskaData.getList("stages", 8); // 8 = string tag type
+            ListTag stagesList = iskaData.getList("stages", 8); // 8 = string tag type
+            LOGGER.debug("[PlayerStageData] Letti {} stages per il giocatore {}", stagesList.size(), player.getName().getString());
+            return stagesList;
         }
         
         /**
@@ -391,6 +400,69 @@ public class StageRegistry {
             CompoundTag iskaData = persistentData.getCompound("iskautils");
             iskaData.put("stages", stagesList);
             persistentData.put("iskautils", iskaData);
+            LOGGER.debug("[PlayerStageData] Salvati {} stages per il giocatore {}", stagesList.size(), player.getName().getString());
+        }
+        
+        /**
+         * Imposta un valore float per il giocatore
+         */
+        public void setPlayerFloatValue(String key, float value) {
+            CompoundTag persistentData = player.getPersistentData();
+            if (!persistentData.contains("iskautils")) {
+                persistentData.put("iskautils", new CompoundTag());
+            }
+            
+            CompoundTag iskaData = persistentData.getCompound("iskautils");
+            if (!iskaData.contains("floatValues")) {
+                iskaData.put("floatValues", new CompoundTag());
+            }
+            
+            CompoundTag floatValues = iskaData.getCompound("floatValues");
+            floatValues.putFloat(key, value);
+            iskaData.put("floatValues", floatValues);
+            persistentData.put("iskautils", iskaData);
+            
+            LOGGER.debug("[PlayerStageData] Impostato valore float {} a {} per il giocatore {}", key, value, player.getName().getString());
+        }
+        
+        /**
+         * Ottiene un valore float per il giocatore
+         */
+        public float getPlayerFloatValue(String key, float defaultValue) {
+            CompoundTag persistentData = player.getPersistentData();
+            if (!persistentData.contains("iskautils")) {
+                return defaultValue;
+            }
+            
+            CompoundTag iskaData = persistentData.getCompound("iskautils");
+            if (!iskaData.contains("floatValues")) {
+                return defaultValue;
+            }
+            
+            CompoundTag floatValues = iskaData.getCompound("floatValues");
+            return floatValues.contains(key) ? floatValues.getFloat(key) : defaultValue;
+        }
+        
+        /**
+         * Rimuove un valore float per il giocatore
+         */
+        public void removePlayerFloatValue(String key) {
+            CompoundTag persistentData = player.getPersistentData();
+            if (!persistentData.contains("iskautils")) {
+                return;
+            }
+            
+            CompoundTag iskaData = persistentData.getCompound("iskautils");
+            if (!iskaData.contains("floatValues")) {
+                return;
+            }
+            
+            CompoundTag floatValues = iskaData.getCompound("floatValues");
+            floatValues.remove(key);
+            iskaData.put("floatValues", floatValues);
+            persistentData.put("iskautils", iskaData);
+            
+            LOGGER.debug("[PlayerStageData] Rimosso valore float {} per il giocatore {}", key, player.getName().getString());
         }
     }
     

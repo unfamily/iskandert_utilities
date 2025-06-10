@@ -1,6 +1,9 @@
 package net.unfamily.iskautils.events;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -14,55 +17,143 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handler per intercettare gli eventi di danno e gestire il Necrotic Crystal Heart.
+ * Handler for intercepting damage events and managing the Necrotic Crystal Heart.
  */
-@EventBusSubscriber(modid = IskaUtils.MOD_ID)
+@EventBusSubscriber
 public class NecroticEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NecroticEventHandler.class);
 
+    // Key for the Necrotic Crystal Heart counter
+    private static final String NECRO_CRYSTAL_HEART_COUNTER = "necro_crystal_heart_hex";
+    
+    // Minimum health threshold before it becomes lethal
+    private static final float MIN_HEALTH_THRESHOLD = 2.0f;
+
     /**
-     * Intercetta l'evento di danno in arrivo per un'entità.
-     * Se l'entità ha equipaggiato un Necrotic Crystal Heart come curio,
-     * annulla completamente il danno.
+     * Intercepts incoming damage events for an entity.
+     * If the entity has equipped a Necrotic Crystal Heart as a curio,
+     * completely negates lethal damage and increments the counter.
      *
-     * @param event L'evento di danno in arrivo
+     * @param event The incoming damage event
      */
     @SubscribeEvent
     public static void onEntityAttacked(LivingIncomingDamageEvent event) {
-        // Ottiene l'entità che subisce danno
+        // Get the entity taking damage
         LivingEntity entity = event.getEntity();
-        
-        // Verifica se l'entità è un giocatore
-        if (entity instanceof Player player && !entity.level().isClientSide()) {
-            LOGGER.info("[NecroticEventHandler] Evento danno ricevuto per il giocatore: {} - Danno: {}", 
-                     player.getName().getString(), event.getAmount());
+        if (entity instanceof Player player) {
+            // Check if damage would be lethal
+            boolean isDamageLethal = player.getHealth() <= event.getAmount();
             
-            // Controlla sia lo stage che l'NBT
-            boolean hasStage = StageRegistry.playerHasStage(player, NecroticCrystalHeartCurioHandler.STAGE_NECRO_CRYSTAL_EQUIP);
-            boolean hasNbtFlag = NecroticCrystalHeartCurioHandler.isNecroticHeartEquipped(player);
-            
-            LOGGER.info("[NecroticEventHandler] Controllo protezione - Stage: {}, NBT: {}", hasStage, hasNbtFlag);
-            
-            // Se uno dei due è true, proteggi dal danno
-            if (hasStage || hasNbtFlag) {
-                // Annulla completamente il danno
-                event.setCanceled(true);
-                // In alternativa, imposta il danno a 0
-                event.setAmount(0.0f);
+            if (StageRegistry.playerHasStage(player, "necro_crystal_heart_equip") && isDamageLethal) {
+                // Get current maximum health
+                AttributeInstance maxHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
+                if (maxHealthAttr == null) {
+                    return;
+                }
                 
-                // Rimuove lo stage per il prossimo danno
-                StageRegistry.removePlayerStage(player, NecroticCrystalHeartCurioHandler.STAGE_NECRO_CRYSTAL_EQUIP);
+                // Get current hex counter value
+                float hexCounter = getCurrentUsageCounter(player);
                 
-                // Rimuove anche il flag NBT
-                NecroticCrystalHeartCurioHandler.setNecroticHeartEquipped(player, false);
+                // Increment counter by 2.0f (one heart)
+                float newHexCounter = hexCounter + 2.0f;
                 
-                // Log info invece di debug per verificare che viene effettivamente chiamato
-                LOGGER.info("[NecroticEventHandler] Danno annullato per il giocatore {} grazie al Necrotic Crystal Heart", 
-                        player.getName().getString());
-            } else {
-                LOGGER.info("[NecroticEventHandler] Giocatore {} non ha protezione attiva", 
-                        player.getName().getString());
+                // Set the new counter value
+                setUsageCounter(player, newHexCounter);
+                
+                // Calculate new maximum health (20 - hex)
+                // Base health is 20.0 (10 hearts)
+                double baseHealth = 20.0;
+                double newMaxHealth = baseHealth - newHexCounter;
+                
+                // If new max health drops below minimum threshold, player must die
+                if (newMaxHealth < MIN_HEALTH_THRESHOLD) {
+                    // Don't zero out damage, allowing player to die
+                    
+                    // Reset hex counter and max health
+                    // Actual reset will happen after death, so schedule it
+                    player.level().getServer().tell(new net.minecraft.server.TickTask(1, () -> {
+                        // Check if player is dead
+                        if (player.isDeadOrDying()) {
+                            // Reset hex counter
+                            setUsageCounter(player, 0.0f);
+                            
+                            // Reset max health to original value
+                            AttributeInstance playerHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
+                            if (playerHealthAttr != null) {
+                                playerHealthAttr.setBaseValue(baseHealth);
+                            }
+                        }
+                    }));
+                } else {
+                    // Zero out damage, player survives
+                    event.setAmount(0.0f);
+                    
+                    // Directly modify player's maximum health
+                    maxHealthAttr.setBaseValue(newMaxHealth);
+                    
+                    // Remove stage after use
+                    StageRegistry.removePlayerStage(player, "necro_crystal_heart_equip");
+                    
+                    // Adjust current health to new maximum if necessary
+                    if (player.getHealth() > player.getMaxHealth()) {
+                        player.setHealth(player.getMaxHealth());
+                    }
+                }
             }
+        }
+    }
+    
+    /**
+     * Gets the current usage counter for the Necrotic Crystal Heart
+     * 
+     * @param player The player
+     * @return The current counter value
+     */
+    private static float getCurrentUsageCounter(Player player) {
+        try {
+            CompoundTag persistentData = player.getPersistentData();
+            if (!persistentData.contains("iskautils")) {
+                return 0.0f;
+            }
+            
+            CompoundTag iskaData = persistentData.getCompound("iskautils");
+            if (!iskaData.contains("floatValues")) {
+                return 0.0f;
+            }
+            
+            CompoundTag floatValues = iskaData.getCompound("floatValues");
+            return floatValues.contains(NECRO_CRYSTAL_HEART_COUNTER) 
+                ? floatValues.getFloat(NECRO_CRYSTAL_HEART_COUNTER) 
+                : 0.0f;
+        } catch (Exception e) {
+            return 0.0f;
+        }
+    }
+    
+    /**
+     * Sets the usage counter for the Necrotic Crystal Heart
+     * 
+     * @param player The player
+     * @param value The new counter value
+     */
+    private static void setUsageCounter(Player player, float value) {
+        try {
+            CompoundTag persistentData = player.getPersistentData();
+            if (!persistentData.contains("iskautils")) {
+                persistentData.put("iskautils", new CompoundTag());
+            }
+            
+            CompoundTag iskaData = persistentData.getCompound("iskautils");
+            if (!iskaData.contains("floatValues")) {
+                iskaData.put("floatValues", new CompoundTag());
+            }
+            
+            CompoundTag floatValues = iskaData.getCompound("floatValues");
+            floatValues.putFloat(NECRO_CRYSTAL_HEART_COUNTER, value);
+            iskaData.put("floatValues", floatValues);
+            persistentData.put("iskautils", iskaData);
+        } catch (Exception e) {
+            // Silently fail
         }
     }
 } 
