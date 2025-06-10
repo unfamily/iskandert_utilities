@@ -1,22 +1,19 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "BAB",
-    "BCB",
-    "BDB"
+    "ACA",
+    "CBC",
+    "ACA"
   ],
   "key": {
-    "B": {
-      "tag": "c:rods/breeze"
-    },
-    "A": {
-      "tag": "c:nether_stars"
-    },
     "C": {
+      "tag": "c:gems/diamond"
+    },
+    "B": {
       "item": "iska_utils:ultra_module"
     },
-    "D": {
-      "tag": "minecraft:trim_templates"
+    "A": {
+      "tag": "c:gems/emerald"
     }
   },
   "result": {
