@@ -2,6 +2,7 @@
     "replace": false,
     "values": [
       "iska_utils:vector_charm",
-      "iska_utils:necromantic_crystal_heart"
+      "iska_utils:portable_dislocator",
+      "iska_utils:necrotic_crystal_heart"
     ]
   }

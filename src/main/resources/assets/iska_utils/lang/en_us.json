@@ -11,6 +11,7 @@
   "item.iska_utils.rubber": "Rubber",
   "item.iska_utils.treetap": "Treetap",
   "item.iska_utils.electric_treetap": "Electric Treetap",
+  "item.iska_utils.necrotic_crystal_heart": "Necrotic Crystal Heart",
   
   "item.iska_utils.rubber_boots": "Rubber Boots",
   "block.iska_utils.rubber_log": "Rubber Log",
@@ -162,14 +163,6 @@
   "block.iska_utils.time_alterer.mode.midnight": "Time Alterer set to Midnight mode",
   "block.iska_utils.time_alterer.mode.unknown": "Error: the time alterer has not been set correctly",
 
-  "item.iska_utils.necromantic_crystal_heart": "Necromantic Crystal Heart",
-  "tooltip.iska_utils.necromantic_crystal_heart.desc": "A dark heart that will not let you perish easily...",
-  "tooltip.iska_utils.necromantic_crystal_heart.desc_unused": "A dark heart that will not let you perish easily...\nonce he prevents lethal damage, the subsequent blows will be more painful...\nsleep to lose his hex...\nor you'll get to such a level of pain that you can't stand it....",
-  "death.attack.iska_utils.necromantic_debt": "%1$s paid the ultimate price for necromantic debt",
-  "death.attack.iska_utils.necromantic_debt.player": "%1$s's soul was claimed due to %2$s's necromantic debt",
-  "message.iska_utils.necromantic_heart.equip": "You feel the dark energy of the Necromantic Heart flow through you...",
-  "message.iska_utils.necromantic_heart.unequip": "The grip of the Necromantic Heart releases you...",
-  "message.iska_utils.necromantic_heart.saved": "The Necromantic Heart saves you from death, but your debt increases to %s!",
-  "message.iska_utils.necromantic_heart.danger": "Warning: Your necromantic debt is dangerously high!",
-  "message.iska_utils.necromantic_heart.sleep_reset": "A peaceful sleep has cleared your necromantic debt of %s"
+  "tooltip.iska_utils.necrotic_crystal_heart.desc": "A dark heart that will not let you perish easily...",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Reduces incoming damage by 25% when equipped as a charm"
 }

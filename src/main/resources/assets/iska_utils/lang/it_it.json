@@ -11,6 +11,7 @@
   "item.iska_utils.rubber": "Gomma",
   "item.iska_utils.treetap": "Estrattore di Linfa Manuale",
   "item.iska_utils.electric_treetap": "Estrattore di Linfa Elettrico",
+  "item.iska_utils.necrotic_crystal_heart": "Cuore di Cristallo Necrotico",
   
   "item.iska_utils.rubber_boots": "Stivali di Gomma",
   "block.iska_utils.rubber_log": "Tronco di Caucciù",
@@ -163,14 +164,6 @@
   "block.iska_utils.time_alterer.mode.midnight": "Alteratore del Tempo impostato in modalità Mezzanotte",
   "block.iska_utils.time_alterer.mode.unknown": "Errore: il alteratore del tempo non è stato impostato correttamente",
 
-  "item.iska_utils.necromantic_crystal_heart": "Cuore di Cristallo Necromantico",
-  "tooltip.iska_utils.necromantic_crystal_heart.desc": "Un cuore oscuro che non ti lascerà perire facilmente...",
-  "tooltip.iska_utils.necromantic_crystal_heart.desc_unused": "Un cuore oscuro che non ti lascerà perire facilmente...\npreviene i danni letali, i colpi successivi saranno più dolorosi...\nriposa per perdere il suo maleficio...\noppure  arriverà a un livello tale di dolore che non puoi sopportare....",
-  "death.attack.iska_utils.necromantic_debt": "%1$s ha pagato il prezzo finale del debito necromantico",
-  "death.attack.iska_utils.necromantic_debt.player": "%1$s ha avuto l'anima reclamata a causa del debito necromantico di %2$s",
-  "message.iska_utils.necromantic_heart.equip": "Senti l'energia oscura del Cuore Necromantico fluire attraverso di te...",
-  "message.iska_utils.necromantic_heart.unequip": "La stretta del Cuore Necromantico ti lascia andare...",
-  "message.iska_utils.necromantic_heart.saved": "Il Cuore Necromantico ti salva dalla morte, ma il tuo debito aumenta a %s!",
-  "message.iska_utils.necromantic_heart.danger": "Attenzione: Il tuo debito necromantico è pericolosamente alto!",
-  "message.iska_utils.necromantic_heart.sleep_reset": "Un sonno pacifico ha cancellato il tuo debito necromantico di %s"
+  "tooltip.iska_utils.necrotic_crystal_heart.desc": "Un cuore oscuro che non ti lascerà perire facilmente...",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Riduce il danno ricevuto del 25% quando equipaggiato come amuleto"
 }

@@ -12,6 +12,7 @@ import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import net.unfamily.iskautils.item.custom.TreeTapItem;
 import net.unfamily.iskautils.item.custom.ElectricTreeTapItem;
 import net.unfamily.iskautils.item.custom.ScannerItem;
+import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +64,11 @@ public class ModItems {
                 ScannerItem scanner = new ScannerItem();
                 return scanner;
             });
+    
+    // Necrotic Crystal Heart - Custom item that modifies incoming damage
+    // Registered as a Curio when Curios is available
+    public static final DeferredItem<Item> NECROTIC_CRYSTAL_HEART = ITEMS.register("necrotic_crystal_heart",
+            () -> new NecroticCrystalHeartItem(new Item.Properties().stacksTo(1)));
             
     // ===== RUBBER TREE ITEMS =====
     
