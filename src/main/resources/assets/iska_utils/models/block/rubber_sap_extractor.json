@@ -1,12 +1,12 @@
 {
 	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
 	"textures": {
 		"0": "iska_utils:block/sap_extr_side",
 		"1": "iska_utils:block/sap_extr_front",
 		"3": "iska_utils:block/sap_extr_pipe",
 		"particle": "iska_utils:block/sap_extr_side"
 	},
-	"render_type": "minecraft:cutout",
 	"elements": [
 		{
 			"name": "main",
@@ -65,8 +65,8 @@
 		},
 		{
 			"name": "pipe_final",
-			"from": [5, 21, 14],
-			"to": [11, 27, 16],
+			"from": [5, 21, 13.9],
+			"to": [11, 27, 15.9],
 			"rotation": {"angle": 0, "axis": "y", "origin": [7, 23, 14]},
 			"faces": {
 				"north": {"uv": [5, 1, 11, 7], "texture": "#3"},
