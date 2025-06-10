@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.network.packet;
 
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +38,15 @@ public class PortableDislocatorC2SPacket {
         LOGGER.info("Received Portable Dislocator packet from player {} for coordinates {}, {}", 
             player.getName().getString(), targetX, targetZ);
         
-        // Start the teleportation process on the server
-        PortableDislocatorItem.startTeleportation(player, targetX, targetZ);
+        // Find the dislocator in player's inventory
+        ItemStack dislocatorStack = PortableDislocatorItem.findPortableDislocator(player);
+        if (dislocatorStack != null) {
+            // Start the teleportation process on the server with the found dislocator
+            PortableDislocatorItem.startTeleportation(player, dislocatorStack, targetX, targetZ);
+        } else {
+            LOGGER.error("Could not find Portable Dislocator for player {} during packet handling", 
+                player.getName().getString());
+        }
     }
     
     /**

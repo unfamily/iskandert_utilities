@@ -232,7 +232,9 @@ public class ModItems {
     public static final DeferredItem<Item> TIME_ALTERER = ITEMS.register("time_alterer",
             () -> new BlockItem(ModBlocks.TIME_ALTERER.get(), ITEM_PROPERTIES));
 
-    // ===== DEV BLOCKS =====
+
+
+    // ===== DEV THINGS =====
     public static final DeferredItem<Item> SCAN_BLOCK = ITEMS.register("scan_block",
             () -> new BlockItem(ModBlocks.SCAN_BLOCK.get(), ITEM_PROPERTIES));
 

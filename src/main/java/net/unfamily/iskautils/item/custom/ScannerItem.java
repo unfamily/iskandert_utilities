@@ -96,20 +96,6 @@ public class ScannerItem extends Item {
     }
 
     /**
-     * Called when an item is crafted
-     * Makes sure crafted items start with full energy
-     */
-    @Override
-    public void onCraftedBy(ItemStack stack, Level level, Player player) {
-        super.onCraftedBy(stack, level, player);
-        
-        if (canStoreEnergy()) {
-            setEnergyStored(stack, Config.scannerEnergyBuffer);
-            LOGGER.debug("Scanner crafted, energy initialized to {}", Config.scannerEnergyBuffer);
-        }
-    }
-
-    /**
      * Called when creating a new ItemStack of this item
      * Initializes the item with energy
      */
@@ -847,7 +833,7 @@ public class ScannerItem extends Item {
         // Ensure the energy tag exists
         CompoundTag tag = ensureEnergyTag(stack);
         int maxCapacity = Config.scannerEnergyBuffer;
-        tag.putInt(ENERGY_TAG, Math.max(0, Math.min(energy, maxCapacity)));
+        tag.putInt(ENERGY_TAG, 0);
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
     

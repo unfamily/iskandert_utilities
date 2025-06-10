@@ -1,9 +1,5 @@
 package net.unfamily.iskautils.item.custom;
 
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.unfamily.iskautils.client.VectorCharmMovement;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,43 +29,4 @@ public class VectorCharmCurioHandler {
             LOGGER.error("Failed to register Vector Charm as Curio", e);
         }
     }
-    
-    /**
-     * This method is called when the curio is equipped.
-     * Can be called through reflection by the Curios API.
-     * @param stack The Vector Charm item stack
-     * @param entity The entity wearing the curio
-     */
-    public static void onEquip(ItemStack stack, LivingEntity entity) {
-        if (entity instanceof Player player && entity.level().isClientSide) {
-            // LOGGER.debug("Vector Charm equipped as Curio by {}", player.getScoreboardName());
-        }
-    }
-    
-    /**
-     * This method is called when the curio is removed.
-     * Can be called through reflection by the Curios API.
-     * @param stack The Vector Charm item stack
-     * @param entity The entity that was wearing the curio
-     */
-    public static void onUnequip(ItemStack stack, LivingEntity entity) {
-        if (entity instanceof Player player && entity.level().isClientSide) {
-            // LOGGER.debug("Vector Charm unequipped as Curio by {}", player.getScoreboardName());
-        }
-    }
-    
-    /**
-     * This method is called every tick when the curio is equipped.
-     * Can be called through reflection by the Curios API.
-     * @param stack The Vector Charm item stack
-     * @param entity The entity wearing the curio
-     */
-    public static void curioTick(ItemStack stack, LivingEntity entity) {
-        if (entity instanceof Player player) {
-            // Apply movement (includes energy consumption)
-            VectorCharmMovement.applyMovement(player, stack);
-        }
-    }
-    
-
 } 

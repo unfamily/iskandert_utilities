@@ -166,7 +166,7 @@ public class PortableDislocatorItem extends Item {
             // Handle pending teleportation on server side
             if (!level.isClientSide) {
                 handlePendingTeleportation(player, level);
-                checkForTeleportRequest(player, level);
+                checkForTeleportRequest(player, stack, level);
             }
         }
     }
@@ -178,7 +178,7 @@ public class PortableDislocatorItem extends Item {
         // Check if the portable dislocator keybind was pressed
         if (KeyBindings.consumeDislocatorKeyClick()) {
             LOGGER.info("Dislocator key pressed while in inventory for player {}", player.getName().getString());
-            handleDislocatorActivation(player, "inventory");
+            handleDislocatorActivation(player, stack, "inventory");
         }
     }
     
@@ -188,20 +188,20 @@ public class PortableDislocatorItem extends Item {
     public static void tickInCurios(ItemStack stack, net.minecraft.world.level.Level level, Player player) {
         // Check if the portable dislocator keybind was pressed (client side)
         if (level.isClientSide && KeyBindings.PORTABLE_DISLOCATOR_KEY.consumeClick()) {
-            handleDislocatorActivation(player, "curios");
+            handleDislocatorActivation(player, stack, "curios");
         }
         
         // Handle pending teleportation (server side)
         if (!level.isClientSide) {
             handlePendingTeleportation(player, level);
-            checkForTeleportRequest(player, level);
+            checkForTeleportRequest(player, stack, level);
         }
     }
     
     /**
      * Checks for teleport requests from client side
      */
-    public static void checkForTeleportRequest(Player player, Level level) {
+    public static void checkForTeleportRequest(Player player, ItemStack stack, Level level) {
         UUID playerId = player.getUUID();
         TeleportRequest request = pendingRequests.get(playerId);
         
@@ -212,23 +212,22 @@ public class PortableDislocatorItem extends Item {
             // Clear the request
             pendingRequests.remove(playerId);
             
-            // Start the server-side teleportation
-            startServerTeleportation(player, request.targetX, request.targetZ);
+            // Start the server-side teleportation using the provided stack
+            startServerTeleportation(player, stack, request.targetX, request.targetZ);
         }
     }
     
     /**
      * Starts server-side teleportation
      */
-    private static void startServerTeleportation(Player player, int targetX, int targetZ) {
+    private static void startServerTeleportation(Player player, ItemStack dislocatorStack, int targetX, int targetZ) {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
         
-        // Find the dislocator and check if it has energy
-        ItemStack dislocatorStack = findPortableDislocator(player);
-        if (dislocatorStack == null) {
-            LOGGER.warn("Portable Dislocator not found in player inventory during teleportation");
+        // Verify the provided stack is a Portable Dislocator
+        if (!(dislocatorStack.getItem() instanceof PortableDislocatorItem)) {
+            LOGGER.warn("Provided ItemStack is not a Portable Dislocator during teleportation");
             return;
         }
         
@@ -607,6 +606,13 @@ public class PortableDislocatorItem extends Item {
     private static void attemptNewTeleportation(Player player, int originalX, int originalZ, int attemptNumber) {
         UUID playerId = player.getUUID();
         
+        // Find the dislocator item
+        ItemStack dislocatorStack = findPortableDislocator(player);
+        if (dislocatorStack == null) {
+            LOGGER.warn("Portable Dislocator not found during retry attempt");
+            return;
+        }
+        
         // Generate new coordinates with the same fixed distance range for all attempts
         java.util.Random random = new java.util.Random();
         
@@ -646,8 +652,10 @@ public class PortableDislocatorItem extends Item {
         newData.originalZ = originalZ;
         newData.attemptCount = attemptNumber;
         
-        // Store the new attempt
+        // Store the new attempt and prepare for teleportation
         activeTeleportations.put(playerId, newData);
+        
+        // No need to check energy again for retry attempts - it was already consumed in the first attempt
         
         // Notify player about the retry
         player.displayClientMessage(
@@ -956,7 +964,7 @@ public class PortableDislocatorItem extends Item {
     /**
      * Handles the activation of the Portable Dislocator
      */
-    public static void handleDislocatorActivation(Player player, String source) {
+    public static void handleDislocatorActivation(Player player, ItemStack dislocatorStack, String source) {
         LOGGER.info("handleDislocatorActivation called from {} for player {}", source, player.getName().getString());
         
         // Prevent activation if already teleporting
@@ -967,14 +975,13 @@ public class PortableDislocatorItem extends Item {
             return;
         }
         
-        // Find the Portable Dislocator
-        ItemStack dislocatorStack = findPortableDislocator(player);
-        if (dislocatorStack == null) {
-            LOGGER.info("Aborting activation: no dislocator found for player {}", player.getName().getString());
-            return; // No dislocator found
-        } else {
-            LOGGER.info("Found dislocator in {}: {}", source, dislocatorStack);
+        // Verify the provided ItemStack is a Portable Dislocator
+        if (!(dislocatorStack.getItem() instanceof PortableDislocatorItem)) {
+            LOGGER.info("Aborting activation: provided item is not a Portable Dislocator");
+            return;
         }
+        
+        LOGGER.info("Using dislocator from {}: {}", source, dislocatorStack);
         
         // Check energy requirements
         PortableDislocatorItem dislocator = (PortableDislocatorItem) dislocatorStack.getItem();
@@ -1024,14 +1031,15 @@ public class PortableDislocatorItem extends Item {
             pendingRequests.put(player.getUUID(), request);
             // Silent request - no feedback
         } else {
-            // Server side - start teleportation (energy check is inside)
-            startServerTeleportation(player, coordinates.getLeft(), coordinates.getRight());
+            // Server side - start teleportation with the provided dislocator stack
+            startServerTeleportation(player, dislocatorStack, coordinates.getLeft(), coordinates.getRight());
         }
     }
     
     /**
      * Starts the teleportation process (can be called from client or server)
-     * @deprecated Use startServerTeleportation instead
+     * Compatibility version that finds the dislocator in player's inventory
+     * @deprecated Use version with explicit ItemStack instead
      */
     @Deprecated
     public static void startTeleportation(Player player, int targetX, int targetZ) {
@@ -1043,8 +1051,33 @@ public class PortableDislocatorItem extends Item {
             TeleportRequest request = new TeleportRequest(player, targetX, targetZ);
             pendingRequests.put(player.getUUID(), request);
         } else {
-            // Server side - start directly
-            startServerTeleportation(player, targetX, targetZ);
+            // Server side - find the dislocator and start directly
+            ItemStack dislocatorStack = findPortableDislocator(player);
+            if (dislocatorStack != null) {
+                startServerTeleportation(player, dislocatorStack, targetX, targetZ);
+            } else {
+                LOGGER.warn("Could not find Portable Dislocator for player {} in legacy teleportation", 
+                    player.getName().getString());
+            }
+        }
+    }
+    
+    /**
+     * Starts the teleportation process (can be called from client or server)
+     * @deprecated Use startServerTeleportation instead
+     */
+    @Deprecated
+    public static void startTeleportation(Player player, ItemStack dislocatorStack, int targetX, int targetZ) {
+        LOGGER.info("Legacy startTeleportation called for player {} to coordinates {}, {}", 
+            player.getName().getString(), targetX, targetZ);
+        
+        if (player.level().isClientSide) {
+            // Client side - create request
+            TeleportRequest request = new TeleportRequest(player, targetX, targetZ);
+            pendingRequests.put(player.getUUID(), request);
+        } else {
+            // Server side - start directly with the provided dislocator
+            startServerTeleportation(player, dislocatorStack, targetX, targetZ);
         }
     }
     
