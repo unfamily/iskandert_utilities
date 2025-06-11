@@ -23,7 +23,7 @@ public class MiningEquitizerEvent {
 
 		if (entity instanceof Player _playerHasItem ? _playerHasItem.getInventory().contains(new ItemStack(ModItems.MINING_EQUITIZER.get())) : false) {
 			float originalSpeed = event.getOriginalSpeed();
-			float newSpeed = originalSpeed * 15.0f;
+			float newSpeed = originalSpeed * 5.0f;
 			event.setNewSpeed(newSpeed);
 		}
 	}
