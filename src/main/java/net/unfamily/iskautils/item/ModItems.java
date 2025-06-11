@@ -14,6 +14,7 @@ import net.unfamily.iskautils.item.custom.ElectricTreeTapItem;
 import net.unfamily.iskautils.item.custom.ScannerItem;
 import net.unfamily.iskautils.item.custom.ScannerChipItem;
 import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
+import net.unfamily.iskautils.item.custom.SwissWrenchItem;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +75,10 @@ public class ModItems {
     // Registered as a Curio when Curios is available
     public static final DeferredItem<Item> NECROTIC_CRYSTAL_HEART = ITEMS.register("necrotic_crystal_heart",
             () -> new NecroticCrystalHeartItem(new Item.Properties().stacksTo(1)));
+            
+    // Swiss Wrench - Custom item that can be used to repair vector plates
+    public static final DeferredItem<Item> SWISS_WRENCH = ITEMS.register("swiss_wrench",
+            () -> new SwissWrenchItem(new Item.Properties().stacksTo(1)));
             
     // ===== RUBBER TREE ITEMS =====
     

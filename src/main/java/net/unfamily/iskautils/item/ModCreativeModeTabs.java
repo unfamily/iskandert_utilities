@@ -25,6 +25,7 @@ public class ModCreativeModeTabs {
                             .icon(() -> new ItemStack(ModItems.VECTOR_CHARM.get()))
                             .displayItems((pParameters, pOutput) -> {
                                 // Custom Items
+                                pOutput.accept(ModItems.SWISS_WRENCH.get());
                                 pOutput.accept(ModItems.VECTOR_CHARM.get());
                                 pOutput.accept(ModItems.PORTABLE_DISLOCATOR.get());
                                 pOutput.accept(ModItems.BASE_MODULE.get());
