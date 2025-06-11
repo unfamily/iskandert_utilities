@@ -36,7 +36,6 @@ import net.unfamily.iskautils.Config;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import net.minecraft.world.item.UseAnim;
-import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -223,8 +222,6 @@ public class ScannerItem extends Item {
                 }
             }
             else {
-            
-
                 // Check if item was held for enough time
                 Block targetBlock = getTargetBlock(itemstack);
                 String targetMob = getTargetMob(itemstack);
@@ -253,14 +250,12 @@ public class ScannerItem extends Item {
                         // Scan for blocks
                         serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started", targetBlock.getName()), true);
                         scanArea(serverPlayer, itemstack);
-                        clear_markers = true;
                         scanSuccess = true;
                     } else if (targetMob != null) {
                         // Scan for mobs
                         serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob", 
                                 getLocalizedMobName(targetMob)), true);
                         scanForMobs(serverPlayer, itemstack);
-                        clear_markers = true;
                         scanSuccess = true;
                     }
                     
@@ -275,7 +270,6 @@ public class ScannerItem extends Item {
                     }
                 } else if (clear_markers) {
                     serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.interrupted"), true);
-                    resetTarget(serverPlayer.level(), serverPlayer, InteractionHand.MAIN_HAND);
                     clear_markers = false;
                 }
             }
@@ -447,7 +441,7 @@ public class ScannerItem extends Item {
         // Get config values
         int scanRange = Config.scannerScanRange;
         int maxBlocksScan = Config.scannerMaxBlocks;
-        int maxTTL = 600;
+        int maxTTL = Config.scannerMarkerTTL;
         
         // Determina il numero di chunk da scansionare in base al raggio configurato
         // Ogni chunk è 16x16 blocchi, quindi calcoliamo quanti chunk dobbiamo controllare
@@ -754,7 +748,7 @@ public class ScannerItem extends Item {
         
         // Get config values
         int scanRange = Config.scannerScanRange;
-        int maxTTL = 600;
+        int maxTTL = Config.scannerMarkerTTL;
         int mobEffectDuration = maxTTL / 20; // Convert ticks to seconds for potion effect
         
         // Scan in a radius

@@ -143,7 +143,7 @@ public class ScannerChipItem extends Item {
     /**
      * Set the target block in the chip
      */
-    private void setTargetBlock(ItemStack itemStack, Block block) {
+    public void setTargetBlock(ItemStack itemStack, Block block) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         
         // Remove any target mob
@@ -159,7 +159,7 @@ public class ScannerChipItem extends Item {
     /**
      * Get the target block from the chip
      */
-    private Block getTargetBlock(ItemStack itemStack) {
+    public Block getTargetBlock(ItemStack itemStack) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (!tag.contains(TARGET_BLOCK_TAG)) {
             return null;
@@ -172,7 +172,7 @@ public class ScannerChipItem extends Item {
     /**
      * Set the target mob in the chip and remove any target block
      */
-    private void setTargetMob(ItemStack itemStack, String mobId) {
+    public void setTargetMob(ItemStack itemStack, String mobId) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         
         // Remove target block if present
@@ -188,7 +188,7 @@ public class ScannerChipItem extends Item {
     /**
      * Get the target mob from the chip
      */
-    private String getTargetMob(ItemStack itemStack) {
+    public String getTargetMob(ItemStack itemStack) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (!tag.contains(TARGET_MOB_TAG)) {
             return null;
