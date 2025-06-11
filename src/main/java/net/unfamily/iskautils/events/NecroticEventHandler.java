@@ -44,7 +44,7 @@ public class NecroticEventHandler {
             // Check if damage would be lethal
             boolean isDamageLethal = player.getHealth() <= event.getAmount();
             
-            if (StageRegistry.playerHasStage(player, "necro_crystal_heart_equip") && isDamageLethal) {
+            if (StageRegistry.playerHasStage(player, "iska_utils_internal-necro_crystal_heart_equip") && isDamageLethal) {
                 // Get current maximum health
                 AttributeInstance maxHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
                 if (maxHealthAttr == null) {
@@ -92,7 +92,7 @@ public class NecroticEventHandler {
                     maxHealthAttr.setBaseValue(newMaxHealth);
                     
                     // Remove stage after use
-                    StageRegistry.removePlayerStage(player, "necro_crystal_heart_equip");
+                    StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
                     
                     // Adjust current health to new maximum if necessary
                     if (player.getHealth() > player.getMaxHealth()) {

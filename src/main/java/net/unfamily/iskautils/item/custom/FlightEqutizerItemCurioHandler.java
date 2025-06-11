@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Class that handles Curios integration for the Necrotic Crystal Heart.
+ * Class that handles Curios integration for the Flight Equitizer.
  * This is a proxy that avoids direct dependencies on Curios, so it's safe to load
  * even when Curios is not present.
  */
@@ -13,7 +13,7 @@ public class FlightEqutizerItemCurioHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(FlightEqutizerItemCurioHandler.class);
    
     /**
-     * Registers the Necrotic Crystal Heart as a curio.
+     * Registers the Flight Equitizer as a curio.
      * Called during mod initialization if Curios is present.
      */
     public static void register() {

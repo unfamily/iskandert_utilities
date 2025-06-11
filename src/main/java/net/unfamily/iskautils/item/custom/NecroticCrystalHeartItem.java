@@ -99,7 +99,7 @@ public class NecroticCrystalHeartItem extends Item {
             
             // if the item is not in the vanilla inventory, add the stage
             if (!isInVanillaInventory) {
-                StageRegistry.addPlayerStage(player, "necro_crystal_heart_equip");
+                StageRegistry.addPlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
             }
         }
     }
