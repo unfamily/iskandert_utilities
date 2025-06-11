@@ -118,6 +118,7 @@ public class ModCreativeModeTabs {
 
                                 // Scanner
                                 pOutput.accept(ModItems.SCANNER.get());
+                                pOutput.accept(ModItems.SCANNER_CHIP.get());
 
 
                             }).build());

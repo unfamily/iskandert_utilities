@@ -11,7 +11,8 @@
   "item.iska_utils.rubber": "Rubber",
   "item.iska_utils.treetap": "Treetap",
   "item.iska_utils.electric_treetap": "Electric Treetap",
-  "item.iska_utils.necrotic_crystal_heart": "§bNecromantic Crystal Heart",
+  "item.iska_utils.necrotic_crystal_heart": "§bNecrotic Crystal Heart",
+  "item.iska_utils.scanner_chip": "Scanner Chip",
   
   "item.iska_utils.rubber_boots": "Rubber Boots",
   "block.iska_utils.rubber_log": "Rubber Log",
@@ -32,6 +33,7 @@
   "block.iska_utils.rubber_door": "Rubber Door",
   "block.iska_utils.rubber_pressure_plate": "Rubber Pressure Plate",
   "block.iska_utils.rubber_button": "Rubber Button",
+  "block.iska_utils.scan_block": "Scan Block",
   
   "block.iska_utils.tar_slime_block": "Tar Slime Block",
   "item.iska_utils.tar_slimeball": "Tar Slimeball",
@@ -76,8 +78,8 @@
   
   "key.categories.iska_utils": "Iskandert's Utilities",
   "key.category.iska_utils": "Iskandert's Utilities",
-  "key.iska_utils.vector_vertical": "Vector Charm Vertical Setting (Increase)",
-  "key.iska_utils.vector_horizontal": "Vector Charm Horizontal Setting (Increase)",
+  "key.iska_utils.vector_vertical": "Vector Charm Vertical Setting",
+  "key.iska_utils.vector_horizontal": "Vector Charm Horizontal Setting",
   "key.iska_utils.vector_hover": "Vector Charm Hover Mode Toggle",
   "key.iska_utils.vector_vertical_decrease": "Vector Charm Vertical Setting (Decrease)",
   "key.iska_utils.vector_horizontal_decrease": "Vector Charm Horizontal Setting (Decrease)",
@@ -145,7 +147,22 @@
   "item.iska_utils.scanner.found_mobs": "Found %s mobs in the area.",
   "item.iska_utils.scanner.no_energy": "Not enough energy to use the Scanner!",
   "item.iska_utils.scanner.tooltip.energy": "Energy: ",
+  "item.iska_utils.scanner.tooltip.target_block": "Target Block",
+  "item.iska_utils.scanner.tooltip.target_mob": "Target Mob",
+  "item.iska_utils.scanner.tooltip.no_target": "No target set",
+  "item.iska_utils.scanner.tooltip.chip_info": "Use with Scanner Chip in offhand to transfer target",
 
+  
+  "item.iska_utils.scanner_chip.target_set": "Target block saved to chip: %s",
+  "item.iska_utils.scanner_chip.mob_target_set": "Mob target saved to chip: %s",
+  "item.iska_utils.scanner_chip.no_target": "No target saved in chip",
+  "item.iska_utils.scanner_chip.transfer_success": "Transferred target block %s from chip to scanner",
+  "item.iska_utils.scanner_chip.transfer_success_mob": "Transferred target mob %s from chip to scanner",
+  "item.iska_utils.scanner_chip.tooltip.target_block": "Saved Block",
+  "item.iska_utils.scanner_chip.tooltip.target_mob": "Saved Mob",
+  "item.iska_utils.scanner_chip.tooltip.no_target": "No target saved",
+  "item.iska_utils.scanner_chip.tooltip.instructions": "Shift+right click a block or hit a mob to save it",
+  
   "block.iska_utils.weather_detector.mode.sunny": "Weather Detector set to Sunny mode",
   "block.iska_utils.weather_detector.mode.rain": "Weather Detector set to Rain mode",
   "block.iska_utils.weather_detector.mode.storm": "Weather Detector set to Storm mode",

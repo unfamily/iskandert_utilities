@@ -209,67 +209,76 @@ public class ScannerItem extends Item {
 
     @Override
     public void releaseUsing(ItemStack itemstack, Level world, LivingEntity entity, int time) {
-        // Rimuovi i dati di caricamento
+        // Remove loading data
+        if (world.isClientSide || !(entity instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
         if (entity instanceof Player player) {
-            LOADING_DATA.remove(player.getUUID());
-        }
-        
-        if (world.isClientSide || !(entity instanceof ServerPlayer player)) {
-            return;
-        }
-        
-        // Check if item was held for enough time
-        Block targetBlock = getTargetBlock(itemstack);
-        String targetMob = getTargetMob(itemstack);
-        
-        if (targetBlock == null && targetMob == null) {
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_target"), true);
-            return;
-        }
-        
-        // The time parameter represents remaining time, so we need to check if it's LESS than a certain value
-        // to determine if user has held long enough
-        int totalDuration = getUseDuration(itemstack, entity);
-        int timeUsed = totalDuration - time;
-        int requiredDuration = Config.scannerScanDuration;
-        
-        if (timeUsed >= requiredDuration) {
-            // Double-check energy before scanning
-            if (requiresEnergyToFunction() && !hasEnoughEnergy(itemstack)) {
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_energy"), true);
-                return;
-            }
-            
-            boolean scanSuccess = false;
-            
-            if (targetBlock != null) {
-                // Scan for blocks
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started", targetBlock.getName()), true);
-                scanArea(player, itemstack);
-                clear_markers = true;
-                scanSuccess = true;
-            } else if (targetMob != null) {
-                // Scan for mobs
-                String mobName = "entity.minecraft." + targetMob.substring(targetMob.indexOf(":") + 1);
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob", Component.translatable(mobName)), true);
-                scanForMobs(player, itemstack);
-                clear_markers = true;
-                scanSuccess = true;
-            }
-            
-            // Consume energy if scan was successful
-            if (scanSuccess) {
-                consumeEnergyForOperation(itemstack);
+            if(player.isCrouching()) {
+                LOADING_DATA.remove(player.getUUID());
                 
-                // Mostra barra completata
+                // Controlla se c'è un chip nella mano secondaria e trasferisci il target
                 if (!world.isClientSide) {
-                    displayLoadingBar(player, requiredDuration, requiredDuration);
+                    checkAndTransferFromChip(player);
                 }
             }
-        } else if (clear_markers) {
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.interrupted"), true);
-            resetTarget(player.level(), player, InteractionHand.MAIN_HAND);
-            clear_markers = false;
+            else {
+            
+
+                // Check if item was held for enough time
+                Block targetBlock = getTargetBlock(itemstack);
+                String targetMob = getTargetMob(itemstack);
+                
+                if (targetBlock == null && targetMob == null) {
+                    serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_target"), true);
+                    return;
+                }
+                
+                // The time parameter represents remaining time, so we need to check if it's LESS than a certain value
+                // to determine if user has held long enough
+                int totalDuration = getUseDuration(itemstack, entity);
+                int timeUsed = totalDuration - time;
+                int requiredDuration = Config.scannerScanDuration;
+                
+                if (timeUsed >= requiredDuration) {
+                    // Double-check energy before scanning
+                    if (requiresEnergyToFunction() && !hasEnoughEnergy(itemstack)) {
+                        serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_energy"), true);
+                        return;
+                    }
+                    
+                    boolean scanSuccess = false;
+                    
+                    if (targetBlock != null) {
+                        // Scan for blocks
+                        serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started", targetBlock.getName()), true);
+                        scanArea(serverPlayer, itemstack);
+                        clear_markers = true;
+                        scanSuccess = true;
+                    } else if (targetMob != null) {
+                        // Scan for mobs
+                        serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob", 
+                                getLocalizedMobName(targetMob)), true);
+                        scanForMobs(serverPlayer, itemstack);
+                        clear_markers = true;
+                        scanSuccess = true;
+                    }
+                    
+                    // Consume energy if scan was successful
+                    if (scanSuccess) {
+                        consumeEnergyForOperation(itemstack);
+                        
+                        // Mostra barra completata
+                        if (!world.isClientSide) {
+                            displayLoadingBar(serverPlayer, requiredDuration, requiredDuration);
+                        }
+                    }
+                } else if (clear_markers) {
+                    serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.interrupted"), true);
+                    resetTarget(serverPlayer.level(), serverPlayer, InteractionHand.MAIN_HAND);
+                    clear_markers = false;
+                }
+            }
         }
     }
     
@@ -900,7 +909,40 @@ public class ScannerItem extends Item {
     }
     
     /**
-     * Adds tooltip information to the item
+     * Crea un nome localizzato per un mob a partire dal suo ID
+     */
+    private Component getLocalizedMobName(String mobId) {
+        if (mobId == null) return Component.literal("Unknown");
+        
+        // Estrai namespace e path dall'ID
+        String namespace = "minecraft";
+        String path = mobId;
+        
+        if (mobId.contains(":")) {
+            String[] parts = mobId.split(":", 2);
+            namespace = parts[0];
+            path = parts[1];
+        }
+        
+        // Prova a usare la chiave di traduzione specifica per il namespace
+        String translationKey = "entity." + namespace + "." + path;
+        Component translated = Component.translatable(translationKey);
+        
+        // Se il namespace non è minecraft, aggiungi il namespace al nome se la traduzione fallisce
+        if (!namespace.equals("minecraft")) {
+            // Controlla se la traduzione ha avuto successo
+            String translatedText = translated.getString();
+            if (translatedText.equals(translationKey)) {
+                // La traduzione ha fallito, usa un formato alternativo
+                return Component.literal(namespace + ":" + path);
+            }
+        }
+        
+        return translated;
+    }
+    
+    /**
+     * Aggiunge informazioni tooltip all'item
      */
     @Override
     @OnlyIn(Dist.CLIENT)
@@ -920,6 +962,37 @@ public class ScannerItem extends Item {
             
             tooltipComponents.add(energyText);
         }
+        
+        // Target information
+        Block targetBlock = getTargetBlock(stack);
+        String targetMob = getTargetMob(stack);
+        
+        if (targetBlock != null) {
+            Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_block")
+                .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
+                .append(targetBlock.getName().copy().withStyle(ChatFormatting.WHITE));
+            
+            tooltipComponents.add(targetText);
+        } else if (targetMob != null) {
+            Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_mob")
+                .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
+                .append(getLocalizedMobName(targetMob).copy().withStyle(ChatFormatting.WHITE));
+            
+            tooltipComponents.add(targetText);
+        } else {
+            Component noTargetText = Component.translatable("item.iska_utils.scanner.tooltip.no_target")
+                .withStyle(style -> style.withColor(ChatFormatting.GRAY));
+            
+            tooltipComponents.add(noTargetText);
+        }
+        
+        // Chip integration info
+        Component chipInfoText = Component.translatable("item.iska_utils.scanner.tooltip.chip_info")
+            .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
+        
+        tooltipComponents.add(chipInfoText);
     }
     
     /**
@@ -997,6 +1070,71 @@ public class ScannerItem extends Item {
         
         // Show the message to the player
         player.displayClientMessage(message, true);
+    }
+
+    /**
+     * Controlla se c'è un chip nella mano secondaria e trasferisce il target
+     */
+    private void checkAndTransferFromChip(Player player) {
+        ItemStack mainHandItem = player.getItemInHand(InteractionHand.MAIN_HAND);
+        ItemStack offHandItem = player.getItemInHand(InteractionHand.OFF_HAND);
+        
+        // Verifica che l'item in mano principale sia questo scanner
+        if (mainHandItem.getItem() != this) {
+            return;
+        }
+        
+        // Verifica che l'item in mano secondaria sia un ScannerChip
+        if (!(offHandItem.getItem() instanceof ScannerChipItem)) {
+            return;
+        }
+        
+        // Ottieni i tag dei due item
+        CompoundTag scannerTag = mainHandItem.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag chipTag = offHandItem.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        
+        // Controlla se il chip ha un target blocco
+        if (chipTag.contains("TargetBlock")) {
+            // Rimuovi target mob se presente
+            scannerTag.remove("TargetMob");
+            
+            // Copia il target blocco
+            String blockId = chipTag.getString("TargetBlock");
+            scannerTag.putString("TargetBlock", blockId);
+            
+            // Assicurati che lo scanner abbia un ID univoco
+            if (!scannerTag.contains("ScannerId")) {
+                scannerTag.putUUID("ScannerId", UUID.randomUUID());
+            }
+            
+            // Salva i dati nello scanner
+            mainHandItem.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
+            
+            // Notifica il giocatore
+            Block block = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(blockId));
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success", block.getName()), true);
+        } 
+        // Controlla se il chip ha un target mob
+        else if (chipTag.contains("TargetMob")) {
+            // Rimuovi target blocco se presente
+            scannerTag.remove("TargetBlock");
+            
+            // Copia il target mob
+            String mobId = chipTag.getString("TargetMob");
+            scannerTag.putString("TargetMob", mobId);
+            
+            // Assicurati che lo scanner abbia un ID univoco
+            if (!scannerTag.contains("ScannerId")) {
+                scannerTag.putUUID("ScannerId", UUID.randomUUID());
+            }
+            
+            // Salva i dati nello scanner
+            mainHandItem.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
+            
+            // Notifica il giocatore
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
+                    getLocalizedMobName(mobId)), true);
+        }
     }
 } 
 

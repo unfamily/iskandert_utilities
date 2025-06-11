@@ -5,7 +5,7 @@
   ],
   "key": {
     "A": {
-      "tag": "c:stones"
+      "tag": "c:stones/cooked"
     },
     "B": {
       "item": "minecraft:dried_kelp"

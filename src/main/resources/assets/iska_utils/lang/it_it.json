@@ -12,7 +12,8 @@
   "item.iska_utils.treetap": "Estrattore di Linfa Manuale",
   "item.iska_utils.electric_treetap": "Estrattore di Linfa Elettrico",
   "item.iska_utils.necrotic_crystal_heart": "§bCuore di Cristallo Necromantico",
-  
+  "item.iska_utils.scanner_chip": "Chip Scanner",
+      
   "item.iska_utils.rubber_boots": "Stivali di Gomma",
   "block.iska_utils.rubber_log": "Tronco di Caucciù",
   "block.iska_utils.stripped_rubber_log": "Tronco di Caucciù Scortecciato",
@@ -32,6 +33,7 @@
   "block.iska_utils.rubber_door": "Porta di Caucciù",
   "block.iska_utils.rubber_pressure_plate": "Piastra di Caucciù",
   "block.iska_utils.rubber_button": "Pulsante di Caucciù",
+  "block.iska_utils.scan_block": "Blocco Scanner",
 
   "block.iska_utils.tar_slime_block": "Blocco di Gelatina Catramosa",
   "item.iska_utils.tar_slimeball": "Gelatina Catramosa",
@@ -145,6 +147,20 @@
   "item.iska_utils.scanner.found_mobs": "Trovati %s mob nell'area.",
   "item.iska_utils.scanner.no_energy": "Energia insufficiente per usare lo Scanner!",
   "item.iska_utils.scanner.tooltip.energy": "Energia: ",
+  "item.iska_utils.scanner.tooltip.target_block": "Blocco Target",
+  "item.iska_utils.scanner.tooltip.target_mob": "Mob Target",
+  "item.iska_utils.scanner.tooltip.no_target": "Nessun target impostato",
+  "item.iska_utils.scanner.tooltip.chip_info": "Usa con un Chip Scanner nella mano secondaria per trasferire il target",
+  
+  "item.iska_utils.scanner_chip.target_set": "Blocco target salvato nel chip: %s",
+  "item.iska_utils.scanner_chip.mob_target_set": "Mob target salvato nel chip: %s",
+  "item.iska_utils.scanner_chip.no_target": "Nessun target salvato nel chip",
+  "item.iska_utils.scanner_chip.transfer_success": "Trasferito blocco target %s dal chip allo scanner",
+  "item.iska_utils.scanner_chip.transfer_success_mob": "Trasferito mob target %s dal chip allo scanner",
+  "item.iska_utils.scanner_chip.tooltip.target_block": "Blocco Salvato",
+  "item.iska_utils.scanner_chip.tooltip.target_mob": "Mob Salvato",
+  "item.iska_utils.scanner_chip.tooltip.no_target": "Nessun target salvato",
+  "item.iska_utils.scanner_chip.tooltip.instructions": "Shift+click destro su un blocco o colpisci un mob per salvarlo",
 
   "block.iska_utils.weather_detector.mode.sunny": "Rilevatore del Meteo impostato in modalità Sole",
   "block.iska_utils.weather_detector.mode.rain": "Rilevatore del Meteo impostato in modalità Pioggia",
