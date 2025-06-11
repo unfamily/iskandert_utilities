@@ -2,10 +2,8 @@ package net.unfamily.iskautils.item.custom;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
@@ -13,23 +11,51 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
-import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.block.state.properties.Property;
+import net.unfamily.iskautils.events.SetWrenchDirectionBlock;
+
+import java.util.List;
 
 public class SwissWrenchItem extends Item {
-    // Tag per i blocchi che non devono essere ruotati
+    // tag for blocks that should not be rotated
     private static final TagKey<Block> WRENCH_NOT_ROTATE = BlockTags.create(
             ResourceLocation.tryParse("c:wrench_not_rotate"));
 
     public SwissWrenchItem(Properties properties) {
         super(properties);
+    }
+    
+    /**
+     * Get the next direction in clockwise rotation
+     */
+    private Direction rotateClockwise(Direction current) {
+        return switch (current) {
+            case NORTH -> Direction.EAST;
+            case EAST -> Direction.SOUTH;
+            case SOUTH -> Direction.WEST;
+            case WEST -> Direction.NORTH;
+            case UP, DOWN -> current; // Non cambia per UP e DOWN
+        };
+    }
+    
+    /**
+     * Get the next direction in counter-clockwise rotation
+     */
+    private Direction rotateCounterClockwise(Direction current) {
+        return switch (current) {
+            case NORTH -> Direction.WEST;
+            case WEST -> Direction.SOUTH;
+            case SOUTH -> Direction.EAST;
+            case EAST -> Direction.NORTH;
+            case UP, DOWN -> current; // Non cambia per UP e DOWN
+        };
     }
     
     @Override
@@ -39,104 +65,119 @@ public class SwissWrenchItem extends Item {
         Player player = context.getPlayer();
         BlockState blockState = level.getBlockState(blockPos);
         Block block = blockState.getBlock();
+        ItemStack itemStack = context.getItemInHand();
         
-        // Verifica se il player sta usando Shift + tasto destro
+        // check if the player is using Shift + right click
         if (player != null && player.isShiftKeyDown()) {
-            // Verifica se il blocco appartiene al tag che esclude la rotazione
+            // check if the block belongs to the tag that excludes rotation
             if (blockState.is(WRENCH_NOT_ROTATE)) {
                 return InteractionResult.PASS;
             }
             
-            // Non facciamo nulla sul client, solo sul server
+            // do nothing on the client, only on the server
             if (level.isClientSide) {
                 return InteractionResult.SUCCESS;
             }
             
-            // Prova a ruotare il blocco in base alle sue proprietà
-            boolean rotated = false;
+            // Get the current rotation mode
+            SetWrenchDirectionBlock.RotationMode mode = SetWrenchDirectionBlock.getSelectedRotationMode(itemStack);
+            boolean changed = false;
             
-            // Prova a ruotare blocchi con la proprietà FACING (6 direzioni complete)
-            if (blockState.hasProperty(BlockStateProperties.FACING)) {
-                Direction currentFacing = blockState.getValue(BlockStateProperties.FACING);
-                Direction newFacing;
+            // Handle different rotation modes
+            if (mode == SetWrenchDirectionBlock.RotationMode.ROTATE_RIGHT || 
+                mode == SetWrenchDirectionBlock.RotationMode.ROTATE_LEFT) {
+                // Determine rotation direction
+                boolean clockwise = (mode == SetWrenchDirectionBlock.RotationMode.ROTATE_RIGHT);
                 
-                // Determina la nuova direzione in base all'input del giocatore
-                Direction lookingDirection = player.getDirection();
-                
-                // Se il giocatore guarda verso l'alto/basso, ruota in modo appropriato
-                if (player.getXRot() > 45) { // Guardando in basso
-                    newFacing = Direction.DOWN;
-                } else if (player.getXRot() < -45) { // Guardando in alto
-                    newFacing = Direction.UP;
-                } else {
-                    // Ruota orizzontalmente
-                    if (currentFacing == Direction.UP || currentFacing == Direction.DOWN) {
-                        // Se attualmente è verticale, orienta verso la direzione del giocatore
-                        newFacing = lookingDirection;
-                    } else {
-                        // Altrimenti ruota orizzontalmente
-                        if (player.isCrouching() && player.isShiftKeyDown()) {
-                            // Se è premuto anche Ctrl (crouch), ruota in verticale
-                            newFacing = (currentFacing == Direction.UP) ? Direction.DOWN : Direction.UP;
-                        } else {
-                            // Ruota orizzontalmente in senso orario
-                            newFacing = currentFacing.getClockWise();
-                        }
+                // Try to rotate horizontal facing
+                if (blockState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+                    Direction current = blockState.getValue(BlockStateProperties.HORIZONTAL_FACING);
+                    Direction rotated = clockwise ? rotateClockwise(current) : rotateCounterClockwise(current);
+                    level.setBlock(blockPos, blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, rotated), 3);
+                    changed = true;
+                }
+                // Try to rotate facing
+                else if (blockState.hasProperty(BlockStateProperties.FACING)) {
+                    Direction current = blockState.getValue(BlockStateProperties.FACING);
+                    Direction rotated = clockwise ? rotateClockwise(current) : rotateCounterClockwise(current);
+                    if (current.getAxis() != rotated.getAxis() || BlockStateProperties.FACING.getPossibleValues().contains(rotated)) {
+                        level.setBlock(blockPos, blockState.setValue(BlockStateProperties.FACING, rotated), 3);
+                        changed = true;
                     }
                 }
+                // Try to rotate axis for pillar blocks
+                else if (blockState.hasProperty(BlockStateProperties.AXIS)) {
+                    Direction.Axis current = blockState.getValue(BlockStateProperties.AXIS);
+                    
+                    // Rotate only horizontal axes
+                    if (current == Direction.Axis.X) {
+                        level.setBlock(blockPos, blockState.setValue(BlockStateProperties.AXIS, Direction.Axis.Z), 3);
+                        changed = true;
+                    } else if (current == Direction.Axis.Z) {
+                        level.setBlock(blockPos, blockState.setValue(BlockStateProperties.AXIS, Direction.Axis.X), 3);
+                        changed = true;
+                    }
+                }
+            } else {
+                // Handle specific direction mode
+                Direction targetDirection = mode.getDirection();
+                if (targetDirection == null) {
+                    return InteractionResult.FAIL;
+                }
                 
-                level.setBlock(blockPos, blockState.setValue(BlockStateProperties.FACING, newFacing), 3);
-                rotated = true;
-            } 
-            // Prova a ruotare blocchi con la proprietà HORIZONTAL_FACING
-            else if (blockState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
-                Direction currentFacing = blockState.getValue(BlockStateProperties.HORIZONTAL_FACING);
-                Direction newFacing = currentFacing.getClockWise();
-                level.setBlock(blockPos, blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, newFacing), 3);
-                rotated = true;
-            }
-            // Prova a ruotare blocchi con la proprietà FACING (HorizontalDirectionalBlock)
-            else if (blockState.hasProperty(HorizontalDirectionalBlock.FACING)) {
-                Direction currentFacing = blockState.getValue(HorizontalDirectionalBlock.FACING);
-                Direction newFacing = currentFacing.getClockWise();
-                level.setBlock(blockPos, blockState.setValue(HorizontalDirectionalBlock.FACING, newFacing), 3);
-                rotated = true;
-            }
-            // Prova a ruotare blocchi con proprietà AXIS (come i tronchi)
-            else if (blockState.hasProperty(BlockStateProperties.AXIS)) {
-                rotated = rotateBlockOnAxis(level, blockPos, blockState);
+                // Try to set the direction of the block based on its properties
+                if (blockState.hasProperty(BlockStateProperties.FACING)) {
+                    level.setBlock(blockPos, blockState.setValue(BlockStateProperties.FACING, targetDirection), 3);
+                    changed = true;
+                } 
+                // Try to set the direction of the block based on its properties
+                else if (blockState.hasProperty(BlockStateProperties.HORIZONTAL_FACING) && 
+                         targetDirection.getAxis().isHorizontal()) {
+                    level.setBlock(blockPos, blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, targetDirection), 3);
+                    changed = true;
+                }
+                // Try to set the direction of the block based on its properties
+                else if (blockState.hasProperty(HorizontalDirectionalBlock.FACING) && 
+                         targetDirection.getAxis().isHorizontal()) {
+                    level.setBlock(blockPos, blockState.setValue(HorizontalDirectionalBlock.FACING, targetDirection), 3);
+                    changed = true;
+                }
+                // Try to set the direction of the block based on its properties
+                else if (blockState.hasProperty(BlockStateProperties.AXIS) && 
+                         targetDirection.getAxis() != Direction.Axis.Y) {
+                    level.setBlock(blockPos, blockState.setValue(BlockStateProperties.AXIS, targetDirection.getAxis()), 3);
+                    changed = true;
+                }
             }
             
-            // Se il blocco è stato ruotato, riproduci un suono
-            if (rotated) {
+            // if the block was changed, play a sound and send a message to the player
+            if (changed) {
                 level.playSound(null, blockPos, SoundEvents.LANTERN_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                player.displayClientMessage(
+                    Component.translatable("item.iska_utils.swiss_wrench.message.block_rotated"), true);
                 return InteractionResult.SUCCESS;
+            } else {
+                player.displayClientMessage(
+                    Component.translatable("item.iska_utils.swiss_wrench.message.cannot_rotate"), true);
+                return InteractionResult.FAIL;
             }
         }
         
         return InteractionResult.PASS;
     }
-    
-    /**
-     * Ruota un blocco basato sulla proprietà AXIS (come i tronchi)
-     */
-    private boolean rotateBlockOnAxis(Level level, BlockPos pos, BlockState state) {
-        if (state.hasProperty(BlockStateProperties.AXIS)) {
-            Direction.Axis currentAxis = state.getValue(BlockStateProperties.AXIS);
-            Direction.Axis newAxis;
-            
-            // Ruota in sequenza X -> Z -> Y -> X
-            switch (currentAxis) {
-                case X -> newAxis = Direction.Axis.Z;
-                case Z -> newAxis = Direction.Axis.Y;
-                case Y -> newAxis = Direction.Axis.X;
-                default -> newAxis = currentAxis;
-            }
-            
-            level.setBlock(pos, state.setValue(BlockStateProperties.AXIS, newAxis), 3);
-            return true;
-        }
+
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
-        return false;
+        // Show current mode
+        SetWrenchDirectionBlock.RotationMode currentMode = SetWrenchDirectionBlock.getSelectedRotationMode(stack);
+        
+        Component modeText = Component.translatable("item.iska_utils.swiss_wrench.tooltip.current_mode", 
+                currentMode.getDisplayName());
+        
+        tooltipComponents.add(modeText);
+        tooltipComponents.add(Component.translatable("item.iska_utils.swiss_wrench.tooltip.desc0"));
+        tooltipComponents.add(Component.translatable("item.iska_utils.swiss_wrench.tooltip.desc1"));
     }
 }

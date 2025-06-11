@@ -19,6 +19,7 @@ import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.unfamily.iskautils.item.custom.RubberBootsItem;
+import net.unfamily.iskautils.item.custom.MiningEquitizer;
 
 
 public class ModItems {
@@ -80,6 +81,9 @@ public class ModItems {
     public static final DeferredItem<Item> SWISS_WRENCH = ITEMS.register("swiss_wrench",
             () -> new SwissWrenchItem(new Item.Properties().stacksTo(1)));
             
+    // Mining Equitizer - Custom item that negates flying mining speed penalty
+    public static final DeferredItem<Item> MINING_EQUITIZER = ITEMS.register("mining_equitizer",
+            () -> new MiningEquitizer(new Item.Properties().stacksTo(1)));
             
     // ===== RUBBER TREE ITEMS =====
     

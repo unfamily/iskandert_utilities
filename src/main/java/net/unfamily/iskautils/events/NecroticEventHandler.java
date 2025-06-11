@@ -40,15 +40,18 @@ public class NecroticEventHandler {
             // Check if damage would be lethal
             boolean isDamageLethal = player.getHealth() <= event.getAmount();
             
+            // Base health is 20.0 (10 hearts)
+            double baseHealth = 20.0;
+            
+            // Get current hex counter value
+            float hexCounter = getCurrentUsageCounter(player);
+            
             if (StageRegistry.playerHasStage(player, "iska_utils_internal-necro_crystal_heart_equip") && isDamageLethal) {
                 // Get current maximum health
                 AttributeInstance maxHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
                 if (maxHealthAttr == null) {
                     return;
                 }
-                
-                // Get current hex counter value
-                float hexCounter = getCurrentUsageCounter(player);
                 
                 // Increment counter by 2.0f (one heart)
                 float newHexCounter = hexCounter + 2.0f;
@@ -57,27 +60,20 @@ public class NecroticEventHandler {
                 setUsageCounter(player, newHexCounter);
                 
                 // Calculate new maximum health (20 - hex)
-                // Base health is 20.0 (10 hearts)
-                double baseHealth = 20.0;
                 double newMaxHealth = baseHealth - newHexCounter;
                 
                 // If new max health drops below minimum threshold, player must die
                 if (newMaxHealth < MIN_HEALTH_THRESHOLD) {
                     // Don't zero out damage, allowing player to die
                     
-                    // Reset hex counter and max health
-                    // Actual reset will happen after death, so schedule it
+                    // Schedule reset after death
                     player.level().getServer().tell(new net.minecraft.server.TickTask(1, () -> {
-                        // Check if player is dead
-                        if (player.isDeadOrDying()) {
-                            // Reset hex counter
-                            setUsageCounter(player, 0.0f);
-                            
-                            // Reset max health to original value
-                            AttributeInstance playerHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
-                            if (playerHealthAttr != null) {
-                                playerHealthAttr.setBaseValue(baseHealth);
-                            }
+                        // Reset hex counter and max health
+                        setUsageCounter(player, 0.0f);
+                        
+                        AttributeInstance playerHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
+                        if (playerHealthAttr != null) {
+                            playerHealthAttr.setBaseValue(baseHealth);
                         }
                     }));
                 } else {
@@ -95,6 +91,20 @@ public class NecroticEventHandler {
                         player.setHealth(player.getMaxHealth());
                     }
                 }
+            } else if (isDamageLethal) {
+                // Se il danno è letale e non ha più il cuore, resetta comunque il contatore
+                player.level().getServer().tell(new net.minecraft.server.TickTask(1, () -> {
+                    if (player.isDeadOrDying() && hexCounter > 0) {
+                        // Reset hex counter
+                        setUsageCounter(player, 0.0f);
+                        
+                        // Reset max health to original value
+                        AttributeInstance playerHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
+                        if (playerHealthAttr != null) {
+                            playerHealthAttr.setBaseValue(baseHealth);
+                        }
+                    }
+                }));
             }
         }
     }

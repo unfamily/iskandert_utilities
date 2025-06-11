@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BCB",
+    "CBC",
+    "CAC"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:storage_blocks/redstone"
+    },
+    "B": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "tag": "c:nuggets/iron"
+    }
+  },
+  "result": {
+    "id": "iska_utils:swiss_wrench",
+    "count": 1
+  }
+} 

@@ -48,6 +48,10 @@ public class LootEvents {
             LootPool.Builder poolBuilder = LootPool.lootPool()
                     .setRolls(ConstantValue.exactly(1))
                     .add(LootItem.lootTableItem(ModItems.NECROTIC_CRYSTAL_HEART.get())
+                            .setWeight(1)
+                            .apply(SetItemCountFunction.setCount(ConstantValue.exactly(1))))
+                    .add(LootItem.lootTableItem(ModItems.MINING_EQUITIZER.get())
+                            .setWeight(1)
                             .apply(SetItemCountFunction.setCount(ConstantValue.exactly(1))))
                     .when(LootItemRandomChanceCondition.randomChance(0.05f));
                     

@@ -120,6 +120,7 @@ public class ModCreativeModeTabs {
                                 
                                 // Artifacts
                                 pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());
+                                pOutput.accept(ModItems.MINING_EQUITIZER.get());
 
 
                             }).build());

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "   ",
+    "ABA",
+    "   "
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:scaffolding"
+    },
+    "B": {
+      "tag": "minecraft:wooden_trapdoors"
+    }
+  },
+  "result": {
+    "id": "iska_utils:raft",
+    "count": 16
+  }
+} 

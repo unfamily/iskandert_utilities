@@ -1,4 +1,4 @@
-package net.unfamily.iskautils.procedures;
+package net.unfamily.iskautils.events;
 
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.bus.api.SubscribeEvent;

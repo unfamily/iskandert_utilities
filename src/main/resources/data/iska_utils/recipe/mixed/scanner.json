@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "A A",
+    "BCB",
+    "BBB"
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:iron_bars"
+    },
+    "B": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "item": "minecraft:ender_eye"
+    }
+  },
+  "result": {
+    "id": "iska_utils:scanner",
+    "count": 1
+  }
+} 

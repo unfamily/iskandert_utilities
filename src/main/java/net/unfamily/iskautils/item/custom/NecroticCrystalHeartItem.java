@@ -104,6 +104,12 @@ public class NecroticCrystalHeartItem extends Item {
         }
     }
 
+    @Override
+	public boolean onDroppedByPlayer(ItemStack itemstack, Player entity) {
+		StageRegistry.removePlayerStage(entity, "iska_utils_internal-necro_crystal_heart_equip");
+		return true;
+	}
+
     private boolean isArtifactsLoaded() {
         return net.neoforged.fml.ModList.get().isLoaded("artifacts");
     }

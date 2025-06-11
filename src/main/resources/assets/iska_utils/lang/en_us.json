@@ -14,6 +14,7 @@
   "item.iska_utils.necrotic_crystal_heart": "§bNecrotic Crystal Heart",
   "item.iska_utils.scanner_chip": "Scanner Chip",
   "item.iska_utils.swiss_wrench": "Swiss Wrench",
+  "item.iska_utils.mining_equitizer": "Mining Equitizer",
   
   "item.iska_utils.rubber_boots": "Rubber Boots",
   "block.iska_utils.rubber_log": "Rubber Log",
@@ -188,5 +189,24 @@
   "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Only a good sleep will heal you...",
   "tooltip.iska_utils.necrotic_crystal_heart.desc3": "Or you will be consumed by pain...",
   "tooltip.iska_utils.necrotic_crystal_heart.artifacts_required": "§4Artifacts mod is required to obtain it",
-  "tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded": "§6Mimic drops this artifact"
+  "tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded": "§6Mimic drops this artifact",
+
+  "item.iska_utils.swiss_wrench.rotation_mode.rotate_right": "Clockwise Rotation",
+  "item.iska_utils.swiss_wrench.rotation_mode.rotate_left": "Counter-Clockwise Rotation", 
+  "item.iska_utils.swiss_wrench.rotation_mode.north": "North Direction",
+  "item.iska_utils.swiss_wrench.rotation_mode.east": "East Direction",
+  "item.iska_utils.swiss_wrench.rotation_mode.south": "South Direction",
+  "item.iska_utils.swiss_wrench.rotation_mode.west": "West Direction",
+  "item.iska_utils.swiss_wrench.rotation_mode.up": "Up Direction",
+  "item.iska_utils.swiss_wrench.rotation_mode.down": "Down Direction",
+  "item.iska_utils.swiss_wrench.message.mode_set": "Rotation mode set to: %s",
+ 
+  "tooltip.iska_utils.mining_equitizer.desc0": "An artifact that increases your strength when mining",
+  "tooltip.iska_utils.mining_equitizer.desc1": "in unfavorable conditions (in water or when flying)",
+
+  "item.iska_utils.swiss_wrench.message.block_rotated": "Block rotated successfully",
+  "item.iska_utils.swiss_wrench.message.cannot_rotate": "Cannot rotate this block",
+  "item.iska_utils.swiss_wrench.tooltip.current_mode": "Current mode: %s",
+  "item.iska_utils.swiss_wrench.tooltip.desc0": "Shift + Right Click to rotate blocks",
+  "item.iska_utils.swiss_wrench.tooltip.desc1": "Left Click to change rotation mode on a block"
 }

@@ -14,6 +14,7 @@
   "item.iska_utils.necrotic_crystal_heart": "§bCuore di Cristallo Necromantico",
   "item.iska_utils.scanner_chip": "Chip Scanner",
   "item.iska_utils.swiss_wrench": "Chiave Svizera",
+  "item.iska_utils.mining_equitizer": "Equitizzatore di Scavo",
   
   "item.iska_utils.rubber_boots": "Stivali di Gomma",
   "block.iska_utils.rubber_log": "Tronco di Caucciù",
@@ -188,5 +189,24 @@
   "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Solo un sano riposo ti guarirà...",
   "tooltip.iska_utils.necrotic_crystal_heart.desc3": "Oppure verrai consumato dal dolore...",
   "tooltip.iska_utils.necrotic_crystal_heart.artifacts_required": "§4Richiede l'Artifacts Mod per ottenerlo",
-  "tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded": "§6Il Mimic dell'Artifacts lo rilascia"
+  "tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded": "§6Il Mimic dell'Artifacts lo rilascia",
+
+  "item.iska_utils.swiss_wrench.rotation_mode.rotate_right": "Rotazione Oraria",
+  "item.iska_utils.swiss_wrench.rotation_mode.rotate_left": "Rotazione Antioraria", 
+  "item.iska_utils.swiss_wrench.rotation_mode.north": "Direzione Nord",
+  "item.iska_utils.swiss_wrench.rotation_mode.east": "Direzione Est",
+  "item.iska_utils.swiss_wrench.rotation_mode.south": "Direzione Sud",
+  "item.iska_utils.swiss_wrench.rotation_mode.west": "Direzione Ovest",
+  "item.iska_utils.swiss_wrench.rotation_mode.up": "Direzione Su",
+  "item.iska_utils.swiss_wrench.rotation_mode.down": "Direzione Giù",
+  "item.iska_utils.swiss_wrench.message.mode_set": "Modalità di rotazione impostata su: %s",
+  
+  "tooltip.iska_utils.mining_equitizer.desc0": "Un'artefatto che aumenta la tua forza quando scavi",
+  "tooltip.iska_utils.mining_equitizer.desc1": "in condizioni sfavorevoli (in acqua o quando voli)",
+
+  "item.iska_utils.swiss_wrench.message.block_rotated": "Blocco ruotato con successo",
+  "item.iska_utils.swiss_wrench.message.cannot_rotate": "Impossibile ruotare questo blocco",
+  "item.iska_utils.swiss_wrench.tooltip.current_mode": "Modalità corrente: %s",
+  "item.iska_utils.swiss_wrench.tooltip.desc0": "Shift + Click destro per ruotare i blocchi",
+  "item.iska_utils.swiss_wrench.tooltip.desc1": "Click sinistro per cambiare modalità di rotazione su un blocco"
 }

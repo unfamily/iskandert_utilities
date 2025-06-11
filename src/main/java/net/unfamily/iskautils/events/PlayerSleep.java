@@ -1,4 +1,4 @@
-package net.unfamily.iskautils.procedures;
+package net.unfamily.iskautils.events;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
@@ -10,6 +10,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerWakeUpEvent;
+import net.unfamily.iskautils.stage.StageRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +53,8 @@ public class PlayerSleep {
 					LOGGER.info("Reset max health and Necrotic Hex for player {} after sleeping", 
 						player.getName().getString());
 				}
+
+				StageRegistry.removePlayerStage(player, "iska_utils_internal-necrotic_crystal_heart");
 			}
 		}
 	}
