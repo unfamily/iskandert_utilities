@@ -113,12 +113,12 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.WEATHER_ALTERER.get());
                                 pOutput.accept(ModItems.TIME_ALTERER.get());
 
-                                // Artifacts
-                                pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());
-
                                 // Scanner
                                 pOutput.accept(ModItems.SCANNER.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP.get());
+                                
+                                // Artifacts
+                                pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());
 
 
                             }).build());

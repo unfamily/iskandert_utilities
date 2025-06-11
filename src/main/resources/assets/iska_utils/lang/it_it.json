@@ -152,6 +152,7 @@
   "item.iska_utils.scanner.tooltip.no_target": "Nessun target impostato",
   "item.iska_utils.scanner.tooltip.chip_info": "o usa con un Chip Scanner nella mano secondaria per trasferire il target",
   "item.iska_utils.scanner.tooltip.instructions": "Shift+click destro su un blocco o colpisci un mob per impostarlo",
+  "item.iska_utils.scanner.max_markers_reached": "Numero massimo di marker raggiunto: %d",
   
   "item.iska_utils.scanner_chip.target_set": "Blocco target salvato nel chip: %s",
   "item.iska_utils.scanner_chip.mob_target_set": "Mob target salvato nel chip: %s",
