@@ -52,6 +52,7 @@ public class ScannerItem extends Item {
     private static final String CLEAR_MARKERS_TAG = "ClearMarkers";
     private static final String ENERGY_TAG = "Energy"; 
     private boolean clear_markers=false;
+    private static final int TTL_MULTIPLIER = 5;
     
     // Map to track active markers by scanner ID
     private static final Map<UUID, List<BlockPos>> ACTIVE_MARKERS = new HashMap<>();
@@ -509,9 +510,8 @@ public class ScannerItem extends Item {
                                     scannerMarkers.add(pos);
                                     newMarkersFound++;
                                     
-                                    // Calcola il moltiplicatore TTL basato sul numero di blocchi scansionati
-                                    int ttlMultiplier = 1 + (newMarkersFound / 1024);
-                                    int finalTTL = baseTTL * ttlMultiplier;
+                                    // Calcola il moltiplicatore TTL basato sul numero di blocchi scansionato
+                                    int finalTTL = baseTTL * TTL_MULTIPLIER;
                                     
                                     // Add TTL for this marker
                                     MARKER_TTL.put(pos, finalTTL);
