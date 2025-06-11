@@ -1,7 +1,6 @@
 {
     "replace": false,
     "values": [
-      "iska_utils:vector_charm",
-      "iska_utils:flight_equitizer"
+      "iska_utils:vector_charm"
     ]
   }
