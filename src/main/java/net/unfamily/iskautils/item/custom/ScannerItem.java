@@ -441,10 +441,9 @@ public class ScannerItem extends Item {
         // Get config values
         int scanRange = Config.scannerScanRange;
         int maxBlocksScan = Config.scannerMaxBlocks;
-        int maxTTL = Config.scannerMarkerTTL;
+        int baseTTL = Config.scannerMarkerTTL;
         
         // Determina il numero di chunk da scansionare in base al raggio configurato
-        // Ogni chunk è 16x16 blocchi, quindi calcoliamo quanti chunk dobbiamo controllare
         int chunkRadius = Math.max(1, scanRange / 16);
         
         // Create a set of currently existing marker positions
@@ -501,7 +500,7 @@ public class ScannerItem extends Item {
                                     // Skip if we already have a marker at this position
                                     if (existingMarkerPositions.contains(pos)) {
                                         // Refresh TTL for existing marker
-                                        MARKER_TTL.put(pos, maxTTL);
+                                        MARKER_TTL.put(pos, baseTTL);
                                         continue;
                                     }
                                     
@@ -510,8 +509,12 @@ public class ScannerItem extends Item {
                                     scannerMarkers.add(pos);
                                     newMarkersFound++;
                                     
+                                    // Calcola il moltiplicatore TTL basato sul numero di blocchi scansionati
+                                    int ttlMultiplier = 1 + (newMarkersFound / 1024);
+                                    int finalTTL = baseTTL * ttlMultiplier;
+                                    
                                     // Add TTL for this marker
-                                    MARKER_TTL.put(pos, maxTTL);
+                                    MARKER_TTL.put(pos, finalTTL);
                                     
                                     // Check if we've reached the limit
                                     if (newMarkersFound >= remainingCapacity) {
