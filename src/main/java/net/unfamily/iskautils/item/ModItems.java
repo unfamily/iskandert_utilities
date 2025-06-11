@@ -19,6 +19,7 @@ import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.unfamily.iskautils.item.custom.RubberBootsItem;
+import net.unfamily.iskautils.item.custom.FlightEquitizerItem;
 
 
 public class ModItems {
@@ -79,6 +80,10 @@ public class ModItems {
     // Swiss Wrench - Custom item that can be used to repair vector plates
     public static final DeferredItem<Item> SWISS_WRENCH = ITEMS.register("swiss_wrench",
             () -> new SwissWrenchItem(new Item.Properties().stacksTo(1)));
+            
+    // Flight Equitizer - Custom item that negates flying mining speed penalty
+    public static final DeferredItem<Item> FLIGHT_EQUITIZER = ITEMS.register("flight_equitizer",
+            () -> new FlightEquitizerItem(new Item.Properties().stacksTo(1)));
             
     // ===== RUBBER TREE ITEMS =====
     
