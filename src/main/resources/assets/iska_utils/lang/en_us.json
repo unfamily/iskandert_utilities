@@ -150,8 +150,8 @@
   "item.iska_utils.scanner.tooltip.target_block": "Target Block",
   "item.iska_utils.scanner.tooltip.target_mob": "Target Mob",
   "item.iska_utils.scanner.tooltip.no_target": "No target set",
-  "item.iska_utils.scanner.tooltip.chip_info": "Use with Scanner Chip in offhand to transfer target",
-  "item.iska_utils.scanner.tooltip.instructions": "Shift+right click a block or hit a mob to set it or use a chip",
+  "item.iska_utils.scanner.tooltip.chip_info": "or use with Scanner Chip in offhand to transfer target",
+  "item.iska_utils.scanner.tooltip.instructions": "Shift+right click a block or hit a mob to set it",
 
   
   "item.iska_utils.scanner_chip.target_set": "Target block saved to chip: %s",
