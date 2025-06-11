@@ -988,6 +988,12 @@ public class ScannerItem extends Item {
             tooltipComponents.add(noTargetText);
         }
         
+        // Instructions
+        Component instructionsText = Component.translatable("item.iska_utils.scanner.tooltip.instructions")
+            .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
+        
+        tooltipComponents.add(instructionsText);
+
         // Chip integration info
         Component chipInfoText = Component.translatable("item.iska_utils.scanner.tooltip.chip_info")
             .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
