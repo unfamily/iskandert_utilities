@@ -47,7 +47,7 @@ public class FlightEquitizerItem extends Item {
         Player player = event.getEntity();
 
         // If the player is on the ground or in water, do nothing
-        if (player.onGround() || player.isInWater()) {
+        if (player.onGround()) {
             return;
         }
             

@@ -39,5 +39,8 @@ public class CuriosIntegration {
         
         // Register Necrotic Crystal Heart as curio
         NecroticCrystalHeartCurioHandler.register();
+
+        // Register Flight Equitizer as curio
+        FlightEqutizerItemCurioHandler.register();
     }
 } 
