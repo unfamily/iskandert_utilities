@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "iska_utils:treetap",
-    "iska_utils:electric_treetap"
+    "iska_utils:electric_treetap",
+    "iska_utils:swiss_wrench"
   ]
 } 
