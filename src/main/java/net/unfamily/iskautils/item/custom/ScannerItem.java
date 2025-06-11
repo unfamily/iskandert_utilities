@@ -554,22 +554,27 @@ public class ScannerItem extends Item {
             // Get the current session ID
             String sessionId = net.unfamily.iskautils.util.SessionVariables.getScannerSessionId().toString();
             
-            // First create a marker for exact positioning
+            // Ottieni l'ID della dimensione
+            ResourceLocation dimensionId = player.level().dimension().location();
+            
+            // Prima crea un marker per il posizionamento esatto
             player.getServer().getCommands().performPrefixedCommand(
                 player.getServer().createCommandSourceStack().withSuppressedOutput(),
-                String.format("summon minecraft:marker %d %d %d {Tags:[\"temp_scan_marker\"]}", pos.getX(), pos.getY(), pos.getZ())
+                String.format("execute in %s run summon minecraft:marker %d %d %d {Tags:[\"temp_scan_marker\"]}", 
+                    dimensionId, pos.getX(), pos.getY(), pos.getZ())
             );
             
-            // Use UUID for marker identification to ensure uniqueness
+            // Usa UUID per identificare il marker
             String markerId = UUID.randomUUID().toString();
             
-            // Then create a block_display at the block center with glowing effect, including scanner ID and session ID tags
+            // Poi crea un block_display al centro del blocco con effetto glowing, 
+            // includendo ID scanner e ID sessione
             player.getServer().getCommands().performPrefixedCommand(
                 player.getServer().createCommandSourceStack().withSuppressedOutput(),
-                String.format("execute at @e[type=marker,tag=temp_scan_marker,limit=1] run summon block_display ~0.0 ~0.0 ~0.0 " +
+                String.format("execute in %s at @e[type=marker,tag=temp_scan_marker,limit=1] run summon block_display ~0.0 ~0.0 ~0.0 " +
                 "{Tags:[\"temp_scan\",\"scanner_%s\",\"session_%s\",\"marker_%s\"],Glowing:1b,block_state:{Name:\"iska_utils:scan_block\"}," +
                 "transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[-0.55f,-0.05f,-0.55f],scale:[1.1f,1.1f,1.1f]}}", 
-                scannerId, sessionId, markerId)
+                dimensionId, scannerId, sessionId, markerId)
             );
             
             // Add the just spawned block_display to the iska_utils_scan team using the unique marker ID
