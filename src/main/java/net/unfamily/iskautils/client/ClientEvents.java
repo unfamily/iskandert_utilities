@@ -1,15 +1,22 @@
 package net.unfamily.iskautils.client;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent.Stage;
 import net.unfamily.iskautils.IskaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.unfamily.iskautils.client.XRayBlockRenderer;
 
 /**
  * Class that manages client-specific events
  */
+@EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT)
 public class ClientEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientEvents.class);
     
@@ -70,5 +77,21 @@ public class ClientEvents {
         }
         
         // We no longer apply movement here, as it's done directly by the item tick methods
+    }
+    
+    /**
+     * Renderizza i blocchi XRay durante il rendering del mondo
+     */
+    @SubscribeEvent
+    public static void onRenderLevel(RenderLevelStageEvent event) {
+        if (event.getStage() == Stage.AFTER_TRANSLUCENT_BLOCKS) {
+            PoseStack poseStack = event.getPoseStack();
+            
+            // Converti il DeltaTracker in float (il valore esatto non è importante per questo rendering)
+            float partialTick = 0.0f;
+            
+            // Renderizza i blocchi XRay
+            XRayBlockRenderer.getInstance().render(poseStack, partialTick);
+        }
     }
 } 
