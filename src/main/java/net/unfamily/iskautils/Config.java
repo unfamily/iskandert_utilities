@@ -235,8 +235,7 @@ public class Config
             .define("000_external_scripts_path", "kubejs/external_scripts");
 
     private static final ModConfigSpec.BooleanValue ARTIFACTS_INFO= BUILDER
-            .comment("If true, the mod will show the artifacts info in the tooltip of the Necrotic Crystal Heart",
-                    "If false, the mod will not show the artifacts info in the tooltip of the Necrotic Crystal Heart")
+            .comment("If false not desplay where obtain the artifacts or mod dependecy required for obtain it (only for lootable artifacts)")
             .define("001_artifacts_info", true);
 
     static {

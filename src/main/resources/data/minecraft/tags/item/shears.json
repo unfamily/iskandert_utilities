@@ -2,8 +2,6 @@
   "replace": false,
   "values": [
     "#c:tools/shears",
-    "#c:tools/shear",
-    "#c:shears",
-    "#c:shear"
+    "#c:tools/shear"
   ]
 } 
