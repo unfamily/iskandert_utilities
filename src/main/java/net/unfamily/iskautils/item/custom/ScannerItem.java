@@ -1018,8 +1018,20 @@ public class ScannerItem extends Item {
         tooltipComponents.add(instruction2Text);
 
         // Chip integration info
-        Component chipInfoText = Component.translatable("item.iska_utils.scanner.tooltip.chip_info")
+        Component chipInfoText = Component.translatable("item.iska_utils.scanner.tooltip.chip_info0")
             .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+
+        if(Config.scannerEnergyConsume > 0) {
+            Component chipInfoText1 = Component.translatable("item.iska_utils.scanner.tooltip.chip_info1")
+                .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+            tooltipComponents.add(chipInfoText1);
+        } else {
+            Component chipInfoText2 = Component.translatable("item.iska_utils.scanner.tooltip.chip_info2")
+                .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+            tooltipComponents.add(chipInfoText2);
+        }
+
+        tooltipComponents.add(chipInfoText);
         
         tooltipComponents.add(chipInfoText);
     }

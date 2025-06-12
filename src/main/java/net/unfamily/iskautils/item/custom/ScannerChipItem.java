@@ -24,6 +24,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
+import net.unfamily.iskautils.Config;
 
 import java.util.List;
 
@@ -338,9 +339,19 @@ public class ScannerChipItem extends Item {
         tooltipComponents.add(instruction1Text);    
         
         // Chip integration info
-        Component chipInfoText = Component.translatable("item.iska_utils.scanner.tooltip.chip_info")
+        Component chipInfoText = Component.translatable("item.iska_utils.scanner_chip.tooltip.chip_info0")
             .withStyle(style -> style.withColor(ChatFormatting.AQUA));
         
+        if(Config.scannerEnergyConsume > 0) {
+            Component chipInfoText1 = Component.translatable("item.iska_utils.scanner.tooltip.chip_info1")
+                .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+            tooltipComponents.add(chipInfoText1);
+        } else {
+            Component chipInfoText2 = Component.translatable("item.iska_utils.scanner.tooltip.chip_info2")
+                .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+            tooltipComponents.add(chipInfoText2);
+        }
+
         tooltipComponents.add(chipInfoText);
 
     }
