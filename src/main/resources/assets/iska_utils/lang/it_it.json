@@ -152,8 +152,10 @@
   "item.iska_utils.scanner.tooltip.target_block": "Blocco Target",
   "item.iska_utils.scanner.tooltip.target_mob": "Mob Target",
   "item.iska_utils.scanner.tooltip.no_target": "Nessun target impostato",
-  "item.iska_utils.scanner.tooltip.chip_info": "o usa con un Chip Scanner nella mano secondaria per trasferire il target",
-  "item.iska_utils.scanner.tooltip.instructions": "Shift+click destro su un blocco o colpisci un mob per impostarlo",
+  "item.iska_utils.scanner.tooltip.chip_info": "Può essere usato con un Chip Scanner nella mano secondaria per trasferire il target",
+  "item.iska_utils.scanner.tooltip.instruction0": "Shift+click destro su un blocco o colpisci un mob per impostarlo",
+  "item.iska_utils.scanner.tooltip.instruction1": "Click destro per rimuovere i marker dei blocchi",
+  "item.iska_utils.scanner.tooltip.instruction2": "Shift+click destro su aria per cancellare le impostazioni dello scanner",
   "item.iska_utils.scanner.max_markers_reached": "Numero massimo di marker raggiunto: %d",
   
   "item.iska_utils.scanner_chip.target_set": "Blocco target salvato nel chip: %s",
@@ -164,7 +166,9 @@
   "item.iska_utils.scanner_chip.tooltip.target_block": "Blocco Salvato",
   "item.iska_utils.scanner_chip.tooltip.target_mob": "Mob Salvato",
   "item.iska_utils.scanner_chip.tooltip.no_target": "Nessun target salvato",
-  "item.iska_utils.scanner_chip.tooltip.instructions": "Shift+click destro su un blocco o colpisci un mob per salvarlo",
+  "item.iska_utils.scanner_chip.tooltip.instruction0": "Shift+click destro su un blocco o colpisci un mob per salvarlo",
+  "item.iska_utils.scanner_chip.tooltip.instruction1": "Shift+click destro su aria per cancellare le impostazioni dello scanner",
+  "item.iska_utils.scanner_chip.tooltip.chip_info": "Può essere usato con un Chip Scanner nella mano secondaria per trasferire il target",
 
   "block.iska_utils.weather_detector.mode.sunny": "Rilevatore del Meteo impostato in modalità Sole",
   "block.iska_utils.weather_detector.mode.rain": "Rilevatore del Meteo impostato in modalità Pioggia",

@@ -320,6 +320,7 @@ public class ScannerChipItem extends Item {
                 .append(getLocalizedMobName(targetMob).copy().withStyle(ChatFormatting.WHITE));
             
             tooltipComponents.add(targetText);
+
         } else {
             Component noTargetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.no_target")
                 .withStyle(style -> style.withColor(ChatFormatting.GRAY));
@@ -328,9 +329,19 @@ public class ScannerChipItem extends Item {
         }
         
         // Instructions
-        Component instructionsText = Component.translatable("item.iska_utils.scanner_chip.tooltip.instructions")
+        Component instruction0Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction0")
             .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
+        tooltipComponents.add(instruction0Text);
+
+        Component instruction1Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction1")
+            .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
+        tooltipComponents.add(instruction1Text);    
         
-        tooltipComponents.add(instructionsText);
+        // Chip integration info
+        Component chipInfoText = Component.translatable("item.iska_utils.scanner.tooltip.chip_info")
+            .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+        
+        tooltipComponents.add(chipInfoText);
+
     }
 }
