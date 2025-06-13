@@ -115,7 +115,7 @@ public class ClientEvents {
      */
     public static void handleRemoveHighlight(BlockPos pos) {
         MarkRenderer.getInstance().removeHighlightedBlock(pos);
-        // Rimuovi anche eventuali billboard marker nella stessa posizione
+        // Also remove any billboard markers at the same position
         MarkRenderer.getInstance().removeBillboardMarker(pos);
     }
     

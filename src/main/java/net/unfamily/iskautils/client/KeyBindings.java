@@ -100,7 +100,7 @@ public class KeyBindings {
 
     /**
      * Handles Vector Charm key events and displays messages to the client
-     * Chiamato da ClientEvents.checkKeysInClientThread()
+     * Called from ClientEvents.checkKeysInClientThread()
      */
     public static void checkKeys() {
         // Check if the player has pressed Vector Charm keys
@@ -186,8 +186,8 @@ public class KeyBindings {
     }
     
     /**
-     * Controlla se il tasto del dislocatore è stato premuto e consuma l'evento
-     * @return true se il tasto è stato premuto, false altrimenti
+     * Checks if the dislocator key has been pressed and consumes the event
+     * @return true if the key was pressed, false otherwise
      */
     public static boolean consumeDislocatorKeyClick() {
         return PORTABLE_DISLOCATOR_KEY.consumeClick();

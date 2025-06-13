@@ -6,7 +6,7 @@ import java.nio.ByteOrder;
 import org.lwjgl.system.MemoryUtil;
 
 /**
- * Implementazione della classe ByteBufferBuilder necessaria per il rendering XRay
+ * Implementation of the ByteBufferBuilder class needed for XRay rendering
  */
 public class ByteBufferBuilder {
     private ByteBuffer buffer;

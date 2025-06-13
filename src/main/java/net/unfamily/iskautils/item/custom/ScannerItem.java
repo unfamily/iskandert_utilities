@@ -161,10 +161,8 @@ public class ScannerItem extends Item {
             return InteractionResultHolder.fail(itemStack);
         }
         
-        // Remove existing markers if scanning blocks
-        if (targetBlock != null) {
-            clearMarkers(player, itemStack);
-        }
+        // Cancella sempre tutti i marker esistenti ad ogni click
+        clearMarkers(player, itemStack);
         
         // Set use duration
         player.startUsingItem(hand);
@@ -217,7 +215,7 @@ public class ScannerItem extends Item {
             if(player.isCrouching()) {
                 LOADING_DATA.remove(player.getUUID());
                 
-                // Controlla se c'è un chip nella mano secondaria e trasferisci il target
+                // Check if there's a chip in the offhand and transfer the target
                 if (!world.isClientSide) {
                     checkAndTransferFromChip(player);
                 }
@@ -264,19 +262,17 @@ public class ScannerItem extends Item {
                     if (scanSuccess) {
                         consumeEnergyForOperation(itemstack);
                         
-                        // Mostra barra completata
+                        // Show completed loading bar
                         if (!world.isClientSide) {
                             displayLoadingBar(serverPlayer, requiredDuration, requiredDuration);
                         }
                     }
                 } else {
-                    // Se il giocatore ha rilasciato prima del tempo richiesto, pulisci i marker esistenti
-                    if (targetBlock != null) {
-                        clearMarkers(player, itemstack);
-                        serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.markers_cleared"), true);
-                    }
+                    // If player released before required time, clear existing markers
+                    clearMarkers(player, itemstack);
+                    serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.markers_cleared"), true);
                     
-                    // Rimuovi i dati di caricamento
+                    // Remove loading data
                     LOADING_DATA.remove(player.getUUID());
                 }
             }
@@ -346,8 +342,8 @@ public class ScannerItem extends Item {
                 // Send clear message to client for each marker
                 for (BlockPos pos : markers) {
                     // Remove the marker from client side
-                    // Check if it's a block or mob marker
                     if (MARKER_TTL.containsKey(pos)) {
+                        // Rimuovi i marker usando handleRemoveHighlight che rimuove sia i blocchi che i billboard
                         net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(serverPlayer, pos);
                         
                         MARKER_TTL.remove(pos);
@@ -428,7 +424,7 @@ public class ScannerItem extends Item {
         int maxBlocksScan = Config.scannerMaxBlocks;
         int baseTTL = Config.scannerMarkerTTL;
         
-        // Determina il numero di chunk da scansionare in base al raggio configurato
+        // Determine the number of chunks to scan based on the configured radius
         int chunkRadius = Math.max(1, scanRange / 16);
         
         // Create a set of currently existing marker positions
@@ -464,7 +460,7 @@ public class ScannerItem extends Item {
                     continue;
                 }
                 
-                // Aggiorna la barra di caricamento ogni chunk
+                // Update the loading bar for each chunk
                 float percentage = (float) currentChunksScanned / totalChunksToScan;
                 displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
                 
@@ -505,15 +501,15 @@ public class ScannerItem extends Item {
                                     scannerMarkers.add(pos);
                                     newMarkersFound++;
                                     
-                                    // Calcola il moltiplicatore TTL basato sul numero di blocchi scansionato
+                                    // Calculate TTL multiplier based on the number of scanned blocks
                                     int finalTTL = baseTTL * TTL_MULTIPLIER;
                                     
                                     // Add TTL for this marker
                                     MARKER_TTL.put(pos, finalTTL);
                                     
                                     // Use MarkRenderer to add the highlighted block on the client side
-                                    // Light blue color (ARGB format): 0xA000BFFF (alpha, red, green, blue)
-                                    int lightBlueColor = 0xA000BFFF;
+                                    // Light blue color (ARGB format): 0x8000BFFF (alpha, red, green, blue)
+                                    int lightBlueColor = 0x8000BFFF;
                                     net.unfamily.iskautils.network.ModMessages.sendAddHighlightPacket(player, pos, lightBlueColor, finalTTL);
                                     
                                     // Check if we've reached the limit (skip if infinite blocks)
@@ -543,7 +539,7 @@ public class ScannerItem extends Item {
         
         player.displayClientMessage(message, true);
         
-        // Assicurati di mostrare la barra completata alla fine
+        // Make sure to show the completed bar at the end
         displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
     }
     
@@ -600,7 +596,7 @@ public class ScannerItem extends Item {
         int scanRange = Config.scannerScanRange;
         int maxTTL = Config.scannerMarkerTTL;
         
-        // Calcola il numero totale di chunk da scansionare
+        // Calculate the total number of chunks to scan
         int chunkRadius = Math.max(1, scanRange / 16);
         int totalChunksToScan = (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
         int currentChunksScanned = 0;
@@ -619,22 +615,22 @@ public class ScannerItem extends Item {
         // Get or create a list for this scanner's markers
         List<BlockPos> scannerMarkers = ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>());
         
-        // Scansiona i chunk nell'area
+        // Scan the chunks in the area
         for (int chunkX = playerPos.getX() / 16 - chunkRadius; chunkX <= playerPos.getX() / 16 + chunkRadius; chunkX++) {
             for (int chunkZ = playerPos.getZ() / 16 - chunkRadius; chunkZ <= playerPos.getZ() / 16 + chunkRadius; chunkZ++) {
                 ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
                 
-                // Verifica se il chunk è caricato
+                // Check if the chunk is loaded
                 if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
                     currentChunksScanned++;
                     continue;
                 }
                 
-                // Aggiorna la barra di caricamento ogni chunk
+                // Update the loading bar for each chunk
                 float percentage = (float) currentChunksScanned / totalChunksToScan;
                 displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
                 
-                // Cerca entità nel chunk corrente
+                // Search for entities in the current chunk
                 List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(
                     LivingEntity.class, 
                     new net.minecraft.world.phys.AABB(
@@ -648,9 +644,9 @@ public class ScannerItem extends Item {
                     }
                 );
                 
-                // Processa le entità trovate
+                // Process the found entities
                 for (LivingEntity entity : nearbyEntities) {
-                    // Ottieni la posizione dell'entità
+                    // Get the entity's position
                     BlockPos entityPos = entity.blockPosition();
                     
                     // Skip if we already have a marker at this position
@@ -664,19 +660,19 @@ public class ScannerItem extends Item {
                     scannerMarkers.add(entityPos);
                     markersFound++;
                     
-                    // Calcola il TTL finale
+                    // Calculate the final TTL
                     int finalTTL = maxTTL * TTL_MULTIPLIER;
                     
                     // Add TTL for this marker
                     MARKER_TTL.put(entityPos, finalTTL);
                     
                     // Use MarkRenderer to add a billboard marker on the client side
-                    // Magenta/Purple color (ARGB format): 0xA0EB3480 (alpha, red, green, blue)
-                    int color = 0xA0EB3480;
+                    // Magenta/Purple color (ARGB format): 0x80EB3480 (alpha, red, green, blue)
+                    int color = 0x80EB3480;
                     net.unfamily.iskautils.network.ModMessages.sendAddBillboardPacket(player, entityPos, color, finalTTL);
                 }
                 
-                // Incrementa i chunk scansionati
+                // Increment scanned chunks
                 currentChunksScanned++;
             }
         }
@@ -684,7 +680,7 @@ public class ScannerItem extends Item {
         player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_mobs", 
                 markersFound, getLocalizedMobName(targetMobId)), true);
         
-        // Assicurati di mostrare la barra completata alla fine
+        // Make sure to show the completed bar at the end
         displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
     }
 
@@ -800,12 +796,12 @@ public class ScannerItem extends Item {
     }
     
     /**
-     * Crea un nome localizzato per un mob a partire dal suo ID
+     * Creates a localized name for a mob from its ID
      */
     private Component getLocalizedMobName(String mobId) {
         if (mobId == null) return Component.literal("Unknown");
         
-        // Estrai namespace e path dall'ID
+        // Extract namespace and path from the ID
         String namespace = "minecraft";
         String path = mobId;
         
@@ -815,17 +811,17 @@ public class ScannerItem extends Item {
             path = parts[1];
         }
         
-        // Prova a usare la chiave di traduzione specifica per il namespace
+        // Try to use the specific translation key for the namespace
         String translationKey = "entity." + namespace + "." + path;
         Component translated = Component.translatable(translationKey);
         
     
-        // Se il namespace non è minecraft, aggiungi il namespace al nome se la traduzione fallisce
+        // If the namespace is not minecraft, add the namespace to the name if the translation fails
         if (!namespace.equals("minecraft")) {
-            // Controlla se la traduzione ha avuto successo
+            // Check if the translation was successful
             String translatedText = translated.getString();
             if (translatedText.equals(translationKey)) {
-                // La traduzione ha fallito, usa un formato alternativo
+                // Translation failed, use an alternative format
                 return Component.literal(namespace + ":" + path);
             }
         }
@@ -965,19 +961,19 @@ public class ScannerItem extends Item {
         
         MutableComponent message = Component.literal("");
         
-        // Aggiungi percentuale
+        // Add percentage
         String percentText = String.format(" %.0f%% ", percentage * 100);
         message.append(Component.literal(percentText).withStyle(percentage >= 1.0f ? 
                 ChatFormatting.GREEN : ChatFormatting.RED));
         
         
-        // Aggiungi blocchi pieni (verdi se completamente carico, altrimenti rossi)
+        // Add filled blocks (green if fully loaded, otherwise red)
         for (int i = 0; i < filledBlocks; i++) {
             message.append(Component.literal("█").withStyle(percentage >= 1.0f ? 
                     ChatFormatting.GREEN : ChatFormatting.RED));
         }
         
-        // Aggiungi blocchi vuoti (grigi)
+        // Add empty blocks (gray)
         for (int i = filledBlocks; i < LOADING_BAR_LENGTH; i++) {
             message.append(Component.literal("█").withStyle(ChatFormatting.DARK_GRAY));
         }
@@ -990,65 +986,65 @@ public class ScannerItem extends Item {
     }
 
     /**
-     * Controlla se c'è un chip nella mano secondaria e trasferisce il target
+     * Checks if there's a chip in the offhand and transfers the target
      */
     private void checkAndTransferFromChip(Player player) {
         ItemStack mainHandItem = player.getItemInHand(InteractionHand.MAIN_HAND);
         ItemStack offHandItem = player.getItemInHand(InteractionHand.OFF_HAND);
         
-        // Verifica che l'item in mano principale sia questo scanner
+        // Verify that the item in the main hand is this scanner
         if (mainHandItem.getItem() != this) {
             return;
         }
         
-        // Verifica che l'item in mano secondaria sia un ScannerChip
+        // Verify that the item in the offhand is a ScannerChip
         if (!(offHandItem.getItem() instanceof ScannerChipItem)) {
             return;
         }
         
-        // Ottieni i tag dei due item
+        // Get the tags of both items
         CompoundTag scannerTag = mainHandItem.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         CompoundTag chipTag = offHandItem.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         
-        // Controlla se il chip ha un target blocco
+        // Check if the chip has a block target
         if (chipTag.contains("TargetBlock")) {
-            // Rimuovi target mob se presente
+            // Remove mob target if present
             scannerTag.remove("TargetMob");
             
-            // Copia il target blocco
+            // Copy the block target
             String blockId = chipTag.getString("TargetBlock");
             scannerTag.putString("TargetBlock", blockId);
             
-            // Assicurati che lo scanner abbia un ID univoco
+            // Make sure the scanner has a unique ID
             if (!scannerTag.contains("ScannerId")) {
                 scannerTag.putUUID("ScannerId", UUID.randomUUID());
             }
             
-            // Salva i dati nello scanner
+            // Save the data to the scanner
             mainHandItem.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
             
-            // Notifica il giocatore
+            // Notify the player
             Block block = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(blockId));
             player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success", block.getName()), true);
         } 
-        // Controlla se il chip ha un target mob
+        // Check if the chip has a mob target
         else if (chipTag.contains("TargetMob")) {
-            // Rimuovi target blocco se presente
+            // Remove block target if present
             scannerTag.remove("TargetBlock");
             
-            // Copia il target mob
+            // Copy the mob target
             String mobId = chipTag.getString("TargetMob");
             scannerTag.putString("TargetMob", mobId);
             
-            // Assicurati che lo scanner abbia un ID univoco
+            // Make sure the scanner has a unique ID
             if (!scannerTag.contains("ScannerId")) {
                 scannerTag.putUUID("ScannerId", UUID.randomUUID());
             }
             
-            // Salva i dati nello scanner
+            // Save the data to the scanner
             mainHandItem.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
             
-            // Notifica il giocatore
+            // Notify the player
             player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
                     getLocalizedMobName(mobId)), true);
         }
