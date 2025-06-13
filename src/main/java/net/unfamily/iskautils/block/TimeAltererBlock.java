@@ -3,6 +3,7 @@ package net.unfamily.iskautils.block;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -23,6 +24,9 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.neoforged.neoforge.capabilities.BlockCapability;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.block.entity.TimeAltererBlockEntity;
 import net.unfamily.iskautils.Config;
@@ -147,5 +151,25 @@ public class TimeAltererBlock extends Block implements EntityBlock {
     private static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> createTickerHelper(
             BlockEntityType<A> typeCheck, BlockEntityType<E> typeExpected, BlockEntityTicker<? super E> ticker) {
         return typeExpected == typeCheck ? (BlockEntityTicker<A>) ticker : null;
+    }
+    
+    /**
+     * Supporto per le capabilities di energia da altre mod
+     */
+    @Nullable
+    public <T> T getCapability(BlockState state, Level level, BlockPos pos, BlockCapability<T, Direction> capability, @Nullable Direction facing) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity == null) {
+            return null;
+        }
+        
+        if (capability == Capabilities.EnergyStorage.BLOCK) {
+            if (blockEntity instanceof TimeAltererBlockEntity timeAlterer) {
+                IEnergyStorage energyStorage = timeAlterer.getEnergyStorage();
+                return (T) energyStorage;
+            }
+        }
+        
+        return null;
     }
 } 

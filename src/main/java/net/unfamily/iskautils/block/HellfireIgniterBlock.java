@@ -19,6 +19,9 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.neoforged.neoforge.capabilities.BlockCapability;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.block.entity.HellfireIgniterBlockEntity;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 
@@ -97,5 +100,25 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
     private static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> createTickerHelper(
             BlockEntityType<A> typeCheck, BlockEntityType<E> typeExpected, BlockEntityTicker<? super E> ticker) {
         return typeExpected == typeCheck ? (BlockEntityTicker<A>) ticker : null;
+    }
+    
+    /**
+     * Supporto per le capabilities di energia da altre mod
+     */
+    @Nullable
+    public <T> T getCapability(BlockState state, Level level, BlockPos pos, BlockCapability<T, Direction> capability, @Nullable Direction facing) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity == null) {
+            return null;
+        }
+        
+        if (capability == Capabilities.EnergyStorage.BLOCK) {
+            if (blockEntity instanceof HellfireIgniterBlockEntity igniter) {
+                IEnergyStorage energyStorage = igniter.getEnergyStorage();
+                return (T) energyStorage;
+            }
+        }
+        
+        return null;
     }
 } 
