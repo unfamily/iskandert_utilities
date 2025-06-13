@@ -113,6 +113,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());
                                 pOutput.accept(ModItems.WEATHER_ALTERER.get());
                                 pOutput.accept(ModItems.TIME_ALTERER.get());
+                                pOutput.accept(ModItems.ANGEL_BLOCK.get());
 
                                 // Scanner
                                 pOutput.accept(ModItems.SCANNER.get());

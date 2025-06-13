@@ -54,6 +54,7 @@
   
   "block.iska_utils.hellfire_igniter": "Innesco Infernale",
   "block.iska_utils.raft": "Ponte a Zattera",
+  "block.iska_utils.raft_no_drop": "Ponte a Zattera",
   "block.iska_utils.rubber_sap_extractor": "Estrattore di Linfa Automatico",
 
   "block.iska_utils.iska_utils_slowness": "Piastra Trappola Lentezza",
@@ -68,6 +69,8 @@
   "block.iska_utils.weather_detector": "Rilevatore del Meteo",
   "block.iska_utils.weather_alterer": "Alteratore del Meteo",
   "block.iska_utils.time_alterer": "Alteratore del Tempo",
+
+  "block.iska_utils.angel_block": "Blocco Angelico",
 
   "creativetab.iska_utils.tab": "Utilità di Iskandert",
   "itemGroup.iska_utils.command_items": "Oggetti di Comando di Iskandert",
@@ -112,6 +115,7 @@
   "item.iska_utils.portable_dislocator.message.used_xp": "Usati %d XP per il teletrasporto",
   "item.iska_utils.portable_dislocator.message.used_both": "Usati %d RF e %d XP per il teletrasporto",
   "item.iska_utils.portable_dislocator.message.retry": "Destinazione non sicura, provo un'altra posizione (tentativo %d)...",
+  "item.iska_utils.portable_dislocator.message.angel_retry": "Utilizzo Angel Block per il teletrasporto (tentativo %d di 5)...",
   "item.iska_utils.portable_dislocator.message.failed": "Impossibile trovare una destinazione sicura dopo diversi tentativi",
 
   "curios.identifier.charm": "Amuleto",

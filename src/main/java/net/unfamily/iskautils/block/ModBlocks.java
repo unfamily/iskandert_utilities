@@ -251,6 +251,10 @@ public class ModBlocks {
             
     public static final DeferredBlock<RaftBlock> RAFT = BLOCKS.register("raft",
             () -> new RaftBlock(RAFT_PROPERTIES));
+            
+    // ===== RAFT NO DROP BLOCK (non-droppable version) =====
+    public static final DeferredBlock<RaftNoDropBlock> RAFT_NO_DROP = BLOCKS.register("raft_no_drop",
+            () -> new RaftNoDropBlock(RAFT_PROPERTIES));
 
     // ===== TAR BLOCK =====
     public static final DeferredBlock<TarSlimeBlock> TAR_SLIME_BLOCK = BLOCKS.register("tar_slime_block",
@@ -292,6 +296,15 @@ public class ModBlocks {
             .strength(0.5F)
             .sound(SoundType.TRIAL_SPAWNER)
             .lightLevel((state) -> 3)
+            .noOcclusion()));
+
+    // ===== ANGEL BLOCK =====
+    // Un blocco che può essere piazzato in aria e si rompe facilmente
+    public static final DeferredBlock<AngelBlock> ANGEL_BLOCK = BLOCKS.register("angel_block",
+        () -> new AngelBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_BLACK) // Colore nero come l'ossidiana
+            .strength(0.5F) // Si rompe facilmente
+            .sound(SoundType.STONE) // Suono della pietra
             .noOcclusion()));
 
     public static void register(IEventBus eventBus) {

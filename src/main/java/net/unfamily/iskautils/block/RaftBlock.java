@@ -13,6 +13,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -21,19 +22,28 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Raft Block - Un blocco sottile che può fluttuare in aria e essere piazzato a parete
+ * Raft Block - A thin block that can float in air and be placed on walls
  */
 public class RaftBlock extends HorizontalDirectionalBlock {
+    
     public static final MapCodec<RaftBlock> CODEC = simpleCodec(RaftBlock::new);
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty VERTICAL = BooleanProperty.create("vertical");
     
-    // Forma del blocco orizzontale (0.5 pixel di altezza)
+    // Horizontal block shape (0.5 pixel height)
     protected static final VoxelShape SHAPE_HORIZONTAL = Block.box(0, 0, 0, 16, 0.5, 16);
     
-    // Forme verticali per i vari orientamenti (nord, sud, est, ovest)
+    // Vertical shapes for different orientations (north, south, east, west)
     protected static final VoxelShape SHAPE_VERTICAL_NORTH = Block.box(0, 0, 0, 16, 16, 0.5);
     protected static final VoxelShape SHAPE_VERTICAL_SOUTH = Block.box(0, 0, 15.5, 16, 16, 16);
     protected static final VoxelShape SHAPE_VERTICAL_EAST = Block.box(15.5, 0, 0, 16, 16, 16);
@@ -74,21 +84,21 @@ public class RaftBlock extends HorizontalDirectionalBlock {
     
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // Otteniamo la faccia su cui si sta cliccando
+        // Get the face being clicked
         Direction clickedFace = context.getClickedFace();
         
-        // Determiniamo se è un piazzamento verticale (su una parete)
+        // Determine if it's a vertical placement (on a wall)
         boolean vertical = clickedFace.getAxis().isHorizontal();
         
         Direction direction;
         
         if (vertical) {
-            // Per piazzamenti su parete, utilizziamo la direzione OPPOSTA della faccia cliccata
-            // In questo modo: nord -> sud, est -> ovest, ecc.
+            // For wall placements, use the OPPOSITE direction of the clicked face
+            // This way: north -> south, east -> west, etc.
             direction = clickedFace.getOpposite();
         } else {
-            // Per piazzamenti orizzontali (pavimento o soffitto), 
-            // usiamo la direzione orizzontale del giocatore
+            // For horizontal placements (floor or ceiling),
+            // use the horizontal direction of the player
             direction = context.getHorizontalDirection();
         }
         
@@ -102,33 +112,33 @@ public class RaftBlock extends HorizontalDirectionalBlock {
         builder.add(FACING, VERTICAL);
     }
     
-    // La raft può esistere ovunque, anche sospesa in aria
+    // The raft can exist anywhere, even suspended in air
     @Override
     public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         return true;
     }
     
-    // Non distruggere la raft se il blocco sotto viene rimosso
+    // Don't destroy the raft if the block below is removed
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, 
                                  LevelAccessor level, BlockPos currentPos, BlockPos neighborPos) {
         return state;
     }
 
-    // Aggiungiamo il metodo per permettere la rotazione con shift+tasto destro
+    // Add method to allow rotation with shift+right click
     @Override
     public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        // Verifichiamo se il giocatore sta premendo shift
+        // Check if the player is pressing shift
         if (player.isShiftKeyDown()) {
             if (!level.isClientSide) {
-                // Otteniamo la direzione corrente
+                // Get the current direction
                 Direction currentDirection = state.getValue(FACING);
                 Direction newDirection = currentDirection.getClockWise();
                 
-                // Aggiorniamo lo stato del blocco con la nuova direzione, mantenendo lo stato verticale
+                // Update the block state with the new direction, keeping the vertical state
                 level.setBlock(pos, state.setValue(FACING, newDirection), 3);
                 
-                // Riproduciamo un suono di click quando il blocco viene ruotato
+                // Play a click sound when the block is rotated
                 level.playSound(null, pos, SoundEvents.WOOD_PLACE, SoundSource.BLOCKS, 0.3F, 0.8F);
             }
             return InteractionResult.sidedSuccess(level.isClientSide);

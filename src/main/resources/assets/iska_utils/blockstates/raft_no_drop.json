@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,vertical=false": {
+      "model": "iska_utils:block/raft"
+    },
+    "facing=east,vertical=false": {
+      "model": "iska_utils:block/raft",
+      "y": 90
+    },
+    "facing=south,vertical=false": {
+      "model": "iska_utils:block/raft",
+      "y": 180
+    },
+    "facing=west,vertical=false": {
+      "model": "iska_utils:block/raft",
+      "y": 270
+    },
+    "facing=north,vertical=true": {
+      "model": "iska_utils:block/raft_vertical"
+    },
+    "facing=east,vertical=true": {
+      "model": "iska_utils:block/raft_vertical",
+      "y": 90
+    },
+    "facing=south,vertical=true": {
+      "model": "iska_utils:block/raft_vertical",
+      "y": 180
+    },
+    "facing=west,vertical=true": {
+      "model": "iska_utils:block/raft_vertical",
+      "y": 270
+    }
+  }
+} 

@@ -32,6 +32,8 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.unfamily.iskautils.block.entity.AngelBlockEntity;
 
 import java.lang.reflect.Method;
 import java.util.regex.Matcher;
@@ -68,6 +70,7 @@ public class PortableDislocatorItem extends Item {
         ChunkPos loadedChunk;
         ServerLevel chunkLevel;
         int attemptCount;
+        boolean usingAngelBlock; // Flag per indicare se stiamo usando l'Angel Block
         
         TeleportationData(Player player, int targetX, int targetZ) {
             this.player = player;
@@ -79,6 +82,7 @@ public class PortableDislocatorItem extends Item {
             this.loadedChunk = null;
             this.chunkLevel = null;
             this.attemptCount = 1;
+            this.usingAngelBlock = false;
         }
     }
     
@@ -95,7 +99,8 @@ public class PortableDislocatorItem extends Item {
     }
     
     private static final int MAX_WAIT_TICKS = 200; // 10 seconds max wait
-    private static final int MAX_ATTEMPTS = 5; // Maximum number of teleportation attempts
+    private static final int MAX_ATTEMPTS = 10; // Aumentato a 10 tentativi totali (5 normali + 5 con Angel Block)
+    private static final int NORMAL_ATTEMPTS = 5; // Primi 5 tentativi normali
 
     public PortableDislocatorItem(Properties properties) {
         super(properties);
@@ -429,8 +434,8 @@ public class PortableDislocatorItem extends Item {
         
         // Log progress every second (20 ticks)
         if (data.ticksWaiting % 20 == 0) {
-            LOGGER.info("Waiting for teleportation: player={}, target={},{}, attempt={}, waiting={}",
-                player.getName().getString(), data.targetX, data.targetZ, data.attemptCount, data.ticksWaiting);
+            LOGGER.info("Waiting for teleportation: player={}, target={},{}, attempt={}, waiting={}, angelBlock={}",
+                player.getName().getString(), data.targetX, data.targetZ, data.attemptCount, data.ticksWaiting, data.usingAngelBlock);
         }
         
         // Timeout after max wait time
@@ -440,7 +445,13 @@ public class PortableDislocatorItem extends Item {
                 
             // Try another attempt if we haven't exceeded max attempts
             if (data.attemptCount < MAX_ATTEMPTS) {
-                attemptNewTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1);
+                // Se abbiamo già fatto 5 tentativi normali, proviamo con l'Angel Block
+                if (data.attemptCount >= NORMAL_ATTEMPTS && !data.usingAngelBlock) {
+                    attemptAngelBlockTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1);
+                } else {
+                    // Tentativo normale o continua con Angel Block se già attivato
+                    attemptNewTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1, data.usingAngelBlock);
+                }
             } else {
                 // All attempts failed, give up
                 resetTeleportationState(playerId);
@@ -493,39 +504,47 @@ public class PortableDislocatorItem extends Item {
                     
                     if (canAccessBlocks) {
                         // Chunk is now loaded, find safe Y position
-                        int safeY = findSafeY(level, data.targetX, data.targetZ);
+                        int safeY;
+                        
+                        if (data.usingAngelBlock) {
+                            // Nei tentativi con Angel Block, piazziamo SOLO l'Angel Block, mai la Raft
+                            safeY = findYForAngelBlock(level, data.targetX, data.targetZ);
+                        } else {
+                            // Altrimenti usiamo il metodo standard
+                            safeY = findSafeY(level, data.targetX, data.targetZ);
+                        }
                         
                         if (safeY != -1) {
                             // Store chunk info for later cleanup
                             data.loadedChunk = chunkPos;
                             data.chunkLevel = serverLevel;
                             
-                            // Verifichiamo se ci troviamo sopra all'acqua o se c'è una raft
-                            BlockPos waterCheckPos = new BlockPos(data.targetX, safeY - 1, data.targetZ);
-                            BlockPos raftCheckPos = new BlockPos(data.targetX, safeY, data.targetZ);
-                            BlockState belowState = level.getBlockState(waterCheckPos);
-                            BlockState currentState = level.getBlockState(raftCheckPos);
-                            
-                            boolean isWater = belowState.is(net.minecraft.world.level.block.Blocks.WATER) ||
-                                             belowState.getFluidState().is(net.minecraft.world.level.material.Fluids.WATER) ||
-                                             belowState.getFluidState().is(net.minecraft.world.level.material.Fluids.FLOWING_WATER);
-                            boolean isRaft = currentState.is(ModBlocks.RAFT.get());
-                            
-                            // Offset Y per posizionare il giocatore correttamente
-                            double yOffset = 0;
-                            int teleportY = safeY;
-                            
-                            if (isRaft) {
-                                // Se c'è una raft, posiziona il giocatore sopra di essa
-                                yOffset = 0.6;
-                                teleportY = safeY; // La raft è alla stessa Y del safeY
-                            } else if (isWater) {
-                                // Se c'è acqua, posiziona il giocatore alla Y originale
-                                yOffset = 0;
+                            // Se stiamo usando l'Angel Block, piazziamolo
+                            if (data.usingAngelBlock) {
+                                placeAngelBlock(level, data.targetX, safeY - 1, data.targetZ);
+                            } else {
+                                // Verifichiamo se ci troviamo sopra all'acqua o se c'è una raft
+                                BlockPos waterCheckPos = new BlockPos(data.targetX, safeY - 1, data.targetZ);
+                                BlockPos raftCheckPos = new BlockPos(data.targetX, safeY, data.targetZ);
+                                BlockState belowState = level.getBlockState(waterCheckPos);
+                                BlockState currentState = level.getBlockState(raftCheckPos);
+                                
+                                boolean isWater = belowState.is(net.minecraft.world.level.block.Blocks.WATER) ||
+                                                 belowState.getFluidState().is(net.minecraft.world.level.material.Fluids.WATER) ||
+                                                 belowState.getFluidState().is(net.minecraft.world.level.material.Fluids.FLOWING_WATER);
+                                boolean isRaft = currentState.is(ModBlocks.RAFT.get());
+                                
+                                // Se c'è acqua ma non c'è già una raft, piazziamo una raft con no_drop
+                                if (isWater && !isRaft) {
+                                    placeRaft(level, data.targetX, safeY, data.targetZ);
+                                }
                             }
                             
+                            // Offset Y per posizionare il giocatore correttamente
+                            int teleportY = safeY;
+                            
                             // Teleport to safe position
-                            player.teleportTo(data.targetX + 0.5, teleportY + yOffset, data.targetZ + 0.5);
+                            player.teleportTo(data.targetX + 0.5, teleportY + 0.3, data.targetZ + 0.5);
                             player.setDeltaMovement(0, 0, 0);
                             
                             // Silent success - no feedback
@@ -541,7 +560,13 @@ public class PortableDislocatorItem extends Item {
                             
                             // Try another attempt if we haven't exceeded max attempts
                             if (data.attemptCount < MAX_ATTEMPTS) {
-                                attemptNewTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1);
+                                // Se abbiamo già fatto 5 tentativi normali, proviamo con l'Angel Block
+                                if (data.attemptCount >= NORMAL_ATTEMPTS && !data.usingAngelBlock) {
+                                    attemptAngelBlockTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1);
+                                } else {
+                                    // Tentativo normale o continua con Angel Block se già attivato
+                                    attemptNewTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1, data.usingAngelBlock);
+                                }
                             } else {
                                 // All attempts failed, give up silently
                                 resetTeleportationState(playerId);
@@ -603,7 +628,7 @@ public class PortableDislocatorItem extends Item {
     /**
      * Attempts new teleportation with randomized coordinates around the original target
      */
-    private static void attemptNewTeleportation(Player player, int originalX, int originalZ, int attemptNumber) {
+    private static void attemptNewTeleportation(Player player, int originalX, int originalZ, int attemptNumber, boolean usingAngelBlock) {
         UUID playerId = player.getUUID();
         
         // Find the dislocator item
@@ -651,6 +676,7 @@ public class PortableDislocatorItem extends Item {
         newData.originalX = originalX;
         newData.originalZ = originalZ;
         newData.attemptCount = attemptNumber;
+        newData.usingAngelBlock = usingAngelBlock;
         
         // Store the new attempt and prepare for teleportation
         activeTeleportations.put(playerId, newData);
@@ -940,7 +966,9 @@ public class PortableDislocatorItem extends Item {
                     BlockPos raftPos = new BlockPos(x, finalY, z);
                     // Controlliamo che ci sia spazio per la raft
                     if (level.getBlockState(raftPos).isAir()) {
-                        level.setBlock(raftPos, ModBlocks.RAFT.get().defaultBlockState(), 3);
+                        // Usiamo la versione no_drop della raft
+                        level.setBlock(raftPos, ModBlocks.RAFT_NO_DROP.get().defaultBlockState(), 3);
+                        LOGGER.info("Piazzata RAFT_NO_DROP alle coordinate {}, {}, {}", x, finalY, z);
                     }
                     
                     // Note: L'offset Y verrà gestito direttamente nel metodo handlePendingTeleportation
@@ -1437,5 +1465,201 @@ public class PortableDislocatorItem extends Item {
             }
             return null;
         }
+    }
+    
+    /**
+     * Attempts new teleportation with Angel Block
+     */
+    private static void attemptAngelBlockTeleportation(Player player, int originalX, int originalZ, int attemptNumber) {
+        LOGGER.info("Starting Angel Block teleportation attempt {} for player {}", attemptNumber, player.getName().getString());
+        
+        // Generate new coordinates with the same fixed distance range for all attempts
+        java.util.Random random = new java.util.Random();
+        
+        // Fixed range for all attempts: 100-150 blocks
+        int minRange = 100;
+        int maxRange = 150;
+        
+        // Generate random offset for X: either [-150, -100] or [100, 150]
+        int offsetX;
+        if (random.nextBoolean()) {
+            // Positive range: 100 to 150
+            offsetX = random.nextInt(maxRange - minRange + 1) + minRange;
+        } else {
+            // Negative range: -150 to -100
+            offsetX = -(random.nextInt(maxRange - minRange + 1) + minRange);
+        }
+        
+        // Generate random offset for Z: either [-150, -100] or [100, 150]
+        int offsetZ;
+        if (random.nextBoolean()) {
+            // Positive range: 100 to 150
+            offsetZ = random.nextInt(maxRange - minRange + 1) + minRange;
+        } else {
+            // Negative range: -150 to -100
+            offsetZ = -(random.nextInt(maxRange - minRange + 1) + minRange);
+        }
+        
+        int newX = originalX + offsetX;
+        int newZ = originalZ + offsetZ;
+        
+        LOGGER.info("Angel Block teleportation attempt {}: Teleporting to new coordinates {}, {} (offset {}, {} from original)",
+            attemptNumber, newX, newZ, offsetX, offsetZ);
+        
+        UUID playerId = player.getUUID();
+        
+        // Create new teleportation data for this attempt
+        TeleportationData newData = new TeleportationData(player, newX, newZ);
+        newData.originalX = originalX;
+        newData.originalZ = originalZ;
+        newData.attemptCount = attemptNumber;
+        newData.usingAngelBlock = true; // Impostiamo il flag per usare l'Angel Block
+        
+        // Store the new attempt and prepare for teleportation
+        activeTeleportations.put(playerId, newData);
+        
+        // Notify player about the Angel Block retry
+        player.displayClientMessage(
+            Component.translatable("item.iska_utils.portable_dislocator.message.angel_retry", attemptNumber - NORMAL_ATTEMPTS)
+                .withStyle(ChatFormatting.YELLOW), 
+            true);
+    }
+    
+    /**
+     * Trova una Y adatta per piazzare l'Angel Block
+     */
+    private static int findYForAngelBlock(Level level, int x, int z) {
+        // Get dimension limits with safety margins
+        int absoluteMinY = level.getMinBuildHeight();
+        int absoluteMaxY = level.getMaxBuildHeight();
+        
+        // Apply safety margins and dimension-specific limits
+        int minY = Math.max(absoluteMinY + 5, getSafeDimensionMinY(level));
+        int maxY = Math.min(absoluteMaxY - 5, getSafeDimensionMaxY(level));
+        
+        // Ensure we don't exceed bedrock boundaries
+        minY = Math.max(minY, getBedrockFloorY(level) + 1);
+        maxY = Math.min(maxY, getBedrockCeilingY(level) - 3); // -3 for player height + safety
+        
+        // Troviamo una Y ragionevole per il mondo specifico
+        String dimensionKey = level.dimension().location().toString();
+        int targetY;
+        
+        switch (dimensionKey) {
+            case "minecraft:the_nether":
+                // Nel Nether, proviamo a stare vicino al centro verticale
+                targetY = 64;
+                break;
+            case "minecraft:the_end":
+                // Nell'End, proviamo a stare a un'altezza sicura
+                targetY = 80;
+                break;
+            case "minecraft:overworld":
+            default:
+                // Nel mondo normale, proviamo a stare a un'altezza ragionevole
+                targetY = 100;
+                break;
+        }
+        
+        // Verifichiamo che la Y sia nei limiti
+        targetY = Math.max(minY, Math.min(maxY, targetY));
+        
+        // Verifichiamo che ci sia spazio per il giocatore
+        for (int y = targetY; y <= maxY - 2; y++) {
+            if (isSpaceAvailable(level, x, y, z)) {
+                return y;
+            }
+        }
+        
+        // Se non troviamo spazio sopra, proviamo sotto
+        for (int y = targetY - 1; y >= minY; y--) {
+            if (isSpaceAvailable(level, x, y, z)) {
+                return y;
+            }
+        }
+        
+        // Se proprio non troviamo spazio, ritorniamo un valore predefinito
+        return targetY;
+    }
+    
+    /**
+     * Verifica se c'è spazio per il giocatore (2 blocchi di altezza)
+     */
+    private static boolean isSpaceAvailable(Level level, int x, int y, int z) {
+        BlockPos pos1 = new BlockPos(x, y, z);
+        BlockPos pos2 = new BlockPos(x, y + 1, z);
+        
+        // Controlliamo che entrambi i blocchi siano aria o sostituibili
+        return (level.getBlockState(pos1).isAir() || level.getBlockState(pos1).is(net.minecraft.tags.BlockTags.REPLACEABLE)) &&
+               (level.getBlockState(pos2).isAir() || level.getBlockState(pos2).is(net.minecraft.tags.BlockTags.REPLACEABLE));
+    }
+    
+    /**
+     * Piazza un Angel Block con il tag "no_drop"
+     */
+    private static void placeAngelBlock(Level level, int x, int y, int z) {
+        BlockPos pos = new BlockPos(x, y, z);
+        
+        // Piazza l'Angel Block
+        if (level.setBlock(pos, ModBlocks.ANGEL_BLOCK.get().defaultBlockState(), 3)) {
+            // Aggiungi il tag "no_drop" all'entità blocco
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity != null) {
+                try {
+                    // Imposta il tag direttamente nei dati persistenti
+                    blockEntity.getPersistentData().putBoolean("no_drop", true);
+                    
+                    // Forza il salvataggio dell'entità blocco
+                    if (blockEntity instanceof AngelBlockEntity angelEntity) {
+                        // Crea un nuovo CompoundTag per salvare i dati
+                        CompoundTag tag = new CompoundTag();
+                        
+                        // Aggiungi il tag no_drop
+                        tag.putBoolean("no_drop", true);
+                        
+                        // Carica il tag nell'entità blocco
+                        if (level instanceof ServerLevel serverLevel) {
+                            angelEntity.loadAdditional(tag, serverLevel.registryAccess());
+                            
+                            // Salva anche nei dati persistenti per sicurezza
+                            angelEntity.getPersistentData().putBoolean("no_drop", true);
+                        }
+                        
+                        // Forza il salvataggio
+                        angelEntity.setChanged();
+                        
+                        // Sincronizza con i client
+                        if (level instanceof ServerLevel serverLevel) {
+                            // Invia un pacchetto di aggiornamento specifico
+                            serverLevel.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);
+                        }
+                    }
+                    
+                    // Log per debug
+                    LOGGER.info("Setting no_drop=true on Angel Block at {},{},{}, entity type: {}", 
+                        x, y, z, blockEntity.getClass().getName());
+                    
+                    // Verifica che il tag sia stato impostato correttamente
+                    boolean tagSet = blockEntity.getPersistentData().getBoolean("no_drop");
+                    LOGGER.info("Placed Angel Block with no_drop tag at {}, {}, {}, tag value: {}", x, y, z, tagSet);
+                } catch (Exception e) {
+                    LOGGER.error("Error setting no_drop tag on Angel Block at {}, {}, {}: {}", x, y, z, e.getMessage());
+                }
+            } else {
+                LOGGER.error("Failed to get BlockEntity for Angel Block at {}, {}, {}", x, y, z);
+            }
+        } else {
+            LOGGER.error("Failed to place Angel Block at {}, {}, {}", x, y, z);
+        }
+    }
+    
+    /**
+     * Piazza una Raft con il tag "no_drop"
+     */
+    private static void placeRaft(Level level, int x, int y, int z) {
+        BlockPos pos = new BlockPos(x, y, z);
+        
+        // Piazza la Raft
+        level.setBlock(pos, ModBlocks.RAFT_NO_DROP.get().defaultBlockState(), 3);
     }
 } 

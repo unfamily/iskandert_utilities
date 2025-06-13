@@ -15,6 +15,7 @@ import net.unfamily.iskautils.item.custom.ScannerItem;
 import net.unfamily.iskautils.item.custom.ScannerChipItem;
 import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.SwissWrenchItem;
+import net.unfamily.iskautils.item.custom.AngelBlockItem;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -221,6 +222,8 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.PLATE_BASE_BLOCK.get(), ITEM_PROPERTIES));
     public static final DeferredItem<Item> RAFT = ITEMS.register("raft",
             () -> new BlockItem(ModBlocks.RAFT.get(), ITEM_PROPERTIES));
+    public static final DeferredItem<Item> RAFT_NO_DROP = ITEMS.register("raft_no_drop",
+            () -> new BlockItem(ModBlocks.RAFT_NO_DROP.get(), ITEM_PROPERTIES));
 
     // ===== TAR =====
     public static final DeferredItem<Item> TAR_SLIME_BLOCK = ITEMS.register("tar_slime_block",
@@ -247,9 +250,11 @@ public class ModItems {
     public static final DeferredItem<Item> TIME_ALTERER = ITEMS.register("time_alterer",
             () -> new BlockItem(ModBlocks.TIME_ALTERER.get(), ITEM_PROPERTIES));
 
+    // ===== ANGEL BLOCK =====
+    public static final DeferredItem<Item> ANGEL_BLOCK = ITEMS.register("angel_block",
+            () -> new AngelBlockItem(ModBlocks.ANGEL_BLOCK.get(), ITEM_PROPERTIES));
 
-
-    // ===== DEV THINGS =====
+    // ===== DEV BLOCKS =====
     public static final DeferredItem<Item> SCAN_BLOCK = ITEMS.register("scan_block",
             () -> new BlockItem(ModBlocks.SCAN_BLOCK.get(), ITEM_PROPERTIES));
 

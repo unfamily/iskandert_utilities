@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BAB",
+    "ACA",
+    "BAB"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:nuggets/gold"
+    },
+    "B": {
+      "tag": "c:feathers"
+    },
+    "C": {
+      "tag": "c:obsidians"
+    }
+  },
+  "result": {
+    "id": "iska_utils:angel_block",
+    "count": 1
+  }
+} 

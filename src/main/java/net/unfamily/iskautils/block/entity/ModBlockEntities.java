@@ -16,9 +16,13 @@ import net.unfamily.iskautils.block.entity.RubberLogEmptyBlockEntity;
 import net.unfamily.iskautils.block.entity.RubberSapExtractorBlockEntity;
 import net.unfamily.iskautils.block.entity.WeatherAltererBlockEntity;
 import net.unfamily.iskautils.block.entity.TimeAltererBlockEntity;
+import net.unfamily.iskautils.block.entity.AngelBlockEntity;
 
 import java.util.function.Supplier;
 
+/**
+ * Registro delle entità blocco
+ */
 public class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, IskaUtils.MOD_ID);
@@ -53,6 +57,15 @@ public class ModBlockEntities {
                     BlockEntityType.Builder.of(TimeAltererBlockEntity::new, 
                             ModBlocks.TIME_ALTERER.get()).build(null));
 
+    // Angel Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AngelBlockEntity>> ANGEL_BLOCK_ENTITY =
+            BLOCK_ENTITIES.register("angel_block_entity",
+                    () -> BlockEntityType.Builder.of(AngelBlockEntity::new, ModBlocks.ANGEL_BLOCK.get())
+                            .build(null));
+
+    /**
+     * Registra tutte le entità blocco
+     */
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }

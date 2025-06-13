@@ -54,6 +54,7 @@
   
   "block.iska_utils.hellfire_igniter": "Hellfire Igniter",
   "block.iska_utils.raft": "Raft Bridge",
+  "block.iska_utils.raft_no_drop": "Raft Bridge",
   "block.iska_utils.rubber_sap_extractor": "Rubber Sap Extractor",
   
   "block.iska_utils.iska_utils_slowness": "Slowness Trap Plate",
@@ -68,6 +69,8 @@
   "block.iska_utils.weather_detector": "Weather Detector",
   "block.iska_utils.weather_alterer": "Weather Alterer",
   "block.iska_utils.time_alterer": "Time Alterer",
+  
+  "block.iska_utils.angel_block": "Angel Block",
   
   "creativetab.iska_utils.tab": "Iskandert's Utilities",
   "itemGroup.iska_utils.command_items": "Iskandert's Command Items",
@@ -112,6 +115,7 @@
   "item.iska_utils.portable_dislocator.message.used_xp": "Used %d XP for teleportation",
   "item.iska_utils.portable_dislocator.message.used_both": "Used %d RF and %d XP for teleportation",
   "item.iska_utils.portable_dislocator.message.retry": "Destination unsafe, trying another location (attempt %d)...",
+  "item.iska_utils.portable_dislocator.message.angel_retry": "Using Angel Block for teleportation (attempt %d of 5)...",
   "item.iska_utils.portable_dislocator.message.failed": "Failed to find safe teleportation destination after multiple attempts",
   
   "curios.identifier.charm": "Charm",

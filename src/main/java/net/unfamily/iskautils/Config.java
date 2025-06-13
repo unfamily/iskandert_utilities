@@ -110,19 +110,23 @@ public class Config
 
     private static final ModConfigSpec.IntValue WEATHER_ALTERER_ENERGY_BUFFER = BUILDER
             .comment("Energy capacity of the Weather Alterer in RF/FE")
-            .defineInRange("200_weatherAltererEnergyBuffer", 100000, 0, Integer.MAX_VALUE);
+            .comment("Recommended value: 100000, but set to 0 to disable energy consumption")
+            .defineInRange("200_weatherAltererEnergyBuffer", 0, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue WEATHER_ALTERER_ENERGY_CONSUME = BUILDER
             .comment("Energy consumed per tick by the Weather Alterer in RF/FE")
-            .defineInRange("201_weatherAltererEnergyConsume", 5000, 0, Integer.MAX_VALUE);
+            .comment("Recommended value: 5000, but set to 0 to disable energy consumption")
+            .defineInRange("201_weatherAltererEnergyConsume", 0, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue TIME_ALTERER_ENERGY_BUFFER = BUILDER
             .comment("Energy capacity of the Time Alterer in RF/FE")
-            .defineInRange("202_timeAltererEnergyBuffer", 100000, 0, Integer.MAX_VALUE);
+            .comment("Recommended value: 100000, but set to 0 to disable energy consumption")
+            .defineInRange("202_timeAltererEnergyBuffer", 0, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue TIME_ALTERER_ENERGY_CONSUME = BUILDER
             .comment("Energy consumed per tick by the Time Alterer in RF/FE")
-            .defineInRange("203_timeAltererEnergyConsume", 5000, 0, Integer.MAX_VALUE);
+            .comment("Recommended value: 5000, but set to 0 to disable energy consumption")
+            .defineInRange("203_timeAltererEnergyConsume", 0, 0, Integer.MAX_VALUE);
             
     // Portable Dislocator resource priority configuration
     private static final ModConfigSpec.BooleanValue PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY = BUILDER

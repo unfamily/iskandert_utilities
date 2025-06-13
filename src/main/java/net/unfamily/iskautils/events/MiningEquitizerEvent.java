@@ -21,6 +21,11 @@ public class MiningEquitizerEvent {
 	public static void onPlayerBreakSpeed(PlayerEvent.BreakSpeed event) {
 		Entity entity = event.getEntity();
 
+
+		if(entity.onGround() && !entity.isInWater()) {
+			return;
+		}
+
 		if (entity instanceof Player _playerHasItem ? _playerHasItem.getInventory().contains(new ItemStack(ModItems.MINING_EQUITIZER.get())) : false) {
 			float originalSpeed = event.getOriginalSpeed();
 			float newSpeed = originalSpeed * 5.0f;
