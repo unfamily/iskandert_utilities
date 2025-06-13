@@ -671,7 +671,8 @@ public class ScannerItem extends Item {
                     MARKER_TTL.put(entityPos, finalTTL);
                     
                     // Use MarkRenderer to add a billboard marker on the client side
-                    int color = 0xA0808080;
+                    // Magenta/Purple color (ARGB format): 0xFFEB3480 (alpha, red, green, blue)
+                    int color = 0xFFEB3480;
                     net.unfamily.iskautils.network.ModMessages.sendAddBillboardPacket(player, entityPos, color, finalTTL);
                 }
                 
