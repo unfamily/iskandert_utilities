@@ -269,9 +269,15 @@ public class ScannerItem extends Item {
                             displayLoadingBar(serverPlayer, requiredDuration, requiredDuration);
                         }
                     }
-                } else if (clear_markers) {
-                    serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.interrupted"), true);
-                    clear_markers = false;
+                } else {
+                    // Se il giocatore ha rilasciato prima del tempo richiesto, pulisci i marker esistenti
+                    if (targetBlock != null) {
+                        clearMarkers(player, itemstack);
+                        serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.markers_cleared"), true);
+                    }
+                    
+                    // Rimuovi i dati di caricamento
+                    LOADING_DATA.remove(player.getUUID());
                 }
             }
         }
@@ -332,41 +338,16 @@ public class ScannerItem extends Item {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (tag.contains(SCANNER_ID_TAG)) {
             UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
-            String scannerIdStr = scannerId.toString();
-            String sessionId = net.unfamily.iskautils.util.SessionVariables.getScannerSessionId().toString();
-            String scannerTag = "scanner_" + scannerIdStr;
-            String sessionTag = "session_" + sessionId;
-            
-            try {
-                // Prima identifica tutti i marker di questo scanner in questa sessione
-                String tagCommand = String.format("execute as @e[type=block_display,tag=temp_scan,tag=%s,tag=%s] run tag @s add scanner_cleanup", 
-                        scannerTag, sessionTag);
-                serverPlayer.getServer().getCommands().performPrefixedCommand(
-                    serverPlayer.getServer().createCommandSourceStack().withSuppressedOutput(),
-                    tagCommand
-                );
-                
-                // Rimuovi dal team
-                String teamLeaveCommand = "team leave @e[type=block_display,tag=scanner_cleanup]";
-                serverPlayer.getServer().getCommands().performPrefixedCommand(
-                    serverPlayer.getServer().createCommandSourceStack().withSuppressedOutput(),
-                    teamLeaveCommand
-                );
-                
-                // Poi uccidi i marker
-                String killCommand = "kill @e[type=block_display,tag=scanner_cleanup]";
-                serverPlayer.getServer().getCommands().performPrefixedCommand(
-                    serverPlayer.getServer().createCommandSourceStack().withSuppressedOutput(),
-                    killCommand
-                );
-            } catch (Exception e) {
-                LOGGER.error("Error clearing markers for scanner {}: {}", scannerIdStr, e.getMessage());
-            }
             
             // Clear from our tracking maps
             if (ACTIVE_MARKERS.containsKey(scannerId)) {
                 List<BlockPos> markers = ACTIVE_MARKERS.get(scannerId);
+                
+                // Send clear message to client for each marker
                 for (BlockPos pos : markers) {
+                    // Remove the marker from client side
+                    net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(serverPlayer, pos);
+                    
                     MARKER_TTL.remove(pos);
                 }
                 
@@ -451,8 +432,11 @@ public class ScannerItem extends Item {
         Set<BlockPos> existingMarkerPositions = new HashSet<>(scannerMarkers);
         
         // Count how many new markers we can create (remaining capacity)
-        int remainingCapacity = maxBlocksScan - existingMarkerPositions.size();
-        if (remainingCapacity <= 0) {
+        // If maxBlocksScan is -1, it means infinite blocks
+        boolean infiniteBlocks = maxBlocksScan == -1;
+        int remainingCapacity = infiniteBlocks ? Integer.MAX_VALUE : maxBlocksScan - existingMarkerPositions.size();
+        
+        if (!infiniteBlocks && remainingCapacity <= 0) {
             // Already at maximum capacity
             player.displayClientMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan), true);
             return;
@@ -505,8 +489,7 @@ public class ScannerItem extends Item {
                                         continue;
                                     }
                                     
-                                    // Create a marker
-                                    createMarker(player, pos);
+                                    // Add the block position to the scanner's markers
                                     scannerMarkers.add(pos);
                                     newMarkersFound++;
                                     
@@ -516,8 +499,13 @@ public class ScannerItem extends Item {
                                     // Add TTL for this marker
                                     MARKER_TTL.put(pos, finalTTL);
                                     
-                                    // Check if we've reached the limit
-                                    if (newMarkersFound >= remainingCapacity) {
+                                    // Use MarkRenderer to add the highlighted block on the client side
+                                    // Light blue color (ARGB format): 0x8000BFFF (alpha, red, green, blue)
+                                    int lightBlueColor = 0x8000BFFF;
+                                    net.unfamily.iskautils.network.ModMessages.sendAddHighlightPacket(player, pos, lightBlueColor, finalTTL);
+                                    
+                                    // Check if we've reached the limit (skip if infinite blocks)
+                                    if (!infiniteBlocks && newMarkersFound >= remainingCapacity) {
                                         limitReached = true;
                                         break scanLoop;
                                     }
@@ -542,61 +530,6 @@ public class ScannerItem extends Item {
     }
     
     /**
-     * Creates a marker at the specified position
-     */
-    private void createMarker(ServerPlayer player, BlockPos pos) {
-        try {
-            // Ensure the scan marker team exists
-            ensureScanMarkerTeam(player.serverLevel());
-            
-            // Get scanner ID from the itemstack
-            CompoundTag tag = player.getItemInHand(InteractionHand.MAIN_HAND)
-                .getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-            String scannerId = tag.contains(SCANNER_ID_TAG) ? tag.getUUID(SCANNER_ID_TAG).toString() : "unknown";
-            
-            // Get the current session ID
-            String sessionId = net.unfamily.iskautils.util.SessionVariables.getScannerSessionId().toString();
-            
-            // Ottieni l'ID della dimensione
-            ResourceLocation dimensionId = player.level().dimension().location();
-            
-            // Prima crea un marker per il posizionamento esatto
-            player.getServer().getCommands().performPrefixedCommand(
-                player.getServer().createCommandSourceStack().withSuppressedOutput(),
-                String.format("execute in %s run summon minecraft:marker %d %d %d {Tags:[\"temp_scan_marker\"]}", 
-                    dimensionId, pos.getX(), pos.getY(), pos.getZ())
-            );
-            
-            // Usa UUID per identificare il marker
-            String markerId = UUID.randomUUID().toString();
-            
-            // Poi crea un block_display al centro del blocco con effetto glowing, 
-            // includendo ID scanner e ID sessione
-            player.getServer().getCommands().performPrefixedCommand(
-                player.getServer().createCommandSourceStack().withSuppressedOutput(),
-                String.format("execute in %s at @e[type=marker,tag=temp_scan_marker,limit=1] run summon block_display ~0.0 ~0.0 ~0.0 " +
-                "{Tags:[\"temp_scan\",\"scanner_%s\",\"session_%s\",\"marker_%s\"],Glowing:1b,block_state:{Name:\"iska_utils:scan_block\"}," +
-                "transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[-0.55f,-0.05f,-0.55f],scale:[1.1f,1.1f,1.1f]}}", 
-                dimensionId, scannerId, sessionId, markerId)
-            );
-            
-            // Add the just spawned block_display to the iska_utils_scan team using the unique marker ID
-            player.getServer().getCommands().performPrefixedCommand(
-                player.getServer().createCommandSourceStack().withSuppressedOutput(),
-                String.format("team join iska_utils_scan @e[type=block_display,tag=temp_scan,tag=marker_%s]", markerId)
-            );
-            
-            // Remove the marker
-            player.getServer().getCommands().performPrefixedCommand(
-                player.getServer().createCommandSourceStack().withSuppressedOutput(),
-                "kill @e[type=marker,tag=temp_scan_marker]"
-            );
-        } catch (Exception e) {
-            LOGGER.error("Error creating a marker: {}", e.getMessage());
-        }
-    }
-    
-    /**
      * Handles item tick (called every game tick)
      * Used to update markers and their TTL
      */
@@ -610,15 +543,9 @@ public class ScannerItem extends Item {
             
             if (ttl <= 0) {
                 // Remove expired marker
-                try {
-                    String command = String.format("kill @e[type=block_display,tag=temp_scan,x=%d,y=%d,z=%d,distance=..1]", 
-                            pos.getX(), pos.getY(), pos.getZ());
-                    level.getServer().getCommands().performPrefixedCommand(
-                        level.getServer().createCommandSourceStack().withSuppressedOutput(),
-                        command
-                    );
-                } catch (Exception e) {
-                    LOGGER.error("Error removing an expired marker: {}", e.getMessage());
+                // Send message to all players in the dimension to remove the marker
+                for (ServerPlayer player : level.players()) {
+                    net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(player, pos);
                 }
                 
                 // Remove marker from TTL map
@@ -637,106 +564,6 @@ public class ScannerItem extends Item {
     }
     
     /**
-     * Ensures the scan marker team exists with the correct color
-     */
-    private static void ensureScanMarkerTeam(ServerLevel level) {
-        try {
-            // Perform team creation command
-            String teamCommand = "team add iska_utils_scan \"Iska Utils Scan\"";
-            level.getServer().getCommands().performPrefixedCommand(
-                level.getServer().createCommandSourceStack().withSuppressedOutput(),
-                teamCommand
-            );
-
-            // Set team color to aqua
-            String colorCommand = "team modify iska_utils_scan color aqua";
-            level.getServer().getCommands().performPrefixedCommand(
-                level.getServer().createCommandSourceStack().withSuppressedOutput(),
-                colorCommand
-            );
-
-            // Make team visible to all players
-            String visibilityCommand = "team modify iska_utils_scan seeFriendlyInvisibles true";
-            level.getServer().getCommands().performPrefixedCommand(
-                level.getServer().createCommandSourceStack().withSuppressedOutput(),
-                visibilityCommand
-            );
-            
-            // Allow friendly fire
-            String friendlyFireCommand = "team modify iska_utils_scan friendlyFire true";
-            level.getServer().getCommands().performPrefixedCommand(
-                level.getServer().createCommandSourceStack().withSuppressedOutput(),
-                friendlyFireCommand
-            );
-            
-            // Don't prevent members from hitting each other
-            String collisionCommand = "team modify iska_utils_scan collisionRule never";
-            level.getServer().getCommands().performPrefixedCommand(
-                level.getServer().createCommandSourceStack().withSuppressedOutput(),
-                collisionCommand
-            );
-        } catch (Exception e) {
-            LOGGER.error("Error creating or updating scan marker team: {}", e.getMessage());
-        }
-    }
-
-
-
-	@Override
-	public boolean hurtEnemy(ItemStack itemstack, LivingEntity entity, LivingEntity sourceentity) {
-        if (sourceentity instanceof ServerPlayer player && !(entity instanceof Player)) {
-            // Seleziona il mob come target e pulisci i blocchi
-            String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
-            
-            // Clear any existing markers
-            clearMarkersAndResetTarget(player, itemstack);
-            
-            // Set the target mob
-            setTargetMob(itemstack, entityId);
-            
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.mob_target_set", entity.getName()), true);
-            
-            return true; // Non danneggiare il mob
-        }
-        return false;
-	}
-
-    /**
-     * Sets the target mob in the scanner and remove any target block
-     */
-    private void setTargetMob(ItemStack itemStack, String mobId) {
-        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        
-        // Debug log
-        LOGGER.info("Setting mob target in NBT: {}", mobId);
-        
-        // Remove target block if any
-        tag.remove(TARGET_BLOCK_TAG);
-        
-        // Set target mob
-        tag.putString(TARGET_MOB_TAG, mobId);
-        
-        // Make sure the scanner has a unique ID
-        if (!tag.contains(SCANNER_ID_TAG)) {
-            tag.putUUID(SCANNER_ID_TAG, UUID.randomUUID());
-        }
-        
-        // Set clear_markers value in NBT
-        tag.putBoolean(CLEAR_MARKERS_TAG, clear_markers);
-        
-        // Save data to ItemStack
-        itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-        
-        // Verify target was set
-        CompoundTag newTag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (newTag.contains(TARGET_MOB_TAG)) {
-            LOGGER.info("Target mob successfully set: {}", newTag.getString(TARGET_MOB_TAG));
-        } else {
-            LOGGER.error("Failed to set target mob!");
-        }
-    }
-    
-    /**
      * Scans the area for target mobs
      */
     private void scanForMobs(ServerPlayer player, ItemStack itemStack) {
@@ -747,9 +574,6 @@ public class ScannerItem extends Item {
         
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
-        
-        // Ensure the scan marker team exists
-        ensureScanMarkerTeam(level);
         
         // Get player position
         BlockPos playerPos = player.blockPosition();

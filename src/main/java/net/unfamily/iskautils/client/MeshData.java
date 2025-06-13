@@ -6,7 +6,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import java.nio.ByteBuffer;
 
 /**
- * Implementazione della classe MeshData necessaria per il rendering XRay
+ * Implementation of the MeshData class necessary for the Mark rendering
  */
 public class MeshData {
     private final ByteBufferBuilder.Result bufferResult;
@@ -26,8 +26,8 @@ public class MeshData {
     }
     
     public void upload() {
-        // Non possiamo usare BufferUploader.drawWithShader direttamente perché accetta solo com.mojang.blaze3d.vertex.MeshData
-        // Useremo un approccio alternativo nel renderer
+        // We cannot use BufferUploader.drawWithShader directly because it only accepts com.mojang.blaze3d.vertex.MeshData
+        // We will use an alternative approach in the renderer
     }
     
     public static class DrawState {

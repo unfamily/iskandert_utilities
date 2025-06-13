@@ -2,6 +2,7 @@ package net.unfamily.iskautils.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -11,7 +12,7 @@ import net.unfamily.iskautils.IskaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.unfamily.iskautils.client.XRayBlockRenderer;
+import net.unfamily.iskautils.client.MarkRenderer;
 
 /**
  * Class that manages client-specific events
@@ -80,18 +81,39 @@ public class ClientEvents {
     }
     
     /**
-     * Renderizza i blocchi XRay durante il rendering del mondo
+     * Render the marks during the world rendering
      */
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         if (event.getStage() == Stage.AFTER_TRANSLUCENT_BLOCKS) {
             PoseStack poseStack = event.getPoseStack();
             
-            // Converti il DeltaTracker in float (il valore esatto non è importante per questo rendering)
+            // Convert the DeltaTracker in float (the exact value is not important for this rendering)
             float partialTick = 0.0f;
             
-            // Renderizza i blocchi XRay
-            XRayBlockRenderer.getInstance().render(poseStack, partialTick);
+            // Render the marks
+            MarkRenderer.getInstance().render(poseStack, partialTick);
         }
+    }
+    
+    /**
+     * Handles adding a highlighted block from the server
+     */
+    public static void handleAddHighlight(BlockPos pos, int color, int durationTicks) {
+        MarkRenderer.getInstance().addHighlightedBlock(pos, color, durationTicks);
+    }
+    
+    /**
+     * Handles removing a highlighted block from the server
+     */
+    public static void handleRemoveHighlight(BlockPos pos) {
+        MarkRenderer.getInstance().removeHighlightedBlock(pos);
+    }
+    
+    /**
+     * Handles clearing all highlighted blocks from the server
+     */
+    public static void handleClearHighlights() {
+        MarkRenderer.getInstance().clearHighlightedBlocks();
     }
 } 

@@ -191,7 +191,7 @@ public class Config
     static {
         BUILDER.pop(); // pop rubber_sap category
         
-        // Category for Development/Advanced Configuration
+        // Category for scanner
         BUILDER.comment("Scanner Configuration").push("scanner");
     }
 
@@ -199,28 +199,28 @@ public class Config
 
     private static final ModConfigSpec.IntValue SCANNER_SCAN_RANGE = BUILDER
             .comment("Maximum scan range in blocks")
-            .defineInRange("001_scannerScanRange", 64, 1, Integer.MAX_VALUE);
+            .defineInRange("000_scannerScanRange", 64, 1, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue SCANNER_SCAN_DURATION = BUILDER
             .comment("Duration in ticks needed to hold the scanner for scanning (1 second = 20 ticks)")
-            .defineInRange("002_scannerScanDuration", 60, 1, 200);
+            .defineInRange("001_scannerScanDuration", 60, 1, 200);
 
     private static final ModConfigSpec.IntValue SCANNER_MAX_BLOCKS = BUILDER
             .comment("Maximum number of blocks that can be scanned at once")
-            .defineInRange("003_scannerMaxBlocks", 4096, 1, Integer.MAX_VALUE);
+            .defineInRange("002_scannerMaxBlocks", 8192, -1, Integer.MAX_VALUE);
 
     // Scanner energy configuration
     private static final ModConfigSpec.IntValue SCANNER_ENERGY_CONSUME = BUILDER
             .comment("Amount of energy consumed per scan operation by the Scanner")
-            .defineInRange("004_scannerEnergyConsume", 50, 0, Integer.MAX_VALUE);
+            .defineInRange("003_scannerEnergyConsume", 50, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue SCANNER_ENERGY_BUFFER = BUILDER
             .comment("Energy capacity of the Scanner in RF/FE")
-            .defineInRange("005_scannerEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
+            .defineInRange("004_scannerEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue SCANNER_MARKER_TTL = BUILDER
             .comment("Time to live for the scanner markers in ticks (1 second = 20 ticks)")
-            .defineInRange("006_scannerMarkerTTL", 600, 1, Integer.MAX_VALUE);
+            .defineInRange("005_scannerMarkerTTL", 600, 1, Integer.MAX_VALUE);
 
     static {
         BUILDER.pop(); // End of scanner category

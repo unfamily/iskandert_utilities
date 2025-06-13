@@ -2,6 +2,7 @@ package net.unfamily.iskautils.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.logging.LogUtils;
@@ -17,30 +18,30 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.client.XRayBlockRenderer;
+import net.unfamily.iskautils.client.MarkRenderer;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Command handler per i marker XRay
+ * Command handler for the markers
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class CreateMarker {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    // Valori predefiniti per il debug
-    private static final int DEFAULT_DIFFICULTY = 5;
-    private static final int DEFAULT_DURATION = 1200; // 60 secondi (20 tick = 1 secondo)
+    // Default values for debug
+    private static final String DEFAULT_COLOR = "33FF0000"; // Rosso semi-trasparente
+    private static final int DEFAULT_DURATION = 1200; // 60 seconds (20 tick = 1 second)
     
     // Command usage messages map
     private static final Map<String, String> COMMAND_USAGE = new HashMap<>();
     
     // Initialize usage messages
     static {
-        COMMAND_USAGE.put("create_marker", "/iska_utils_marker create <x> <y> <z> [difficulty] [duration]");
-        COMMAND_USAGE.put("create_marker_looking", "/iska_utils_marker create_looking [difficulty] [duration]");
+        COMMAND_USAGE.put("create_marker", "/iska_utils_marker create <x> <y> <z> [color] [duration]");
+        COMMAND_USAGE.put("create_marker_looking", "/iska_utils_marker create_looking [color] [duration]");
         COMMAND_USAGE.put("clear_markers", "/iska_utils_marker clear");
     }
     
@@ -51,7 +52,7 @@ public class CreateMarker {
     }
     
     /**
-     * Registra i comandi per i marker
+     * Register the commands for the markers
      */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
@@ -59,24 +60,24 @@ public class CreateMarker {
                 .requires(source -> source.hasPermission(2)) // Require OP level 2
                 .then(Commands.literal("create")
                     .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                        .executes(context -> createMarker(context, DEFAULT_DIFFICULTY, DEFAULT_DURATION))
-                        .then(Commands.argument("difficulty", IntegerArgumentType.integer(1, 10))
+                        .executes(context -> createMarker(context, DEFAULT_COLOR, DEFAULT_DURATION))
+                        .then(Commands.argument("color", StringArgumentType.word())
                             .executes(context -> createMarker(context, 
-                                IntegerArgumentType.getInteger(context, "difficulty"), 
+                                StringArgumentType.getString(context, "color"), 
                                 DEFAULT_DURATION))
                             .then(Commands.argument("duration", IntegerArgumentType.integer(1))
                                 .executes(context -> createMarker(context, 
-                                    IntegerArgumentType.getInteger(context, "difficulty"), 
+                                    StringArgumentType.getString(context, "color"), 
                                     IntegerArgumentType.getInteger(context, "duration")))))))
                 .then(Commands.literal("create_looking")
-                    .executes(context -> createMarkerLooking(context, DEFAULT_DIFFICULTY, DEFAULT_DURATION))
-                    .then(Commands.argument("difficulty", IntegerArgumentType.integer(1, 10))
+                    .executes(context -> createMarkerLooking(context, DEFAULT_COLOR, DEFAULT_DURATION))
+                    .then(Commands.argument("color", StringArgumentType.word())
                         .executes(context -> createMarkerLooking(context, 
-                            IntegerArgumentType.getInteger(context, "difficulty"), 
+                            StringArgumentType.getString(context, "color"), 
                             DEFAULT_DURATION))
                         .then(Commands.argument("duration", IntegerArgumentType.integer(1))
                             .executes(context -> createMarkerLooking(context, 
-                                IntegerArgumentType.getInteger(context, "difficulty"), 
+                                StringArgumentType.getString(context, "color"), 
                                 IntegerArgumentType.getInteger(context, "duration"))))))
                 .then(Commands.literal("clear")
                     .executes(CreateMarker::clearMarkers))
@@ -99,71 +100,108 @@ public class CreateMarker {
     }
     
     /**
-     * Crea un marker X-Ray per un blocco con coordinate specificate
+     * Converte una stringa esadecimale in un valore intero
+     * Supporta formati come "RRGGBB" o "AARRGGBB"
      */
-    private static int createMarker(CommandContext<CommandSourceStack> context, int difficulty, int duration) throws CommandSyntaxException {
-        // Ottieni il source del comando
+    private static int parseHexColor(String hexColor) {
+        // Rimuovi eventuali prefissi "0x" o "#"
+        if (hexColor.startsWith("0x") || hexColor.startsWith("0X")) {
+            hexColor = hexColor.substring(2);
+        } else if (hexColor.startsWith("#")) {
+            hexColor = hexColor.substring(1);
+        }
+        
+        // Se il colore è in formato RGB (6 caratteri), aggiungi l'alfa
+        if (hexColor.length() == 6) {
+            hexColor = "33" + hexColor; // Aggiungi alfa semi-trasparente (33 = ~20%)
+        }
+        
+        // Assicurati che la stringa abbia 8 caratteri (AARRGGBB)
+        if (hexColor.length() != 8) {
+            LOGGER.warn("Invalid hex color format: {}. Using default color.", hexColor);
+            return 0x33FF0000; // Rosso semi-trasparente come default
+        }
+        
+        try {
+            return (int) Long.parseLong(hexColor, 16);
+        } catch (NumberFormatException e) {
+            LOGGER.warn("Invalid hex color format: {}. Using default color.", hexColor);
+            return 0x33FF0000; // Rosso semi-trasparente come default
+        }
+    }
+    
+    /**
+     * Create a marker for a block with specified coordinates
+     */
+    private static int createMarker(CommandContext<CommandSourceStack> context, String colorHex, int duration) throws CommandSyntaxException {
+        // Get the command source
         CommandSourceStack source = context.getSource();
         
-        // Estrai i parametri
+        // Extract the parameters
         BlockPos pos = BlockPosArgument.getBlockPos(context, "pos");
         
-        // Aggiungi il blocco evidenziato
-        XRayBlockRenderer.getInstance().addHighlightedBlock(pos, difficulty, duration);
+        // Parse the color
+        int color = parseHexColor(colorHex);
+        
+        // Add the highlighted block
+        MarkRenderer.getInstance().addHighlightedBlock(pos, color, duration);
      
-        // Invia un messaggio di conferma
+        // Send a confirmation message
         source.sendSuccess(() -> Component.literal(
-            String.format("§aMarker X-Ray creato a %s con difficoltà %d per %d tick", 
-            pos.toShortString(), difficulty, duration)
+            String.format("§aMarker Block created at %s with color 0x%08X for %d tick", 
+            pos.toShortString(), color, duration)
         ), true);
         
         return 1;
     }
     
     /**
-     * Crea un marker X-Ray per il blocco che il giocatore sta guardando
+     * Create a marker for the block the player is looking at
      */
-    private static int createMarkerLooking(CommandContext<CommandSourceStack> context, int difficulty, int duration) throws CommandSyntaxException {
-        // Ottieni il source del comando
+    private static int createMarkerLooking(CommandContext<CommandSourceStack> context, String colorHex, int duration) throws CommandSyntaxException {
+        // Get the command source
         CommandSourceStack source = context.getSource();
         
-        // Verifica che il comando sia stato eseguito da un giocatore
+        // Check if the command was executed by a player
         Player player = source.getPlayerOrException();
         
-        // Ottieni il blocco che il giocatore sta guardando
+        // Get the block the player is looking at
         HitResult hitResult = player.pick(20.0, 0.0F, false);
         
         if (!(hitResult instanceof BlockHitResult blockHitResult) || hitResult.getType() == HitResult.Type.MISS) {
-            source.sendFailure(Component.literal("§cNessun blocco trovato. Devi guardare un blocco."));
+            source.sendFailure(Component.literal("§cNo block found. You must look at a block."));
             return 0;
         }
         
         BlockPos pos = ((BlockHitResult) hitResult).getBlockPos();
         
-        // Aggiungi il blocco evidenziato
-        XRayBlockRenderer.getInstance().addHighlightedBlock(pos, difficulty, duration);
+        // Parse the color
+        int color = parseHexColor(colorHex);
+        
+        // Add the highlighted block
+        MarkRenderer.getInstance().addHighlightedBlock(pos, color, duration);
      
-        // Invia un messaggio di conferma
+        // Send a confirmation message
         source.sendSuccess(() -> Component.literal(
-            String.format("§aMarker X-Ray creato a %s con difficoltà %d per %d tick", 
-            pos.toShortString(), difficulty, duration)
+            String.format("§aMarker Block created at %s with color 0x%08X for %d tick", 
+            pos.toShortString(), color, duration)
         ), true);
         
         return 1;
     }
     
     /**
-     * Rimuove tutti i marker X-Ray
+     * Remove all markers
      */
     private static int clearMarkers(CommandContext<CommandSourceStack> context) {
-        // Ottieni il source del comando
+        // Get the command source
         CommandSourceStack source = context.getSource();
         
-        // Rimuovi tutti i blocchi evidenziati
-        XRayBlockRenderer.getInstance().clearHighlightedBlocks();
+        // Remove all highlighted blocks
+        MarkRenderer.getInstance().clearHighlightedBlocks();
      
-        // Invia un messaggio di conferma
-        source.sendSuccess(() -> Component.literal("§aTutti i marker X-Ray sono stati rimossi"), true);
+        // Send a confirmation message
+        source.sendSuccess(() -> Component.literal("§aAll markers have been removed"), true);
         
         return 1;
     }
