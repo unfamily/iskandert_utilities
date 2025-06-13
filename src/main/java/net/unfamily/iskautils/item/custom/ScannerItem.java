@@ -512,8 +512,8 @@ public class ScannerItem extends Item {
                                     MARKER_TTL.put(pos, finalTTL);
                                     
                                     // Use MarkRenderer to add the highlighted block on the client side
-                                    // Light blue color (ARGB format): 0x8000BFFF (alpha, red, green, blue)
-                                    int lightBlueColor = 0xFF00BFFF;
+                                    // Light blue color (ARGB format): 0xA000BFFF (alpha, red, green, blue)
+                                    int lightBlueColor = 0xA000BFFF;
                                     net.unfamily.iskautils.network.ModMessages.sendAddHighlightPacket(player, pos, lightBlueColor, finalTTL);
                                     
                                     // Check if we've reached the limit (skip if infinite blocks)
@@ -671,8 +671,8 @@ public class ScannerItem extends Item {
                     MARKER_TTL.put(entityPos, finalTTL);
                     
                     // Use MarkRenderer to add a billboard marker on the client side
-                    // Magenta/Purple color (ARGB format): 0xFFEB3480 (alpha, red, green, blue)
-                    int color = 0xFFEB3480;
+                    // Magenta/Purple color (ARGB format): 0xA0EB3480 (alpha, red, green, blue)
+                    int color = 0xA0EB3480;
                     net.unfamily.iskautils.network.ModMessages.sendAddBillboardPacket(player, entityPos, color, finalTTL);
                 }
                 
