@@ -70,7 +70,7 @@ public class PortableDislocatorItem extends Item {
         ChunkPos loadedChunk;
         ServerLevel chunkLevel;
         int attemptCount;
-        boolean usingAngelBlock; // Flag per indicare se stiamo usando l'Angel Block
+        boolean usingAngelBlock; // Flag to indicate if we're using the Angel Block
         
         TeleportationData(Player player, int targetX, int targetZ) {
             this.player = player;
@@ -99,8 +99,8 @@ public class PortableDislocatorItem extends Item {
     }
     
     private static final int MAX_WAIT_TICKS = 200; // 10 seconds max wait
-    private static final int MAX_ATTEMPTS = 10; // Aumentato a 10 tentativi totali (5 normali + 5 con Angel Block)
-    private static final int NORMAL_ATTEMPTS = 5; // Primi 5 tentativi normali
+    private static final int MAX_ATTEMPTS = 10; // Increased to 10 total attempts (5 normal + 5 with Angel Block)
+    private static final int NORMAL_ATTEMPTS = 5; // First 5 normal attempts
 
     public PortableDislocatorItem(Properties properties) {
         super(properties);
@@ -182,7 +182,7 @@ public class PortableDislocatorItem extends Item {
     private void tickInInventory(ItemStack stack, net.minecraft.world.level.Level level, Player player, int slotId, boolean isSelected) {
         // Check if the portable dislocator keybind was pressed
         if (KeyBindings.consumeDislocatorKeyClick()) {
-            LOGGER.info("Dislocator key pressed while in inventory for player {}", player.getName().getString());
+
             handleDislocatorActivation(player, stack, "inventory");
         }
     }
@@ -211,8 +211,7 @@ public class PortableDislocatorItem extends Item {
         TeleportRequest request = pendingRequests.get(playerId);
         
         if (request != null && level instanceof ServerLevel) {
-            LOGGER.info("Processing teleport request from client for player {} to {}, {}", 
-                player.getName().getString(), request.targetX, request.targetZ);
+
             
             // Clear the request
             pendingRequests.remove(playerId);
@@ -232,7 +231,7 @@ public class PortableDislocatorItem extends Item {
         
         // Verify the provided stack is a Portable Dislocator
         if (!(dislocatorStack.getItem() instanceof PortableDislocatorItem)) {
-            LOGGER.warn("Provided ItemStack is not a Portable Dislocator during teleportation");
+
             return;
         }
         
@@ -256,8 +255,7 @@ public class PortableDislocatorItem extends Item {
                 boolean energyConsumed = dislocator.consumeEnergyForTeleportation(dislocatorStack);
                 boolean xpConsumed = dislocator.consumeXpForTeleportation(player);
                 
-                LOGGER.info("Consumed energy (dual mode): {}", dislocator.getEffectiveEnergyConsumption());
-                LOGGER.info("Consumed XP (dual mode): {}", Config.portableDislocatorXpConsume);
+
                 
                 if (energyConsumed && xpConsumed) {
                     player.displayClientMessage(
@@ -279,12 +277,12 @@ public class PortableDislocatorItem extends Item {
         else if (prioritizeEnergy) {
             if (hasEnoughEnergy) {
                 canTeleport = dislocator.consumeEnergyForTeleportation(dislocatorStack);
-                LOGGER.info("Used energy with priority: {}", dislocator.getEffectiveEnergyConsumption());
+
             } 
             // If energy priority but no energy, try XP
             else if (hasEnoughXp) {
                 canTeleport = dislocator.consumeXpForTeleportation(player);
-                LOGGER.info("Energy prioritized but not available, used XP: {}", Config.portableDislocatorXpConsume);
+
                 
                 if (canTeleport) {
                     player.displayClientMessage(
@@ -299,7 +297,7 @@ public class PortableDislocatorItem extends Item {
         else if (prioritizeXp) {
             if (hasEnoughXp) {
                 canTeleport = dislocator.consumeXpForTeleportation(player);
-                LOGGER.info("Used XP with priority: {}", Config.portableDislocatorXpConsume);
+
                 
                 if (canTeleport) {
                     player.displayClientMessage(
@@ -312,7 +310,7 @@ public class PortableDislocatorItem extends Item {
             // If XP priority but no XP, try energy
             else if (hasEnoughEnergy) {
                 canTeleport = dislocator.consumeEnergyForTeleportation(dislocatorStack);
-                LOGGER.info("XP prioritized but not available, used energy: {}", dislocator.getEffectiveEnergyConsumption());
+
             }
         }
         // No priority set (default to energy first, then XP)
@@ -320,10 +318,10 @@ public class PortableDislocatorItem extends Item {
             if (energyEnabled) {
                 if (hasEnoughEnergy) {
                     canTeleport = dislocator.consumeEnergyForTeleportation(dislocatorStack);
-                    LOGGER.info("Default priority - used energy: {}", dislocator.getEffectiveEnergyConsumption());
+
                 } else if (xpEnabled && hasEnoughXp) {
                     canTeleport = dislocator.consumeXpForTeleportation(player);
-                    LOGGER.info("Default priority - energy not available, used XP: {}", Config.portableDislocatorXpConsume);
+
                     
                     if (canTeleport) {
                         player.displayClientMessage(
@@ -335,7 +333,7 @@ public class PortableDislocatorItem extends Item {
                 }
             } else if (xpEnabled && hasEnoughXp) {
                 canTeleport = dislocator.consumeXpForTeleportation(player);
-                LOGGER.info("Default priority - energy disabled, used XP: {}", Config.portableDislocatorXpConsume);
+
                 
                 if (canTeleport) {
                     player.displayClientMessage(
@@ -347,7 +345,7 @@ public class PortableDislocatorItem extends Item {
             } else if (!energyEnabled && !xpEnabled) {
                 // Both systems disabled, teleport is free
                 canTeleport = true;
-                LOGGER.info("Both energy and XP disabled, teleport is free");
+
             }
         }
         
@@ -366,7 +364,7 @@ public class PortableDislocatorItem extends Item {
                     true);
             }
             if (!energyEnabled && !xpEnabled) {
-                LOGGER.warn("Unexpected state: teleportation failed but no resources are required");
+
             }
             return;
         }
@@ -398,9 +396,7 @@ public class PortableDislocatorItem extends Item {
         int randomizedX = targetX + offsetX;
         int randomizedZ = targetZ + offsetZ;
         
-        // Log the coordinates for debugging
-        LOGGER.info("Teleporting from original coordinates {}, {} to randomized coordinates {}, {} (offset: {}, {})",
-            targetX, targetZ, randomizedX, randomizedZ, offsetX, offsetZ);
+
         
         // Clear any existing teleportation for this player
         UUID playerId = player.getUUID();
@@ -432,16 +428,11 @@ public class PortableDislocatorItem extends Item {
         
         data.ticksWaiting++;
         
-        // Log progress every second (20 ticks)
-        if (data.ticksWaiting % 20 == 0) {
-            LOGGER.info("Waiting for teleportation: player={}, target={},{}, attempt={}, waiting={}, angelBlock={}",
-                player.getName().getString(), data.targetX, data.targetZ, data.attemptCount, data.ticksWaiting, data.usingAngelBlock);
-        }
+
         
         // Timeout after max wait time
         if (data.ticksWaiting > MAX_WAIT_TICKS) {
-            LOGGER.info("Teleportation timed out after {} ticks, attempt {} of {}",
-                data.ticksWaiting, data.attemptCount, MAX_ATTEMPTS);
+
                 
             // Try another attempt if we haven't exceeded max attempts
             if (data.attemptCount < MAX_ATTEMPTS) {
@@ -531,7 +522,7 @@ public class PortableDislocatorItem extends Item {
                                 return;
                             }
                             
-                            // Controlla se c'è acqua sotto dove andrebbe l'Angel Block
+                            // Check if there's water below where the Angel Block would be placed
                             BlockPos belowPos = new BlockPos(data.targetX, safeY - 2, data.targetZ);
                             BlockState belowState = level.getBlockState(belowPos);
                             
@@ -541,10 +532,10 @@ public class PortableDislocatorItem extends Item {
                                                    belowState.getFluidState().is(net.minecraft.world.level.material.Fluids.FLOWING_WATER));
                             
                             if (isWaterBelow) {
-                                // Se c'è acqua, piazza il raft invece dell'Angel Block
+                                // If there's water, place a raft instead of the Angel Block
                                 placeRaft(level, data.targetX, safeY - 1, data.targetZ);
                             } else {
-                                // Altrimenti piazza l'Angel Block normalmente
+                                // Otherwise place the Angel Block normally
                                 placeAngelBlock(level, data.targetX, safeY - 1, data.targetZ);
                             }
                         } else {
@@ -633,7 +624,7 @@ public class PortableDislocatorItem extends Item {
      * Schedules chunk unloading after specified ticks
      */
     private static void scheduleChunkUnload(ServerLevel serverLevel, ChunkPos chunkPos, int delayTicks) {
-        LOGGER.info("Scheduling chunk unload for {}, {} after {} ticks", chunkPos.x, chunkPos.z, delayTicks);
+
         // Use the server's scheduler to remove the ticket after delay
         serverLevel.getServer().execute(() -> {
             // Schedule the ticket removal
@@ -642,11 +633,11 @@ public class PortableDislocatorItem extends Item {
                     Thread.sleep(delayTicks * 50); // Convert ticks to milliseconds
                     serverLevel.getServer().execute(() -> {
                         serverLevel.getChunkSource().removeRegionTicket(DISLOCATOR_TICKET, chunkPos, 2, Unit.INSTANCE);
-                        LOGGER.info("Removed chunk loading ticket for chunk at {}, {}", chunkPos.x, chunkPos.z);
+
                     });
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    LOGGER.error("Chunk unload scheduling interrupted", e);
+
                 }
             }).start();
         });
@@ -656,7 +647,7 @@ public class PortableDislocatorItem extends Item {
      * Resets teleportation state for a specific player
      */
     private static void resetTeleportationState(UUID playerId) {
-        LOGGER.info("Resetting teleportation state for player {}", playerId);
+
         activeTeleportations.remove(playerId);
         pendingRequests.remove(playerId);
     }
@@ -670,7 +661,7 @@ public class PortableDislocatorItem extends Item {
         // Find the dislocator item
         ItemStack dislocatorStack = findPortableDislocator(player);
         if (dislocatorStack == null) {
-            LOGGER.warn("Portable Dislocator not found during retry attempt");
+
             return;
         }
         
@@ -704,8 +695,7 @@ public class PortableDislocatorItem extends Item {
         int newX = originalX + offsetX;
         int newZ = originalZ + offsetZ;
         
-        LOGGER.info("Retry attempt {}: Teleporting to new coordinates {}, {} (offset {}, {} from original)",
-            attemptNumber, newX, newZ, offsetX, offsetZ);
+
         
         // Create new teleportation data for this attempt
         TeleportationData newData = new TeleportationData(player, newX, newZ);
@@ -1000,16 +990,16 @@ public class PortableDislocatorItem extends Item {
                                  groundState.getFluidState().is(net.minecraft.world.level.material.Fluids.FLOWING_WATER);
                 
                 if (isWater) {
-                    // Piazziamo la raft un blocco più in alto rispetto all'acqua
+                    // Place the raft one block higher than the water
                     BlockPos raftPos = new BlockPos(x, finalY, z);
-                    // Controlliamo che ci sia spazio per la raft
+                    // Check if there's space for the raft
                     if (level.getBlockState(raftPos).isAir()) {
-                        // Usiamo la versione no_drop della raft
+                        // Use the no_drop version of the raft
                         level.setBlock(raftPos, ModBlocks.RAFT_NO_DROP.get().defaultBlockState(), 3);
-                        LOGGER.info("Piazzata RAFT_NO_DROP alle coordinate {}, {}, {}", x, finalY, z);
+                        // Raft placed
                     }
                     
-                    // Note: L'offset Y verrà gestito direttamente nel metodo handlePendingTeleportation
+                    // Note: The Y offset will be handled directly in the handlePendingTeleportation method
                 }
                 // Note: Other liquids (lava, etc.) should not reach this point due to hasValidGround check
             }
@@ -1031,23 +1021,23 @@ public class PortableDislocatorItem extends Item {
      * Handles the activation of the Portable Dislocator
      */
     public static void handleDislocatorActivation(Player player, ItemStack dislocatorStack, String source) {
-        LOGGER.info("handleDislocatorActivation called from {} for player {}", source, player.getName().getString());
+
         
         // Prevent activation if already teleporting
         UUID playerId = player.getUUID();
         TeleportationData data = activeTeleportations.get(playerId);
         if (data != null) {
-            LOGGER.info("Aborting activation: teleportation already in progress");
+
             return;
         }
         
         // Verify the provided ItemStack is a Portable Dislocator
         if (!(dislocatorStack.getItem() instanceof PortableDislocatorItem)) {
-            LOGGER.info("Aborting activation: provided item is not a Portable Dislocator");
+
             return;
         }
         
-        LOGGER.info("Using dislocator from {}: {}", source, dislocatorStack);
+
         
         // Check energy requirements
         PortableDislocatorItem dislocator = (PortableDislocatorItem) dislocatorStack.getItem();
@@ -1058,9 +1048,7 @@ public class PortableDislocatorItem extends Item {
         ItemStack mainHand = player.getMainHandItem();
         ItemStack offHand = player.getOffhandItem();
         
-        LOGGER.info("Checking hands - Main: {}, Off: {}", 
-            mainHand.isEmpty() ? "empty" : mainHand.getItem().toString(),
-            offHand.isEmpty() ? "empty" : offHand.getItem().toString());
+
         
         ItemStack compassStack = null;
         String compassType = null;
@@ -1069,13 +1057,13 @@ public class PortableDislocatorItem extends Item {
         if (isValidCompass(mainHand)) {
             compassStack = mainHand;
             compassType = getCompassType(mainHand);
-            LOGGER.info("Found valid compass in main hand: {}", compassType);
+
         }
         // If not found in main hand, check off hand
         else if (isValidCompass(offHand)) {
             compassStack = offHand;
             compassType = getCompassType(offHand);
-            LOGGER.info("Found valid compass in off hand: {}", compassType);
+
         }
         
         if (compassStack == null || compassType == null) {
@@ -1109,8 +1097,6 @@ public class PortableDislocatorItem extends Item {
      */
     @Deprecated
     public static void startTeleportation(Player player, int targetX, int targetZ) {
-        LOGGER.info("Legacy startTeleportation called for player {} to coordinates {}, {}", 
-            player.getName().getString(), targetX, targetZ);
         
         if (player.level().isClientSide) {
             // Client side - create request
@@ -1122,8 +1108,7 @@ public class PortableDislocatorItem extends Item {
             if (dislocatorStack != null) {
                 startServerTeleportation(player, dislocatorStack, targetX, targetZ);
             } else {
-                LOGGER.warn("Could not find Portable Dislocator for player {} in legacy teleportation", 
-                    player.getName().getString());
+
             }
         }
     }
@@ -1134,8 +1119,6 @@ public class PortableDislocatorItem extends Item {
      */
     @Deprecated
     public static void startTeleportation(Player player, ItemStack dislocatorStack, int targetX, int targetZ) {
-        LOGGER.info("Legacy startTeleportation called for player {} to coordinates {}, {}", 
-            player.getName().getString(), targetX, targetZ);
         
         if (player.level().isClientSide) {
             // Client side - create request
@@ -1420,10 +1403,10 @@ public class PortableDislocatorItem extends Item {
         
         int xpToConsume = Config.portableDislocatorXpConsume;
         
-        // Verifichiamo se il giocatore ha abbastanza esperienza (punti totali o livelli convertibili)
-        // L'XP totale è in punti, quindi controlliamo sia quello che i livelli
+        // Check if the player has enough experience (total points or convertible levels)
+        // Total XP is in points, so we check both points and levels
         if (player.totalExperience >= xpToConsume || player.experienceLevel > 0) {
-            // Lasciamo che Minecraft gestisca la conversione tra livelli e punti
+            // Let Minecraft handle the conversion between levels and points
             player.giveExperiencePoints(-xpToConsume);
             return true;
         }
@@ -1472,10 +1455,10 @@ public class PortableDislocatorItem extends Item {
      */
     private static ItemStack checkCuriosSlots(Player player) {
         try {
-            // Approccio alternativo che usa getCuriosHandler invece di getAllEquipped
+            // Alternative approach using getCuriosHandler instead of getAllEquipped
             Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
             
-            // Ottiene l'handler delle Curios per il player
+            // Gets the Curios handler for the player
             Method getCuriosHandlerMethod = curioApiClass.getMethod("getCuriosHelper");
             Object curiosHelper = getCuriosHandlerMethod.invoke(null);
             
@@ -1496,7 +1479,7 @@ public class PortableDislocatorItem extends Item {
             
             return null;
         } catch (Exception e) {
-            // Se c'è un errore di reflection, log e continua
+            // If there's a reflection error, log and continue
             LOGGER.warn("Error checking Curios slots: {}", e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
@@ -1509,7 +1492,7 @@ public class PortableDislocatorItem extends Item {
      * Attempts new teleportation with Angel Block
      */
     private static void attemptAngelBlockTeleportation(Player player, int originalX, int originalZ, int attemptNumber) {
-        LOGGER.info("Starting Angel Block teleportation attempt {} for player {}", attemptNumber, player.getName().getString());
+
         
         // Generate new coordinates with the same fixed distance range for all attempts
         java.util.Random random = new java.util.Random();
@@ -1541,8 +1524,7 @@ public class PortableDislocatorItem extends Item {
         int newX = originalX + offsetX;
         int newZ = originalZ + offsetZ;
         
-        LOGGER.info("Angel Block teleportation attempt {}: Teleporting to new coordinates {}, {} (offset {}, {} from original)",
-            attemptNumber, newX, newZ, offsetX, offsetZ);
+
         
         UUID playerId = player.getUUID();
         
@@ -1551,7 +1533,7 @@ public class PortableDislocatorItem extends Item {
         newData.originalX = originalX;
         newData.originalZ = originalZ;
         newData.attemptCount = attemptNumber;
-        newData.usingAngelBlock = true; // Impostiamo il flag per usare l'Angel Block
+        newData.usingAngelBlock = true; // Set the flag to use the Angel Block
         
         // Store the new attempt and prepare for teleportation
         activeTeleportations.put(playerId, newData);
@@ -1639,18 +1621,18 @@ public class PortableDislocatorItem extends Item {
         // Check for bedrock ceiling to prevent spawning in bedrock
         boolean notNearBedrockCeiling = !isNearBedrockCeiling(level, y);
         
-        // Controlla se c'è acqua sotto dove andrebbe l'Angel Block (per piazzare il raft)
+        // Check if there's water below where the Angel Block would be placed (to place a raft instead)
         boolean hasWaterBelow = hasWaterBelow(level, x, y - 1, z);
         
-        // Se c'è acqua sotto, dobbiamo verificare se possiamo piazzare il raft sopra l'acqua
+        // If there's water below, we need to check if we can place a raft above the water
         if (hasWaterBelow) {
-            // Verifica se c'è spazio per piazzare il raft (il blocco al livello dell'Angel Block deve essere aria)
+            // Check if there's space to place the raft (the block at the Angel Block level must be air)
             BlockState angelBlockState = level.getBlockState(angelBlockPos);
             if (!angelBlockState.isAir()) {
-                return false; // Non c'è spazio per il raft
+                return false; // No space for the raft
             }
             
-            // In questo caso, piazzeremo il raft invece dell'Angel Block
+            // In this case, we'll place a raft instead of the Angel Block
             return playerSpace && notNearBedrockCeiling;
         }
         
@@ -1658,13 +1640,13 @@ public class PortableDislocatorItem extends Item {
     }
     
     /**
-     * Verifica se c'è acqua sotto la posizione specificata
+     * Checks if there's water below the specified position
      */
     private static boolean hasWaterBelow(Level level, int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y - 1, z);
         BlockState state = level.getBlockState(pos);
         
-        // Verifica se è acqua
+        // Check if it's water
         return !state.getFluidState().isEmpty() && 
                (state.is(net.minecraft.world.level.block.Blocks.WATER) ||
                 state.getFluidState().is(net.minecraft.world.level.material.Fluids.WATER) ||
@@ -1697,12 +1679,12 @@ public class PortableDislocatorItem extends Item {
     private static boolean isBlockValidForAngelBlock(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         
-        // Angel Block può essere piazzato SOLO nell'aria o in blocchi rimpiazzabili che non sono liquidi
+        // Angel Block can ONLY be placed in air or in replaceable blocks that are not liquids
         boolean isAirOrReplaceable = state.isAir() || 
                                     (state.is(net.minecraft.tags.BlockTags.REPLACEABLE) && 
                                      state.getFluidState().isEmpty());
         
-        // Non deve mai essere piazzato su bedrock
+        // Must never be placed on bedrock
         boolean isNotBedrock = !state.is(net.minecraft.world.level.block.Blocks.BEDROCK);
         
         return isAirOrReplaceable && isNotBedrock;
@@ -1734,11 +1716,11 @@ public class PortableDislocatorItem extends Item {
     private static void placeAngelBlock(Level level, int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
         
-        // Verifica che il blocco sia aria o rimpiazzabile e NON un liquido
+        // Verify that the block is air or replaceable and NOT a liquid
         BlockState currentState = level.getBlockState(pos);
         if (!currentState.isAir() && 
             !(currentState.is(net.minecraft.tags.BlockTags.REPLACEABLE) && currentState.getFluidState().isEmpty())) {
-            LOGGER.error("Cannot place Angel Block at {}, {}, {} - position is not air or replaceable", x, y, z);
+
             return;
         }
         
@@ -1779,15 +1761,14 @@ public class PortableDislocatorItem extends Item {
                     
                     // check if the tag was set correctly
                     boolean tagSet = blockEntity.getPersistentData().getBoolean("no_drop");
-                    LOGGER.info("Placed Angel Block with no_drop tag at {}, {}, {}, tag value: {}", x, y, z, tagSet);
                 } catch (Exception e) {
-                    LOGGER.error("Error setting no_drop tag on Angel Block at {}, {}, {}: {}", x, y, z, e.getMessage());
+                    // Error setting tag
                 }
             } else {
-                LOGGER.error("Failed to get BlockEntity for Angel Block at {}, {}, {}", x, y, z);
+                // Failed to get BlockEntity
             }
         } else {
-            LOGGER.error("Failed to place Angel Block at {}, {}, {}", x, y, z);
+            // Failed to place Angel Block
         }
     }
     
@@ -1797,16 +1778,16 @@ public class PortableDislocatorItem extends Item {
     private static void placeRaft(Level level, int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
         
-        // Verifica che il blocco sia aria o rimpiazzabile e NON un liquido
+        // Verify that the block is air or replaceable and NOT a liquid
         BlockState currentState = level.getBlockState(pos);
         if (!currentState.isAir() && 
             !(currentState.is(net.minecraft.tags.BlockTags.REPLACEABLE) && currentState.getFluidState().isEmpty())) {
-            LOGGER.error("Cannot place Raft at {}, {}, {} - position is not air or replaceable", x, y, z);
+
             return;
         }
         
         // place the Raft
         level.setBlock(pos, ModBlocks.RAFT_NO_DROP.get().defaultBlockState(), 3);
-        LOGGER.info("Placed RAFT_NO_DROP at {}, {}, {}", x, y, z);
+
     }
 } 
