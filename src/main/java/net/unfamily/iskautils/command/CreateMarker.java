@@ -42,6 +42,8 @@ public class CreateMarker {
     static {
         COMMAND_USAGE.put("create_marker", "/iska_utils_marker create <x> <y> <z> [color] [duration]");
         COMMAND_USAGE.put("create_marker_looking", "/iska_utils_marker create_looking [color] [duration]");
+        COMMAND_USAGE.put("create_billboard", "/iska_utils_marker billboard <x> <y> <z> [color] [duration]");
+        COMMAND_USAGE.put("create_billboard_looking", "/iska_utils_marker billboard_looking [color] [duration]");
         COMMAND_USAGE.put("clear_markers", "/iska_utils_marker clear");
     }
     
@@ -57,7 +59,7 @@ public class CreateMarker {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
             Commands.literal("iska_utils_marker")
-                .requires(source -> source.hasPermission(2)) // Require OP level 2
+                .requires(source -> source.hasPermission(0)) //No permission required
                 .then(Commands.literal("create")
                     .then(Commands.argument("pos", BlockPosArgument.blockPos())
                         .executes(context -> createMarker(context, DEFAULT_COLOR, DEFAULT_DURATION))
@@ -77,6 +79,27 @@ public class CreateMarker {
                             DEFAULT_DURATION))
                         .then(Commands.argument("duration", IntegerArgumentType.integer(1))
                             .executes(context -> createMarkerLooking(context, 
+                                StringArgumentType.getString(context, "color"), 
+                                IntegerArgumentType.getInteger(context, "duration"))))))
+                .then(Commands.literal("billboard")
+                    .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                        .executes(context -> createBillboard(context, DEFAULT_COLOR, DEFAULT_DURATION))
+                        .then(Commands.argument("color", StringArgumentType.word())
+                            .executes(context -> createBillboard(context, 
+                                StringArgumentType.getString(context, "color"), 
+                                DEFAULT_DURATION))
+                            .then(Commands.argument("duration", IntegerArgumentType.integer(1))
+                                .executes(context -> createBillboard(context, 
+                                    StringArgumentType.getString(context, "color"), 
+                                    IntegerArgumentType.getInteger(context, "duration")))))))
+                .then(Commands.literal("billboard_looking")
+                    .executes(context -> createBillboardLooking(context, DEFAULT_COLOR, DEFAULT_DURATION))
+                    .then(Commands.argument("color", StringArgumentType.word())
+                        .executes(context -> createBillboardLooking(context, 
+                            StringArgumentType.getString(context, "color"), 
+                            DEFAULT_DURATION))
+                        .then(Commands.argument("duration", IntegerArgumentType.integer(1))
+                            .executes(context -> createBillboardLooking(context, 
                                 StringArgumentType.getString(context, "color"), 
                                 IntegerArgumentType.getInteger(context, "duration"))))))
                 .then(Commands.literal("clear")
@@ -184,6 +207,66 @@ public class CreateMarker {
         // Send a confirmation message
         source.sendSuccess(() -> Component.literal(
             String.format("§aMarker Block created at %s with color 0x%08X for %d tick", 
+            pos.toShortString(), color, duration)
+        ), true);
+        
+        return 1;
+    }
+    
+    /**
+     * Create a billboard marker at specified coordinates
+     */
+    private static int createBillboard(CommandContext<CommandSourceStack> context, String colorHex, int duration) throws CommandSyntaxException {
+        // Get the command source
+        CommandSourceStack source = context.getSource();
+        
+        // Extract the parameters
+        BlockPos pos = BlockPosArgument.getBlockPos(context, "pos");
+        
+        // Parse the color
+        int color = parseHexColor(colorHex);
+        
+        // Add the billboard marker
+        MarkRenderer.getInstance().addBillboardMarker(pos, color, duration);
+     
+        // Send a confirmation message
+        source.sendSuccess(() -> Component.literal(
+            String.format("§aBillboard Marker created at %s with color 0x%08X for %d tick", 
+            pos.toShortString(), color, duration)
+        ), true);
+        
+        return 1;
+    }
+    
+    /**
+     * Create a billboard marker for the block the player is looking at
+     */
+    private static int createBillboardLooking(CommandContext<CommandSourceStack> context, String colorHex, int duration) throws CommandSyntaxException {
+        // Get the command source
+        CommandSourceStack source = context.getSource();
+        
+        // Check if the command was executed by a player
+        Player player = source.getPlayerOrException();
+        
+        // Get the block the player is looking at
+        HitResult hitResult = player.pick(20.0, 0.0F, false);
+        
+        if (!(hitResult instanceof BlockHitResult blockHitResult) || hitResult.getType() == HitResult.Type.MISS) {
+            source.sendFailure(Component.literal("§cNo block found. You must look at a block."));
+            return 0;
+        }
+        
+        BlockPos pos = ((BlockHitResult) hitResult).getBlockPos();
+        
+        // Parse the color
+        int color = parseHexColor(colorHex);
+        
+        // Add the billboard marker
+        MarkRenderer.getInstance().addBillboardMarker(pos, color, duration);
+     
+        // Send a confirmation message
+        source.sendSuccess(() -> Component.literal(
+            String.format("§aBillboard Marker created at %s with color 0x%08X for %d tick", 
             pos.toShortString(), color, duration)
         ), true);
         

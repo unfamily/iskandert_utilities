@@ -75,6 +75,25 @@ public class ModMessages {
     }
     
     /**
+     * Sends a packet to add a billboard marker
+     * This is a simplified implementation that directly calls the client handler
+     * in single player mode, but would use actual packets in multiplayer
+     */
+    public static void sendAddBillboardPacket(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
+        // In a real implementation, this would send a packet to the client
+        // For now, we'll use a direct call for single player compatibility
+        try {
+            // This will be executed on the client side
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                ClientEvents.handleAddBillboard(pos, color, durationTicks);
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+            LOGGER.debug("Could not send billboard packet to client: {}", e.getMessage());
+        }
+    }
+    
+    /**
      * Sends a packet to remove a highlighted block
      */
     public static void sendRemoveHighlightPacket(ServerPlayer player, BlockPos pos) {

@@ -104,10 +104,19 @@ public class ClientEvents {
     }
     
     /**
+     * Handles adding a billboard marker from the server
+     */
+    public static void handleAddBillboard(BlockPos pos, int color, int durationTicks) {
+        MarkRenderer.getInstance().addBillboardMarker(pos, color, durationTicks);
+    }
+    
+    /**
      * Handles removing a highlighted block from the server
      */
     public static void handleRemoveHighlight(BlockPos pos) {
         MarkRenderer.getInstance().removeHighlightedBlock(pos);
+        // Rimuovi anche eventuali billboard marker nella stessa posizione
+        MarkRenderer.getInstance().removeBillboardMarker(pos);
     }
     
     /**

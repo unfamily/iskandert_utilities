@@ -207,7 +207,7 @@ public class Config
 
     private static final ModConfigSpec.IntValue SCANNER_MAX_BLOCKS = BUILDER
             .comment("Maximum number of blocks that can be scanned at once")
-            .defineInRange("002_scannerMaxBlocks", 8192, -1, Integer.MAX_VALUE);
+            .defineInRange("002_scannerMaxBlocks", 8192, 1, Integer.MAX_VALUE);
 
     // Scanner energy configuration
     private static final ModConfigSpec.IntValue SCANNER_ENERGY_CONSUME = BUILDER

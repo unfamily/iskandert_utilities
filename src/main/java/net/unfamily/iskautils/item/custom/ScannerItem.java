@@ -346,9 +346,12 @@ public class ScannerItem extends Item {
                 // Send clear message to client for each marker
                 for (BlockPos pos : markers) {
                     // Remove the marker from client side
-                    net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(serverPlayer, pos);
-                    
-                    MARKER_TTL.remove(pos);
+                    // Check if it's a block or mob marker
+                    if (MARKER_TTL.containsKey(pos)) {
+                        net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(serverPlayer, pos);
+                        
+                        MARKER_TTL.remove(pos);
+                    }
                 }
                 
                 markers.clear();
@@ -442,6 +445,10 @@ public class ScannerItem extends Item {
             return;
         }
         
+        // Calculate the total number of chunks to scan 
+        int totalChunksToScan = (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
+        int currentChunksScanned = 0;
+        
         // Scan in a radius based on the configured scan range
         int newMarkersFound = 0;
         boolean limitReached = false;
@@ -453,8 +460,13 @@ public class ScannerItem extends Item {
                 
                 // Check if chunk is loaded
                 if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
+                    currentChunksScanned++;
                     continue;
                 }
+                
+                // Aggiorna la barra di caricamento ogni chunk
+                float percentage = (float) currentChunksScanned / totalChunksToScan;
+                displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
                 
                 // Scan the chunk
                 for (int x = currentChunkPos.getMinBlockX(); x <= currentChunkPos.getMaxBlockX(); x++) {
@@ -501,7 +513,7 @@ public class ScannerItem extends Item {
                                     
                                     // Use MarkRenderer to add the highlighted block on the client side
                                     // Light blue color (ARGB format): 0x8000BFFF (alpha, red, green, blue)
-                                    int lightBlueColor = 0x8000BFFF;
+                                    int lightBlueColor = 0xFF00BFFF;
                                     net.unfamily.iskautils.network.ModMessages.sendAddHighlightPacket(player, pos, lightBlueColor, finalTTL);
                                     
                                     // Check if we've reached the limit (skip if infinite blocks)
@@ -514,6 +526,9 @@ public class ScannerItem extends Item {
                         }
                     }
                 }
+                
+                // Increment scanned chunks
+                currentChunksScanned++;
             }
         }
         
@@ -527,6 +542,9 @@ public class ScannerItem extends Item {
         }
         
         player.displayClientMessage(message, true);
+        
+        // Assicurati di mostrare la barra completata alla fine
+        displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
     }
     
     /**
@@ -581,60 +599,92 @@ public class ScannerItem extends Item {
         // Get config values
         int scanRange = Config.scannerScanRange;
         int maxTTL = Config.scannerMarkerTTL;
-        int mobEffectDuration = maxTTL / 20; // Convert ticks to seconds for potion effect
+        
+        // Calcola il numero totale di chunk da scansionare
+        int chunkRadius = Math.max(1, scanRange / 16);
+        int totalChunksToScan = (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
+        int currentChunksScanned = 0;
         
         // Scan in a radius
         int markersFound = 0;
         
         double scanRangeSquared = scanRange * scanRange;
-        List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(
-            LivingEntity.class, 
-            player.getBoundingBox().inflate(scanRange),
-            entity -> {
-                double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
-                return distanceSq <= scanRangeSquared && 
-                       BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString().equals(targetMobId);
-            }
-        );
         
-        for (LivingEntity entity : nearbyEntities) {
-            // Skip entities that already have a team (except our team)
-            String entityUUID = entity.getStringUUID();
-            if (level.getScoreboard().getPlayersTeam(entityUUID) != null && 
-                !level.getScoreboard().getPlayersTeam(entityUUID).getName().equals("iska_utils_scan")) {
-                continue;
+        // Create a set of currently existing marker positions
+        Set<BlockPos> existingMarkerPositions = new HashSet<>();
+        if (ACTIVE_MARKERS.containsKey(scannerId)) {
+            existingMarkerPositions.addAll(ACTIVE_MARKERS.get(scannerId));
+        }
+        
+        // Get or create a list for this scanner's markers
+        List<BlockPos> scannerMarkers = ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>());
+        
+        // Scansiona i chunk nell'area
+        for (int chunkX = playerPos.getX() / 16 - chunkRadius; chunkX <= playerPos.getX() / 16 + chunkRadius; chunkX++) {
+            for (int chunkZ = playerPos.getZ() / 16 - chunkRadius; chunkZ <= playerPos.getZ() / 16 + chunkRadius; chunkZ++) {
+                ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
+                
+                // Verifica se il chunk è caricato
+                if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
+                    currentChunksScanned++;
+                    continue;
+                }
+                
+                // Aggiorna la barra di caricamento ogni chunk
+                float percentage = (float) currentChunksScanned / totalChunksToScan;
+                displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
+                
+                // Cerca entità nel chunk corrente
+                List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(
+                    LivingEntity.class, 
+                    new net.minecraft.world.phys.AABB(
+                        currentChunkPos.getMinBlockX(), level.getMinBuildHeight(), currentChunkPos.getMinBlockZ(),
+                        currentChunkPos.getMaxBlockX(), level.getMaxBuildHeight(), currentChunkPos.getMaxBlockZ()
+                    ),
+                    entity -> {
+                        double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
+                        return distanceSq <= scanRangeSquared && 
+                               BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString().equals(targetMobId);
+                    }
+                );
+                
+                // Processa le entità trovate
+                for (LivingEntity entity : nearbyEntities) {
+                    // Ottieni la posizione dell'entità
+                    BlockPos entityPos = entity.blockPosition();
+                    
+                    // Skip if we already have a marker at this position
+                    if (existingMarkerPositions.contains(entityPos)) {
+                        // Refresh TTL for existing marker
+                        MARKER_TTL.put(entityPos, maxTTL);
+                        continue;
+                    }
+                    
+                    // Add the entity position to the scanner's markers
+                    scannerMarkers.add(entityPos);
+                    markersFound++;
+                    
+                    // Calcola il TTL finale
+                    int finalTTL = maxTTL * TTL_MULTIPLIER;
+                    
+                    // Add TTL for this marker
+                    MARKER_TTL.put(entityPos, finalTTL);
+                    
+                    // Use MarkRenderer to add a billboard marker on the client side
+                    int color = 0xA0808080;
+                    net.unfamily.iskautils.network.ModMessages.sendAddBillboardPacket(player, entityPos, color, finalTTL);
+                }
+                
+                // Incrementa i chunk scansionati
+                currentChunksScanned++;
             }
-            
-            // Check if the entity has already active effects and determine whether to hide particles
-            boolean hideParticles = true; // Default: particles hidden if no effects
-            
-            // If the entity has effects, maintain the particle visibility of the first effect found
-            if (!entity.getActiveEffects().isEmpty()) {
-                hideParticles = !entity.getActiveEffects().iterator().next().isVisible();
-            }
-            
-            // Apply glowing effect to the mob with the right particle visibility
-            String effectCommand = String.format(
-                "effect give %s minecraft:glowing %d 0 %b", 
-                entityUUID, mobEffectDuration, hideParticles
-            );
-            player.getServer().getCommands().performPrefixedCommand(
-                player.getServer().createCommandSourceStack().withSuppressedOutput(),
-                effectCommand
-            );
-            
-            // Add to the team for coloring
-            String teamJoinCommand = String.format("team join iska_utils_scan %s", entityUUID);
-            player.getServer().getCommands().performPrefixedCommand(
-                player.getServer().createCommandSourceStack().withSuppressedOutput(),
-                teamJoinCommand
-            );
-            
-            markersFound++;
         }
         
         player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_mobs", 
                 markersFound, getLocalizedMobName(targetMobId)), true);
+        
+        // Assicurati di mostrare la barra completata alla fine
+        displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
     }
 
     // ===== ENERGY MANAGEMENT METHODS =====
@@ -768,6 +818,7 @@ public class ScannerItem extends Item {
         String translationKey = "entity." + namespace + "." + path;
         Component translated = Component.translatable(translationKey);
         
+    
         // Se il namespace non è minecraft, aggiungi il namespace al nome se la traduzione fallisce
         if (!namespace.equals("minecraft")) {
             // Controlla se la traduzione ha avuto successo
