@@ -30,8 +30,6 @@ public class MarkRenderer {
     private final Map<BlockPos, MarkBlockData> highlightedBlocks = new HashMap<>();
     private final Map<BlockPos, MarkBlockData> billboardMarkers = new HashMap<>();
     
-    private static final ResourceLocation MARKER_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/marker_other.png");
-    
     private MarkRenderer() {}
     
     public static MarkRenderer getInstance() {
@@ -56,8 +54,8 @@ public class MarkRenderer {
      * @param durationTicks Duration in tick (20 tick = 1 second)
      */
     public void addBillboardMarker(BlockPos pos, int color, int durationTicks) {
-        // Add the marker to the map
-        billboardMarkers.put(pos, new MarkBlockData(color, Minecraft.getInstance().level.getGameTime() + durationTicks));
+        // Add the marker to the map, using a special flag to indicate it's a small cube marker
+        billboardMarkers.put(pos, new MarkBlockData(color, Minecraft.getInstance().level.getGameTime() + durationTicks, true));
     }
     
     /**
@@ -187,111 +185,87 @@ public class MarkRenderer {
      * Render billboard markers
      */
     private void renderBillboardMarkers(PoseStack poseStack, Minecraft mc, Vec3 cameraPos, long currentTime) {
-        // Prepare the rendering for billboards
+        // Prepare the rendering for small cubes
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableDepthTest();
-        RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-        RenderSystem.setShaderTexture(0, MARKER_TEXTURE);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
         
         // Start rendering
         Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        Matrix4f matrix = poseStack.last().pose();
         
-        // Render each billboard marker
+        // Render each marker as a small cube
         for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkers.entrySet()) {
             BlockPos pos = entry.getKey();
             int color = entry.getValue().color;
             
-            // Draw the billboard
-            drawBillboard(poseStack, bufferBuilder, pos, cameraPos, color, 1.0f);
+            // Draw the small cube (12x12 pixels, centered in the block)
+            drawSmallCube(bufferBuilder, matrix, pos, cameraPos, color);
         }
         
         // Complete the rendering
-        com.mojang.blaze3d.vertex.MeshData meshData = bufferBuilder.build();
-        if (meshData != null) {
-            BufferUploader.drawWithShader(meshData);
-        }
+        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
         
         RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();
     }
     
     /**
-     * Draw a billboard marker that always faces the camera
+     * Draw a small cube (12x12 pixels) centered at the specified position
      */
-    private void drawBillboard(PoseStack poseStack, BufferBuilder bufferBuilder, BlockPos pos, Vec3 cameraPos, int color, float size) {
-        // Save the current transformation matrix
-        poseStack.pushPose();
-        
-        // Translate to the marker position (center of the block)
-        float x = pos.getX() + 0.5f - (float)cameraPos.x;
-        float y = pos.getY() + 0.5f - (float)cameraPos.y;
-        float z = pos.getZ() + 0.5f - (float)cameraPos.z;
-        poseStack.translate(x, y, z);
-        
-        // Make the billboard face the camera
-        // Get the camera rotation and apply it to make the billboard face the camera
-        Quaternionf rotation = new Quaternionf(Minecraft.getInstance().gameRenderer.getMainCamera().rotation());
-        // Non coniughiamo il quaternione, ma lo applichiamo direttamente
-        poseStack.mulPose(rotation);
-        
-        // Ruotiamo di 180 gradi sull'asse Y per far sì che il billboard guardi verso la camera
-        poseStack.mulPose(new Quaternionf().rotateY((float)Math.PI));
-        
-        // Scale the billboard
+    private void drawSmallCube(BufferBuilder bufferBuilder, Matrix4f matrix, BlockPos pos, Vec3 cameraPos, int color) {
+        // Calculate the size of the cube (12/16 of a block = 0.75 blocks)
+        float size = 12.0f / 16.0f;
         float halfSize = size / 2.0f;
         
+        // Calculate the position (centered in the block)
+        float x = pos.getX() + 0.5f - halfSize - (float)cameraPos.x;
+        float y = pos.getY() + 0.5f - halfSize - (float)cameraPos.y;
+        float z = pos.getZ() + 0.5f - halfSize - (float)cameraPos.z;
+        
         // Extract color components
-        int red = (color >> 16) & 0xFF;
-        int green = (color >> 8) & 0xFF;
-        int blue = color & 0xFF;
-        int alpha = (color >> 24) & 0xFF;
+        float red = ((color >> 16) & 0xFF) / 255.0F;
+        float green = ((color >> 8) & 0xFF) / 255.0F;
+        float blue = (color & 0xFF) / 255.0F;
+        float alpha = ((color >> 24) & 0xFF) / 255.0F;
         
-        // Get the transformation matrix
-        Matrix4f matrix = poseStack.last().pose();
+        // Bottom face
+        bufferBuilder.addVertex(x, y, z).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y, z).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y, z + size).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x, y, z + size).setColor(red, green, blue, alpha);
         
-        // Applica la trasformazione della matrice alle coordinate dei vertici
-        // Vertice 1: in basso a sinistra
-        float[] v1 = transformVertex(matrix, -halfSize, -halfSize, 0);
-        bufferBuilder.addVertex(v1[0], v1[1], v1[2])
-                    .setUv(0, 1)
-                    .setColor(red, green, blue, alpha);
+        // Top face
+        bufferBuilder.addVertex(x, y + size, z).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x, y + size, z + size).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y + size, z + size).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y + size, z).setColor(red, green, blue, alpha);
         
-        // Vertice 2: in basso a destra
-        float[] v2 = transformVertex(matrix, halfSize, -halfSize, 0);
-        bufferBuilder.addVertex(v2[0], v2[1], v2[2])
-                    .setUv(1, 1)
-                    .setColor(red, green, blue, alpha);
+        // North face
+        bufferBuilder.addVertex(x, y, z).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x, y + size, z).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y + size, z).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y, z).setColor(red, green, blue, alpha);
         
-        // Vertice 3: in alto a destra
-        float[] v3 = transformVertex(matrix, halfSize, halfSize, 0);
-        bufferBuilder.addVertex(v3[0], v3[1], v3[2])
-                    .setUv(1, 0)
-                    .setColor(red, green, blue, alpha);
+        // South face
+        bufferBuilder.addVertex(x, y, z + size).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y, z + size).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y + size, z + size).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x, y + size, z + size).setColor(red, green, blue, alpha);
         
-        // Vertice 4: in alto a sinistra
-        float[] v4 = transformVertex(matrix, -halfSize, halfSize, 0);
-        bufferBuilder.addVertex(v4[0], v4[1], v4[2])
-                    .setUv(0, 0)
-                    .setColor(red, green, blue, alpha);
+        // West face
+        bufferBuilder.addVertex(x, y, z).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x, y, z + size).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x, y + size, z + size).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x, y + size, z).setColor(red, green, blue, alpha);
         
-        // Restore the transformation matrix
-        poseStack.popPose();
-    }
-    
-    /**
-     * Applica la trasformazione della matrice a un vertice
-     */
-    private float[] transformVertex(Matrix4f matrix, float x, float y, float z) {
-        float[] result = new float[3];
-        float w = 1.0f;
-        
-        result[0] = matrix.m00() * x + matrix.m10() * y + matrix.m20() * z + matrix.m30() * w;
-        result[1] = matrix.m01() * x + matrix.m11() * y + matrix.m21() * z + matrix.m31() * w;
-        result[2] = matrix.m02() * x + matrix.m12() * y + matrix.m22() * z + matrix.m32() * w;
-        
-        return result;
+        // East face
+        bufferBuilder.addVertex(x + size, y, z).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y + size, z).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y + size, z + size).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(x + size, y, z + size).setColor(red, green, blue, alpha);
     }
     
     /**
@@ -350,10 +324,18 @@ public class MarkRenderer {
     private static class MarkBlockData {
         final int color;
         final long expirationTime;
+        final boolean isSmallCube;
         
         MarkBlockData(int color, long expirationTime) {
             this.color = color;
             this.expirationTime = expirationTime;
+            this.isSmallCube = false;
+        }
+        
+        MarkBlockData(int color, long expirationTime, boolean isSmallCube) {
+            this.color = color;
+            this.expirationTime = expirationTime;
+            this.isSmallCube = isSmallCube;
         }
     }
 } 
