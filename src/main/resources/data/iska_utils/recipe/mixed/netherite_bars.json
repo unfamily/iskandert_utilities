@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NNN",
+    "NNN"
+  ],
+  "key": {
+    "N": {
+      "tag": "c:ingots/netherite"
+    }
+  },
+  "result": {
+    "id": "iska_utils:netherite_bars",
+    "count": 16
+  }
+} 

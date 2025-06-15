@@ -36,6 +36,8 @@
   "block.iska_utils.rubber_pressure_plate": "Rubber Pressure Plate",
   "block.iska_utils.rubber_button": "Rubber Button",
   "block.iska_utils.scan_block": "Scan Block",
+  "block.iska_utils.netherite_bars": "Netherite Bars",
+  "block.iska_utils.wither_proof_block": "Wither Proof Block",
   
   "block.iska_utils.tar_slime_block": "Tar Slime Block",
   "item.iska_utils.tar_slimeball": "Tar Slimeball",

@@ -47,6 +47,31 @@ public class ModBlocks {
             .lightLevel((state) -> state.getValue(HellfireIgniterBlock.POWERED) ? 7 : 3)
             .noOcclusion();
     
+    // ===== WITHER PROOF BLOCKS =====
+    
+    // Properties for Wither Proof Block
+    private static final BlockBehaviour.Properties WITHER_PROOF_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_BLACK)
+            .strength(50.0f, 1200.0f)
+            .sound(SoundType.NETHERITE_BLOCK)
+            .requiresCorrectToolForDrops();
+            
+    // Properties for Netherite Bars
+    private static final BlockBehaviour.Properties NETHERITE_BARS_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_BLACK)
+            .strength(6.0f, 1200.0f)
+            .sound(SoundType.NETHERITE_BLOCK)
+            .requiresCorrectToolForDrops()
+            .noOcclusion();
+    
+    // Wither Proof Block
+    public static final DeferredBlock<WitherProofBlock> WITHER_PROOF_BLOCK = BLOCKS.register("wither_proof_block",
+            () -> new WitherProofBlock(WITHER_PROOF_PROPERTIES));
+            
+    // Netherite Bars
+    public static final DeferredBlock<NetheriteBarsBlock> NETHERITE_BARS = BLOCKS.register("netherite_bars",
+            () -> new NetheriteBarsBlock(NETHERITE_BARS_PROPERTIES));
+    
     // ===== STANDARD VECTOR PLATES (DON'T AFFECT PLAYERS) =====
     
     // Slow Vector Plate (slowest)
@@ -100,7 +125,6 @@ public class ModBlocks {
     // Rubber Sap Extractor (automatically extracts sap from rubber logs)
     public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",
             () -> new RubberSapExtractorBlock(RUBBER_SAP_EXTRACTOR_PROPERTIES));
-
 
     // ===== SMOOTH BLACKSTONE =====
     private static final BlockBehaviour.Properties SMOOTH_BLACKSTONE_PROPERTIES = BlockBehaviour.Properties.of()

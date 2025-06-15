@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NNN",
+    "NON",
+    "NNN"
+  ],
+  "key": {
+    "N": {
+      "tag": "c:bars/netherite"
+    },
+    "O": {
+      "tag": "c:obsidians/crying"
+    }
+  },
+  "result": {
+    "id": "iska_utils:wither_proof_block",
+    "count": 1
+  }
+} 

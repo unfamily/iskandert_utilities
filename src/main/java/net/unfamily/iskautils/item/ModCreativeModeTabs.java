@@ -36,6 +36,10 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.ULTRA_MODULE.get());
                                 pOutput.accept(ModItems.RUBBER_BOOTS.get());
                                 
+                                // Wither Proof Blocks
+                                pOutput.accept(ModItems.WITHER_PROOF_BLOCK.get());
+                                pOutput.accept(ModItems.NETHERITE_BARS.get());
+                                
                                 // Rubber Tree Items
                                 pOutput.accept(ModItems.SAP.get());
                                 pOutput.accept(ModItems.RUBBER_CHUNK.get());

@@ -10,6 +10,8 @@
     "iska_utils:rubber_sap_extractor",
     "iska_utils:weather_detector",
     "iska_utils:time_alterer",
-    "iska_utils:weather_alterer"
+    "iska_utils:weather_alterer",
+    "iska_utils:wither_proof_block",
+    "iska_utils:netherite_bars"
   ]
 } 
