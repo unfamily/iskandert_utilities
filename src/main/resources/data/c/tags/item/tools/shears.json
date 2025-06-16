@@ -2,6 +2,6 @@
   "replace": false,
   "values": [
     "#minecraft:shears",
-    "c:tools/shear"
+    "#c:tools/shear"
   ]
 } 
