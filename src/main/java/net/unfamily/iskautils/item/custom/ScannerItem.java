@@ -569,15 +569,65 @@ public class ScannerItem extends Item {
                                     // Add TTL for this marker
                                     MARKER_TTL.put(pos, finalTTL);
                                     
-                                    // Use MarkRenderer to add the highlighted block on the client side with the block name
-                                    int color = Config.scannerDefaultOreColor;
-                                    int colorWithAlpha = (0x80 << 24) | color;
-                                    
                                     // Get the block name for display
                                     BlockState blockState = level.getBlockState(pos);
                                     Block block = blockState.getBlock();
                                     Component blockName = block.getName();
                                     String blockNameString = blockName.getString();
+                                    String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
+                                    
+                                    // Get color from config based on block type
+                                    int color = Config.scannerDefaultOreColor; // Default color from config
+                                    
+                                    // Check for exact match in config
+                                    boolean colorFound = false;
+                                    for (String entry : Config.scannerOreEntries) {
+                                        String[] parts = entry.split(";");
+                                        if (parts.length == 2) {
+                                            String oreName = parts[0];
+                                            // Exact match
+                                            if (oreName.equals(blockId)) {
+                                                try {
+                                                    color = Integer.parseInt(parts[1], 16);
+                                                    colorFound = true;
+                                                    break;
+                                                } catch (NumberFormatException e) {
+                                                    // Use default color
+                                                }
+                                            }
+                                            // Pattern match (with $ prefix)
+                                            else if (oreName.startsWith("$")) {
+                                                String searchTerm = oreName.substring(1).toLowerCase();
+                                                if (blockId.toLowerCase().contains(searchTerm)) {
+                                                    try {
+                                                        color = Integer.parseInt(parts[1], 16);
+                                                        colorFound = true;
+                                                        break;
+                                                    } catch (NumberFormatException e) {
+                                                        // Use default color
+                                                    }
+                                                }
+                                            }
+                                            // Simple contains match (for entries like "gold", "iron", etc.)
+                                            else if (blockId.toLowerCase().contains(oreName.toLowerCase())) {
+                                                try {
+                                                    color = Integer.parseInt(parts[1], 16);
+                                                    colorFound = true;
+                                                    break;
+                                                } catch (NumberFormatException e) {
+                                                    // Use default color
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Log debug info if needed
+                                    if (colorFound) {
+                                        LOGGER.debug("Applied color {} to block {}", Integer.toHexString(color), blockId);
+                                    }
+                                    
+                                    // Add alpha channel to the color
+                                    int colorWithAlpha = (0x80 << 24) | color;
                                     
                                     net.unfamily.iskautils.network.ModMessages.sendAddHighlightWithNamePacket(player, pos, colorWithAlpha, finalTTL, blockNameString);
                                     
@@ -736,8 +786,8 @@ public class ScannerItem extends Item {
                     MARKER_TTL.put(entityPos, finalTTL);
                     
                     // Use MarkRenderer to add a billboard marker on the client side with the entity name
-                    // Magenta/Purple color (ARGB format): 0x80EB3480 (alpha, red, green, blue)
-                    int color = 0x80EB3480;
+                    // Get color from config and apply alpha
+                    int color = (Config.scannerDefaultAlpha << 24) | Config.scannerDefaultMobColor;
                     net.unfamily.iskautils.network.ModMessages.sendAddBillboardWithNamePacket(player, entityPos, color, finalTTL, entity.getName().getString());
                 }
                 
@@ -1226,8 +1276,8 @@ public class ScannerItem extends Item {
             }
         }
         
-        // Default color for ores not in the config (light blue)
-        int defaultOreColor = Config.scannerDefaultOreColor; // Without alpha
+        // Default color for ores not in the config from Config class
+        int defaultOreColor = Config.scannerDefaultOreColor; // Default ore color without alpha
         
         scanLoop:
         for (int chunkX = playerChunkPos.x - chunkRadius; chunkX <= playerChunkPos.x + chunkRadius; chunkX++) {
@@ -1340,24 +1390,54 @@ public class ScannerItem extends Item {
                                     // Determine color based on ore type
                                     int color = defaultOreColor;
                                     
-                                    // Check for exact match first
-                                    if (oreColorMap.containsKey(blockId)) {
-                                        color = oreColorMap.get(blockId);
-                                    } else {
-                                        // Check for pattern matches (with $ prefix)
-                                        for (Map.Entry<String, Integer> entry : oreColorMap.entrySet()) {
-                                            String pattern = entry.getKey();
-                                            if (pattern.startsWith("$")) {
-                                                String searchTerm = pattern.substring(1).toLowerCase();
-                                                if (blockId.toLowerCase().contains(searchTerm)) {
-                                                    color = entry.getValue();
+                                    // Check for exact match in config
+                                    boolean colorFound = false;
+                                    for (String entry : Config.scannerOreEntries) {
+                                        String[] parts = entry.split(";");
+                                        if (parts.length == 2) {
+                                            String oreName = parts[0];
+                                            // Exact match
+                                            if (oreName.equals(blockId)) {
+                                                try {
+                                                    color = Integer.parseInt(parts[1], 16);
+                                                    colorFound = true;
                                                     break;
+                                                } catch (NumberFormatException e) {
+                                                    // Use default color
+                                                }
+                                            }
+                                            // Pattern match (with $ prefix)
+                                            else if (oreName.startsWith("$")) {
+                                                String searchTerm = oreName.substring(1).toLowerCase();
+                                                if (blockId.toLowerCase().contains(searchTerm)) {
+                                                    try {
+                                                        color = Integer.parseInt(parts[1], 16);
+                                                        colorFound = true;
+                                                        break;
+                                                    } catch (NumberFormatException e) {
+                                                        // Use default color
+                                                    }
+                                                }
+                                            }
+                                            // Simple contains match (for entries like "gold", "iron", etc.)
+                                            else if (blockId.toLowerCase().contains(oreName.toLowerCase())) {
+                                                try {
+                                                    color = Integer.parseInt(parts[1], 16);
+                                                    colorFound = true;
+                                                    break;
+                                                } catch (NumberFormatException e) {
+                                                    // Use default color
                                                 }
                                             }
                                         }
                                     }
                                     
-                                    // Add alpha channel to the color (force to 80 for consistency)
+                                    // Log debug info if needed
+                                    if (colorFound) {
+                                        LOGGER.debug("Applied color {} to block {}", Integer.toHexString(color), blockId);
+                                    }
+                                    
+                                    // Add alpha channel to the color
                                     int colorWithAlpha = (0x80 << 24) | color;
                                     
                                     // Get the block name for display

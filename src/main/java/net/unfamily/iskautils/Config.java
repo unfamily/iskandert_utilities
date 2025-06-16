@@ -226,6 +226,20 @@ public class Config
             .comment("Time to live for the scanner markers in ticks (1 second = 20 ticks)")
             .defineInRange("005_scannerMarkerTTL", 600, 1, Integer.MAX_VALUE);
 
+
+    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_ALPHA = BUILDER
+    .comment("Default alpha value for scanner markers (in hexadecimal)")
+    .define("006_scannerDefaultAlpha", "80");
+
+    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_ORE_COLOR = BUILDER
+    .comment("Default color for ore markers (in hexadecimal RGB)")
+    .define("007_scannerDefaultOreColor", "00BFFF");
+
+    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_MOB_COLOR = BUILDER
+    .comment("Default color for mob markers (in hexadecimal RGB)")
+    .define("008_scannerDefaultMobColor", "EB3480");
+
+
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_ORE_ENTRIES = BUILDER
             .comment("List of ore entries that can be scanned with their colors",
                     "Format: 'ore_name;RRGGBB' where:",
@@ -236,14 +250,30 @@ public class Config
                     java.util.Arrays.asList(
                         "gold;FFD700",     // Gold ore - Gold color
                         "iron;C0C0C0",     // Iron ore - Silver color
-                        "diamond;00FFFF",  // Diamond ore - Cyan color
+                        "diamond;00FFFF",  // Diamond ore - White-Cyan color
                         "emerald;00FF00",  // Emerald ore - Green color
                         "coal;333333",     // Coal ore - Dark gray
                         "lapis;0000FF",    // Lapis ore - Blue color
                         "redstone;FF0000", // Redstone ore - Red color
                         "copper;D2691E",   // Copper ore - Copper color
                         "quartz;FFFAFA",   // Quartz ore - White color
-                        "netherite_scrap;4B0082" // Ancient Debris - Indigo color (exact match)
+                        "netherite_scrap;4B0082", // Ancient Debris - Indigo color
+                        "amethyst;9966CC", // Amethyst ore - Purple color
+                        "certus;BCF7F7", // Certus Quartz ore - White-Lightblue color
+                        "uraninite;00FF00", // Uraninite ore - Green color
+                        "uranium;365226", // Uranium ore - Olive Green color
+                        "fluorite;FC79CF", // Fluorite ore - Pink color
+                        "tin;BCF7F7", // Tin ore - White-Lightblue color
+                        "lead;381C80", // Lead ore - Blue-Purple color
+                        "silver;B6B6B8", // Silver ore - White-Gray color
+                        "platinum;A1D1CC", // Platinum ore - Light-Blue color
+                        "osmium;A1D1CC", // Platinum ore - Light-Blue color
+                        "nickel;CED1A1", // Nickel ore - White-Yellow color
+                        "aluminum;B6B6B8", // Aluminum ore - White-Gray color
+                        "zinc;00FF00", // Zinc ore - White-Green color
+                        "allthemodium;C78938", // Allthemodium ore - Orange color
+                        "vibranium;40BBBF", // Vibranium ore - Blue-Green color
+                        "unubtanium;993BAC" // Unubtanium ore - Purple color
                     ), 
                     obj -> obj instanceof String && ((String)obj).contains(";"));
 
@@ -278,30 +308,17 @@ public class Config
                     ), 
                     obj -> obj instanceof String && ((String)obj).contains(";"));
 
-    private static final ModConfigSpec.IntValue SCANNER_DEFAULT_ALPHA = BUILDER
-            .comment("Default alpha value for scanner markers (0-255)",
-                    "Higher values make markers more opaque")
-            .defineInRange("102_scanner_default_alpha", 80, 0, 255);
-
-    private static final ModConfigSpec.IntValue SCANNER_DEFAULT_ORE_COLOR = BUILDER
-            .comment("Default color for ores that don't match any specific pattern (RGB format)",
-                    "Format: 0xRRGGBB (hexadecimal)")
-            .defineInRange("103_scanner_default_ore_color", 0xFFAA00, 0, 0xFFFFFF);
-
-    private static final ModConfigSpec.IntValue SCANNER_DEFAULT_MOB_COLOR = BUILDER
-            .comment("Default color for mobs that don't match any specific pattern (RGB format)",
-                    "Format: 0xRRGGBB (hexadecimal)")
-            .defineInRange("104_scanner_default_mob_color", 0x00AA00, 0, 0xFFFFFF);
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_ORE_TAGS = BUILDER
             .comment("List of ore tags that should be scanned when using the ore scanner chip",
                     "These tags will be used to identify blocks as ores",
                     "You can use * as a wildcard at the end of a tag name")
-            .defineList("105_scanner_ore_tags", 
+            .defineList("102_scanner_ore_tags", 
                     java.util.Arrays.asList(
                         "c:ores",
                         "c:raw_materials",
-                        "c:storage_blocks/raw_*"
+                        "c:storage_blocks",
+                        "c:budding_blocks"
                     ), 
                     obj -> obj instanceof String);
 
@@ -409,10 +426,12 @@ public class Config
         scannerMarkerTTL = SCANNER_MARKER_TTL.get();
         scannerOreEntries = new java.util.ArrayList<>(SCANNER_ORE_ENTRIES.get());
         scannerMobEntries = new java.util.ArrayList<>(SCANNER_MOB_ENTRIES.get());
-        scannerDefaultAlpha = SCANNER_DEFAULT_ALPHA.get();
-        scannerDefaultOreColor = SCANNER_DEFAULT_ORE_COLOR.get();
-        scannerDefaultMobColor = SCANNER_DEFAULT_MOB_COLOR.get();
         scannerOreTags = new java.util.ArrayList<>(SCANNER_ORE_TAGS.get());
+        
+        // Default values for scanner colors
+        scannerDefaultAlpha = Integer.parseInt(SCANNER_DEFAULT_ALPHA.get(), 16);
+        scannerDefaultOreColor = Integer.parseInt(SCANNER_DEFAULT_ORE_COLOR.get(), 16);
+        scannerDefaultMobColor = Integer.parseInt(SCANNER_DEFAULT_MOB_COLOR.get(), 16);
 
         // If the energy required is 0, the energy stored is 0 automatically
         if (electricTreetapEnergyConsume <= 0) {
