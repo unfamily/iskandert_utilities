@@ -420,7 +420,7 @@ public class ScannerItem extends Item {
             
             // Clear from our tracking maps
             if (ACTIVE_MARKERS.containsKey(scannerId)) {
-                List<BlockPos> markers = ACTIVE_MARKERS.get(scannerId);
+                List<BlockPos> markers = new ArrayList<>(ACTIVE_MARKERS.get(scannerId));
                 
                 // Send clear message to client for each marker
                 for (BlockPos pos : markers) {
@@ -433,7 +433,20 @@ public class ScannerItem extends Item {
                     }
                 }
                 
-                markers.clear();
+                ACTIVE_MARKERS.get(scannerId).clear();
+            } else {
+                // Se non ci sono marker attivi per questo scanner, controlla tutti i marker esistenti
+                // Questo gestisce il caso in cui lo scanner è stato rilasciato e ripreso
+                List<BlockPos> allMarkers = new ArrayList<>(MARKER_TTL.keySet());
+                for (BlockPos pos : allMarkers) {
+                    net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(serverPlayer, pos);
+                    MARKER_TTL.remove(pos);
+                }
+                
+                // Pulisci tutte le liste di marker attivi
+                for (UUID id : ACTIVE_MARKERS.keySet()) {
+                    ACTIVE_MARKERS.get(id).clear();
+                }
             }
         }
     }

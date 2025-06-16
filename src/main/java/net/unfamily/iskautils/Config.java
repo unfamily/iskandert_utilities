@@ -244,7 +244,7 @@ public class Config
             .comment("List of ore entries that can be scanned with their colors",
                     "Format: 'ore_name;RRGGBB' where:",
                     "- ore_name is a special prefix that will match all blocks containing this name",
-                    "- RRGGBB is the hexadecimal RGB color (without alpha)",
+                    "- RRGGBB is the hexadecimal RGB color",
                     "Example: 'gold;FFD700' will match all gold ores with gold color")
             .defineList("100_scanner_ore_entries", 
                     java.util.Arrays.asList(
@@ -257,7 +257,8 @@ public class Config
                         "redstone;FF0000", // Redstone ore - Red color
                         "copper;D2691E",   // Copper ore - Copper color
                         "quartz;FFFAFA",   // Quartz ore - White color
-                        "netherite_scrap;4B0082", // Ancient Debris - Indigo color
+                        "netherite;4B0082", // Ancient Debris - Indigo color
+                        "ancient_debris;4B0082", // Ancient Debris - Indigo color
                         "amethyst;9966CC", // Amethyst ore - Purple color
                         "certus;BCF7F7", // Certus Quartz ore - White-Lightblue color
                         "uraninite;00FF00", // Uraninite ore - Green color
@@ -279,9 +280,9 @@ public class Config
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_MOB_ENTRIES = BUILDER
             .comment("List of mob entries that can be scanned with their colors",
-                    "Format: '$mob_name;RRGGBB' for prefix matching or 'minecraft:exact_mob;RRGGBB' for exact match",
+                    "Format: '$mob_name;RRGGBB' for prefix matching or 'modid:exact_mob;RRGGBB' for exact match",
                     "- $mob_name will match all entities containing this name",
-                    "- RRGGBB is the hexadecimal RGB color (without alpha)",
+                    "- RRGGBB is the hexadecimal RGB color",
                     "Example: '$zombie;00AA00' will match all zombie variants")
             .defineList("101_scanner_mob_entries", 
                     java.util.Arrays.asList(
