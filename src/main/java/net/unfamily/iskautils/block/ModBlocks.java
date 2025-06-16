@@ -52,8 +52,8 @@ public class ModBlocks {
     // Properties for Wither Proof Block
     private static final BlockBehaviour.Properties WITHER_PROOF_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.COLOR_BLACK)
-            .strength(50.0f, 1200.0f)
-            .sound(SoundType.NETHERITE_BLOCK)
+            .strength(1.0f, 2.0f)
+            .sound(SoundType.STONE)
             .requiresCorrectToolForDrops();
             
     // Properties for Netherite Bars

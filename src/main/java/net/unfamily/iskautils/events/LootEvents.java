@@ -26,8 +26,8 @@ import java.util.List;
 public class LootEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(LootEvents.class);
     
-    // Possibili percorsi per la loot table del mimic di Artifacts
-    // Poiché i percorsi possono variare tra le versioni, controlliamo tutte le varianti possibili
+    // Possible paths for the mimic loot table of Artifacts
+    // Since the paths can vary between versions, we check all possible variants
     private static final List<ResourceLocation> MIMIC_LOOT_TABLES = Arrays.asList(
         ResourceLocation.fromNamespaceAndPath("artifacts", "entities/mimic"),
         ResourceLocation.fromNamespaceAndPath("artifacts", "entity/mimic"),
@@ -38,11 +38,11 @@ public class LootEvents {
     public static void onLootTableLoad(LootTableLoadEvent event) {
         ResourceLocation table = event.getName();
         
-        LOGGER.debug("Loot table caricata: {}", table.toString());
+        LOGGER.debug("Loot table loaded: {}", table.toString());
         
         // Check if this is the mimic loot table
         if (MIMIC_LOOT_TABLES.contains(table)) {
-            LOGGER.info("Trovata loot table del mimic: {}. Aggiungo Necrotic Crystal Heart", table);
+            LOGGER.info("Found mimic loot table: {}. Adding Necrotic Crystal Heart", table);
             
             // Create a new loot pool for our item
             LootPool.Builder poolBuilder = LootPool.lootPool()
@@ -58,7 +58,7 @@ public class LootEvents {
             // Add our pool to the loot table
             event.getTable().addPool(poolBuilder.build());
             
-            LOGGER.info("Aggiunto con successo Necrotic Crystal Heart alla loot table del mimic");
+            LOGGER.info("Successfully added Necrotic Crystal Heart to the mimic loot table");
         }
     }
 } 

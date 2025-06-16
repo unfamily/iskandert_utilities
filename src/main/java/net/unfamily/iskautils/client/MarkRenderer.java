@@ -13,7 +13,10 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -48,6 +51,18 @@ public class MarkRenderer {
     }
     
     /**
+     * Add a block to highlight with tooltip text
+     * @param pos Block position
+     * @param color Color in ARGB format (0xAARRGGBB)
+     * @param durationTicks Duration in tick (20 tick = 1 second)
+     * @param text Optional text to display when looking at the block
+     */
+    public void addHighlightedBlock(BlockPos pos, int color, int durationTicks, String text) {
+        // Add the block to the map with text
+        highlightedBlocks.put(pos, new MarkBlockData(color, Minecraft.getInstance().level.getGameTime() + durationTicks, false, text));
+    }
+    
+    /**
      * Add a billboard marker at the specified position
      * @param pos Block position
      * @param color Color tint in ARGB format (0xAARRGGBB)
@@ -56,6 +71,18 @@ public class MarkRenderer {
     public void addBillboardMarker(BlockPos pos, int color, int durationTicks) {
         // Add the marker to the map, using a special flag to indicate it's a small cube marker
         billboardMarkers.put(pos, new MarkBlockData(color, Minecraft.getInstance().level.getGameTime() + durationTicks, true));
+    }
+    
+    /**
+     * Add a billboard marker at the specified position with tooltip text
+     * @param pos Block position
+     * @param color Color tint in ARGB format (0xAARRGGBB)
+     * @param durationTicks Duration in tick (20 tick = 1 second)
+     * @param text Optional text to display when looking at the marker
+     */
+    public void addBillboardMarker(BlockPos pos, int color, int durationTicks, String text) {
+        // Add the marker to the map with text
+        billboardMarkers.put(pos, new MarkBlockData(color, Minecraft.getInstance().level.getGameTime() + durationTicks, true, text));
     }
     
     /**
@@ -78,6 +105,109 @@ public class MarkRenderer {
     public void clearHighlightedBlocks() {
         highlightedBlocks.clear();
         billboardMarkers.clear();
+    }
+    
+    /**
+     * Check if player is looking at a marked block and display its text if available
+     * Should be called every tick from a client event handler
+     */
+    public void checkPlayerLookingAtMarker() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || mc.player == null) {
+            return;
+        }
+        
+        // Distanza massima per il rilevamento dei marker (aumentata significativamente)
+        double maxDistance = 64.0;
+        
+        // Get what the player is looking at
+        HitResult hitResult = mc.player.pick(maxDistance, 0.0F, false);
+        
+        if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
+            BlockPos pos = ((BlockHitResult)hitResult).getBlockPos();
+            
+            // Check if it's a highlighted block
+            MarkBlockData data = highlightedBlocks.get(pos);
+            if (data != null && data.text != null) {
+                mc.player.displayClientMessage(Component.literal(data.text), true);
+                return;
+            }
+            
+            // Check if it's a billboard marker
+            data = billboardMarkers.get(pos);
+            if (data != null && data.text != null) {
+                mc.player.displayClientMessage(Component.literal(data.text), true);
+            }
+        } else {
+            // Se non stiamo guardando un blocco specifico, controlliamo tutti i marker
+            // per vedere se stiamo guardando nella loro direzione generale
+            checkDistantMarkers(mc, maxDistance);
+        }
+    }
+    
+    /**
+     * Verifica se il giocatore sta guardando nella direzione di un marker distante
+     * e mostra il testo se disponibile
+     */
+    private void checkDistantMarkers(Minecraft mc, double maxDistance) {
+        // Posizione della camera
+        Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
+        // Direzione in cui sta guardando il giocatore
+        Vec3 lookVec = mc.player.getViewVector(1.0F);
+        
+        // Verifica tutti i blocchi evidenziati
+        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocks.entrySet()) {
+            if (entry.getValue().text != null) {
+                BlockPos pos = entry.getKey();
+                // Converti la posizione del blocco in un vettore
+                Vec3 blockVec = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+                // Calcola il vettore dalla camera al blocco
+                Vec3 toBlock = blockVec.subtract(cameraPos);
+                double distance = toBlock.length();
+                
+                // Se il blocco è entro la distanza massima
+                if (distance <= maxDistance) {
+                    // Normalizza il vettore
+                    Vec3 toBlockNorm = toBlock.normalize();
+                    // Calcola il prodotto scalare (dot product) tra la direzione di vista e il vettore verso il blocco
+                    double dotProduct = lookVec.dot(toBlockNorm);
+                    
+                    // Se il dot product è vicino a 1, significa che stiamo guardando quasi direttamente verso il blocco
+                    // 0.98 corrisponde a circa 11 gradi di tolleranza
+                    if (dotProduct > 0.98) {
+                        mc.player.displayClientMessage(Component.literal(entry.getValue().text + " (" + String.format("%.1f", distance) + "m)"), true);
+                        return;
+                    }
+                }
+            }
+        }
+        
+        // Verifica tutti i marker billboard
+        for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkers.entrySet()) {
+            if (entry.getValue().text != null) {
+                BlockPos pos = entry.getKey();
+                // Converti la posizione del blocco in un vettore
+                Vec3 blockVec = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+                // Calcola il vettore dalla camera al blocco
+                Vec3 toBlock = blockVec.subtract(cameraPos);
+                double distance = toBlock.length();
+                
+                // Se il blocco è entro la distanza massima
+                if (distance <= maxDistance) {
+                    // Normalizza il vettore
+                    Vec3 toBlockNorm = toBlock.normalize();
+                    // Calcola il prodotto scalare (dot product) tra la direzione di vista e il vettore verso il blocco
+                    double dotProduct = lookVec.dot(toBlockNorm);
+                    
+                    // Se il dot product è vicino a 1, significa che stiamo guardando quasi direttamente verso il blocco
+                    // 0.98 corrisponde a circa 11 gradi di tolleranza
+                    if (dotProduct > 0.98) {
+                        mc.player.displayClientMessage(Component.literal(entry.getValue().text + " (" + String.format("%.1f", distance) + "m)"), true);
+                        return;
+                    }
+                }
+            }
+        }
     }
     
     /**
@@ -116,6 +246,9 @@ public class MarkRenderer {
         if (highlightedBlocks.isEmpty() && billboardMarkers.isEmpty()) {
             return;
         }
+        
+        // Check if player is looking at a marked block to display text
+        checkPlayerLookingAtMarker();
         
         // Get the camera position
         Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
@@ -325,17 +458,27 @@ public class MarkRenderer {
         final int color;
         final long expirationTime;
         final boolean isSmallCube;
+        final String text;
         
         MarkBlockData(int color, long expirationTime) {
             this.color = color;
             this.expirationTime = expirationTime;
             this.isSmallCube = false;
+            this.text = null;
         }
         
         MarkBlockData(int color, long expirationTime, boolean isSmallCube) {
             this.color = color;
             this.expirationTime = expirationTime;
             this.isSmallCube = isSmallCube;
+            this.text = null;
+        }
+        
+        MarkBlockData(int color, long expirationTime, boolean isSmallCube, String text) {
+            this.color = color;
+            this.expirationTime = expirationTime;
+            this.isSmallCube = isSmallCube;
+            this.text = text;
         }
     }
 } 
