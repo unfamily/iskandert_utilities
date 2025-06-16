@@ -155,6 +155,12 @@ public class MarkRenderer {
         // Direzione in cui sta guardando il giocatore
         Vec3 lookVec = mc.player.getViewVector(1.0F);
         
+        // Blocco più vicino trovato
+        BlockPos nearestBlockPos = null;
+        double nearestDistance = Double.MAX_VALUE;
+        String nearestText = null;
+        boolean isNearestBillboard = false;
+        
         // Verifica tutti i blocchi evidenziati
         for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocks.entrySet()) {
             if (entry.getValue().text != null) {
@@ -172,11 +178,16 @@ public class MarkRenderer {
                     // Calcola il prodotto scalare (dot product) tra la direzione di vista e il vettore verso il blocco
                     double dotProduct = lookVec.dot(toBlockNorm);
                     
-                    // Se il dot product è vicino a 1, significa che stiamo guardando quasi direttamente verso il blocco
-                    // 0.98 corrisponde a circa 11 gradi di tolleranza
-                    if (dotProduct > 0.98) {
-                        mc.player.displayClientMessage(Component.literal(entry.getValue().text + " (" + String.format("%.1f", distance) + "m)"), true);
-                        return;
+                    // Aumenta l'angolo di tolleranza in base alla distanza
+                    // Più lontano è il blocco, più facile sarà puntarlo
+                    double minDotProduct = calculateMinDotProduct(distance);
+                    
+                    // Se il dot product è maggiore del minimo, significa che stiamo guardando verso il blocco
+                    if (dotProduct > minDotProduct && distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestBlockPos = pos;
+                        nearestText = entry.getValue().text;
+                        isNearestBillboard = false;
                     }
                 }
             }
@@ -199,14 +210,50 @@ public class MarkRenderer {
                     // Calcola il prodotto scalare (dot product) tra la direzione di vista e il vettore verso il blocco
                     double dotProduct = lookVec.dot(toBlockNorm);
                     
-                    // Se il dot product è vicino a 1, significa che stiamo guardando quasi direttamente verso il blocco
-                    // 0.98 corrisponde a circa 11 gradi di tolleranza
-                    if (dotProduct > 0.98) {
-                        mc.player.displayClientMessage(Component.literal(entry.getValue().text + " (" + String.format("%.1f", distance) + "m)"), true);
-                        return;
+                    // Aumenta l'angolo di tolleranza in base alla distanza
+                    // Più lontano è il blocco, più facile sarà puntarlo
+                    double minDotProduct = calculateMinDotProduct(distance);
+                    
+                    // Se il dot product è maggiore del minimo, significa che stiamo guardando verso il blocco
+                    if (dotProduct > minDotProduct && distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestBlockPos = pos;
+                        nearestText = entry.getValue().text;
+                        isNearestBillboard = true;
                     }
                 }
             }
+        }
+        
+        // Se abbiamo trovato un blocco, mostra il testo
+        if (nearestBlockPos != null && nearestText != null) {
+            String markerType = isNearestBillboard ? "Marker" : "Blocco";
+            mc.player.displayClientMessage(Component.literal(nearestText + " (" + markerType + ", " + String.format("%.1f", nearestDistance) + "m)"), true);
+        }
+    }
+    
+    /**
+     * Calcola il valore minimo del prodotto scalare in base alla distanza
+     * Più lontano è il blocco, minore sarà il valore richiesto (angolo di tolleranza maggiore)
+     */
+    private double calculateMinDotProduct(double distance) {
+        // A 10 blocchi: 0.98 (circa 11 gradi)
+        // A 30 blocchi: 0.95 (circa 18 gradi)
+        // A 50 blocchi: 0.90 (circa 26 gradi)
+        // A 64 blocchi: 0.85 (circa 32 gradi)
+        
+        if (distance <= 10) {
+            return 0.98; // Circa 11 gradi
+        } else if (distance <= 20) {
+            return 0.96; // Circa 16 gradi
+        } else if (distance <= 30) {
+            return 0.94; // Circa 20 gradi
+        } else if (distance <= 40) {
+            return 0.92; // Circa 23 gradi
+        } else if (distance <= 50) {
+            return 0.90; // Circa 26 gradi
+        } else {
+            return 0.85; // Circa 32 gradi
         }
     }
     
