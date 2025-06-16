@@ -1,0 +1,20 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+      " B ",
+      "BAB",
+      " B "
+    ],
+    "key": {
+      "A": {
+        "item": "iska_utils:scanner_chip"
+      },
+      "B": {
+        "item": "minecraft:glow_ink_sac"
+      }
+    },
+    "result": {
+      "id": "iska_utils:scanner_chip_mobs",
+      "count": 1
+    }
+  } 

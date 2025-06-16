@@ -48,6 +48,7 @@ public class ScannerItem extends Item {
  
     private static final String TARGET_BLOCK_TAG = "TargetBlock";
     private static final String TARGET_MOB_TAG = "TargetMob";
+    private static final String TARGET_GEN_TAG = "TargetGeneric";
     private static final String SCANNER_ID_TAG = "ScannerId";
     private static final String CLEAR_MARKERS_TAG = "ClearMarkers";
     private static final String ENERGY_TAG = "Energy"; 
@@ -146,11 +147,12 @@ public class ScannerItem extends Item {
             return InteractionResultHolder.success(itemStack);
         }
         
-        // Check if we have a target block or mob
+        // Check if we have a target block, mob or generic target
         Block targetBlock = getTargetBlock(itemStack);
         String targetMob = getTargetMob(itemStack);
+        String genericTarget = getGenericTarget(itemStack);
         
-        if (targetBlock == null && targetMob == null) {
+        if (targetBlock == null && targetMob == null && genericTarget == null) {
             player.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_target"), true);
             return InteractionResultHolder.fail(itemStack);
         }
@@ -224,8 +226,9 @@ public class ScannerItem extends Item {
                 // Check if item was held for enough time
                 Block targetBlock = getTargetBlock(itemstack);
                 String targetMob = getTargetMob(itemstack);
+                String genericTarget = getGenericTarget(itemstack);
                 
-                if (targetBlock == null && targetMob == null) {
+                if (targetBlock == null && targetMob == null && genericTarget == null) {
                     serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_target"), true);
                     return;
                 }
@@ -256,6 +259,17 @@ public class ScannerItem extends Item {
                                 getLocalizedMobName(targetMob)), true);
                         scanForMobs(serverPlayer, itemstack);
                         scanSuccess = true;
+                    } else if (genericTarget != null) {
+                        // Scan based on generic target
+                        if ("ores".equals(genericTarget)) {
+                            serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_ores"), true);
+                            scanForAllOres(serverPlayer, itemstack);
+                            scanSuccess = true;
+                        } else if ("mobs".equals(genericTarget)) {
+                            serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_all_mobs"), true);
+                            scanForAllMobs(serverPlayer, itemstack);
+                            scanSuccess = true;
+                        }
                     }
                     
                     // Consume energy if scan was successful
@@ -324,6 +338,75 @@ public class ScannerItem extends Item {
     }
     
     /**
+     * Gets the target mob from the scanner
+     */
+    private String getTargetMob(ItemStack itemStack) {
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        
+        // Read clear_markers state if present
+        if (tag.contains(CLEAR_MARKERS_TAG)) {
+            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
+        }
+        
+        if (!tag.contains(TARGET_MOB_TAG)) {
+            LOGGER.debug("No target mob found in item");
+            return null;
+        }
+        
+        String mobId = tag.getString(TARGET_MOB_TAG);
+        LOGGER.debug("Found target mob in item: {}", mobId);
+        
+        return mobId;
+    }
+    
+    /**
+     * Gets the generic target type from the scanner
+     * @return "ores" or "mobs" or null if not set
+     */
+    private String getGenericTarget(ItemStack itemStack) {
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        
+        // Read clear_markers state if present
+        if (tag.contains(CLEAR_MARKERS_TAG)) {
+            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
+        }
+        
+        if (!tag.contains(TARGET_GEN_TAG)) {
+            return null;
+        }
+        
+        String genericTarget = tag.getString(TARGET_GEN_TAG);
+        LOGGER.debug("Found generic target in item: {}", genericTarget);
+        
+        return genericTarget;
+    }
+    
+    /**
+     * Sets the generic target in the scanner
+     */
+    private void setGenericTarget(ItemStack itemStack, String targetType) {
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        
+        // Remove any specific targets
+        tag.remove(TARGET_BLOCK_TAG);
+        tag.remove(TARGET_MOB_TAG);
+        
+        // Set generic target
+        tag.putString(TARGET_GEN_TAG, targetType);
+        
+        // Make sure the scanner has a unique ID
+        if (!tag.contains(SCANNER_ID_TAG)) {
+            tag.putUUID(SCANNER_ID_TAG, UUID.randomUUID());
+        }
+        
+        // Set clear_markers state
+        tag.putBoolean(CLEAR_MARKERS_TAG, clear_markers);
+        
+        // Save data to ItemStack
+        itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+    
+    /**
      * Removes all existing markers for this scanner
      */
     private void clearMarkers(Player player, ItemStack itemStack) {
@@ -356,28 +439,6 @@ public class ScannerItem extends Item {
     }
     
     /**
-     * Gets the target mob from the scanner
-     */
-    private String getTargetMob(ItemStack itemStack) {
-        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        
-        // Read clear_markers state if present
-        if (tag.contains(CLEAR_MARKERS_TAG)) {
-            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
-        }
-        
-        if (!tag.contains(TARGET_MOB_TAG)) {
-            LOGGER.debug("No target mob found in item");
-            return null;
-        }
-        
-        String mobId = tag.getString(TARGET_MOB_TAG);
-        LOGGER.debug("Found target mob in item: {}", mobId);
-        
-        return mobId;
-    }
-    
-    /**
      * Clears all markers and resets both block and mob targets
      */
     private void clearMarkersAndResetTarget(ServerPlayer player, ItemStack itemStack) {
@@ -388,6 +449,7 @@ public class ScannerItem extends Item {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         tag.remove(TARGET_BLOCK_TAG);
         tag.remove(TARGET_MOB_TAG);
+        tag.remove(TARGET_GEN_TAG);
         
         // Set clear_markers from NBT
         if (tag.contains(CLEAR_MARKERS_TAG)) {
@@ -507,10 +569,17 @@ public class ScannerItem extends Item {
                                     // Add TTL for this marker
                                     MARKER_TTL.put(pos, finalTTL);
                                     
-                                    // Use MarkRenderer to add the highlighted block on the client side
-                                    // Light blue color (ARGB format): 0x8000BFFF (alpha, red, green, blue)
-                                    int lightBlueColor = 0x8000BFFF;
-                                    net.unfamily.iskautils.network.ModMessages.sendAddHighlightPacket(player, pos, lightBlueColor, finalTTL);
+                                    // Use MarkRenderer to add the highlighted block on the client side with the block name
+                                    int color = Config.scannerDefaultOreColor;
+                                    int colorWithAlpha = (0x80 << 24) | color;
+                                    
+                                    // Get the block name for display
+                                    BlockState blockState = level.getBlockState(pos);
+                                    Block block = blockState.getBlock();
+                                    Component blockName = block.getName();
+                                    String blockNameString = blockName.getString();
+                                    
+                                    net.unfamily.iskautils.network.ModMessages.sendAddHighlightWithNamePacket(player, pos, colorWithAlpha, finalTTL, blockNameString);
                                     
                                     // Check if we've reached the limit (skip if infinite blocks)
                                     if (!infiniteBlocks && newMarkersFound >= remainingCapacity) {
@@ -666,10 +735,10 @@ public class ScannerItem extends Item {
                     // Add TTL for this marker
                     MARKER_TTL.put(entityPos, finalTTL);
                     
-                    // Use MarkRenderer to add a billboard marker on the client side
+                    // Use MarkRenderer to add a billboard marker on the client side with the entity name
                     // Magenta/Purple color (ARGB format): 0x80EB3480 (alpha, red, green, blue)
                     int color = 0x80EB3480;
-                    net.unfamily.iskautils.network.ModMessages.sendAddBillboardPacket(player, entityPos, color, finalTTL);
+                    net.unfamily.iskautils.network.ModMessages.sendAddBillboardWithNamePacket(player, entityPos, color, finalTTL, entity.getName().getString());
                 }
                 
                 // Increment scanned chunks
@@ -854,6 +923,7 @@ public class ScannerItem extends Item {
         // Target information
         Block targetBlock = getTargetBlock(stack);
         String targetMob = getTargetMob(stack);
+        String genericTarget = getGenericTarget(stack);
         
         if (targetBlock != null) {
             Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_block")
@@ -869,6 +939,20 @@ public class ScannerItem extends Item {
                 .append(getLocalizedMobName(targetMob).copy().withStyle(ChatFormatting.WHITE));
             
             tooltipComponents.add(targetText);
+        } else if (genericTarget != null) {
+            if ("ores".equals(genericTarget)) {
+                Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_ores_prefix")
+                    .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                    .append(Component.translatable("item.iska_utils.scanner.tooltip.target_ores_value")
+                    .withStyle(ChatFormatting.WHITE));
+                tooltipComponents.add(targetText);
+            } else if ("mobs".equals(genericTarget)) {
+                Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_prefix")
+                    .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                    .append(Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_value")
+                    .withStyle(ChatFormatting.WHITE));
+                tooltipComponents.add(targetText);
+            }
         } else {
             Component noTargetText = Component.translatable("item.iska_utils.scanner.tooltip.no_target")
                 .withStyle(style -> style.withColor(ChatFormatting.GRAY));
@@ -902,8 +986,6 @@ public class ScannerItem extends Item {
                 .withStyle(style -> style.withColor(ChatFormatting.AQUA));
             tooltipComponents.add(chipInfoText2);
         }
-
-        tooltipComponents.add(chipInfoText);
         
         tooltipComponents.add(chipInfoText);
     }
@@ -1008,8 +1090,9 @@ public class ScannerItem extends Item {
         
         // Check if the chip has a block target
         if (chipTag.contains("TargetBlock")) {
-            // Remove mob target if present
+            // Remove mob target and generic target if present
             scannerTag.remove("TargetMob");
+            scannerTag.remove("TargetGeneric");
             
             // Copy the block target
             String blockId = chipTag.getString("TargetBlock");
@@ -1029,8 +1112,9 @@ public class ScannerItem extends Item {
         } 
         // Check if the chip has a mob target
         else if (chipTag.contains("TargetMob")) {
-            // Remove block target if present
+            // Remove block target and generic target if present
             scannerTag.remove("TargetBlock");
+            scannerTag.remove("TargetGeneric");
             
             // Copy the mob target
             String mobId = chipTag.getString("TargetMob");
@@ -1048,6 +1132,421 @@ public class ScannerItem extends Item {
             player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
                     getLocalizedMobName(mobId)), true);
         }
+        // Check if the chip has a generic target
+        else if (chipTag.contains("TargetGeneric")) {
+            // Remove block target and mob target if present
+            scannerTag.remove("TargetBlock");
+            scannerTag.remove("TargetMob");
+            
+            // Copy the generic target
+            String genericTarget = chipTag.getString("TargetGeneric");
+            scannerTag.putString("TargetGeneric", genericTarget);
+            
+            // Make sure the scanner has a unique ID
+            if (!scannerTag.contains("ScannerId")) {
+                scannerTag.putUUID("ScannerId", UUID.randomUUID());
+            }
+            
+            // Save the data to the scanner
+            mainHandItem.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
+            
+            // Notify the player
+            if ("ores".equals(genericTarget)) {
+                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"), true);
+            } else if ("mobs".equals(genericTarget)) {
+                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"), true);
+            }
+        }
+    }
+
+    /**
+     * Scans the area for all ore blocks based on common tags
+     */
+    private void scanForAllOres(ServerPlayer player, ItemStack itemStack) {
+        if (player.level() == null || !(player.level() instanceof ServerLevel level)) {
+            return;
+        }
+        
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
+        
+        // Get or create a list for this scanner's markers
+        List<BlockPos> scannerMarkers = ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>());
+        
+        // Get player position
+        BlockPos playerPos = player.blockPosition();
+        ChunkPos playerChunkPos = new ChunkPos(playerPos);
+        
+        // Get config values
+        int scanRange = Config.scannerScanRange;
+        int maxBlocksScan = Config.scannerMaxBlocks;
+        int baseTTL = Config.scannerMarkerTTL;
+        int defaultAlpha = Config.scannerDefaultAlpha;
+        
+        // Force alpha to be 80 for consistency
+        defaultAlpha = 0x80;
+        
+        // Determine the number of chunks to scan based on the configured radius
+        int chunkRadius = Math.max(1, scanRange / 16);
+        
+        // Create a set of currently existing marker positions
+        Set<BlockPos> existingMarkerPositions = new HashSet<>(scannerMarkers);
+        
+        // Count how many new markers we can create (remaining capacity)
+        // If maxBlocksScan is -1, it means infinite blocks
+        boolean infiniteBlocks = maxBlocksScan == -1;
+        int remainingCapacity = infiniteBlocks ? Integer.MAX_VALUE : maxBlocksScan - existingMarkerPositions.size();
+        
+        if (!infiniteBlocks && remainingCapacity <= 0) {
+            // Already at maximum capacity
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan), true);
+            return;
+        }
+        
+        // Calculate the total number of chunks to scan 
+        int totalChunksToScan = (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
+        int currentChunksScanned = 0;
+        
+        // Scan in a radius based on the configured scan range
+        int newMarkersFound = 0;
+        boolean limitReached = false;
+        
+        // Load ore color mappings from config
+        Map<String, Integer> oreColorMap = new HashMap<>();
+        for (String entry : Config.scannerOreEntries) {
+            String[] parts = entry.split(";");
+            if (parts.length == 2) {
+                String oreName = parts[0];
+                try {
+                    int color = Integer.parseInt(parts[1], 16);
+                    oreColorMap.put(oreName, color);
+                } catch (NumberFormatException e) {
+                    LOGGER.error("Invalid color format in ore entry: {}", entry);
+                }
+            }
+        }
+        
+        // Default color for ores not in the config (light blue)
+        int defaultOreColor = Config.scannerDefaultOreColor; // Without alpha
+        
+        scanLoop:
+        for (int chunkX = playerChunkPos.x - chunkRadius; chunkX <= playerChunkPos.x + chunkRadius; chunkX++) {
+            for (int chunkZ = playerChunkPos.z - chunkRadius; chunkZ <= playerChunkPos.z + chunkRadius; chunkZ++) {
+                ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
+                
+                // Check if chunk is loaded
+                if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
+                    currentChunksScanned++;
+                    continue;
+                }
+                
+                // Update the loading bar for each chunk
+                float percentage = (float) currentChunksScanned / totalChunksToScan;
+                displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
+                
+                // Scan the chunk
+                for (int x = currentChunkPos.getMinBlockX(); x <= currentChunkPos.getMaxBlockX(); x++) {
+                    for (int z = currentChunkPos.getMinBlockZ(); z <= currentChunkPos.getMaxBlockZ(); z++) {
+                        // Prioritize blocks closer to the player's Y level
+                        int playerY = playerPos.getY();
+                        
+                        // Scan from player Y outward in both directions
+                        for (int yOffset = 0; yOffset < level.getMaxBuildHeight() - level.getMinBuildHeight(); yOffset++) {
+                            // Try above player first, then below
+                            for (int yDir = 0; yDir <= 1; yDir++) {
+                                int y = playerY + (yDir == 0 ? yOffset : -yOffset);
+                                
+                                // Skip if out of world bounds
+                                if (y < level.getMinBuildHeight() || y > level.getMaxBuildHeight()) {
+                                    continue;
+                                }
+                                
+                                BlockPos pos = new BlockPos(x, y, z);
+                                
+                                // Check if it's too far from the player
+                                if (player.distanceToSqr(pos.getX(), pos.getY(), pos.getZ()) > scanRange * scanRange) {
+                                    continue;
+                                }
+                                
+                                // Check if the block is an ore
+                                BlockState blockState = level.getBlockState(pos);
+                                Block block = blockState.getBlock();
+                                String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
+                                
+                                // Check if it's an ore using the configured tags
+                                boolean isOre = false;
+                                
+                                // Check if the block matches any of the configured ore tags
+                                for (String tagName : Config.scannerOreTags) {
+                                    // For tag format like "c:ores", we need to check if the block has this tag
+                                    if (tagName.startsWith("#")) {
+                                        // Remove the # prefix
+                                        tagName = tagName.substring(1);
+                                    }
+                                    
+                                    // Check if it's a wildcard tag (ends with *)
+                                    if (tagName.endsWith("*")) {
+                                        // Remove the * and use as a prefix
+                                        String prefix = tagName.substring(0, tagName.length() - 1);
+                                        
+                                        // Check all tags that start with this prefix
+                                        for (net.minecraft.tags.TagKey<Block> blockTag : block.builtInRegistryHolder().tags().toList()) {
+                                            String tagId = blockTag.location().toString();
+                                            if (tagId.startsWith(prefix)) {
+                                                isOre = true;
+                                                break;
+                                            }
+                                        }
+                                    } else {
+                                        // Split namespace and path
+                                        String[] parts = tagName.split(":", 2);
+                                        String namespace = parts.length > 1 ? parts[0] : "minecraft";
+                                        String path = parts.length > 1 ? parts[1] : tagName;
+                                        
+                                        // Check if the block has this tag
+                                        net.minecraft.resources.ResourceLocation tagId = ResourceLocation.parse(namespace + ":" + path);
+                                        if (block.builtInRegistryHolder().is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, tagId))) {
+                                            isOre = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                // Fallback check based on block name if no tag matches
+                                if (!isOre) {
+                                    isOre = blockId.contains("ore") || 
+                                           blockId.contains("raw_block") || 
+                                           (blockId.contains("deepslate") && blockId.contains("ore"));
+                                }
+                                
+                                if (isOre) {
+                                    // Skip if we already have a marker at this position
+                                    if (existingMarkerPositions.contains(pos)) {
+                                        // Refresh TTL for existing marker
+                                        MARKER_TTL.put(pos, baseTTL);
+                                        continue;
+                                    }
+                                    
+                                    // Add the block position to the scanner's markers
+                                    scannerMarkers.add(pos);
+                                    newMarkersFound++;
+                                    
+                                    // Calculate TTL multiplier based on the number of scanned blocks
+                                    int finalTTL = baseTTL * TTL_MULTIPLIER;
+                                    
+                                    // Add TTL for this marker
+                                    MARKER_TTL.put(pos, finalTTL);
+                                    
+                                    // Determine color based on ore type
+                                    int color = defaultOreColor;
+                                    
+                                    // Check for exact match first
+                                    if (oreColorMap.containsKey(blockId)) {
+                                        color = oreColorMap.get(blockId);
+                                    } else {
+                                        // Check for pattern matches (with $ prefix)
+                                        for (Map.Entry<String, Integer> entry : oreColorMap.entrySet()) {
+                                            String pattern = entry.getKey();
+                                            if (pattern.startsWith("$")) {
+                                                String searchTerm = pattern.substring(1).toLowerCase();
+                                                if (blockId.toLowerCase().contains(searchTerm)) {
+                                                    color = entry.getValue();
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Add alpha channel to the color (force to 80 for consistency)
+                                    int colorWithAlpha = (0x80 << 24) | color;
+                                    
+                                    // Get the block name for display
+                                    Component blockName = block.getName();
+                                    String blockNameString = blockName.getString();
+                                    
+                                    // Use MarkRenderer to add the highlighted block on the client side with the block name
+                                    net.unfamily.iskautils.network.ModMessages.sendAddHighlightWithNamePacket(player, pos, colorWithAlpha, finalTTL, blockNameString);
+                                    
+                                    // Check if we've reached the limit (skip if infinite blocks)
+                                    if (!infiniteBlocks && newMarkersFound >= remainingCapacity) {
+                                        limitReached = true;
+                                        break scanLoop;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Increment scanned chunks
+                currentChunksScanned++;
+            }
+        }
+        
+        Component message;
+        if (limitReached) {
+            message = Component.translatable("item.iska_utils.scanner.found_ores_limit", 
+                    newMarkersFound, maxBlocksScan);
+        } else {
+            message = Component.translatable("item.iska_utils.scanner.found_ores", 
+                    newMarkersFound);
+        }
+        
+        player.displayClientMessage(message, true);
+        
+        // Make sure to show the completed bar at the end
+        displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
+    }
+
+    /**
+     * Scans the area for all mobs
+     */
+    private void scanForAllMobs(ServerPlayer player, ItemStack itemStack) {
+        if (player.level() == null || !(player.level() instanceof ServerLevel level)) {
+            return;
+        }
+        
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
+        
+        // Get player position
+        BlockPos playerPos = player.blockPosition();
+        
+        // Get config values
+        int scanRange = Config.scannerScanRange;
+        int maxTTL = Config.scannerMarkerTTL;
+        int defaultAlpha = Config.scannerDefaultAlpha;
+        
+        // Force alpha to be 80 for consistency
+        defaultAlpha = 0x80;
+        
+        // Calculate the total number of chunks to scan
+        int chunkRadius = Math.max(1, scanRange / 16);
+        int totalChunksToScan = (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
+        int currentChunksScanned = 0;
+        
+        // Scan in a radius
+        int markersFound = 0;
+        
+        double scanRangeSquared = scanRange * scanRange;
+        
+        // Create a set of currently existing marker positions
+        Set<BlockPos> existingMarkerPositions = new HashSet<>();
+        if (ACTIVE_MARKERS.containsKey(scannerId)) {
+            existingMarkerPositions.addAll(ACTIVE_MARKERS.get(scannerId));
+        }
+        
+        // Get or create a list for this scanner's markers
+        List<BlockPos> scannerMarkers = ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>());
+        
+        // Load mob color mappings from config
+        Map<String, Integer> mobColorMap = new HashMap<>();
+        for (String entry : Config.scannerMobEntries) {
+            String[] parts = entry.split(";");
+            if (parts.length == 2) {
+                String mobPattern = parts[0];
+                try {
+                    int color = Integer.parseInt(parts[1], 16);
+                    mobColorMap.put(mobPattern, color);
+                } catch (NumberFormatException e) {
+                    LOGGER.error("Invalid color format in mob entry: {}", entry);
+                }
+            }
+        }
+        
+        // Default color for mobs not in the config (magenta/purple)
+        int defaultMobColor = Config.scannerDefaultMobColor; // Without alpha
+        
+        // Scan the chunks in the area
+        for (int chunkX = playerPos.getX() / 16 - chunkRadius; chunkX <= playerPos.getX() / 16 + chunkRadius; chunkX++) {
+            for (int chunkZ = playerPos.getZ() / 16 - chunkRadius; chunkZ <= playerPos.getZ() / 16 + chunkRadius; chunkZ++) {
+                ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
+                
+                // Check if the chunk is loaded
+                if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
+                    currentChunksScanned++;
+                    continue;
+                }
+                
+                // Update the loading bar for each chunk
+                float percentage = (float) currentChunksScanned / totalChunksToScan;
+                displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
+                
+                // Search for all entities in the current chunk
+                List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(
+                    LivingEntity.class, 
+                    new net.minecraft.world.phys.AABB(
+                        currentChunkPos.getMinBlockX(), level.getMinBuildHeight(), currentChunkPos.getMinBlockZ(),
+                        currentChunkPos.getMaxBlockX(), level.getMaxBuildHeight(), currentChunkPos.getMaxBlockZ()
+                    ),
+                    entity -> {
+                        double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
+                        return distanceSq <= scanRangeSquared && !(entity instanceof Player);
+                    }
+                );
+                
+                // Process the found entities
+                for (LivingEntity entity : nearbyEntities) {
+                    // Get the entity's position
+                    BlockPos entityPos = entity.blockPosition();
+                    
+                    // Skip if we already have a marker at this position
+                    if (existingMarkerPositions.contains(entityPos)) {
+                        // Refresh TTL for existing marker
+                        MARKER_TTL.put(entityPos, maxTTL);
+                        continue;
+                    }
+                    
+                    // Add the entity position to the scanner's markers
+                    scannerMarkers.add(entityPos);
+                    markersFound++;
+                    
+                    // Calculate the final TTL
+                    int finalTTL = maxTTL * TTL_MULTIPLIER;
+                    
+                    // Add TTL for this marker
+                    MARKER_TTL.put(entityPos, finalTTL);
+                    
+                    // Determine color based on mob type
+                    String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
+                    int color = defaultMobColor;
+                    
+                    // Check for exact match first
+                    if (mobColorMap.containsKey(entityId)) {
+                        color = mobColorMap.get(entityId);
+                    } else {
+                        // Check for pattern matches (with $ prefix)
+                        for (Map.Entry<String, Integer> entry : mobColorMap.entrySet()) {
+                            String pattern = entry.getKey();
+                            if (pattern.startsWith("$")) {
+                                String searchTerm = pattern.substring(1).toLowerCase();
+                                if (entityId.toLowerCase().contains(searchTerm)) {
+                                    color = entry.getValue();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Add alpha channel to the color (force to 80 for consistency)
+                    int colorWithAlpha = (0x80 << 24) | color;
+                    
+                    // Get the entity name for display
+                    String entityName = entity.getName().getString();
+                    
+                    // Use MarkRenderer to add a billboard marker on the client side with the entity name
+                    net.unfamily.iskautils.network.ModMessages.sendAddBillboardWithNamePacket(player, entityPos, colorWithAlpha, finalTTL, entityName);
+                }
+                
+                // Increment scanned chunks
+                currentChunksScanned++;
+            }
+        }
+        
+        player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_all_mobs", markersFound), true);
+        
+        // Make sure to show the completed bar at the end
+        displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
     }
 } 
 

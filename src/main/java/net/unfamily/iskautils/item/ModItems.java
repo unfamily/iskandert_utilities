@@ -2,6 +2,7 @@ package net.unfamily.iskautils.item;
 
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -21,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.unfamily.iskautils.item.custom.RubberBootsItem;
 import net.unfamily.iskautils.item.custom.MiningEquitizer;
+
 
 
 public class ModItems {
@@ -82,6 +84,30 @@ public class ModItems {
     // Scanner Chip - Custom item to store scanner targets
     public static final DeferredItem<Item> SCANNER_CHIP = ITEMS.register("scanner_chip",
             () -> new ScannerChipItem());
+            
+    // Scanner Chip for Ores - Specialized chip for scanning all ores
+    public static final DeferredItem<Item> SCANNER_CHIP_ORES = ITEMS.register("scanner_chip_ores",
+            () -> new ScannerChipItem() {
+                @Override
+                public ItemStack getDefaultInstance() {
+                    // Initialize with "ores" target
+                    ItemStack stack = super.getDefaultInstance();
+                    this.setGenericTarget(stack, "ores");
+                    return stack;
+                }
+            });
+            
+    // Scanner Chip for Mobs - Specialized chip for scanning all mobs
+    public static final DeferredItem<Item> SCANNER_CHIP_MOBS = ITEMS.register("scanner_chip_mobs",
+            () -> new ScannerChipItem() {
+                @Override
+                public ItemStack getDefaultInstance() {
+                    // Initialize with "mobs" target
+                    ItemStack stack = super.getDefaultInstance();
+                    this.setGenericTarget(stack, "mobs");
+                    return stack;
+                }
+            });
     
     // Necrotic Crystal Heart - Custom item that modifies incoming damage
     // Registered as a Curio when Curios is available

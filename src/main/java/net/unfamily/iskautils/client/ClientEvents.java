@@ -104,10 +104,24 @@ public class ClientEvents {
     }
     
     /**
+     * Handles adding a highlighted block with name from the server
+     */
+    public static void handleAddHighlightWithName(BlockPos pos, int color, int durationTicks, String name) {
+        MarkRenderer.getInstance().addHighlightedBlock(pos, color, durationTicks, name);
+    }
+    
+    /**
      * Handles adding a billboard marker from the server
      */
     public static void handleAddBillboard(BlockPos pos, int color, int durationTicks) {
         MarkRenderer.getInstance().addBillboardMarker(pos, color, durationTicks);
+    }
+    
+    /**
+     * Handles adding a billboard marker with name from the server
+     */
+    public static void handleAddBillboardWithName(BlockPos pos, int color, int durationTicks, String name) {
+        MarkRenderer.getInstance().addBillboardMarker(pos, color, durationTicks, name);
     }
     
     /**

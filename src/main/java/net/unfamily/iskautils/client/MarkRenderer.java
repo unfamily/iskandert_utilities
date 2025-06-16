@@ -118,7 +118,7 @@ public class MarkRenderer {
         }
         
         // Distanza massima per il rilevamento dei marker (aumentata significativamente)
-        double maxDistance = 64.0;
+        double maxDistance = 256.0; // Raddoppiata a 256 blocchi
         
         // Get what the player is looking at
         HitResult hitResult = mc.player.pick(maxDistance, 0.0F, false);
@@ -129,20 +129,25 @@ public class MarkRenderer {
             // Check if it's a highlighted block
             MarkBlockData data = highlightedBlocks.get(pos);
             if (data != null && data.text != null) {
-                mc.player.displayClientMessage(Component.literal(data.text), true);
+                // Calcola la distanza per mostrarla nel messaggio
+                double distance = mc.player.position().distanceTo(new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5));
+                mc.player.displayClientMessage(Component.literal(data.text + " (" + String.format("%.1f", distance) + "m)"), true);
                 return;
             }
             
             // Check if it's a billboard marker
             data = billboardMarkers.get(pos);
             if (data != null && data.text != null) {
-                mc.player.displayClientMessage(Component.literal(data.text), true);
+                // Calcola la distanza per mostrarla nel messaggio
+                double distance = mc.player.position().distanceTo(new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5));
+                mc.player.displayClientMessage(Component.literal(data.text + " (" + String.format("%.1f", distance) + "m)"), true);
+                return;
             }
-        } else {
-            // Se non stiamo guardando un blocco specifico, controlliamo tutti i marker
-            // per vedere se stiamo guardando nella loro direzione generale
-            checkDistantMarkers(mc, maxDistance);
         }
+        
+        // Se non stiamo guardando un blocco specifico, controlliamo tutti i marker
+        // per vedere se stiamo guardando nella loro direzione generale
+        checkDistantMarkers(mc, maxDistance);
     }
     
     /**
@@ -165,6 +170,13 @@ public class MarkRenderer {
         for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocks.entrySet()) {
             if (entry.getValue().text != null) {
                 BlockPos pos = entry.getKey();
+                
+                // Verifica se il blocco esiste ancora (non è aria)
+                // Per i blocchi evidenziati, controlliamo che non siano aria
+                if (mc.level.getBlockState(pos).isAir()) {
+                    continue; // Salta questo blocco se è aria
+                }
+                
                 // Converti la posizione del blocco in un vettore
                 Vec3 blockVec = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
                 // Calcola il vettore dalla camera al blocco
@@ -178,16 +190,21 @@ public class MarkRenderer {
                     // Calcola il prodotto scalare (dot product) tra la direzione di vista e il vettore verso il blocco
                     double dotProduct = lookVec.dot(toBlockNorm);
                     
-                    // Aumenta l'angolo di tolleranza in base alla distanza
-                    // Più lontano è il blocco, più facile sarà puntarlo
-                    double minDotProduct = calculateMinDotProduct(distance);
+                    // Calcola l'angolo di tolleranza in base alla distanza
+                    double minDotProduct = calculateMinDotProduct(distance, maxDistance);
                     
                     // Se il dot product è maggiore del minimo, significa che stiamo guardando verso il blocco
-                    if (dotProduct > minDotProduct && distance < nearestDistance) {
-                        nearestDistance = distance;
-                        nearestBlockPos = pos;
-                        nearestText = entry.getValue().text;
-                        isNearestBillboard = false;
+                    if (dotProduct > minDotProduct) {
+                        // Usa una formula di priorità che considera sia la distanza che quanto è centrato il marker
+                        // Più è centrato e vicino, maggiore è la priorità
+                        double priority = dotProduct / (distance * 0.1);
+                        
+                        if (nearestBlockPos == null || priority > nearestDistance) {
+                            nearestDistance = priority;
+                            nearestBlockPos = pos;
+                            nearestText = entry.getValue().text;
+                            isNearestBillboard = false;
+                        }
                     }
                 }
             }
@@ -197,6 +214,10 @@ public class MarkRenderer {
         for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkers.entrySet()) {
             if (entry.getValue().text != null) {
                 BlockPos pos = entry.getKey();
+                
+                // Per i billboard marker, non è necessario che ci sia un blocco
+                // quindi non facciamo il controllo isAir()
+                
                 // Converti la posizione del blocco in un vettore
                 Vec3 blockVec = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
                 // Calcola il vettore dalla camera al blocco
@@ -210,16 +231,21 @@ public class MarkRenderer {
                     // Calcola il prodotto scalare (dot product) tra la direzione di vista e il vettore verso il blocco
                     double dotProduct = lookVec.dot(toBlockNorm);
                     
-                    // Aumenta l'angolo di tolleranza in base alla distanza
-                    // Più lontano è il blocco, più facile sarà puntarlo
-                    double minDotProduct = calculateMinDotProduct(distance);
+                    // Calcola l'angolo di tolleranza in base alla distanza
+                    double minDotProduct = calculateMinDotProduct(distance, maxDistance);
                     
                     // Se il dot product è maggiore del minimo, significa che stiamo guardando verso il blocco
-                    if (dotProduct > minDotProduct && distance < nearestDistance) {
-                        nearestDistance = distance;
-                        nearestBlockPos = pos;
-                        nearestText = entry.getValue().text;
-                        isNearestBillboard = true;
+                    if (dotProduct > minDotProduct) {
+                        // Usa una formula di priorità che considera sia la distanza che quanto è centrato il marker
+                        // Più è centrato e vicino, maggiore è la priorità
+                        double priority = dotProduct / (distance * 0.1);
+                        
+                        if (nearestBlockPos == null || priority > nearestDistance) {
+                            nearestDistance = priority;
+                            nearestBlockPos = pos;
+                            nearestText = entry.getValue().text;
+                            isNearestBillboard = true;
+                        }
                     }
                 }
             }
@@ -227,8 +253,22 @@ public class MarkRenderer {
         
         // Se abbiamo trovato un blocco, mostra il testo
         if (nearestBlockPos != null && nearestText != null) {
+            // Calcola la distanza reale per mostrarla nel messaggio
+            double actualDistance = mc.player.position().distanceTo(
+                new Vec3(nearestBlockPos.getX() + 0.5, nearestBlockPos.getY() + 0.5, nearestBlockPos.getZ() + 0.5));
+            
             String markerType = isNearestBillboard ? "Marker" : "Blocco";
-            mc.player.displayClientMessage(Component.literal(nearestText + " (" + markerType + ", " + String.format("%.1f", nearestDistance) + "m)"), true);
+            
+            // Per i blocchi evidenziati, verifichiamo ancora una volta che non siano aria
+            if (!isNearestBillboard && mc.level.getBlockState(nearestBlockPos).isAir()) {
+                // Se il blocco è aria, mostra solo il testo senza distanza
+                mc.player.displayClientMessage(Component.literal(nearestText), true);
+            } else {
+                // Altrimenti mostra il testo completo con distanza
+                mc.player.displayClientMessage(
+                    Component.literal(nearestText + " (" + markerType + ", " + String.format("%.1f", actualDistance) + "m)"), 
+                    true);
+            }
         }
     }
     
@@ -236,25 +276,22 @@ public class MarkRenderer {
      * Calcola il valore minimo del prodotto scalare in base alla distanza
      * Più lontano è il blocco, minore sarà il valore richiesto (angolo di tolleranza maggiore)
      */
-    private double calculateMinDotProduct(double distance) {
-        // A 10 blocchi: 0.98 (circa 11 gradi)
-        // A 30 blocchi: 0.95 (circa 18 gradi)
-        // A 50 blocchi: 0.90 (circa 26 gradi)
-        // A 64 blocchi: 0.85 (circa 32 gradi)
+    private double calculateMinDotProduct(double distance, double maxDistance) {
+        // Formula: cos(angolo) = minDotProduct
+        // Vogliamo che l'angolo di tolleranza aumenti linearmente con la distanza
         
-        if (distance <= 10) {
-            return 0.98; // Circa 11 gradi
-        } else if (distance <= 20) {
-            return 0.96; // Circa 16 gradi
-        } else if (distance <= 30) {
-            return 0.94; // Circa 20 gradi
-        } else if (distance <= 40) {
-            return 0.92; // Circa 23 gradi
-        } else if (distance <= 50) {
-            return 0.90; // Circa 26 gradi
-        } else {
-            return 0.85; // Circa 32 gradi
-        }
+        // A 10 blocchi: tolleranza di circa 5 gradi (cos(5°) ≈ 0.996)
+        // A 128 blocchi: tolleranza di circa 20 gradi (cos(20°) ≈ 0.94)
+        
+        // Interpolazione lineare tra questi due punti
+        double minAngleDegrees = 5.0;
+        double maxAngleDegrees = 20.0;
+        double normalizedDistance = Math.min(distance, maxDistance) / maxDistance;
+        double angleDegrees = minAngleDegrees + (maxAngleDegrees - minAngleDegrees) * normalizedDistance;
+        
+        // Converti l'angolo in radianti e calcola il coseno
+        double angleRadians = Math.toRadians(angleDegrees);
+        return Math.cos(angleRadians);
     }
     
     /**

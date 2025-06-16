@@ -3,6 +3,7 @@ package net.unfamily.iskautils.events;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -67,28 +68,44 @@ public class SetScannerOrScannerChip {
 		}
 		// handle ScannerChip
 		else if (itemStack.getItem() instanceof ScannerChipItem) {
-			// select the mob as target
-			String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
+			// Check if this is a specialized chip (ores or mobs) - these cannot be overwritten
+			ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
+			String itemPath = itemId.getPath();
+			boolean isSpecializedChip = itemPath.contains("scanner_chip_ores") || itemPath.contains("scanner_chip_mobs");
 			
-			// get the NBT tag of the chip
-			var tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-			
-			// remove the block target if present
-			tag.remove("TargetBlock");
-			
-			// set the mob target
-			tag.putString("TargetMob", entityId);
-			
-			// save the data in the chip
-			itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-			
-			// notify the player
-			if (!player.level().isClientSide) {
-				player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.mob_target_set", entity.getName()), true);
+			// Only set target for regular chips
+			if (!isSpecializedChip) {
+				// select the mob as target
+				String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
+				
+				// get the NBT tag of the chip
+				var tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+				
+				// remove the block target if present
+				tag.remove("TargetBlock");
+				
+				// set the mob target
+				tag.putString("TargetMob", entityId);
+				
+				// save the data in the chip
+				itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+				
+				// notify the player
+				if (!player.level().isClientSide) {
+					player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.mob_target_set", entity.getName()), true);
+				}
+				
+				// cancel the event to prevent the normal interaction
+				event.setCanceled(true);
+			} else {
+				// Notify the player that specialized chips cannot be overwritten
+				if (!player.level().isClientSide) {
+					player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.specialized_cannot_overwrite"), true);
+				}
+				
+				// cancel the event to prevent the normal interaction
+				event.setCanceled(true);
 			}
-			
-			// cancel the event to prevent the normal interaction
-			event.setCanceled(true);
 		}
 	}
 }

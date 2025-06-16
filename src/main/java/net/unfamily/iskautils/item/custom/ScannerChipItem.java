@@ -37,6 +37,7 @@ public class ScannerChipItem extends Item {
     // Constant tags used to store data in the item
     private static final String TARGET_BLOCK_TAG = "TargetBlock";
     private static final String TARGET_MOB_TAG = "TargetMob";
+    private static final String TARGET_GEN_TAG = "TargetGeneric";
     
     public ScannerChipItem() {
         super(new Item.Properties()
@@ -55,8 +56,13 @@ public class ScannerChipItem extends Item {
             return InteractionResult.SUCCESS;
         }
         
-        // If the player is crouching (Shift), register the target block
-        if (player.isCrouching()) {
+        // Check if this is a specialized chip (ores or mobs) - these cannot be overwritten
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
+        String itemPath = itemId.getPath();
+        boolean isSpecializedChip = itemPath.contains("scanner_chip_ores") || itemPath.contains("scanner_chip_mobs");
+        
+        // If the player is crouching (Shift), register the target block, but only for regular chips
+        if (player.isCrouching() && !isSpecializedChip) {
             BlockState state = level.getBlockState(blockPos);
             Block block = state.getBlock();
             
@@ -75,6 +81,7 @@ public class ScannerChipItem extends Item {
             // Check if we have a target in the chip
             Block targetBlock = getTargetBlock(itemStack);
             String targetMob = getTargetMob(itemStack);
+            String genericTarget = getGenericTarget(itemStack);
             
             if (targetBlock != null) {
                 // Transfer the target block to the scanner
@@ -83,6 +90,10 @@ public class ScannerChipItem extends Item {
             } else if (targetMob != null) {
                 // Transfer the target mob to the scanner
                 transferMobTargetToScanner(itemStack, mainHandItem, scanner, player);
+                return InteractionResult.SUCCESS;
+            } else if (genericTarget != null) {
+                // Transfer the generic target to the scanner
+                transferGenericTargetToScanner(itemStack, mainHandItem, scanner, player);
                 return InteractionResult.SUCCESS;
             } else {
                 player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"), true);
@@ -101,12 +112,42 @@ public class ScannerChipItem extends Item {
             return InteractionResultHolder.success(itemStack);
         }
         
+        // Check if this is a specialized chip (ores or mobs)
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
+        String itemPath = itemId.getPath();
+        boolean isSpecializedChip = itemPath.contains("scanner_chip_ores") || itemPath.contains("scanner_chip_mobs");
+        
+        // If the player is crouching (Shift), set the generic target based on the chip type
+        if (player.isCrouching()) {
+            // For specialized chips, automatically set the target
+            if (isSpecializedChip) {
+                if (itemPath.contains("scanner_chip_ores")) {
+                    // Set the chip to scan for all ores if not already set
+                    if (getGenericTarget(itemStack) == null) {
+                        setGenericTarget(itemStack, "ores");
+                    }
+                    return InteractionResultHolder.success(itemStack);
+                } else if (itemPath.contains("scanner_chip_mobs")) {
+                    // Set the chip to scan for all mobs if not already set
+                    if (getGenericTarget(itemStack) == null) {
+                        setGenericTarget(itemStack, "mobs");
+                    }
+                    return InteractionResultHolder.success(itemStack);
+                }
+            } else {
+                // For regular chips, check the item's registry name to determine its type
+                // This is left for backward compatibility
+                // ... existing code for regular chips ...
+            }
+        }
+        
         // If the main hand has a scanner, transfer the target
         ItemStack mainHandItem = player.getItemInHand(InteractionHand.MAIN_HAND);
         if (mainHandItem.getItem() instanceof ScannerItem scanner) {
             // Check if we have a target in the chip
             Block targetBlock = getTargetBlock(itemStack);
             String targetMob = getTargetMob(itemStack);
+            String genericTarget = getGenericTarget(itemStack);
             
             if (targetBlock != null) {
                 // Transfer the target block to the scanner
@@ -115,6 +156,10 @@ public class ScannerChipItem extends Item {
             } else if (targetMob != null) {
                 // Transfer the target mob to the scanner
                 transferMobTargetToScanner(itemStack, mainHandItem, scanner, player);
+                return InteractionResultHolder.success(itemStack);
+            } else if (genericTarget != null) {
+                // Transfer the generic target to the scanner
+                transferGenericTargetToScanner(itemStack, mainHandItem, scanner, player);
                 return InteractionResultHolder.success(itemStack);
             } else {
                 player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"), true);
@@ -128,15 +173,23 @@ public class ScannerChipItem extends Item {
     @Override
     public boolean hurtEnemy(ItemStack itemstack, LivingEntity entity, LivingEntity sourceentity) {
         if (sourceentity instanceof Player player && !(entity instanceof Player)) {
-            // Select the mob as the target
-            String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
+            // Check if this is a specialized chip (ores or mobs) - these cannot be overwritten
+            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemstack.getItem());
+            String itemPath = itemId.getPath();
+            boolean isSpecializedChip = itemPath.contains("scanner_chip_ores") || itemPath.contains("scanner_chip_mobs");
             
-            // Set the target mob
-            setTargetMob(itemstack, entityId);
-            
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.mob_target_set", entity.getName()), true);
-            
-            return true; // Don't damage the mob
+            // Only set target for regular chips
+            if (!isSpecializedChip) {
+                // Select the mob as the target
+                String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
+                
+                // Set the target mob
+                setTargetMob(itemstack, entityId);
+                
+                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.mob_target_set", entity.getName()), true);
+                
+                return true; // Don't damage the mob
+            }
         }
         return false;
     }
@@ -147,8 +200,9 @@ public class ScannerChipItem extends Item {
     public void setTargetBlock(ItemStack itemStack, Block block) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         
-        // Remove any target mob
+        // Remove any target mob or generic target
         tag.remove(TARGET_MOB_TAG);
+        tag.remove(TARGET_GEN_TAG);
         
         // Set the target block
         tag.putString(TARGET_BLOCK_TAG, BuiltInRegistries.BLOCK.getKey(block).toString());
@@ -176,8 +230,9 @@ public class ScannerChipItem extends Item {
     public void setTargetMob(ItemStack itemStack, String mobId) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         
-        // Remove target block if present
+        // Remove target block and generic target if present
         tag.remove(TARGET_BLOCK_TAG);
+        tag.remove(TARGET_GEN_TAG);
         
         // Set target mob
         tag.putString(TARGET_MOB_TAG, mobId);
@@ -197,6 +252,38 @@ public class ScannerChipItem extends Item {
         
         return tag.getString(TARGET_MOB_TAG);
     }
+
+    /**
+     * Set the generic target in the chip and remove any specific targets
+     * @param itemStack The chip item stack
+     * @param targetType Either "ores" or "mobs"
+     */
+    public void setGenericTarget(ItemStack itemStack, String targetType) {
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        
+        // Remove specific targets if present
+        tag.remove(TARGET_BLOCK_TAG);
+        tag.remove(TARGET_MOB_TAG);
+        
+        // Set generic target
+        tag.putString(TARGET_GEN_TAG, targetType);
+        
+        // Save the data in the ItemStack
+        itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+    
+    /**
+     * Get the generic target from the chip
+     * @return "ores", "mobs" or null if not set
+     */
+    public String getGenericTarget(ItemStack itemStack) {
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains(TARGET_GEN_TAG)) {
+            return null;
+        }
+        
+        return tag.getString(TARGET_GEN_TAG);
+    }
     
     /**
      * Transfer the target block from the chip to the scanner
@@ -215,6 +302,7 @@ public class ScannerChipItem extends Item {
         
         // Remove previous targets from the scanner
         scannerTag.remove(TARGET_MOB_TAG);
+        scannerTag.remove(TARGET_GEN_TAG);
         
         // Set the new target block
         scannerTag.putString(TARGET_BLOCK_TAG, chipTag.getString(TARGET_BLOCK_TAG));
@@ -247,6 +335,7 @@ public class ScannerChipItem extends Item {
         
         // Remove previous targets from the scanner
         scannerTag.remove(TARGET_BLOCK_TAG);
+        scannerTag.remove(TARGET_GEN_TAG);
         
         // Set the new target mob
         scannerTag.putString(TARGET_MOB_TAG, chipTag.getString(TARGET_MOB_TAG));
@@ -264,12 +353,50 @@ public class ScannerChipItem extends Item {
     }
     
     /**
-     * Crea un nome localizzato per un mob a partire dal suo ID
+     * Transfer the generic target from the chip to the scanner
+     */
+    private void transferGenericTargetToScanner(ItemStack chipStack, ItemStack scannerStack, ScannerItem scanner, Player player) {
+        String genericTarget = getGenericTarget(chipStack);
+        if (genericTarget == null) {
+            return;
+        }
+        
+        // Get the chip tag
+        CompoundTag chipTag = chipStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        
+        // Get the scanner tag
+        CompoundTag scannerTag = scannerStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        
+        // Remove previous targets from the scanner
+        scannerTag.remove(TARGET_BLOCK_TAG);
+        scannerTag.remove(TARGET_MOB_TAG);
+        
+        // Set the new generic target
+        scannerTag.putString(TARGET_GEN_TAG, chipTag.getString(TARGET_GEN_TAG));
+        
+        // Ensure the scanner has a unique ID
+        if (!scannerTag.contains("ScannerId")) {
+            scannerTag.putUUID("ScannerId", java.util.UUID.randomUUID());
+        }
+        
+        // Save the data in the scanner
+        scannerStack.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
+        
+        // Display appropriate message based on target type
+        if ("ores".equals(genericTarget)) {
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"), true);
+        } else if ("mobs".equals(genericTarget)) {
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"), true);
+        }
+    }
+    
+    /**
+     * Creates a localized name for a mob from its ID
      */
     private Component getLocalizedMobName(String mobId) {
         if (mobId == null) return Component.literal("Unknown");
         
-        // Estrai namespace e path dall'ID
+        // Extract namespace and path from the ID
         String namespace = "minecraft";
         String path = mobId;
         
@@ -279,16 +406,16 @@ public class ScannerChipItem extends Item {
             path = parts[1];
         }
         
-        // Prova a usare la chiave di traduzione specifica per il namespace
+        // Try to use the specific translation key for the namespace
         String translationKey = "entity." + namespace + "." + path;
         Component translated = Component.translatable(translationKey);
         
-        // Se il namespace non è minecraft, aggiungi il namespace al nome se la traduzione fallisce
+        // If the namespace is not minecraft, add the namespace to the name if the translation fails
         if (!namespace.equals("minecraft")) {
-            // Controlla se la traduzione ha avuto successo
+            // Check if the translation was successful
             String translatedText = translated.getString();
             if (translatedText.equals(translationKey)) {
-                // La traduzione ha fallito, usa un formato alternativo
+                // Translation failed, use an alternative format
                 return Component.literal(namespace + ":" + path);
             }
         }
@@ -296,63 +423,96 @@ public class ScannerChipItem extends Item {
         return translated;
     }
     
-    /**
-     * Add tooltip information to the item
-     */
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
+        // Check if this is a specialized chip (ores or mobs)
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        String itemPath = itemId.getPath();
+        boolean isOresChip = itemPath.contains("scanner_chip_ores");
+        boolean isMobsChip = itemPath.contains("scanner_chip_mobs");
+        
         // Target information
         Block targetBlock = getTargetBlock(stack);
         String targetMob = getTargetMob(stack);
+        String genericTarget = getGenericTarget(stack);
         
         if (targetBlock != null) {
             Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_block")
-                .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
-                .append(targetBlock.getName().copy().withStyle(ChatFormatting.WHITE));
+                    .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                    .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
+                    .append(targetBlock.getName().copy().withStyle(ChatFormatting.WHITE));
             
             tooltipComponents.add(targetText);
         } else if (targetMob != null) {
             Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mob")
-                .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
-                .append(getLocalizedMobName(targetMob).copy().withStyle(ChatFormatting.WHITE));
+                    .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                    .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
+                    .append(getLocalizedMobName(targetMob).copy().withStyle(ChatFormatting.WHITE));
             
             tooltipComponents.add(targetText);
-
+        } else if (genericTarget != null) {
+            if ("ores".equals(genericTarget)) {
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_value")
+                        .withStyle(ChatFormatting.WHITE));
+                tooltipComponents.add(targetText);
+            } else if ("mobs".equals(genericTarget)) {
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_all_mobs_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_all_mobs_value")
+                        .withStyle(ChatFormatting.WHITE));
+                tooltipComponents.add(targetText);
+            }
         } else {
-            Component noTargetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.no_target")
-                .withStyle(style -> style.withColor(ChatFormatting.GRAY));
+            // For specialized chips, show default target even if not set yet
+            if (isOresChip) {
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_value")
+                        .withStyle(ChatFormatting.WHITE));
+                tooltipComponents.add(targetText);
+            } else if (isMobsChip) {
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_all_mobs_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_all_mobs_value")
+                        .withStyle(ChatFormatting.WHITE));
+                tooltipComponents.add(targetText);
+            } else {
+                Component noTargetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.no_target")
+                        .withStyle(style -> style.withColor(ChatFormatting.GRAY));
+                
+                tooltipComponents.add(noTargetText);
+            }
+        }
+        
+        // Instructions - only show for regular chips
+        if (!isOresChip && !isMobsChip) {
+            Component instruction0Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction0")
+                    .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
+            tooltipComponents.add(instruction0Text);
             
-            tooltipComponents.add(noTargetText);
+            Component instruction1Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction1")
+                    .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
+            tooltipComponents.add(instruction1Text);
         }
         
-        // Instructions
-        Component instruction0Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction0")
-            .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-        tooltipComponents.add(instruction0Text);
-
-        Component instruction1Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction1")
-            .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-        tooltipComponents.add(instruction1Text);    
+        // Add transfer instruction for all chips
+        Component transferText = Component.translatable("item.iska_utils.scanner_chip.tooltip.transfer_instruction")
+                .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
+        tooltipComponents.add(transferText);
         
-        // Chip integration info
-        Component chipInfoText = Component.translatable("item.iska_utils.scanner_chip.tooltip.chip_info0")
-            .withStyle(style -> style.withColor(ChatFormatting.AQUA));
-        
-        if(Config.scannerEnergyConsume > 0) {
-            Component chipInfoText1 = Component.translatable("item.iska_utils.scanner.tooltip.chip_info1")
-                .withStyle(style -> style.withColor(ChatFormatting.AQUA));
-            tooltipComponents.add(chipInfoText1);
-        } else {
-            Component chipInfoText2 = Component.translatable("item.iska_utils.scanner.tooltip.chip_info2")
-                .withStyle(style -> style.withColor(ChatFormatting.AQUA));
-            tooltipComponents.add(chipInfoText2);
+        // Special chip information
+        if (isOresChip) {
+            Component chipTypeText = Component.translatable("item.iska_utils.scanner_chip.tooltip.ore_chip_desc")
+                    .withStyle(style -> style.withColor(ChatFormatting.LIGHT_PURPLE));
+            tooltipComponents.add(chipTypeText);
+        } else if (isMobsChip) {
+            Component chipTypeText = Component.translatable("item.iska_utils.scanner_chip.tooltip.mob_chip_desc")
+                    .withStyle(style -> style.withColor(ChatFormatting.LIGHT_PURPLE));
+            tooltipComponents.add(chipTypeText);
         }
-
-        tooltipComponents.add(chipInfoText);
-
     }
 }

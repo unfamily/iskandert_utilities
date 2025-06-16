@@ -122,6 +122,8 @@ public class ModCreativeModeTabs {
                                 // Scanner
                                 pOutput.accept(ModItems.SCANNER.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP.get());
+                                pOutput.accept(ModItems.SCANNER_CHIP_ORES.get());
+                                pOutput.accept(ModItems.SCANNER_CHIP_MOBS.get());
                                 
                                 // Artifacts
                                 pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());

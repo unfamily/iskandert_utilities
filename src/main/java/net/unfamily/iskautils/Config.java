@@ -226,6 +226,85 @@ public class Config
             .comment("Time to live for the scanner markers in ticks (1 second = 20 ticks)")
             .defineInRange("005_scannerMarkerTTL", 600, 1, Integer.MAX_VALUE);
 
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_ORE_ENTRIES = BUILDER
+            .comment("List of ore entries that can be scanned with their colors",
+                    "Format: 'ore_name;RRGGBB' where:",
+                    "- ore_name is a special prefix that will match all blocks containing this name",
+                    "- RRGGBB is the hexadecimal RGB color (without alpha)",
+                    "Example: 'gold;FFD700' will match all gold ores with gold color")
+            .defineList("100_scanner_ore_entries", 
+                    java.util.Arrays.asList(
+                        "gold;FFD700",     // Gold ore - Gold color
+                        "iron;C0C0C0",     // Iron ore - Silver color
+                        "diamond;00FFFF",  // Diamond ore - Cyan color
+                        "emerald;00FF00",  // Emerald ore - Green color
+                        "coal;333333",     // Coal ore - Dark gray
+                        "lapis;0000FF",    // Lapis ore - Blue color
+                        "redstone;FF0000", // Redstone ore - Red color
+                        "copper;D2691E",   // Copper ore - Copper color
+                        "quartz;FFFAFA",   // Quartz ore - White color
+                        "netherite_scrap;4B0082" // Ancient Debris - Indigo color (exact match)
+                    ), 
+                    obj -> obj instanceof String && ((String)obj).contains(";"));
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_MOB_ENTRIES = BUILDER
+            .comment("List of mob entries that can be scanned with their colors",
+                    "Format: '$mob_name;RRGGBB' for prefix matching or 'minecraft:exact_mob;RRGGBB' for exact match",
+                    "- $mob_name will match all entities containing this name",
+                    "- RRGGBB is the hexadecimal RGB color (without alpha)",
+                    "Example: '$zombie;00AA00' will match all zombie variants")
+            .defineList("101_scanner_mob_entries", 
+                    java.util.Arrays.asList(
+                        "$creeper;00FF00",   // Creeper - Green
+                        "$zombie;00AA00",    // Zombie variants - Dark green
+                        "$skeleton;CCCCCC",  // Skeleton variants - Light gray
+                        "$spider;222222",    // Spider variants - Black
+                        "$enderman;AA00AA",  // Enderman - Purple
+                        "$slime;55FF55",     // Slime - Light green
+                        "$witch;AA00FF",     // Witch - Purple/Magenta
+                        "$blaze;FF6600",     // Blaze - Orange
+                        "$ghast;FFFFFF",     // Ghast - White
+                        "$wither;333333",    // Wither - Black
+                        "$dragon;AA00AA",    // Ender Dragon - Purple
+                        "minecraft:evoker;0000FF", // Evoker - Blue (exact match)
+                        "$villager;AA8866",  // Villager - Brown
+                        "$golem;CCCCCC",     // Iron Golem - Light gray
+                        "$axolotl;FF99FF",   // Axolotl - Pink
+                        "$allay;99CCFF",     // Allay - Light blue
+                        "$cow;AA5522",       // Cow - Brown
+                        "$sheep;FFFFFF",     // Sheep - White
+                        "$chicken;FFFF00",    // Chicken - Yellow
+                        "$mimic;4A2150"     // Mimic - Brown
+                    ), 
+                    obj -> obj instanceof String && ((String)obj).contains(";"));
+
+    private static final ModConfigSpec.IntValue SCANNER_DEFAULT_ALPHA = BUILDER
+            .comment("Default alpha value for scanner markers (0-255)",
+                    "Higher values make markers more opaque")
+            .defineInRange("102_scanner_default_alpha", 80, 0, 255);
+
+    private static final ModConfigSpec.IntValue SCANNER_DEFAULT_ORE_COLOR = BUILDER
+            .comment("Default color for ores that don't match any specific pattern (RGB format)",
+                    "Format: 0xRRGGBB (hexadecimal)")
+            .defineInRange("103_scanner_default_ore_color", 0xFFAA00, 0, 0xFFFFFF);
+
+    private static final ModConfigSpec.IntValue SCANNER_DEFAULT_MOB_COLOR = BUILDER
+            .comment("Default color for mobs that don't match any specific pattern (RGB format)",
+                    "Format: 0xRRGGBB (hexadecimal)")
+            .defineInRange("104_scanner_default_mob_color", 0x00AA00, 0, 0xFFFFFF);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_ORE_TAGS = BUILDER
+            .comment("List of ore tags that should be scanned when using the ore scanner chip",
+                    "These tags will be used to identify blocks as ores",
+                    "You can use * as a wildcard at the end of a tag name")
+            .defineList("105_scanner_ore_tags", 
+                    java.util.Arrays.asList(
+                        "c:ores",
+                        "c:raw_materials",
+                        "c:storage_blocks/raw_*"
+                    ), 
+                    obj -> obj instanceof String);
+
     static {
         BUILDER.pop(); // End of scanner category
         BUILDER.comment("Development and Advanced Configuration").push("dev");
@@ -287,6 +366,12 @@ public class Config
     public static int timeAltererEnergyConsume;
     public static boolean artifactsInfo;
     public static int scannerMarkerTTL;
+    public static java.util.List<String> scannerOreEntries;
+    public static java.util.List<String> scannerMobEntries;
+    public static int scannerDefaultAlpha;
+    public static int scannerDefaultOreColor;
+    public static int scannerDefaultMobColor;
+    public static java.util.List<String> scannerOreTags;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -322,6 +407,12 @@ public class Config
         timeAltererEnergyConsume = TIME_ALTERER_ENERGY_CONSUME.get();
         artifactsInfo = ARTIFACTS_INFO.get();
         scannerMarkerTTL = SCANNER_MARKER_TTL.get();
+        scannerOreEntries = new java.util.ArrayList<>(SCANNER_ORE_ENTRIES.get());
+        scannerMobEntries = new java.util.ArrayList<>(SCANNER_MOB_ENTRIES.get());
+        scannerDefaultAlpha = SCANNER_DEFAULT_ALPHA.get();
+        scannerDefaultOreColor = SCANNER_DEFAULT_ORE_COLOR.get();
+        scannerDefaultMobColor = SCANNER_DEFAULT_MOB_COLOR.get();
+        scannerOreTags = new java.util.ArrayList<>(SCANNER_ORE_TAGS.get());
 
         // If the energy required is 0, the energy stored is 0 automatically
         if (electricTreetapEnergyConsume <= 0) {
