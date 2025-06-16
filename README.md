@@ -10,3 +10,4 @@ At the moment it only adds:
 - Rubber Trees, Rubber Boots (negate fall damage)
 - Added Scanner: uselful for find ores and mobs
 - JSON scripting system.
+  
