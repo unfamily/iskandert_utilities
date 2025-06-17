@@ -133,6 +133,9 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SCANNER_CHIP_ORES.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP_MOBS.get());
                                 
+                                // Structure System
+                                pOutput.accept(ModItems.STRUCTURE_PLACER.get());
+                                
                                 // Artifacts
                                 pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());
                                 pOutput.accept(ModItems.MINING_EQUITIZER.get());

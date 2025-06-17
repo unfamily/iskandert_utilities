@@ -17,6 +17,7 @@ import net.unfamily.iskautils.item.custom.ScannerChipItem;
 import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.SwissWrenchItem;
 import net.unfamily.iskautils.item.custom.AngelBlockItem;
+import net.unfamily.iskautils.item.custom.StructurePlacerItem;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -305,6 +306,10 @@ public class ModItems {
     // ===== DEV BLOCKS =====
     public static final DeferredItem<Item> SCAN_BLOCK = ITEMS.register("scan_block",
             () -> new BlockItem(ModBlocks.SCAN_BLOCK.get(), ITEM_PROPERTIES));
+
+    // ===== STRUCTURE SYSTEM =====
+    public static final DeferredItem<Item> STRUCTURE_PLACER = ITEMS.register("structure_placer",
+            () -> new StructurePlacerItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

@@ -17,6 +17,7 @@
   "item.iska_utils.scanner_chip_mobs": "Chip Scanner per Mob",
   "item.iska_utils.swiss_wrench": "Chiave Svizera",
   "item.iska_utils.mining_equitizer": "Equitizzatore di Scavo",
+  "item.iska_utils.structure_placer": "Piazzatore di Strutture",
   
   "item.iska_utils.rubber_boots": "Stivali di Gomma",
   "block.iska_utils.rubber_log": "Tronco di Caucciù",
@@ -110,8 +111,8 @@
   "message.iska_utils.vector_hover_mode.hover": "Modalità Amuleto Vettoriale: fluttuazione",
   "message.iska_utils.vector_hover_mode.off": "Modalità Amuleto Vettoriale: default",
 
-  "item.iska_utils.portable_dislocator.tooltip.main": "Premi %s per teletrasportarti vicino alle coordinate della bussola (da 100 a 150 blocchi di distanza)",
-  "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Ti teletrasporta vicino alle coordinate della bussola (da 100 a 150 blocchi di distanza)",
+  "item.iska_utils.portable_dislocator.tooltip.main": "Premi %s per teletrasportarti vicino alle coordinate della bussola (da 200 a 300 blocchi di distanza)",
+  "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Ti teletrasporta vicino alle coordinate della bussola (da 200 a 300 blocchi di distanza)",
   "item.iska_utils.portable_dislocator.tooltip.compasses": "Funziona con la Bussola Naturale e la Bussola dell'Esploratore",
   "item.iska_utils.portable_dislocator.tooltip.energy": "Energia: ",
   "item.iska_utils.portable_dislocator.tooltip.xp_backup": "In alternativa consuma %d XP se l'energia è esaurita",
@@ -198,6 +199,9 @@
   "item.iska_utils.scanner_chip.tooltip.instruction1": "Shift+click con lo scanner nella mano principale per",
   "item.iska_utils.scanner_chip.tooltip.transfer_instruction": "trasferire il target dal chip allo scanner",
   "item.iska_utils.scanner_chip.tooltip.ore_chip_desc": "Chip specializzato per la scansione di tutti i minerali",
+
+  "commands.iska_utils.structure.error.not_found": "Struttura non trovata",
+  "commands.iska_utils.structure.error.placement_failed": "Impossibile piazzare la struttura",
   "item.iska_utils.scanner_chip.tooltip.mob_chip_desc": "Chip specializzato per la scansione di tutti i mob",
   "item.iska_utils.scanner_chip.generic_target_set_ores": "Target impostato per scansionare tutti i minerali",
   "item.iska_utils.scanner_chip.generic_target_set_mobs": "Target impostato per scansionare tutti i mob",

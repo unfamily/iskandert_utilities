@@ -1,0 +1,86 @@
+// quando vengono usate? quando si ha una blueprint settata con la struttura
+// o quando il blocco che auto builda (non so come chiamarlo) ha la la blueprint al suo interno
+// ed è settato con la struttura corrispondente.
+// da valutare se con /reload si ricaricano le strutture disponibili o se si controlla ogni volta quindi più dinamico...
+// valotare successivamente la possibilità di salvarle in game tramite un sistema...
+{
+    "type": "iska_utils:structure",
+    "overwritable": true, //opzionale, se non specificato è false
+    "structure": [
+        {
+            "id": "iska_utils-wither_grinder",
+            "name": "Iskandert's Wither Grinder",
+            "can_force": true,
+            //"stages": [ //opzionale, ovviamente non lo useremo in questo esempio
+                //{"stage_type": "world", "stage": "placable0", "is": false},
+                //{"stage_type": "world", "stage": "placable0", "is": true},
+                //{"stage_type": "player", "stage": "placable1", "is": false},
+                //{"stage_type": "player", "stage": "placable1", "is": true}
+            //],
+            "can_replace": [
+                //opzionale, se non specificato usa il rimpiazzo di default ovvero l'aria
+                //il rimpazzo dell'aria è sempre attivo anche se specificato altri casi
+                //in questo esempio usa solo il rimpiazzo di default ovvero l'aria però sotto
+                //segnati i vari casi blocchi, tag e speciali.
+                //"minecraft:water",
+                //"#c:lava" //si possono usare i tag hanno come prefisso #
+                //"$replacable" //caso speciale, indica tutti i blocchi e liquidi che possono essere rimpiazzati
+                //"$fluis" //caso speciale, indica tutti i liquidi
+                //"$blocks" //caso speciale, indica tutti i blocchi
+            ],
+            "icon": { //opzionale in caso non specificato non mostra nessuna icona
+                "type": "minecraft:item",  //"type":"image"
+                "item": "minecraft:wither_skeleton_skull" //"image":"path/to/image"
+            },
+            "description": ["Easy way to kill withers"], //opzionale,ogni stringa è una riga
+            "pattern": [
+                //layer 0 layer 1 layer 2 layer 3 layer 4 layer 5 layer 6
+                [["   "],["   "],["   "],["   "],["AAA"], ["AAA"], ["AAA"]], //X -1
+                [["L@ "],["   "],["   "],["   "],["AAA"], ["A A"], ["AAA"]], //X 0
+                [["   "],["   "],["   "],["   "],["AAA"], ["AAA"], ["AAA"]] //X +1
+            ],
+            "key": {
+                "A": [
+                    {
+                        "block": "iska_utils:wither_proof_block"
+                    }
+                    //{ "tag": "c:blocks/wither_proof" } //si possono usare i tag hanno come prefisso #
+                    //{
+                        //opzionale, richiede stage, le condizioni non sono soddisfatte il blocco alternatio
+                        // non può essere piazzato.
+                        //conditions[0,2]
+                        //"block": "minecraft:bedrock"
+                    //}
+                ],
+                "@": [
+                    {
+                        "block": "minecraft:piston",
+                        "properties": {
+                            "facing": "up"
+                        }
+                    }
+                ],
+                "L": [
+                    {
+                        "block": "minecraft:lever",
+                        "properties": {
+                            "face": "floor",
+                            "facing": "east",
+                            "powered": "false"
+                        }
+                    }
+                ]
+            }
+        } //altre strutture nello stesso script
+    ]
+}
+
+// la chiave @ è il centro della struttura
+// quando si piazza si piazza sulla superficie controllando che sia libero
+// se non è libero segnala l'ingombro con i marker per blocchi rossi
+// se è attivo can_force e si clicca nuovamente prima dello scadere dei marker (60tick) si piazza comunque
+// se per uno stage si trova un bloccco non piazzabile (quindi va controllato prima di piazzarlo)
+// e non si ha un blocco alternativo piazzabile, la struttura non viene piazzata.
+// le chiavi con più blocchi indicano blocchi alternativi usabili ma devono essere presenti nell'inventario
+// esempio: minecraft:dirt e minecraft:coarse_dirt. se il totale richiesto è 5 ma ci sono solo 1 dirt e 2 di coarse_dirt
+// la struttura non viene piazzata poichè non ha tutti i blocchi richiesti.

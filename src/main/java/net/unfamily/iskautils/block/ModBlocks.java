@@ -52,8 +52,7 @@ public class ModBlocks {
     
     // Properties for Wither Proof Block
     private static final BlockBehaviour.Properties WITHER_PROOF_PROPERTIES = BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_BLACK)
-            .strength(1.0f, 2.0f)
+            .strength(50.0f, 1200.0f) // Resistente come il bedrock alle esplosioni del Wither
             .sound(SoundType.STONE)
             .requiresCorrectToolForDrops();
             

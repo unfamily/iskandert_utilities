@@ -17,6 +17,7 @@
   "item.iska_utils.scanner_chip_mobs": "Mob Scanner Chip",
   "item.iska_utils.swiss_wrench": "Swiss Wrench",
   "item.iska_utils.mining_equitizer": "Mining Equitizer",
+  "item.iska_utils.structure_placer": "Structure Placer",
   
   "item.iska_utils.rubber_boots": "Rubber Boots",
   "block.iska_utils.rubber_log": "Rubber Log",
@@ -110,8 +111,8 @@
   "message.iska_utils.vector_hover_mode.hover": "Vector Charm mode: hover",
   "message.iska_utils.vector_hover_mode.off": "Vector Charm mode: default",
   
-  "item.iska_utils.portable_dislocator.tooltip.main": "Press %s to teleport near compass coordinates (100-150 blocks away)",
-  "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Teleports near compass coordinates (100-150 blocks away)",
+  "item.iska_utils.portable_dislocator.tooltip.main": "Press %s to teleport near compass coordinates (200-300 blocks away)",
+  "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Teleports near compass coordinates (200-300 blocks away)",
   "item.iska_utils.portable_dislocator.tooltip.compasses": "Works with Nature's Compass and Explorer's Compass",
   "item.iska_utils.portable_dislocator.tooltip.energy": "Energy: ",
   "item.iska_utils.portable_dislocator.tooltip.xp_backup": "Alternatively consumes %d XP if out of energy",
@@ -248,5 +249,8 @@
   "item.iska_utils.swiss_wrench.message.cannot_rotate": "Cannot rotate this block",
   "item.iska_utils.swiss_wrench.tooltip.current_mode": "Current mode: %s",
   "item.iska_utils.swiss_wrench.tooltip.desc0": "Shift + Right Click to rotate blocks",
-  "item.iska_utils.swiss_wrench.tooltip.desc1": "Left Click to change rotation mode on a block"
+  "item.iska_utils.swiss_wrench.tooltip.desc1": "Left Click to change rotation mode on a block",
+
+  "commands.iska_utils.structure.error.not_found": "Structure not found",
+  "commands.iska_utils.structure.error.placement_failed": "Failed to place structure"
 }

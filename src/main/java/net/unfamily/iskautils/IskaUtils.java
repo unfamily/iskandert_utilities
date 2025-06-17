@@ -49,6 +49,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.unfamily.iskautils.structure.StructureLoader;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)
@@ -86,6 +87,10 @@ public class IskaUtils {
         // per evitare errori "Cannot register new entries to DeferredRegister after RegisterEvent has been fired"
         CommandItemLoader.scanConfigDirectory();
         CommandItemRegistry.initializeItems();
+        
+        // ===== STRUCTURE SYSTEM =====
+        // Carica le definizioni delle strutture dal sistema di scripting
+        StructureLoader.scanConfigDirectory();
         
         // Register blocks and items
         ModBlocks.register(modEventBus);
@@ -147,6 +152,9 @@ public class IskaUtils {
     private void clientSetup(final FMLClientSetupEvent event) {
         // Initialize client events
         ClientEvents.init();
+        
+        // TODO: Register custom GUI screens once MenuType is properly implemented
+        // For now, the GUI will work with the default menu provider system
     }
 
     // Add the example block item to the building blocks tab
