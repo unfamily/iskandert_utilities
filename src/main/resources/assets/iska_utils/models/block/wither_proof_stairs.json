@@ -1,0 +1,8 @@
+{
+  "parent": "block/stairs",
+  "textures": {
+    "bottom": "iska_utils:block/wither_proof_block",
+    "top": "iska_utils:block/wither_proof_block",
+    "side": "iska_utils:block/wither_proof_block"
+  }
+} 

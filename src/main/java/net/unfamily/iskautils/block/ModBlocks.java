@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.WallBlock;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -67,6 +68,18 @@ public class ModBlocks {
     // Wither Proof Block
     public static final DeferredBlock<WitherProofBlock> WITHER_PROOF_BLOCK = BLOCKS.register("wither_proof_block",
             () -> new WitherProofBlock(WITHER_PROOF_PROPERTIES));
+
+    // Wither Proof Stairs
+    public static final DeferredBlock<StairBlock> WITHER_PROOF_STAIRS = BLOCKS.register("wither_proof_stairs",
+            () -> new StairBlock(WITHER_PROOF_BLOCK.get().defaultBlockState(), WITHER_PROOF_PROPERTIES));
+
+    // Wither Proof Slab
+    public static final DeferredBlock<SlabBlock> WITHER_PROOF_SLAB = BLOCKS.register("wither_proof_slab",
+            () -> new SlabBlock(WITHER_PROOF_PROPERTIES));
+
+    // Wither Proof Wall
+    public static final DeferredBlock<WallBlock> WITHER_PROOF_WALL = BLOCKS.register("wither_proof_wall",
+            () -> new WallBlock(WITHER_PROOF_PROPERTIES.forceSolidOn()));
             
     // Netherite Bars
     public static final DeferredBlock<NetheriteBarsBlock> NETHERITE_BARS = BLOCKS.register("netherite_bars",

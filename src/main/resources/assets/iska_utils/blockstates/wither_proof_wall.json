@@ -1,0 +1,40 @@
+{
+  "multipart": [
+    {
+      "when": { "up": "true" },
+      "apply": { "model": "iska_utils:block/wither_proof_wall" }
+    },
+    {
+      "when": { "north": "low" },
+      "apply": { "model": "iska_utils:block/wither_proof_wall_side", "uvlock": true }
+    },
+    {
+      "when": { "east": "low" },
+      "apply": { "model": "iska_utils:block/wither_proof_wall_side", "y": 90, "uvlock": true }
+    },
+    {
+      "when": { "south": "low" },
+      "apply": { "model": "iska_utils:block/wither_proof_wall_side", "y": 180, "uvlock": true }
+    },
+    {
+      "when": { "west": "low" },
+      "apply": { "model": "iska_utils:block/wither_proof_wall_side", "y": 270, "uvlock": true }
+    },
+    {
+      "when": { "north": "tall" },
+      "apply": { "model": "iska_utils:block/wither_proof_wall_side_tall", "uvlock": true }
+    },
+    {
+      "when": { "east": "tall" },
+      "apply": { "model": "iska_utils:block/wither_proof_wall_side_tall", "y": 90, "uvlock": true }
+    },
+    {
+      "when": { "south": "tall" },
+      "apply": { "model": "iska_utils:block/wither_proof_wall_side_tall", "y": 180, "uvlock": true }
+    },
+    {
+      "when": { "west": "tall" },
+      "apply": { "model": "iska_utils:block/wither_proof_wall_side_tall", "y": 270, "uvlock": true }
+    }
+  ]
+} 

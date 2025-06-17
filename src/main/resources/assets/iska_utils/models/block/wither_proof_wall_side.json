@@ -1,0 +1,7 @@
+{
+  "parent": "block/template_wall_side",
+  "textures": {
+    "wall": "iska_utils:block/wither_proof_block",
+    "particle": "iska_utils:block/wither_proof_block"
+  }
+} 

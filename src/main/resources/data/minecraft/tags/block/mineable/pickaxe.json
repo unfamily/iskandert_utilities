@@ -12,6 +12,9 @@
     "iska_utils:time_alterer",
     "iska_utils:weather_alterer",
     "iska_utils:wither_proof_block",
+    "iska_utils:wither_proof_stairs",
+    "iska_utils:wither_proof_slab",
+    "iska_utils:wither_proof_wall",
     "iska_utils:netherite_bars"
   ]
 } 

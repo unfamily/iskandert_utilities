@@ -40,6 +40,9 @@
   "block.iska_utils.scan_block": "Scan Block",
   "block.iska_utils.netherite_bars": "Netherite Bars",
   "block.iska_utils.wither_proof_block": "Wither Proof Stone",
+  "block.iska_utils.wither_proof_stairs": "Wither Proof Stairs",
+  "block.iska_utils.wither_proof_slab": "Wither Proof Slab",
+  "block.iska_utils.wither_proof_wall": "Wither Proof Wall",
   
   "block.iska_utils.tar_slime_block": "Tar Slime Block",
   "item.iska_utils.tar_slimeball": "Tar Slimeball",

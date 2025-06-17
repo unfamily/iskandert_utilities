@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "iska_utils:wither_proof_block"
+  },
+  "result": {
+    "id": "iska_utils:wither_proof_slab",
+    "count": 2
+  }
+} 

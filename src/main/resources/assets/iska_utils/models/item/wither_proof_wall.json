@@ -1,0 +1,6 @@
+{
+  "parent": "block/wall_inventory",
+  "textures": {
+    "wall": "iska_utils:block/wither_proof_block"
+  }
+} 

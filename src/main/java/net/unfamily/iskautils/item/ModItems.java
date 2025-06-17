@@ -38,6 +38,18 @@ public class ModItems {
     public static final DeferredItem<Item> WITHER_PROOF_BLOCK = ITEMS.register("wither_proof_block",
             () -> new BlockItem(ModBlocks.WITHER_PROOF_BLOCK.get(), ITEM_PROPERTIES));
             
+    // Wither Proof Stairs
+    public static final DeferredItem<Item> WITHER_PROOF_STAIRS = ITEMS.register("wither_proof_stairs",
+            () -> new BlockItem(ModBlocks.WITHER_PROOF_STAIRS.get(), ITEM_PROPERTIES));
+            
+    // Wither Proof Slab
+    public static final DeferredItem<Item> WITHER_PROOF_SLAB = ITEMS.register("wither_proof_slab",
+            () -> new BlockItem(ModBlocks.WITHER_PROOF_SLAB.get(), ITEM_PROPERTIES));
+
+    // Wither Proof Wall
+    public static final DeferredItem<Item> WITHER_PROOF_WALL = ITEMS.register("wither_proof_wall",
+            () -> new BlockItem(ModBlocks.WITHER_PROOF_WALL.get(), ITEM_PROPERTIES));
+            
     // Netherite Bars
     public static final DeferredItem<Item> NETHERITE_BARS = ITEMS.register("netherite_bars",
             () -> new BlockItem(ModBlocks.NETHERITE_BARS.get(), ITEM_PROPERTIES));

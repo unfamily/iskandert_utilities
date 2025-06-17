@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "A  ",
+    "AA ",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "item": "iska_utils:wither_proof_block"
+    }
+  },
+  "result": {
+    "id": "iska_utils:wither_proof_stairs",
+    "count": 4
+  }
+} 

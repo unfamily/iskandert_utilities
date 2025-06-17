@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "iska_utils:smooth_blackstone_wall"
+    "iska_utils:smooth_blackstone_wall",
+    "iska_utils:wither_proof_wall"
   ]
 } 

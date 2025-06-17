@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "type=bottom": { "model": "iska_utils:block/wither_proof_slab" },
+    "type=top": { "model": "iska_utils:block/wither_proof_slab_top" },
+    "type=double": { "model": "iska_utils:block/wither_proof_block" }
+  }
+} 

@@ -36,10 +36,6 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.ULTRA_MODULE.get());
                                 pOutput.accept(ModItems.RUBBER_BOOTS.get());
                                 
-                                // Wither Proof Blocks
-                                pOutput.accept(ModItems.WITHER_PROOF_BLOCK.get());
-                                pOutput.accept(ModItems.NETHERITE_BARS.get());
-                                
                                 // Rubber Tree Items
                                 pOutput.accept(ModItems.SAP.get());
                                 pOutput.accept(ModItems.RUBBER_CHUNK.get());
@@ -106,18 +102,30 @@ public class ModCreativeModeTabs {
                                     pOutput.accept(itemHolder.get());
                                 }
                                 
-                                // Utility Blocks
-                                pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
+                                // Bars
+                                pOutput.accept(ModItems.NETHERITE_BARS.get());
+
+                                // Wither Proof Blocks
+                                pOutput.accept(ModItems.WITHER_PROOF_BLOCK.get());
+                                pOutput.accept(ModItems.WITHER_PROOF_STAIRS.get());
+                                pOutput.accept(ModItems.WITHER_PROOF_SLAB.get());
+                                pOutput.accept(ModItems.WITHER_PROOF_WALL.get());
+
+                                // Smooth Blackstone Blocks
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE.get());
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE_SLAB.get());
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE_STAIRS.get());
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE_WALL.get());
                                 pOutput.accept(ModItems.PLATE_BASE_BLOCK.get());
+
+                                // Utility Blocks
+                                pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
                                 pOutput.accept(ModItems.RAFT.get());
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());
                                 pOutput.accept(ModItems.WEATHER_ALTERER.get());
                                 pOutput.accept(ModItems.TIME_ALTERER.get());
                                 pOutput.accept(ModItems.ANGEL_BLOCK.get());
+
 
                                 // Scanner
                                 pOutput.accept(ModItems.SCANNER.get());
