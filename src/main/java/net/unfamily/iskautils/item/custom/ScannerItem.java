@@ -122,15 +122,14 @@ public class ScannerItem extends Item {
             return InteractionResult.SUCCESS;
         }
         
-        // If player is crouching (Shift), register the target block
+        // If player is crouching (shift), register the target block or mob
         if (player.isCrouching()) {
             BlockState state = level.getBlockState(blockPos);
             Block block = state.getBlock();
             
             if (block != Blocks.AIR) {
-                // Register the target block in the scanner's NBT
+                // Register the target block
                 setTargetBlock(itemStack, block);
-                
                 player.displayClientMessage(Component.translatable("item.iska_utils.scanner.target_set", block.getName()), true);
                 return InteractionResult.SUCCESS;
             }
@@ -145,6 +144,29 @@ public class ScannerItem extends Item {
         
         if (level.isClientSide) {
             return InteractionResultHolder.success(itemStack);
+        }
+        
+        // If player is crouching (shift), allow using for chip transfer
+        if (player.isCrouching()) {
+            // Check if there is a chip in the offhand
+            ItemStack offHandItem = player.getItemInHand(InteractionHand.OFF_HAND);
+            if (offHandItem.getItem() instanceof ScannerChipItem) {
+                // Check if the chip has a valid target
+                ScannerChipItem chipItem = (ScannerChipItem) offHandItem.getItem();
+                boolean hasTarget = chipItem.getTargetBlock(offHandItem) != null || 
+                                   chipItem.getTargetMob(offHandItem) != null || 
+                                   chipItem.getGenericTarget(offHandItem) != null;
+                
+                if (hasTarget) {
+                    // Start using the item for the transfer
+                    player.displayClientMessage(Component.translatable("item.iska_utils.scanner.transferring_from_chip"), true);
+                    player.startUsingItem(hand);
+                    return InteractionResultHolder.consume(itemStack);
+                } else {
+                    player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"), true);
+                    return InteractionResultHolder.fail(itemStack);
+                }
+            }
         }
         
         // Check if we have a target block, mob or generic target
@@ -1031,10 +1053,6 @@ public class ScannerItem extends Item {
         Component instruction1Text = Component.translatable("item.iska_utils.scanner.tooltip.instruction1")
             .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
         tooltipComponents.add(instruction1Text);
-
-        Component instruction2Text = Component.translatable("item.iska_utils.scanner.tooltip.instruction2")
-            .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-        tooltipComponents.add(instruction2Text);
 
         // Chip integration info
         Component chipInfoText = Component.translatable("item.iska_utils.scanner.tooltip.chip_info0")

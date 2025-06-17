@@ -38,11 +38,70 @@ public class ScannerChipItem extends Item {
     private static final String TARGET_BLOCK_TAG = "TargetBlock";
     private static final String TARGET_MOB_TAG = "TargetMob";
     private static final String TARGET_GEN_TAG = "TargetGeneric";
+    private static final String INITIALIZED_TAG = "Initialized";
     
     public ScannerChipItem() {
         super(new Item.Properties()
                 .stacksTo(1)
                 .rarity(Rarity.UNCOMMON));
+    }
+    
+    @Override
+    public void onCraftedBy(ItemStack itemStack, Level level, Player player) {
+        super.onCraftedBy(itemStack, level, player);
+        
+        // Inizializza l'NBT per i chip specifici
+        initializeSpecializedChip(itemStack);
+    }
+    
+    @Override
+    public void inventoryTick(ItemStack itemStack, Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
+        super.inventoryTick(itemStack, level, entity, slotId, isSelected);
+        
+        // Verifica se il chip è già inizializzato
+        if (level.isClientSide) return;
+        
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (tag.contains(INITIALIZED_TAG)) return;
+        
+        // Inizializza l'NBT per i chip specifici se non è già impostato
+        initializeSpecializedChip(itemStack);
+        
+        // Imposta il flag di inizializzazione
+        tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        tag.putBoolean(INITIALIZED_TAG, true);
+        itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+    
+    /**
+     * Inizializza i chip specializzati con il loro target predefinito
+     */
+    private void initializeSpecializedChip(ItemStack itemStack) {
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
+        String itemPath = itemId.getPath();
+        
+        if (itemPath.contains("scanner_chip_ores") && getGenericTarget(itemStack) == null) {
+            // Inizializza il chip per minerali
+            setGenericTarget(itemStack, "ores");
+        } else if (itemPath.contains("scanner_chip_mobs") && getGenericTarget(itemStack) == null) {
+            // Inizializza il chip per mostri
+            setGenericTarget(itemStack, "mobs");
+        }
+    }
+    
+    @Override
+    public ItemStack getDefaultInstance() {
+        ItemStack itemStack = super.getDefaultInstance();
+        
+        // Inizializza l'NBT per i chip specifici
+        initializeSpecializedChip(itemStack);
+        
+        // Imposta il flag di inizializzazione
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        tag.putBoolean(INITIALIZED_TAG, true);
+        itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        
+        return itemStack;
     }
     
     @Override
@@ -168,30 +227,6 @@ public class ScannerChipItem extends Item {
         }
         
         return InteractionResultHolder.pass(itemStack);
-    }
-    
-    @Override
-    public boolean hurtEnemy(ItemStack itemstack, LivingEntity entity, LivingEntity sourceentity) {
-        if (sourceentity instanceof Player player && !(entity instanceof Player)) {
-            // Check if this is a specialized chip (ores or mobs) - these cannot be overwritten
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemstack.getItem());
-            String itemPath = itemId.getPath();
-            boolean isSpecializedChip = itemPath.contains("scanner_chip_ores") || itemPath.contains("scanner_chip_mobs");
-            
-            // Only set target for regular chips
-            if (!isSpecializedChip) {
-                // Select the mob as the target
-                String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
-                
-                // Set the target mob
-                setTargetMob(itemstack, entityId);
-                
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.mob_target_set", entity.getName()), true);
-                
-                return true; // Don't damage the mob
-            }
-        }
-        return false;
     }
     
     /**
