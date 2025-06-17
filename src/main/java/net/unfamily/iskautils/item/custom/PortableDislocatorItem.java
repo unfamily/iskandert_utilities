@@ -1048,7 +1048,8 @@ public class PortableDislocatorItem extends Item {
         ItemStack mainHand = player.getMainHandItem();
         ItemStack offHand = player.getOffhandItem();
         
-
+        LOGGER.debug("Checking hands for compass: mainHand={}, offHand={}", 
+                    mainHand.getItem(), offHand.getItem());
         
         ItemStack compassStack = null;
         String compassType = null;
@@ -1057,27 +1058,30 @@ public class PortableDislocatorItem extends Item {
         if (isValidCompass(mainHand)) {
             compassStack = mainHand;
             compassType = getCompassType(mainHand);
-
+            LOGGER.debug("Found valid compass in main hand: type={}", compassType);
         }
         // If not found in main hand, check off hand
         else if (isValidCompass(offHand)) {
             compassStack = offHand;
             compassType = getCompassType(offHand);
-
+            LOGGER.debug("Found valid compass in off hand: type={}", compassType);
         }
         
         if (compassStack == null || compassType == null) {
-            // Silent failure - no feedback
+            LOGGER.debug("No valid compass found in hands");
             return;
         }
 
         // Extract coordinates from compass using a robust approach
+        LOGGER.debug("Attempting to extract coordinates from compass");
         Pair<Integer, Integer> coordinates = extractCoordinates(compassStack, player);
         
         if (coordinates == null) {
-            // Silent failure - no feedback
+            LOGGER.debug("Failed to extract coordinates from compass");
             return;
         }
+        
+        LOGGER.debug("Successfully extracted coordinates: x={}, z={}", coordinates.getLeft(), coordinates.getRight());
 
         // If we're on the client side, create a request for the server
         if (player.level().isClientSide) {
@@ -1131,30 +1135,143 @@ public class PortableDislocatorItem extends Item {
     }
     
     /**
+     * Checks if the ItemStack is a valid compass
+     */
+    private static boolean isValidCompass(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        String itemIdString = itemId.toString();
+        
+        LOGGER.debug("Checking if item is valid compass: itemId={}", itemIdString);
+        
+        boolean isValid = itemIdString.equals("naturescompass:naturescompass") || 
+                         itemIdString.equals("explorerscompass:explorerscompass") ||
+                         itemIdString.equals("structurecompass:structure_compass");
+
+        
+        LOGGER.debug("Item valid compass check result: {}", isValid);
+        
+        return isValid;
+    }
+
+    /**
+     * Gets the compass type from the ItemStack
+     */
+    private static String getCompassType(ItemStack stack) {
+        if (stack.isEmpty()) return null;
+        
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        String itemIdString = itemId.toString();
+        
+        LOGGER.debug("Getting compass type for itemId: {}", itemIdString);
+        
+        if (itemIdString.equals("naturescompass:naturescompass")) {
+            return "naturescompass";
+        } else if (itemIdString.equals("explorerscompass:explorerscompass")) {
+            return "explorerscompass";
+        } else if (itemIdString.equals("structurecompass:structure_compass") || 
+                   itemIdString.equals("structurecompass:structurecompass") ||
+                   itemIdString.contains("structurecompass")) {
+            return "structurecompass";
+        }
+        return null;
+    }
+    
+    /**
      * Extracts coordinates using reflection on DataComponents
      */
     private static Pair<Integer, Integer> extractCoordinates(ItemStack compass, Player player) {
-        String compassType = compass.getItem().toString();
+        // Get compass type using the more reliable method
+        String compassTypeFromId = getCompassType(compass);
+        String compassItemString = compass.getItem().toString();
+        String compassString = compass.toString();
+        
+        // Debug logging
+        LOGGER.debug("Processing compass: type={}, item={}", compassTypeFromId, compassItemString);
+        LOGGER.debug("Compass string: {}", compassString);
         
         var components = compass.getComponents();
         
         try {
+            // Method 0: Special handling for structure compass - try direct component access first
+            if ("structurecompass".equals(compassTypeFromId)) {
+                // Try string parsing as the most reliable method for structure compass
+                Pattern structurePattern = Pattern.compile("pos:\\[I;(-?\\d+),\\d+,(-?\\d+)\\]");
+                Matcher structureMatcher = structurePattern.matcher(compassString);
+                if (structureMatcher.find()) {
+                    int x = Integer.parseInt(structureMatcher.group(1));
+                    int z = Integer.parseInt(structureMatcher.group(2));
+                    LOGGER.debug("Extracted coordinates from string parsing (early): x={}, z={}", x, z);
+                    return Pair.of(x, z);
+                }
+                
+                // Alternative pattern for structure compass
+                Pattern altPattern = Pattern.compile("structurecompass:structure_info=\\{[^}]*pos:\\[I;(-?\\d+),\\d+,(-?\\d+)\\]");
+                Matcher altMatcher = altPattern.matcher(compassString);
+                if (altMatcher.find()) {
+                    int x = Integer.parseInt(altMatcher.group(1));
+                    int z = Integer.parseInt(altMatcher.group(2));
+                    LOGGER.debug("Extracted coordinates from alternative pattern: x={}, z={}", x, z);
+                    return Pair.of(x, z);
+                }
+                
+                // Try to find structure_info component directly
+                for (var entry : components) {
+                    String componentKey = entry.type().toString();
+                    Object componentValue = entry.value();
+                    
+                    LOGGER.debug("Structure compass component: key={}, value={}, valueClass={}", 
+                                 componentKey, componentValue, componentValue.getClass().getSimpleName());
+                    
+                    if (componentKey.contains("structure_info") || componentKey.endsWith("structure_info")) {
+                        if (componentValue instanceof CompoundTag) {
+                            CompoundTag structureInfo = (CompoundTag) componentValue;
+                            LOGGER.debug("Found structure_info CompoundTag: {}", structureInfo);
+                            if (structureInfo.contains("pos")) {
+                                int[] pos = structureInfo.getIntArray("pos");
+                                if (pos.length >= 3) {
+                                    int x = pos[0];
+                                    int z = pos[2];
+                                    LOGGER.debug("Extracted coordinates from structure_info: x={}, z={}", x, z);
+                                    return Pair.of(x, z);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
             // Method 1: Try to read from CustomData (traditional NBT)
             if (compass.has(DataComponents.CUSTOM_DATA)) {
                 var customData = compass.get(DataComponents.CUSTOM_DATA);
                 var nbt = customData.copyTag();
                 
-                if (compassType.contains("naturescompass")) {
+                LOGGER.debug("Found CustomData NBT: {}", nbt);
+                
+                if ("naturescompass".equals(compassTypeFromId)) {
                     if (nbt.contains("naturescompass:found_x") && nbt.contains("naturescompass:found_z")) {
                         int x = nbt.getInt("naturescompass:found_x");
                         int z = nbt.getInt("naturescompass:found_z");
                         return Pair.of(x, z);
                     }
-                } else if (compassType.contains("explorerscompass")) {
+                } else if ("explorerscompass".equals(compassTypeFromId)) {
                     if (nbt.contains("explorerscompass:found_x") && nbt.contains("explorerscompass:found_z")) {
                         int x = nbt.getInt("explorerscompass:found_x");
                         int z = nbt.getInt("explorerscompass:found_z");
                         return Pair.of(x, z);
+                    }
+                } else if ("structurecompass".equals(compassTypeFromId)) {
+                    if (nbt.contains("structurecompass:structure_info")) {
+                        CompoundTag structureInfo = nbt.getCompound("structurecompass:structure_info");
+                        if (structureInfo.contains("pos")) {
+                            int[] pos = structureInfo.getIntArray("pos");
+                            if (pos.length >= 3) {
+                                int x = pos[0];
+                                int z = pos[2];
+                                return Pair.of(x, z);
+                            }
+                        }
                     }
                 }
             }
@@ -1163,48 +1280,141 @@ public class PortableDislocatorItem extends Item {
             Integer foundX = null;
             Integer foundZ = null;
             
+            LOGGER.debug("Method 2: Iterating through {} components", components.size());
+            
             // Try to extract values by converting from Object to Integer
             for (var entry : components) {
                 String componentKey = entry.type().toString();
                 Object componentValue = entry.value();
                 
-                if (compassType.contains("naturescompass")) {
+                LOGGER.debug("Component: key={}, value={}, valueClass={}", 
+                            componentKey, componentValue, componentValue.getClass().getSimpleName());
+                
+                if ("naturescompass".equals(compassTypeFromId)) {
                     if (componentKey.contains("found_x") && componentValue instanceof Integer) {
                         foundX = (Integer) componentValue;
                     }
                     if (componentKey.contains("found_z") && componentValue instanceof Integer) {
                         foundZ = (Integer) componentValue;
                     }
-                } else if (compassType.contains("explorerscompass")) {
+                } else if ("explorerscompass".equals(compassTypeFromId)) {
                     if (componentKey.contains("found_x") && componentValue instanceof Integer) {
                         foundX = (Integer) componentValue;
                     }
                     if (componentKey.contains("found_z") && componentValue instanceof Integer) {
                         foundZ = (Integer) componentValue;
+                    }
+                } else if ("structurecompass".equals(compassTypeFromId)) {
+                    // Handle structure_info component for structure compass
+                    if (componentKey.contains("structure_info")) {
+                        LOGGER.debug("Found structure_info in Method 2: key={}, valueClass={}", 
+                                    componentKey, componentValue.getClass().getSimpleName());
+                        
+                        // Try to handle StructureInfo object directly
+                        if (componentValue.getClass().getSimpleName().equals("StructureInfo")) {
+                            try {
+                                // Use reflection to get the BlockPos from StructureInfo
+                                var posField = componentValue.getClass().getMethod("pos");
+                                Object blockPos = posField.invoke(componentValue);
+                                
+                                if (blockPos != null) {
+                                    // Extract X and Z from BlockPos
+                                    var getXMethod = blockPos.getClass().getMethod("getX");
+                                    var getZMethod = blockPos.getClass().getMethod("getZ");
+                                    
+                                    int x = (Integer) getXMethod.invoke(blockPos);
+                                    int z = (Integer) getZMethod.invoke(blockPos);
+                                    
+                                    LOGGER.debug("Method 2: Extracted coordinates from StructureInfo: x={}, z={}", x, z);
+                                    foundX = x;
+                                    foundZ = z;
+                                }
+                            } catch (Exception e) {
+                                LOGGER.debug("Method 2: StructureInfo reflection failed: {}", e.getMessage());
+                                
+                                // Fallback: try string parsing on the StructureInfo object
+                                try {
+                                    String valueString = componentValue.toString();
+                                    LOGGER.debug("Method 2: Trying string parsing on StructureInfo: {}", valueString);
+                                    
+                                    // Pattern for BlockPos{x=3200, y=0, z=6672}
+                                    Pattern blockPosPattern = Pattern.compile("BlockPos\\{x=(-?\\d+),\\s*y=(-?\\d+),\\s*z=(-?\\d+)\\}");
+                                    Matcher matcher = blockPosPattern.matcher(valueString);
+                                    if (matcher.find()) {
+                                        foundX = Integer.parseInt(matcher.group(1));
+                                        foundZ = Integer.parseInt(matcher.group(3));
+                                        LOGGER.debug("Method 2: String parsing found coordinates from StructureInfo x={}, z={}", foundX, foundZ);
+                                    }
+                                } catch (Exception ex) {
+                                    LOGGER.debug("Method 2: StructureInfo string parsing failed: {}", ex.getMessage());
+                                }
+                            }
+                        }
+                        else if (componentValue instanceof CompoundTag) {
+                            CompoundTag structureInfo = (CompoundTag) componentValue;
+                            if (structureInfo.contains("pos")) {
+                                int[] pos = structureInfo.getIntArray("pos");
+                                if (pos.length >= 3) {
+                                    foundX = pos[0];
+                                    foundZ = pos[2];
+                                    LOGGER.debug("Method 2: Found coordinates x={}, z={}", foundX, foundZ);
+                                }
+                            }
+                        }
+                        // Also try to handle if the component is stored differently
+                        else {
+                            try {
+                                String valueString = componentValue.toString();
+                                LOGGER.debug("Method 2: Trying string parsing on: {}", valueString);
+                                // Try to extract from string representation
+                                Pattern posPattern = Pattern.compile("pos:\\[I;(-?\\d+),\\d+,(-?\\d+)\\]");
+                                Matcher matcher = posPattern.matcher(valueString);
+                                if (matcher.find()) {
+                                    foundX = Integer.parseInt(matcher.group(1));
+                                    foundZ = Integer.parseInt(matcher.group(2));
+                                    LOGGER.debug("Method 2: String parsing found coordinates x={}, z={}", foundX, foundZ);
+                                }
+                            } catch (Exception e) {
+                                LOGGER.debug("Method 2: String parsing failed: {}", e.getMessage());
+                            }
+                        }
                     }
                 }
             }
             
             // If we found both coordinates, return them
             if (foundX != null && foundZ != null) {
+                LOGGER.debug("Method 2: Successfully found coordinates x={}, z={}", foundX, foundZ);
                 return Pair.of(foundX, foundZ);
+            } else {
+                LOGGER.debug("Method 2: No coordinates found (foundX={}, foundZ={})", foundX, foundZ);
             }
             
             // Method 3: toString() parsing as fallback
-            String compassString = compass.toString();
+            //String compassString = compass.toString();
             
             // More flexible patterns that handle both possible orders
             Pattern patternXZ, patternZX;
-            if (compassType.contains("naturescompass")) {
+            if ("naturescompass".equals(compassTypeFromId)) {
                 // Pattern for X before Z
                 patternXZ = Pattern.compile("naturescompass:found_x=(-?\\d+).*?naturescompass:found_z=(-?\\d+)");
                 // Pattern for Z before X
                 patternZX = Pattern.compile("naturescompass:found_z=(-?\\d+).*?naturescompass:found_x=(-?\\d+)");
-            } else if (compassType.contains("explorerscompass")) {
+            } else if ("explorerscompass".equals(compassTypeFromId)) {
                 // Pattern for X before Z
                 patternXZ = Pattern.compile("explorerscompass:found_x=(-?\\d+).*?explorerscompass:found_z=(-?\\d+)");
                 // Pattern for Z before X
                 patternZX = Pattern.compile("explorerscompass:found_z=(-?\\d+).*?explorerscompass:found_x=(-?\\d+)");
+            } else if ("structurecompass".equals(compassTypeFromId)) {
+                // Pattern for structure_info with pos array
+                Pattern structurePattern = Pattern.compile("pos:\\[I;(-?\\d+),\\d+,(-?\\d+)\\]");
+                Matcher structureMatcher = structurePattern.matcher(compassString);
+                if (structureMatcher.find()) {
+                    int x = Integer.parseInt(structureMatcher.group(1));
+                    int z = Integer.parseInt(structureMatcher.group(2));
+                    return Pair.of(x, z);
+                }
+                return null;
             } else {
                 return null;
             }
@@ -1226,37 +1436,10 @@ public class PortableDislocatorItem extends Item {
             }
             
         } catch (Exception e) {
-            // Silent failure
+            LOGGER.debug("Exception in extractCoordinates: {}", e.getMessage());
         }
         
-        return null;
-    }
-
-    /**
-     * Checks if the ItemStack is a valid compass
-     */
-    private static boolean isValidCompass(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-        
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        return itemId.toString().equals("naturescompass:naturescompass") || 
-               itemId.toString().equals("explorerscompass:explorerscompass");
-    }
-
-    /**
-     * Gets the compass type from the ItemStack
-     */
-    private static String getCompassType(ItemStack stack) {
-        if (stack.isEmpty()) return null;
-        
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        String itemIdString = itemId.toString();
-        
-        if (itemIdString.equals("naturescompass:naturescompass")) {
-            return "naturescompass";
-        } else if (itemIdString.equals("explorerscompass:explorerscompass")) {
-            return "explorerscompass";
-        }
+        LOGGER.debug("extractCoordinates: No coordinates found for compass type {}", compassTypeFromId);
         return null;
     }
     
