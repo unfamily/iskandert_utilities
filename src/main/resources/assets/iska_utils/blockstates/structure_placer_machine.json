@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "iska_utils:block/structure_placer_machine"
+    }
+  }
+} 

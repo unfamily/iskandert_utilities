@@ -308,6 +308,9 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.SCAN_BLOCK.get(), ITEM_PROPERTIES));
 
     // ===== STRUCTURE SYSTEM =====
+    public static final DeferredItem<Item> STRUCTURE_PLACER_MACHINE = ITEMS.register("structure_placer_machine",
+            () -> new BlockItem(ModBlocks.STRUCTURE_PLACER_MACHINE.get(), ITEM_PROPERTIES));
+            
     public static final DeferredItem<Item> STRUCTURE_PLACER = ITEMS.register("structure_placer",
             () -> new StructurePlacerItem(new Item.Properties().stacksTo(1)));
 

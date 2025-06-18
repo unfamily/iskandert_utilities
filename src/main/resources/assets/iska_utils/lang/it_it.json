@@ -113,7 +113,7 @@
 
   "item.iska_utils.portable_dislocator.tooltip.main": "Premi %s per teletrasportarti vicino alle coordinate della bussola (da 200 a 300 blocchi di distanza)",
   "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Ti teletrasporta vicino alle coordinate della bussola (da 200 a 300 blocchi di distanza)",
-  "item.iska_utils.portable_dislocator.tooltip.compasses": "Funziona con la Bussola Naturale e la Bussola dell'Esploratore",
+  "item.iska_utils.portable_dislocator.tooltip.compasses": "Funziona con il Natura's Compass, l'Explorer's Compass e altri oggetti simili",
   "item.iska_utils.portable_dislocator.tooltip.energy": "Energia: ",
   "item.iska_utils.portable_dislocator.tooltip.xp_backup": "In alternativa consuma %d XP se l'energia è esaurita",
   "item.iska_utils.portable_dislocator.tooltip.consumes_xp": "Consuma %d XP per teletrasporto",
@@ -201,7 +201,7 @@
   
     "chat.iska_utils.structure_placer.required_blocks": "Blocchi richiesti:",
   "gui.iska_utils.structure_placer.title": "Selettore Strutture",
-  "gui.iska_utils.structure_placer.save": "Salva",
+  "gui.iska_utils.structure_placer.apply": "Applica",
   "gui.iska_utils.structure_placer.cancel": "Annulla",
   "chat.iska_utils.structure_placer.structure_saved": "Struttura salvata: %s",
   "chat.iska_utils.structure_placer.no_structure_selected": "Nessuna struttura selezionata",
@@ -261,5 +261,30 @@
   "item.iska_utils.swiss_wrench.message.cannot_rotate": "Impossibile ruotare questo blocco",
   "item.iska_utils.swiss_wrench.tooltip.current_mode": "Modalità corrente: %s",
   "item.iska_utils.swiss_wrench.tooltip.desc0": "Shift + Click destro per ruotare i blocchi",
-  "item.iska_utils.swiss_wrench.tooltip.desc1": "Click sinistro per cambiare modalità di rotazione su un blocco"
+  "item.iska_utils.swiss_wrench.tooltip.desc1": "Click sinistro per cambiare modalità di rotazione su un blocco",
+
+  "item.iska_utils.structure_placer.tooltip.right_click_block": "§7Tasto destro sul blocco per posizionarlo",
+  "item.iska_utils.structure_placer.tooltip.right_click_air": "§7Tasto destro sull'aria per aprire la GUI di configurazione",
+  "item.iska_utils.structure_placer.tooltip.left_click_rotate": "§7Tasto sinistro su un blocco per ruotare",
+  "item.iska_utils.structure_placer.tooltip.shift_force": "§7Shift+click per forzare il piazzamento",
+  "item.iska_utils.structure_placer.tooltip.no_selection": "§7Tasto destro per selezionare la struttura",
+  "item.iska_utils.structure_placer.tooltip.preview_enabled": "§aModalità anteprima abilitata",
+  "item.iska_utils.structure_placer.tooltip.rotation": "§eRotazione: §f%s",
+  "item.iska_utils.structure_placer.rotated": "§6Struttura ruotata verso: §f%s",
+  "item.iska_utils.structure_placer.no_structure_selected": "§cNessuna struttura selezionata! Tasto destro per selezionare.",
+  
+      "item.iska_utils.structure_monouse.rotated": "§6Struttura ruotata verso: §f%s",
+    "item.iska_utils.structure_monouse.tooltip.right_click": "§9Tasto destro: Anteprima",
+    "item.iska_utils.structure_monouse.tooltip.double_click": "§9Doppio-click: Posiziona (timeout 5s)",
+    "item.iska_utils.structure_monouse.tooltip.left_click_rotate": "§9Tasto sinistro: Ruota",
+    "item.iska_utils.structure_monouse.tooltip.single_use": "§6Item monouso",
+  
+  "item.iska_utils.iska_utils_wither_grinder": "Kit Trituratore di Wither",
+  
+  "block.iska_utils.structure_placer_machine": "Macchina Piazza-Strutture",
+  
+  "direction.iska_utils.north": "Nord",
+  "direction.iska_utils.east": "Est", 
+  "direction.iska_utils.south": "Sud",
+  "direction.iska_utils.west": "Ovest"
 }

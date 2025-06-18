@@ -88,6 +88,10 @@ public class IskaUtils {
         CommandItemLoader.scanConfigDirectory();
         CommandItemRegistry.initializeItems();
         
+        // ===== STRUCTURE MONOUSE ITEM SYSTEM =====
+        // Carica e inizializza gli item Structure Monouse dinamici
+        net.unfamily.iskautils.structure.StructureMonouseRegistry.initializeItems();
+        
         // ===== STRUCTURE SYSTEM =====
         // Carica le definizioni delle strutture dal sistema di scripting
         StructureLoader.scanConfigDirectory();
@@ -104,6 +108,9 @@ public class IskaUtils {
         
         // Register Command Items system
         CommandItemRegistry.register(modEventBus);
+        
+        // Register Structure Monouse Items system
+        net.unfamily.iskautils.structure.StructureMonouseRegistry.register(modEventBus);
         
         // Register GUI MenuTypes
         net.unfamily.iskautils.client.gui.ModMenuTypes.MENUS.register(modEventBus);

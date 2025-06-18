@@ -17,15 +17,15 @@ import net.minecraft.client.gui.components.Button;
 public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlacerMenu> {
     
     // Background texture
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/background_structure_selector.png");
+    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/background_item_structure_selector.png");
     private static final ResourceLocation ENTRY_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
     private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
     private static final ResourceLocation TINY_BUTTONS_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/tiny_buttons.png");
     private static final ResourceLocation SINGLE_SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
     
-    // Dimensioni della texture (basate sul file PNG reale: 200x240)
+    // Dimensioni della texture (basate sul file PNG reale: 200x164)
     private static final int GUI_WIDTH = 200;
-    private static final int GUI_HEIGHT = 240;
+    private static final int GUI_HEIGHT = 164;
     
     // Dimensioni degli elementi UI
     private static final int ENTRY_WIDTH = 140; // entry_wide.png è 140x24
@@ -111,11 +111,11 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
         int cancelX = this.leftPos + CANCEL_BUTTON_X;
         int buttonY = this.topPos + SAVE_CANCEL_Y;
         
-        this.saveButton = Button.builder(Component.literal("Save"), button -> handleSaveClick())
+        this.saveButton = Button.builder(Component.translatable("gui.iska_utils.structure_placer.apply"), button -> handleSaveClick())
             .bounds(saveX, buttonY, SAVE_CANCEL_BUTTON_WIDTH, SAVE_CANCEL_BUTTON_HEIGHT)
             .build();
         
-        this.cancelButton = Button.builder(Component.literal("Cancel"), button -> handleCancelClick())
+        this.cancelButton = Button.builder(Component.translatable("gui.iska_utils.structure_placer.cancel"), button -> handleCancelClick())
             .bounds(cancelX, buttonY, SAVE_CANCEL_BUTTON_WIDTH, SAVE_CANCEL_BUTTON_HEIGHT)
             .build();
         
@@ -130,7 +130,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         // Disegna il background
-        guiGraphics.blit(BACKGROUND, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, 200, 240);
+        guiGraphics.blit(BACKGROUND, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, 200, 164);
         
         // Disegna le 3 entry centrali
         renderEntries(guiGraphics, mouseX, mouseY);
@@ -150,8 +150,9 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Titolo della GUI (centrato)
-        String title = "Structure Selector";
+        // Titolo della GUI (centrato) - ora usa la traduzione
+        Component titleComponent = Component.translatable("gui.iska_utils.structure_placer.title");
+        String title = titleComponent.getString();
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
         guiGraphics.drawString(this.font, title, titleX, 8, 0x404040, false);
     }

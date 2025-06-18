@@ -113,7 +113,7 @@
   
   "item.iska_utils.portable_dislocator.tooltip.main": "Press %s to teleport near compass coordinates (200-300 blocks away)",
   "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Teleports near compass coordinates (200-300 blocks away)",
-  "item.iska_utils.portable_dislocator.tooltip.compasses": "Works with Nature's Compass and Explorer's Compass",
+  "item.iska_utils.portable_dislocator.tooltip.compasses": "Works with Nature's Compass, Explorer's Compass and other compass-like items",
   "item.iska_utils.portable_dislocator.tooltip.energy": "Energy: ",
   "item.iska_utils.portable_dislocator.tooltip.xp_backup": "Alternatively consumes %d XP if out of energy",
   "item.iska_utils.portable_dislocator.tooltip.consumes_xp": "Consumes %d XP per teleportation",
@@ -255,13 +255,38 @@
   "commands.iska_utils.structure.error.placement_failed": "Failed to place structure",
 
   "gui.iska_utils.structure_placer.title": "Structure Placer",
-  "gui.iska_utils.structure_placer.save": "Save",
+  "gui.iska_utils.structure_placer.apply": "Apply",
   "gui.iska_utils.structure_placer.cancel": "Cancel",
   "chat.iska_utils.structure_placer.structure_saved": "Structure saved: %s",
   "chat.iska_utils.structure_placer.no_structure_selected": "No structure selected",
   "chat.iska_utils.structure_placer.item_not_found": "Structure Placer item not found in hand",
   "chat.iska_utils.structure_placer.required_blocks": "Required blocks:",
   "iska_utils.wither_proof_block": "Wither-Proof Blocks",
-  "minecraft.piston": "Pistons",
-  "minecraft.lever": "Levers"
+  "minecraft.piston": "Minecraft: Piston",
+  "minecraft.lever": "Minecraft: Lever",
+
+  "item.iska_utils.structure_placer.tooltip.right_click_block": "§7Right-click on block to place structure",
+  "item.iska_utils.structure_placer.tooltip.right_click_air": "§7Right-click on air to open configuration GUI",
+  "item.iska_utils.structure_placer.tooltip.left_click_rotate": "§7Left-click on block to rotate structure",
+  "item.iska_utils.structure_placer.tooltip.shift_force": "§7Shift+click to force placement",
+  "item.iska_utils.structure_placer.tooltip.no_selection": "§7Right-click to select structure",
+  "item.iska_utils.structure_placer.tooltip.preview_enabled": "§aPreview mode enabled",
+  "item.iska_utils.structure_placer.tooltip.rotation": "§eRotation: §f%s",
+  "item.iska_utils.structure_placer.rotated": "§6Structure rotated to: §f%s",
+  "item.iska_utils.structure_placer.no_structure_selected": "§cNo structure selected! Right-click to select.",
+  
+      "item.iska_utils.structure_monouse.rotated": "§6Structure rotated to: §f%s",
+    "item.iska_utils.structure_monouse.tooltip.right_click": "§9Right click: Preview",
+    "item.iska_utils.structure_monouse.tooltip.double_click": "§9Double-click: Place (5s timeout)",
+    "item.iska_utils.structure_monouse.tooltip.left_click_rotate": "§9Left click: Rotate",
+    "item.iska_utils.structure_monouse.tooltip.single_use": "§6Single use item",
+  
+  "item.iska_utils.iska_utils_wither_grinder": "Wither Grinder Kit",
+  
+  "block.iska_utils.structure_placer_machine": "Structure Placer Machine",
+  
+  "direction.iska_utils.north": "North",
+  "direction.iska_utils.east": "East", 
+  "direction.iska_utils.south": "South",
+  "direction.iska_utils.west": "West"
 }

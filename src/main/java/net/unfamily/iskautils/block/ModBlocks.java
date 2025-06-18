@@ -63,6 +63,12 @@ public class ModBlocks {
             .sound(SoundType.NETHERITE_BLOCK)
             .requiresCorrectToolForDrops()
             .noOcclusion();
+            
+    private static final BlockBehaviour.Properties STRUCTURE_PLACER_MACHINE_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL)
+            .strength(3.0f, 6.0f)
+            .sound(SoundType.METAL)
+            .requiresCorrectToolForDrops();
     
     // Wither Proof Block
     public static final DeferredBlock<WitherProofBlock> WITHER_PROOF_BLOCK = BLOCKS.register("wither_proof_block",
@@ -129,6 +135,10 @@ public class ModBlocks {
             () -> new PlayerUltraVectBlock(VECTOR_PROPERTIES));
     
     // ===== UTILITY BLOCKS =====
+    
+    // Structure Placer Machine (automated structure placement)
+    public static final DeferredBlock<StructurePlacerMachineBlock> STRUCTURE_PLACER_MACHINE = BLOCKS.register("structure_placer_machine",
+            () -> new StructurePlacerMachineBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
     
     // Hellfire Igniter (creates fire when activated by redstone)
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",

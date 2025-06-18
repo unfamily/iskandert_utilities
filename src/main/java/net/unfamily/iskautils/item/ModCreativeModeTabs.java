@@ -82,7 +82,7 @@ public class ModCreativeModeTabs {
                                     }
                                 }
                                 
-                                // Standard Vector Plates
+                                                // Standard Vector Plates
                                 pOutput.accept(ModItems.SLOW_VECT.get());
                                 pOutput.accept(ModItems.MODERATE_VECT.get());
                                 pOutput.accept(ModItems.FAST_VECT.get());
@@ -133,8 +133,16 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SCANNER_CHIP_ORES.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP_MOBS.get());
                                 
-                                // Structure System
-                                pOutput.accept(ModItems.STRUCTURE_PLACER.get());
+                                                // Structure System
+                pOutput.accept(ModItems.STRUCTURE_PLACER_MACHINE.get());
+                pOutput.accept(ModItems.STRUCTURE_PLACER.get());
+                
+                // Structure Monouse Items
+                Map<String, DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem>> monouseItems = 
+                    net.unfamily.iskautils.structure.StructureMonouseRegistry.getAllItems();
+                for (DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem> itemHolder : monouseItems.values()) {
+                    pOutput.accept(itemHolder.get());
+                }
                                 
                                 // Artifacts
                                 pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());
