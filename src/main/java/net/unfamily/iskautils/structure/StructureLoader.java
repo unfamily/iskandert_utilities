@@ -132,32 +132,41 @@ public class StructureLoader {
                 "                [[\"   \"],[\"   \"],[\"   \"],[\"   \"],[\"AAA\"], [\"AAA\"], [\"AAA\"]]\n" +
                 "            ],\n" +
                 "            \"key\": {\n" +
-                "                \"A\": [\n" +
-                "                    {\n" +
-                "                        \"block\": \"iska_utils:wither_proof_block\"\n" +
-                "                    },\n" +
-                "                    {\n" +
-                "                        \"block\": \"mob_grinding_utils:tinted_glass\"\n" +
-                "                    }\n" +
-                "                ],\n" +
-                "                \"@\": [\n" +
-                "                    {\n" +
-                "                        \"block\": \"minecraft:piston\",\n" +
-                "                        \"properties\": {\n" +
-                "                            \"facing\": \"up\"\n" +
+                "                \"A\": {\n" +
+                "                    \"display\": \"iska_utils.wither_proof_block\",\n" +
+                "                    \"alternatives\": [\n" +
+                "                        {\n" +
+                "                            \"block\": \"iska_utils:wither_proof_block\"\n" +
+                "                        },\n" +
+                "                        {\n" +
+                "                            \"block\": \"mob_grinding_utils:tinted_glass\"\n" +
                 "                        }\n" +
-                "                    }\n" +
-                "                ],\n" +
-                "                \"L\": [\n" +
-                "                    {\n" +
-                "                        \"block\": \"minecraft:lever\",\n" +
-                "                        \"properties\": {\n" +
-                "                            \"face\": \"floor\",\n" +
-                "                            \"facing\": \"east\",\n" +
-                "                            \"powered\": \"false\"\n" +
+                "                    ]\n" +
+                "                },\n" +
+                "                \"@\": {\n" +
+                "                    \"display\": \"minecraft.piston\",\n" +
+                "                    \"alternatives\": [\n" +
+                "                        {\n" +
+                "                            \"block\": \"minecraft:piston\",\n" +
+                "                            \"properties\": {\n" +
+                "                                \"facing\": \"up\"\n" +
+                "                            }\n" +
                 "                        }\n" +
-                "                    }\n" +
-                "                ]\n" +
+                "                    ]\n" +
+                "                },\n" +
+                "                \"L\": {\n" +
+                "                    \"display\": \"minecraft.lever\",\n" +
+                "                    \"alternatives\": [\n" +
+                "                        {\n" +
+                "                            \"block\": \"minecraft:lever\",\n" +
+                "                            \"properties\": {\n" +
+                "                                \"face\": \"floor\",\n" +
+                "                                \"facing\": \"east\",\n" +
+                "                                \"powered\": \"false\"\n" +
+                "                            }\n" +
+                "                        }\n" +
+                "                    ]\n" +
+                "                }\n" +
                 "            }\n" +
                 "        }\n" +
                 "    ]\n" +
@@ -407,37 +416,69 @@ public class StructureLoader {
         Map<String, List<StructureDefinition.BlockDefinition>> key = new HashMap<>();
         
         for (String keyChar : keyJson.keySet()) {
-            JsonArray blockDefArray = keyJson.getAsJsonArray(keyChar);
+            JsonElement keyElement = keyJson.get(keyChar);
             List<StructureDefinition.BlockDefinition> blockDefs = new ArrayList<>();
+            String groupDisplayName = null;
             
-            for (JsonElement blockDefElement : blockDefArray) {
-                JsonObject blockDefJson = blockDefElement.getAsJsonObject();
-                StructureDefinition.BlockDefinition blockDef = new StructureDefinition.BlockDefinition();
+            if (keyElement.isJsonObject()) {
+                // Nuovo formato con display e alternatives
+                JsonObject keyObject = keyElement.getAsJsonObject();
                 
-                if (blockDefJson.has("block")) {
-                    blockDef.setBlock(blockDefJson.get("block").getAsString());
-                }
-                if (blockDefJson.has("tag")) {
-                    blockDef.setTag(blockDefJson.get("tag").getAsString());
+                if (keyObject.has("display")) {
+                    groupDisplayName = keyObject.get("display").getAsString();
                 }
                 
-                // Analizza le proprietà
-                if (blockDefJson.has("properties") && blockDefJson.get("properties").isJsonObject()) {
-                    JsonObject propsJson = blockDefJson.getAsJsonObject("properties");
-                    Map<String, String> properties = new HashMap<>();
-                    for (String propKey : propsJson.keySet()) {
-                        properties.put(propKey, propsJson.get(propKey).getAsString());
-                    }
-                    blockDef.setProperties(properties);
+                if (keyObject.has("alternatives") && keyObject.get("alternatives").isJsonArray()) {
+                    JsonArray alternativesArray = keyObject.getAsJsonArray("alternatives");
+                    parseAlternatives(alternativesArray, blockDefs, groupDisplayName);
                 }
-                
-                blockDefs.add(blockDef);
+            } else if (keyElement.isJsonArray()) {
+                // Formato legacy - array diretto
+                JsonArray blockDefArray = keyElement.getAsJsonArray();
+                parseAlternatives(blockDefArray, blockDefs, groupDisplayName);
             }
             
             key.put(keyChar, blockDefs);
         }
         
         return key;
+    }
+    
+    /**
+     * Helper per analizzare le alternative di blocchi
+     */
+    private static void parseAlternatives(JsonArray alternativesArray, List<StructureDefinition.BlockDefinition> blockDefs, String groupDisplayName) {
+        boolean isFirstBlock = true;
+        
+        for (JsonElement blockDefElement : alternativesArray) {
+            JsonObject blockDefJson = blockDefElement.getAsJsonObject();
+            StructureDefinition.BlockDefinition blockDef = new StructureDefinition.BlockDefinition();
+            
+            // Il primo blocco del gruppo ottiene il display name del gruppo
+            if (isFirstBlock && groupDisplayName != null) {
+                blockDef.setDisplay(groupDisplayName);
+                isFirstBlock = false;
+            }
+            
+            if (blockDefJson.has("block")) {
+                blockDef.setBlock(blockDefJson.get("block").getAsString());
+            }
+            if (blockDefJson.has("tag")) {
+                blockDef.setTag(blockDefJson.get("tag").getAsString());
+            }
+            
+            // Analizza le proprietà
+            if (blockDefJson.has("properties") && blockDefJson.get("properties").isJsonObject()) {
+                JsonObject propsJson = blockDefJson.getAsJsonObject("properties");
+                Map<String, String> properties = new HashMap<>();
+                for (String propKey : propsJson.keySet()) {
+                    properties.put(propKey, propsJson.get(propKey).getAsString());
+                }
+                blockDef.setProperties(properties);
+            }
+            
+            blockDefs.add(blockDef);
+        }
     }
 
     /**
@@ -466,10 +507,17 @@ public class StructureLoader {
     }
 
     /**
-     * Ottiene tutte le definizioni di strutture
+     * Ottiene tutte le definizioni di strutture ordinate per ID
      */
     public static Map<String, StructureDefinition> getAllStructures() {
-        return new HashMap<>(STRUCTURES);
+        return STRUCTURES.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        java.util.LinkedHashMap::new
+                ));
     }
 
     /**
@@ -481,9 +529,11 @@ public class StructureLoader {
     }
 
     /**
-     * Ottiene la lista degli ID delle strutture disponibili
+     * Ottiene la lista degli ID delle strutture disponibili ordinati alfabeticamente
      */
     public static List<String> getAvailableStructureIds() {
-        return new ArrayList<>(STRUCTURES.keySet());
+        return STRUCTURES.keySet().stream()
+                .sorted()
+                .collect(java.util.stream.Collectors.toList());
     }
 } 

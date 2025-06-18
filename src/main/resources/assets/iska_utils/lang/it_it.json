@@ -198,6 +198,9 @@
   "item.iska_utils.scanner_chip.tooltip.instruction0": "Shift+click destro su un blocco o un mob per salvarlo",
   "item.iska_utils.scanner_chip.tooltip.instruction1": "Shift+click con lo scanner nella mano principale per",
   "item.iska_utils.scanner_chip.tooltip.transfer_instruction": "trasferire il target dal chip allo scanner",
+  
+    "chat.iska_utils.structure_placer.required_blocks": "Blocchi richiesti:",
+  "gui.iska_utils.structure_placer.title": "Selettore Strutture",
   "item.iska_utils.scanner_chip.tooltip.ore_chip_desc": "Chip specializzato per la scansione di tutti i minerali",
 
   "commands.iska_utils.structure.error.not_found": "Struttura non trovata",

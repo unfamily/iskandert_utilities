@@ -105,6 +105,9 @@ public class IskaUtils {
         // Register Command Items system
         CommandItemRegistry.register(modEventBus);
         
+        // Register GUI MenuTypes
+        net.unfamily.iskautils.client.gui.ModMenuTypes.MENUS.register(modEventBus);
+        
         // Register Curios integration if it's installed
         if (ModUtils.isCuriosLoaded()) {
             CuriosIntegration.register(modEventBus);
@@ -153,8 +156,7 @@ public class IskaUtils {
         // Initialize client events
         ClientEvents.init();
         
-        // TODO: Register custom GUI screens once MenuType is properly implemented
-        // For now, the GUI will work with the default menu provider system
+        // Register custom GUI screens - will be done in ClientModEvents
     }
 
     // Add the example block item to the building blocks tab
@@ -189,6 +191,12 @@ public class IskaUtils {
         @SubscribeEvent
         public static void registerGeometryLoaders(net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders event) {
             event.register(DynamicPotionPlateModelLoader.ID, DynamicPotionPlateModelLoader.INSTANCE);
+        }
+        
+        @SubscribeEvent
+        public static void registerMenuScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_PLACER_MENU.get(),
+                          net.unfamily.iskautils.client.gui.StructurePlacerScreen::new);
         }
     }
 

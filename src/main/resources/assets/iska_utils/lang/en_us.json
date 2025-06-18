@@ -252,5 +252,8 @@
   "item.iska_utils.swiss_wrench.tooltip.desc1": "Left Click to change rotation mode on a block",
 
   "commands.iska_utils.structure.error.not_found": "Structure not found",
-  "commands.iska_utils.structure.error.placement_failed": "Failed to place structure"
+  "commands.iska_utils.structure.error.placement_failed": "Failed to place structure",
+
+  "gui.iska_utils.structure_placer.title": "Structure Placer",
+  "chat.iska_utils.structure_placer.required_blocks": "Required blocks:"
 }

@@ -160,4 +160,23 @@ public class ModMessages {
             LOGGER.debug("Could not send clear highlights packet to client: {}", e.getMessage());
         }
     }
+    
+    /**
+     * Sends a Structure Placer save packet to the server
+     * This simulates a client-to-server packet for saving the selected structure
+     */
+    public static void sendStructurePlacerSavePacket(String structureId) {
+        LOGGER.info("Sending Structure Placer save packet: {}", structureId);
+        // Simplified implementation - directly handle on the server side
+        try {
+            net.minecraft.server.level.ServerPlayer player = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer().getPlayerList().getPlayers().get(0);
+            if (player != null) {
+                net.unfamily.iskautils.network.packet.StructurePlacerSaveC2SPacket packet = 
+                    new net.unfamily.iskautils.network.packet.StructurePlacerSaveC2SPacket(structureId);
+                packet.handle(player);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Could not send Structure Placer save packet: {}", e.getMessage());
+        }
+    }
 } 

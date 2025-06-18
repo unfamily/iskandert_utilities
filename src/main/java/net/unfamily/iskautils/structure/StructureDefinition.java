@@ -43,11 +43,14 @@ public class StructureDefinition {
      * Definizione di un blocco nel pattern della struttura
      */
     public static class BlockDefinition {
+        private String display; // Nome traducibile per visualizzazione
         private String block;
         private String tag;
         private Map<String, String> properties = new HashMap<>();
         private List<StageCondition> conditions = new ArrayList<>();
 
+        public String getDisplay() { return display; }
+        public void setDisplay(String display) { this.display = display; }
         public String getBlock() { return block; }
         public void setBlock(String block) { this.block = block; }
         public String getTag() { return tag; }
