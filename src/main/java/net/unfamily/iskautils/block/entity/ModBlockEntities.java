@@ -17,6 +17,7 @@ import net.unfamily.iskautils.block.entity.RubberSapExtractorBlockEntity;
 import net.unfamily.iskautils.block.entity.WeatherAltererBlockEntity;
 import net.unfamily.iskautils.block.entity.TimeAltererBlockEntity;
 import net.unfamily.iskautils.block.entity.AngelBlockEntity;
+import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 
 import java.util.function.Supplier;
 
@@ -61,6 +62,12 @@ public class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AngelBlockEntity>> ANGEL_BLOCK_ENTITY =
             BLOCK_ENTITIES.register("angel_block_entity",
                     () -> BlockEntityType.Builder.of(AngelBlockEntity::new, ModBlocks.ANGEL_BLOCK.get())
+                            .build(null));
+
+    // Structure Placer Machine Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StructurePlacerMachineBlockEntity>> STRUCTURE_PLACER_MACHINE_BE =
+            BLOCK_ENTITIES.register("structure_placer_machine",
+                    () -> BlockEntityType.Builder.of(StructurePlacerMachineBlockEntity::new, ModBlocks.STRUCTURE_PLACER_MACHINE.get())
                             .build(null));
 
     /**
@@ -117,6 +124,30 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof TimeAltererBlockEntity timeAltererEntity) {
                             return timeAltererEntity.getEnergyStorage();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register item handler capability for Structure Placer Machine
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    STRUCTURE_PLACER_MACHINE_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
+                            return machineEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register energy capability for Structure Placer Machine
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    STRUCTURE_PLACER_MACHINE_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
+                            return machineEntity.getEnergyStorage();
                         }
                         return null;
                     }

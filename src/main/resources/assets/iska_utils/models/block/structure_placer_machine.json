@@ -1,6 +1,12 @@
 {
-  "parent": "block/cube_all",
+  "parent": "block/cube",
   "textures": {
-    "all": "iska_utils:block/structure_placer_machine"
+    "particle": "iska_utils:block/structure_builder_front",
+    "down": "iska_utils:block/structure_builder_buttom",
+    "up": "iska_utils:block/structure_builder_top",
+    "north": "iska_utils:block/structure_builder_front",
+    "south": "iska_utils:block/structure_builder_back",
+    "east": "iska_utils:block/structure_builder_side",
+    "west": "iska_utils:block/structure_builder_side"
   }
 } 

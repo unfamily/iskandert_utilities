@@ -9,12 +9,13 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.minecraft.client.gui.components.Button;
 
 /**
- * Screen per la GUI del Structure Placer
+ * Screen per la GUI di selezione strutture della Structure Placer Machine (basata sulla StructurePlacerScreen dell'item)
  */
-public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlacerMenu> {
+public class StructureSelectionScreen extends AbstractContainerScreen<StructurePlacerMachineMenu> {
     
     // Background texture
     private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/structure_selector.png");
@@ -81,12 +82,18 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     private Button saveButton;
     private Button cancelButton;
     
-    public StructurePlacerScreen(StructurePlacerMenu menu, Inventory playerInventory, Component title) {
+    // Reference alla macchina
+    private final StructurePlacerMachineBlockEntity blockEntity;
+    
+    public StructureSelectionScreen(StructurePlacerMachineMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         
         // Imposta le dimensioni della GUI
         this.imageWidth = GUI_WIDTH;
         this.imageHeight = GUI_HEIGHT;
+        
+        // Ottieni il block entity dalla menu
+        this.blockEntity = menu.getBlockEntity();
         
         // Carica le strutture disponibili
         loadAvailableStructures();
@@ -100,6 +107,21 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
         this.availableStructures = new java.util.ArrayList<>(structureMap.values());
         
         this.totalEntries = availableStructures.size();
+        
+        // Trova la struttura attualmente selezionata
+        if (blockEntity != null && !blockEntity.getSelectedStructure().isEmpty()) {
+            String currentSelection = blockEntity.getSelectedStructure();
+            for (int i = 0; i < availableStructures.size(); i++) {
+                if (availableStructures.get(i).getId().equals(currentSelection)) {
+                    selectedStructureIndex = i;
+                    // Scrolla per mostrare la selezione corrente
+                    if (selectedStructureIndex >= visibleEntries) {
+                        scrollOffset = Math.max(0, selectedStructureIndex - visibleEntries + 1);
+                    }
+                    break;
+                }
+            }
+        }
     }
     
     @Override
@@ -144,14 +166,14 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
         // Renderizza il background della GUI
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         
-        // Renderizza gli item tooltips
+        // Renderizza gli item tooltips (se necessario)
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
     
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Titolo della GUI (centrato) - ora usa la traduzione
-        Component titleComponent = Component.translatable("gui.iska_utils.structure_placer.title");
+        // Titolo della GUI (centrato) - usa la traduzione per selezione strutture
+        Component titleComponent = Component.translatable("gui.iska_utils.structure_selection.title");
         String title = titleComponent.getString();
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
         guiGraphics.drawString(this.font, title, titleX, 8, 0x404040, false);
@@ -201,145 +223,101 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
                 
                 guiGraphics.pose().popPose();
                 
-                // Pulsante di selezione nel fondo a destra dell'entry
+                // Renderizza il pulsante di selezione
                 renderSelectionButton(guiGraphics, entryX, entryY, entryIndex, mouseX, mouseY);
+                
+                // Renderizza l'icona della struttura
+                renderStructureIcon(guiGraphics, structure, entryX + ENTRY_WIDTH - SLOT_SIZE - 2, entryY + 3);
             }
-            // Se non c'è struttura, l'entry rimane vuota (solo la texture)
         }
     }
     
     /**
-     * Renderizza la scrollbar con handle e pulsanti
+     * Renderizza la scrollbar
      */
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        if (totalEntries <= visibleEntries) return; // Non mostrare scrollbar se non serve
+        
         int scrollbarX = this.leftPos + SCROLLBAR_X;
-        int scrollbarY = this.topPos + SCROLLBAR_Y;
-        int buttonUpY = this.topPos + BUTTON_UP_Y;
-        int buttonDownY = this.topPos + BUTTON_DOWN_Y;
         
-        // Disegna la scrollbar completa (8 pixel larghe, altezza 34)
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0, 0, 
-                        SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        // Pulsante SU (freccia su) - prima riga di tiny_buttons.png (0,0)
+        int upButtonY = this.topPos + BUTTON_UP_Y;
+        boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH && 
+                           mouseY >= upButtonY && mouseY < upButtonY + HANDLE_SIZE;
+        int upV = upHovered ? 8 : 0; // Seconda riga se hovered
+        guiGraphics.blit(TINY_BUTTONS_TEXTURE, scrollbarX, upButtonY, 0, upV, HANDLE_SIZE, HANDLE_SIZE, 32, 16);
         
-        // Pulsante SU (8x8 pixel) - sopra la scrollbar
-        boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                           mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
-        int upTextureY = upHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, 
-                        SCROLLBAR_WIDTH * 2, upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        // Scrollbar track (background)
+        int trackY = this.topPos + SCROLLBAR_Y;
+        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, trackY, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT);
         
-        // Pulsante GIÙ (8x8 pixel) - sotto la scrollbar  
-        boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                             mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
-        int downTextureY = downHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, 
-                        SCROLLBAR_WIDTH * 3, downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // Handle (8x8 pixel) - sempre visibile, ma mobile solo se necessario
-        float scrollRatio = 0;
-        if (availableStructures.size() > visibleEntries) {
-            scrollRatio = (float) scrollOffset / (availableStructures.size() - visibleEntries);
+        // Handle (slider)
+        if (totalEntries > visibleEntries) {
+            int maxScroll = totalEntries - visibleEntries;
+            int handleY = trackY + (scrollOffset * (SCROLLBAR_HEIGHT - HANDLE_SIZE)) / maxScroll;
+            // Handle è nella seconda parte della texture scrollbar.png (offset X = SCROLLBAR_WIDTH)
+            guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, handleY, SCROLLBAR_WIDTH, 0, HANDLE_SIZE, HANDLE_SIZE, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT);
         }
-        int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
         
-        boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                               mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, handleY, 
-                        SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        // Pulsante GIÙ (freccia giù) - ultima colonna di tiny_buttons.png (24,0)
+        int downButtonY = this.topPos + BUTTON_DOWN_Y;
+        boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH && 
+                             mouseY >= downButtonY && mouseY < downButtonY + HANDLE_SIZE;
+        int downV = downHovered ? 8 : 0; // Seconda riga se hovered
+        guiGraphics.blit(TINY_BUTTONS_TEXTURE, scrollbarX, downButtonY, 24, downV, HANDLE_SIZE, HANDLE_SIZE, 32, 16);
     }
     
     /**
-     * Renderizza lo slot dell'icona e il pulsante di selezione per un'entry
+     * Renderizza il pulsante di selezione per ogni entry
      */
     private void renderSelectionButton(GuiGraphics guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
-        // Posizione dello slot: più a sinistra, centrato verticalmente
-        int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - BUTTON_SIZE - 6; // 6 pixel di margine totale
-        int slotY = entryY + (ENTRY_HEIGHT - SLOT_SIZE) / 2; // Centrato verticalmente
-        
-        // Disegna lo slot (18x18)
-        guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 
-                        SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
-        
-        // Disegna l'icona della struttura nello slot se disponibile
-        if (entryIndex < availableStructures.size()) {
-            net.unfamily.iskautils.structure.StructureDefinition structure = availableStructures.get(entryIndex);
-            renderStructureIcon(guiGraphics, structure, slotX + 1, slotY + 1); // +1 pixel per centrare nell'slot
-        }
-        
-        // Posizione del pulsante: subito dopo lo slot, centrato verticalmente
-        int buttonX = slotX + SLOT_SIZE + 2; // 2 pixel di spazio dopo lo slot
+        // Posizione del pulsante: a destra dell'entry, prima dello slot dell'icona
+        int buttonX = entryX + ENTRY_WIDTH - SLOT_SIZE - BUTTON_SIZE - 4; // 4 pixel di margine
         int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2; // Centrato verticalmente
         
-        // Verifica se il mouse è sopra il pulsante
-        boolean isHovered = mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE &&
+        // Determina se è selezionato e se è hovered
+        boolean isSelected = (entryIndex == selectedStructureIndex);
+        boolean isHovered = mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE && 
                            mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE;
         
-        // Determina il tipo di pulsante (vuoto o pieno)
-        boolean isSelected = (entryIndex == selectedStructureIndex);
-        int buttonU = isSelected ? BUTTON_FILLED_U : BUTTON_EMPTY_U;
-        int buttonV = isHovered ? BUTTON_HOVERED_V : BUTTON_NORMAL_V;
+        // Seleziona texture in base allo stato
+        int u = isSelected ? BUTTON_FILLED_U : BUTTON_EMPTY_U; // Colonna: vuoto(8) o pieno(16)
+        int v = isHovered ? BUTTON_HOVERED_V : BUTTON_NORMAL_V; // Riga: normale(0) o illuminato(8)
         
-        // Disegna il pulsante
-        guiGraphics.blit(TINY_BUTTONS_TEXTURE, buttonX, buttonY, buttonU, buttonV, 
-                        BUTTON_SIZE, BUTTON_SIZE, 64, 96);
+        // Renderizza il pulsante dalla texture tiny_buttons.png
+        guiGraphics.blit(TINY_BUTTONS_TEXTURE, buttonX, buttonY, u, v, BUTTON_SIZE, BUTTON_SIZE, 32, 16);
     }
     
     /**
-     * Renderizza l'icona di una struttura nello slot
+     * Renderizza l'icona della struttura (per ora slot vuoto)
      */
     private void renderStructureIcon(GuiGraphics guiGraphics, net.unfamily.iskautils.structure.StructureDefinition structure, int x, int y) {
-        if (structure.getIcon() != null && structure.getIcon().getItem() != null) {
-            // Cerca di ottenere l'item dall'ID specificato nello script
-            try {
-                net.minecraft.resources.ResourceLocation itemId = net.minecraft.resources.ResourceLocation.parse(structure.getIcon().getItem());
-                net.minecraft.world.item.Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(itemId);
-                
-                if (item != null && item != net.minecraft.world.item.Items.AIR) {
-                    net.minecraft.world.item.ItemStack itemStack = new net.minecraft.world.item.ItemStack(item);
-                    guiGraphics.renderItem(itemStack, x, y);
-                    return;
-                }
-            } catch (Exception e) {
-                // Se fallisce, usa l'item di default
-            }
-        }
+        // Disegna lo slot usando la texture single_slot.png (18x18)
+        guiGraphics.blit(SINGLE_SLOT_TEXTURE, x, y, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
         
-        // Item di default se non specificato o non trovato: blocco di pietra
-        net.minecraft.world.item.ItemStack defaultItem = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE);
-        guiGraphics.renderItem(defaultItem, x, y);
+        // L'icona della struttura potrebbe essere implementata in futuro
+        // usando structure.getIcon() quando il sistema sarà completo
     }
     
     /**
-     * Gestisce i click sui pulsanti Save e Cancel
+     * Gestisce il click sul pulsante Save/Apply
      */
     private void handleSaveClick() {
-        // DEBUG: Stampa informazioni di debug
-        System.out.println("=== SAVE CLICK DEBUG ===");
-        System.out.println("selectedStructureIndex: " + selectedStructureIndex);
-        System.out.println("availableStructures.size(): " + availableStructures.size());
-        System.out.println("scrollOffset: " + scrollOffset);
-        
-        if (selectedStructureIndex >= 0 && selectedStructureIndex < availableStructures.size()) {
-            net.unfamily.iskautils.structure.StructureDefinition structure = availableStructures.get(selectedStructureIndex);
+        // Salva la struttura selezionata nel block entity
+        if (selectedStructureIndex >= 0 && selectedStructureIndex < availableStructures.size() && blockEntity != null) {
+            String selectedId = availableStructures.get(selectedStructureIndex).getId();
+            blockEntity.setSelectedStructure(selectedId);
             
-            // DEBUG: Stampa informazioni sulla struttura selezionata
-            System.out.println("Selected structure ID: " + structure.getId());
-            System.out.println("Selected structure Name: " + structure.getName());
-            
-            // Invia il packet al server per salvare la struttura
-            net.unfamily.iskautils.network.ModMessages.sendStructurePlacerSavePacket(structure.getId());
-            
-            playButtonSound();
-            this.minecraft.setScreen(null); // Chiudi la GUI
-        } else {
-            // Nessuna struttura selezionata
+            // Messaggio di conferma al player
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("§cNo structure selected!"), 
-                    true);
+                this.minecraft.player.sendSystemMessage(
+                    Component.literal("Selected structure: " + selectedId)
+                );
             }
         }
+        
+        playButtonSound();
+        this.onClose();
     }
     
     /**
@@ -347,13 +325,11 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
      */
     private void handleCancelClick() {
         playButtonSound();
-        if (this.minecraft != null) {
-            this.minecraft.setScreen(null); // Chiudi la GUI senza salvare
-        }
+        this.onClose();
     }
     
     /**
-     * Riproduce il suono dei pulsanti vanilla
+     * Suona il suono del click del pulsante
      */
     private void playButtonSound() {
         if (this.minecraft != null) {
@@ -363,34 +339,13 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) { // Click sinistro
-            // Verifica click sui pulsanti Save/Cancel
-            if (handleSaveCancelClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Verifica click sui pulsanti di selezione
-            if (handleSelectionButtonClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Verifica click sui pulsanti di scroll
-            if (handleScrollButtonClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Verifica click sull'handle per il drag
-            if (handleHandleClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Verifica click sulla scrollbar per il salto
-            if (handleScrollbarClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Verifica click sulle entry
-            if (handleEntryClick(mouseX, mouseY)) {
+        if (button == 0) { // Left click
+            // Gestisci i vari click nell'ordine di priorità
+            if (handleScrollButtonClick(mouseX, mouseY) ||
+                handleSelectionButtonClick(mouseX, mouseY) ||
+                handleHandleClick(mouseX, mouseY) ||
+                handleScrollbarClick(mouseX, mouseY) ||
+                handleEntryClick(mouseX, mouseY)) {
                 return true;
             }
         }
@@ -399,23 +354,25 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     }
     
     /**
-     * Gestisce i click sui pulsanti di scroll
+     * Gestisce i click sui pulsanti di scroll (frecce su/giù)
      */
     private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        int scrollbarX = this.leftPos + SCROLLBAR_X;
-        int buttonUpY = this.topPos + BUTTON_UP_Y;
-        int buttonDownY = this.topPos + BUTTON_DOWN_Y;
+        if (totalEntries <= visibleEntries) return false;
         
-        // Pulsante SU (sopra la scrollbar)
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-            mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE) {
+        int scrollbarX = this.leftPos + SCROLLBAR_X;
+        
+        // Pulsante SU
+        int upButtonY = this.topPos + BUTTON_UP_Y;
+        if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH && 
+            mouseY >= upButtonY && mouseY < upButtonY + HANDLE_SIZE) {
             scrollUp();
             return true;
         }
         
-        // Pulsante GIÙ (sotto la scrollbar)
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-            mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE) {
+        // Pulsante GIÙ
+        int downButtonY = this.topPos + BUTTON_DOWN_Y;
+        if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH && 
+            mouseY >= downButtonY && mouseY < downButtonY + HANDLE_SIZE) {
             scrollDown();
             return true;
         }
@@ -434,36 +391,14 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
             int entryX = this.leftPos + ENTRIES_START_X;
             int entryY = this.topPos + ENTRIES_START_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
             
-            // Posizione del pulsante (deve corrispondere a renderSelectionButton)
-            int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - BUTTON_SIZE - 6;
-            int buttonX = slotX + SLOT_SIZE + 2;
+            // Calcola posizione del pulsante
+            int buttonX = entryX + ENTRY_WIDTH - SLOT_SIZE - BUTTON_SIZE - 4;
             int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2;
             
-            if (mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE &&
+            // Controlla se il click è sul pulsante
+            if (mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE && 
                 mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE) {
-                
-                // DEBUG: Stampa informazioni di selezione
-                System.out.println("=== SELECTION BUTTON CLICK DEBUG ===");
-                System.out.println("Clicked entryIndex: " + entryIndex);
-                System.out.println("Current selectedStructureIndex: " + selectedStructureIndex);
-                System.out.println("scrollOffset: " + scrollOffset);
-                System.out.println("Entry visual position i: " + i);
-                
-                // Seleziona/deseleziona la struttura
-                if (selectedStructureIndex == entryIndex) {
-                    selectedStructureIndex = -1; // Deseleziona
-                    System.out.println("Deselected -> selectedStructureIndex: " + selectedStructureIndex);
-                } else {
-                    selectedStructureIndex = entryIndex; // Seleziona questa
-                    System.out.println("Selected -> selectedStructureIndex: " + selectedStructureIndex);
-                    
-                    // DEBUG: Stampa info sulla struttura selezionata
-                    if (entryIndex < availableStructures.size()) {
-                        var structure = availableStructures.get(entryIndex);
-                        System.out.println("Selected structure ID: " + structure.getId());
-                        System.out.println("Selected structure Name: " + structure.getName());
-                    }
-                }
+                selectedStructureIndex = entryIndex;
                 playButtonSound();
                 return true;
             }
@@ -472,95 +407,82 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     }
     
     /**
-     * Gestisce i click sull'handle per iniziare il drag
+     * Gestisce il click sull'handle per iniziare il drag
      */
     private boolean handleHandleClick(double mouseX, double mouseY) {
-        if (availableStructures.size() <= visibleEntries) return false; // Non draggabile se poche strutture
+        if (totalEntries <= visibleEntries) return false;
         
         int scrollbarX = this.leftPos + SCROLLBAR_X;
-        int scrollbarY = this.topPos + SCROLLBAR_Y;
+        int trackY = this.topPos + SCROLLBAR_Y;
         
-        float scrollRatio = (float) scrollOffset / (availableStructures.size() - visibleEntries);
-        int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        // Calcola la posizione dell'handle
+        int maxScroll = totalEntries - visibleEntries;
+        int handleY = trackY + (scrollOffset * (SCROLLBAR_HEIGHT - HANDLE_SIZE)) / maxScroll;
         
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
+        // Controlla se il click è sull'handle
+        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && 
             mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
-            
             isDraggingHandle = true;
-            dragStartY = (int) mouseY;
+            dragStartY = (int)mouseY;
             dragStartScrollOffset = scrollOffset;
-            playButtonSound();
             return true;
         }
+        
         return false;
     }
     
     /**
-     * Gestisce i click sulla scrollbar per saltare a una posizione
+     * Gestisce i click sulla track della scrollbar
      */
     private boolean handleScrollbarClick(double mouseX, double mouseY) {
-        if (availableStructures.size() <= visibleEntries) return false;
+        if (totalEntries <= visibleEntries) return false;
         
         int scrollbarX = this.leftPos + SCROLLBAR_X;
-        int scrollbarY = this.topPos + SCROLLBAR_Y;
+        int trackY = this.topPos + SCROLLBAR_Y;
         
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH &&
-            mouseY >= scrollbarY && mouseY < scrollbarY + SCROLLBAR_HEIGHT) {
+        // Controlla se il click è sulla track
+        if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH && 
+            mouseY >= trackY && mouseY < trackY + SCROLLBAR_HEIGHT) {
             
-            // Calcola la nuova posizione del scroll in base al click
-            float clickRatio = (float)(mouseY - scrollbarY) / SCROLLBAR_HEIGHT;
-            clickRatio = Math.max(0, Math.min(1, clickRatio)); // Clamp tra 0 e 1
+            // Calcola dove dovrebbe andare l'handle
+            int maxScroll = totalEntries - visibleEntries;
+            int handleY = trackY + (scrollOffset * (SCROLLBAR_HEIGHT - HANDLE_SIZE)) / maxScroll;
             
-            int newScrollOffset = (int)(clickRatio * (availableStructures.size() - visibleEntries));
-            newScrollOffset = Math.max(0, Math.min(availableStructures.size() - visibleEntries, newScrollOffset));
-            
-            if (newScrollOffset != scrollOffset) {
-                scrollOffset = newScrollOffset;
-                playButtonSound();
+            // Scrolla verso l'alto se si clicca sopra l'handle, giù se sotto
+            if (mouseY < handleY) {
+                scrollUpSilent();
+            } else if (mouseY > handleY + HANDLE_SIZE) {
+                scrollDownSilent();
             }
             return true;
         }
-        return false;
-    }
-    
-    /**
-     * Gestisce i click sui pulsanti Save e Cancel
-     */
-    private boolean handleSaveCancelClick(double mouseX, double mouseY) {
-        int saveX = this.leftPos + SAVE_BUTTON_X;
-        int cancelX = this.leftPos + CANCEL_BUTTON_X;
-        
-        int buttonWidth = SAVE_CANCEL_BUTTON_WIDTH;
-        int buttonHeight = SAVE_CANCEL_BUTTON_HEIGHT;
-        
-        // Click su Save
-        if (mouseX >= saveX && mouseX < saveX + buttonWidth &&
-            mouseY >= this.topPos + SAVE_CANCEL_Y && mouseY < this.topPos + SAVE_CANCEL_Y + buttonHeight) {
-            handleSaveClick();
-            return true;
-        }
-        
-        // Click su Cancel
-        if (mouseX >= cancelX && mouseX < cancelX + buttonWidth &&
-            mouseY >= this.topPos + SAVE_CANCEL_Y && mouseY < this.topPos + SAVE_CANCEL_Y + buttonHeight) {
-            handleCancelClick();
-            return true;
-        }
         
         return false;
     }
     
     /**
-     * Gestisce i click sulle entry delle strutture - RIMOSSO: Non più selezione diretta
+     * Gestisce i click direttamente sulle entry per selezione rapida
      */
     private boolean handleEntryClick(double mouseX, double mouseY) {
-        // Le entry non sono più cliccabili per selezione
-        // Solo i pulsanti di selezione funzionano
+        for (int i = 0; i < visibleEntries; i++) {
+            int entryIndex = scrollOffset + i;
+            if (entryIndex >= availableStructures.size()) continue;
+            
+            int entryX = this.leftPos + ENTRIES_START_X;
+            int entryY = this.topPos + ENTRIES_START_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
+            
+            // Controlla se il click è sull'entry (ma non sui pulsanti/slot)
+            if (mouseX >= entryX && mouseX < entryX + ENTRY_WIDTH && 
+                mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT) {
+                selectedStructureIndex = entryIndex;
+                return true;
+            }
+        }
         return false;
     }
     
     /**
-     * Scrolla verso l'alto (con suono per i click)
+     * Scrolla su con suono
      */
     private void scrollUp() {
         if (scrollUpSilent()) {
@@ -569,7 +491,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     }
     
     /**
-     * Scrolla verso il basso (con suono per i click)
+     * Scrolla giù con suono
      */
     private void scrollDown() {
         if (scrollDownSilent()) {
@@ -578,10 +500,10 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     }
     
     /**
-     * Scrolla verso l'alto senza suono (per rotella mouse)
+     * Scrolla su senza suono (ritorna true se c'è stato movimento)
      */
     private boolean scrollUpSilent() {
-        if (availableStructures.size() > visibleEntries && scrollOffset > 0) {
+        if (scrollOffset > 0) {
             scrollOffset--;
             return true;
         }
@@ -589,54 +511,51 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     }
     
     /**
-     * Scrolla verso il basso senza suono (per rotella mouse)
+     * Scrolla giù senza suono (ritorna true se c'è stato movimento)
      */
     private boolean scrollDownSilent() {
-        if (availableStructures.size() > visibleEntries && scrollOffset < availableStructures.size() - visibleEntries) {
+        int maxScroll = Math.max(0, totalEntries - visibleEntries);
+        if (scrollOffset < maxScroll) {
             scrollOffset++;
             return true;
         }
         return false;
     }
     
-
-    
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        // Gestisce lo scroll del mouse SENZA SUONO
-        if (scrollY > 0) {
-            return scrollUpSilent();
-        } else if (scrollY < 0) {
-            return scrollDownSilent();
+        // Scroll con la rotella del mouse
+        if (totalEntries > visibleEntries) {
+            if (scrollY > 0) {
+                scrollUpSilent();
+            } else if (scrollY < 0) {
+                scrollDownSilent();
+            }
+            return true;
         }
-        
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
     
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
+        if (button == 0) {
             isDraggingHandle = false;
-            return true;
         }
         return super.mouseReleased(mouseX, mouseY, button);
     }
     
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (button == 0 && isDraggingHandle && availableStructures.size() > visibleEntries) {
-            // Calcola il nuovo scroll offset basato sul movimento del mouse
-            int deltaY = (int) mouseY - dragStartY;
-            float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+        // Gestisce il drag dell'handle della scrollbar
+        if (isDraggingHandle && totalEntries > visibleEntries) {
+            int deltaY = (int)mouseY - dragStartY;
+            int maxScroll = totalEntries - visibleEntries;
             
-            int newScrollOffset = dragStartScrollOffset + (int)(scrollRatio * (availableStructures.size() - visibleEntries));
-            newScrollOffset = Math.max(0, Math.min(availableStructures.size() - visibleEntries, newScrollOffset));
-            
-            if (newScrollOffset != scrollOffset) {
-                scrollOffset = newScrollOffset;
-            }
+            // Calcola il nuovo offset basato sul movimento
+            int newOffset = dragStartScrollOffset + (deltaY * maxScroll) / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            scrollOffset = Math.max(0, Math.min(maxScroll, newOffset));
             return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
-} 
+}

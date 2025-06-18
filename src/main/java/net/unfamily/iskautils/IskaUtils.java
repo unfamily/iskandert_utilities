@@ -204,6 +204,8 @@ public class IskaUtils {
         public static void registerMenuScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_PLACER_MENU.get(),
                           net.unfamily.iskautils.client.gui.StructurePlacerScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_PLACER_MACHINE_MENU.get(),
+                          net.unfamily.iskautils.client.gui.StructurePlacerMachineScreen::new);
         }
     }
 
