@@ -201,6 +201,14 @@
   
     "chat.iska_utils.structure_placer.required_blocks": "Blocchi richiesti:",
   "gui.iska_utils.structure_placer.title": "Selettore Strutture",
+  "gui.iska_utils.structure_placer.save": "Salva",
+  "gui.iska_utils.structure_placer.cancel": "Annulla",
+  "chat.iska_utils.structure_placer.structure_saved": "Struttura salvata: %s",
+  "chat.iska_utils.structure_placer.no_structure_selected": "Nessuna struttura selezionata",
+  "chat.iska_utils.structure_placer.item_not_found": "Item Structure Placer non trovato in mano",
+  "iska_utils.wither_proof_block": "Blocchi Wither-Proof",
+  "minecraft.piston": "Pistoni",
+  "minecraft.lever": "Leve",
   "item.iska_utils.scanner_chip.tooltip.ore_chip_desc": "Chip specializzato per la scansione di tutti i minerali",
 
   "commands.iska_utils.structure.error.not_found": "Struttura non trovata",
