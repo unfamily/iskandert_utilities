@@ -1,6 +1,8 @@
 package net.unfamily.iskautils.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -29,6 +31,7 @@ import java.util.Map;
  * Renderer for visible blocks through walls
  */
 public class MarkRenderer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MarkRenderer.class);
     private static final MarkRenderer INSTANCE = new MarkRenderer();
     private final Map<BlockPos, MarkBlockData> highlightedBlocks = new HashMap<>();
     private final Map<BlockPos, MarkBlockData> billboardMarkers = new HashMap<>();
@@ -71,6 +74,10 @@ public class MarkRenderer {
     public void addBillboardMarker(BlockPos pos, int color, int durationTicks) {
         // Add the marker to the map, using a special flag to indicate it's a small cube marker
         billboardMarkers.put(pos, new MarkBlockData(color, Minecraft.getInstance().level.getGameTime() + durationTicks, true));
+        
+        // Debug logging
+        LOGGER.info("Billboard marker added at {} with color {:08x}, duration {} ticks. Total markers: {}", 
+                pos, color, durationTicks, billboardMarkers.size());
     }
     
     /**
@@ -402,6 +409,11 @@ public class MarkRenderer {
      * Render billboard markers
      */
     private void renderBillboardMarkers(PoseStack poseStack, Minecraft mc, Vec3 cameraPos, long currentTime) {
+        // Debug: log how many markers we're trying to render
+        if (!billboardMarkers.isEmpty()) {
+            LOGGER.info("Rendering {} billboard markers", billboardMarkers.size());
+        }
+        
         // Prepare the rendering for small cubes
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();

@@ -284,14 +284,25 @@
   "item.iska_utils.iska_utils_wither_grinder": "Wither Grinder Kit",
   
   "block.iska_utils.structure_placer_machine": "Structure Placer Machine",
-  "gui.iska_utils.structure_placer.select": "Select",
-  "gui.iska_utils.structure_selection.title": "Select Structure",
-  "gui.iska_utils.structure_placer_machine.select": "Select",
-  "gui.iska_utils.structure_placer_machine.toggle": "Show/Hide",
-  "gui.iska_utils.structure_placer_machine.energy_tooltip": "%,d / %,d FE",
   
   "direction.iska_utils.north": "North",
   "direction.iska_utils.east": "East", 
   "direction.iska_utils.south": "South",
-  "direction.iska_utils.west": "West"
+  "direction.iska_utils.west": "West",
+
+  "gui.iska_utils.structure_placer_machine.select": "Select",
+  "gui.iska_utils.structure_placer_machine.show": "Show",
+  "gui.iska_utils.structure_placer_machine.rotate": "Rotate",
+  "gui.iska_utils.structure_placer_machine.set_inventory": "Set Inventory",
+  "gui.iska_utils.structure_placer_machine.selected_structure": "Selected Structure",
+  "gui.iska_utils.structure_placer_machine.none_selected": "None",
+  "gui.iska_utils.structure_placer_machine.preview_enabled": "Preview enabled",
+  
+  "block.iska_utils.scan_block_red": "Scan Block (Red)",
+  "block.iska_utils.scan_block_green": "Scan Block (Green)",
+  "gui.iska_utils.structure_placer_machine.preview_disabled": "Preview disabled",
+  "gui.iska_utils.structure_placer_machine.preview_updated": "Preview updated with new rotation",
+  "gui.iska_utils.structure_placer_machine.rotated": "Structure rotated to: %s",
+  "gui.iska_utils.structure_placer_machine.no_structure_selected": "No structure selected",
+  "gui.iska_utils.structure_selection.title": "Select Structure"
 }

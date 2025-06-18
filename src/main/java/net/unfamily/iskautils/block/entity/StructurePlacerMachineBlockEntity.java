@@ -39,6 +39,9 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     // Preview mode toggle
     private boolean showPreview = false;
     
+    // Structure rotation (0, 90, 180, 270 degrees)
+    private int rotation = 0;
+    
     public StructurePlacerMachineBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.STRUCTURE_PLACER_MACHINE_BE.get(), pos, blockState);
         
@@ -61,6 +64,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         tag.putInt("energy", energyStorage.getEnergyStored());
         tag.putString("selectedStructure", selectedStructure);
         tag.putBoolean("showPreview", showPreview);
+        tag.putInt("rotation", rotation);
     }
     
     @Override
@@ -74,6 +78,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         }
         selectedStructure = tag.getString("selectedStructure");
         showPreview = tag.getBoolean("showPreview");
+        rotation = tag.getInt("rotation");
     }
     
     /**
@@ -112,6 +117,15 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     
     public void setShowPreview(boolean showPreview) {
         this.showPreview = showPreview;
+        setChanged();
+    }
+    
+    public int getRotation() {
+        return rotation;
+    }
+    
+    public void setRotation(int rotation) {
+        this.rotation = rotation % 360; // Ensure rotation is always 0-359
         setChanged();
     }
     

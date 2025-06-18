@@ -23,4 +23,9 @@ public class ModMenuTypes {
             MENUS.register("structure_placer_machine", () -> 
                 new MenuType<>(StructurePlacerMachineMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
+    // Structure Selection menu (without slots)
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<StructureSelectionMenu>> STRUCTURE_SELECTION_MENU = 
+        MENUS.register("structure_selection", () -> 
+            new MenuType<>(StructureSelectionMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+    
 } 

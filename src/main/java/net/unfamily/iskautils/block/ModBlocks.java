@@ -327,6 +327,22 @@ public class ModBlocks {
                     .strength(0.5f, 1.0f)
                     .sound(SoundType.GLASS)
                     .noOcclusion()));
+                    
+    // SCAN BLOCK RED (for conflicts)
+    public static final DeferredBlock<Block> SCAN_BLOCK_RED = BLOCKS.register("scan_block_red",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(0.5f, 1.0f)
+                    .sound(SoundType.GLASS)
+                    .noOcclusion()));
+                    
+    // SCAN BLOCK GREEN (for free spaces)
+    public static final DeferredBlock<Block> SCAN_BLOCK_GREEN = BLOCKS.register("scan_block_green",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(0.5f, 1.0f)
+                    .sound(SoundType.GLASS)
+                    .noOcclusion()));
 
     // Weather Alterer Block
     public static final DeferredBlock<WeatherAltererBlock> WEATHER_ALTERER = BLOCKS.register("weather_alterer",

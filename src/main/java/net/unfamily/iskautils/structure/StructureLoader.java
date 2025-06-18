@@ -168,6 +168,44 @@ public class StructureLoader {
                 "                    ]\n" +
                 "                }\n" +
                 "            }\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"id\": \"iska_utils-wither_summoning\",\n" +
+                "            \"name\": \"Wither Summoning Structure\",\n" +
+                "            \"can_replace\": [\n" +
+                "            ],\n" +
+                "            \"icon\": {\n" +
+                "                \"type\": \"minecraft:item\",\n" +
+                "                \"item\": \"minecraft:wither_skeleton_skull\"\n" +
+                "            },\n" +
+                "            \"description\": [\"Structure to summon the Wither boss\"],\n" +
+                "            \"pattern\": [\n" +
+                "                [[\" @ \"],[\" A \"],[\"AAA\"],[\"BBB\"]]\n" +
+                "            ],\n" +
+                "            \"key\": {\n" +
+                "                \"A\": {\n" +
+                "                    \"display\": \"minecraft.soul_sand\",\n" +
+                "                    \"alternatives\": [\n" +
+                "                        {\n" +
+                "                            \"block\": \"minecraft:soul_sand\"\n" +
+                "                        },\n" +
+                "                        {\n" +
+                "                            \"block\": \"minecraft:soul_soil\"\n" +
+                "                        }\n" +
+                "                    ]\n" +
+                "                },\n" +
+                "                \"B\": {\n" +
+                "                    \"display\": \"minecraft.wither_skeleton_skull\",\n" +
+                "                    \"alternatives\": [\n" +
+                "                        {\n" +
+                "                            \"block\": \"minecraft:wither_skeleton_skull\",\n" +
+                "                            \"properties\": {\n" +
+                "                                \"rotation\": \"0\"\n" +
+                "                            }\n" +
+                "                        }\n" +
+                "                    ]\n" +
+                "                }\n" +
+                "            }\n" +
                 "        }\n" +
                 "    ]\n" +
                 "}";

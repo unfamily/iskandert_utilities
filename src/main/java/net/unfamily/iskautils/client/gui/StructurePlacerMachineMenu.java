@@ -37,7 +37,12 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
     private static final int ENERGY_INDEX = 0;
     private static final int MAX_ENERGY_INDEX = 1;
     private static final int SHOW_PREVIEW_INDEX = 2;
-    private static final int DATA_COUNT = 3;
+    private static final int ROTATION_INDEX = 3;
+    private static final int STRUCTURE_HASH_INDEX = 4; // Hash of selected structure string
+    private static final int BLOCK_POS_X_INDEX = 5;
+    private static final int BLOCK_POS_Y_INDEX = 6;
+    private static final int BLOCK_POS_Z_INDEX = 7;
+    private static final int DATA_COUNT = 8;
     
     // Constructor for server-side (with block entity)
     public StructurePlacerMachineMenu(int containerId, Inventory playerInventory, StructurePlacerMachineBlockEntity blockEntity) {
@@ -55,6 +60,11 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
                     case ENERGY_INDEX -> blockEntity.getEnergyStorage().getEnergyStored();
                     case MAX_ENERGY_INDEX -> blockEntity.getEnergyStorage().getMaxEnergyStored();
                     case SHOW_PREVIEW_INDEX -> blockEntity.isShowPreview() ? 1 : 0;
+                    case ROTATION_INDEX -> blockEntity.getRotation();
+                    case STRUCTURE_HASH_INDEX -> blockEntity.getSelectedStructure().hashCode();
+                    case BLOCK_POS_X_INDEX -> blockPos.getX();
+                    case BLOCK_POS_Y_INDEX -> blockPos.getY();
+                    case BLOCK_POS_Z_INDEX -> blockPos.getZ();
                     default -> 0;
                 };
             }
@@ -79,10 +89,15 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
     
     // Constructor for client-side (simplified)
     public StructurePlacerMachineMenu(int containerId, Inventory playerInventory) {
+        this(containerId, playerInventory, BlockPos.ZERO);
+    }
+    
+    // Constructor for client-side with position (for proper packet handling)
+    public StructurePlacerMachineMenu(int containerId, Inventory playerInventory, BlockPos pos) {
         super(ModMenuTypes.STRUCTURE_PLACER_MACHINE_MENU.get(), containerId);
         
         this.blockEntity = null;
-        this.blockPos = BlockPos.ZERO;
+        this.blockPos = pos; // Use the provided position instead of ZERO
         this.levelAccess = ContainerLevelAccess.NULL;
         
         // Create dummy container data for client
@@ -96,7 +111,7 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
     
     /**
      * Adds the 27 machine slots (3 rows x 9 slots)
-     * Starting at GUI coordinates (7, 51)
+     * Starting at GUI coordinates (7, 99) - moved down 48px for increased button area
      */
     private void addMachineSlots() {
         IItemHandler itemHandler;
@@ -113,7 +128,7 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = row * 9 + col;
                 int xPos = 8 + col * 18; // GUI coordinate 7 + 1 (slot padding)
-                int yPos = 52 + row * 18; // GUI coordinate 51 + 1 (slot padding)
+                int yPos = 100 + row * 18; // GUI coordinate 99 + 1 (slot padding) - moved down 48px
                 
                 addSlot(new SlotItemHandler(itemHandler, slotIndex, xPos, yPos));
             }
@@ -122,7 +137,7 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
     
     /**
      * Adds player inventory slots
-     * Starting at GUI coordinates (7, 117)
+     * Starting at GUI coordinates (7, 165) - moved down 48px for increased button area
      */
     private void addPlayerInventory(Inventory playerInventory) {
         // 3 rows of 9 slots (inventory)
@@ -130,7 +145,7 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = col + row * 9 + 9; // +9 to skip hotbar
                 int xPos = 8 + col * 18; // GUI coordinate 7 + 1
-                int yPos = 118 + row * 18; // GUI coordinate 117 + 1
+                int yPos = 166 + row * 18; // GUI coordinate 165 + 1 - moved down 48px
                 
                 addSlot(new Slot(playerInventory, slotIndex, xPos, yPos));
             }
@@ -144,7 +159,7 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
         // 1 row of 9 slots (hotbar) - below inventory
         for (int col = 0; col < 9; col++) {
             int xPos = 8 + col * 18;
-            int yPos = 176; // Below inventory (118 + 3*18 = 172, +4 spacing)
+            int yPos = 224; // Below inventory (166 + 3*18 = 220, +4 spacing) - moved down 48px
             
             addSlot(new Slot(playerInventory, col, xPos, yPos));
         }
@@ -201,6 +216,30 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
     
     public boolean isShowPreview() {
         return this.containerData.get(SHOW_PREVIEW_INDEX) != 0;
+    }
+    
+    public int getRotation() {
+        return this.containerData.get(ROTATION_INDEX);
+    }
+    
+    public int getStructureHash() {
+        return this.containerData.get(STRUCTURE_HASH_INDEX);
+    }
+    
+    public BlockPos getSyncedBlockPos() {
+        // Get position from synced data if available, otherwise use stored position
+        if (this.blockEntity != null) {
+            return this.blockPos; // Server side
+        } else {
+            // Client side - get from synced data
+            int x = this.containerData.get(BLOCK_POS_X_INDEX);
+            int y = this.containerData.get(BLOCK_POS_Y_INDEX);
+            int z = this.containerData.get(BLOCK_POS_Z_INDEX);
+            if (x == 0 && y == 0 && z == 0) {
+                return this.blockPos; // Fallback to stored position
+            }
+            return new BlockPos(x, y, z);
+        }
     }
     
     public BlockPos getBlockPos() {

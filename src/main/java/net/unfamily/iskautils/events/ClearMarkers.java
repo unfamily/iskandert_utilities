@@ -29,6 +29,9 @@ public class ClearMarkers {
 	public static void onServerStarting(ServerStartingEvent event) {
 		// Reset session ID when server starts
 		SessionVariables.resetScannerSessionId();
+		
+		// Create teams for block_display coloring
+		createDisplayTeams(event.getServer());
 	}
 	
 	@SubscribeEvent
@@ -78,6 +81,37 @@ public class ClearMarkers {
 			}
 		} catch (Exception e) {
 			LOGGER.error("Error clearing markers: {}", e.getMessage());
+		}
+	}
+	
+	/**
+	 * Creates teams for coloring block_display entities
+	 */
+	private static void createDisplayTeams(net.minecraft.server.MinecraftServer server) {
+		try {
+			// Create blue team for free spaces
+			server.getCommands().performPrefixedCommand(
+				server.createCommandSourceStack().withSuppressedOutput(),
+				"team add blue"
+			);
+			server.getCommands().performPrefixedCommand(
+				server.createCommandSourceStack().withSuppressedOutput(),
+				"team modify blue color blue"
+			);
+			
+			// Create red team for conflicts
+			server.getCommands().performPrefixedCommand(
+				server.createCommandSourceStack().withSuppressedOutput(),
+				"team add red"
+			);
+			server.getCommands().performPrefixedCommand(
+				server.createCommandSourceStack().withSuppressedOutput(),
+				"team modify red color red"
+			);
+			
+			LOGGER.info("Created display teams for block_display coloring");
+		} catch (Exception e) {
+			LOGGER.debug("Teams may already exist or error creating teams: {}", e.getMessage());
 		}
 	}
 }

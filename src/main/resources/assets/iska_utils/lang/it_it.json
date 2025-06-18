@@ -282,14 +282,24 @@
   "item.iska_utils.iska_utils_wither_grinder": "Kit Trituratore di Wither",
   
   "block.iska_utils.structure_placer_machine": "Macchina Piazza-Strutture",
-  "gui.iska_utils.structure_placer.select": "Seleziona",
-  "gui.iska_utils.structure_selection.title": "Seleziona Struttura",
   "gui.iska_utils.structure_placer_machine.select": "Seleziona",
-  "gui.iska_utils.structure_placer_machine.toggle": "Mostra/Nascondi",
-  "gui.iska_utils.structure_placer_machine.energy_tooltip": "%,d / %,d FE",
+  "gui.iska_utils.structure_placer_machine.show": "Mostra",
+  "gui.iska_utils.structure_placer_machine.rotate": "Ruota",
+  "gui.iska_utils.structure_placer_machine.set_inventory": "Imposta Inventario",
+  "gui.iska_utils.structure_placer_machine.selected_structure": "Struttura Selezionata",
+  "gui.iska_utils.structure_placer_machine.none_selected": "Nessuna",
+  "gui.iska_utils.structure_placer_machine.preview_enabled": "Anteprima attivata",
+  "gui.iska_utils.structure_placer_machine.preview_disabled": "Anteprima disattivata",
+  "gui.iska_utils.structure_placer_machine.preview_updated": "Anteprima aggiornata con nuova rotazione",
+  "gui.iska_utils.structure_placer_machine.rotated": "Struttura ruotata verso: %s",
+  "gui.iska_utils.structure_placer_machine.no_structure_selected": "Nessuna struttura selezionata",
+  "gui.iska_utils.structure_selection.title": "Seleziona Struttura",
   
   "direction.iska_utils.north": "Nord",
   "direction.iska_utils.east": "Est", 
   "direction.iska_utils.south": "Sud",
-  "direction.iska_utils.west": "Ovest"
+  "direction.iska_utils.west": "Ovest",
+  
+  "block.iska_utils.scan_block_red": "Blocco Scan (Rosso)",
+  "block.iska_utils.scan_block_green": "Blocco Scan (Verde)"
 }

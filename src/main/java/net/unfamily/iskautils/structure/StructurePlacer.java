@@ -74,6 +74,15 @@ public class StructurePlacer {
                                     continue; // Salta gli spazi vuoti
                                 }
                                 
+                                // Se è @, controllare se è definito nella key
+                                if (character.equals("@")) {
+                                    if (key == null || !key.containsKey("@")) {
+                                        // @ non è definito nella key, trattalo come spazio vuoto
+                                        continue;
+                                    }
+                                    // Se arriviamo qui, @ è definito nella key, quindi processalo come un blocco normale
+                                }
+                                
                                 // Calcola la posizione assoluta di questo blocco
                                 // Ogni carattere della stringa Z rappresenta una posizione Z aggiuntiva
                                 int worldX = x;

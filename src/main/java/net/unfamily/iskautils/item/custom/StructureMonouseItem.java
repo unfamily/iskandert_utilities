@@ -223,9 +223,9 @@ public class StructureMonouseItem extends Item {
     private void showPreview(ServerPlayer player, BlockPos centerPos, StructureDefinition structure, int rotation) {
         Map<BlockPos, String> positions = calculateStructurePositions(centerPos, structure, rotation);
         
-        // Show blue preview markers for 5 seconds
+        // Show blue preview markers for 15 seconds
         for (BlockPos pos : positions.keySet()) {
-            MarkRenderer.getInstance().addBillboardMarker(pos, PREVIEW_COLOR, 100); // 5 seconds
+            MarkRenderer.getInstance().addBillboardMarker(pos, PREVIEW_COLOR, 300); // 15 seconds
         }
     }
     
@@ -259,39 +259,8 @@ public class StructureMonouseItem extends Item {
                 }
             }
             
-            // Second pass: place all blocks (since we know it's safe)
-            for (Map.Entry<BlockPos, String> entry : blockPositions.entrySet()) {
-                BlockPos blockPos = entry.getKey();
-                String character = entry.getValue();
-                List<StructureDefinition.BlockDefinition> blockDefs = key.get(character);
-                
-                if (blockDefs != null && !blockDefs.isEmpty()) {
-                    // Use the first available block definition
-                    StructureDefinition.BlockDefinition blockDef = blockDefs.get(0);
-                    
-                    // Get block from registry
-                    ResourceLocation blockLocation = ResourceLocation.parse(blockDef.getBlock());
-                    Block block = BuiltInRegistries.BLOCK.get(blockLocation);
-                    
-                    if (block != null && block != Blocks.AIR) {
-                        BlockState blockState = block.defaultBlockState();
-                        
-                        // Apply properties if specified
-                        if (blockDef.getProperties() != null) {
-                            for (Map.Entry<String, String> propEntry : blockDef.getProperties().entrySet()) {
-                                try {
-                                    blockState = applyBlockProperty(blockState, propEntry.getKey(), propEntry.getValue());
-                                } catch (Exception e) {
-                                    // Ignore invalid properties
-                                }
-                            }
-                        }
-                        
-                        // Place the block
-                        ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
-                    }
-                }
-            }
+            // Second pass: place all blocks with delay between layers
+            placeStructureWithLayerDelay(player, blockPositions, key, structure);
             
             return true;
         } catch (Exception e) {
@@ -300,6 +269,89 @@ public class StructureMonouseItem extends Item {
         }
     }
     
+    /**
+     * Piazza la struttura con delay di 2 tick tra i layer
+     */
+    private void placeStructureWithLayerDelay(ServerPlayer player, Map<BlockPos, String> blockPositions, 
+                                            Map<String, List<StructureDefinition.BlockDefinition>> key, 
+                                            StructureDefinition structure) {
+        // Raggruppa i blocchi per layer (Y coordinate)
+        Map<Integer, Map<BlockPos, String>> blocksByLayer = new HashMap<>();
+        
+        for (Map.Entry<BlockPos, String> entry : blockPositions.entrySet()) {
+            BlockPos pos = entry.getKey();
+            int layer = pos.getY();
+            blocksByLayer.computeIfAbsent(layer, k -> new HashMap<>()).put(pos, entry.getValue());
+        }
+        
+        // Piazza il primo layer immediatamente
+        List<Integer> sortedLayers = blocksByLayer.keySet().stream().sorted().toList();
+        
+        if (!sortedLayers.isEmpty()) {
+            int firstLayer = sortedLayers.get(0);
+            placeLayer(player, blocksByLayer.get(firstLayer), key, structure);
+            
+            // Schedula i layer rimanenti con delay di 20 tick tra ognuno
+            for (int i = 1; i < sortedLayers.size(); i++) {
+                final int layerY = sortedLayers.get(i);
+                final int delayTicks = i * 20; // 20 tick per ogni layer dopo il primo
+                final Map<BlockPos, String> layerBlocks = blocksByLayer.get(layerY);
+                
+                // Schedula il piazzamento del layer dopo il delay
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(delayTicks * 50); // Converti tick in millisecondi
+                        ((ServerLevel) player.level()).getServer().execute(() -> {
+                            placeLayer(player, layerBlocks, key, structure);
+                        });
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
+            }
+        }
+    }
+    
+    /**
+     * Piazza un singolo layer di blocchi
+     */
+    private void placeLayer(ServerPlayer player, Map<BlockPos, String> layerBlocks, 
+                          Map<String, List<StructureDefinition.BlockDefinition>> key, 
+                          StructureDefinition structure) {
+        for (Map.Entry<BlockPos, String> entry : layerBlocks.entrySet()) {
+            BlockPos blockPos = entry.getKey();
+            String character = entry.getValue();
+            List<StructureDefinition.BlockDefinition> blockDefs = key.get(character);
+            
+            if (blockDefs != null && !blockDefs.isEmpty()) {
+                // Use the first available block definition
+                StructureDefinition.BlockDefinition blockDef = blockDefs.get(0);
+                
+                // Get block from registry
+                ResourceLocation blockLocation = ResourceLocation.parse(blockDef.getBlock());
+                Block block = BuiltInRegistries.BLOCK.get(blockLocation);
+                
+                if (block != null && block != Blocks.AIR) {
+                    BlockState blockState = block.defaultBlockState();
+                    
+                    // Apply properties if specified
+                    if (blockDef.getProperties() != null) {
+                        for (Map.Entry<String, String> propEntry : blockDef.getProperties().entrySet()) {
+                            try {
+                                blockState = applyBlockProperty(blockState, propEntry.getKey(), propEntry.getValue());
+                            } catch (Exception e) {
+                                // Ignore invalid properties
+                            }
+                        }
+                    }
+                    
+                    // Place the block
+                    ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
+                }
+            }
+        }
+    }
+
     /**
      * Calculates positions of all structure blocks with rotation
      */
@@ -322,23 +374,34 @@ public class StructureMonouseItem extends Item {
                         for (int charIndex = 0; charIndex < cellChars.length; charIndex++) {
                             String character = cellChars[charIndex];
                             
-                            if (character != null && !character.equals(" ")) {
-                                int originalX = x;
-                                int originalY = y;
-                                int originalZ = z * cellChars.length + charIndex;
-                                
-                                // Calculate relative position from center @
-                                int relX = originalX - relativeCenter.getX();
-                                int relY = originalY - relativeCenter.getY();
-                                int relZ = originalZ - relativeCenter.getZ();
-                                
-                                // Apply rotation to relative coordinates
-                                BlockPos rotatedRelativePos = applyRotation(relX, relY, relZ, rotation);
-                                
-                                // Calculate final position in world
-                                BlockPos blockPos = centerPos.offset(rotatedRelativePos.getX(), rotatedRelativePos.getY(), rotatedRelativePos.getZ());
-                                positions.put(blockPos, character);
+                            // Salta spazi vuoti
+                            if (character == null || character.equals(" ")) continue;
+                            
+                            // Se è @, controllare se è definito nella key
+                            if (character.equals("@")) {
+                                Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
+                                if (key == null || !key.containsKey("@")) {
+                                    // @ non è definito nella key, trattalo come spazio vuoto
+                                    continue;
+                                }
+                                // Se arriviamo qui, @ è definito nella key, quindi processalo come un blocco normale
                             }
+                            
+                            int originalX = x;
+                            int originalY = y;
+                            int originalZ = z * cellChars.length + charIndex;
+                            
+                            // Calculate relative position from center @
+                            int relX = originalX - relativeCenter.getX();
+                            int relY = originalY - relativeCenter.getY();
+                            int relZ = originalZ - relativeCenter.getZ();
+                            
+                            // Apply rotation to relative coordinates
+                            BlockPos rotatedRelativePos = applyRotation(relX, relY, relZ, rotation);
+                            
+                            // Calculate final position in world
+                            BlockPos blockPos = centerPos.offset(rotatedRelativePos.getX(), rotatedRelativePos.getY(), rotatedRelativePos.getZ());
+                            positions.put(blockPos, character);
                         }
                     }
                 }
@@ -416,9 +479,9 @@ public class StructureMonouseItem extends Item {
     private void showSuccessMarkers(ServerPlayer player, BlockPos centerPos, StructureDefinition structure, int rotation) {
         Map<BlockPos, String> positions = calculateStructurePositions(centerPos, structure, rotation);
         
-        // Show green markers for 2 seconds without text
+        // Show green markers for 15 seconds without text
         for (BlockPos pos : positions.keySet()) {
-            MarkRenderer.getInstance().addBillboardMarker(pos, SUCCESS_COLOR, 40); // 2 seconds, without text
+            MarkRenderer.getInstance().addBillboardMarker(pos, SUCCESS_COLOR, 300); // 15 seconds, without text
         }
     }
     

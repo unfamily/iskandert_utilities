@@ -160,14 +160,12 @@ public class StructurePlacerItem extends Item {
             BlockState currentState = player.level().getBlockState(blockPos);
             
             if (canReplaceBlock(currentState, structure)) {
-                // Spazio vuoto/sostituibile: marker azzurro alla posizione del blocco
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, PREVIEW_COLOR, 100, // 5 secondi
-                    "Empty space");
+                // Spazio vuoto/sostituibile: marker azzurro alla posizione del blocco (15 secondi, senza testo)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, PREVIEW_COLOR, 300); // 15 secondi
                 blueMarkers++;
             } else {
-                // Spazio occupato: marker rosso alla posizione del blocco
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 100, // 5 secondi
-                    "Occupied: " + currentState.getBlock().getName().getString());
+                // Spazio occupato: marker rosso alla posizione del blocco (15 secondi, senza testo)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 300); // 15 secondi
                 redMarkers++;
             }
         }
@@ -309,7 +307,18 @@ public class StructurePlacerItem extends Item {
                         for (int charIndex = 0; charIndex < cellChars.length; charIndex++) {
                             String character = cellChars[charIndex];
                             
-                            if (character != null && !character.equals(" ")) {
+                            // Salta spazi vuoti
+                            if (character == null || character.equals(" ")) continue;
+                            
+                            // Se è @, controllare se è definito nella key
+                            if (character.equals("@")) {
+                                Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
+                                if (key == null || !key.containsKey("@")) {
+                                    // @ non è definito nella key, trattalo come spazio vuoto
+                                    continue;
+                                }
+                                // Se arriviamo qui, @ è definito nella key, quindi processalo come un blocco normale
+                            }
                                 int originalX = x;
                                 int originalY = y;
                                 int originalZ = z * cellChars.length + charIndex;
@@ -330,7 +339,6 @@ public class StructurePlacerItem extends Item {
                                 );
                                 
                                 positions.put(blockPos, character);
-                            }
                         }
                     }
                 }
@@ -523,15 +531,67 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Piazza la struttura usando i blocchi allocati specificamente
+     * Piazza la struttura usando i blocchi allocati specificamente con delay tra i layer
      */
     private boolean placeStructureWithAllocatedBlocks(ServerLevel level, Map<BlockPos, AllocatedBlock> blockAllocation, 
                                                     StructureDefinition structure, ServerPlayer player, boolean isForced) {
         try {
+            // Raggruppa i blocchi per layer (Y coordinate)
+            Map<Integer, Map<BlockPos, AllocatedBlock>> blocksByLayer = new HashMap<>();
+            
+            for (Map.Entry<BlockPos, AllocatedBlock> entry : blockAllocation.entrySet()) {
+                BlockPos pos = entry.getKey();
+                int layer = pos.getY();
+                blocksByLayer.computeIfAbsent(layer, k -> new HashMap<>()).put(pos, entry.getValue());
+            }
+            
+            // Piazza il primo layer immediatamente
+            Map<Integer, Boolean> layerResults = new HashMap<>();
+            List<Integer> sortedLayers = blocksByLayer.keySet().stream().sorted().toList();
+            
+            if (!sortedLayers.isEmpty()) {
+                int firstLayer = sortedLayers.get(0);
+                boolean firstLayerSuccess = placeLayer(level, blocksByLayer.get(firstLayer), structure, player, isForced);
+                layerResults.put(firstLayer, firstLayerSuccess);
+                
+                // Schedula i layer rimanenti con delay di 20 tick tra ognuno
+                for (int i = 1; i < sortedLayers.size(); i++) {
+                    final int layerY = sortedLayers.get(i);
+                    final int delayTicks = i * 20; // 20 tick per ogni layer dopo il primo
+                    final Map<BlockPos, AllocatedBlock> layerBlocks = blocksByLayer.get(layerY);
+                    
+                    // Schedula il piazzamento del layer dopo il delay
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(delayTicks * 50); // Converti tick in millisecondi
+                            level.getServer().execute(() -> {
+                                boolean layerSuccess = placeLayer(level, layerBlocks, structure, player, isForced);
+                                layerResults.put(layerY, layerSuccess);
+                            });
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }).start();
+                }
+            }
+            
+            // Ritorna true se almeno il primo layer è stato piazzato con successo
+            return !layerResults.isEmpty() && layerResults.values().stream().anyMatch(success -> success);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Piazza un singolo layer di blocchi
+     */
+    private boolean placeLayer(ServerLevel level, Map<BlockPos, AllocatedBlock> layerBlocks, 
+                             StructureDefinition structure, ServerPlayer player, boolean isForced) {
+        try {
             int placedBlocks = 0;
             Map<BlockPos, AllocatedBlock> skippedBlocks = new HashMap<>();
             
-            for (Map.Entry<BlockPos, AllocatedBlock> entry : blockAllocation.entrySet()) {
+            for (Map.Entry<BlockPos, AllocatedBlock> entry : layerBlocks.entrySet()) {
                 BlockPos pos = entry.getKey();
                 AllocatedBlock allocated = entry.getValue();
                 StructureDefinition.BlockDefinition blockDef = allocated.getBlockDefinition();
@@ -577,10 +637,6 @@ public class StructurePlacerItem extends Item {
             // Se in modalità forzata e ci sono blocchi saltati, ripristinali nell'inventario
             if (isForced && !skippedBlocks.isEmpty()) {
                 restoreAllocatedBlocks(player, skippedBlocks.values());
-                
-                // Informa il giocatore dei blocchi saltati
-                int skippedCount = skippedBlocks.size();
-                player.displayClientMessage(Component.literal("§e" + placedBlocks + " §7blocks placed, §c" + skippedCount + " §7skipped (occupied spaces)"), true);
             }
             
             // Successo se almeno un blocco è stato piazzato
@@ -757,9 +813,8 @@ public class StructurePlacerItem extends Item {
             BlockState currentState = player.level().getBlockState(blockPos);
             
             if (!canReplaceBlock(currentState, structure)) {
-                // Marker alla posizione del blocco
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 60, // 3 secondi
-                    "Conflict: " + currentState.getBlock().getName().getString());
+                // Marker alla posizione del blocco (15 secondi, senza testo)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 300); // 15 secondi
             }
         }
     }
@@ -792,9 +847,8 @@ public class StructurePlacerItem extends Item {
             }
             
             if (wasPlaced) {
-                String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-                MarkRenderer.getInstance().addBillboardMarker(pos, SUCCESS_COLOR, 40, // 2 secondi
-                    "Placed: " + structureName);
+                // Marker di successo (15 secondi, senza testo)
+                MarkRenderer.getInstance().addBillboardMarker(pos, SUCCESS_COLOR, 300); // 15 secondi
             }
         }
     }
