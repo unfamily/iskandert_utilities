@@ -298,9 +298,10 @@
   "gui.iska_utils.structure_placer_machine.none_selected": "None",
   "gui.iska_utils.structure_placer_machine.preview_enabled": "Preview enabled",
   "gui.iska_utils.structure_placer_machine.redstone_mode": "Redstone Mode",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.none": "Redstone Mode: None",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.low": "Redstone Mode: Low Signal",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.high": "Redstone Mode: High Signal",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.none": "None",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.low": "Low",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.high": "High",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.pulse": "Pulse",
   
   "block.iska_utils.scan_block_red": "Scan Block (Red)",
   "block.iska_utils.scan_block_green": "Scan Block (Green)",

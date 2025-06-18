@@ -150,9 +150,14 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         ).bounds(showButtonX, bottomRowY, buttonWidth, buttonHeight).build();
         this.addRenderableWidget(this.setInventoryButton);
         
-        // Center: Redstone Mode Button (custom rendered)
-        this.redstoneModeButtonX = this.leftPos + (this.imageWidth - REDSTONE_BUTTON_SIZE) / 2;
-        this.redstoneModeButtonY = topRowY;
+        // Right side: Redstone Mode Button (opposite to energy bar, between Show and Set Inventory)
+        // Position it at the right edge, similar to energy bar positioning on the left
+        int rightMargin = ((20 - REDSTONE_BUTTON_SIZE) / 2); // Same margin logic as energy bar
+        this.redstoneModeButtonX = this.leftPos + this.imageWidth - rightMargin - REDSTONE_BUTTON_SIZE;
+        // Position Y between Show (topRowY=25) and Set Inventory (bottomRowY=70)
+        // Show button bottom: 25+20=45, Set Inventory top: 70
+        // Center between them: (45+70)/2 = 57.5, minus half button height: 57.5-8=49.5
+        this.redstoneModeButtonY = this.topPos + 49;
     }
     
     private void onStructureSelectPressed() {
@@ -285,9 +290,10 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                            mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
         
         // Draw button background (normal or highlighted)
-        int textureY = isHovered ? 16 : 0; // Second texture (highlighted) or first (normal)
+        int textureY = isHovered ? 16 : 0; // Highlighted version is below the normal one
         guiGraphics.blit(MEDIUM_BUTTONS, this.redstoneModeButtonX, this.redstoneModeButtonY, 
-                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 16, 32);
+                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
+                        96, 96); // Correct texture size: 96x96
         
         // Get current redstone mode from menu
         int redstoneMode = this.menu.getRedstoneMode();
@@ -300,7 +306,6 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         switch (redstoneMode) {
             case 0 -> {
                 // NONE mode: Gunpowder icon
-                // We'll use the vanilla gunpowder texture through item rendering
                 net.minecraft.world.item.ItemStack gunpowder = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GUNPOWDER);
                 renderScaledItem(guiGraphics, gunpowder, iconX, iconY, iconSize);
             }
@@ -310,8 +315,13 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                 renderScaledItem(guiGraphics, redstone, iconX, iconY, iconSize);
             }
             case 2 -> {
-                // HIGH mode: Redstone GUI texture
-                guiGraphics.blit(REDSTONE_GUI, iconX, iconY, 0, 0, iconSize, iconSize, 16, 16);
+                // HIGH mode: Redstone GUI texture rendered as item-like (12x12)
+                renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
+            }
+            case 3 -> {
+                // PULSE mode: Repeater icon
+                net.minecraft.world.item.ItemStack repeater = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REPEATER);
+                renderScaledItem(guiGraphics, repeater, iconX, iconY, iconSize);
             }
         }
     }
@@ -332,6 +342,27 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         
         // Render the item
         guiGraphics.renderItem(itemStack, 0, 0);
+        
+        // Restore matrix state
+        guiGraphics.pose().popPose();
+    }
+    
+    /**
+     * Renders a texture scaled to the specified size (like an item)
+     */
+    private void renderScaledTexture(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int size) {
+        // Save current matrix state
+        guiGraphics.pose().pushPose();
+        
+        // Calculate scale: original texture size is 16x16, we want 12x12
+        float scale = (float) size / 16.0f;
+        
+        // Translate to position and apply scale
+        guiGraphics.pose().translate(x, y, 0);
+        guiGraphics.pose().scale(scale, scale, 1.0f);
+        
+        // Render the texture (assuming it's 16x16)
+        guiGraphics.blit(texture, 0, 0, 0, 0, 16, 16, 16, 16);
         
         // Restore matrix state
         guiGraphics.pose().popPose();
@@ -384,6 +415,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                 case 0 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.none");
                 case 1 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.low");
                 case 2 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.high");
+                case 3 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.pulse");
                 default -> Component.literal("Unknown mode");
             };
             
