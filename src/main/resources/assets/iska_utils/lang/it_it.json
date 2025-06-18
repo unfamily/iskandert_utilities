@@ -301,5 +301,9 @@
   "direction.iska_utils.west": "Ovest",
   
   "block.iska_utils.scan_block_red": "Blocco Scan (Rosso)",
-  "block.iska_utils.scan_block_green": "Blocco Scan (Verde)"
+  "block.iska_utils.scan_block_green": "Blocco Scan (Verde)",
+  "gui.iska_utils.structure_placer_machine.redstone_mode": "Modalità Redstone",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.none": "Modalità Redstone: Nessuna",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.low": "Modalità Redstone: Segnale Basso",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.high": "Modalità Redstone: Segnale Alto"
 }
