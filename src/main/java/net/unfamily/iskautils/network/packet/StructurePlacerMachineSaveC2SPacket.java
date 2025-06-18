@@ -78,6 +78,11 @@ public class StructurePlacerMachineSaveC2SPacket {
         // Salva la struttura selezionata nella macchina (sul server)
         machineEntity.setSelectedStructure(structureId);
         
+        // Forza la sincronizzazione dei dati del menu se il player ha il menu aperto
+        if (player.containerMenu instanceof net.unfamily.iskautils.client.gui.StructurePlacerMachineMenu menu) {
+            menu.forceDataSync();
+        }
+        
         // Informa il giocatore del successo
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();
         player.displayClientMessage(

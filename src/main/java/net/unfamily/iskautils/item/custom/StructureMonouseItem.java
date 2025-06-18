@@ -14,6 +14,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
@@ -26,6 +27,7 @@ import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.structure.StructureMonouseDefinition;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -270,12 +272,18 @@ public class StructureMonouseItem extends Item {
     }
     
     /**
-     * Piazza la struttura con delay di 2 tick tra i layer
+     * Places the structure with 5 tick delay between layers
      */
     private void placeStructureWithLayerDelay(ServerPlayer player, Map<BlockPos, String> blockPositions, 
                                             Map<String, List<StructureDefinition.BlockDefinition>> key, 
                                             StructureDefinition structure) {
-        // Raggruppa i blocchi per layer (Y coordinate)
+        // Check if structure has slower flag enabled
+        if (structure.isSlower()) {
+            placeStructureWithBlockDelay(player, blockPositions, key, structure);
+            return;
+        }
+        
+        // Group blocks by layer (Y coordinate)
         Map<Integer, Map<BlockPos, String>> blocksByLayer = new HashMap<>();
         
         for (Map.Entry<BlockPos, String> entry : blockPositions.entrySet()) {
@@ -284,23 +292,23 @@ public class StructureMonouseItem extends Item {
             blocksByLayer.computeIfAbsent(layer, k -> new HashMap<>()).put(pos, entry.getValue());
         }
         
-        // Piazza il primo layer immediatamente
+        // Place first layer immediately
         List<Integer> sortedLayers = blocksByLayer.keySet().stream().sorted().toList();
         
         if (!sortedLayers.isEmpty()) {
             int firstLayer = sortedLayers.get(0);
             placeLayer(player, blocksByLayer.get(firstLayer), key, structure);
             
-            // Schedula i layer rimanenti con delay di 20 tick tra ognuno
+            // Schedule remaining layers with 5 tick delay between each
             for (int i = 1; i < sortedLayers.size(); i++) {
                 final int layerY = sortedLayers.get(i);
-                final int delayTicks = i * 20; // 20 tick per ogni layer dopo il primo
+                final int delayTicks = i * 5; // 5 ticks for each layer after the first
                 final Map<BlockPos, String> layerBlocks = blocksByLayer.get(layerY);
                 
-                // Schedula il piazzamento del layer dopo il delay
+                // Schedule layer placement after delay
                 new Thread(() -> {
                     try {
-                        Thread.sleep(delayTicks * 50); // Converti tick in millisecondi
+                        Thread.sleep(delayTicks * 50); // Convert ticks to milliseconds
                         ((ServerLevel) player.level()).getServer().execute(() -> {
                             placeLayer(player, layerBlocks, key, structure);
                         });
@@ -313,39 +321,118 @@ public class StructureMonouseItem extends Item {
     }
     
     /**
-     * Piazza un singolo layer di blocchi
+     * Places the structure with 5 tick delay between each individual block (when slower is enabled)
+     */
+    private void placeStructureWithBlockDelay(ServerPlayer player, Map<BlockPos, String> blockPositions, 
+                                            Map<String, List<StructureDefinition.BlockDefinition>> key, 
+                                            StructureDefinition structure) {
+        List<Map.Entry<BlockPos, String>> blockList = new ArrayList<>(blockPositions.entrySet());
+        
+        // Place first block immediately
+        if (!blockList.isEmpty()) {
+            placeSingleBlock(player, blockList.get(0), key, structure);
+            
+            // Schedule remaining blocks with 5 tick delay between each
+            for (int i = 1; i < blockList.size(); i++) {
+                final Map.Entry<BlockPos, String> blockEntry = blockList.get(i);
+                final int delayTicks = i * 5; // 5 ticks between each block
+                
+                // Schedule block placement after delay
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(delayTicks * 50); // Convert ticks to milliseconds
+                        ((ServerLevel) player.level()).getServer().execute(() -> {
+                            placeSingleBlock(player, blockEntry, key, structure);
+                        });
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
+            }
+        }
+    }
+    
+    /**
+     * Places a single layer of blocks
      */
     private void placeLayer(ServerPlayer player, Map<BlockPos, String> layerBlocks, 
                           Map<String, List<StructureDefinition.BlockDefinition>> key, 
                           StructureDefinition structure) {
         for (Map.Entry<BlockPos, String> entry : layerBlocks.entrySet()) {
-            BlockPos blockPos = entry.getKey();
-            String character = entry.getValue();
-            List<StructureDefinition.BlockDefinition> blockDefs = key.get(character);
+            placeSingleBlock(player, entry, key, structure);
+        }
+    }
+    
+    /**
+     * Places a single block with all necessary checks
+     */
+    private void placeSingleBlock(ServerPlayer player, Map.Entry<BlockPos, String> blockEntry, 
+                                Map<String, List<StructureDefinition.BlockDefinition>> key, 
+                                StructureDefinition structure) {
+        BlockPos blockPos = blockEntry.getKey();
+        String character = blockEntry.getValue();
+        List<StructureDefinition.BlockDefinition> blockDefs = key.get(character);
+        
+        if (blockDefs != null && !blockDefs.isEmpty()) {
+            // Use the first available block definition
+            StructureDefinition.BlockDefinition blockDef = blockDefs.get(0);
             
-            if (blockDefs != null && !blockDefs.isEmpty()) {
-                // Use the first available block definition
-                StructureDefinition.BlockDefinition blockDef = blockDefs.get(0);
+            // Get block from registry
+            ResourceLocation blockLocation = ResourceLocation.parse(blockDef.getBlock());
+            Block block = BuiltInRegistries.BLOCK.get(blockLocation);
+            
+            if (block != null && block != Blocks.AIR) {
+                BlockState blockState = block.defaultBlockState();
                 
-                // Get block from registry
-                ResourceLocation blockLocation = ResourceLocation.parse(blockDef.getBlock());
-                Block block = BuiltInRegistries.BLOCK.get(blockLocation);
-                
-                if (block != null && block != Blocks.AIR) {
-                    BlockState blockState = block.defaultBlockState();
-                    
-                    // Apply properties if specified
-                    if (blockDef.getProperties() != null) {
-                        for (Map.Entry<String, String> propEntry : blockDef.getProperties().entrySet()) {
-                            try {
-                                blockState = applyBlockProperty(blockState, propEntry.getKey(), propEntry.getValue());
-                            } catch (Exception e) {
-                                // Ignore invalid properties
-                            }
+                // Apply properties if specified
+                if (blockDef.getProperties() != null) {
+                    for (Map.Entry<String, String> propEntry : blockDef.getProperties().entrySet()) {
+                        try {
+                            blockState = applyBlockProperty(blockState, propEntry.getKey(), propEntry.getValue());
+                        } catch (Exception e) {
+                            // Ignore invalid properties
                         }
                     }
-                    
-                    // Place the block
+                }
+                
+                // Check if we should place as player
+                if (structure.isPlaceAsPlayer()) {
+                    // Place as if done by player - create temporary ItemStack and use BlockItem
+                    try {
+                        Item blockItem = block.asItem();
+                        if (blockItem != null && blockItem != Items.AIR) {
+                            ItemStack blockStack = new ItemStack(blockItem);
+                            
+                            // Create a fake UseOnContext to simulate player placement
+                            var context = new net.minecraft.world.item.context.UseOnContext(
+                                player, 
+                                net.minecraft.world.InteractionHand.MAIN_HAND, 
+                                new net.minecraft.world.phys.BlockHitResult(
+                                    net.minecraft.world.phys.Vec3.atCenterOf(blockPos), 
+                                    net.minecraft.core.Direction.UP, 
+                                    blockPos, // Use the actual position, not below
+                                    false
+                                )
+                            );
+                            
+                            // Try to use BlockItem.useOn to place it like a player would
+                            if (blockItem instanceof net.minecraft.world.item.BlockItem blockItemInstance) {
+                                blockItemInstance.place(new net.minecraft.world.item.context.BlockPlaceContext(context));
+                            } else {
+                                // Fallback to normal placement
+                                ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
+                            }
+                        } else {
+                            // Fallback to normal placement
+                            ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
+                        }
+                    } catch (Exception e) {
+                        // If player-like placement fails, fallback to normal placement
+                        LOGGER.debug("Player-like placement failed for {}, using normal placement: {}", blockDef.getBlock(), e.getMessage());
+                        ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
+                    }
+                } else {
+                    // Normal placement
                     ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
                 }
             }
@@ -374,17 +461,17 @@ public class StructureMonouseItem extends Item {
                         for (int charIndex = 0; charIndex < cellChars.length; charIndex++) {
                             String character = cellChars[charIndex];
                             
-                            // Salta spazi vuoti
+                            // Skip empty spaces
                             if (character == null || character.equals(" ")) continue;
                             
-                            // Se è @, controllare se è definito nella key
+                            // If it's @, check if it's defined in the key
                             if (character.equals("@")) {
                                 Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
                                 if (key == null || !key.containsKey("@")) {
-                                    // @ non è definito nella key, trattalo come spazio vuoto
+                                    // @ is not defined in key, treat as empty space
                                     continue;
                                 }
-                                // Se arriviamo qui, @ è definito nella key, quindi processalo come un blocco normale
+                                // If we get here, @ is defined in key, so process as normal block
                             }
                             
                             int originalX = x;

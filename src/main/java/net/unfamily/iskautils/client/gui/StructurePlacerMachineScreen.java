@@ -20,6 +20,11 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/block_structure.png");
     private static final ResourceLocation ENERGY_BAR = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/energy_bar.png");
     
+    // Medium buttons texture (16x32 - normal and highlighted)
+    private static final ResourceLocation MEDIUM_BUTTONS = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
+    // Redstone GUI icon
+    private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
+    
     // GUI dimensions (based on block_structure.png: 176x248 - increased button area height by 48px)
     private static final int GUI_WIDTH = 176;
     private static final int GUI_HEIGHT = 248;
@@ -28,11 +33,15 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     private static final int ENERGY_BAR_WIDTH = 8;
     private static final int ENERGY_BAR_HEIGHT = 32;
     
-    // Buttons for the X layout
+    // Button references
     private Button structureSelectButton;  // Top left
     private Button showButton;            // Top right (aligned with title end) - renamed from applyButton
     private Button rotateButton;          // Bottom left
     private Button setInventoryButton;    // Bottom right
+    
+    // Custom redstone mode button
+    private int redstoneModeButtonX, redstoneModeButtonY;
+    private static final int REDSTONE_BUTTON_SIZE = 16;
     
     public StructurePlacerMachineScreen(StructurePlacerMachineMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -52,6 +61,36 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         
         // Initialize buttons in X layout
         initializeButtons();
+    }
+    
+    @Override
+    public void containerTick() {
+        super.containerTick();
+        
+        // Update button states based on current data
+        updateButtonStates();
+    }
+    
+    /**
+     * Updates button states and text based on current synced data
+     */
+    private void updateButtonStates() {
+        // Aggiorniamo solo il testo del pulsante di rotazione
+        // Il pulsante "Show" mantiene il testo fisso
+        
+        if (this.rotateButton != null) {
+            // Update rotate button text to show current rotation
+            int rotation = this.menu.getRotation();
+            String rotationText = switch (rotation) {
+                case 0 -> Component.translatable("direction.iska_utils.north").getString();
+                case 90 -> Component.translatable("direction.iska_utils.east").getString(); 
+                case 180 -> Component.translatable("direction.iska_utils.south").getString();
+                case 270 -> Component.translatable("direction.iska_utils.west").getString();
+                default -> rotation + "°";
+            };
+            Component rotateText = Component.literal("↻ " + rotationText);
+            this.rotateButton.setMessage(rotateText);
+        }
     }
     
     private void initializeButtons() {
@@ -80,7 +119,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         ).bounds(selectButtonX, topRowY, buttonWidth, buttonHeight).build();
         this.addRenderableWidget(this.structureSelectButton);
         
-        // Top Right: Show Button (aligned with title end)
+        // Top Right: Show Button (aligned with title end) - testo fisso "Show"
         int showButtonX = this.leftPos + titleEndX - buttonWidth;
         this.showButton = Button.builder(
                 Component.translatable("gui.iska_utils.structure_placer_machine.show"),
@@ -88,9 +127,18 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         ).bounds(showButtonX, topRowY, buttonWidth, buttonHeight).build();
         this.addRenderableWidget(this.showButton);
         
-        // Bottom Left: Rotate Button
+        // Bottom Left: Rotate Button - text will be updated by updateButtonStates()
+        int rotation = this.menu.getRotation();
+        String rotationText = switch (rotation) {
+            case 0 -> Component.translatable("direction.iska_utils.north").getString();
+            case 90 -> Component.translatable("direction.iska_utils.east").getString(); 
+            case 180 -> Component.translatable("direction.iska_utils.south").getString();
+            case 270 -> Component.translatable("direction.iska_utils.west").getString();
+            default -> rotation + "°";
+        };
+        Component initialRotateText = Component.literal("↻ " + rotationText);
         this.rotateButton = Button.builder(
-                Component.translatable("gui.iska_utils.structure_placer_machine.rotate"),
+                initialRotateText,
                 button -> onRotatePressed()
         ).bounds(selectButtonX, bottomRowY, buttonWidth, buttonHeight).build();
         this.addRenderableWidget(this.rotateButton);
@@ -101,6 +149,10 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                 button -> onSetInventoryPressed()
         ).bounds(showButtonX, bottomRowY, buttonWidth, buttonHeight).build();
         this.addRenderableWidget(this.setInventoryButton);
+        
+        // Center: Redstone Mode Button (custom rendered)
+        this.redstoneModeButtonX = this.leftPos + (this.imageWidth - REDSTONE_BUTTON_SIZE) / 2;
+        this.redstoneModeButtonY = topRowY;
     }
     
     private void onStructureSelectPressed() {
@@ -174,6 +226,15 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // Implementation for set inventory button pressed
     }
     
+    private void onRedstoneModePressed() {
+        // Get the machine position from the menu (synced from server)
+        BlockPos machinePos = this.menu.getSyncedBlockPos();
+        if (!machinePos.equals(BlockPos.ZERO)) {
+            // Send redstone mode packet to cycle the mode
+            net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineRedstoneModePacket(machinePos);
+        }
+    }
+    
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         // Draw the background texture
@@ -181,6 +242,9 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         
         // Draw the energy bar
         renderEnergyBar(guiGraphics);
+        
+        // Draw the custom redstone mode button
+        renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
     }
     
     private void renderEnergyBar(GuiGraphics guiGraphics) {
@@ -215,6 +279,64 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         }
     }
     
+    private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // Check if mouse is over the button
+        boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
+                           mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
+        
+        // Draw button background (normal or highlighted)
+        int textureY = isHovered ? 16 : 0; // Second texture (highlighted) or first (normal)
+        guiGraphics.blit(MEDIUM_BUTTONS, this.redstoneModeButtonX, this.redstoneModeButtonY, 
+                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 16, 32);
+        
+        // Get current redstone mode from menu
+        int redstoneMode = this.menu.getRedstoneMode();
+        
+        // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
+        int iconX = this.redstoneModeButtonX + 2; // Center: (16-12)/2 = 2
+        int iconY = this.redstoneModeButtonY + 2; // Center: (16-12)/2 = 2
+        int iconSize = 12;
+        
+        switch (redstoneMode) {
+            case 0 -> {
+                // NONE mode: Gunpowder icon
+                // We'll use the vanilla gunpowder texture through item rendering
+                net.minecraft.world.item.ItemStack gunpowder = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GUNPOWDER);
+                renderScaledItem(guiGraphics, gunpowder, iconX, iconY, iconSize);
+            }
+            case 1 -> {
+                // LOW mode: Redstone dust icon
+                net.minecraft.world.item.ItemStack redstone = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REDSTONE);
+                renderScaledItem(guiGraphics, redstone, iconX, iconY, iconSize);
+            }
+            case 2 -> {
+                // HIGH mode: Redstone GUI texture
+                guiGraphics.blit(REDSTONE_GUI, iconX, iconY, 0, 0, iconSize, iconSize, 16, 16);
+            }
+        }
+    }
+    
+    /**
+     * Renders an item scaled to the specified size
+     */
+    private void renderScaledItem(GuiGraphics guiGraphics, net.minecraft.world.item.ItemStack itemStack, int x, int y, int size) {
+        // Save current matrix state
+        guiGraphics.pose().pushPose();
+        
+        // Calculate scale: original item size is 16x16, we want 12x12
+        float scale = (float) size / 16.0f;
+        
+        // Translate to position and apply scale
+        guiGraphics.pose().translate(x, y, 0);
+        guiGraphics.pose().scale(scale, scale, 1.0f);
+        
+        // Render the item
+        guiGraphics.renderItem(itemStack, 0, 0);
+        
+        // Restore matrix state
+        guiGraphics.pose().popPose();
+    }
+    
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         // Render the background
@@ -222,6 +344,9 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         
         // Render energy bar tooltip
         renderEnergyTooltip(guiGraphics, mouseX, mouseY);
+        
+        // Render redstone mode button tooltip
+        renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
         
         // Render item tooltips
         this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -245,6 +370,31 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         }
     }
     
+    private void renderRedstoneModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // Check if mouse is over the button
+        boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
+                           mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
+        
+        if (isHovered) {
+            // Get current redstone mode from menu
+            int redstoneMode = this.menu.getRedstoneMode();
+            
+            // Draw the appropriate tooltip
+            Component tooltip = switch (redstoneMode) {
+                case 0 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.none");
+                case 1 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.low");
+                case 2 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.high");
+                default -> Component.literal("Unknown mode");
+            };
+            
+            // Calculate tooltip position
+            int tooltipX = this.redstoneModeButtonX - this.font.width(tooltip.getString()) - 10;
+            int tooltipY = this.redstoneModeButtonY - 20;
+            
+            guiGraphics.drawString(this.font, tooltip, tooltipX, tooltipY, 0xFFFFFF, false);
+        }
+    }
+    
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         // Draw the title (centered)
@@ -258,17 +408,17 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     }
     
     private void renderSelectedStructureText(GuiGraphics guiGraphics) {
-        // Get the selected structure from the block entity
-        StructurePlacerMachineBlockEntity blockEntity = this.menu.getBlockEntityFromLevel(this.minecraft.level);
-        String selectedStructure = "";
+        // Use the new cached structure method from the menu instead of directly accessing block entity
+        String selectedStructure = this.menu.getCachedSelectedStructure();
         
-        if (blockEntity != null && !blockEntity.getSelectedStructure().isEmpty()) {
-            // Try to get the structure name, fallback to ID
-            var structure = net.unfamily.iskautils.structure.StructureLoader.getStructure(blockEntity.getSelectedStructure());
+        // If we have a structure ID, try to get the display name
+        String displayName = "";
+        if (!selectedStructure.isEmpty()) {
+            var structure = net.unfamily.iskautils.structure.StructureLoader.getStructure(selectedStructure);
             if (structure != null) {
-                selectedStructure = structure.getName() != null ? structure.getName() : structure.getId();
+                displayName = structure.getName() != null ? structure.getName() : structure.getId();
             } else {
-                selectedStructure = blockEntity.getSelectedStructure();
+                displayName = selectedStructure; // Fallback to ID if structure not found
             }
         }
         
@@ -276,9 +426,9 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         Component labelComponent = Component.translatable("gui.iska_utils.structure_placer_machine.selected_structure");
         String labelText = labelComponent.getString() + ":"; // Remove space after colon since it's on its own line
         
-        Component structureComponent = selectedStructure.isEmpty() ? 
+        Component structureComponent = displayName.isEmpty() ? 
             Component.translatable("gui.iska_utils.structure_placer_machine.none_selected") :
-            Component.literal(selectedStructure);
+            Component.literal(displayName);
         String structureText = structureComponent.getString();
         
         // Use a smaller scale for better fit
@@ -307,10 +457,25 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // Draw second line: structure name or "None" (centered, colored)
         int scaledStructureWidth = this.font.width(structureText);
         int scaledStructureX = Math.round((this.imageWidth / scale - scaledStructureWidth) / 2);
-        int structureColor = selectedStructure.isEmpty() ? 0xFF4040 : 0x4040FF;
+        int structureColor = displayName.isEmpty() ? 0xFF4040 : 0x4040FF;
         guiGraphics.drawString(this.font, structureText, scaledStructureX, scaledSecondLineY, structureColor, false);
         
         // Restore matrix state
         guiGraphics.pose().popPose();
+    }
+    
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // Check if click is on redstone mode button
+        if (button == 0) { // Left click
+            if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
+                mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
+                
+                onRedstoneModePressed();
+                return true;
+            }
+        }
+        
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 } 

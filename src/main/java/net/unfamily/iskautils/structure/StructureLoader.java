@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import net.unfamily.iskautils.Config;
 import org.slf4j.Logger;
 
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -18,20 +19,20 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * Carica le definizioni delle strutture dai file JSON esterni
+ * Loads structure definitions from external JSON files
  */
 public class StructureLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
-    // Mappa per memorizzare le strutture caricate
+    // Map to store loaded structures
     private static final Map<String, StructureDefinition> STRUCTURES = new HashMap<>();
     
-    // File e directory da cui sono caricate le strutture
+    // Files and directories from which structures are loaded
     private static final Map<String, Boolean> PROTECTED_DEFINITIONS = new HashMap<>();
 
     /**
-     * Scansiona la directory di configurazione per le strutture
+     * Scans the configuration directory for structures
      */
     public static void scanConfigDirectory() {
         String configPath = Config.externalScriptsPath;
@@ -42,36 +43,36 @@ public class StructureLoader {
         Path structuresPath = Paths.get(configPath, "iska_utils_structures");
         
         try {
-            // Crea la directory se non esiste
+            // Create directory if it doesn't exist
             if (!Files.exists(structuresPath)) {
                 Files.createDirectories(structuresPath);
-                LOGGER.info("Creata directory per le strutture: {}", structuresPath);
+                LOGGER.info("Created structures directory: {}", structuresPath);
             }
             
-            // Pulisci le strutture precedenti
+            // Clear previous structures
             PROTECTED_DEFINITIONS.clear();
             STRUCTURES.clear();
             
-            // Genera il file di default se non esiste
+            // Generate default file if it doesn't exist
             Path defaultStructuresFile = structuresPath.resolve("default_structures.json");
             if (!Files.exists(defaultStructuresFile) || shouldRegenerateDefaultStructures(defaultStructuresFile)) {
-                LOGGER.debug("Generazione o rigenerazione del file default_structures.json");
+                LOGGER.debug("Generating or regenerating default_structures.json file");
                 generateDefaultStructures(structuresPath);
             }
             
-            // Scansiona tutti i file JSON nella directory
+            // Scan all JSON files in the directory
             try (Stream<Path> files = Files.walk(structuresPath)) {
                 files.filter(Files::isRegularFile)
                      .filter(path -> path.toString().endsWith(".json"))
                      .filter(path -> !path.getFileName().toString().startsWith("."))
-                     .sorted() // Processa in ordine alfabetico
+                     .sorted() // Process in alphabetical order
                      .forEach(StructureLoader::scanConfigFile);
             }
             
-            LOGGER.info("Scansione strutture completata. Caricate {} strutture", STRUCTURES.size());
+            LOGGER.info("Structure scanning completed. Loaded {} structures", STRUCTURES.size());
             
         } catch (Exception e) {
-            LOGGER.error("Errore durante la scansione della directory delle strutture: {}", e.getMessage());
+            LOGGER.error("Error while scanning structures directory: {}", e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
@@ -79,13 +80,13 @@ public class StructureLoader {
     }
 
     /**
-     * Controlla se il file default_structures.json deve essere rigenerato
+     * Checks if the default_structures.json file should be regenerated
      */
     private static boolean shouldRegenerateDefaultStructures(Path defaultFile) {
         try {
             if (!Files.exists(defaultFile)) return true;
             
-            // Leggi il file e controlla se ha il campo overwritable
+            // Read the file and check if it has the overwritable field
             try (InputStream inputStream = Files.newInputStream(defaultFile)) {
                 JsonElement jsonElement = GSON.fromJson(new InputStreamReader(inputStream), JsonElement.class);
                 if (jsonElement != null && jsonElement.isJsonObject()) {
@@ -97,19 +98,19 @@ public class StructureLoader {
             }
             return false;
         } catch (Exception e) {
-            LOGGER.warn("Errore nel leggere il file di default delle strutture, verrà rigenerato: {}", e.getMessage());
+            LOGGER.warn("Error reading default structures file, it will be regenerated: {}", e.getMessage());
             return true;
         }
     }
 
     /**
-     * Genera il file di strutture di default
+     * Generates the default structures file
      */
     private static void generateDefaultStructures(Path structuresPath) {
         try {
             Path defaultStructuresPath = structuresPath.resolve("default_structures.json");
             
-            // Copia il contenuto del file di default interno (quello che hai fornito)
+            // Copy the content of the internal default file
             String defaultStructuresContent = 
                 "{\n" +
                 "    \"type\": \"iska_utils:structure\",\n" +
@@ -172,8 +173,9 @@ public class StructureLoader {
                 "        {\n" +
                 "            \"id\": \"iska_utils-wither_summoning\",\n" +
                 "            \"name\": \"Wither Summoning Structure\",\n" +
-                "            \"can_replace\": [\n" +
-                "            ],\n" +
+                "            \"can_replace\": [],\n" +
+                "            \"slower\": true,\n" +
+                "            \"place_like_player\": true,\n" +
                 "            \"icon\": {\n" +
                 "                \"type\": \"minecraft:item\",\n" +
                 "                \"item\": \"minecraft:wither_skeleton_skull\"\n" +
@@ -211,25 +213,25 @@ public class StructureLoader {
                 "}";
             
             Files.write(defaultStructuresPath, defaultStructuresContent.getBytes());
-            LOGGER.info("Creato file di strutture di esempio: {}", defaultStructuresPath);
+            LOGGER.info("Created example structures file: {}", defaultStructuresPath);
             
         } catch (IOException e) {
-            LOGGER.error("Impossibile creare il file di strutture di default: {}", e.getMessage());
+            LOGGER.error("Unable to create default structures file: {}", e.getMessage());
         }
     }
 
     /**
-     * Scansiona un singolo file di configurazione per le strutture
+     * Scans a single configuration file for structures
      */
     private static void scanConfigFile(Path configFile) {
-        LOGGER.debug("Scansione file di configurazione: {}", configFile);
+        LOGGER.debug("Scanning configuration file: {}", configFile);
         
         String definitionId = configFile.getFileName().toString().replace(".json", "");
         
         try (InputStream inputStream = Files.newInputStream(configFile)) {
             parseConfigFromStream(definitionId, configFile.toString(), inputStream);
         } catch (Exception e) {
-            LOGGER.error("Errore nella lettura del file di strutture {}: {}", configFile, e.getMessage());
+            LOGGER.error("Error reading structures file {}: {}", configFile, e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
@@ -237,7 +239,7 @@ public class StructureLoader {
     }
 
     /**
-     * Analizza la configurazione da un input stream
+     * Parses configuration from an input stream
      */
     private static void parseConfigFromStream(String definitionId, String filePath, InputStream inputStream) {
         try (InputStreamReader reader = new InputStreamReader(inputStream)) {
@@ -246,10 +248,10 @@ public class StructureLoader {
                 JsonObject json = jsonElement.getAsJsonObject();
                 parseConfigJson(definitionId, filePath, json);
             } else {
-                LOGGER.error("JSON non valido nel file di strutture: {}", filePath);
+                LOGGER.error("Invalid JSON in structures file: {}", filePath);
             }
         } catch (Exception e) {
-            LOGGER.error("Errore nell'analisi del file di strutture {}: {}", filePath, e.getMessage());
+            LOGGER.error("Error parsing structures file {}: {}", filePath, e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
@@ -257,36 +259,36 @@ public class StructureLoader {
     }
 
     /**
-     * Analizza la configurazione da un oggetto JSON
+     * Processes configuration from JSON object
      */
     private static void parseConfigJson(String definitionId, String filePath, JsonObject json) {
         try {
-            // Controlla se questo è un file di definizione di strutture
+            // Check if this is a structure definition file
             if (!json.has("type") || !json.get("type").getAsString().equals("iska_utils:structure")) {
-                LOGGER.debug("Saltato file {} - non è una definizione di struttura", filePath);
+                LOGGER.debug("Skipped file {} - not a structure definition", filePath);
                 return;
             }
             
-            // Ottieni lo stato di sovrascrivibilità
+            // Get overwritable status
             boolean overwritable = true;
             if (json.has("overwritable")) {
                 overwritable = json.get("overwritable").getAsBoolean();
             }
             
-            // Controlla se questo è un file protetto
+            // Check if this is a protected file
             if (PROTECTED_DEFINITIONS.containsKey(definitionId) && !PROTECTED_DEFINITIONS.get(definitionId)) {
-                LOGGER.debug("Saltata definizione di struttura protetta: {}", definitionId);
+                LOGGER.debug("Skipped protected structure definition: {}", definitionId);
                 return;
             }
             
-            // Aggiorna lo stato di protezione
+            // Update protection status
             PROTECTED_DEFINITIONS.put(definitionId, overwritable);
             
-            // Processa le strutture
+            // Process structures
             processStructuresJson(json);
             
         } catch (Exception e) {
-            LOGGER.error("Errore nell'elaborazione della definizione di struttura {}: {}", definitionId, e.getMessage());
+            LOGGER.error("Error processing structure definition {}: {}", definitionId, e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
@@ -294,11 +296,11 @@ public class StructureLoader {
     }
 
     /**
-     * Processa l'array delle strutture da un file di definizione
+     * Processes structure array from definition file
      */
     private static void processStructuresJson(JsonObject json) {
         if (!json.has("structure") || !json.get("structure").isJsonArray()) {
-            LOGGER.error("File di definizione di struttura mancante dell'array 'structure'");
+            LOGGER.error("Structure definition file missing 'structure' array");
             return;
         }
         
@@ -311,35 +313,45 @@ public class StructureLoader {
     }
 
     /**
-     * Processa una singola definizione di struttura
+     * Processes a single structure definition
      */
     private static void processStructureDefinition(JsonObject structureJson) {
         try {
-            // Ottieni l'ID richiesto
+            // Get required ID
             if (!structureJson.has("id") || !structureJson.get("id").isJsonPrimitive()) {
-                LOGGER.error("Definizione di struttura mancante del campo 'id'");
+                LOGGER.error("Structure definition missing 'id' field");
                 return;
             }
             
             String structureId = structureJson.get("id").getAsString();
             
-            // Crea la definizione di struttura
+            // Create structure definition
             StructureDefinition definition = new StructureDefinition();
             definition.setId(structureId);
             
-            // Analizza il nome
+            // Parse name
             if (structureJson.has("name")) {
                 definition.setName(structureJson.get("name").getAsString());
             } else {
-                definition.setName(structureId); // Usa l'ID come fallback
+                definition.setName(structureId); // Use ID as fallback
             }
             
-            // Analizza can_force
+            // Parse can_force
             if (structureJson.has("can_force")) {
                 definition.setCanForce(structureJson.get("can_force").getAsBoolean());
             }
             
-            // Analizza can_replace
+            // Parse slower
+            if (structureJson.has("slower")) {
+                definition.setSlower(structureJson.get("slower").getAsBoolean());
+            }
+            
+            // Parse place_like_player
+            if (structureJson.has("place_like_player")) {
+                definition.setPlaceAsPlayer(structureJson.get("place_like_player").getAsBoolean());
+            }
+            
+            // Parse can_replace
             if (structureJson.has("can_replace") && structureJson.get("can_replace").isJsonArray()) {
                 JsonArray replaceArray = structureJson.getAsJsonArray("can_replace");
                 List<String> canReplace = new ArrayList<>();
@@ -349,61 +361,64 @@ public class StructureLoader {
                 definition.setCanReplace(canReplace);
             }
             
-            // Analizza l'icona
+            // Parse icon
             if (structureJson.has("icon") && structureJson.get("icon").isJsonObject()) {
                 JsonObject iconJson = structureJson.getAsJsonObject("icon");
                 StructureDefinition.IconDefinition icon = new StructureDefinition.IconDefinition();
                 
-                if (iconJson.has("type")) {
-                    icon.setType(iconJson.get("type").getAsString());
-                }
                 if (iconJson.has("item")) {
                     icon.setItem(iconJson.get("item").getAsString());
                 }
-                if (iconJson.has("image")) {
-                    icon.setImage(iconJson.get("image").getAsString());
+                if (iconJson.has("count")) {
+                    icon.setCount(iconJson.get("count").getAsInt());
                 }
                 
                 definition.setIcon(icon);
             }
             
-            // Analizza la descrizione
-            if (structureJson.has("description") && structureJson.get("description").isJsonArray()) {
-                JsonArray descArray = structureJson.getAsJsonArray("description");
-                List<String> description = new ArrayList<>();
-                for (JsonElement element : descArray) {
-                    description.add(element.getAsString());
+            // Parse description
+            if (structureJson.has("description")) {
+                if (structureJson.get("description").isJsonArray()) {
+                    JsonArray descArray = structureJson.getAsJsonArray("description");
+                    // Take only first element as single string
+                    if (descArray.size() > 0) {
+                        definition.setDescription(descArray.get(0).getAsString());
+                    }
+                } else {
+                    definition.setDescription(structureJson.get("description").getAsString());
                 }
-                definition.setDescription(description);
             }
             
-            // Analizza il pattern
+            // Parse pattern
             if (structureJson.has("pattern") && structureJson.get("pattern").isJsonArray()) {
                 JsonArray patternArray = structureJson.getAsJsonArray("pattern");
                 String[][][][] pattern = parsePattern(patternArray);
                 definition.setPattern(pattern);
             }
             
-            // Analizza la chiave
+            // Parse key
             if (structureJson.has("key") && structureJson.get("key").isJsonObject()) {
                 JsonObject keyJson = structureJson.getAsJsonObject("key");
                 Map<String, List<StructureDefinition.BlockDefinition>> key = parseKey(keyJson);
                 definition.setKey(key);
             }
             
-            // Analizza gli stage
+            // Parse stages - now a list of strings
             if (structureJson.has("stages") && structureJson.get("stages").isJsonArray()) {
                 JsonArray stagesArray = structureJson.getAsJsonArray("stages");
-                List<StructureDefinition.StageCondition> stages = parseStages(stagesArray);
+                List<String> stages = new ArrayList<>();
+                for (JsonElement stageElement : stagesArray) {
+                    stages.add(stageElement.getAsString());
+                }
                 definition.setStages(stages);
             }
             
-            // Registra la definizione di struttura
+            // Register structure definition
             STRUCTURES.put(structureId, definition);
-            LOGGER.debug("Registrata definizione di struttura: {}", structureId);
+            LOGGER.debug("Registered structure definition: {}", structureId);
             
         } catch (Exception e) {
-            LOGGER.error("Errore nell'elaborazione della definizione di struttura: {}", e.getMessage());
+            LOGGER.error("Error processing structure definition: {}", e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
@@ -411,34 +426,34 @@ public class StructureLoader {
     }
 
     /**
-     * Analizza il pattern della struttura
-     * Formato JSON: [X][Y][Z] dove ogni Z è una stringa di caratteri
-     * Output: [layer=Y][row=X][col=Z][depth=caratteri] per compatibilità con StructureDefinition
+     * Parses structure pattern
+     * JSON format: [X][Y][Z] where each Z is a string of characters
+     * Output: [layer=Y][row=X][col=Z][depth=characters] for StructureDefinition compatibility
      */
     private static String[][][][] parsePattern(JsonArray patternArray) {
-        // Il JSON è in formato [X][Y][Z], dobbiamo convertirlo in [Y][X][Z][caratteri]
-        int xPositions = patternArray.size(); // Numero di posizioni X
+        // JSON is in [X][Y][Z] format, we need to convert to [Y][X][Z][characters]
+        int xPositions = patternArray.size(); // Number of X positions
         if (xPositions == 0) return new String[0][0][0][0];
         
         JsonArray firstX = patternArray.get(0).getAsJsonArray();
-        int yLayers = firstX.size(); // Numero di layer Y
+        int yLayers = firstX.size(); // Number of Y layers
         if (yLayers == 0) return new String[0][0][0][0];
         
         JsonArray firstY = firstX.get(0).getAsJsonArray();
-        int zStrings = firstY.size(); // Numero di stringhe Z
+        int zStrings = firstY.size(); // Number of Z strings
         if (zStrings == 0) return new String[0][0][0][0];
         
-        // Crea array nel formato finale [Y][X][Z][caratteri]
+        // Create array in final format [Y][X][Z][characters]
         String[][][][] pattern = new String[yLayers][xPositions][zStrings][];
         
-        // Itera attraverso il JSON [X][Y][Z] e riorganizza in [Y][X][Z][caratteri]
+        // Iterate through JSON [X][Y][Z] and reorganize to [Y][X][Z][characters]
         for (int x = 0; x < xPositions; x++) {
             JsonArray xArray = patternArray.get(x).getAsJsonArray();
             for (int y = 0; y < yLayers; y++) {
                 JsonArray yArray = xArray.get(y).getAsJsonArray();
                 for (int z = 0; z < zStrings; z++) {
                     String cellValue = yArray.get(z).getAsString();
-                    // Divide la stringa in caratteri individuali per le posizioni Z multiple
+                    // Split string into individual characters for multiple Z positions
                     pattern[y][x][z] = cellValue.split("");
                 }
             }
@@ -448,7 +463,7 @@ public class StructureLoader {
     }
 
     /**
-     * Analizza la chiave delle definizioni di blocchi
+     * Parses key of block definitions
      */
     private static Map<String, List<StructureDefinition.BlockDefinition>> parseKey(JsonObject keyJson) {
         Map<String, List<StructureDefinition.BlockDefinition>> key = new HashMap<>();
@@ -459,7 +474,7 @@ public class StructureLoader {
             String groupDisplayName = null;
             
             if (keyElement.isJsonObject()) {
-                // Nuovo formato con display e alternatives
+                // New format with display and alternatives
                 JsonObject keyObject = keyElement.getAsJsonObject();
                 
                 if (keyObject.has("display")) {
@@ -471,7 +486,7 @@ public class StructureLoader {
                     parseAlternatives(alternativesArray, blockDefs, groupDisplayName);
                 }
             } else if (keyElement.isJsonArray()) {
-                // Formato legacy - array diretto
+                // Legacy format - direct array
                 JsonArray blockDefArray = keyElement.getAsJsonArray();
                 parseAlternatives(blockDefArray, blockDefs, groupDisplayName);
             }
@@ -483,7 +498,7 @@ public class StructureLoader {
     }
     
     /**
-     * Helper per analizzare le alternative di blocchi
+     * Helper to parse block alternatives
      */
     private static void parseAlternatives(JsonArray alternativesArray, List<StructureDefinition.BlockDefinition> blockDefs, String groupDisplayName) {
         boolean isFirstBlock = true;
@@ -492,7 +507,7 @@ public class StructureLoader {
             JsonObject blockDefJson = blockDefElement.getAsJsonObject();
             StructureDefinition.BlockDefinition blockDef = new StructureDefinition.BlockDefinition();
             
-            // Il primo blocco del gruppo ottiene il display name del gruppo
+            // First block in group gets the group display name
             if (isFirstBlock && groupDisplayName != null) {
                 blockDef.setDisplay(groupDisplayName);
                 isFirstBlock = false;
@@ -501,11 +516,8 @@ public class StructureLoader {
             if (blockDefJson.has("block")) {
                 blockDef.setBlock(blockDefJson.get("block").getAsString());
             }
-            if (blockDefJson.has("tag")) {
-                blockDef.setTag(blockDefJson.get("tag").getAsString());
-            }
             
-            // Analizza le proprietà
+            // Parse properties
             if (blockDefJson.has("properties") && blockDefJson.get("properties").isJsonObject()) {
                 JsonObject propsJson = blockDefJson.getAsJsonObject("properties");
                 Map<String, String> properties = new HashMap<>();
@@ -520,32 +532,14 @@ public class StructureLoader {
     }
 
     /**
-     * Analizza le condizioni di stage
-     */
-    private static List<StructureDefinition.StageCondition> parseStages(JsonArray stagesArray) {
-        List<StructureDefinition.StageCondition> stages = new ArrayList<>();
-        
-        for (JsonElement stageElement : stagesArray) {
-            JsonObject stageJson = stageElement.getAsJsonObject();
-            String stageType = stageJson.get("stage_type").getAsString();
-            String stage = stageJson.get("stage").getAsString();
-            boolean is = stageJson.get("is").getAsBoolean();
-            
-            stages.add(new StructureDefinition.StageCondition(stageType, stage, is));
-        }
-        
-        return stages;
-    }
-
-    /**
-     * Ottiene una definizione di struttura per ID
+     * Gets a structure definition by ID
      */
     public static StructureDefinition getStructure(String id) {
         return STRUCTURES.get(id);
     }
 
     /**
-     * Ottiene tutte le definizioni di strutture ordinate per ID
+     * Gets all structure definitions sorted by ID
      */
     public static Map<String, StructureDefinition> getAllStructures() {
         return STRUCTURES.entrySet().stream()
@@ -559,15 +553,15 @@ public class StructureLoader {
     }
 
     /**
-     * Ricarica tutte le definizioni di strutture
+     * Reloads all structure definitions
      */
     public static void reloadAllDefinitions() {
-        LOGGER.info("Ricaricamento di tutte le definizioni di strutture...");
+        LOGGER.info("Reloading all structure definitions...");
         scanConfigDirectory();
     }
 
     /**
-     * Ottiene la lista degli ID delle strutture disponibili ordinati alfabeticamente
+     * Gets the list of available structure IDs sorted alphabetically
      */
     public static List<String> getAvailableStructureIds() {
         return STRUCTURES.keySet().stream()

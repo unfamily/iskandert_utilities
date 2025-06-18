@@ -16,54 +16,54 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Classe responsabile del piazzamento fisico delle strutture nel mondo
+ * Class responsible for physical placement of structures in the world
  */
 public class StructurePlacer {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
-     * Piazza una struttura nel mondo
+     * Places a structure in the world
      * 
-     * @param level Il livello del server dove piazzare la struttura
-     * @param centerPos La posizione dove piazzare il centro della struttura
-     * @param structure La definizione della struttura da piazzare
-     * @param player Il giocatore che ha richiesto il piazzamento (può essere null)
-     * @return true se il piazzamento è riuscito, false altrimenti
+     * @param level The server level where to place the structure
+     * @param centerPos The position where to place the structure center
+     * @param structure The structure definition to place
+     * @param player The player who requested the placement (can be null)
+     * @return true if placement succeeded, false otherwise
      */
     public static boolean placeStructure(ServerLevel level, BlockPos centerPos, StructureDefinition structure, ServerPlayer player) {
         try {
-            // Verifica i prerequisiti
+            // Verify prerequisites
             if (!canPlaceStructure(level, centerPos, structure, player)) {
-                LOGGER.debug("Impossibile piazzare la struttura {} - prerequisiti non soddisfatti", structure.getId());
+                LOGGER.debug("Cannot place structure {} - prerequisites not satisfied", structure.getId());
                 return false;
             }
 
-            // Ottieni il pattern della struttura
+            // Get structure pattern
             String[][][][] pattern = structure.getPattern();
             if (pattern == null || pattern.length == 0) {
-                LOGGER.error("Struttura {} ha un pattern vuoto o nullo", structure.getId());
+                LOGGER.error("Structure {} has empty or null pattern", structure.getId());
                 return false;
             }
 
-            // Trova la posizione relativa del centro
+            // Find relative center position
             BlockPos relativeCenter = structure.findCenter();
             if (relativeCenter == null) {
                 relativeCenter = new BlockPos(0, 0, 0);
-                LOGGER.warn("Centro non trovato per la struttura {}, uso (0,0,0)", structure.getId());
+                LOGGER.warn("Center not found for structure {}, using (0,0,0)", structure.getId());
             }
 
-            // Calcola l'offset per posizionare correttamente la struttura
-            // Sottrae la posizione relativa del centro e alza di un blocco
+            // Calculate offset to position structure correctly
+            // Subtract relative center position and raise by one block
             BlockPos offsetPos = centerPos.subtract(relativeCenter).above();
 
-            // Piazza ogni blocco del pattern
-            // Pattern convertito dal loader: [Y][X][Z][caratteri] 
-            // dove Y=altezza, X=est-ovest, Z=nord-sud, caratteri=multiple posizioni Z dalla stringa
+            // Place each block in the pattern
+            // Pattern converted by loader: [Y][X][Z][characters] 
+            // where Y=height, X=east-west, Z=north-south, characters=multiple Z positions from string
             Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
             
-            for (int y = 0; y < pattern.length; y++) {                    // Y (altezza/layer)
-                for (int x = 0; x < pattern[y].length; x++) {             // X (est-ovest) 
-                    for (int z = 0; z < pattern[y][x].length; z++) {      // Z (nord-sud)
+            for (int y = 0; y < pattern.length; y++) {                    // Y (height/layer)
+                for (int x = 0; x < pattern[y].length; x++) {             // X (east-west) 
+                    for (int z = 0; z < pattern[y][x].length; z++) {      // Z (north-south)
                         String[] cellChars = pattern[y][x][z];
                         
                         if (cellChars != null) {
@@ -71,31 +71,31 @@ public class StructurePlacer {
                                 String character = cellChars[charIndex];
                                 
                                 if (character == null || character.equals(" ")) {
-                                    continue; // Salta gli spazi vuoti
+                                    continue; // Skip empty spaces
                                 }
                                 
-                                // Se è @, controllare se è definito nella key
+                                // If it's @, check if it's defined in the key
                                 if (character.equals("@")) {
                                     if (key == null || !key.containsKey("@")) {
-                                        // @ non è definito nella key, trattalo come spazio vuoto
+                                        // @ is not defined in key, treat as empty space
                                         continue;
                                     }
-                                    // Se arriviamo qui, @ è definito nella key, quindi processalo come un blocco normale
+                                    // If we get here, @ is defined in key, so process as normal block
                                 }
                                 
-                                // Calcola la posizione assoluta di questo blocco
-                                // Ogni carattere della stringa Z rappresenta una posizione Z aggiuntiva
+                                // Calculate absolute position of this block
+                                // Each character in Z string represents an additional Z position
                                 int worldX = x;
                                 int worldY = y;
                                 int worldZ = z * cellChars.length + charIndex;
                                 
                                 BlockPos blockPos = offsetPos.offset(worldX, worldY, worldZ);
                                 
-                                // Piazza il blocco basato sulla chiave
+                                // Place block based on key
                                 if (!placeBlockFromKey(level, blockPos, character, key, structure)) {
-                                    LOGGER.warn("Impossibile piazzare il blocco '{}' alla posizione {} per la struttura {}", 
+                                    LOGGER.warn("Cannot place block '{}' at position {} for structure {}", 
                                         character, blockPos, structure.getId());
-                                    // Continua comunque con gli altri blocchi
+                                    // Continue with other blocks anyway
                                 }
                             }
                         }
@@ -103,11 +103,11 @@ public class StructurePlacer {
                 }
             }
 
-            LOGGER.info("Struttura {} piazzata con successo al centro {}", structure.getId(), centerPos);
+            LOGGER.info("Structure {} placed successfully at center {}", structure.getId(), centerPos);
             return true;
 
         } catch (Exception e) {
-            LOGGER.error("Errore durante il piazzamento della struttura {}: {}", structure.getId(), e.getMessage());
+            LOGGER.error("Error during structure placement {}: {}", structure.getId(), e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
@@ -116,83 +116,83 @@ public class StructurePlacer {
     }
 
     /**
-     * Verifica se una struttura può essere piazzata
+     * Verifies if a structure can be placed
      */
     private static boolean canPlaceStructure(ServerLevel level, BlockPos centerPos, StructureDefinition structure, ServerPlayer player) {
-        // Verifica gli stage se specificati
+        // Verify stages if specified
         if (structure.getStages() != null && !structure.getStages().isEmpty()) {
-            if (!structure.canPlace(player)) {
-                LOGGER.debug("Stage non soddisfatti per la struttura {}", structure.getId());
+            if (!structure.canBePlaced(player)) {
+                LOGGER.debug("Stage not satisfied for structure {}", structure.getId());
                 return false;
             }
         }
 
-        // Per ora permettiamo sempre il piazzamento
-        // Più avanti si possono aggiungere controlli per:
-        // - Verifica dello spazio disponibile
-        // - Controllo dei blocchi rimpiazzabili
-        // - Verifica dell'inventario del giocatore per i materiali necessari
+        // For now always allow placement
+        // Later we can add checks for:
+        // - Available space verification
+        // - Replaceable blocks check
+        // - Player inventory verification for required materials
         
         return true;
     }
 
     /**
-     * Piazza un singolo blocco basato sulla definizione nella chiave
+     * Places a single block based on key definition
      */
     private static boolean placeBlockFromKey(ServerLevel level, BlockPos pos, String keyCharacter, 
                                            Map<String, List<StructureDefinition.BlockDefinition>> key, 
                                            StructureDefinition structure) {
         
-        // Ottieni le definizioni per questo carattere
+        // Get definitions for this character
         List<StructureDefinition.BlockDefinition> blockDefs = key.get(keyCharacter);
         if (blockDefs == null || blockDefs.isEmpty()) {
-            LOGGER.warn("Nessuna definizione trovata per il carattere '{}' nella struttura {}", keyCharacter, structure.getId());
+            LOGGER.warn("No definition found for character '{}' in structure {}", keyCharacter, structure.getId());
             return false;
         }
 
-        // Usa la prima definizione disponibile (in futuro si potranno implementare alternative)
+        // Use first available definition (alternatives can be implemented later)
         StructureDefinition.BlockDefinition blockDef = blockDefs.get(0);
 
         try {
             BlockState blockState = getBlockStateFromDefinition(blockDef);
             if (blockState != null) {
-                // Verifica se possiamo rimpiazzare il blocco esistente
+                // Verify if we can replace existing block
                 if (canReplaceBlock(level, pos, structure)) {
-                    level.setBlock(pos, blockState, 3); // Flag 3 = aggiorna + notifica clienti
+                    level.setBlock(pos, blockState, 3); // Flag 3 = update + notify clients
                     return true;
                 } else {
-                    LOGGER.debug("Impossibile rimpiazzare il blocco alla posizione {} per la struttura {}", pos, structure.getId());
+                    LOGGER.debug("Cannot replace block at position {} for structure {}", pos, structure.getId());
                     return false;
                 }
             } else {
-                LOGGER.warn("Impossibile creare BlockState dalla definizione per '{}' nella struttura {}", keyCharacter, structure.getId());
+                LOGGER.warn("Cannot create BlockState from definition for '{}' in structure {}", keyCharacter, structure.getId());
                 return false;
             }
         } catch (Exception e) {
-            LOGGER.error("Errore nel piazzamento del blocco '{}' alla posizione {} per la struttura {}: {}", 
+            LOGGER.error("Error placing block '{}' at position {} for structure {}: {}", 
                 keyCharacter, pos, structure.getId(), e.getMessage());
             return false;
         }
     }
 
     /**
-     * Crea un BlockState dalla definizione del blocco
+     * Creates a BlockState from block definition
      */
     private static BlockState getBlockStateFromDefinition(StructureDefinition.BlockDefinition blockDef) {
         try {
-            // Gestisci i blocchi definiti per nome
+            // Handle blocks defined by name
             if (blockDef.getBlock() != null && !blockDef.getBlock().isEmpty()) {
                 ResourceLocation blockId = ResourceLocation.parse(blockDef.getBlock());
                 Block block = BuiltInRegistries.BLOCK.get(blockId);
                 
                 if (block == Blocks.AIR && !blockDef.getBlock().equals("minecraft:air")) {
-                    LOGGER.warn("Blocco non trovato: {}", blockDef.getBlock());
+                    LOGGER.warn("Block not found: {}", blockDef.getBlock());
                     return null;
                 }
                 
                 BlockState blockState = block.defaultBlockState();
                 
-                // Applica le proprietà se specificate
+                // Apply properties if specified
                 if (blockDef.getProperties() != null && !blockDef.getProperties().isEmpty()) {
                     blockState = applyProperties(blockState, blockDef.getProperties());
                 }
@@ -200,23 +200,19 @@ public class StructurePlacer {
                 return blockState;
             }
             
-            // TODO: Gestisci i tag (blocchi definiti tramite tag)
-            if (blockDef.getTag() != null && !blockDef.getTag().isEmpty()) {
-                LOGGER.warn("Gestione dei tag non ancora implementata: {}", blockDef.getTag());
-                return Blocks.STONE.defaultBlockState(); // Fallback temporaneo
-            }
+            // TODO: Handle tags (blocks defined via tags) - for future implementation
             
-            LOGGER.warn("Definizione di blocco vuota o non valida");
+            LOGGER.warn("Empty or invalid block definition");
             return null;
             
         } catch (Exception e) {
-            LOGGER.error("Errore nella creazione del BlockState: {}", e.getMessage());
+            LOGGER.error("Error creating BlockState: {}", e.getMessage());
             return null;
         }
     }
 
     /**
-     * Applica le proprietà ad un BlockState
+     * Applies properties to a BlockState
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static BlockState applyProperties(BlockState blockState, Map<String, String> properties) {
@@ -227,7 +223,7 @@ public class StructurePlacer {
                 String propertyName = entry.getKey();
                 String propertyValue = entry.getValue();
                 
-                // Trova la proprietà nel BlockState
+                // Find property in BlockState
                 Property<?> property = null;
                 for (Property<?> prop : blockState.getProperties()) {
                     if (prop.getName().equals(propertyName)) {
@@ -237,44 +233,44 @@ public class StructurePlacer {
                 }
                 
                 if (property == null) {
-                    LOGGER.warn("Proprietà '{}' non trovata per il blocco {}", propertyName, blockState.getBlock());
+                    LOGGER.warn("Property '{}' not found for block {}", propertyName, blockState.getBlock());
                     continue;
                 }
                 
-                // Prova ad applicare il valore
+                // Try to apply value
                 try {
                     Comparable value = property.getValue(propertyValue).orElse(null);
                     if (value != null) {
                         result = result.setValue((Property) property, value);
                     } else {
-                        LOGGER.warn("Valore '{}' non valido per la proprietà '{}' del blocco {}", 
+                        LOGGER.warn("Invalid value '{}' for property '{}' of block {}", 
                             propertyValue, propertyName, blockState.getBlock());
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("Errore nell'applicazione della proprietà '{}={}' al blocco {}: {}", 
+                    LOGGER.warn("Error applying property '{}={}' to block {}: {}", 
                         propertyName, propertyValue, blockState.getBlock(), e.getMessage());
                 }
             }
             
             return result;
         } catch (Exception e) {
-            LOGGER.error("Errore nell'applicazione delle proprietà: {}", e.getMessage());
-            return blockState; // Ritorna lo stato originale in caso di errore
+            LOGGER.error("Error applying properties: {}", e.getMessage());
+            return blockState; // Return original state on error
         }
     }
 
     /**
-     * Verifica se un blocco può essere rimpiazzato
+     * Verifies if a block can be replaced
      */
     private static boolean canReplaceBlock(ServerLevel level, BlockPos pos, StructureDefinition structure) {
         BlockState existingState = level.getBlockState(pos);
         
-        // L'aria può sempre essere rimpiazzata
+        // Air can always be replaced
         if (existingState.isAir()) {
             return true;
         }
         
-        // Controlla la lista can_replace della struttura
+        // Check structure can_replace list
         List<String> canReplace = structure.getCanReplace();
         if (canReplace != null && !canReplace.isEmpty()) {
             String blockId = BuiltInRegistries.BLOCK.getKey(existingState.getBlock()).toString();
@@ -284,15 +280,15 @@ public class StructurePlacer {
                     return true;
                 }
                 
-                // TODO: Gestisci i casi speciali come $replaceable, $fluids, ecc.
-                // TODO: Gestisci i tag con prefisso #
+                // TODO: Handle special cases like $replaceable, $fluids, etc.
+                // TODO: Handle tags with # prefix
             }
             
-            return false; // Se c'è una lista can_replace e il blocco non è in lista, non può essere rimpiazzato
+            return false; // If there's a can_replace list and block is not in list, it cannot be replaced
         }
         
-        // Se non c'è una lista can_replace, per sicurezza rimpiazziamo solo l'aria
-        // In futuro si può cambiare questo comportamento
+        // If there's no can_replace list, for safety we only replace air
+        // This behavior can be changed in the future
         return existingState.isAir();
     }
 } 

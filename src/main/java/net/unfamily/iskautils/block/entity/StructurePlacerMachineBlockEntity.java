@@ -42,6 +42,43 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     // Structure rotation (0, 90, 180, 270 degrees)
     private int rotation = 0;
     
+    // Redstone mode (0 = NONE, 1 = LOW, 2 = HIGH)
+    private int redstoneMode = 0;
+    
+    /**
+     * Enum for redstone modes
+     */
+    public enum RedstoneMode {
+        NONE(0),    // Gunpowder icon
+        LOW(1),     // Redstone dust icon  
+        HIGH(2);    // Redstone gui icon
+        
+        private final int value;
+        
+        RedstoneMode(int value) {
+            this.value = value;
+        }
+        
+        public int getValue() {
+            return value;
+        }
+        
+        public static RedstoneMode fromValue(int value) {
+            for (RedstoneMode mode : values()) {
+                if (mode.value == value) return mode;
+            }
+            return NONE;
+        }
+        
+        public RedstoneMode next() {
+            return switch (this) {
+                case NONE -> LOW;
+                case LOW -> HIGH;
+                case HIGH -> NONE;
+            };
+        }
+    }
+    
     public StructurePlacerMachineBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.STRUCTURE_PLACER_MACHINE_BE.get(), pos, blockState);
         
@@ -58,6 +95,24 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     }
     
     @Override
+    public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
+    }
+    
+    @Override
+    public net.minecraft.nbt.CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
+    }
+    
+    @Override
+    public void onDataPacket(net.minecraft.network.Connection net, net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, net.minecraft.core.HolderLookup.Provider lookupProvider) {
+        super.onDataPacket(net, pkt, lookupProvider);
+        if (pkt.getTag() != null) {
+            loadAdditional(pkt.getTag(), lookupProvider);
+        }
+    }
+    
+    @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.put("inventory", itemHandler.serializeNBT(registries));
@@ -65,6 +120,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         tag.putString("selectedStructure", selectedStructure);
         tag.putBoolean("showPreview", showPreview);
         tag.putInt("rotation", rotation);
+        tag.putInt("redstoneMode", redstoneMode);
     }
     
     @Override
@@ -79,6 +135,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         selectedStructure = tag.getString("selectedStructure");
         showPreview = tag.getBoolean("showPreview");
         rotation = tag.getInt("rotation");
+        redstoneMode = tag.getInt("redstoneMode");
     }
     
     /**
@@ -126,6 +183,15 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     
     public void setRotation(int rotation) {
         this.rotation = rotation % 360; // Ensure rotation is always 0-359
+        setChanged();
+    }
+    
+    public int getRedstoneMode() {
+        return redstoneMode;
+    }
+    
+    public void setRedstoneMode(int redstoneMode) {
+        this.redstoneMode = redstoneMode % 3; // Ensure mode is always 0-2
         setChanged();
     }
     

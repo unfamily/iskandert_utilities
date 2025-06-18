@@ -242,22 +242,14 @@ public class ModMessages {
                         return;
                     }
                     
-                    // Toggle preview mode
-                    boolean currentPreview = machineEntity.isShowPreview();
-                    boolean newPreview = !currentPreview;
-                    machineEntity.setShowPreview(newPreview);
+                    // Show preview (always show, don't toggle)
+                    machineEntity.setShowPreview(true);
                     
-                    if (newPreview) {
-                        // Show preview
-                        showStructurePreview(level, machinePos, player, structure, machineEntity.getRotation());
-                        
-                        String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-                        player.displayClientMessage(net.minecraft.network.chat.Component.literal("§bShowing preview: §f" + structureName), true);
-                    } else {
-                        // Hide preview - remove existing markers
-                        // Note: Markers will automatically expire, but we could send a clear packet here if needed
-                        player.displayClientMessage(net.minecraft.network.chat.Component.literal("§7Preview hidden"), true);
-                    }
+                    // Always show the preview
+                    showStructurePreview(level, machinePos, player, structure, machineEntity.getRotation());
+                    
+                    String structureName = structure.getName() != null ? structure.getName() : structure.getId();
+                    player.displayClientMessage(net.minecraft.network.chat.Component.literal("§bShowing preview: §f" + structureName), true);
                     
                 } catch (Exception e) {
                     LOGGER.error("Error executing packet on server thread: {}", e.getMessage());
@@ -274,8 +266,6 @@ public class ModMessages {
      * This simulates a client-to-server packet for rotating the structure
      */
     public static void sendStructurePlacerMachineRotatePacket(BlockPos machinePos) {
-        LOGGER.info("Sending Structure Placer Machine rotate packet at {}", machinePos);
-        // Simplified implementation - directly handle on the server side
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
             if (minecraft == null) {
@@ -328,45 +318,90 @@ public class ModMessages {
     }
     
     /**
-     * Mostra la preview della struttura usando marker billboard
+     * Sends a Structure Placer Machine Redstone Mode packet to the server
+     * This cycles through the redstone modes: NONE -> LOW -> HIGH -> NONE
+     */
+    public static void sendStructurePlacerMachineRedstoneModePacket(BlockPos machinePos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Directly call the redstone mode logic
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = player.serverLevel().getBlockEntity(machinePos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity machine) {
+                            // Cycle redstone mode: 0 -> 1 -> 2 -> 0
+                            int currentMode = machine.getRedstoneMode();
+                            int newMode = (currentMode + 1) % 3;
+                            machine.setRedstoneMode(newMode);
+                            
+                            // Get mode name for notification
+                            String modeText = switch (newMode) {
+                                case 0 -> "None";
+                                case 1 -> "Low Signal";
+                                case 2 -> "High Signal";
+                                default -> "Unknown";
+                            };
+                            
+                            // Play button click sound
+                            player.playNotifySound(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                                 net.minecraft.sounds.SoundSource.MASTER, 0.25f, 1.0f);
+                            
+                            // Notify player
+                            player.displayClientMessage(net.minecraft.network.chat.Component.literal("§eRedstone Mode: §f" + modeText), true);
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Structure Placer Machine redstone mode packet: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.error("Could not send Structure Placer Machine redstone mode packet: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Shows structure preview using billboard markers
      */
     private static void showStructurePreview(ServerLevel world, BlockPos machinePos, net.minecraft.server.level.ServerPlayer player, StructureDefinition structure, int rotation) {
-        LOGGER.info("=== START showStructurePreview ===");
-        LOGGER.info("Machine pos: {}, Player: {}, Structure: {}, Rotation: {}", machinePos, player.getName().getString(), structure != null ? structure.getId() : "null", rotation);
-        
         if (structure == null) {
-            LOGGER.warn("Structure is null, aborting preview");
             return;
         }
 
-        // Prima rimuovi i marker precedenti per questa macchina
-        LOGGER.info("Removing previous markers...");
+        // First remove previous markers for this machine
         try {
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 ClientEvents.handleClearHighlights();
             });
         } catch (Exception e) {
-            LOGGER.debug("Could not clear client highlights: {}", e.getMessage());
+            // Ignore client-side errors in single player
         }
 
         String[][][][] pattern = structure.getPattern();
         if (pattern == null || pattern.length == 0) {
-            LOGGER.warn("Pattern is null or empty, aborting preview");
             return;
         }
-        
-        LOGGER.info("Pattern dimensions: [Y={}, X={}, Z={}, chars=variable]", pattern.length, pattern[0].length, pattern[0][0].length);
 
-        // Trova il centro della struttura
+        // Find structure center
         BlockPos center = structure.findCenter();
         if (center == null) center = new BlockPos(0, 0, 0);
-        LOGGER.info("Structure center: {}", center);
 
-        int duration = 300; // 15 secondi (300 ticks)
-        int totalBlocksProcessed = 0;
-        int markersCreated = 0;
+        int duration = 300; // 15 seconds (300 ticks)
 
-        // Itera attraverso il pattern della struttura [Y][X][Z][caratteri]
+        // Iterate through structure pattern [Y][X][Z][characters]
         for (int y = 0; y < pattern.length; y++) {
             for (int x = 0; x < pattern[y].length; x++) {
                 for (int z = 0; z < pattern[y][x].length; z++) {
@@ -375,83 +410,50 @@ public class ModMessages {
                     if (cellChars != null) {
                         for (int charIndex = 0; charIndex < cellChars.length; charIndex++) {
                             String patternChar = cellChars[charIndex];
-                            totalBlocksProcessed++;
                             
-                            // Salta spazi vuoti
+                            // Skip empty spaces
                             if (patternChar == null || patternChar.equals(" ")) continue;
                             
-                            // Se è @, controllare se è definito nella key
+                            // If it's @, check if it's defined in the key
                             if (patternChar.equals("@")) {
                                 Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
                                 if (key == null || !key.containsKey("@")) {
-                                    // @ non è definito nella key, trattalo come spazio vuoto
+                                    // @ is not defined in key, treat as empty space
                                     continue;
                                 }
-                                // Se arriviamo qui, @ è definito nella key, quindi processalo come un blocco normale
+                                // If we get here, @ is defined in key, so process as normal block
                             }
 
-                            // Calcola la posizione Z effettiva
-                            int zEffettivo = z * cellChars.length + charIndex;
+                            // Calculate effective Z position
+                            int effectiveZ = z * cellChars.length + charIndex;
                             
-                            // Calcola offset dal centro
+                            // Calculate offset from center
                             int offsetX = x - center.getX();
                             int offsetY = y - center.getY(); 
-                            int offsetZ = zEffettivo - center.getZ();
+                            int offsetZ = effectiveZ - center.getZ();
                             
-                            // Applica rotazione (semplice rotazione 2D su X-Z)
-                            int rotatedX, rotatedZ;
-                            switch (rotation) {
-                                case 90:
-                                    rotatedX = -offsetZ;
-                                    rotatedZ = offsetX;
-                                    break;
-                                case 180:
-                                    rotatedX = -offsetX;
-                                    rotatedZ = -offsetZ;
-                                    break;
-                                case 270:
-                                    rotatedX = offsetZ;
-                                    rotatedZ = -offsetX;
-                                    break;
-                                default: // 0 gradi
-                                    rotatedX = offsetX;
-                                    rotatedZ = offsetZ;
-                                    break;
-                            }
-
-                            // Calcola la posizione finale nel mondo (spostata di +1 in Y per evitare conflitti con la macchina)
-                            BlockPos finalPos = machinePos.offset(rotatedX, offsetY + 1, rotatedZ);
-
-                            // Determina se c'è un conflitto
+                            // Apply rotation
+                            BlockPos rotatedOffset = applyRotation(offsetX, offsetY, offsetZ, rotation);
+                            
+                            // Calculate final position in world (shifted +1 in Y to avoid conflicts with machine)
+                            BlockPos finalPos = machinePos.offset(rotatedOffset.getX(), rotatedOffset.getY() + 1, rotatedOffset.getZ());
+                            
+                            // Check for conflicts
                             boolean hasConflict = !world.getBlockState(finalPos).canBeReplaced();
+                              
+                            // Use colors for markers: same colors as items
+                            int markerColor = hasConflict ? 0x80FF4444 : 0x804444FF; // Red and blue like items
                             
-                            // Usa colori per i marker: stessi colori degli item
-                            int markerColor = hasConflict ? 0x80FF4444 : 0x804444FF; // Rosso e azzurro come negli item
-                            
-                            LOGGER.info("Creating marker at {} with color {:08x} (conflict: {})", finalPos, markerColor, hasConflict);
-
-                            // Crea marker billboard
                             try {
                                 sendAddBillboardPacket(player, finalPos, markerColor, duration);
-                                markersCreated++;
-                                LOGGER.info("Marker created successfully at {}", finalPos);
-                                
                             } catch (Exception e) {
                                 LOGGER.error("Error creating marker: {}", e.getMessage());
-                                e.printStackTrace();
                             }
                         }
                     }
                 }
             }
         }
-        
-        LOGGER.info("Preview creation completed: {} blocks processed, {} markers created", totalBlocksProcessed, markersCreated);
-        
-        // Informa il giocatore
-        player.displayClientMessage(net.minecraft.network.chat.Component.literal("§bPreview created: §f" + markersCreated + " §bmarkers (15s duration)"), true);
-        
-        LOGGER.info("=== END showStructurePreview ===");
     }
     
     /**
@@ -476,17 +478,17 @@ public class ModMessages {
                         for (int charIndex = 0; charIndex < cellChars.length; charIndex++) {
                             String character = cellChars[charIndex];
                             
-                            // Salta spazi vuoti
+                            // Skip empty spaces
                             if (character == null || character.equals(" ")) continue;
                             
-                            // Se è @, controllare se è definito nella key
+                            // If it's @, check if it's defined in the key
                             if (character.equals("@")) {
                                 java.util.Map<String, java.util.List<net.unfamily.iskautils.structure.StructureDefinition.BlockDefinition>> key = structure.getKey();
                                 if (key == null || !key.containsKey("@")) {
-                                    // @ non è definito nella key, trattalo come spazio vuoto
+                                    // @ is not defined in key, treat as empty space
                                     continue;
                                 }
-                                // Se arriviamo qui, @ è definito nella key, quindi processalo come un blocco normale
+                                // If we get here, @ is defined in key, so process as normal block
                             }
                             
                             int originalX = x;
@@ -501,7 +503,7 @@ public class ModMessages {
                             // Apply rotation to relative coordinates
                             net.minecraft.core.BlockPos rotatedRelativePos = applyRotation(relX, relY, relZ, rotation);
                             
-                            // Calculate final position in world (spostata di +1 in Y per evitare conflitti con la macchina)
+                            // Calculate final position in world (shifted +1 in Y to avoid conflicts with machine)
                             net.minecraft.core.BlockPos blockPos = centerPos.offset(
                                 rotatedRelativePos.getX(), 
                                 rotatedRelativePos.getY() + 1, 
@@ -564,31 +566,25 @@ public class ModMessages {
      * This simulates a client-to-server packet for saving the selected structure in the machine
      */
     public static void sendStructurePlacerMachineSavePacket(String structureId, BlockPos machinePos) {
-        LOGGER.info("Sending Structure Placer Machine save packet: {} at {}", structureId, machinePos);
-        // Simplified implementation - directly handle on the server side
         try {
-            // Try to get the minecraft instance
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
             if (minecraft == null) {
                 LOGGER.error("Minecraft instance is null!");
                 return;
             }
             
-            // Try to get the singleplayer server
             net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
             }
             
-            // Try to get the player list
             net.minecraft.server.players.PlayerList playerList = server.getPlayerList();
             if (playerList == null) {
                 LOGGER.error("Player list is null!");
                 return;
             }
             
-            // Try to get the players
             java.util.List<net.minecraft.server.level.ServerPlayer> players = playerList.getPlayers();
             if (players.isEmpty()) {
                 LOGGER.error("No players found on server!");
@@ -601,27 +597,20 @@ public class ModMessages {
                 return;
             }
             
-            LOGGER.info("Creating StructurePlacerMachineSaveC2SPacket...");
             net.unfamily.iskautils.network.packet.StructurePlacerMachineSaveC2SPacket packet = 
                 new net.unfamily.iskautils.network.packet.StructurePlacerMachineSaveC2SPacket(structureId, machinePos);
             
-            LOGGER.info("Scheduling packet.handle() to run on server thread with player: {}", player.getName().getString());
-            
-            // Forza l'esecuzione sul server thread per accedere correttamente ai BlockEntity
+            // Execute on server thread to properly access BlockEntity
             server.execute(() -> {
                 try {
-                    LOGGER.info("Executing packet.handle() on server thread");
                     packet.handle(player);
-                    LOGGER.info("Packet handle completed successfully on server thread!");
                 } catch (Exception e) {
                     LOGGER.error("Error executing packet on server thread: {}", e.getMessage());
-                    e.printStackTrace();
                 }
             });
             
         } catch (Exception e) {
             LOGGER.error("Could not send Structure Placer Machine save packet: {}", e.getMessage());
-            e.printStackTrace(); // Print full stack trace for debugging
         }
     }
 } 

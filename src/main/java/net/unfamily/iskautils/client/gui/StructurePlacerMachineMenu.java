@@ -42,7 +42,12 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
     private static final int BLOCK_POS_X_INDEX = 5;
     private static final int BLOCK_POS_Y_INDEX = 6;
     private static final int BLOCK_POS_Z_INDEX = 7;
-    private static final int DATA_COUNT = 8;
+    private static final int REDSTONE_MODE_INDEX = 8;
+    private static final int DATA_COUNT = 9;
+    
+    // Store the structure ID for client-side access (synced separately)
+    private String cachedSelectedStructure = "";
+    private int lastSyncedStructureHash = 0;
     
     // Constructor for server-side (with block entity)
     public StructurePlacerMachineMenu(int containerId, Inventory playerInventory, StructurePlacerMachineBlockEntity blockEntity) {
@@ -51,6 +56,12 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
         this.blockEntity = blockEntity;
         this.blockPos = blockEntity.getBlockPos();
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
+        
+        // Initialize cached structure on server side
+        if (blockEntity != null) {
+            this.cachedSelectedStructure = blockEntity.getSelectedStructure();
+            this.lastSyncedStructureHash = this.cachedSelectedStructure.hashCode();
+        }
         
         // Create container data that syncs with the block entity
         this.containerData = new ContainerData() {
@@ -65,6 +76,7 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
                     case BLOCK_POS_X_INDEX -> blockPos.getX();
                     case BLOCK_POS_Y_INDEX -> blockPos.getY();
                     case BLOCK_POS_Z_INDEX -> blockPos.getZ();
+                    case REDSTONE_MODE_INDEX -> blockEntity.getRedstoneMode();
                     default -> 0;
                 };
             }
@@ -246,6 +258,10 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
         return this.blockPos;
     }
     
+    public int getRedstoneMode() {
+        return this.containerData.get(REDSTONE_MODE_INDEX);
+    }
+    
     // Method to get block entity from level (for client-side actions)
     // This searches for the nearest Structure Placer Machine in render distance
     public StructurePlacerMachineBlockEntity getBlockEntityFromLevel(Level level) {
@@ -271,5 +287,79 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
             }
         }
         return null;
+    }
+    
+    /**
+     * Called every tick on both client and server to sync data
+     */
+    @Override
+    public void broadcastChanges() {
+        super.broadcastChanges();
+        
+        // Server side: update cached structure and sync to client
+        if (this.blockEntity != null) {
+            String currentStructure = this.blockEntity.getSelectedStructure();
+            int currentHash = currentStructure.hashCode();
+            
+            // If structure changed, update cache
+            if (currentHash != this.lastSyncedStructureHash) {
+                this.cachedSelectedStructure = currentStructure;
+                this.lastSyncedStructureHash = currentHash;
+            }
+        }
+    }
+    
+    /**
+     * Client-side method to update cached structure when hash changes
+     */
+    public void updateCachedStructure() {
+        if (this.blockEntity != null) {
+            // Server side - directly get the structure
+            this.cachedSelectedStructure = this.blockEntity.getSelectedStructure();
+            this.lastSyncedStructureHash = this.cachedSelectedStructure.hashCode();
+        } else {
+            // Client side - check if hash changed and try to get structure from nearby block entity
+            int currentHash = getStructureHash();
+            if (currentHash != this.lastSyncedStructureHash) {
+                this.lastSyncedStructureHash = currentHash;
+                
+                // Try to find the block entity to get the structure string
+                if (net.minecraft.client.Minecraft.getInstance().level != null) {
+                    StructurePlacerMachineBlockEntity be = getBlockEntityFromLevel(net.minecraft.client.Minecraft.getInstance().level);
+                    if (be != null) {
+                        this.cachedSelectedStructure = be.getSelectedStructure();
+                    } else {
+                        // If we can't find the block entity, clear the cache
+                        this.cachedSelectedStructure = "";
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Forces refresh of client data - call this when structure selection changes
+     */
+    public void forceDataSync() {
+        if (this.blockEntity != null) {
+            // Reset hash to force resync on next broadcastChanges
+            this.lastSyncedStructureHash = -1;
+            this.cachedSelectedStructure = "";
+            broadcastChanges();
+        }
+    }
+    
+    /**
+     * Gets the cached selected structure (works on both client and server)
+     */
+    public String getCachedSelectedStructure() {
+        if (this.blockEntity != null) {
+            // Server side - always get fresh data
+            return this.blockEntity.getSelectedStructure();
+        } else {
+            // Client side - update cache if needed and return cached value
+            updateCachedStructure();
+            return this.cachedSelectedStructure;
+        }
     }
 } 

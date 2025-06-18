@@ -26,12 +26,13 @@ import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.structure.StructurePlacer;
 import net.unfamily.iskautils.util.ModUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Item per piazzare strutture nel mondo con GUI di selezione
+ * Item for placing structures in the world with selection GUI
  */
 public class StructurePlacerItem extends Item {
     
@@ -42,10 +43,10 @@ public class StructurePlacerItem extends Item {
     public static final String LAST_CLICK_POS_KEY = "last_click_pos";
     public static final String ROTATION_KEY = "rotation";
     
-    // Colori per i marker
-    public static final int PREVIEW_COLOR = 0x804444FF; // Azzurro semi-trasparente
-    public static final int CONFLICT_COLOR = 0x80FF4444; // Rosso semi-trasparente
-    public static final int SUCCESS_COLOR = 0x8044FF44; // Verde semi-trasparente
+    // Colors for markers
+    public static final int PREVIEW_COLOR = 0x804444FF; // Semi-transparent blue
+    public static final int CONFLICT_COLOR = 0x80FF4444; // Semi-transparent red
+    public static final int SUCCESS_COLOR = 0x8044FF44; // Semi-transparent green
     
     public StructurePlacerItem(Properties properties) {
         super(properties);
@@ -56,7 +57,7 @@ public class StructurePlacerItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-            // Usa il sistema testuale per la selezione struttura
+            // Use text system for structure selection
             openStructureSelectionGui(serverPlayer, stack);
         }
         
@@ -65,7 +66,7 @@ public class StructurePlacerItem extends Item {
     
     @Override
     public boolean onLeftClickEntity(ItemStack stack, Player player, Entity entity) {
-        // Impedisce il danno alle entità quando si usa per la rotazione
+        // Prevents damage to entities when used for rotation
         return true;
     }
     
@@ -74,7 +75,7 @@ public class StructurePlacerItem extends Item {
         Level level = context.getLevel();
         Player player = context.getPlayer();
         ItemStack stack = context.getItemInHand();
-        BlockPos pos = context.getClickedPos().above(); // Piazza un blocco sopra al blocco cliccato
+        BlockPos pos = context.getClickedPos().above(); // Place one block above the clicked block
         
         if (level.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.SUCCESS;
@@ -92,35 +93,33 @@ public class StructurePlacerItem extends Item {
             return InteractionResult.FAIL;
         }
         
-        // Nuovo sistema: controlla se è il secondo click entro 5 secondi nella stessa posizione
+        // New system: check if this is the second click within 5 seconds at the same position
         long currentTime = level.getGameTime();
         long lastClickTime = getLastClickTime(stack);
         BlockPos lastClickPos = getLastClickPos(stack);
         
-        boolean isSecondClick = (currentTime - lastClickTime <= 100) && // 5 secondi = 100 tick
+        boolean isSecondClick = (currentTime - lastClickTime <= 100) && // 5 seconds = 100 ticks
                                pos.equals(lastClickPos);
         
         if (isSecondClick) {
-            // Secondo click: tenta di piazzare la struttura
+            // Second click: attempt to place the structure
             return attemptStructurePlacement(serverPlayer, pos, structure, stack);
         } else {
-            // Primo click: mostra preview con marker specifici
+            // First click: show preview with specific markers
             showDetailedPreview(serverPlayer, pos, structure, stack);
             
-            // Salva il tempo e la posizione del click
+            // Save click time and position
             saveLastClick(stack, currentTime, pos);
             
             return InteractionResult.SUCCESS;
         }
     }
     
-
-    
     /**
-     * Apre la GUI di selezione della struttura
+     * Opens the structure selection GUI
      */
     private void openStructureSelectionGui(ServerPlayer player, ItemStack stack) {
-        // Apre la GUI del Structure Placer
+        // Opens the Structure Placer GUI
         player.openMenu(new net.minecraft.world.MenuProvider() {
             @Override
             public net.minecraft.network.chat.Component getDisplayName() {
@@ -137,13 +136,13 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Mostra l'anteprima dettagliata della struttura con marker azzurri per spazi vuoti e rossi per spazi occupati
+     * Shows detailed structure preview with blue markers for empty spaces and red markers for occupied spaces
      */
     private void showDetailedPreview(ServerPlayer player, BlockPos centerPos, StructureDefinition structure, ItemStack stack) {
-        // Rimuovi i marker precedenti se esistono
+        // Remove previous markers if they exist
         clearPreviousMarkers(player, stack);
         
-        // Calcola le posizioni dei blocchi della struttura
+        // Calculate structure block positions
         Map<BlockPos, String> blockPositions = calculateStructurePositions(centerPos, structure, stack);
         
         if (blockPositions.isEmpty()) {
@@ -151,7 +150,7 @@ public class StructurePlacerItem extends Item {
             return;
         }
         
-        // Mostra marker specifici per ogni posizione
+        // Show specific markers for each position
         int blueMarkers = 0;
         int redMarkers = 0;
         
@@ -160,20 +159,20 @@ public class StructurePlacerItem extends Item {
             BlockState currentState = player.level().getBlockState(blockPos);
             
             if (canReplaceBlock(currentState, structure)) {
-                // Spazio vuoto/sostituibile: marker azzurro alla posizione del blocco (15 secondi, senza testo)
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, PREVIEW_COLOR, 300); // 15 secondi
+                // Empty/replaceable space: blue marker at block position (15 seconds, no text)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, PREVIEW_COLOR, 300); // 15 seconds
                 blueMarkers++;
             } else {
-                // Spazio occupato: marker rosso alla posizione del blocco (15 secondi, senza testo)
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 300); // 15 secondi
+                // Occupied space: red marker at block position (15 seconds, no text)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 300); // 15 seconds
                 redMarkers++;
             }
         }
         
-        // Salva la posizione per riferimenti futuri
+        // Save position for future reference
         saveLastPreviewPos(stack, centerPos);
         
-        // Informa il giocatore
+        // Inform the player
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();
         player.displayClientMessage(Component.literal("§bPreview: §f" + structureName), true);
         player.displayClientMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, §c" + redMarkers + " §7occupied spaces"), true);
@@ -185,21 +184,21 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Tenta di piazzare la struttura controllando i materiali
+     * Attempts to place the structure by checking materials
      */
     private InteractionResult attemptStructurePlacement(ServerPlayer player, BlockPos centerPos, StructureDefinition structure, ItemStack stack) {
-        // Calcola le posizioni e crea una mappa di allocazione specifica dei blocchi
+        // Calculate positions and create a specific block allocation map
         Map<BlockPos, String> blockPositions = calculateStructurePositions(centerPos, structure, stack);
         Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
         
-        // Crea una mappa di allocazione che traccia esattamente quale blocco usare per ogni posizione
+        // Create an allocation map that tracks exactly which block to use for each position
         Map<BlockPos, AllocatedBlock> blockAllocation = new HashMap<>();
         Map<String, Integer> missingMaterials = new HashMap<>();
         
-        // Traccia le alternative per ogni tipo di materiale
+        // Track alternatives for each material type
         Map<String, List<StructureDefinition.BlockDefinition>> alternativesMap = new HashMap<>();
         
-        // Alloca i blocchi specifici dall'inventario
+        // Allocate specific blocks from inventory
         for (Map.Entry<BlockPos, String> entry : blockPositions.entrySet()) {
             BlockPos blockPos = entry.getKey();
             String character = entry.getValue();
@@ -210,26 +209,26 @@ public class StructurePlacerItem extends Item {
                 if (allocated != null) {
                     blockAllocation.put(blockPos, allocated);
                 } else {
-                    // Non trovato, aggiungi ai materiali mancanti
+                    // Not found, add to missing materials
                     String displayName = blockDefs.get(0).getDisplay() != null && !blockDefs.get(0).getDisplay().isEmpty() 
                         ? blockDefs.get(0).getDisplay() 
                         : blockDefs.get(0).getBlock();
                     missingMaterials.merge(displayName, 1, Integer::sum);
                     
-                    // Traccia le alternative disponibili per questo materiale
+                    // Track available alternatives for this material
                     alternativesMap.put(displayName, blockDefs);
                 }
             }
         }
         
         if (!missingMaterials.isEmpty()) {
-            // Ripristina gli item allocati che non sono stati utilizzati
+            // Restore allocated items that were not used
             restoreAllocatedBlocks(player, blockAllocation.values());
             showMissingMaterialsWithAlternatives(player, missingMaterials, alternativesMap);
             return InteractionResult.FAIL;
         }
         
-        // Controlla lo spazio - controlla alla posizione effettiva, non un blocco sopra
+        // Check space - check at actual position, not above a block
         boolean hasConflicts = false;
         for (Map.Entry<BlockPos, String> entry : blockPositions.entrySet()) {
             BlockPos blockPos = entry.getKey();
@@ -241,7 +240,7 @@ public class StructurePlacerItem extends Item {
             }
         }
         
-        // Se ci sono conflitti, mostra marker rossi
+        // If there are conflicts, show red markers
         if (hasConflicts) {
             if (!structure.isCanForce()) {
                 showConflictMarkers(player, blockPositions, structure);
@@ -249,7 +248,7 @@ public class StructurePlacerItem extends Item {
                 player.displayClientMessage(Component.literal("§cSpace is occupied! Structure cannot be placed."), true);
                 return InteractionResult.FAIL;
             } else {
-                // Se può forzare, chiedi conferma
+                // If can force, ask for confirmation
                 if (!player.isShiftKeyDown()) {
                     showConflictMarkers(player, blockPositions, structure);
                     restoreAllocatedBlocks(player, blockAllocation.values());
@@ -259,12 +258,12 @@ public class StructurePlacerItem extends Item {
             }
         }
         
-        // I materiali sono già stati consumati durante l'allocazione, ora piazza la struttura
+        // Materials have already been consumed during allocation, now place the structure
         boolean isForced = hasConflicts && structure.isCanForce() && player.isShiftKeyDown();
         boolean success = placeStructureWithAllocatedBlocks((ServerLevel) player.level(), blockAllocation, structure, player, isForced);
         
         if (success) {
-            // Mostra marker verdi di successo UN BLOCCO PIÙ IN ALTO solo per i blocchi effettivamente piazzati
+            // Show green success markers UN ONE BLOCK MORE UP ONLY FOR THE ACTUALLY PLACED BLOCKS
             showSuccessMarkers((ServerLevel) player.level(), blockAllocation, structure, isForced);
             
             String structureName = structure.getName() != null ? structure.getName() : structure.getId();
@@ -275,7 +274,7 @@ public class StructurePlacerItem extends Item {
             }
             return InteractionResult.SUCCESS;
         } else {
-            // Se il piazzamento fallisce, ripristina i blocchi
+            // If placement fails, restore blocks
             restoreAllocatedBlocks(player, blockAllocation.values());
             player.displayClientMessage(Component.literal("§cFailed to place structure!"), true);
             return InteractionResult.FAIL;
@@ -283,7 +282,7 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Calcola le posizioni di tutti i blocchi della struttura con rotazione attorno al centro @
+     * Calculate all block positions of the structure with rotation around the center @
      */
     private Map<BlockPos, String> calculateStructurePositions(BlockPos centerPos, StructureDefinition structure, ItemStack stack) {
         Map<BlockPos, String> positions = new HashMap<>();
@@ -291,11 +290,11 @@ public class StructurePlacerItem extends Item {
         String[][][][] pattern = structure.getPattern();
         if (pattern == null) return positions;
         
-        // Trova il centro della struttura (simbolo @)
+        // Find structure center (symbol @)
         BlockPos relativeCenter = structure.findCenter();
         if (relativeCenter == null) relativeCenter = BlockPos.ZERO;
         
-        // Ottieni la rotazione dall'ItemStack
+        // Get rotation from ItemStack
         int rotation = getRotation(stack);
         
         for (int y = 0; y < pattern.length; y++) {
@@ -307,31 +306,31 @@ public class StructurePlacerItem extends Item {
                         for (int charIndex = 0; charIndex < cellChars.length; charIndex++) {
                             String character = cellChars[charIndex];
                             
-                            // Salta spazi vuoti
+                            // Skip empty spaces
                             if (character == null || character.equals(" ")) continue;
                             
-                            // Se è @, controllare se è definito nella key
+                            // If it's @, check if it's defined in the key
                             if (character.equals("@")) {
                                 Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
                                 if (key == null || !key.containsKey("@")) {
-                                    // @ non è definito nella key, trattalo come spazio vuoto
+                                    // @ is not defined in the key, treat it as empty space
                                     continue;
                                 }
-                                // Se arriviamo qui, @ è definito nella key, quindi processalo come un blocco normale
+                                // If we get here, @ is defined in the key, so process it as a normal block
                             }
                                 int originalX = x;
                                 int originalY = y;
                                 int originalZ = z * cellChars.length + charIndex;
                                 
-                                // Calcola posizione relativa rispetto al centro @
+                                // Calculate relative position relative to the center @
                                 int relX = originalX - relativeCenter.getX();
                                 int relY = originalY - relativeCenter.getY();
                                 int relZ = originalZ - relativeCenter.getZ();
                                 
-                                // Applica la rotazione alle coordinate relative
+                                // Apply rotation to relative coordinates
                                 BlockPos rotatedRelativePos = applyRotation(relX, relY, relZ, rotation);
                                 
-                                // Calcola la posizione finale nel mondo
+                                // Calculate final position in the world
                                 BlockPos blockPos = centerPos.offset(
                                     rotatedRelativePos.getX(), 
                                     rotatedRelativePos.getY(), 
@@ -349,27 +348,27 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Applica la rotazione alle coordinate relative
+     * Apply rotation to relative coordinates
      */
     private BlockPos applyRotation(int x, int y, int z, int rotation) {
-        // Rotazione solo orizzontale (X e Z), Y rimane uguale
+        // Rotation only horizontal (X and Z), Y remains the same
         int newX = x;
         int newZ = z;
         
         switch (rotation) {
-            case 0:   // Nord (nessuna rotazione)
+            case 0:   // North (no rotation)
                 newX = x;
                 newZ = z;
                 break;
-            case 90:  // Est (90° in senso orario)
+            case 90:  // East (90° clockwise)
                 newX = -z;
                 newZ = x;
                 break;
-            case 180: // Sud (180°)
+            case 180: // South (180°)
                 newX = -x;
                 newZ = -z;
                 break;
-            case 270: // Ovest (270° in senso orario = 90° antiorario)
+            case 270: // West (270° clockwise = 90° counterclockwise)
                 newX = z;
                 newZ = -x;
                 break;
@@ -379,7 +378,7 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Calcola i materiali necessari per la struttura (raggruppati per display name)
+     * Calculate required materials for the structure (grouped by display name)
      */
     private Map<String, MaterialRequirement> calculateRequiredMaterials(BlockPos centerPos, StructureDefinition structure) {
         Map<String, MaterialRequirement> materials = new HashMap<>();
@@ -390,7 +389,7 @@ public class StructurePlacerItem extends Item {
         for (String character : positions.values()) {
             List<StructureDefinition.BlockDefinition> blockDefs = key.get(character);
             if (blockDefs != null && !blockDefs.isEmpty()) {
-                // Usa il display name o il primo block ID come chiave
+                // Use display name or first block ID as key
                 final String displayName = blockDefs.get(0).getDisplay() != null && !blockDefs.get(0).getDisplay().isEmpty() 
                     ? blockDefs.get(0).getDisplay() 
                     : blockDefs.get(0).getBlock();
@@ -406,7 +405,7 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Classe helper per raggruppare i requisiti di materiali con alternative
+     * Helper class to group material requirements with alternatives
      */
     private static class MaterialRequirement {
         private final String displayName;
@@ -428,7 +427,7 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Classe per tracciare un blocco allocato dall'inventario
+     * Helper class to track an allocated block from inventory
      */
     private static class AllocatedBlock {
         private final StructureDefinition.BlockDefinition blockDefinition;
@@ -451,21 +450,21 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Alloca un singolo blocco dall'inventario del giocatore
+     * Allocate a single block from player inventory
      */
     private AllocatedBlock allocateBlockFromInventory(ServerPlayer player, List<StructureDefinition.BlockDefinition> blockDefinitions) {
         for (int i = 0; i < player.getInventory().items.size(); i++) {
             ItemStack stack = player.getInventory().items.get(i);
             
             if (!stack.isEmpty()) {
-                // Ottieni il blocco dall'item se possibile
+                // Get block from item if possible
                 Block block = null;
                 String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                 
                 if (stack.getItem() instanceof BlockItem blockItem) {
                     block = blockItem.getBlock();
                 } else {
-                    // Prova a trovare un blocco corrispondente per item che non sono BlockItem
+                    // Try to find a matching block for item that are not BlockItem
                     try {
                         net.minecraft.resources.ResourceLocation itemLocation = net.minecraft.resources.ResourceLocation.parse(itemId);
                         net.minecraft.resources.ResourceLocation blockLocation = 
@@ -475,17 +474,17 @@ public class StructurePlacerItem extends Item {
                             block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
                         }
                     } catch (Exception e) {
-                        // Ignora se non riesce a trovare il blocco corrispondente
+                        // Ignore if unable to find matching block
                     }
                 }
                 
                 if (block != null) {
                     String blockId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).toString();
                     
-                    // Controlla se questo blocco corrisponde a una delle definizioni richieste
+                    // Check if this block matches any of the required definitions
                     for (StructureDefinition.BlockDefinition blockDef : blockDefinitions) {
                         if (blockDef.getBlock() != null && blockDef.getBlock().equals(blockId)) {
-                            // Trovato! Consuma un item e crea l'allocazione
+                            // Found! Consume an item and create allocation
                             ItemStack consumedStack = stack.copy();
                             consumedStack.setCount(1);
                             
@@ -502,26 +501,26 @@ public class StructurePlacerItem extends Item {
             }
         }
         
-        return null; // Non trovato
+        return null; // Not found
     }
     
     /**
-     * Ripristina i blocchi allocati nell'inventario del giocatore
+     * Restore allocated blocks to player inventory
      */
     private void restoreAllocatedBlocks(ServerPlayer player, java.util.Collection<AllocatedBlock> allocatedBlocks) {
         for (AllocatedBlock allocated : allocatedBlocks) {
             ItemStack consumedStack = allocated.getConsumedStack();
             
-            // Prova a rimettere l'item nello slot originale
+            // Try to put item back in original slot
             ItemStack currentStack = player.getInventory().items.get(allocated.getInventorySlot());
             if (currentStack.isEmpty()) {
                 player.getInventory().items.set(allocated.getInventorySlot(), consumedStack.copy());
             } else if (ItemStack.isSameItemSameComponents(currentStack, consumedStack)) {
                 currentStack.grow(consumedStack.getCount());
             } else {
-                // Se lo slot originale è occupato, trova un altro slot
+                // If original slot is occupied, find another slot
                 if (!player.getInventory().add(consumedStack.copy())) {
-                    // Se l'inventario è pieno, droppa l'item
+                    // If inventory is full, drop item
                     player.drop(consumedStack.copy(), false);
                 }
             }
@@ -531,12 +530,12 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Piazza la struttura usando i blocchi allocati specificamente con delay tra i layer
+     * Place structure using specifically allocated blocks with delay between layers
      */
     private boolean placeStructureWithAllocatedBlocks(ServerLevel level, Map<BlockPos, AllocatedBlock> blockAllocation, 
                                                     StructureDefinition structure, ServerPlayer player, boolean isForced) {
         try {
-            // Raggruppa i blocchi per layer (Y coordinate)
+            // Group blocks by layer (Y coordinate)
             Map<Integer, Map<BlockPos, AllocatedBlock>> blocksByLayer = new HashMap<>();
             
             for (Map.Entry<BlockPos, AllocatedBlock> entry : blockAllocation.entrySet()) {
@@ -545,7 +544,7 @@ public class StructurePlacerItem extends Item {
                 blocksByLayer.computeIfAbsent(layer, k -> new HashMap<>()).put(pos, entry.getValue());
             }
             
-            // Piazza il primo layer immediatamente
+            // Place first layer immediately
             Map<Integer, Boolean> layerResults = new HashMap<>();
             List<Integer> sortedLayers = blocksByLayer.keySet().stream().sorted().toList();
             
@@ -554,16 +553,16 @@ public class StructurePlacerItem extends Item {
                 boolean firstLayerSuccess = placeLayer(level, blocksByLayer.get(firstLayer), structure, player, isForced);
                 layerResults.put(firstLayer, firstLayerSuccess);
                 
-                // Schedula i layer rimanenti con delay di 20 tick tra ognuno
-                for (int i = 1; i < sortedLayers.size(); i++) {
-                    final int layerY = sortedLayers.get(i);
-                    final int delayTicks = i * 20; // 20 tick per ogni layer dopo il primo
-                    final Map<BlockPos, AllocatedBlock> layerBlocks = blocksByLayer.get(layerY);
+                            // Schedule remaining layers with delay between each
+            for (int i = 1; i < sortedLayers.size(); i++) {
+                final int layerY = sortedLayers.get(i);
+                final int delayTicks = i * 5; // 5 ticks per layer after the first
+                final Map<BlockPos, AllocatedBlock> layerBlocks = blocksByLayer.get(layerY);
                     
-                    // Schedula il piazzamento del layer dopo il delay
+                    // Schedule layer placement after delay
                     new Thread(() -> {
                         try {
-                            Thread.sleep(delayTicks * 50); // Converti tick in millisecondi
+                            Thread.sleep(delayTicks * 50); // Convert ticks to milliseconds
                             level.getServer().execute(() -> {
                                 boolean layerSuccess = placeLayer(level, layerBlocks, structure, player, isForced);
                                 layerResults.put(layerY, layerSuccess);
@@ -575,7 +574,7 @@ public class StructurePlacerItem extends Item {
                 }
             }
             
-            // Ritorna true se almeno il primo layer è stato piazzato con successo
+            // Return true if at least the first layer was placed successfully
             return !layerResults.isEmpty() && layerResults.values().stream().anyMatch(success -> success);
         } catch (Exception e) {
             return false;
@@ -583,11 +582,16 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Piazza un singolo layer di blocchi
+     * Place a single layer of blocks
      */
     private boolean placeLayer(ServerLevel level, Map<BlockPos, AllocatedBlock> layerBlocks, 
                              StructureDefinition structure, ServerPlayer player, boolean isForced) {
         try {
+            // Check if structure has slower flag enabled
+            if (structure.isSlower()) {
+                return placeLayerWithBlockDelay(level, layerBlocks, structure, player, isForced);
+            }
+            
             int placedBlocks = 0;
             Map<BlockPos, AllocatedBlock> skippedBlocks = new HashMap<>();
             
@@ -596,17 +600,17 @@ public class StructurePlacerItem extends Item {
                 AllocatedBlock allocated = entry.getValue();
                 StructureDefinition.BlockDefinition blockDef = allocated.getBlockDefinition();
                 
-                // Se è in modalità forzata, controlla se la posizione può essere sostituita
+                // If in forced mode, check if position can be replaced
                 if (isForced) {
                     BlockState currentState = level.getBlockState(pos);
                     if (!canReplaceBlock(currentState, structure)) {
-                        // Salta questa posizione e tieni da parte il blocco per ripristinarlo
+                        // Skip this position and keep block for restoration
                         skippedBlocks.put(pos, allocated);
                         continue;
                     }
                 }
                 
-                // Ottieni il blocco dal registro
+                // Get block from registry
                 net.minecraft.resources.ResourceLocation blockLocation = 
                     net.minecraft.resources.ResourceLocation.parse(blockDef.getBlock());
                 Block block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
@@ -614,32 +618,69 @@ public class StructurePlacerItem extends Item {
                 if (block != null && block != Blocks.AIR) {
                     BlockState blockState = block.defaultBlockState();
                     
-                    // Applica le proprietà se specificate
+                    // Apply properties if specified
                     if (blockDef.getProperties() != null) {
                         for (Map.Entry<String, String> propEntry : blockDef.getProperties().entrySet()) {
                             try {
                                 blockState = applyBlockProperty(blockState, propEntry.getKey(), propEntry.getValue());
                             } catch (Exception e) {
-                                // Ignora proprietà non valide
+                                // Ignore invalid properties
                             }
                         }
                     }
                     
-                    // Piazza il blocco
-                    level.setBlock(pos, blockState, 3);
+                    // Check if we should place as player
+                    if (structure.isPlaceAsPlayer()) {
+                        // Place as if done by player - create temporary ItemStack and use BlockItem
+                        try {
+                            Item blockItem = block.asItem();
+                            if (blockItem != null && blockItem != net.minecraft.world.item.Items.AIR) {
+                                ItemStack blockStack = new ItemStack(blockItem);
+                                
+                                // Create a fake UseOnContext to simulate player placement
+                                var context = new net.minecraft.world.item.context.UseOnContext(
+                                    player, 
+                                    net.minecraft.world.InteractionHand.MAIN_HAND, 
+                                    new net.minecraft.world.phys.BlockHitResult(
+                                        net.minecraft.world.phys.Vec3.atCenterOf(pos), 
+                                        net.minecraft.core.Direction.UP, 
+                                        pos, // Use the actual position, not below
+                                        false
+                                    )
+                                );
+                                
+                                // Try to use BlockItem.useOn to place it like a player would
+                                if (blockItem instanceof net.minecraft.world.item.BlockItem blockItemInstance) {
+                                    blockItemInstance.place(new net.minecraft.world.item.context.BlockPlaceContext(context));
+                                } else {
+                                    // Fallback to normal placement
+                                    level.setBlock(pos, blockState, 3);
+                                }
+                            } else {
+                                // Fallback to normal placement
+                                level.setBlock(pos, blockState, 3);
+                            }
+                        } catch (Exception e) {
+                            // If player-like placement fails, fallback to normal placement
+                            level.setBlock(pos, blockState, 3);
+                        }
+                    } else {
+                        // Normal placement
+                        level.setBlock(pos, blockState, 3);
+                    }
                     placedBlocks++;
                 } else {
-                    // Blocco non valido - tieni da parte per ripristino
+                    // Invalid block - keep for restoration
                     skippedBlocks.put(pos, allocated);
                 }
             }
             
-            // Se in modalità forzata e ci sono blocchi saltati, ripristinali nell'inventario
+            // If in forced mode and there are skipped blocks, restore them in inventory
             if (isForced && !skippedBlocks.isEmpty()) {
                 restoreAllocatedBlocks(player, skippedBlocks.values());
             }
             
-            // Successo se almeno un blocco è stato piazzato
+            // Success if at least one block is placed
             return placedBlocks > 0;
         } catch (Exception e) {
             return false;
@@ -647,7 +688,157 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Applica una proprietà a un BlockState
+     * Place a layer with delay between each individual block (when slower is enabled)
+     */
+    private boolean placeLayerWithBlockDelay(ServerLevel level, Map<BlockPos, AllocatedBlock> layerBlocks, 
+                                           StructureDefinition structure, ServerPlayer player, boolean isForced) {
+        try {
+            List<Map.Entry<BlockPos, AllocatedBlock>> blockList = new ArrayList<>(layerBlocks.entrySet());
+            Map<BlockPos, AllocatedBlock> skippedBlocks = new HashMap<>();
+            
+            // Place first block immediately
+            if (!blockList.isEmpty()) {
+                boolean firstBlockPlaced = placeSingleBlock(level, blockList.get(0), structure, player, isForced, skippedBlocks);
+                
+                // Schedule remaining blocks with 5 tick delay between each
+                for (int i = 1; i < blockList.size(); i++) {
+                    final Map.Entry<BlockPos, AllocatedBlock> blockEntry = blockList.get(i);
+                    final int delayTicks = i * 5; // 5 ticks between each block
+                    
+                    // Schedule block placement after delay
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(delayTicks * 50); // Convert ticks to milliseconds
+                            level.getServer().execute(() -> {
+                                placeSingleBlock(level, blockEntry, structure, player, isForced, skippedBlocks);
+                            });
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }).start();
+                }
+                
+                // Restore skipped blocks at the end
+                if (isForced && !skippedBlocks.isEmpty()) {
+                    // Schedule restoration after all blocks are processed
+                    int totalDelay = blockList.size() * 5 + 10; // Extra delay to ensure all blocks are processed
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(totalDelay * 50);
+                            level.getServer().execute(() -> {
+                                restoreAllocatedBlocks(player, skippedBlocks.values());
+                            });
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }).start();
+                }
+                
+                return firstBlockPlaced || !layerBlocks.isEmpty();
+            }
+            
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Place a single block with all necessary checks
+     */
+    private boolean placeSingleBlock(ServerLevel level, Map.Entry<BlockPos, AllocatedBlock> blockEntry, 
+                                   StructureDefinition structure, ServerPlayer player, boolean isForced,
+                                   Map<BlockPos, AllocatedBlock> skippedBlocks) {
+        try {
+            BlockPos pos = blockEntry.getKey();
+            AllocatedBlock allocated = blockEntry.getValue();
+            StructureDefinition.BlockDefinition blockDef = allocated.getBlockDefinition();
+            
+            // If in forced mode, check if position can be replaced
+            if (isForced) {
+                BlockState currentState = level.getBlockState(pos);
+                if (!canReplaceBlock(currentState, structure)) {
+                    // Skip this position and keep block for restoration
+                    synchronized (skippedBlocks) {
+                        skippedBlocks.put(pos, allocated);
+                    }
+                    return false;
+                }
+            }
+            
+            // Get block from registry
+            net.minecraft.resources.ResourceLocation blockLocation = 
+                net.minecraft.resources.ResourceLocation.parse(blockDef.getBlock());
+            Block block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
+            
+            if (block != null && block != Blocks.AIR) {
+                BlockState blockState = block.defaultBlockState();
+                
+                // Apply properties if specified
+                if (blockDef.getProperties() != null) {
+                    for (Map.Entry<String, String> propEntry : blockDef.getProperties().entrySet()) {
+                        try {
+                            blockState = applyBlockProperty(blockState, propEntry.getKey(), propEntry.getValue());
+                        } catch (Exception e) {
+                            // Ignore invalid properties
+                        }
+                    }
+                }
+                
+                // Check if we should place as player
+                if (structure.isPlaceAsPlayer()) {
+                    // Place as if done by player - create temporary ItemStack and use BlockItem
+                    try {
+                        Item blockItem = block.asItem();
+                        if (blockItem != null && blockItem != net.minecraft.world.item.Items.AIR) {
+                            ItemStack blockStack = new ItemStack(blockItem);
+                            
+                            // Create a fake UseOnContext to simulate player placement
+                            var context = new net.minecraft.world.item.context.UseOnContext(
+                                player, 
+                                net.minecraft.world.InteractionHand.MAIN_HAND, 
+                                new net.minecraft.world.phys.BlockHitResult(
+                                    net.minecraft.world.phys.Vec3.atCenterOf(pos), 
+                                    net.minecraft.core.Direction.UP, 
+                                    pos, // Use the actual position, not below
+                                    false
+                                )
+                            );
+                            
+                            // Try to use BlockItem.useOn to place it like a player would
+                            if (blockItem instanceof net.minecraft.world.item.BlockItem blockItemInstance) {
+                                blockItemInstance.place(new net.minecraft.world.item.context.BlockPlaceContext(context));
+                            } else {
+                                // Fallback to normal placement
+                                level.setBlock(pos, blockState, 3);
+                            }
+                        } else {
+                            // Fallback to normal placement
+                            level.setBlock(pos, blockState, 3);
+                        }
+                    } catch (Exception e) {
+                        // If player-like placement fails, fallback to normal placement
+                        level.setBlock(pos, blockState, 3);
+                    }
+                } else {
+                    // Normal placement
+                    level.setBlock(pos, blockState, 3);
+                }
+                return true;
+            } else {
+                // Invalid block - keep for restoration
+                synchronized (skippedBlocks) {
+                    skippedBlocks.put(pos, allocated);
+                }
+                return false;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Apply a property to a BlockState
      */
     private BlockState applyBlockProperty(BlockState state, String propertyName, String value) {
         for (net.minecraft.world.level.block.state.properties.Property<?> property : state.getProperties()) {
@@ -655,11 +846,11 @@ public class StructurePlacerItem extends Item {
                 return applyPropertyValue(state, property, value);
             }
         }
-        return state; // Proprietà non trovata, ritorna lo stato originale
+        return state; // Property not found, return original state
     }
     
     /**
-     * Applica il valore di una proprietà specifica
+     * Apply the value of a specific property
      */
     @SuppressWarnings("unchecked")
     private <T extends Comparable<T>> BlockState applyPropertyValue(BlockState state, 
@@ -671,29 +862,29 @@ public class StructurePlacerItem extends Item {
                 return state.setValue(property, optionalValue.get());
             }
         } catch (Exception e) {
-            // Ignora valori non validi
+            // Ignore invalid values
         }
         return state;
     }
 
     /**
-     * Scansiona l'inventario del giocatore per i materiali disponibili
+     * Scan player inventory for available materials
      */
     private Map<String, Integer> scanPlayerInventory(ServerPlayer player, Map<String, MaterialRequirement> requiredMaterials) {
         Map<String, Integer> available = new HashMap<>();
         
-        // Scansiona inventario principale + hotbar
+        // Scan main inventory + hotbar
         for (ItemStack stack : player.getInventory().items) {
             if (!stack.isEmpty()) {
-                // Ottieni il blocco dall'item se possibile
+                // Get block from item if possible
                 Block block = null;
                 String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                 
                 if (stack.getItem() instanceof BlockItem blockItem) {
                     block = blockItem.getBlock();
                 } else {
-                    // Prova a trovare un blocco corrispondente per item che non sono BlockItem
-                    // ma che corrispondono comunque a un blocco (come lever, button, etc.)
+                    // Try to find a matching block for item that are not BlockItem
+                    // but that still correspond to a block (like lever, button, etc.)
                     try {
                         net.minecraft.resources.ResourceLocation itemLocation = net.minecraft.resources.ResourceLocation.parse(itemId);
                         net.minecraft.resources.ResourceLocation blockLocation = 
@@ -703,19 +894,19 @@ public class StructurePlacerItem extends Item {
                             block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
                         }
                     } catch (Exception e) {
-                        // Ignora se non riesce a trovare il blocco corrispondente
+                        // Ignore if unable to find matching block
                     }
                 }
                 
                 if (block != null) {
                     String blockId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).toString();
                     
-                    // Controlla se questo blocco è una delle alternative richieste
+                    // Check if this block is one of the required alternatives
                     for (MaterialRequirement requirement : requiredMaterials.values()) {
                         for (StructureDefinition.BlockDefinition blockDef : requirement.getAlternatives()) {
                             if (blockDef.getBlock() != null && blockDef.getBlock().equals(blockId)) {
                                 available.merge(requirement.getDisplayName(), stack.getCount(), Integer::sum);
-                                break; // Esci dal loop interno una volta trovato
+                                break; // Exit inner loop once found
                             }
                         }
                     }
@@ -727,7 +918,7 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Consuma i materiali dall'inventario del giocatore basandosi sui requisiti
+     * Consume materials from player inventory based on requirements
      */
     private void consumeMaterialsFromRequirements(ServerPlayer player, Map<String, MaterialRequirement> requirements, Map<String, Integer> availableMaterials) {
         for (Map.Entry<String, MaterialRequirement> entry : requirements.entrySet()) {
@@ -736,19 +927,19 @@ public class StructurePlacerItem extends Item {
             int needed = requirement.getCount();
             int remaining = needed;
             
-            // Cerca negli slot dell'inventario
+            // Search inventory slots
             for (int i = 0; i < player.getInventory().items.size() && remaining > 0; i++) {
                 ItemStack stack = player.getInventory().items.get(i);
                 
                 if (!stack.isEmpty()) {
-                    // Ottieni il blocco dall'item se possibile
+                    // Get block from item if possible
                     Block block = null;
                     String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                     
                     if (stack.getItem() instanceof BlockItem blockItem) {
                         block = blockItem.getBlock();
                     } else {
-                        // Prova a trovare un blocco corrispondente per item che non sono BlockItem
+                        // Try to find a matching block for item that are not BlockItem
                         try {
                             net.minecraft.resources.ResourceLocation itemLocation = net.minecraft.resources.ResourceLocation.parse(itemId);
                             net.minecraft.resources.ResourceLocation blockLocation = 
@@ -758,14 +949,14 @@ public class StructurePlacerItem extends Item {
                                 block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
                             }
                         } catch (Exception e) {
-                            // Ignora se non riesce a trovare il blocco corrispondente
+                            // Ignore if unable to find matching block
                         }
                     }
                     
                     if (block != null) {
                         String stackBlockId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).toString();
                         
-                        // Controlla se questo blocco è una delle alternative richieste
+                        // Check if this block is one of the required alternatives
                         for (StructureDefinition.BlockDefinition blockDef : requirement.getAlternatives()) {
                             if (blockDef.getBlock() != null && blockDef.getBlock().equals(stackBlockId)) {
                                 int toConsume = Math.min(remaining, stack.getCount());
@@ -775,7 +966,7 @@ public class StructurePlacerItem extends Item {
                                 if (stack.isEmpty()) {
                                     player.getInventory().items.set(i, ItemStack.EMPTY);
                                 }
-                                break; // Esci dal loop delle alternative
+                                break; // Exit inner loop of alternatives
                             }
                         }
                     }
@@ -783,18 +974,18 @@ public class StructurePlacerItem extends Item {
             }
         }
         
-        // Aggiorna l'inventario del giocatore
+        // Update player inventory
         player.getInventory().setChanged();
     }
     
     /**
-     * Verifica se un blocco può essere rimpiazzato
+     * Check if a block can be replaced
      */
     private boolean canReplaceBlock(BlockState state, StructureDefinition structure) {
-        // L'aria può sempre essere rimpiazzata
+        // Air can always be replaced
         if (state.isAir()) return true;
         
-        // Controlla la lista can_replace della struttura
+        // Check structure can_replace list
         List<String> canReplace = structure.getCanReplace();
         if (canReplace != null) {
             String blockId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
@@ -805,7 +996,7 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Mostra marker rossi per i conflitti
+     * Show red markers for conflicts
      */
     private void showConflictMarkers(ServerPlayer player, Map<BlockPos, String> positions, StructureDefinition structure) {
         for (Map.Entry<BlockPos, String> entry : positions.entrySet()) {
@@ -813,14 +1004,14 @@ public class StructurePlacerItem extends Item {
             BlockState currentState = player.level().getBlockState(blockPos);
             
             if (!canReplaceBlock(currentState, structure)) {
-                // Marker alla posizione del blocco (15 secondi, senza testo)
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 300); // 15 secondi
+                // Marker at block position (15 seconds, no text)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 300); // 15 seconds
             }
         }
     }
     
     /**
-     * Mostra marker verdi di successo solo per i blocchi effettivamente piazzati
+     * Show green success markers only for actually placed blocks
      */
     private void showSuccessMarkers(ServerLevel level, Map<BlockPos, AllocatedBlock> blockAllocation, 
                                   StructureDefinition structure, boolean isForced) {
@@ -828,18 +1019,18 @@ public class StructurePlacerItem extends Item {
             BlockPos pos = entry.getKey();
             BlockState currentState = level.getBlockState(pos);
             
-            // Se è in modalità forzata, mostra marker solo per blocchi che sono stati effettivamente piazzati
+            // If in forced mode, show markers only for blocks that were actually placed
             boolean wasPlaced = true;
             if (isForced) {
-                // Controlla se alla posizione c'è ancora il blocco originale (non piazzato)
-                // oppure se c'è il blocco che dovevamo piazzare (piazzato)
+                // Check if at position there is still the original block (not placed)
+                // or if there is the block we were supposed to place (placed)
                 AllocatedBlock allocated = entry.getValue();
                 try {
                     net.minecraft.resources.ResourceLocation blockLocation = 
                         net.minecraft.resources.ResourceLocation.parse(allocated.getBlockDefinition().getBlock());
                     Block expectedBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
                     
-                    // Se il blocco corrente non è quello che dovevamo piazzare, significa che è stato saltato
+                    // If current block is not the one we were supposed to place, it means it was skipped
                     wasPlaced = currentState.getBlock() == expectedBlock;
                 } catch (Exception e) {
                     wasPlaced = false;
@@ -847,29 +1038,29 @@ public class StructurePlacerItem extends Item {
             }
             
             if (wasPlaced) {
-                // Marker di successo (15 secondi, senza testo)
-                MarkRenderer.getInstance().addBillboardMarker(pos, SUCCESS_COLOR, 300); // 15 secondi
+                // Success marker (15 seconds, no text)
+                MarkRenderer.getInstance().addBillboardMarker(pos, SUCCESS_COLOR, 300); // 15 seconds
             }
         }
     }
     
     /**
-     * Mostra un messaggio semplificato dei materiali mancanti con alternative specifiche
+     * Shows a simplified message of missing materials with specific alternatives
      */
     private void showMissingMaterialsMessageSimple(ServerPlayer player, Map<String, Integer> missingMaterials, int totalBlocks) {
         player.displayClientMessage(Component.literal("§cMissing materials:"), false);
         
-        // Per ogni materiale mancante, trova le alternative dal sistema di allocazione
-        // Non usiamo più calculateStructurePositions qui poiché serve solo per i display names
+        // For each missing material, find alternatives from allocation system
+        // We no longer use calculateStructurePositions here as it's only needed for display names
         
         for (Map.Entry<String, Integer> entry : missingMaterials.entrySet()) {
             String displayName = entry.getKey();
             int missing = entry.getValue();
             
-            // Usa il display name tradotto se disponibile, altrimenti usa il nome formattato
+            // Use translated display name if available, otherwise use formatted name
             String translatedDisplayName = Component.translatable(displayName).getString();
             if (translatedDisplayName.equals(displayName)) {
-                // Se non c'è traduzione, usa il nome formattato
+                // If no translation, use formatted name
                 translatedDisplayName = getFormattedDisplayName(displayName);
             }
             
@@ -881,7 +1072,7 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Mostra i materiali mancanti con tutte le alternative disponibili
+     * Shows missing materials with all available alternatives
      */
     private void showMissingMaterialsWithAlternatives(ServerPlayer player, Map<String, Integer> missingMaterials, 
                                                      Map<String, List<StructureDefinition.BlockDefinition>> alternativesMap) {
@@ -891,12 +1082,12 @@ public class StructurePlacerItem extends Item {
             String displayName = entry.getKey();
             int missing = entry.getValue();
             
-            // Mostra il nome principale del gruppo
+            // Show main name of group
             String translatedDisplayName = getFormattedDisplayName(displayName);
             Component message = Component.literal("§c- " + missing + " §f" + translatedDisplayName + ":");
             player.displayClientMessage(message, false);
             
-            // Mostra tutte le alternative disponibili
+            // Show all available alternatives
             List<StructureDefinition.BlockDefinition> alternatives = alternativesMap.get(displayName);
             if (alternatives != null) {
                 for (StructureDefinition.BlockDefinition blockDef : alternatives) {
@@ -910,27 +1101,27 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Rimuove i marker precedenti
+     * Remove previous markers
      */
     private void clearPreviousMarkers(ServerPlayer player, ItemStack stack) {
-        // I marker scadono automaticamente, ma potremmo implementare una rimozione esplicita
-        // se necessario in futuro
+        // Markers expire automatically, but we could implement explicit removal
+        // if needed in the future
     }
     
     /**
-     * Mostra un messaggio formattato dei materiali mancanti
+     * Shows a formatted message of missing materials
      */
     private void showMissingMaterialsMessage(ServerPlayer player, Map<String, Integer> missingMaterials, int totalBlocks, Map<String, MaterialRequirement> requirements) {
-        // Non mostra più "required_blocks" generico, ma i display name specifici
+        // No longer shows "required_blocks" generic, but specific display names
         
         for (Map.Entry<String, Integer> entry : missingMaterials.entrySet()) {
             String displayName = entry.getKey();
             int missing = entry.getValue();
             
-            // Usa il display name tradotto se disponibile, altrimenti usa il display name grezzo
+            // Use translated display name if available, otherwise use raw display name
             String translatedDisplayName = Component.translatable(displayName).getString();
             if (translatedDisplayName.equals(displayName)) {
-                // Se non c'è traduzione, usa il nome formattato
+                // If no translation, use formatted name
                 translatedDisplayName = getTranslatedBlockName(displayName);
             }
             
@@ -940,9 +1131,9 @@ public class StructurePlacerItem extends Item {
             player.displayClientMessage(message, false);
         }
         
-        // Rimuove "total blocks needed" - ora ogni gruppo ha il suo nome specifico
+        // Remove "total blocks needed" - now each group has its own specific name
         
-        // Mostra le alternative disponibili
+        // Show available alternatives
         for (Map.Entry<String, MaterialRequirement> reqEntry : requirements.entrySet()) {
             MaterialRequirement requirement = reqEntry.getValue();
             if (requirement.getAlternatives().size() > 1) {
@@ -955,7 +1146,7 @@ public class StructurePlacerItem extends Item {
                 for (StructureDefinition.BlockDefinition blockDef : requirement.getAlternatives()) {
                     if (blockDef.getBlock() != null) {
                         String translatedName = getTranslatedBlockName(blockDef.getBlock());
-                        // Controlla se il blocco esiste nel gioco
+                        // Check if block exists in game
                         if (blockExists(blockDef.getBlock())) {
                             player.displayClientMessage(Component.literal("    §a- " + translatedName), false);
                         } else {
@@ -968,7 +1159,7 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Controlla se un blocco esiste nel registro
+     * Check if a block exists in registry
      */
     private boolean blockExists(String blockId) {
         try {
@@ -980,24 +1171,24 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Ottiene il nome tradotto di un blocco dal suo ID
+     * Get translated name of a block from its ID
      */
     private String getTranslatedBlockName(String blockId) {
         return getFormattedBlockName(blockId);
     }
     
     /**
-     * Formatta il nome di un blocco nel formato "Mod Name: Block Name"
+     * Format block name in "Mod Name: Block Name" format
      */
     private String getFormattedBlockName(String blockId) {
         try {
-            // Converti l'ID del blocco (namespace:name) nel formato del modname
+            // Convert block ID (namespace:name) to modname format
             String[] parts = blockId.split(":");
             if (parts.length == 2) {
                 String namespace = parts[0];
                 String blockName = parts[1];
                 
-                // Mappa alcuni namespace comuni ai nomi dei mod
+                // Map common namespace to mod names
                 String modName = switch (namespace) {
                     case "minecraft" -> "Minecraft";
                     case "iska_utils" -> "Iskandert's Utilities";
@@ -1010,28 +1201,28 @@ public class StructurePlacerItem extends Item {
                     case "botania" -> "Botania";
                     case "tconstruct" -> "Tinkers' Construct";
                     default -> {
-                        // Capitalizza il namespace come fallback
+                        // Capitalize namespace as fallback
                         yield formatModName(namespace);
                     }
                 };
                 
-                // Converte il nome del blocco in un formato leggibile
+                // Convert block name to readable format
                 String readableName = formatBlockName(blockName);
                 
                 return modName + ": " + readableName;
             }
         } catch (Exception e) {
-            // Se fallisce, usa l'ID originale
+            // If fails, use original ID
         }
         
         return blockId;
     }
     
     /**
-     * Formatta il nome di un display name nel formato corretto
+     * Format display name in correct format
      */
     private String getFormattedDisplayName(String displayName) {
-        // Se è già un translation key, prova a tradurlo
+        // If already a translation key, try to translate it
         if (displayName.contains(".")) {
             String translated = Component.translatable(displayName).getString();
             if (!translated.equals(displayName)) {
@@ -1039,17 +1230,17 @@ public class StructurePlacerItem extends Item {
             }
         }
         
-        // Altrimenti formatta come un block ID
+        // Otherwise format as a block ID
         return getFormattedBlockName(displayName);
     }
     
     /**
-     * Formatta il nome di una mod dal namespace
+     * Format mod name from namespace
      */
     private String formatModName(String namespace) {
         if (namespace.length() <= 1) return namespace.toUpperCase();
         
-        // Dividi per underscore e capitalizza ogni parola
+        // Split by underscore and capitalize each word
         String[] parts = namespace.split("_");
         StringBuilder result = new StringBuilder();
         
@@ -1064,7 +1255,7 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
-     * Formatta il nome di un blocco dal suo ID interno
+     * Format block name from its internal ID
      */
     private String formatBlockName(String blockName) {
         String readableName = blockName.replace("_", " ");
@@ -1149,7 +1340,7 @@ public class StructurePlacerItem extends Item {
             if (structure != null) {
                 tooltip.add(Component.literal("§bSelected: §f" + structure.getName()));
                 
-                // Mostra rotazione corrente
+                // Show current rotation
                 int rotation = getRotation(stack);
                 String rotationText = switch (rotation) {
                     case 0 -> Component.translatable("direction.iska_utils.north").getString();

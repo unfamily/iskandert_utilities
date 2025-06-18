@@ -121,7 +121,7 @@ public class StructureCommand {
             Component message = Component.literal("§a" + structure.getId() + " §7- §f" + name);
             
             if (structure.getDescription() != null && !structure.getDescription().isEmpty()) {
-                String desc = String.join(" ", structure.getDescription());
+                String desc = structure.getDescription();
                 message = message.copy().append(Component.literal(" §7(" + desc + ")"));
             }
             
@@ -173,9 +173,7 @@ public class StructureCommand {
         
         if (structure.getDescription() != null && !structure.getDescription().isEmpty()) {
             source.sendSuccess(() -> Component.literal("§bDescription:"), false);
-            for (String desc : structure.getDescription()) {
-                source.sendSuccess(() -> Component.literal("  §7" + desc), false);
-            }
+            source.sendSuccess(() -> Component.literal("  §7" + structure.getDescription()), false);
         }
         
         int[] dimensions = structure.getDimensions();
