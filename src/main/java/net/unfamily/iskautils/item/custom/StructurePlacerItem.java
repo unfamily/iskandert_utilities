@@ -989,10 +989,82 @@ public class StructurePlacerItem extends Item {
         List<String> canReplace = structure.getCanReplace();
         if (canReplace != null) {
             String blockId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
-            return canReplace.contains(blockId);
+            
+            for (String replaceableId : canReplace) {
+                if (replaceableId.equals(blockId)) {
+                    return true;
+                }
+                
+                // Handle special cases
+                if (handleSpecialReplaceableCase(replaceableId, state)) {
+                    return true;
+                }
+                
+                // Handle tags with # prefix
+                if (replaceableId.startsWith("#") && handleTagReplacement(replaceableId, state)) {
+                    return true;
+                }
+            }
+            
+            return false; // If there's a can_replace list and block is not in list, it cannot be replaced
         }
         
         return false;
+    }
+    
+    /**
+     * Handles special replacement cases like $replaceable, $fluids, etc.
+     */
+    private boolean handleSpecialReplaceableCase(String replaceableId, BlockState existingState) {
+        return switch (replaceableId.toLowerCase()) {
+            case "$replaceable" -> existingState.canBeReplaced();
+            case "$fluids", "$fluid" -> existingState.getFluidState().isSource() || !existingState.getFluidState().isEmpty();
+            case "$air" -> existingState.isAir();
+            case "$water" -> existingState.is(net.minecraft.world.level.block.Blocks.WATER);
+            case "$lava" -> existingState.is(net.minecraft.world.level.block.Blocks.LAVA);
+            case "$plants", "$plant" -> existingState.is(net.minecraft.tags.BlockTags.REPLACEABLE_BY_TREES) || 
+                                      existingState.is(net.minecraft.tags.BlockTags.SMALL_FLOWERS) ||
+                                      existingState.is(net.minecraft.tags.BlockTags.TALL_FLOWERS) ||
+                                      existingState.is(net.minecraft.tags.BlockTags.SAPLINGS);
+            case "$dirt" -> existingState.is(net.minecraft.tags.BlockTags.DIRT);
+            case "$logs", "$log" -> existingState.is(net.minecraft.tags.BlockTags.LOGS);
+            case "$leaves" -> existingState.is(net.minecraft.tags.BlockTags.LEAVES);
+            case "$stone" -> existingState.is(net.minecraft.tags.BlockTags.STONE_ORE_REPLACEABLES) ||
+                           existingState.is(net.minecraft.tags.BlockTags.DEEPSLATE_ORE_REPLACEABLES);
+            case "$ores", "$ore" -> existingState.is(net.minecraft.tags.BlockTags.COAL_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.IRON_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.GOLD_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.DIAMOND_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.EMERALD_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.LAPIS_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.REDSTONE_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.COPPER_ORES);
+            default -> false;
+        };
+    }
+    
+    /**
+     * Handles tag-based replacement with # prefix
+     */
+    private boolean handleTagReplacement(String tagId, BlockState existingState) {
+        try {
+            // Remove # prefix
+            String cleanTagId = tagId.substring(1);
+            
+            // Parse as ResourceLocation
+            net.minecraft.resources.ResourceLocation tagLocation = net.minecraft.resources.ResourceLocation.parse(cleanTagId);
+            
+            // Get tag from registry
+            net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> blockTag = 
+                net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, tagLocation);
+            
+            // Check if block is in the tag
+            return existingState.is(blockTag);
+            
+        } catch (Exception e) {
+            // Silent failure for invalid tags in item context
+            return false;
+        }
     }
     
     /**

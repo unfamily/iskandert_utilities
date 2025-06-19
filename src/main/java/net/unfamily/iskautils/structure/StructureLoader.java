@@ -71,6 +71,9 @@ public class StructureLoader {
             
             LOGGER.info("Structure scanning completed. Loaded {} structures", STRUCTURES.size());
             
+            // Generate comprehensive documentation
+            StructureDocumentationGenerator.generateDocumentation();
+            
         } catch (Exception e) {
             LOGGER.error("Error while scanning structures directory: {}", e.getMessage());
             if (LOGGER.isDebugEnabled()) {

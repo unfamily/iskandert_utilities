@@ -76,7 +76,7 @@ public class StructurePlacerSaveC2SPacket {
     }
     
     /**
-     * Metodo di compatibilità per quando i packet completi saranno implementati
+     * Compatibility method for complete packet implementation
      */
     public static void handlePacket(StructurePlacerSaveC2SPacket packet, ServerPlayer player) {
         packet.handle(player);

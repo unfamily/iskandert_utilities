@@ -72,11 +72,11 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         }
     };
     
-    // Energy storage for the machine (configured capacity and max input)
+    // Energy storage for the machine (configured capacity, max input, and max extract)
     private final EnergyStorage energyStorage = new EnergyStorage(
         net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer, 
         net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer, // Max input = max capacity
-        0
+        net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer  // Max extract = max capacity (allow full extraction)
     );
     
     // Auto-placement counter for NONE mode (places every 60 ticks)
@@ -177,7 +177,9 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.put("inventory", itemHandler.serializeNBT(registries));
-        tag.putInt("energy", energyStorage.getEnergyStored());
+        int currentEnergy = energyStorage.getEnergyStored();
+        tag.putInt("energy", currentEnergy);
+        LOGGER.debug("Structure Placer Machine saving energy: {}", currentEnergy);
         tag.putInt("autoPulseTimer", autoPulseTimer);
         if (placedByPlayer != null) {
             tag.putUUID("placedByPlayer", placedByPlayer);
@@ -219,7 +221,12 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             itemHandler.deserializeNBT(registries, tag.getCompound("inventory"));
         }
         if (tag.contains("energy")) {
-            energyStorage.deserializeNBT(registries, tag.get("energy"));
+            // Load energy directly from the saved int value
+            int savedEnergy = tag.getInt("energy");
+            // Set energy by extracting all and then receiving the saved amount
+            energyStorage.extractEnergy(energyStorage.getEnergyStored(), false);
+            energyStorage.receiveEnergy(savedEnergy, false);
+            LOGGER.debug("Structure Placer Machine loaded energy: {}", savedEnergy);
         }
         autoPulseTimer = tag.getInt("autoPulseTimer");
         if (tag.hasUUID("placedByPlayer")) {
@@ -476,15 +483,8 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             blockEntity.attemptAutoPlacement(level, pos);
         }
         
-        // Consume energy per tick when active (configured amount)
-        int energyConsumption = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
-        if (energyConsumption > 0 && blockEntity.energyStorage.getEnergyStored() >= energyConsumption) {
-            // Check if machine should be considered "active" (has structure selected and materials)
-            if (blockEntity.shouldConsumeIdleEnergy()) {
-                blockEntity.energyStorage.extractEnergy(energyConsumption, false);
-                blockEntity.setChanged();
-            }
-        }
+        // Note: Energy is consumed only when blocks are actually placed,
+        // not per tick. See placeSingleBlock() method for energy consumption logic.
     }
     
     // MenuProvider implementation
@@ -536,7 +536,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             if (blockDefs != null && !blockDefs.isEmpty()) {
                 // Check if position can be placed first
                 BlockState currentState = level.getBlockState(blockPos);
-                if (currentState.isAir() || currentState.canBeReplaced()) {
+                if (canReplaceBlock(currentState, structure)) {
                     // Only simulate allocation if position is actually placeable
                     AllocatedBlock simulated = simulateAllocateBlockFromInventory(blockDefs);
                     if (simulated != null) {
@@ -557,17 +557,26 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 BlockPos blockPos = entry.getKey();
                 AllocatedBlock simulated = entry.getValue();
                 
-                // Check if position is still available and consume the item
+                // Check if position is still available
                 BlockState currentState = level.getBlockState(blockPos);
-                if (currentState.isAir() || currentState.canBeReplaced()) {
-                    // Actually consume the item now
+                if (canReplaceBlock(currentState, structure)) {
+                    // Check if we have enough energy BEFORE consuming the item
+                    int energyRequired = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
+                    if (energyRequired > 0 && energyStorage.getEnergyStored() < energyRequired) {
+                        // Not enough energy, stop placing more blocks (don't consume items)
+                        LOGGER.debug("Structure Placer Machine: Not enough energy to place block (need {}, have {})", 
+                            energyRequired, energyStorage.getEnergyStored());
+                        break;
+                    }
+                    
+                    // Only consume the item if we have enough energy
                     if (consumeAllocatedBlock(simulated)) {
-                        // Place the block with energy check
+                        // Place the block with energy check (should always succeed now)
                         if (placeSingleBlock((ServerLevel) level, blockPos, simulated, structure)) {
                             placedBlocks++;
                         } else {
-                            // Not enough energy, stop placing more blocks
-                            // TODO: Could restore the consumed item here if needed
+                            // This should not happen since we already checked energy
+                            LOGGER.warn("Structure Placer Machine: Unexpected failure in placeSingleBlock after energy check");
                             break;
                         }
                     }
@@ -789,7 +798,12 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     private boolean placeSingleBlock(ServerLevel level, BlockPos blockPos, AllocatedBlock allocated, StructureDefinition structure) {
         // Check if we have enough energy to place this block
         int energyRequired = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
+        LOGGER.debug("Structure Placer Machine energy requirement check: energyRequired={}, currentEnergy={}", 
+            energyRequired, energyStorage.getEnergyStored());
+        
         if (energyRequired > 0 && energyStorage.getEnergyStored() < energyRequired) {
+            LOGGER.debug("Structure Placer Machine: Not enough energy to place block (need {}, have {})", 
+                energyRequired, energyStorage.getEnergyStored());
             return false; // Not enough energy
         }
         
@@ -862,7 +876,11 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             
             // Consume energy after successful placement
             if (energyRequired > 0) {
+                int energyBefore = energyStorage.getEnergyStored();
                 energyStorage.extractEnergy(energyRequired, false);
+                int energyAfter = energyStorage.getEnergyStored();
+                LOGGER.debug("Structure Placer Machine consumed {} energy ({} -> {}) for placing block at {}", 
+                    energyBefore - energyAfter, energyBefore, energyAfter, blockPos);
                 setChanged(); // Mark block entity as changed for saving
             }
             
@@ -873,19 +891,96 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     }
     
     /**
-     * Determines if the machine should consume idle energy per tick
-     * Machine is considered "active" if it has a structure selected and redstone mode is not NONE
+     * Check if a block can be replaced by structure placement
      */
-    private boolean shouldConsumeIdleEnergy() {
-        // Only consume energy if we have a structure selected
-        if (selectedStructure == null || selectedStructure.isEmpty()) {
-            return false;
+    private boolean canReplaceBlock(BlockState state, StructureDefinition structure) {
+        // Air can always be replaced
+        if (state.isAir()) return true;
+        
+        // Check structure can_replace list
+        List<String> canReplace = structure.getCanReplace();
+        if (canReplace != null) {
+            String blockId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+            
+            for (String replaceableId : canReplace) {
+                if (replaceableId.equals(blockId)) {
+                    return true;
+                }
+                
+                // Handle special cases
+                if (handleSpecialReplaceableCase(replaceableId, state)) {
+                    return true;
+                }
+                
+                // Handle tags with # prefix
+                if (replaceableId.startsWith("#") && handleTagReplacement(replaceableId, state)) {
+                    return true;
+                }
+            }
+            
+            return false; // If there's a can_replace list and block is not in list, it cannot be replaced
         }
         
-        // Only consume energy if redstone mode is not NONE (meaning machine can potentially place)
-        RedstoneMode mode = RedstoneMode.fromValue(redstoneMode);
-        return mode != RedstoneMode.NONE;
+        // If no can_replace list specified, use default Minecraft behavior
+        return state.canBeReplaced();
     }
+    
+    /**
+     * Handles special replacement cases like $replaceable, $fluids, etc.
+     */
+    private boolean handleSpecialReplaceableCase(String replaceableId, BlockState existingState) {
+        return switch (replaceableId.toLowerCase()) {
+            case "$replaceable" -> existingState.canBeReplaced();
+            case "$fluids", "$fluid" -> existingState.getFluidState().isSource() || !existingState.getFluidState().isEmpty();
+            case "$air" -> existingState.isAir();
+            case "$water" -> existingState.is(net.minecraft.world.level.block.Blocks.WATER);
+            case "$lava" -> existingState.is(net.minecraft.world.level.block.Blocks.LAVA);
+            case "$plants", "$plant" -> existingState.is(net.minecraft.tags.BlockTags.REPLACEABLE_BY_TREES) || 
+                                      existingState.is(net.minecraft.tags.BlockTags.SMALL_FLOWERS) ||
+                                      existingState.is(net.minecraft.tags.BlockTags.TALL_FLOWERS) ||
+                                      existingState.is(net.minecraft.tags.BlockTags.SAPLINGS);
+            case "$dirt" -> existingState.is(net.minecraft.tags.BlockTags.DIRT);
+            case "$logs", "$log" -> existingState.is(net.minecraft.tags.BlockTags.LOGS);
+            case "$leaves" -> existingState.is(net.minecraft.tags.BlockTags.LEAVES);
+            case "$stone" -> existingState.is(net.minecraft.tags.BlockTags.STONE_ORE_REPLACEABLES) ||
+                           existingState.is(net.minecraft.tags.BlockTags.DEEPSLATE_ORE_REPLACEABLES);
+            case "$ores", "$ore" -> existingState.is(net.minecraft.tags.BlockTags.COAL_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.IRON_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.GOLD_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.DIAMOND_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.EMERALD_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.LAPIS_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.REDSTONE_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.COPPER_ORES);
+            default -> false;
+        };
+    }
+    
+    /**
+     * Handles tag-based replacement with # prefix
+     */
+    private boolean handleTagReplacement(String tagId, BlockState existingState) {
+        try {
+            // Remove # prefix
+            String cleanTagId = tagId.substring(1);
+            
+            // Parse as ResourceLocation
+            net.minecraft.resources.ResourceLocation tagLocation = net.minecraft.resources.ResourceLocation.parse(cleanTagId);
+            
+            // Get tag from registry
+            net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> blockTag = 
+                net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, tagLocation);
+            
+            // Check if block is in the tag
+            return existingState.is(blockTag);
+            
+        } catch (Exception e) {
+            LOGGER.warn("Invalid tag format: '{}' - {}", tagId, e.getMessage());
+            return false;
+        }
+    }
+    
+
     
     /**
      * Applies a block property with the given name and value
@@ -926,15 +1021,24 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             BlockPos blockPos = firstBlock.getKey();
             AllocatedBlock simulated = firstBlock.getValue();
             
-            // Check if position is still available and consume the item
+            // Check if position is still available
             BlockState currentState = level.getBlockState(blockPos);
-            if (currentState.isAir() || currentState.canBeReplaced()) {
-                // Actually consume the item now
+            if (canReplaceBlock(currentState, structure)) {
+                // Check if we have enough energy BEFORE consuming the item
+                int energyRequired = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
+                if (energyRequired > 0 && energyStorage.getEnergyStored() < energyRequired) {
+                    // Not enough energy for first block, log message and stop (don't consume item)
+                    LOGGER.warn("Structure Placer Machine: Not enough energy to place blocks (need {}, have {})", 
+                        energyRequired, energyStorage.getEnergyStored());
+                    return;
+                }
+                
+                // Only consume the item if we have enough energy
                 if (consumeAllocatedBlock(simulated)) {
-                    // Place the block with energy check
+                    // Place the block with energy check (should always succeed now)
                     if (!placeSingleBlock(level, blockPos, simulated, structure)) {
-                        // Not enough energy for first block, log message and stop
-                        LOGGER.warn("Structure Placer Machine: Not enough energy to place blocks");
+                        // This should not happen since we already checked energy
+                        LOGGER.warn("Structure Placer Machine: Unexpected failure in placeSingleBlock after energy check");
                         return;
                     }
                 }
@@ -953,15 +1057,24 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                             BlockPos pos = blockEntry.getKey();
                             AllocatedBlock simulatedBlock = blockEntry.getValue();
                             
-                            // Check if position is still available and consume the item
+                            // Check if position is still available
                             BlockState currentBlockState = level.getBlockState(pos);
-                            if (currentBlockState.isAir() || currentBlockState.canBeReplaced()) {
-                                // Actually consume the item now
+                            if (canReplaceBlock(currentBlockState, structure)) {
+                                // Check if we have enough energy BEFORE consuming the item
+                                int energyRequired = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
+                                if (energyRequired > 0 && energyStorage.getEnergyStored() < energyRequired) {
+                                    // Not enough energy, log message but don't consume item
+                                    LOGGER.warn("Structure Placer Machine: Not enough energy to place block at {} (need {}, have {})", 
+                                        pos, energyRequired, energyStorage.getEnergyStored());
+                                    return; // Stop placing more blocks
+                                }
+                                
+                                // Only consume the item if we have enough energy
                                 if (consumeAllocatedBlock(simulatedBlock)) {
-                                    // Place the block with energy check
+                                    // Place the block with energy check (should always succeed now)
                                     if (!placeSingleBlock(level, pos, simulatedBlock, structure)) {
-                                        // Not enough energy, log message but continue with other blocks
-                                        LOGGER.warn("Structure Placer Machine: Not enough energy to place block at {}", pos);
+                                        // This should not happen since we already checked energy
+                                        LOGGER.warn("Structure Placer Machine: Unexpected failure in placeSingleBlock after energy check at {}", pos);
                                     }
                                 }
                             }

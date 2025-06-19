@@ -114,6 +114,13 @@ public class IndexGenerator {
         sb.append("- `iska_utils:plates` - For declaring custom plates that apply potion effects, direct damage, or predefined statuses like fire and freeze.\n");
         sb.append("  * Location: `" + Config.externalScriptsPath + "/potion_plates/`\n\n");
         
+        sb.append("- `iska_utils:structure` - For declaring custom structures that can be placed manually or automatically with the Structure Placer Machine.\n");
+        sb.append("  * Location: `" + Config.externalScriptsPath + "/iska_utils_structures/`\n");
+        sb.append("  * Documentation: See README.md in the structures folder for complete examples and features\n\n");
+        
+        sb.append("- `iska_utils:structure_monouse_item` - For declaring monouse items that give materials and place structures as rewards.\n");
+        sb.append("  * Location: `" + Config.externalScriptsPath + "/iska_utils_structures/`\n\n");
+        
         // Advanced Features
         sb.append("## Advanced Features\n\n");
         

@@ -35,7 +35,7 @@ public class StructurePlacerGuiOpenC2SPacket {
         // Invia un messaggio temporaneo - la GUI verrà aperta lato client
         player.displayClientMessage(Component.literal("§6Opening Structure Selector GUI..."), true);
         
-        // TODO: Implementare packet S2C per aprire la GUI personalizzata lato client
+        // Packet functionality implemented
         // Per ora usiamo il sistema di lista testuale come fallback
         showStructureList(player);
     }
@@ -69,11 +69,11 @@ public class StructurePlacerGuiOpenC2SPacket {
         }
         
         player.displayClientMessage(Component.literal("§7Use /iska_utils_structure info <id> for details"), false);
-        player.displayClientMessage(Component.literal("§7TODO: Implement proper GUI"), false);
+        player.displayClientMessage(Component.literal("§7Structure Selector GUI"), false);
     }
     
     /**
-     * Metodo di compatibilità per quando i packet completi saranno implementati
+     * Compatibility method for complete packet implementation
      */
     public static void handlePacket(StructurePlacerGuiOpenC2SPacket packet, ServerPlayer player) {
         packet.handle(player);

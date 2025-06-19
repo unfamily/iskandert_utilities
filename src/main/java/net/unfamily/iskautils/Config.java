@@ -145,7 +145,7 @@ public class Config
     
     // Structure Placer Machine configuration
     private static final ModConfigSpec.IntValue STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME = BUILDER
-            .comment("Energy consumed per tick by the Structure Placer Machine in RF/FE")
+            .comment("Energy consumed per block placed by the Structure Placer Machine in RF/FE")
             .defineInRange("300_structurePlacerMachineEnergyConsume", 50, 0, Integer.MAX_VALUE);
     
     private static final ModConfigSpec.IntValue STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER = BUILDER
@@ -447,6 +447,9 @@ public class Config
         // Structure Placer Machine logic
         structurePlacerMachineEnergyConsume = STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME.get();
         structurePlacerMachineEnergyBuffer = STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER.get();
+        
+        System.out.println("Structure Placer Machine config loaded: energyConsume=" + structurePlacerMachineEnergyConsume + 
+            ", energyBuffer=" + structurePlacerMachineEnergyBuffer);
 
         // If the energy required is 0, the energy stored is 0 automatically
         if (electricTreetapEnergyConsume <= 0) {
