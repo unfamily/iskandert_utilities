@@ -576,15 +576,15 @@ public class StructureMonouseItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         
-        // Add structure name (display name, not ID)
+        // Struttura
         StructureDefinition structure = StructureLoader.getStructure(definition.getPlaceName());
         String displayName = definition.getPlaceName(); // fallback to ID
         if (structure != null && structure.getName() != null && !structure.getName().isEmpty()) {
             displayName = structure.getName();
         }
-        tooltip.add(Component.literal("§7Structure: §f" + displayName));
+        tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.structure", displayName));
         
-        // Add rotation info
+        // Direzione impostata
         int rotation = getRotation(stack);
         String rotationText = switch (rotation) {
             case 0 -> Component.translatable("direction.iska_utils.north").getString();
@@ -593,18 +593,22 @@ public class StructureMonouseItem extends Item {
             case 270 -> Component.translatable("direction.iska_utils.west").getString();
             default -> rotation + "°";
         };
-        tooltip.add(Component.literal("§eRotation: §f" + rotationText));
+        tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.rotation", rotationText));
         
-        // Add items that will be given
+        // Fatto che è monouso
+        tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.single_use"));
+        
+        // Lista degli oggetti che otterrai
         if (!definition.getGiveItems().isEmpty()) {
-            tooltip.add(Component.literal("§7Will give:"));
+            tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.will_give"));
             for (StructureMonouseDefinition.GiveItem giveItem : definition.getGiveItems()) {
                 tooltip.add(Component.literal("§8  - " + giveItem.getCount() + "x " + giveItem.getItem()));
             }
         }
         
         tooltip.add(Component.literal(""));
-        tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.single_use"));
+        
+        // Istruzioni d'uso (tutte tranne shift+right click per forzare)
         tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.right_click"));
         tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.double_click"));
         tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.left_click_rotate"));

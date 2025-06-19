@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " CB",
+    " AC",
+    "A  "
+  ],
+  "key": {
+    "A": {
+      "tag": "c:rods/wooden"
+    },
+    "B": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "tag": "c:plastic_or_rubber"
+    }
+  },
+  "result": {
+    "id": "iska_utils:structure_placer",
+    "count": 1
+  }
+} 

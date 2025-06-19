@@ -1335,12 +1335,14 @@ public class StructurePlacerItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         String structureId = getSelectedStructure(stack);
+        
         if (structureId != null && !structureId.isEmpty()) {
             StructureDefinition structure = StructureLoader.getStructure(structureId);
             if (structure != null) {
-                tooltip.add(Component.literal("§bSelected: §f" + structure.getName()));
+                // Struttura selezionata
+                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.selected_structure", structure.getName()));
                 
-                // Show current rotation
+                // Direzione impostata
                 int rotation = getRotation(stack);
                 String rotationText = switch (rotation) {
                     case 0 -> Component.translatable("direction.iska_utils.north").getString();
@@ -1352,23 +1354,21 @@ public class StructurePlacerItem extends Item {
                 tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.rotation", rotationText));
                 
                 tooltip.add(Component.literal(""));
-                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_block"));
-                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_air"));
-                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.left_click_rotate"));
                 
+                // Istruzioni d'uso
+                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_air"));
+                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_block"));
                 if (structure.isCanForce()) {
                     tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.shift_force"));
                 }
+                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.left_click_rotate"));
             } else {
                 tooltip.add(Component.literal("§cInvalid structure: " + structureId));
             }
         } else {
+            // Nessuna struttura selezionata
             tooltip.add(Component.literal(""));
-            tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.no_selection"));
-        }
-        
-        if (isPreviewMode(stack)) {
-            tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.preview_enabled"));
+            tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_air"));
         }
     }
 } 

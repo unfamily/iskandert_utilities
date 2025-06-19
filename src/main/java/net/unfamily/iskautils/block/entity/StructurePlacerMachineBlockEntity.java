@@ -138,9 +138,6 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         for (int i = 0; i < 27; i++) {
             ghostFilters.add(ItemStack.EMPTY);
         }
-        
-        // Debug: Start with some energy for testing the energy bar
-        this.energyStorage.receiveEnergy(5000, false); // Start with 5000/10000 FE (50%)
     }
     
     // Data access methods
