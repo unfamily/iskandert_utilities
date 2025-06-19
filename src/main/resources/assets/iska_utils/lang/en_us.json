@@ -270,6 +270,7 @@
   "item.iska_utils.structure_placer.tooltip.right_click_air": "§9Right click: Select structure (not on block)",
   "item.iska_utils.structure_placer.tooltip.right_click_block": "§9Right click on block: Preview structure",
   "item.iska_utils.structure_placer.tooltip.shift_force": "§9Shift+right click: Force placement",
+  "item.iska_utils.structure_placer.tooltip.double_click": "§9Double-click: Place (5s timeout)",
   "item.iska_utils.structure_placer.tooltip.left_click_rotate": "§9Left click on block: Rotate structure",
   "item.iska_utils.structure_placer.rotated": "§6Structure rotated to: §f%s",
   "item.iska_utils.structure_placer.no_structure_selected": "§cNo structure selected! Right-click to select.",

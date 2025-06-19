@@ -72,8 +72,12 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         }
     };
     
-    // Energy storage for the machine (10,000 FE capacity, 100 FE/t input)
-    private final EnergyStorage energyStorage = new EnergyStorage(10000, 100, 0);
+    // Energy storage for the machine (configured capacity and max input)
+    private final EnergyStorage energyStorage = new EnergyStorage(
+        net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer, 
+        net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer, // Max input = max capacity
+        0
+    );
     
     // Auto-placement counter for NONE mode (places every 60 ticks)
     private int autoPulseTimer = 0;
@@ -472,10 +476,12 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             blockEntity.attemptAutoPlacement(level, pos);
         }
         
-        // For testing: slowly drain energy (1 FE per second)
-        if (level.getGameTime() % 20 == 0) { // Every second
-            if (blockEntity.energyStorage.getEnergyStored() > 0) {
-                blockEntity.energyStorage.extractEnergy(1, false);
+        // Consume energy per tick when active (configured amount)
+        int energyConsumption = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
+        if (energyConsumption > 0 && blockEntity.energyStorage.getEnergyStored() >= energyConsumption) {
+            // Check if machine should be considered "active" (has structure selected and materials)
+            if (blockEntity.shouldConsumeIdleEnergy()) {
+                blockEntity.energyStorage.extractEnergy(energyConsumption, false);
                 blockEntity.setChanged();
             }
         }
@@ -546,6 +552,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             placeStructureWithBlockDelay((ServerLevel) level, blockAllocation, structure);
         } else {
             // Place all blocks immediately
+            int placedBlocks = 0;
             for (Map.Entry<BlockPos, AllocatedBlock> entry : blockAllocation.entrySet()) {
                 BlockPos blockPos = entry.getKey();
                 AllocatedBlock simulated = entry.getValue();
@@ -555,11 +562,21 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 if (currentState.isAir() || currentState.canBeReplaced()) {
                     // Actually consume the item now
                     if (consumeAllocatedBlock(simulated)) {
-                        // Place the block
-                        placeSingleBlock((ServerLevel) level, blockPos, simulated, structure);
+                        // Place the block with energy check
+                        if (placeSingleBlock((ServerLevel) level, blockPos, simulated, structure)) {
+                            placedBlocks++;
+                        } else {
+                            // Not enough energy, stop placing more blocks
+                            // TODO: Could restore the consumed item here if needed
+                            break;
+                        }
                     }
                 }
                 // Note: if we can't place or consume, we do nothing (no need to restore since we never consumed)
+            }
+            
+            if (placedBlocks > 0) {
+                LOGGER.info("Structure Placer Machine placed {} blocks", placedBlocks);
             }
         }
     }
@@ -767,9 +784,15 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     }
     
     /**
-     * Places a single block with structure settings
+     * Places a single block with structure settings and energy consumption
      */
-    private void placeSingleBlock(ServerLevel level, BlockPos blockPos, AllocatedBlock allocated, StructureDefinition structure) {
+    private boolean placeSingleBlock(ServerLevel level, BlockPos blockPos, AllocatedBlock allocated, StructureDefinition structure) {
+        // Check if we have enough energy to place this block
+        int energyRequired = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
+        if (energyRequired > 0 && energyStorage.getEnergyStored() < energyRequired) {
+            return false; // Not enough energy
+        }
+        
         StructureDefinition.BlockDefinition blockDef = allocated.getBlockDefinition();
         
         // Get block from registry
@@ -836,7 +859,32 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 // Normal placement
                 level.setBlock(blockPos, blockState, 3);
             }
+            
+            // Consume energy after successful placement
+            if (energyRequired > 0) {
+                energyStorage.extractEnergy(energyRequired, false);
+                setChanged(); // Mark block entity as changed for saving
+            }
+            
+            return true; // Block placed successfully
         }
+        
+        return false; // Block was null or air, couldn't place
+    }
+    
+    /**
+     * Determines if the machine should consume idle energy per tick
+     * Machine is considered "active" if it has a structure selected and redstone mode is not NONE
+     */
+    private boolean shouldConsumeIdleEnergy() {
+        // Only consume energy if we have a structure selected
+        if (selectedStructure == null || selectedStructure.isEmpty()) {
+            return false;
+        }
+        
+        // Only consume energy if redstone mode is not NONE (meaning machine can potentially place)
+        RedstoneMode mode = RedstoneMode.fromValue(redstoneMode);
+        return mode != RedstoneMode.NONE;
     }
     
     /**
@@ -883,8 +931,12 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             if (currentState.isAir() || currentState.canBeReplaced()) {
                 // Actually consume the item now
                 if (consumeAllocatedBlock(simulated)) {
-                    // Place the block
-                    placeSingleBlock(level, blockPos, simulated, structure);
+                    // Place the block with energy check
+                    if (!placeSingleBlock(level, blockPos, simulated, structure)) {
+                        // Not enough energy for first block, log message and stop
+                        LOGGER.warn("Structure Placer Machine: Not enough energy to place blocks");
+                        return;
+                    }
                 }
             }
             
@@ -906,8 +958,11 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                             if (currentBlockState.isAir() || currentBlockState.canBeReplaced()) {
                                 // Actually consume the item now
                                 if (consumeAllocatedBlock(simulatedBlock)) {
-                                    // Place the block
-                                    placeSingleBlock(level, pos, simulatedBlock, structure);
+                                    // Place the block with energy check
+                                    if (!placeSingleBlock(level, pos, simulatedBlock, structure)) {
+                                        // Not enough energy, log message but continue with other blocks
+                                        LOGGER.warn("Structure Placer Machine: Not enough energy to place block at {}", pos);
+                                    }
                                 }
                             }
                             // Note: if we can't place or consume, we do nothing (no need to restore since we never consumed)

@@ -267,6 +267,7 @@
   "item.iska_utils.structure_placer.tooltip.rotation": "§eRotazione: §f%s",
   "item.iska_utils.structure_placer.tooltip.right_click_air": "§9Tasto destro: Seleziona struttura (non su blocco)",
   "item.iska_utils.structure_placer.tooltip.right_click_block": "§9Tasto destro su blocco: Anteprima struttura",
+  "item.iska_utils.structure_placer.tooltip.double_click": "§9Doppio-click: Posiziona (timeout 5s)",
   "item.iska_utils.structure_placer.tooltip.shift_force": "§9Shift+tasto destro: Forza piazzamento",
   "item.iska_utils.structure_placer.tooltip.left_click_rotate": "§9Tasto sinistro su blocco: Ruota struttura",
   "item.iska_utils.structure_placer.rotated": "§6Struttura ruotata verso: §f%s",

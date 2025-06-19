@@ -173,8 +173,12 @@ public class MarkRenderer {
         String nearestText = null;
         boolean isNearestBillboard = false;
         
+        // Crea copie delle mappe per evitare ConcurrentModificationException
+        Map<BlockPos, MarkBlockData> highlightedBlocksCopy = new HashMap<>(highlightedBlocks);
+        Map<BlockPos, MarkBlockData> billboardMarkersCopy = new HashMap<>(billboardMarkers);
+        
         // Verifica tutti i blocchi evidenziati
-        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocks.entrySet()) {
+        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocksCopy.entrySet()) {
             if (entry.getValue().text != null) {
                 BlockPos pos = entry.getKey();
                 
@@ -218,7 +222,7 @@ public class MarkRenderer {
         }
         
         // Verifica tutti i marker billboard
-        for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkers.entrySet()) {
+        for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkersCopy.entrySet()) {
             if (entry.getValue().text != null) {
                 BlockPos pos = entry.getKey();
                 
@@ -359,9 +363,12 @@ public class MarkRenderer {
      * Render cube highlights
      */
     private void renderCubeHighlights(PoseStack poseStack, Minecraft mc, Vec3 cameraPos, long currentTime) {
+        // Crea copia della mappa per evitare ConcurrentModificationException
+        Map<BlockPos, MarkBlockData> highlightedBlocksCopy = new HashMap<>(highlightedBlocks);
+        
         // Check if there are valid blocks to render
         boolean hasValidBlocks = false;
-        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocks.entrySet()) {
+        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocksCopy.entrySet()) {
             if (!mc.level.getBlockState(entry.getKey()).isAir()) {
                 hasValidBlocks = true;
                 break;
@@ -385,7 +392,7 @@ public class MarkRenderer {
         Matrix4f matrix = poseStack.last().pose();
         
         // Render each block
-        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocks.entrySet()) {
+        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocksCopy.entrySet()) {
             BlockPos pos = entry.getKey();
             int color = entry.getValue().color;
             
@@ -409,9 +416,12 @@ public class MarkRenderer {
      * Render billboard markers
      */
     private void renderBillboardMarkers(PoseStack poseStack, Minecraft mc, Vec3 cameraPos, long currentTime) {
+        // Crea copia della mappa per evitare ConcurrentModificationException
+        Map<BlockPos, MarkBlockData> billboardMarkersCopy = new HashMap<>(billboardMarkers);
+        
         // Debug: log how many markers we're trying to render
-        if (!billboardMarkers.isEmpty()) {
-            LOGGER.info("Rendering {} billboard markers", billboardMarkers.size());
+        if (!billboardMarkersCopy.isEmpty()) {
+            LOGGER.info("Rendering {} billboard markers", billboardMarkersCopy.size());
         }
         
         // Prepare the rendering for small cubes
@@ -426,7 +436,7 @@ public class MarkRenderer {
         Matrix4f matrix = poseStack.last().pose();
         
         // Render each marker as a small cube
-        for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkers.entrySet()) {
+        for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkersCopy.entrySet()) {
             BlockPos pos = entry.getKey();
             int color = entry.getValue().color;
             

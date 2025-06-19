@@ -142,7 +142,15 @@ public class Config
     private static final ModConfigSpec.IntValue RUBBER_SAP_EXTRACTOR_SPEED = BUILDER
             .comment("Speed of the Rubber Sap Extractor in ticks (lower is faster)")
             .defineInRange("200_rubberSapExtractorSpeed", 10, 1, Integer.MAX_VALUE);
-
+    
+    // Structure Placer Machine configuration
+    private static final ModConfigSpec.IntValue STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME = BUILDER
+            .comment("Energy consumed per tick by the Structure Placer Machine in RF/FE")
+            .defineInRange("300_structurePlacerMachineEnergyConsume", 50, 0, Integer.MAX_VALUE);
+    
+    private static final ModConfigSpec.IntValue STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER = BUILDER
+            .comment("Energy capacity of the Structure Placer Machine in RF/FE")
+            .defineInRange("301_structurePlacerMachineEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
             
     static {
         BUILDER.pop(); // End of general_utilities category
@@ -390,6 +398,8 @@ public class Config
     public static int scannerDefaultOreColor;
     public static int scannerDefaultMobColor;
     public static java.util.List<String> scannerOreTags;
+    public static int structurePlacerMachineEnergyConsume;
+    public static int structurePlacerMachineEnergyBuffer;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -428,11 +438,15 @@ public class Config
         scannerOreEntries = new java.util.ArrayList<>(SCANNER_ORE_ENTRIES.get());
         scannerMobEntries = new java.util.ArrayList<>(SCANNER_MOB_ENTRIES.get());
         scannerOreTags = new java.util.ArrayList<>(SCANNER_ORE_TAGS.get());
-        
+                
         // Default values for scanner colors
         scannerDefaultAlpha = Integer.parseInt(SCANNER_DEFAULT_ALPHA.get(), 16);
         scannerDefaultOreColor = Integer.parseInt(SCANNER_DEFAULT_ORE_COLOR.get(), 16);
         scannerDefaultMobColor = Integer.parseInt(SCANNER_DEFAULT_MOB_COLOR.get(), 16);
+
+        // Structure Placer Machine logic
+        structurePlacerMachineEnergyConsume = STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME.get();
+        structurePlacerMachineEnergyBuffer = STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER.get();
 
         // If the energy required is 0, the energy stored is 0 automatically
         if (electricTreetapEnergyConsume <= 0) {
@@ -529,6 +543,19 @@ public class Config
             timeAltererEnergyConsume = timeAltererEnergyBuffer;
         }
         
+        // Structure Placer Machine logic
+        if(structurePlacerMachineEnergyConsume <= 0) {
+            structurePlacerMachineEnergyBuffer = 0;
+        }
+        
+        if(structurePlacerMachineEnergyBuffer <= 0) {
+            structurePlacerMachineEnergyConsume = 0;    
+        }
+
+        // If the energy buffer is less than the energy consume, set the energy consume to the energy buffer
+        if(structurePlacerMachineEnergyBuffer < structurePlacerMachineEnergyConsume) {
+            structurePlacerMachineEnergyConsume = structurePlacerMachineEnergyBuffer;
+        }
     }
     
     @SubscribeEvent

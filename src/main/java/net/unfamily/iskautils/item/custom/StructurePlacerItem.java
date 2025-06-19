@@ -1339,10 +1339,10 @@ public class StructurePlacerItem extends Item {
         if (structureId != null && !structureId.isEmpty()) {
             StructureDefinition structure = StructureLoader.getStructure(structureId);
             if (structure != null) {
-                // Struttura selezionata
+                // Selected structure
                 tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.selected_structure", structure.getName()));
                 
-                // Direzione impostata
+                // Set direction
                 int rotation = getRotation(stack);
                 String rotationText = switch (rotation) {
                     case 0 -> Component.translatable("direction.iska_utils.north").getString();
@@ -1354,21 +1354,19 @@ public class StructurePlacerItem extends Item {
                 tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.rotation", rotationText));
                 
                 tooltip.add(Component.literal(""));
-                
-                // Istruzioni d'uso
-                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_air"));
-                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_block"));
-                if (structure.isCanForce()) {
-                    tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.shift_force"));
-                }
-                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.left_click_rotate"));
             } else {
                 tooltip.add(Component.literal("§cInvalid structure: " + structureId));
+                tooltip.add(Component.literal(""));
             }
         } else {
-            // Nessuna struttura selezionata
             tooltip.add(Component.literal(""));
-            tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_air"));
         }
+        
+        // Usage instructions (sempre visibili)
+        tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_air"));
+        tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_block"));
+        tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.double_click"));
+        tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.shift_force"));
+        tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.left_click_rotate"));
     }
 } 
