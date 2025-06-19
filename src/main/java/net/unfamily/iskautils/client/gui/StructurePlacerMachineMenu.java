@@ -362,4 +362,45 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
             return this.cachedSelectedStructure;
         }
     }
+    
+    /**
+     * Get ghost filter for a specific slot (works on both client and server)
+     */
+    public ItemStack getGhostFilter(int slot) {
+        if (this.blockEntity != null) {
+            // Server side - get directly from block entity
+            return this.blockEntity.getGhostFilter(slot);
+        } else {
+            // Client side - try to get from block entity via level lookup
+            if (this.minecraft != null && this.minecraft.level != null) {
+                StructurePlacerMachineBlockEntity blockEntity = getBlockEntityFromLevel(this.minecraft.level);
+                if (blockEntity != null) {
+                    return blockEntity.getGhostFilter(slot);
+                }
+            }
+            return ItemStack.EMPTY;
+        }
+    }
+    
+    /**
+     * Check if a slot has a ghost filter (works on both client and server)
+     */
+    public boolean hasGhostFilter(int slot) {
+        if (this.blockEntity != null) {
+            // Server side - get directly from block entity
+            return this.blockEntity.hasGhostFilter(slot);
+        } else {
+            // Client side - try to get from block entity via level lookup
+            if (this.minecraft != null && this.minecraft.level != null) {
+                StructurePlacerMachineBlockEntity blockEntity = getBlockEntityFromLevel(this.minecraft.level);
+                if (blockEntity != null) {
+                    return blockEntity.hasGhostFilter(slot);
+                }
+            }
+            return false;
+        }
+    }
+    
+    // Add minecraft field for client-side access
+    private net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
 } 

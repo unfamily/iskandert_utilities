@@ -89,7 +89,6 @@ public class ModMessages {
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
-            LOGGER.debug("Could not send highlight packet to client: {}", e.getMessage());
         }
     }
     
@@ -106,7 +105,6 @@ public class ModMessages {
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
-            LOGGER.debug("Could not send highlight with name packet to client: {}", e.getMessage());
         }
     }
     
@@ -125,7 +123,6 @@ public class ModMessages {
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
-            LOGGER.debug("Could not send billboard packet to client: {}", e.getMessage());
         }
     }
     
@@ -142,7 +139,6 @@ public class ModMessages {
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
-            LOGGER.debug("Could not send billboard with name packet to client: {}", e.getMessage());
         }
     }
     
@@ -159,7 +155,6 @@ public class ModMessages {
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
-            LOGGER.debug("Could not send remove highlight packet to client: {}", e.getMessage());
         }
     }
     
@@ -176,7 +171,6 @@ public class ModMessages {
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
-            LOGGER.debug("Could not send clear highlights packet to client: {}", e.getMessage());
         }
     }
     
@@ -319,9 +313,11 @@ public class ModMessages {
     
     /**
      * Sends a Structure Placer Machine Redstone Mode packet to the server
-     * This cycles through the redstone modes: NONE -> LOW -> HIGH -> NONE
      */
     public static void sendStructurePlacerMachineRedstoneModePacket(BlockPos machinePos) {
+        LOGGER.info("Sending Structure Placer Machine redstone mode packet: {}", machinePos);
+        
+        // Use simplified approach like other machine buttons
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
             if (minecraft == null) {
@@ -340,36 +336,90 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        // Directly call the redstone mode logic
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = player.serverLevel().getBlockEntity(machinePos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity machine) {
-                            // Cycle redstone mode: 0 -> 1 -> 2 -> 0
-                            int currentMode = machine.getRedstoneMode();
-                            int newMode = (currentMode + 1) % 3;
-                            machine.setRedstoneMode(newMode);
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
+                        if (blockEntity instanceof StructurePlacerMachineBlockEntity machine) {
                             
-                            // Get mode name for notification
-                            String modeText = switch (newMode) {
-                                case 0 -> "None";
-                                case 1 -> "Low Signal";
-                                case 2 -> "High Signal";
-                                default -> "Unknown";
-                            };
+                            // Cycle to next redstone mode
+                            StructurePlacerMachineBlockEntity.RedstoneMode currentMode = StructurePlacerMachineBlockEntity.RedstoneMode.fromValue(machine.getRedstoneMode());
+                            StructurePlacerMachineBlockEntity.RedstoneMode nextMode = currentMode.next();
+                            machine.setRedstoneMode(nextMode.getValue());
                             
-                            // Play button click sound
-                            player.playNotifySound(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
-                                                 net.minecraft.sounds.SoundSource.MASTER, 0.25f, 1.0f);
+                            // Play click sound
+                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
                             
-                            // Notify player
-                            player.displayClientMessage(net.minecraft.network.chat.Component.literal("§eRedstone Mode: §f" + modeText), true);
+                            // Mark the block entity as changed
+                            machine.setChanged();
                         }
                     }
                 } catch (Exception e) {
                     LOGGER.error("Error handling Structure Placer Machine redstone mode packet: {}", e.getMessage());
                 }
             });
+            
+
         } catch (Exception e) {
-            LOGGER.error("Could not send Structure Placer Machine redstone mode packet: {}", e.getMessage());
+            LOGGER.error("Could not send Structure Placer Machine redstone mode packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Sends a Structure Placer Machine Set Inventory packet to the server
+     * Mode: 0 = normal, 1 = shift+click, 2 = ctrl/alt+click
+     */
+    public static void sendStructurePlacerMachineSetInventoryPacket(BlockPos machinePos, int mode) {
+        // Simplified implementation - directly handle on the server side
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Server is null - cannot send Structure Placer Machine Set Inventory packet");
+                return;
+            }
+            
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel world = player.serverLevel();
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(machinePos);
+                        
+                        if (blockEntity instanceof StructurePlacerMachineBlockEntity machine) {
+                            
+                            // Execute the appropriate action based on mode
+                            switch (mode) {
+                                case net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_NORMAL -> {
+                                    machine.setInventoryFilters();
+                                    // Play a soft click sound
+                                    world.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                                  net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                                }
+                                case net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_SHIFT -> {
+                                    machine.clearAllFilters();
+                                    // Play a different sound for clearing
+                                    world.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                                  net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 0.8f);
+                                }
+                                case net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_CTRL -> {
+                                    machine.clearEmptyFilters();
+                                    // Play a third sound for partial clearing
+                                    world.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                                  net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 0.9f);
+                                }
+                            }
+                            
+                            machine.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error executing Set Inventory packet on server thread: {}", e.getMessage(), e);
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Structure Placer Machine Set Inventory packet: {}", e.getMessage(), e);
         }
     }
     
@@ -447,7 +497,7 @@ public class ModMessages {
                             try {
                                 sendAddBillboardPacket(player, finalPos, markerColor, duration);
                             } catch (Exception e) {
-                                LOGGER.error("Error creating marker: {}", e.getMessage());
+                                // Ignore marker creation errors
                             }
                         }
                     }

@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -34,40 +35,66 @@ import net.unfamily.iskautils.client.gui.StructurePlacerMachineMenu;
 import net.unfamily.iskautils.structure.StructureDefinition;
 import net.unfamily.iskautils.structure.StructureLoader;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Block Entity for the Structure Placer Machine
  */
 public class StructurePlacerMachineBlockEntity extends BlockEntity implements MenuProvider {
     
+    private static final Logger LOGGER = LoggerFactory.getLogger(StructurePlacerMachineBlockEntity.class);
+    
     private final ItemStackHandler itemHandler = new ItemStackHandler(27) {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
+        }
+        
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            // Get ghost filter from direct field access
+            if (slot >= 0 && slot < ghostFilters.size()) {
+                ItemStack ghostFilter = ghostFilters.get(slot);
+                
+                if (!ghostFilter.isEmpty()) {
+                    // Only allow items that match the ghost filter
+                    return ItemStack.isSameItemSameComponents(stack, ghostFilter);
+                }
+            }
+            // No filter, allow any item
+            return true;
         }
     };
     
     // Energy storage for the machine (10,000 FE capacity, 100 FE/t input)
     private final EnergyStorage energyStorage = new EnergyStorage(10000, 100, 0);
     
-    // Selected structure for this machine
-    private String selectedStructure = "";
-    
-    // Preview mode toggle
-    private boolean showPreview = false;
-    
-    // Structure rotation (0, 90, 180, 270 degrees)
-    private int rotation = 0;
-    
-    // Redstone mode (0 = NONE, 1 = LOW, 2 = HIGH, 3 = PULSE)
-    private int redstoneMode = 0;
-    
     // Auto-placement counter for NONE mode (places every 60 ticks)
     private int autoPulseTimer = 0;
     private static final int AUTO_PULSE_INTERVAL = 60; // 3 seconds (60 ticks)
+    
+    // Redstone state tracking for PULSE mode
+    private boolean previousRedstoneState = false;
+    private int pulseIgnoreTimer = 0; // Timer to ignore redstone after pulse placement
+    
+    // Player who placed this machine (for player-like placement)
+    private UUID placedByPlayer = null;
+    
+    // Flag to force sync on next tick (after world reload)
+    private boolean needsSync = false;
+    
+    // Structure data fields (direct storage)
+    private List<ItemStack> ghostFilters = new ArrayList<>();
+    private String selectedStructure = "";
+    private boolean showPreview = false;
+    private int rotation = 0;
+    private int redstoneMode = 0;
     
     /**
      * Enum for redstone modes
@@ -107,10 +134,17 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     
     public StructurePlacerMachineBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.STRUCTURE_PLACER_MACHINE_BE.get(), pos, blockState);
+        // Initialize ghost filters list with 27 empty slots
+        for (int i = 0; i < 27; i++) {
+            ghostFilters.add(ItemStack.EMPTY);
+        }
         
         // Debug: Start with some energy for testing the energy bar
         this.energyStorage.receiveEnergy(5000, false); // Start with 5000/10000 FE (50%)
     }
+    
+    // Data access methods
+    
     
     @Override
     public void setChanged() {
@@ -143,12 +177,39 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         super.saveAdditional(tag, registries);
         tag.put("inventory", itemHandler.serializeNBT(registries));
         tag.putInt("energy", energyStorage.getEnergyStored());
+        tag.putInt("autoPulseTimer", autoPulseTimer);
+        if (placedByPlayer != null) {
+            tag.putUUID("placedByPlayer", placedByPlayer);
+        }
+        
+        // Save redstone state tracking
+        tag.putBoolean("previousRedstoneState", previousRedstoneState);
+        tag.putInt("pulseIgnoreTimer", pulseIgnoreTimer);
+        
+        // Save structure data fields directly
         tag.putString("selectedStructure", selectedStructure);
         tag.putBoolean("showPreview", showPreview);
         tag.putInt("rotation", rotation);
         tag.putInt("redstoneMode", redstoneMode);
-        tag.putInt("autoPulseTimer", autoPulseTimer);
+        
+        // Save ghost filters manually to NBT using the same format as inventory
+        CompoundTag ghostTag = new CompoundTag();
+        int savedFilters = 0;
+        for (int i = 0; i < ghostFilters.size(); i++) {
+            ItemStack filter = ghostFilters.get(i);
+            if (!filter.isEmpty()) {
+                CompoundTag itemTag = new CompoundTag();
+                // Use ItemStack.saveOptional for proper serialization
+                ItemStack.OPTIONAL_CODEC.encodeStart(registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE), filter)
+                    .result().ifPresent(nbt -> itemTag.merge((CompoundTag) nbt));
+                ghostTag.put("slot" + i, itemTag);
+                savedFilters++;
+            }
+        }
+        tag.put("ghostFilters", ghostTag);
     }
+    
+
     
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
@@ -159,11 +220,43 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         if (tag.contains("energy")) {
             energyStorage.deserializeNBT(registries, tag.get("energy"));
         }
-        selectedStructure = tag.getString("selectedStructure");
-        showPreview = tag.getBoolean("showPreview");
-        rotation = tag.getInt("rotation");
-        redstoneMode = tag.getInt("redstoneMode");
         autoPulseTimer = tag.getInt("autoPulseTimer");
+        if (tag.hasUUID("placedByPlayer")) {
+            placedByPlayer = tag.getUUID("placedByPlayer");
+        }
+        
+        // Load redstone state tracking
+        previousRedstoneState = tag.getBoolean("previousRedstoneState");
+        pulseIgnoreTimer = tag.getInt("pulseIgnoreTimer");
+        
+        // Load structure data directly to fields
+        this.selectedStructure = tag.getString("selectedStructure");
+        this.showPreview = tag.getBoolean("showPreview");
+        this.rotation = tag.getInt("rotation");
+        this.redstoneMode = tag.getInt("redstoneMode");
+        
+        // Load ghost filters from NBT
+        this.ghostFilters.clear();
+        for (int i = 0; i < 27; i++) {
+            this.ghostFilters.add(ItemStack.EMPTY);
+        }
+        
+        if (tag.contains("ghostFilters")) {
+            CompoundTag ghostTag = tag.getCompound("ghostFilters");
+            int loadedFilters = 0;
+            for (int i = 0; i < 27; i++) {
+                String slotKey = "slot" + i;
+                if (ghostTag.contains(slotKey)) {
+                    CompoundTag itemTag = ghostTag.getCompound(slotKey);
+                    // Use ItemStack.OPTIONAL_CODEC for proper deserialization
+                    ItemStack filter = ItemStack.OPTIONAL_CODEC.parse(registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE), itemTag)
+                        .result().orElse(ItemStack.EMPTY);
+                    this.ghostFilters.set(i, filter);
+                    loadedFilters++;
+                }
+            }
+
+        }
     }
     
     /**
@@ -190,53 +283,196 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     public String getSelectedStructure() {
         return selectedStructure;
     }
-    
+
     public void setSelectedStructure(String selectedStructure) {
         this.selectedStructure = selectedStructure;
         setChanged();
     }
-    
+
     public boolean isShowPreview() {
         return showPreview;
     }
-    
+
     public void setShowPreview(boolean showPreview) {
         this.showPreview = showPreview;
         setChanged();
     }
-    
+
     public int getRotation() {
         return rotation;
     }
-    
+
     public void setRotation(int rotation) {
         this.rotation = rotation % 360; // Ensure rotation is always 0-359
         setChanged();
     }
-    
+
     public int getRedstoneMode() {
         return redstoneMode;
     }
-    
+
     public void setRedstoneMode(int redstoneMode) {
         this.redstoneMode = redstoneMode % 4; // Ensure mode is always 0-3
         setChanged();
     }
     
+    public UUID getPlacedByPlayer() {
+        return placedByPlayer;
+    }
+    
+    public void setPlacedByPlayer(UUID placedByPlayer) {
+        this.placedByPlayer = placedByPlayer;
+        setChanged();
+    }
+    
+    /**
+     * Set Inventory functionality - saves ghost filters based on current inventory contents
+     */
+    public void setInventoryFilters() {
+        for (int slot = 0; slot < itemHandler.getSlots(); slot++) {
+            ItemStack currentStack = itemHandler.getStackInSlot(slot);
+            if (!currentStack.isEmpty()) {
+                // Save a copy of the item as ghost filter (with count 1)
+                ItemStack filter = currentStack.copy();
+                filter.setCount(1); // Set count to 1 for ghost filter
+                ghostFilters.set(slot, filter);
+            }
+            // Empty slots remain empty (no filter)
+        }
+        setChanged();
+    }
+
+    /**
+     * Clear all ghost filters from all slots (Shift+Click behavior)
+     */
+    public void clearAllFilters() {
+        for (int i = 0; i < ghostFilters.size(); i++) {
+            ghostFilters.set(i, ItemStack.EMPTY);
+        }
+        setChanged();
+    }
+
+    /**
+     * Clear ghost filters only from slots that don't currently have the matching item (Ctrl+Click behavior)
+     */
+    public void clearEmptyFilters() {
+        for (int slot = 0; slot < ghostFilters.size(); slot++) {
+            ItemStack filter = ghostFilters.get(slot);
+            if (!filter.isEmpty()) {
+                ItemStack currentStack = itemHandler.getStackInSlot(slot);
+                
+                // If slot is empty or contains different item, clear the filter
+                if (currentStack.isEmpty() || !ItemStack.isSameItemSameComponents(currentStack, filter)) {
+                    ghostFilters.set(slot, ItemStack.EMPTY);
+                }
+            }
+        }
+        setChanged();
+    }
+
+    /**
+     * Get ghost filter for a specific slot (for GUI display)
+     */
+    public ItemStack getGhostFilter(int slot) {
+        if (slot >= 0 && slot < ghostFilters.size()) {
+            return ghostFilters.get(slot);
+        }
+        return ItemStack.EMPTY;
+    }
+
+    /**
+     * Check if a slot has a ghost filter
+     */
+    public boolean hasGhostFilter(int slot) {
+        if (slot >= 0 && slot < ghostFilters.size()) {
+            return !ghostFilters.get(slot).isEmpty();
+        }
+        return false;
+    }
+    
     // Static tick method for server-side updates
     public static void tick(Level level, BlockPos pos, BlockState state, StructurePlacerMachineBlockEntity blockEntity) {
-        if (level.isClientSide()) return;
+        if (level.isClientSide()) {
+            return; // Only run on server side
+        }
         
-        // Auto-placement logic for NONE mode
-        if (blockEntity.redstoneMode == RedstoneMode.NONE.getValue()) {
-            blockEntity.autoPulseTimer++;
-            if (blockEntity.autoPulseTimer >= AUTO_PULSE_INTERVAL) {
-                blockEntity.autoPulseTimer = 0; // Reset timer
-                blockEntity.attemptAutoPlacement(level, pos);
+        // Force sync to client if needed (after world reload)
+        if (blockEntity.needsSync) {
+            blockEntity.needsSync = false;
+            level.sendBlockUpdated(pos, state, state, 3);
+        }
+        
+        // Get current redstone power level
+        int redstonePower = level.getBestNeighborSignal(pos);
+        boolean hasRedstoneSignal = redstonePower > 0;
+        
+        // Auto-placement logic based on redstone mode
+        RedstoneMode mode = RedstoneMode.fromValue(blockEntity.getRedstoneMode());
+        boolean shouldPlace = false;
+        
+        switch (mode) {
+            case NONE -> {
+                // Mode 0: Always active, ignore redstone
+                blockEntity.autoPulseTimer++;
+                if (blockEntity.autoPulseTimer >= AUTO_PULSE_INTERVAL) {
+                    blockEntity.autoPulseTimer = 0; // Reset timer
+                    shouldPlace = true;
+                }
             }
-        } else {
-            // Reset timer if not in NONE mode
-            blockEntity.autoPulseTimer = 0;
+            case LOW -> {
+                // Mode 1: Only when redstone is OFF (low signal)
+                if (!hasRedstoneSignal) {
+                    blockEntity.autoPulseTimer++;
+                    if (blockEntity.autoPulseTimer >= AUTO_PULSE_INTERVAL) {
+                        blockEntity.autoPulseTimer = 0; // Reset timer
+                        shouldPlace = true;
+                    }
+                } else {
+                    // Reset timer when redstone is on
+                    blockEntity.autoPulseTimer = 0;
+                }
+            }
+            case HIGH -> {
+                // Mode 2: Only when redstone is ON (high signal)
+                if (hasRedstoneSignal) {
+                    blockEntity.autoPulseTimer++;
+                    if (blockEntity.autoPulseTimer >= AUTO_PULSE_INTERVAL) {
+                        blockEntity.autoPulseTimer = 0; // Reset timer
+                        shouldPlace = true;
+                    }
+                } else {
+                    // Reset timer when redstone is off
+                    blockEntity.autoPulseTimer = 0;
+                }
+            }
+            case PULSE -> {
+                // Mode 3: Only on redstone pulse (low to high transition)
+                // Decrement ignore timer if active
+                if (blockEntity.pulseIgnoreTimer > 0) {
+                    blockEntity.pulseIgnoreTimer--;
+                }
+                
+                // Check for low-to-high transition only if not ignoring pulses
+                if (blockEntity.pulseIgnoreTimer == 0) {
+                    if (hasRedstoneSignal && !blockEntity.previousRedstoneState) {
+                        // Detected rising edge (pulse)
+                        shouldPlace = true;
+                        // Start ignore timer for 60 ticks
+                        blockEntity.pulseIgnoreTimer = AUTO_PULSE_INTERVAL;
+                    }
+                }
+                
+                // Update previous state
+                blockEntity.previousRedstoneState = hasRedstoneSignal;
+                
+                // Always reset auto timer in pulse mode (we don't use it)
+                blockEntity.autoPulseTimer = 0;
+            }
+        }
+        
+        // Attempt placement if conditions are met
+        if (shouldPlace) {
+            blockEntity.attemptAutoPlacement(level, pos);
         }
         
         // For testing: slowly drain energy (1 FE per second)
@@ -246,14 +482,6 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 blockEntity.setChanged();
             }
         }
-    }
-    
-    /**
-     * Debug method to add energy for testing
-     */
-    public void addEnergyForTesting(int amount) {
-        energyStorage.receiveEnergy(amount, false);
-        setChanged();
     }
     
     // MenuProvider implementation
@@ -275,6 +503,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         if (level.isClientSide()) return;
         
         // Check if we have a selected structure
+        String selectedStructure = getSelectedStructure();
         if (selectedStructure == null || selectedStructure.isEmpty()) {
             return;
         }
@@ -287,14 +516,14 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         
         // Calculate structure positions (place above machine)
         BlockPos placementPos = machinePos.above();
-        Map<BlockPos, String> blockPositions = calculateStructurePositions(placementPos, structure, rotation);
+        Map<BlockPos, String> blockPositions = calculateStructurePositions(placementPos, structure, getRotation());
         Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
         
         if (blockPositions.isEmpty() || key == null) {
             return;
         }
         
-        // Try to allocate blocks from inventory
+        // Try to allocate blocks from inventory (simulate first)
         Map<BlockPos, AllocatedBlock> blockAllocation = new HashMap<>();
         for (Map.Entry<BlockPos, String> entry : blockPositions.entrySet()) {
             BlockPos blockPos = entry.getKey();
@@ -302,28 +531,39 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             List<StructureDefinition.BlockDefinition> blockDefs = key.get(character);
             
             if (blockDefs != null && !blockDefs.isEmpty()) {
-                AllocatedBlock allocated = allocateBlockFromInventory(blockDefs);
-                if (allocated != null) {
-                    blockAllocation.put(blockPos, allocated);
+                // Check if position can be placed first
+                BlockState currentState = level.getBlockState(blockPos);
+                if (currentState.isAir() || currentState.canBeReplaced()) {
+                    // Only simulate allocation if position is actually placeable
+                    AllocatedBlock simulated = simulateAllocateBlockFromInventory(blockDefs);
+                    if (simulated != null) {
+                        blockAllocation.put(blockPos, simulated);
+                    }
                 }
             }
         }
         
         // Place allocated blocks with forced placement logic
-        for (Map.Entry<BlockPos, AllocatedBlock> entry : blockAllocation.entrySet()) {
-            BlockPos blockPos = entry.getKey();
-            AllocatedBlock allocated = entry.getValue();
-            
-            // Check if position is occupied - if yes, skip but don't consume block
-            BlockState currentState = level.getBlockState(blockPos);
-            if (!currentState.isAir() && !currentState.canBeReplaced()) {
-                // Return block to inventory since we couldn't place it
-                restoreBlockToInventory(allocated);
-                continue;
+        if (structure.isSlower()) {
+            // Use block-by-block placement with delays (like StructureMonouseItem)
+            placeStructureWithBlockDelay((ServerLevel) level, blockAllocation, structure);
+        } else {
+            // Place all blocks immediately
+            for (Map.Entry<BlockPos, AllocatedBlock> entry : blockAllocation.entrySet()) {
+                BlockPos blockPos = entry.getKey();
+                AllocatedBlock simulated = entry.getValue();
+                
+                // Check if position is still available and consume the item
+                BlockState currentState = level.getBlockState(blockPos);
+                if (currentState.isAir() || currentState.canBeReplaced()) {
+                    // Actually consume the item now
+                    if (consumeAllocatedBlock(simulated)) {
+                        // Place the block
+                        placeSingleBlock((ServerLevel) level, blockPos, simulated, structure);
+                    }
+                }
+                // Note: if we can't place or consume, we do nothing (no need to restore since we never consumed)
             }
-            
-            // Place the block
-            placeSingleBlock((ServerLevel) level, blockPos, allocated, structure);
         }
     }
     
@@ -466,24 +706,67 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     }
     
     /**
-     * Returns a block to inventory (when placement fails)
+     * Simulates allocating a block from inventory without actually consuming it
      */
-    private void restoreBlockToInventory(AllocatedBlock allocated) {
-        // Try to return to original slot first
-        ItemStack remainder = itemHandler.insertItem(allocated.getInventorySlot(), allocated.getOriginalStack(), false);
-        
-        // If original slot is full, try other slots
-        if (!remainder.isEmpty()) {
-            for (int slot = 0; slot < itemHandler.getSlots(); slot++) {
-                remainder = itemHandler.insertItem(slot, remainder, false);
-                if (remainder.isEmpty()) break;
+    private AllocatedBlock simulateAllocateBlockFromInventory(List<StructureDefinition.BlockDefinition> blockDefinitions) {
+        for (int slot = 0; slot < itemHandler.getSlots(); slot++) {
+            ItemStack stack = itemHandler.getStackInSlot(slot);
+            
+            if (!stack.isEmpty()) {
+                // Get block from item if possible
+                Block block = null;
+                String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+                
+                if (stack.getItem() instanceof BlockItem blockItem) {
+                    block = blockItem.getBlock();
+                } else {
+                    // Try to find a matching block for items that are not BlockItem
+                    try {
+                        ResourceLocation itemLocation = ResourceLocation.parse(itemId);
+                        ResourceLocation blockLocation = 
+                            ResourceLocation.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
+                        
+                        if (BuiltInRegistries.BLOCK.containsKey(blockLocation)) {
+                            block = BuiltInRegistries.BLOCK.get(blockLocation);
+                        }
+                    } catch (Exception e) {
+                        // Ignore if unable to find matching block
+                    }
+                }
+                
+                if (block != null) {
+                    String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
+                    
+                    // Check if this block matches any of the required block definitions
+                    for (StructureDefinition.BlockDefinition blockDef : blockDefinitions) {
+                        if (blockDef.getBlock().equals(blockId)) {
+                            // SIMULATE extraction (don't actually extract)
+                            ItemStack simulated = itemHandler.extractItem(slot, 1, true); // true = simulate only
+                            if (!simulated.isEmpty()) {
+                                // Create simulated allocation with original stack
+                                return new AllocatedBlock(blockDef, slot, simulated.copy());
+                            }
+                        }
+                    }
+                }
             }
         }
         
-        // If still can't fit, drop in world (shouldn't happen normally)
-        if (!remainder.isEmpty() && level != null) {
-            Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), remainder);
+        return null; // No suitable block found
+    }
+    
+    /**
+     * Actually consumes an item from inventory for an already simulated allocation
+     */
+    private boolean consumeAllocatedBlock(AllocatedBlock simulated) {
+        // Verify the item is still available in the expected slot
+        ItemStack slotStack = itemHandler.getStackInSlot(simulated.getInventorySlot());
+        if (!slotStack.isEmpty() && ItemStack.isSameItemSameComponents(slotStack, simulated.getOriginalStack())) {
+            // Actually extract the item
+            ItemStack extracted = itemHandler.extractItem(simulated.getInventorySlot(), 1, false);
+            return !extracted.isEmpty();
         }
+        return false; // Item no longer available
     }
     
     /**
@@ -510,14 +793,23 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 }
             }
             
-            // Check if we should place as player (fake player placement)
+            // Check if we should place as player
             if (structure.isPlaceAsPlayer()) {
+                // Place as if done by player - try to find the real player who placed this machine
                 try {
                     Item blockItem = block.asItem();
                     if (blockItem != null && blockItem != Items.AIR) {
-                        // Create a fake UseOnContext - we don't have a real player, so use null
+                        ItemStack blockStack = new ItemStack(blockItem);
+                        
+                        // Try to get the real player who placed this machine
+                        Player realPlayer = null;
+                        if (placedByPlayer != null) {
+                            realPlayer = level.getPlayerByUUID(placedByPlayer);
+                        }
+                        
+                        // Create UseOnContext with real player if available, null otherwise
                         var context = new UseOnContext(
-                            null, // No player available 
+                            realPlayer, // Use real player if available
                             InteractionHand.MAIN_HAND, 
                             new BlockHitResult(
                                 Vec3.atCenterOf(blockPos), 
@@ -527,13 +819,9 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                             )
                         );
                         
-                        // Try to use BlockItem.place
+                        // Try to use BlockItem.place like the items do
                         if (blockItem instanceof BlockItem blockItemInstance) {
-                            // Create placement context without player
-                            BlockPlaceContext placeContext = new BlockPlaceContext(level, null, InteractionHand.MAIN_HAND, 
-                                allocated.getOriginalStack(), new BlockHitResult(Vec3.atCenterOf(blockPos), 
-                                net.minecraft.core.Direction.UP, blockPos, false));
-                            
+                            BlockPlaceContext placeContext = new BlockPlaceContext(context);
                             blockItemInstance.place(placeContext);
                         } else {
                             // Fallback to normal placement
@@ -579,5 +867,59 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             // Ignore conversion errors
         }
         return state;
+    }
+    
+    /**
+     * Places the structure with 5 tick delay between each individual block (when slower is enabled)
+     */
+    private void placeStructureWithBlockDelay(ServerLevel level, Map<BlockPos, AllocatedBlock> blockAllocation, StructureDefinition structure) {
+        java.util.List<Map.Entry<BlockPos, AllocatedBlock>> blockList = new java.util.ArrayList<>(blockAllocation.entrySet());
+        
+        // Place first block immediately
+        if (!blockList.isEmpty()) {
+            Map.Entry<BlockPos, AllocatedBlock> firstBlock = blockList.get(0);
+            BlockPos blockPos = firstBlock.getKey();
+            AllocatedBlock simulated = firstBlock.getValue();
+            
+            // Check if position is still available and consume the item
+            BlockState currentState = level.getBlockState(blockPos);
+            if (currentState.isAir() || currentState.canBeReplaced()) {
+                // Actually consume the item now
+                if (consumeAllocatedBlock(simulated)) {
+                    // Place the block
+                    placeSingleBlock(level, blockPos, simulated, structure);
+                }
+            }
+            
+            // Schedule remaining blocks with 5 tick delay between each
+            for (int i = 1; i < blockList.size(); i++) {
+                final Map.Entry<BlockPos, AllocatedBlock> blockEntry = blockList.get(i);
+                final int delayTicks = i * 5; // 5 ticks between each block
+                
+                // Schedule block placement after delay
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(delayTicks * 50); // Convert ticks to milliseconds
+                        level.getServer().execute(() -> {
+                            BlockPos pos = blockEntry.getKey();
+                            AllocatedBlock simulatedBlock = blockEntry.getValue();
+                            
+                            // Check if position is still available and consume the item
+                            BlockState currentBlockState = level.getBlockState(pos);
+                            if (currentBlockState.isAir() || currentBlockState.canBeReplaced()) {
+                                // Actually consume the item now
+                                if (consumeAllocatedBlock(simulatedBlock)) {
+                                    // Place the block
+                                    placeSingleBlock(level, pos, simulatedBlock, structure);
+                                }
+                            }
+                            // Note: if we can't place or consume, we do nothing (no need to restore since we never consumed)
+                        });
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
+            }
+        }
     }
 } 

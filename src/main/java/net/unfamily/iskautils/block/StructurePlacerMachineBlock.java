@@ -70,6 +70,19 @@ public class StructurePlacerMachineBlock extends BaseEntityBlock {
         return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
     
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        
+        // Save the player who placed this machine for player-like placement
+        if (!level.isClientSide() && placer instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
+                machineEntity.setPlacedByPlayer(serverPlayer.getUUID());
+            }
+        }
+    }
+    
     // Override setPlacedBy if needed for custom naming functionality
     
     @Override
@@ -77,13 +90,6 @@ public class StructurePlacerMachineBlock extends BaseEntityBlock {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
-                // If player is sneaking, add energy for testing
-                if (player.isShiftKeyDown()) {
-                    machineEntity.addEnergyForTesting(1000); // Add 1000 FE
-                    player.sendSystemMessage(Component.literal("Added 1000 FE for testing"));
-                    return InteractionResult.CONSUME;
-                }
-                
                 serverPlayer.openMenu(machineEntity);
                 return InteractionResult.CONSUME;
             }

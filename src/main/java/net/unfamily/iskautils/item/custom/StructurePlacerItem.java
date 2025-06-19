@@ -1363,6 +1363,7 @@ public class StructurePlacerItem extends Item {
                 tooltip.add(Component.literal("§cInvalid structure: " + structureId));
             }
         } else {
+            tooltip.add(Component.literal(""));
             tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.no_selection"));
         }
         

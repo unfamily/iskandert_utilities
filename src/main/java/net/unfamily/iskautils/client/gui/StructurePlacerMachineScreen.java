@@ -3,6 +3,7 @@ package net.unfamily.iskautils.client.gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -11,6 +12,7 @@ import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 // import net.unfamily.iskautils.client.gui.StructurePlacerScreen;
 // import net.neoforged.neoforge.network.PacketDistributor;
 // import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Screen for the Structure Placer Machine GUI
@@ -152,7 +154,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         
         // Right side: Redstone Mode Button (opposite to energy bar, between Show and Set Inventory)
         // Position it at the right edge, similar to energy bar positioning on the left
-        int rightMargin = ((20 - REDSTONE_BUTTON_SIZE) / 2); // Same margin logic as energy bar
+        int rightMargin = ((20 - REDSTONE_BUTTON_SIZE) / 2) + 10; // Same margin logic as energy bar + 10px inward
         this.redstoneModeButtonX = this.leftPos + this.imageWidth - rightMargin - REDSTONE_BUTTON_SIZE;
         // Position Y between Show (topRowY=25) and Set Inventory (bottomRowY=70)
         // Show button bottom: 25+20=45, Set Inventory top: 70
@@ -228,12 +230,117 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     }
     
     private void onSetInventoryPressed() {
-        // Implementation for set inventory button pressed
+        System.out.println("=== onSetInventoryPressed() CALLED ===");
+        
+        // Get the machine position from the menu (synced from server)
+        BlockPos machinePos = this.menu.getSyncedBlockPos();
+        System.out.println("DEBUG: getSyncedBlockPos() returned: " + machinePos);
+        
+        if (!machinePos.equals(BlockPos.ZERO)) {
+            // Determine the mode based on modifier keys
+            int mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_NORMAL;
+            
+            if (hasShiftDown()) {
+                mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_SHIFT;
+            } else if (hasControlDown() || hasAltDown()) {
+                // Support both Ctrl and Alt/AltGr for the same functionality
+                mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_CTRL;
+            }
+            
+            // Use the same approach as all other buttons
+            net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineSetInventoryPacket(machinePos, mode);
+            System.out.println("DEBUG: Sent packet mode " + mode + " via ModMessages like other buttons");
+        } else {
+            System.out.println("DEBUG: Position is ZERO, trying fallback...");
+            
+            // Debug fallback process step by step
+            if (this.minecraft != null) {
+                System.out.println("DEBUG: Minecraft instance OK");
+                if (this.minecraft.level != null) {
+                    System.out.println("DEBUG: Level instance OK");
+                    
+                    StructurePlacerMachineBlockEntity blockEntity = this.menu.getBlockEntityFromLevel(this.minecraft.level);
+                    System.out.println("DEBUG: getBlockEntityFromLevel returned: " + (blockEntity != null ? "FOUND" : "NULL"));
+                    
+                    if (blockEntity != null) {
+                        BlockPos actualPos = blockEntity.getBlockPos();
+                        System.out.println("DEBUG: Found block entity at: " + actualPos);
+                        
+                        // Determine mode again for fallback
+                        int mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_NORMAL;
+                        if (hasShiftDown()) {
+                            mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_SHIFT;
+                        } else if (hasControlDown() || hasAltDown()) {
+                            mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_CTRL;
+                        }
+                        
+                        net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineSetInventoryPacket(actualPos, mode);
+                        System.out.println("DEBUG: Sent packet mode " + mode + " via fallback position: " + actualPos);
+                    } else {
+                        System.out.println("DEBUG: No block entity found nearby");
+                        
+                        // Debug: Try manual search around player
+                        if (this.minecraft.player != null) {
+                            BlockPos playerPos = this.minecraft.player.blockPosition();
+                            System.out.println("DEBUG: Player position: " + playerPos);
+                            System.out.println("DEBUG: Searching manually in 8x8x8 area...");
+                            
+                            boolean found = false;
+                            for (int x = -4; x <= 4 && !found; x++) {
+                                for (int y = -4; y <= 4 && !found; y++) {
+                                    for (int z = -4; z <= 4 && !found; z++) {
+                                        BlockPos searchPos = playerPos.offset(x, y, z);
+                                        net.minecraft.world.level.block.entity.BlockEntity be = this.minecraft.level.getBlockEntity(searchPos);
+                                        if (be instanceof StructurePlacerMachineBlockEntity machineEntity) {
+                                            System.out.println("DEBUG: MANUAL SEARCH found machine at: " + searchPos);
+                                            found = true;
+                                        }
+                                    }
+                                }
+                            }
+                            if (!found) {
+                                System.out.println("DEBUG: MANUAL SEARCH found no machines in 8x8x8 area");
+                            }
+                        }
+                    }
+                } else {
+                    System.out.println("DEBUG: Level is NULL");
+                }
+            } else {
+                System.out.println("DEBUG: Minecraft is NULL");
+            }
+        }
     }
     
     private void onRedstoneModePressed() {
-        // Get the machine position from the menu (synced from server)
+        // Try multiple methods to get the machine position
         BlockPos machinePos = this.menu.getSyncedBlockPos();
+        
+        // If getSyncedBlockPos returns ZERO, try getBlockPos
+        if (machinePos.equals(BlockPos.ZERO)) {
+            machinePos = this.menu.getBlockPos();
+        }
+        
+        // If still ZERO, try to find the machine by searching nearby
+        if (machinePos.equals(BlockPos.ZERO) && this.minecraft != null && this.minecraft.level != null && this.minecraft.player != null) {
+            BlockPos playerPos = this.minecraft.player.blockPosition();
+            
+            // Search in a 16x16x16 area around player for the machine
+            for (int x = -8; x <= 8; x++) {
+                for (int y = -8; y <= 8; y++) {
+                    for (int z = -8; z <= 8; z++) {
+                        BlockPos searchPos = playerPos.offset(x, y, z);
+                        if (this.minecraft.level.getBlockEntity(searchPos) instanceof net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity) {
+                            machinePos = searchPos;
+                            break;
+                        }
+                    }
+                    if (!machinePos.equals(BlockPos.ZERO)) break;
+                }
+                if (!machinePos.equals(BlockPos.ZERO)) break;
+            }
+        }
+        
         if (!machinePos.equals(BlockPos.ZERO)) {
             // Send redstone mode packet to cycle the mode
             net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineRedstoneModePacket(machinePos);
@@ -373,14 +480,59 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // Render the background
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         
+        // Render ghost items on top of empty slots
+        renderGhostItems(guiGraphics);
+        
         // Render energy bar tooltip
         renderEnergyTooltip(guiGraphics, mouseX, mouseY);
         
         // Render redstone mode button tooltip
         renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
         
+        // Render Set Inventory button tooltip
+        renderSetInventoryTooltip(guiGraphics, mouseX, mouseY);
+        
         // Render item tooltips
         this.renderTooltip(guiGraphics, mouseX, mouseY);
+    }
+    
+    /**
+     * Renders ghost items (semi-transparent) in slots that have filters but are empty
+     */
+    private void renderGhostItems(GuiGraphics guiGraphics) {
+        for (int slot = 0; slot < 27; slot++) { // Only machine slots (first 27)
+            if (this.menu.hasGhostFilter(slot)) {
+                // Get the actual slot to check if it's empty
+                net.minecraft.world.inventory.Slot guiSlot = this.menu.getSlot(slot);
+                if (guiSlot.getItem().isEmpty()) {
+                    // Slot is empty but has a ghost filter - render the ghost item
+                    ItemStack ghostFilter = this.menu.getGhostFilter(slot);
+                    if (!ghostFilter.isEmpty()) {
+                        renderGhostItem(guiGraphics, ghostFilter, guiSlot.x, guiSlot.y);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Renders a single ghost item (semi-transparent) at the specified position
+     */
+    private void renderGhostItem(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y) {
+        // Save current matrix state
+        guiGraphics.pose().pushPose();
+        
+        // Translate to the slot position (relative to GUI)
+        guiGraphics.pose().translate(this.leftPos + x, this.topPos + y, 0);
+        
+        // Render the item first
+        guiGraphics.renderItem(itemStack, 0, 0);
+        
+        // Then apply a semi-transparent dark overlay to create ghost effect
+        guiGraphics.fill(0, 0, 16, 16, 0x80000000); // 50% transparent black overlay
+        
+        // Restore matrix state
+        guiGraphics.pose().popPose();
     }
     
     private void renderEnergyTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
@@ -396,7 +548,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             int energy = this.menu.getEnergyStored();
             int maxEnergy = this.menu.getMaxEnergyStored();
             
-            Component tooltip = Component.literal(String.format("%,d / %,d FE", energy, maxEnergy));
+            Component tooltip = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy));
             guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
         }
     }
@@ -419,11 +571,21 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                 default -> Component.literal("Unknown mode");
             };
             
-            // Calculate tooltip position
-            int tooltipX = this.redstoneModeButtonX - this.font.width(tooltip.getString()) - 10;
-            int tooltipY = this.redstoneModeButtonY - 20;
+            // Use the standard tooltip rendering system (with background and border)
+            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+        }
+    }
+    
+    private void renderSetInventoryTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // Check if mouse is over the Set Inventory button
+        if (this.setInventoryButton != null && this.setInventoryButton.isHovered()) {
+            java.util.List<Component> tooltipLines = new java.util.ArrayList<>();
+            tooltipLines.add(Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line1"));
+            tooltipLines.add(Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line2"));
+            tooltipLines.add(Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line3"));
             
-            guiGraphics.drawString(this.font, tooltip, tooltipX, tooltipY, 0xFFFFFF, false);
+            // Use the correct method for multi-line tooltips
+            guiGraphics.renderComponentTooltip(this.font, tooltipLines, mouseX, mouseY);
         }
     }
     
