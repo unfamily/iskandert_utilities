@@ -1,6 +1,10 @@
 package net.unfamily.iskautils.structure;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.nbt.CompoundTag;
@@ -150,5 +154,124 @@ public class StructureDefinition {
         
         // For now always returns true, complete implementation will be added later
         return true;
+    }
+    
+    /**
+     * Serializza questa definizione di struttura in formato JSON
+     * @return Una stringa JSON rappresentante questa struttura
+     */
+    public String toJson() {
+        Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+        
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "iska_utils:structure");
+        
+        JsonArray structureArray = new JsonArray();
+        JsonObject structureObj = new JsonObject();
+        
+        // Aggiungi i campi base
+        if (id != null) structureObj.addProperty("id", id);
+        if (name != null) structureObj.addProperty("name", name);
+        if (description != null) structureObj.addProperty("description", description);
+        if (canForce) structureObj.addProperty("can_force", canForce);
+        if (slower) structureObj.addProperty("slower", slower);
+        if (placeAsPlayer) structureObj.addProperty("place_like_player", placeAsPlayer);
+        if (overwritable) structureObj.addProperty("overwritable", overwritable);
+        
+        // Aggiungi can_replace se presente
+        if (canReplace != null && !canReplace.isEmpty()) {
+            JsonArray canReplaceArray = new JsonArray();
+            for (String replace : canReplace) {
+                canReplaceArray.add(replace);
+            }
+            structureObj.add("can_replace", canReplaceArray);
+        }
+        
+        // Aggiungi stages se presente
+        if (stages != null && !stages.isEmpty()) {
+            JsonArray stagesArray = new JsonArray();
+            for (String stage : stages) {
+                stagesArray.add(stage);
+            }
+            structureObj.add("stages", stagesArray);
+        }
+        
+        // Aggiungi icon se presente
+        if (icon != null && icon.getItem() != null) {
+            JsonObject iconObj = new JsonObject();
+            iconObj.addProperty("type", "minecraft:item");
+            iconObj.addProperty("item", icon.getItem());
+            if (icon.getCount() != 1) {
+                iconObj.addProperty("count", icon.getCount());
+            }
+            // NBT non è facilmente serializzabile, lo saltiamo per ora
+            structureObj.add("icon", iconObj);
+        }
+        
+        // Aggiungi pattern se presente
+        if (pattern != null) {
+            JsonArray patternArray = new JsonArray();
+            for (String[][][] yLayer : pattern) {
+                JsonArray yArray = new JsonArray();
+                for (String[][] xLayer : yLayer) {
+                    JsonArray xArray = new JsonArray();
+                    for (String[] zLayer : xLayer) {
+                        JsonArray zArray = new JsonArray();
+                        for (String character : zLayer) {
+                            zArray.add(character != null ? character : " ");
+                        }
+                        xArray.add(zArray);
+                    }
+                    yArray.add(xArray);
+                }
+                patternArray.add(yArray);
+            }
+            structureObj.add("pattern", patternArray);
+        }
+        
+        // Aggiungi key se presente
+        if (key != null && !key.isEmpty()) {
+            JsonObject keyObj = new JsonObject();
+            for (Map.Entry<String, List<BlockDefinition>> entry : key.entrySet()) {
+                String keyChar = entry.getKey();
+                List<BlockDefinition> blockDefs = entry.getValue();
+                
+                if (!blockDefs.isEmpty()) {
+                    BlockDefinition firstBlock = blockDefs.get(0);
+                    JsonObject charObj = new JsonObject();
+                    
+                    if (firstBlock.getDisplay() != null) {
+                        charObj.addProperty("display", firstBlock.getDisplay());
+                    }
+                    
+                    JsonArray alternativesArray = new JsonArray();
+                    for (BlockDefinition blockDef : blockDefs) {
+                        JsonObject altObj = new JsonObject();
+                        if (blockDef.getBlock() != null) {
+                            altObj.addProperty("block", blockDef.getBlock());
+                        }
+                        if (blockDef.getProperties() != null && !blockDef.getProperties().isEmpty()) {
+                            JsonObject propsObj = new JsonObject();
+                            for (Map.Entry<String, String> prop : blockDef.getProperties().entrySet()) {
+                                propsObj.addProperty(prop.getKey(), prop.getValue());
+                            }
+                            altObj.add("properties", propsObj);
+                        }
+                        if (blockDef.isIgnorePlacement()) {
+                            altObj.addProperty("ignore_placement", true);
+                        }
+                        alternativesArray.add(altObj);
+                    }
+                    charObj.add("alternatives", alternativesArray);
+                    keyObj.add(keyChar, charObj);
+                }
+            }
+            structureObj.add("key", keyObj);
+        }
+        
+        structureArray.add(structureObj);
+        json.add("structure", structureArray);
+        
+        return gson.toJson(json);
     }
 } 

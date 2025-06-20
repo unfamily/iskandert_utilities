@@ -18,6 +18,7 @@ import net.unfamily.iskautils.client.MarkRenderer;
 import net.unfamily.iskautils.network.packet.VectorCharmC2SPacket;
 import net.unfamily.iskautils.network.packet.PortableDislocatorC2SPacket;
 import net.unfamily.iskautils.structure.StructureDefinition;
+import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.minecraft.network.FriendlyByteBuf;
@@ -661,6 +662,46 @@ public class ModMessages {
             
         } catch (Exception e) {
             LOGGER.error("Could not send Structure Placer Machine save packet: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Invia le strutture del server al client per sincronizzazione
+     * Questo permette al client di vedere tutte le strutture disponibili sul server
+     */
+    public static void sendStructureSyncPacket(ServerPlayer player) {
+        try {
+            // Controlla se siamo in modalità singleplayer
+            boolean isSingleplayer = player.getServer().isSingleplayer();
+            
+            if (isSingleplayer) {
+                LOGGER.debug("Modalità singleplayer detected, skipping structure sync for player {}", 
+                           player.getName().getString());
+                return; // In singleplayer, il client ha già le sue strutture locali
+            }
+            
+            // Ottieni SOLO le strutture da sincronizzare (MAI le strutture client del server)
+            Map<String, StructureDefinition> serverStructures = StructureLoader.getStructuresForSync();
+            
+            if (serverStructures.isEmpty()) {
+                LOGGER.debug("Nessuna struttura da sincronizzare per il player {}", player.getName().getString());
+                return;
+            }
+            
+            LOGGER.info("Sincronizzando {} strutture al client per player {} (dedicated server)", 
+                       serverStructures.size(), player.getName().getString());
+            
+            // Crea il pacchetto di sincronizzazione con il flag del server
+            net.unfamily.iskautils.network.packet.StructureSyncS2CPacket packet = 
+                net.unfamily.iskautils.network.packet.StructureSyncS2CPacket.create(serverStructures, net.unfamily.iskautils.Config.acceptClientStructure);
+            
+            // TODO: In un server dedicato, qui invieresti il vero pacchetto al client
+            // Per ora logga solo che la sincronizzazione è necessaria
+            LOGGER.info("TODO: Inviare pacchetto di sincronizzazione strutture al client {} su server dedicato", 
+                       player.getName().getString());
+            
+        } catch (Exception e) {
+            LOGGER.error("Errore nell'invio del pacchetto di sincronizzazione strutture: {}", e.getMessage());
         }
     }
 } 

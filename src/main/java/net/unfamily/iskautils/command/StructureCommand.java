@@ -106,9 +106,10 @@ public class StructureCommand {
     private static int listStructures(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         
-        var structures = StructureLoader.getAllStructures();
+        var allStructures = StructureLoader.getAllStructures();
+        var clientStructures = StructureLoader.getClientStructures();
         
-        if (structures.isEmpty()) {
+        if (allStructures.isEmpty()) {
             source.sendSuccess(() -> Component.literal("§eNo structures available."), false);
             source.sendSuccess(() -> Component.literal("§7Use §a/iska_utils_structure reload §7to reload structures."), false);
             return 0;
@@ -116,9 +117,24 @@ public class StructureCommand {
         
         source.sendSuccess(() -> Component.literal("§6===== Available Structures ====="), false);
         
-        for (StructureDefinition structure : structures.values()) {
+        for (StructureDefinition structure : allStructures.values()) {
             String name = structure.getName() != null ? structure.getName() : structure.getId();
-            Component message = Component.literal("§a" + structure.getId() + " §7- §f" + name);
+            String structureId = structure.getId();
+            
+            // Indica se è una struttura client e di quale giocatore
+            String prefix = "§a";
+            if (structureId.startsWith("client_")) {
+                prefix = "§b"; // Blu per le strutture client
+                
+                // Estrai il nome del giocatore dall'ID se possibile
+                String[] parts = structureId.split("_", 3); // ["client", "nickname", "resto"]
+                if (parts.length >= 2) {
+                    String playerName = parts[1];
+                    name = name + " §7(Player: §b" + playerName + "§7)";
+                }
+            }
+            
+            Component message = Component.literal(prefix + structureId + " §7- §f" + name);
             
             if (structure.getDescription() != null && !structure.getDescription().isEmpty()) {
                 String desc = structure.getDescription();
@@ -129,8 +145,14 @@ public class StructureCommand {
             source.sendSuccess(() -> finalMessage, false);
         }
         
-        source.sendSuccess(() -> Component.literal("§7Total: §a" + structures.size() + " §7structures"), false);
-        return structures.size();
+        int regularCount = allStructures.size() - clientStructures.size();
+        source.sendSuccess(() -> Component.literal("§7Total: §a" + regularCount + " §7regular + §b" + clientStructures.size() + " §7client = §f" + allStructures.size() + " §7structures"), false);
+        
+        if (clientStructures.size() > 0) {
+            source.sendSuccess(() -> Component.literal("§7§oClient structures are shown in §bblue§7§o"), false);
+        }
+        
+        return allStructures.size();
     }
 
     /**
@@ -141,11 +163,53 @@ public class StructureCommand {
         
         try {
             int oldCount = StructureLoader.getAllStructures().size();
-            StructureLoader.reloadAllDefinitions();
+            
+            // Determina se siamo in singleplayer o multiplayer
+            boolean isSingleplayer = source.getServer() != null && source.getServer().isSingleplayer();
+            
+            // Ottieni il giocatore se disponibile (per caricare le sue strutture client)
+            ServerPlayer commandPlayer = null;
+            try {
+                commandPlayer = source.getPlayerOrException();
+            } catch (CommandSyntaxException e) {
+                // Comando eseguito dalla console
+                LOGGER.debug("Command executed from console, no specific player available");
+            }
+            
+            if (isSingleplayer) {
+                // Singleplayer: forza sempre il caricamento delle strutture client
+                LOGGER.info("Reloading structures in singleplayer mode - including client structures");
+                StructureLoader.reloadAllDefinitions(true, commandPlayer);
+                source.sendSuccess(() -> Component.literal("§7Singleplayer mode: Client structures included"), false);
+            } else {
+                // Multiplayer: usa il flag di configurazione del server
+                LOGGER.info("Reloading structures in multiplayer mode - respecting server configuration");
+                StructureLoader.reloadAllDefinitions(true, commandPlayer); // Forza il reload sul server
+                source.sendSuccess(() -> Component.literal("§7Multiplayer mode: Client structures based on server config"), false);
+            }
+            
             int newCount = StructureLoader.getAllStructures().size();
+            var clientStructures = StructureLoader.getClientStructures();
             
             source.sendSuccess(() -> Component.literal("§aStructures reloaded successfully!"), false);
-            source.sendSuccess(() -> Component.literal("§7Structures loaded: §a" + newCount + " §7(previous: §c" + oldCount + "§7)"), false);
+            source.sendSuccess(() -> Component.literal("§7Structures loaded: §a" + (newCount - clientStructures.size()) + " §7regular + §b" + clientStructures.size() + " §7client = §f" + newCount + " §7total (previous: §c" + oldCount + "§7)"), false);
+            
+            // Sincronizza le strutture ricaricate con tutti i client connessi (solo in multiplayer)
+            if (!isSingleplayer) {
+                try {
+                    if (source.getServer() != null) {
+                        for (net.minecraft.server.level.ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
+                            net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
+                        }
+                        source.sendSuccess(() -> Component.literal("§7Structures synchronized to all connected clients"), false);
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error synchronizing reloaded structures to clients: {}", e.getMessage());
+                    source.sendSuccess(() -> Component.literal("§cWarning: Failed to synchronize structures to clients"), false);
+                }
+            } else {
+                source.sendSuccess(() -> Component.literal("§7Singleplayer mode: No client synchronization needed"), false);
+            }
             
             return newCount;
         } catch (Exception e) {

@@ -776,7 +776,7 @@ The Structure Placer Machine provides automated structure placement with advance
 ---
 
 *🤖 Generated automatically by Iska Utils Structure Scripting System*
-*📅 Last updated: """ + java.time.LocalDateTime.now().toString() + """
+*📅 Last updated: "'" + java.time.LocalDateTime.now().toString() + "'"*
 
 ### JSON Schema Reference
 

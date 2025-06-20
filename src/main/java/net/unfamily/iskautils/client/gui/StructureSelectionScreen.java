@@ -174,6 +174,18 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         // Titolo della GUI (centrato) - usa la traduzione per selezione strutture
         Component titleComponent = Component.translatable("gui.iska_utils.structure_selection.title");
         String title = titleComponent.getString();
+        
+        // Aggiungi indicatori per il tipo di strutture
+        if (StructureLoader.isUsingServerStructures()) {
+            title += " (Server)";
+        }
+        
+        // Conta le strutture client
+        int clientStructuresCount = StructureLoader.getClientStructures().size();
+        if (clientStructuresCount > 0) {
+            title += " [" + clientStructuresCount + " Client]";
+        }
+        
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
         guiGraphics.drawString(this.font, title, titleX, 8, 0x404040, false);
     }

@@ -93,8 +93,9 @@ public class IskaUtils {
         net.unfamily.iskautils.structure.StructureMonouseRegistry.initializeItems();
         
         // ===== STRUCTURE SYSTEM =====
-        // Carica le definizioni delle strutture dal sistema di scripting
-        StructureLoader.scanConfigDirectory();
+        // Carica solo le definizioni delle strutture server/globali all'avvio
+        // Le strutture client saranno caricate quando il giocatore è disponibile
+        StructureLoader.scanConfigDirectoryServerOnly();
         
         // Register blocks and items
         ModBlocks.register(modEventBus);
@@ -221,6 +222,31 @@ public class IskaUtils {
             
             // Commands registration happens via RegisterCommandsEvent
         }
+        
+        @SubscribeEvent
+        public static void onPlayerLoggedIn(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+            if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                // Ricarica le strutture includendo le client structures ora che il giocatore è disponibile
+                try {
+                    LOGGER.info("Player {} connected, reloading structures with client support...", serverPlayer.getName().getString());
+                    
+                    // Ricarica le strutture con il contesto del giocatore per il nickname corretto
+                    StructureLoader.reloadAllDefinitions(true, serverPlayer);
+                    
+                    // Aggiungi un piccolo delay per assicurarsi che il client sia pronto per la sincronizzazione
+                    serverPlayer.getServer().execute(() -> {
+                        try {
+                            net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(serverPlayer);
+                        } catch (Exception e) {
+                            LOGGER.error("Error synchronizing structures to player {}: {}", 
+                                       serverPlayer.getName().getString(), e.getMessage());
+                        }
+                    });
+                } catch (Exception e) {
+                    LOGGER.error("Error in player login event: {}", e.getMessage());
+                }
+            }
+        }
 
         @SubscribeEvent
         public static void onServerStopping(ServerStoppingEvent event) {
@@ -228,6 +254,13 @@ public class IskaUtils {
             
             // Shutdown the macro executor service
             MacroCommand.shutdown();
+            
+            // Ritorna alle strutture locali quando il server si ferma
+            try {
+                StructureLoader.resetToLocalStructures();
+            } catch (Exception e) {
+                LOGGER.error("Error resetting to local structures: {}", e.getMessage());
+            }
         }
         
         @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.LOWEST)
@@ -262,6 +295,15 @@ public class IskaUtils {
                 CommandItemRegistry.reloadDefinitions();
             } catch (Exception e) {
                 LOGGER.error("Error loading command item definitions at server startup: {}", e.getMessage());
+            }
+            
+            // Sincronizza le strutture con tutti i client connessi
+            try {
+                for (net.minecraft.server.level.ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+                    net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error synchronizing structures to clients: {}", e.getMessage());
             }
         }
         
@@ -319,6 +361,25 @@ public class IskaUtils {
                 cooldownCleanupTimer = 0;
                 if (event.getServer().overworld() != null) {
                     PotionPlateBlock.cleanupCooldowns(event.getServer().overworld());
+                }
+            }
+        }
+    }
+    
+    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
+    public static class ClientGameEvents {
+        @SubscribeEvent
+        public static void onClientPlayerLoggedIn(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+            // Solo per il client locale (singleplayer) o quando il client si connette a un server
+            if (event.getEntity() instanceof net.minecraft.client.player.LocalPlayer) {
+                try {
+                    LOGGER.info("Local player joined world, reloading client structures...");
+                    
+                    // Ricarica le strutture includendo le client structures ora che il giocatore è disponibile
+                    StructureLoader.reloadAllDefinitions(true);
+                    
+                } catch (Exception e) {
+                    LOGGER.error("Error reloading client structures on player join: {}", e.getMessage());
                 }
             }
         }

@@ -343,9 +343,20 @@ public class Config
                     "The system will look for any scripts of this mod: <path>/potion_plates/")
             .define("000_external_scripts_path", "kubejs/external_scripts");
 
+    private static final ModConfigSpec.ConfigValue<String> CLIENT_STRUCTURE_PATH = BUILDER
+            .comment("Path to the external scripts directory for custom structures",
+                    "Default: 'iska_utils_client/structures'",
+                    "The system will look for any scripts of this mod: <path>/iska_utils_structures/")
+            .define("001_client_structure_path", "iska_utils_client/structures");
+
+    private static final ModConfigSpec.BooleanValue ACCEPT_CLIENT_STRUCTURE = BUILDER
+            .comment("If true, the client will be able to use the structures saved by the server",
+                    "Default: true")
+            .define("002_accept_client_structure", true);
+
     private static final ModConfigSpec.BooleanValue ARTIFACTS_INFO= BUILDER
             .comment("If false not desplay where obtain the artifacts or mod dependecy required for obtain it (only for lootable artifacts)")
-            .define("001_artifacts_info", true);
+            .define("100_artifacts_info", true);
 
     static {
         BUILDER.pop(); // End of dev category
@@ -400,6 +411,8 @@ public class Config
     public static java.util.List<String> scannerOreTags;
     public static int structurePlacerMachineEnergyConsume;
     public static int structurePlacerMachineEnergyBuffer;
+    public static String clientStructurePath;
+    public static boolean acceptClientStructure;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -443,10 +456,13 @@ public class Config
         scannerDefaultAlpha = Integer.parseInt(SCANNER_DEFAULT_ALPHA.get(), 16);
         scannerDefaultOreColor = Integer.parseInt(SCANNER_DEFAULT_ORE_COLOR.get(), 16);
         scannerDefaultMobColor = Integer.parseInt(SCANNER_DEFAULT_MOB_COLOR.get(), 16);
-
         // Structure Placer Machine logic
         structurePlacerMachineEnergyConsume = STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME.get();
         structurePlacerMachineEnergyBuffer = STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER.get();
+
+        // Client Structure Path logic
+        clientStructurePath = CLIENT_STRUCTURE_PATH.get();
+        acceptClientStructure = ACCEPT_CLIENT_STRUCTURE.get();
         
         System.out.println("Structure Placer Machine config loaded: energyConsume=" + structurePlacerMachineEnergyConsume + 
             ", energyBuffer=" + structurePlacerMachineEnergyBuffer);
