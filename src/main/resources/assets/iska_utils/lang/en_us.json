@@ -279,10 +279,16 @@
   "item.iska_utils.structure_monouse.tooltip.structure": "§bStructure: §f%s",
   "item.iska_utils.structure_monouse.tooltip.rotation": "§eRotation: §f%s",
   "item.iska_utils.structure_monouse.tooltip.will_give": "§7Will give:",
+  "item.iska_utils.structure_monouse.tooltip.give_item": "§8  - %dx %s",
   "item.iska_utils.structure_monouse.tooltip.single_use": "§6Single use item",
   "item.iska_utils.structure_monouse.tooltip.right_click": "§9Right click: Preview",
   "item.iska_utils.structure_monouse.tooltip.double_click": "§9Double-click: Place (5s timeout)",
   "item.iska_utils.structure_monouse.tooltip.left_click_rotate": "§9Left click on block: Rotate structure",
+  
+  "item.iska_utils.structure_monouse.message.structure_not_found": "§cStructure not found: %s",
+  "item.iska_utils.structure_monouse.message.placed_successfully": "§aStructure §f%s §aplaced successfully!",
+  "item.iska_utils.structure_monouse.message.placement_failed": "§cFailed to place structure! §7(Not enough space)",
+  "item.iska_utils.structure_monouse.message.preview": "§ePreview: §f%s §7(Click again within 5s to place)",
   
   "item.iska_utils.iska_utils_wither_grinder": "Wither Grinder Kit",
   

@@ -23,7 +23,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -33,8 +33,8 @@ import java.util.Map;
 public class MarkRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger(MarkRenderer.class);
     private static final MarkRenderer INSTANCE = new MarkRenderer();
-    private final Map<BlockPos, MarkBlockData> highlightedBlocks = new HashMap<>();
-    private final Map<BlockPos, MarkBlockData> billboardMarkers = new HashMap<>();
+    private final Map<BlockPos, MarkBlockData> highlightedBlocks = new ConcurrentHashMap<>();
+    private final Map<BlockPos, MarkBlockData> billboardMarkers = new ConcurrentHashMap<>();
     
     private MarkRenderer() {}
     
@@ -173,12 +173,8 @@ public class MarkRenderer {
         String nearestText = null;
         boolean isNearestBillboard = false;
         
-        // Crea copie delle mappe per evitare ConcurrentModificationException
-        Map<BlockPos, MarkBlockData> highlightedBlocksCopy = new HashMap<>(highlightedBlocks);
-        Map<BlockPos, MarkBlockData> billboardMarkersCopy = new HashMap<>(billboardMarkers);
-        
-        // Verifica tutti i blocchi evidenziati
-        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocksCopy.entrySet()) {
+        // Verifica tutti i blocchi evidenziati - iterazione diretta su ConcurrentHashMap è thread-safe
+        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocks.entrySet()) {
             if (entry.getValue().text != null) {
                 BlockPos pos = entry.getKey();
                 
@@ -222,7 +218,7 @@ public class MarkRenderer {
         }
         
         // Verifica tutti i marker billboard
-        for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkersCopy.entrySet()) {
+        for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkers.entrySet()) {
             if (entry.getValue().text != null) {
                 BlockPos pos = entry.getKey();
                 
@@ -320,23 +316,11 @@ public class MarkRenderer {
         
         long currentTime = mc.level.getGameTime();
         
-        // Remove expired blocks
-        Iterator<Map.Entry<BlockPos, MarkBlockData>> iterator = highlightedBlocks.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<BlockPos, MarkBlockData> entry = iterator.next();
-            if (entry.getValue().expirationTime <= currentTime) {
-                iterator.remove();
-            }
-        }
+        // Remove expired blocks - usando removeIf che è thread-safe su ConcurrentHashMap
+        highlightedBlocks.entrySet().removeIf(entry -> entry.getValue().expirationTime <= currentTime);
         
-        // Remove expired billboard markers
-        Iterator<Map.Entry<BlockPos, MarkBlockData>> markerIterator = billboardMarkers.entrySet().iterator();
-        while (markerIterator.hasNext()) {
-            Map.Entry<BlockPos, MarkBlockData> entry = markerIterator.next();
-            if (entry.getValue().expirationTime <= currentTime) {
-                markerIterator.remove();
-            }
-        }
+        // Remove expired billboard markers - usando removeIf che è thread-safe su ConcurrentHashMap
+        billboardMarkers.entrySet().removeIf(entry -> entry.getValue().expirationTime <= currentTime);
         
         if (highlightedBlocks.isEmpty() && billboardMarkers.isEmpty()) {
             return;
@@ -363,12 +347,9 @@ public class MarkRenderer {
      * Render cube highlights
      */
     private void renderCubeHighlights(PoseStack poseStack, Minecraft mc, Vec3 cameraPos, long currentTime) {
-        // Crea copia della mappa per evitare ConcurrentModificationException
-        Map<BlockPos, MarkBlockData> highlightedBlocksCopy = new HashMap<>(highlightedBlocks);
-        
         // Check if there are valid blocks to render
         boolean hasValidBlocks = false;
-        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocksCopy.entrySet()) {
+        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocks.entrySet()) {
             if (!mc.level.getBlockState(entry.getKey()).isAir()) {
                 hasValidBlocks = true;
                 break;
@@ -391,8 +372,8 @@ public class MarkRenderer {
         BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         Matrix4f matrix = poseStack.last().pose();
         
-        // Render each block
-        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocksCopy.entrySet()) {
+        // Render each block - iterazione diretta su ConcurrentHashMap è thread-safe
+        for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocks.entrySet()) {
             BlockPos pos = entry.getKey();
             int color = entry.getValue().color;
             
@@ -416,12 +397,9 @@ public class MarkRenderer {
      * Render billboard markers
      */
     private void renderBillboardMarkers(PoseStack poseStack, Minecraft mc, Vec3 cameraPos, long currentTime) {
-        // Crea copia della mappa per evitare ConcurrentModificationException
-        Map<BlockPos, MarkBlockData> billboardMarkersCopy = new HashMap<>(billboardMarkers);
-        
         // Debug: log how many markers we're trying to render
-        if (!billboardMarkersCopy.isEmpty()) {
-            LOGGER.info("Rendering {} billboard markers", billboardMarkersCopy.size());
+        if (!billboardMarkers.isEmpty()) {
+            LOGGER.info("Rendering {} billboard markers", billboardMarkers.size());
         }
         
         // Prepare the rendering for small cubes
@@ -435,8 +413,8 @@ public class MarkRenderer {
         BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         Matrix4f matrix = poseStack.last().pose();
         
-        // Render each marker as a small cube
-        for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkersCopy.entrySet()) {
+        // Render each marker as a small cube - iterazione diretta su ConcurrentHashMap è thread-safe
+        for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkers.entrySet()) {
             BlockPos pos = entry.getKey();
             int color = entry.getValue().color;
             

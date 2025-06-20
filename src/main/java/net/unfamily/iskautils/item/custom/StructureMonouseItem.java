@@ -162,7 +162,7 @@ public class StructureMonouseItem extends Item {
         // Get the structure to place
         StructureDefinition structure = StructureLoader.getStructure(definition.getPlaceName());
         if (structure == null) {
-            player.displayClientMessage(Component.literal("§cStructure not found: " + definition.getPlaceName()), true);
+            player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.structure_not_found", definition.getPlaceName()), true);
             return InteractionResult.FAIL;
         }
         
@@ -190,7 +190,7 @@ public class StructureMonouseItem extends Item {
                 giveItemsToPlayer(serverPlayer);
                 
                 String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-                player.displayClientMessage(Component.literal("§aStructure §f" + structureName + " §aplaced successfully!"), true);
+                player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.placed_successfully", structureName), true);
                 
                 // Show green success markers
                 showSuccessMarkers(serverPlayer, pos, structure, rotation);
@@ -200,7 +200,7 @@ public class StructureMonouseItem extends Item {
                 
                 return InteractionResult.SUCCESS;
             } else {
-                player.displayClientMessage(Component.literal("§cFailed to place structure! §7(Not enough space or materials)"), true);
+                player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.placement_failed"), true);
                 return InteractionResult.FAIL;
             }
         } else {
@@ -213,7 +213,7 @@ public class StructureMonouseItem extends Item {
             setLastClickPos(stack, currentPosHash);
             
             String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-            player.displayClientMessage(Component.literal("§ePreview: §f" + structureName + " §7(Click again within 5s to place)"), true);
+            player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.preview", structureName), true);
             
             return InteractionResult.SUCCESS;
         }
@@ -602,7 +602,7 @@ public class StructureMonouseItem extends Item {
         if (!definition.getGiveItems().isEmpty()) {
             tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.will_give"));
             for (StructureMonouseDefinition.GiveItem giveItem : definition.getGiveItems()) {
-                tooltip.add(Component.literal("§8  - " + giveItem.getCount() + "x " + giveItem.getItem()));
+                tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.give_item", giveItem.getCount(), giveItem.getItem()));
             }
         }
         

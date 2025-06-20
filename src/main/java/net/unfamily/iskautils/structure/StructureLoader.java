@@ -21,9 +21,6 @@ import java.util.stream.Stream;
 
 /**
  * Loads structure definitions from external JSON files
- * 
- * TODO: RIMUOVERE la logica temporanea di fallback "dev" per ambiente di sviluppo
- *       Vedere generateFallbackNickname() - da rimuovere prima del rilascio
  */
 public class StructureLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -37,6 +34,29 @@ public class StructureLoader {
     
     // Flag to track if we're using server-synced structures (client-side only)
     private static boolean usingServerStructures = false;
+
+    /**
+     * Comparatore personalizzato per ordinare le strutture:
+     * 1. Strutture server prima (non iniziano con "client_")
+     * 2. Strutture client dopo (iniziano con "client_")
+     * 3. All'interno di ogni gruppo, ordine alfabetico per ID
+     */
+    private static final java.util.Comparator<Map.Entry<String, StructureDefinition>> STRUCTURE_COMPARATOR = 
+        (entry1, entry2) -> {
+            String id1 = entry1.getKey();
+            String id2 = entry2.getKey();
+            
+            boolean isClient1 = id1.startsWith("client_");
+            boolean isClient2 = id2.startsWith("client_");
+            
+            // Se uno è client e l'altro no, il non-client viene prima
+            if (isClient1 != isClient2) {
+                return isClient1 ? 1 : -1; // Non-client (server) prima
+            }
+            
+            // Se sono dello stesso tipo, ordine alfabetico
+            return id1.compareTo(id2);
+        };
 
     /**
      * Scans the configuration directory for structures
@@ -323,7 +343,7 @@ public class StructureLoader {
         }
         
         if (forceLoad) {
-            LOGGER.debug("Force loading client structures (reload or singleplayer)");
+            // Force loading per reload o singleplayer
         }
         
         String clientStructurePath = Config.clientStructurePath;
@@ -335,11 +355,10 @@ public class StructureLoader {
         
         try {
             if (!Files.exists(clientStructuresPath)) {
-                if (!isServer) {
-                    // Solo sul client, crea la directory se non esiste
-                    Files.createDirectories(clientStructuresPath);
-                    LOGGER.info("Created client structures directory: {}", clientStructuresPath);
-                }
+                // Crea la directory se non esiste (sia su client che su server per sviluppo)
+                Files.createDirectories(clientStructuresPath);
+                LOGGER.info("Created client structures directory: {}", clientStructuresPath);
+                // Se la directory è appena stata creata, non ci sono file da scansionare
                 return;
             }
             
@@ -461,19 +480,6 @@ public class StructureLoader {
      */
     private static String generateFallbackNickname() {
         try {
-            // TODO: RIMUOVERE - Fallback temporaneo per ambiente di sviluppo
-            // Controlla se siamo in ambiente di sviluppo (classpath contiene "build" o "bin")
-            String classPath = System.getProperty("java.class.path", "");
-            boolean isDevelopmentEnvironment = classPath.contains("build") || 
-                                             classPath.contains("bin") || 
-                                             classPath.contains("gradle") ||
-                                             System.getProperty("java.vm.name", "").contains("HotSpot");
-            
-            if (isDevelopmentEnvironment) {
-                LOGGER.debug("Development environment detected, using 'dev' as fallback nickname");
-                return "dev";
-            }
-            
             // Prova a ottenere informazioni dal sistema per creare un fallback unico
             String systemUser = System.getProperty("user.name", "unknown");
             long timestamp = System.currentTimeMillis() % 10000; // Ultime 4 cifre del timestamp
@@ -919,7 +925,7 @@ public class StructureLoader {
      */
     public static Map<String, StructureDefinition> getAllStructures() {
         return STRUCTURES.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
+                .sorted(STRUCTURE_COMPARATOR)
                 .collect(java.util.stream.Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
@@ -942,7 +948,7 @@ public class StructureLoader {
         if (!Config.acceptClientStructure) {
             return STRUCTURES.entrySet().stream()
                     .filter(entry -> !entry.getKey().startsWith("client_"))
-                    .sorted(Map.Entry.comparingByKey())
+                    .sorted(STRUCTURE_COMPARATOR)
                     .collect(java.util.stream.Collectors.toMap(
                             Map.Entry::getKey,
                             Map.Entry::getValue,
@@ -963,7 +969,7 @@ public class StructureLoader {
         // Ogni client deve usare le sue strutture client locali
         return STRUCTURES.entrySet().stream()
                 .filter(entry -> !entry.getKey().startsWith("client_"))
-                .sorted(Map.Entry.comparingByKey())
+                .sorted(STRUCTURE_COMPARATOR)
                 .collect(java.util.stream.Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
@@ -978,7 +984,7 @@ public class StructureLoader {
     public static Map<String, StructureDefinition> getClientStructures() {
         return STRUCTURES.entrySet().stream()
                 .filter(entry -> entry.getKey().startsWith("client_"))
-                .sorted(Map.Entry.comparingByKey())
+                .sorted(STRUCTURE_COMPARATOR)
                 .collect(java.util.stream.Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
@@ -1019,8 +1025,9 @@ public class StructureLoader {
      * Gets the list of available structure IDs sorted alphabetically
      */
     public static List<String> getAvailableStructureIds() {
-        return STRUCTURES.keySet().stream()
-                .sorted()
+        return STRUCTURES.entrySet().stream()
+                .sorted(STRUCTURE_COMPARATOR)
+                .map(Map.Entry::getKey)
                 .collect(java.util.stream.Collectors.toList());
     }
     

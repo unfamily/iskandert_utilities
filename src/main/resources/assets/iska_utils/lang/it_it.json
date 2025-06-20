@@ -277,10 +277,16 @@
   "item.iska_utils.structure_monouse.tooltip.structure": "§bStruttura: §f%s",
   "item.iska_utils.structure_monouse.tooltip.rotation": "§eRotazione: §f%s",
   "item.iska_utils.structure_monouse.tooltip.will_give": "§7Otterrai:",
-  "item.iska_utils.structure_monouse.tooltip.single_use": "§6Item monouso",
+  "item.iska_utils.structure_monouse.tooltip.give_item": "§8  - %dx %s",
+  "item.iska_utils.structure_monouse.tooltip.single_use": "§6Oggetto monouso",
   "item.iska_utils.structure_monouse.tooltip.right_click": "§9Tasto destro: Anteprima",
   "item.iska_utils.structure_monouse.tooltip.double_click": "§9Doppio-click: Posiziona (timeout 5s)",
   "item.iska_utils.structure_monouse.tooltip.left_click_rotate": "§9Tasto sinistro su blocco: Ruota struttura",
+  
+  "item.iska_utils.structure_monouse.message.structure_not_found": "§cStruttura non trovata: %s",
+  "item.iska_utils.structure_monouse.message.placed_successfully": "§aStruttura §f%s §apiazzata con successo!",
+  "item.iska_utils.structure_monouse.message.placement_failed": "§cImpossibile piazzare la struttura! §7(Spazio insufficiente)",
+  "item.iska_utils.structure_monouse.message.preview": "§eAnteprima: §f%s §7(Clicca di nuovo entro 5s per piazzare)",
   
   "item.iska_utils.iska_utils_wither_grinder": "Kit Trituratore di Wither",
   
