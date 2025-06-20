@@ -200,8 +200,6 @@ public class StructurePlacer {
                 return blockState;
             }
             
-            // TODO: Handle tags (blocks defined via tags) - for future implementation
-            
             LOGGER.warn("Empty or invalid block definition");
             return null;
             

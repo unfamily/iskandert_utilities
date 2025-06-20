@@ -18,6 +18,11 @@
   "item.iska_utils.swiss_wrench": "Chiave Svizera",
   "item.iska_utils.mining_equitizer": "Equitizzatore di Scavo",
   "item.iska_utils.structure_placer": "Piazzatore di Strutture",
+  "item.iska_utils.blueprint": "Disegno Tecnico",
+  "gui.iska_utils.structure_name": "Nome Struttura",
+  "gui.iska_utils.save": "Salva",
+  "gui.iska_utils.area": "Area: ",
+  "gui.iska_utils.save_error_empty_name": "Inserisci un nome per la struttura",
   
   "item.iska_utils.rubber_boots": "Stivali di Gomma",
   "block.iska_utils.rubber_log": "Tronco di Caucciù",
@@ -79,6 +84,7 @@
   "block.iska_utils.time_alterer": "Alteratore del Tempo",
 
   "block.iska_utils.angel_block": "Blocco Angelico",
+  "block.iska_utils.structure_saver_machine": "Macchina Salvatrice di Strutture",
 
   "creativetab.iska_utils.tab": "Utilità di Iskandert",
   "itemGroup.iska_utils.command_items": "Oggetti di Comando di Iskandert",

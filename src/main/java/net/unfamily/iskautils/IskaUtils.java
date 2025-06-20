@@ -209,6 +209,8 @@ public class IskaUtils {
                           net.unfamily.iskautils.client.gui.StructurePlacerMachineScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_SELECTION_MENU.get(),
                           net.unfamily.iskautils.client.gui.StructureSelectionScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_SAVER_MACHINE_MENU.get(),
+                          net.unfamily.iskautils.client.gui.StructureSaverMachineScreen::new);
         }
     }
 

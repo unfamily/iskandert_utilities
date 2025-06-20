@@ -140,6 +140,10 @@ public class ModBlocks {
     public static final DeferredBlock<StructurePlacerMachineBlock> STRUCTURE_PLACER_MACHINE = BLOCKS.register("structure_placer_machine",
             () -> new StructurePlacerMachineBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
     
+    // Structure Saver Machine (saves structures to compound tags)
+    public static final DeferredBlock<StructureSaverMachineBlock> STRUCTURE_SAVER_MACHINE = BLOCKS.register("structure_saver_machine",
+            () -> new StructureSaverMachineBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
+    
     // Hellfire Igniter (creates fire when activated by redstone)
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
             () -> new HellfireIgniterBlock(HELLFIRE_PROPERTIES));

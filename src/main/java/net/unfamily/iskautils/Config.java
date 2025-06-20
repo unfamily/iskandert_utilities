@@ -151,6 +151,15 @@ public class Config
     private static final ModConfigSpec.IntValue STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER = BUILDER
             .comment("Energy capacity of the Structure Placer Machine in RF/FE")
             .defineInRange("301_structurePlacerMachineEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
+    
+    // Structure Saver Machine configuration
+    private static final ModConfigSpec.IntValue STRUCTURE_SAVER_MACHINE_ENERGY_CONSUME = BUILDER
+            .comment("Energy consumed per operation by the Structure Saver Machine in RF/FE")
+            .defineInRange("302_structureSaverMachineEnergyConsume", 100, 0, Integer.MAX_VALUE);
+    
+    private static final ModConfigSpec.IntValue STRUCTURE_SAVER_MACHINE_ENERGY_BUFFER = BUILDER
+            .comment("Energy capacity of the Structure Saver Machine in RF/FE")
+            .defineInRange("303_structureSaverMachineEnergyBuffer", 50000, 0, Integer.MAX_VALUE);
             
     static {
         BUILDER.pop(); // End of general_utilities category
@@ -411,6 +420,8 @@ public class Config
     public static java.util.List<String> scannerOreTags;
     public static int structurePlacerMachineEnergyConsume;
     public static int structurePlacerMachineEnergyBuffer;
+    public static int structureSaverMachineEnergyConsume;
+    public static int structureSaverMachineEnergyBuffer;
     public static String clientStructurePath;
     public static boolean acceptClientStructure;
 
@@ -459,6 +470,8 @@ public class Config
         // Structure Placer Machine logic
         structurePlacerMachineEnergyConsume = STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME.get();
         structurePlacerMachineEnergyBuffer = STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER.get();
+        structureSaverMachineEnergyConsume = STRUCTURE_SAVER_MACHINE_ENERGY_CONSUME.get();
+        structureSaverMachineEnergyBuffer = STRUCTURE_SAVER_MACHINE_ENERGY_BUFFER.get();
 
         // Client Structure Path logic
         clientStructurePath = CLIENT_STRUCTURE_PATH.get();
@@ -575,6 +588,21 @@ public class Config
         if(structurePlacerMachineEnergyBuffer < structurePlacerMachineEnergyConsume) {
             structurePlacerMachineEnergyConsume = structurePlacerMachineEnergyBuffer;
         }
+
+        // Structure Saver Machine logic
+        if(structureSaverMachineEnergyConsume <= 0) {
+            structureSaverMachineEnergyBuffer = 0;
+        }
+        
+        if(structureSaverMachineEnergyBuffer <= 0) {
+            structureSaverMachineEnergyConsume = 0;
+        }
+
+        // If the energy buffer is less than the energy consume, set the energy consume to the energy buffer
+        if(structureSaverMachineEnergyBuffer < structureSaverMachineEnergyConsume) {
+            structureSaverMachineEnergyConsume = structureSaverMachineEnergyBuffer;
+        }
+        
     }
     
     @SubscribeEvent

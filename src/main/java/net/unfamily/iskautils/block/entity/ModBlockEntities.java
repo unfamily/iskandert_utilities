@@ -18,6 +18,7 @@ import net.unfamily.iskautils.block.entity.WeatherAltererBlockEntity;
 import net.unfamily.iskautils.block.entity.TimeAltererBlockEntity;
 import net.unfamily.iskautils.block.entity.AngelBlockEntity;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
+import net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity;
 
 import java.util.function.Supplier;
 
@@ -68,6 +69,12 @@ public class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StructurePlacerMachineBlockEntity>> STRUCTURE_PLACER_MACHINE_BE =
             BLOCK_ENTITIES.register("structure_placer_machine",
                     () -> BlockEntityType.Builder.of(StructurePlacerMachineBlockEntity::new, ModBlocks.STRUCTURE_PLACER_MACHINE.get())
+                            .build(null));
+
+    // Structure Saver Machine Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StructureSaverMachineBlockEntity>> STRUCTURE_SAVER_MACHINE_BE =
+            BLOCK_ENTITIES.register("structure_saver_machine",
+                    () -> BlockEntityType.Builder.of(StructureSaverMachineBlockEntity::new, ModBlocks.STRUCTURE_SAVER_MACHINE.get())
                             .build(null));
 
     /**
@@ -148,6 +155,18 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
                             return machineEntity.getEnergyStorage();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register energy capability for Structure Saver Machine
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    STRUCTURE_SAVER_MACHINE_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof StructureSaverMachineBlockEntity saverMachineEntity) {
+                            return saverMachineEntity.getEnergyStorage();
                         }
                         return null;
                     }

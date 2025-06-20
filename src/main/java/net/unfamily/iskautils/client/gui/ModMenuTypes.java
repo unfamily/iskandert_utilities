@@ -28,4 +28,9 @@ public class ModMenuTypes {
         MENUS.register("structure_selection", () -> 
             new MenuType<>(StructureSelectionMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
+    // Structure Saver Machine menu
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<StructureSaverMachineMenu>> STRUCTURE_SAVER_MACHINE_MENU =
+            MENUS.register("structure_saver_machine", () -> 
+                new MenuType<>(StructureSaverMachineMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+    
 } 

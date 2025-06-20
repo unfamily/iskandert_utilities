@@ -18,6 +18,11 @@
   "item.iska_utils.swiss_wrench": "Swiss Wrench",
   "item.iska_utils.mining_equitizer": "Mining Equitizer",
   "item.iska_utils.structure_placer": "Structure Placer",
+  "item.iska_utils.blueprint": "Blueprint",
+  "gui.iska_utils.structure_name": "Structure Name",
+  "gui.iska_utils.save": "Save",
+  "gui.iska_utils.area": "Area: ",
+  "gui.iska_utils.save_error_empty_name": "Please enter a structure name",
   
   "item.iska_utils.rubber_boots": "Rubber Boots",
   "block.iska_utils.rubber_log": "Rubber Log",
@@ -79,6 +84,7 @@
   "block.iska_utils.time_alterer": "Time Alterer",
   
   "block.iska_utils.angel_block": "Angel Block",
+  "block.iska_utils.structure_saver_machine": "Structure Saver Machine",
   
   "creativetab.iska_utils.tab": "Iskandert's Utilities",
   "itemGroup.iska_utils.command_items": "Iskandert's Command Items",
