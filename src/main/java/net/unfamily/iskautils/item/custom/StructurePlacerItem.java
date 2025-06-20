@@ -159,12 +159,12 @@ public class StructurePlacerItem extends Item {
             BlockState currentState = player.level().getBlockState(blockPos);
             
             if (canReplaceBlock(currentState, structure)) {
-                // Empty/replaceable space: blue marker at block position (15 seconds, no text)
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, PREVIEW_COLOR, 300); // 15 seconds
+                // Empty/replaceable space: blue marker at block position (5 seconds, no text)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, PREVIEW_COLOR, 100); // 5 seconds
                 blueMarkers++;
             } else {
-                // Occupied space: red marker at block position (15 seconds, no text)
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 300); // 15 seconds
+                // Occupied space: red marker at block position (5 seconds, no text)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 100); // 5 seconds
                 redMarkers++;
             }
         }
@@ -1076,8 +1076,8 @@ public class StructurePlacerItem extends Item {
             BlockState currentState = player.level().getBlockState(blockPos);
             
             if (!canReplaceBlock(currentState, structure)) {
-                // Marker at block position (15 seconds, no text)
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 300); // 15 seconds
+                // Marker at block position (5 seconds, no text)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 100); // 5 seconds
             }
         }
     }
@@ -1110,8 +1110,8 @@ public class StructurePlacerItem extends Item {
             }
             
             if (wasPlaced) {
-                // Success marker (15 seconds, no text)
-                MarkRenderer.getInstance().addBillboardMarker(pos, SUCCESS_COLOR, 300); // 15 seconds
+                // Success marker (5 seconds, no text)
+                MarkRenderer.getInstance().addBillboardMarker(pos, SUCCESS_COLOR, 100); // 5 seconds
             }
         }
     }

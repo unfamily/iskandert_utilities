@@ -41,6 +41,7 @@ public class StructureMonouseItem extends Item {
     
     // Colors for markers
     public static final int PREVIEW_COLOR = 0x804444FF; // Semi-transparent blue
+    public static final int CONFLICT_COLOR = 0x80FF4444; // Semi-transparent red
     public static final int SUCCESS_COLOR = 0x8044FF44; // Semi-transparent green
     
     // Double-click system constants
@@ -212,9 +213,6 @@ public class StructureMonouseItem extends Item {
             setLastClickTime(stack, currentTime);
             setLastClickPos(stack, currentPosHash);
             
-            String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-            player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.preview", structureName), true);
-            
             return InteractionResult.SUCCESS;
         }
     }
@@ -225,9 +223,32 @@ public class StructureMonouseItem extends Item {
     private void showPreview(ServerPlayer player, BlockPos centerPos, StructureDefinition structure, int rotation) {
         Map<BlockPos, String> positions = calculateStructurePositions(centerPos, structure, rotation);
         
-        // Show blue preview markers for 15 seconds
-        for (BlockPos pos : positions.keySet()) {
-            MarkRenderer.getInstance().addBillboardMarker(pos, PREVIEW_COLOR, 300); // 15 seconds
+        int blueMarkers = 0;
+        int redMarkers = 0;
+        
+        for (Map.Entry<BlockPos, String> entry : positions.entrySet()) {
+            BlockPos blockPos = entry.getKey();
+            BlockState currentState = player.level().getBlockState(blockPos);
+            
+            if (canReplaceBlock(currentState, structure)) {
+                // Empty/replaceable space: blue marker at block position (5 seconds, no text)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, PREVIEW_COLOR, 100); // 5 seconds
+                blueMarkers++;
+            } else {
+                // Occupied space: red marker at block position (5 seconds, no text)
+                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 100); // 5 seconds
+                redMarkers++;
+            }
+        }
+        
+        // Inform the player about conflicts and empty spaces
+        String structureName = structure.getName() != null ? structure.getName() : structure.getId();
+        player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.preview", structureName), true);
+        
+        if (redMarkers > 0) {
+            player.displayClientMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, §c" + redMarkers + " §7occupied spaces"), true);
+        } else {
+            player.displayClientMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, all clear!"), true);
         }
     }
     
@@ -254,8 +275,8 @@ public class StructureMonouseItem extends Item {
                     
                     BlockState existingState = player.level().getBlockState(blockPos);
                     
-                    // Only allow replacement of air, water, lava, or other replaceable blocks
-                    if (!existingState.canBeReplaced()) {
+                    // Use the same replacement logic as preview
+                    if (!canReplaceBlock(existingState, structure)) {
                         return false; // Cannot replace existing block
                     }
                 }
@@ -566,9 +587,9 @@ public class StructureMonouseItem extends Item {
     private void showSuccessMarkers(ServerPlayer player, BlockPos centerPos, StructureDefinition structure, int rotation) {
         Map<BlockPos, String> positions = calculateStructurePositions(centerPos, structure, rotation);
         
-        // Show green markers for 15 seconds without text
+        // Show green markers for 5 seconds without text
         for (BlockPos pos : positions.keySet()) {
-            MarkRenderer.getInstance().addBillboardMarker(pos, SUCCESS_COLOR, 300); // 15 seconds, without text
+            MarkRenderer.getInstance().addBillboardMarker(pos, SUCCESS_COLOR, 100); // 5 seconds, without text
         }
     }
     
@@ -618,5 +639,94 @@ public class StructureMonouseItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         // Prevent right-click in air usage
         return InteractionResultHolder.pass(player.getItemInHand(hand));
+    }
+
+    /**
+     * Check if a block can be replaced
+     */
+    private boolean canReplaceBlock(BlockState state, StructureDefinition structure) {
+        // Air can always be replaced
+        if (state.isAir()) return true;
+        
+        // Check structure can_replace list
+        List<String> canReplace = structure.getCanReplace();
+        if (canReplace != null) {
+            String blockId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+            
+            for (String replaceableId : canReplace) {
+                if (replaceableId.equals(blockId)) {
+                    return true;
+                }
+                
+                // Handle special cases
+                if (handleSpecialReplaceableCase(replaceableId, state)) {
+                    return true;
+                }
+                
+                // Handle tags with # prefix
+                if (replaceableId.startsWith("#") && handleTagReplacement(replaceableId, state)) {
+                    return true;
+                }
+            }
+            
+            return false; // If there's a can_replace list and block is not in list, it cannot be replaced
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Handles special replacement cases like $replaceable, $fluids, etc.
+     */
+    private boolean handleSpecialReplaceableCase(String replaceableId, BlockState existingState) {
+        return switch (replaceableId.toLowerCase()) {
+            case "$replaceable" -> existingState.canBeReplaced();
+            case "$fluids", "$fluid" -> existingState.getFluidState().isSource() || !existingState.getFluidState().isEmpty();
+            case "$air" -> existingState.isAir();
+            case "$water" -> existingState.is(net.minecraft.world.level.block.Blocks.WATER);
+            case "$lava" -> existingState.is(net.minecraft.world.level.block.Blocks.LAVA);
+            case "$plants", "$plant" -> existingState.is(net.minecraft.tags.BlockTags.REPLACEABLE_BY_TREES) || 
+                                      existingState.is(net.minecraft.tags.BlockTags.SMALL_FLOWERS) ||
+                                      existingState.is(net.minecraft.tags.BlockTags.TALL_FLOWERS) ||
+                                      existingState.is(net.minecraft.tags.BlockTags.SAPLINGS);
+            case "$dirt" -> existingState.is(net.minecraft.tags.BlockTags.DIRT);
+            case "$logs", "$log" -> existingState.is(net.minecraft.tags.BlockTags.LOGS);
+            case "$leaves" -> existingState.is(net.minecraft.tags.BlockTags.LEAVES);
+            case "$stone" -> existingState.is(net.minecraft.tags.BlockTags.STONE_ORE_REPLACEABLES) ||
+                           existingState.is(net.minecraft.tags.BlockTags.DEEPSLATE_ORE_REPLACEABLES);
+            case "$ores", "$ore" -> existingState.is(net.minecraft.tags.BlockTags.COAL_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.IRON_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.GOLD_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.DIAMOND_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.EMERALD_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.LAPIS_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.REDSTONE_ORES) ||
+                                  existingState.is(net.minecraft.tags.BlockTags.COPPER_ORES);
+            default -> false;
+        };
+    }
+    
+    /**
+     * Handles tag-based replacement with # prefix
+     */
+    private boolean handleTagReplacement(String tagId, BlockState existingState) {
+        try {
+            // Remove # prefix
+            String cleanTagId = tagId.substring(1);
+            
+            // Parse as ResourceLocation
+            net.minecraft.resources.ResourceLocation tagLocation = net.minecraft.resources.ResourceLocation.parse(cleanTagId);
+            
+            // Get tag from registry
+            net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> blockTag = 
+                net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, tagLocation);
+            
+            // Check if block is in the tag
+            return existingState.is(blockTag);
+            
+        } catch (Exception e) {
+            // Silent failure for invalid tags in item context
+            return false;
+        }
     }
 } 
