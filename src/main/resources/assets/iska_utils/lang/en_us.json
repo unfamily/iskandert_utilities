@@ -21,7 +21,8 @@
   "item.iska_utils.blueprint": "Blueprint",
   "gui.iska_utils.structure_name": "Structure Name",
   "gui.iska_utils.save": "Save",
-  "gui.iska_utils.area": "Area: ",
+  "gui.iska_utils.area": "Area:",
+  "gui.iska_utils.area_too_large": "Area too large! (max 64x64x64)",
   "gui.iska_utils.save_error_empty_name": "Please enter a structure name",
   
   "item.iska_utils.rubber_boots": "Rubber Boots",
@@ -85,6 +86,7 @@
   
   "block.iska_utils.angel_block": "Angel Block",
   "block.iska_utils.structure_saver_machine": "Structure Saver Machine",
+  "block.iska_utils.structure_marker": "Structure Marker",
   
   "creativetab.iska_utils.tab": "Iskandert's Utilities",
   "itemGroup.iska_utils.command_items": "Iskandert's Command Items",
@@ -327,5 +329,30 @@
   "gui.iska_utils.structure_placer_machine.preview_updated": "Preview updated with new rotation",
   "gui.iska_utils.structure_placer_machine.rotated": "Structure rotated to: %s",
   "gui.iska_utils.structure_placer_machine.no_structure_selected": "No structure selected",
-  "gui.iska_utils.structure_selection.title": "Select Structure"
+  "gui.iska_utils.structure_selection.title": "Select Structure",
+
+  "item.iska_utils.blueprint.vertex1_saved": "Vertex 1 saved: %s",
+  "item.iska_utils.blueprint.vertex2_saved": "Vertex 2 saved: %s", 
+  "item.iska_utils.blueprint.reset": "Blueprint reset",
+  "item.iska_utils.blueprint.area_info": "Area: %sx%sx%s (%s blocks)",
+  "item.iska_utils.blueprint.tooltip.vertex1": "Vertex 1: %s",
+  "item.iska_utils.blueprint.tooltip.vertex2": "Vertex 2: %s",
+  "item.iska_utils.blueprint.tooltip.dimensions": "Dimensions: %sx%sx%s",
+  "item.iska_utils.blueprint.tooltip.volume": "Volume: %s blocks",
+  "item.iska_utils.blueprint.tooltip.click_first": "Click on a block to save the first vertex",
+  "item.iska_utils.blueprint.tooltip.click_second": "Click on another block to save the second vertex",
+  "item.iska_utils.blueprint.tooltip.reset_hint": "Shift+Right Click to reset",
+  "item.iska_utils.blueprint.save_hint": "Use Shift+Right Click in Structure Saver GUI to import coordinates",
+  "gui.iska_utils.blueprint_imported": "Blueprint imported: %s to %s",
+  "item.iska_utils.blueprint.center_saved": "Structure center saved: %s",
+  "item.iska_utils.blueprint.preview_complete": "Complete blueprint preview shown",
+  "item.iska_utils.blueprint.tooltip.center": "Center: %s",
+  "item.iska_utils.blueprint.tooltip.click_center": "Click on a block to save the structure center",
+  "gui.iska_utils.blueprint_invalid_size": "Invalid blueprint: area %dx%dx%d too large (max 64x64x64)",
+  "gui.iska_utils.blueprint_imported_complete": "Complete blueprint imported: %s to %s, center: %s",
+  "gui.iska_utils.blueprint_requires_center": "Blueprint requires all 3 points: vertex1, vertex2, and center",
+  "gui.iska_utils.save_error_no_coordinates": "No coordinates imported! Use Shift+Right Click with a complete blueprint first",
+  "gui.iska_utils.save_success": "Structure '%s' saved! Area: %s to %s, Center: %s",
+  "gui.iska_utils.blueprint_imported_to_machine": "Blueprint imported to machine: %s to %s, center: %s",
+  "gui.iska_utils.structure_saver": "Structure Saver Machine"
 }

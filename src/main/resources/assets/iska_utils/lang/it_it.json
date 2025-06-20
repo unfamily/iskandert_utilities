@@ -18,10 +18,11 @@
   "item.iska_utils.swiss_wrench": "Chiave Svizera",
   "item.iska_utils.mining_equitizer": "Equitizzatore di Scavo",
   "item.iska_utils.structure_placer": "Piazzatore di Strutture",
-  "item.iska_utils.blueprint": "Disegno Tecnico",
+  "item.iska_utils.blueprint": "Progetto Tecnico",
   "gui.iska_utils.structure_name": "Nome Struttura",
   "gui.iska_utils.save": "Salva",
-  "gui.iska_utils.area": "Area: ",
+  "gui.iska_utils.area": "Area:",
+  "gui.iska_utils.area_too_large": "Area troppo grande! (max 64x64x64)",
   "gui.iska_utils.save_error_empty_name": "Inserisci un nome per la struttura",
   
   "item.iska_utils.rubber_boots": "Stivali di Gomma",
@@ -85,6 +86,7 @@
 
   "block.iska_utils.angel_block": "Blocco Angelico",
   "block.iska_utils.structure_saver_machine": "Macchina Salvatrice di Strutture",
+  "block.iska_utils.structure_marker": "Marcatore di Strutture",
 
   "creativetab.iska_utils.tab": "Utilità di Iskandert",
   "itemGroup.iska_utils.command_items": "Oggetti di Comando di Iskandert",
@@ -324,5 +326,30 @@
   "gui.iska_utils.structure_placer_machine.redstone_mode.none": "Nessuna",
   "gui.iska_utils.structure_placer_machine.redstone_mode.low": "Bassa",
   "gui.iska_utils.structure_placer_machine.redstone_mode.high": "Alta",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.pulse": "Impulso"
+  "gui.iska_utils.structure_placer_machine.redstone_mode.pulse": "Impulso",
+
+  "item.iska_utils.blueprint.vertex1_saved": "Vertice 1 salvato: %s",
+  "item.iska_utils.blueprint.vertex2_saved": "Vertice 2 salvato: %s", 
+  "item.iska_utils.blueprint.reset": "Progetto resettato",
+  "item.iska_utils.blueprint.area_info": "Area: %sx%sx%s (%s blocchi)",
+  "item.iska_utils.blueprint.tooltip.vertex1": "Vertice 1: %s",
+  "item.iska_utils.blueprint.tooltip.vertex2": "Vertice 2: %s",
+  "item.iska_utils.blueprint.tooltip.dimensions": "Dimensioni: %sx%sx%s",
+  "item.iska_utils.blueprint.tooltip.volume": "Volume: %s blocchi",
+  "item.iska_utils.blueprint.tooltip.click_first": "Clicca su un blocco per salvare il primo vertice",
+  "item.iska_utils.blueprint.tooltip.click_second": "Clicca su un altro blocco per salvare il secondo vertice",
+  "item.iska_utils.blueprint.tooltip.reset_hint": "Shift+Click Destro per resettare",
+  "item.iska_utils.blueprint.save_hint": "Usa Shift+Click Destro nella GUI Structure Saver per importare le coordinate",
+  "gui.iska_utils.blueprint_imported": "Progetto importato: %s a %s",
+  "item.iska_utils.blueprint.center_saved": "Centro struttura salvato: %s",
+  "item.iska_utils.blueprint.preview_complete": "Anteprima progetto completa mostrata",
+  "item.iska_utils.blueprint.tooltip.center": "Centro: %s",
+  "item.iska_utils.blueprint.tooltip.click_center": "Clicca su un blocco per salvare il centro della struttura",
+  "gui.iska_utils.blueprint_invalid_size": "Blueprint non valida: area %dx%dx%d troppo grande (max 64x64x64)",
+  "gui.iska_utils.blueprint_imported_complete": "Progetto completo importato: %s a %s, centro: %s",
+  "gui.iska_utils.blueprint_requires_center": "Il progetto richiede tutti e 3 i punti: vertice1, vertice2 e centro",
+  "gui.iska_utils.save_error_no_coordinates": "Nessuna coordinata importata! Usa Shift+Click Destro con un progetto completo prima",
+  "gui.iska_utils.save_success": "Struttura '%s' salvata! Area: %s a %s, Centro: %s",
+  "gui.iska_utils.blueprint_imported_to_machine": "Progetto importato nella macchina: %s a %s, centro: %s",
+  "gui.iska_utils.structure_saver": "Macchina Salva Strutture"
 }

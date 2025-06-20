@@ -20,6 +20,11 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
     // 27 slot display (3 righe x 9 slot)
     private static final int DISPLAY_SLOTS = 27;
     
+    // Flags per tracciare quando i dati blueprint cambiano
+    private boolean blueprintDataChanged = false;
+    private net.minecraft.core.BlockPos lastVertex1 = null;
+    private net.minecraft.core.BlockPos lastVertex2 = null;
+    
     public StructureSaverMachineMenu(int containerId, Inventory playerInventory, StructureSaverMachineBlockEntity blockEntity) {
         super(ModMenuTypes.STRUCTURE_SAVER_MACHINE_MENU.get(), containerId);
         
@@ -56,8 +61,8 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = row * 9 + col;
-                int xPos = 7 + col * 18; // GUI coordinate 7 (nessun padding)
-                int yPos = 145 + row * 18; // GUI coordinate 145 (nessun padding)
+                int xPos = 8 + col * 18; // GUI coordinate 7 + 1 (spostato +1 a sinistra)
+                int yPos = 142 + row * 18; // GUI coordinate 145 - 3 (spostato 1 pixel più in basso)
                 
                 addSlot(new SlotItemHandler(itemHandler, slotIndex, xPos, yPos));
             }
@@ -82,6 +87,70 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
     
     @Override
     public boolean stillValid(Player player) {
-        return stillValid(this.levelAccess, player, ModBlocks.STRUCTURE_SAVER_MACHINE.get());
+        return stillValid(ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos()), player, ModBlocks.STRUCTURE_SAVER_MACHINE.get());
+    }
+    
+    /**
+     * Controlla se i dati blueprint sono cambiati
+     */
+    @Override
+    public void broadcastChanges() {
+        super.broadcastChanges();
+        
+        // Controlla se i dati blueprint sono cambiati (con null-safety)
+        if (blockEntity != null) {
+            var currentVertex1 = blockEntity.getBlueprintVertex1();
+            var currentVertex2 = blockEntity.getBlueprintVertex2();
+            
+            boolean changed = false;
+            if (!java.util.Objects.equals(lastVertex1, currentVertex1) || !java.util.Objects.equals(lastVertex2, currentVertex2)) {
+                lastVertex1 = currentVertex1;
+                lastVertex2 = currentVertex2;
+                changed = true;
+            }
+            
+            if (changed) {
+                blueprintDataChanged = true;
+            }
+        }
+    }
+    
+    /**
+     * Verifica se i dati blueprint sono cambiati e resetta il flag
+     */
+    public boolean checkAndResetBlueprintDataChanged() {
+        boolean changed = blueprintDataChanged;
+        blueprintDataChanged = false;
+        
+        // Debug logging con null-safety
+        if (changed && blockEntity != null) {
+            System.out.println("DEBUG MENU: Blueprint data changed detected!");
+            System.out.println("DEBUG MENU: vertex1 = " + blockEntity.getBlueprintVertex1());
+            System.out.println("DEBUG MENU: vertex2 = " + blockEntity.getBlueprintVertex2());
+            System.out.println("DEBUG MENU: hasValidArea = " + blockEntity.hasValidArea());
+        } else if (changed && blockEntity == null) {
+            System.out.println("DEBUG MENU: Blueprint data changed but blockEntity is null!");
+        }
+        
+        return changed;
+    }
+    
+    /**
+     * Forza il refresh dei dati blueprint
+     */
+    public void forceRefreshBlueprintData() {
+        blueprintDataChanged = true;
+        
+        // Aggiorna i dati di confronto per forzare il refresh
+        if (blockEntity != null) {
+            lastVertex1 = blockEntity.getBlueprintVertex1();
+            lastVertex2 = blockEntity.getBlueprintVertex2();
+        }
+        
+        System.out.println("DEBUG MENU: Forced refresh of blueprint data");
+    }
+    
+    public StructureSaverMachineBlockEntity getBlockEntity() {
+        return blockEntity;
     }
 } 

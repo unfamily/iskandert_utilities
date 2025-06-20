@@ -11,8 +11,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.energy.EnergyStorage;
-import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.slf4j.Logger;
@@ -26,13 +24,6 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     
     private static final Logger LOGGER = LoggerFactory.getLogger(StructureSaverMachineBlockEntity.class);
     
-    // Energy storage configurabile da Config
-    private final EnergyStorage energyStorage = new EnergyStorage(
-        net.unfamily.iskautils.Config.structureSaverMachineEnergyBuffer, 
-        net.unfamily.iskautils.Config.structureSaverMachineEnergyBuffer, // Max input = capacity
-        net.unfamily.iskautils.Config.structureSaverMachineEnergyBuffer  // Max extract = capacity
-    );
-    
     // Item storage per i 27 slot display
     private final ItemStackHandler itemHandler = new ItemStackHandler(27) {
         @Override
@@ -44,6 +35,11 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     
     // Compound tags storage per dati struttura
     private CompoundTag structureData = new CompoundTag();
+    
+    // Coordinate importate dalla blueprint
+    private net.minecraft.core.BlockPos blueprintVertex1;
+    private net.minecraft.core.BlockPos blueprintVertex2;
+    private net.minecraft.core.BlockPos blueprintCenter;
     
     // Stato operativo
     private boolean isWorking = false;
@@ -68,25 +64,43 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        return saveWithoutMetadata(registries);
+        CompoundTag tag = super.getUpdateTag(registries);
+        
+        // Aggiungi esplicitamente i dati blueprint per la sincronizzazione
+        if (blueprintVertex1 != null) {
+            tag.putInt("blueprintVertex1X", blueprintVertex1.getX());
+            tag.putInt("blueprintVertex1Y", blueprintVertex1.getY());
+            tag.putInt("blueprintVertex1Z", blueprintVertex1.getZ());
+        }
+        if (blueprintVertex2 != null) {
+            tag.putInt("blueprintVertex2X", blueprintVertex2.getX());
+            tag.putInt("blueprintVertex2Y", blueprintVertex2.getY());
+            tag.putInt("blueprintVertex2Z", blueprintVertex2.getZ());
+        }
+        if (blueprintCenter != null) {
+            tag.putInt("blueprintCenterX", blueprintCenter.getX());
+            tag.putInt("blueprintCenterY", blueprintCenter.getY());
+            tag.putInt("blueprintCenterZ", blueprintCenter.getZ());
+        }
+        
+        System.out.println("DEBUG BE: getUpdateTag called, including blueprint data");
+        System.out.println("DEBUG BE: tag contains blueprintVertex1X = " + tag.contains("blueprintVertex1X"));
+        return tag;
     }
     
     @Override
     public void onDataPacket(net.minecraft.network.Connection net, net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider lookupProvider) {
         super.onDataPacket(net, pkt, lookupProvider);
         if (pkt.getTag() != null) {
+            System.out.println("DEBUG BE: Received data packet on client");
             loadAdditional(pkt.getTag(), lookupProvider);
+            System.out.println("DEBUG BE: After packet load - hasValidArea = " + hasValidArea());
         }
     }
     
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        
-        // Salva energia
-        int currentEnergy = energyStorage.getEnergyStored();
-        tag.putInt("energy", currentEnergy);
-        LOGGER.debug("Structure Saver Machine saving energy: {}", currentEnergy);
         
         // Salva item handler
         tag.put("inventory", itemHandler.serializeNBT(registries));
@@ -97,19 +111,28 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
         // Salva stato operativo
         tag.putBoolean("isWorking", isWorking);
         tag.putInt("workProgress", workProgress);
+        
+        // Salva dati blueprint
+        if (blueprintVertex1 != null) {
+            tag.putInt("blueprintVertex1X", blueprintVertex1.getX());
+            tag.putInt("blueprintVertex1Y", blueprintVertex1.getY());
+            tag.putInt("blueprintVertex1Z", blueprintVertex1.getZ());
+        }
+        if (blueprintVertex2 != null) {
+            tag.putInt("blueprintVertex2X", blueprintVertex2.getX());
+            tag.putInt("blueprintVertex2Y", blueprintVertex2.getY());
+            tag.putInt("blueprintVertex2Z", blueprintVertex2.getZ());
+        }
+        if (blueprintCenter != null) {
+            tag.putInt("blueprintCenterX", blueprintCenter.getX());
+            tag.putInt("blueprintCenterY", blueprintCenter.getY());
+            tag.putInt("blueprintCenterZ", blueprintCenter.getZ());
+        }
     }
     
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        
-        // Carica energia
-        if (tag.contains("energy")) {
-            int savedEnergy = tag.getInt("energy");
-            energyStorage.extractEnergy(energyStorage.getEnergyStored(), false);
-            energyStorage.receiveEnergy(savedEnergy, false);
-            LOGGER.debug("Structure Saver Machine loaded energy: {}", savedEnergy);
-        }
         
         // Carica item handler
         if (tag.contains("inventory")) {
@@ -126,6 +149,31 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
         // Carica stato operativo
         isWorking = tag.getBoolean("isWorking");
         workProgress = tag.getInt("workProgress");
+        
+        // Carica dati blueprint
+        if (tag.contains("blueprintVertex1X")) {
+            int x1 = tag.getInt("blueprintVertex1X");
+            int y1 = tag.getInt("blueprintVertex1Y");
+            int z1 = tag.getInt("blueprintVertex1Z");
+            blueprintVertex1 = new BlockPos(x1, y1, z1);
+            System.out.println("DEBUG BE LOAD: vertex1 loaded = " + blueprintVertex1);
+        }
+        if (tag.contains("blueprintVertex2X")) {
+            int x2 = tag.getInt("blueprintVertex2X");
+            int y2 = tag.getInt("blueprintVertex2Y");
+            int z2 = tag.getInt("blueprintVertex2Z");
+            blueprintVertex2 = new BlockPos(x2, y2, z2);
+            System.out.println("DEBUG BE LOAD: vertex2 loaded = " + blueprintVertex2);
+        }
+        if (tag.contains("blueprintCenterX")) {
+            int x3 = tag.getInt("blueprintCenterX");
+            int y3 = tag.getInt("blueprintCenterY");
+            int z3 = tag.getInt("blueprintCenterZ");
+            blueprintCenter = new BlockPos(x3, y3, z3);
+            System.out.println("DEBUG BE LOAD: center loaded = " + blueprintCenter);
+        }
+        
+        System.out.println("DEBUG BE LOAD: After loading - hasValidArea = " + hasValidArea());
     }
     
     /**
@@ -140,13 +188,8 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
         if (blockEntity.isWorking) {
             blockEntity.workProgress++;
             
-            // Esempio di consumo energia durante lavoro
-            int energyRequired = net.unfamily.iskautils.Config.structureSaverMachineEnergyConsume;
-            if (energyRequired > 0 && blockEntity.energyStorage.getEnergyStored() >= energyRequired) {
-                blockEntity.energyStorage.extractEnergy(energyRequired, false);
-                blockEntity.setChanged();
-            } else if (energyRequired > 0) {
-                // Non abbastanza energia, ferma il lavoro
+            // Lavoro semplificato senza energia
+            if (blockEntity.workProgress >= 100) { // Completa dopo 5 secondi (100 tick)
                 blockEntity.isWorking = false;
                 blockEntity.workProgress = 0;
                 blockEntity.setChanged();
@@ -168,10 +211,6 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     }
     
     // Getters and setters
-    public IEnergyStorage getEnergyStorage() {
-        return energyStorage;
-    }
-    
     public IItemHandler getItemHandler() {
         return itemHandler;
     }
@@ -202,17 +241,110 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     }
     
     /**
-     * Ottiene l'energia attualmente immagazzinata
+     * Imposta i dati della blueprint importata
      */
-    public int getEnergyStored() {
-        return energyStorage.getEnergyStored();
+    public void setBlueprintData(net.minecraft.core.BlockPos vertex1, net.minecraft.core.BlockPos vertex2, net.minecraft.core.BlockPos center) {
+        this.blueprintVertex1 = vertex1;
+        this.blueprintVertex2 = vertex2;
+        this.blueprintCenter = center;
+        
+        // Debug logging per verificare che i dati siano salvati
+        System.out.println("DEBUG BE: setBlueprintData called");
+        System.out.println("DEBUG BE: vertex1 set to = " + this.blueprintVertex1);
+        System.out.println("DEBUG BE: vertex2 set to = " + this.blueprintVertex2);
+        System.out.println("DEBUG BE: center set to = " + this.blueprintCenter);
+        System.out.println("DEBUG BE: hasValidArea = " + hasValidArea());
+        
+        setChanged(); // Salva i dati
+        
+        // Forza la sincronizzazione standard del BlockEntity
+        if (level != null && !level.isClientSide()) {
+            System.out.println("DEBUG BE: Forcing block update for sync");
+            
+            // Metodo 1: Invia update packet standard
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            
+            // Metodo 2: Packet custom (backup)
+            if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                for (var player : serverLevel.players()) {
+                    if (player.distanceToSqr(getBlockPos().getX(), getBlockPos().getY(), getBlockPos().getZ()) < 64 * 64) {
+                        // Invia il data packet standard del BlockEntity
+                        var packet = getUpdatePacket();
+                        if (packet != null) {
+                            ((net.minecraft.server.level.ServerPlayer) player).connection.send(packet);
+                            System.out.println("DEBUG BE: Sent standard update packet to player " + player.getName().getString());
+                        }
+                        
+                                                 // Backup: packet custom via ModMessages (sistema semplificato)
+                        net.unfamily.iskautils.network.ModMessages.sendStructureSaverBlueprintSyncPacket(
+                            (net.minecraft.server.level.ServerPlayer) player, getBlockPos(), blueprintVertex1, blueprintVertex2, blueprintCenter
+                        );
+                    }
+                }
+            }
+            
+            System.out.println("DEBUG BE: Sent both standard and custom sync packets");
+        }
     }
     
     /**
-     * Ottiene la capacità massima di energia
+     * Imposta i dati blueprint lato client (chiamato dal packet)
      */
-    public int getMaxEnergyStored() {
-        return energyStorage.getMaxEnergyStored();
+    public void setBlueprintDataClientSide(net.minecraft.core.BlockPos vertex1, net.minecraft.core.BlockPos vertex2, net.minecraft.core.BlockPos center) {
+        this.blueprintVertex1 = vertex1;
+        this.blueprintVertex2 = vertex2;
+        this.blueprintCenter = center;
+        
+        System.out.println("DEBUG BE CLIENT: Blueprint data updated from packet");
+        System.out.println("DEBUG BE CLIENT: vertex1 = " + this.blueprintVertex1);
+        System.out.println("DEBUG BE CLIENT: vertex2 = " + this.blueprintVertex2);
+        System.out.println("DEBUG BE CLIENT: center = " + this.blueprintCenter);
+        System.out.println("DEBUG BE CLIENT: hasValidArea = " + hasValidArea());
+    }
+    
+    /**
+     * Ottiene il primo vertice della blueprint
+     */
+    public net.minecraft.core.BlockPos getBlueprintVertex1() {
+        return blueprintVertex1;
+    }
+    
+    /**
+     * Ottiene il secondo vertice della blueprint
+     */
+    public net.minecraft.core.BlockPos getBlueprintVertex2() {
+        return blueprintVertex2;
+    }
+    
+    /**
+     * Ottiene il centro della blueprint
+     */
+    public net.minecraft.core.BlockPos getBlueprintCenter() {
+        return blueprintCenter;
+    }
+    
+    /**
+     * Verifica se ha dati blueprint validi (tutti e 3 i punti)
+     */
+    public boolean hasBlueprintData() {
+        return blueprintVertex1 != null && blueprintVertex2 != null && blueprintCenter != null;
+    }
+    
+    /**
+     * Verifica se ha almeno i primi 2 vertici per calcoli area
+     */
+    public boolean hasValidArea() {
+        return blueprintVertex1 != null && blueprintVertex2 != null;
+    }
+    
+    /**
+     * Cancella i dati blueprint
+     */
+    public void clearBlueprintData() {
+        this.blueprintVertex1 = null;
+        this.blueprintVertex2 = null;
+        this.blueprintCenter = null;
+        setChanged();
     }
     
     // MenuProvider implementation (per la GUI futura)

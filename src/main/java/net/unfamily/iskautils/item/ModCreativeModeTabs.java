@@ -137,6 +137,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.STRUCTURE_PLACER_MACHINE.get());
                                 pOutput.accept(ModItems.STRUCTURE_SAVER_MACHINE.get());
                                 pOutput.accept(ModItems.STRUCTURE_PLACER.get());
+                                pOutput.accept(ModItems.BLUEPRINT.get());
                 
                 // Structure Monouse Items
                 Map<String, DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem>> monouseItems = 

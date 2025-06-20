@@ -372,6 +372,9 @@ public class MarkRenderer {
         BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         Matrix4f matrix = poseStack.last().pose();
         
+        // Flag per tracciare se abbiamo aggiunto vertex al buffer
+        boolean hasVertices = false;
+        
         // Render each block - iterazione diretta su ConcurrentHashMap è thread-safe
         for (Map.Entry<BlockPos, MarkBlockData> entry : highlightedBlocks.entrySet()) {
             BlockPos pos = entry.getKey();
@@ -384,10 +387,13 @@ public class MarkRenderer {
             
             // Draw the cube
             drawCube(bufferBuilder, matrix, pos, cameraPos, color);
+            hasVertices = true;
         }
         
-        // Complete the rendering
-        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        // Complete the rendering only if we have vertices
+        if (hasVertices) {
+            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        }
         
         RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();
@@ -413,6 +419,9 @@ public class MarkRenderer {
         BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         Matrix4f matrix = poseStack.last().pose();
         
+        // Flag per tracciare se abbiamo aggiunto vertex al buffer
+        boolean hasVertices = false;
+        
         // Render each marker as a small cube - iterazione diretta su ConcurrentHashMap è thread-safe
         for (Map.Entry<BlockPos, MarkBlockData> entry : billboardMarkers.entrySet()) {
             BlockPos pos = entry.getKey();
@@ -420,10 +429,13 @@ public class MarkRenderer {
             
             // Draw the small cube (12x12 pixels, centered in the block)
             drawSmallCube(bufferBuilder, matrix, pos, cameraPos, color);
+            hasVertices = true;
         }
         
-        // Complete the rendering
-        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        // Complete the rendering only if we have vertices
+        if (hasVertices) {
+            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        }
         
         RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();

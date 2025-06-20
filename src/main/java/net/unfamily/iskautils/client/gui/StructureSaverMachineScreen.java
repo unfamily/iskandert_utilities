@@ -47,7 +47,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     
     // Positions (adapted for 176x200 GUI, spostato più in alto senza energia)
     private static final int ENTRIES_START_X = 18;
-    private static final int ENTRIES_START_Y = 25; // Ritornato in alto senza energia
+    private static final int ENTRIES_START_Y = 20; // Spostato 5 pixel più in alto (da 25 a 20)
     
     // Scrollbar positions (aggiornate per la nuova posizione delle entry)
     private static final int SCROLLBAR_X = ENTRIES_START_X + ENTRY_WIDTH + 4;
@@ -67,20 +67,9 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     private EditBox nameEditBox;
     private Button saveButton;
     
-    // Posizioni nuovi componenti (appena sotto la terza entry, prima delle slot)
-    private static final int EDIT_BOX_Y = ENTRIES_START_Y + (3 * ENTRY_HEIGHT) + 4; // 4px sotto terza entry
-    private static final int BUTTONS_ROW_Y = EDIT_BOX_Y + 22; // Sotto l'editbox, ma prima delle slot
-    
-    // Pulsanti tiny 2x2 (ultimi 4 del primo set: A, C, B, D)
-    private static final int TINY_BUTTONS_X = ENTRIES_START_X + ENTRY_WIDTH - 16; // Allineati a destra
-    private static final int TINY_BUTTON_A_U = 32; // Quinta colonna (ultimi 4)
-    private static final int TINY_BUTTON_A_V = 0;  // Prima riga
-    private static final int TINY_BUTTON_B_U = 48; // Settima colonna
-    private static final int TINY_BUTTON_B_V = 0;  // Prima riga  
-    private static final int TINY_BUTTON_C_U = 40; // Sesta colonna
-    private static final int TINY_BUTTON_C_V = 0;  // Prima riga
-    private static final int TINY_BUTTON_D_U = 56; // Ottava colonna
-    private static final int TINY_BUTTON_D_V = 0;  // Prima riga
+    // Posizioni nuovi componenti (spostati ancora più in alto di poco)
+    private static final int EDIT_BOX_Y = ENTRIES_START_Y + (VISIBLE_ENTRIES * ENTRY_HEIGHT) + 2; // 2px sotto l'ultima entry (era 5px)
+    private static final int BUTTONS_ROW_Y = EDIT_BOX_Y + 22; // 22px sotto l'EditBox (era 25px)
     
     public StructureSaverMachineScreen(StructureSaverMachineMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -94,14 +83,62 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     protected void init() {
         super.init();
         
+        // Debug: Forza refresh all'apertura GUI
+        this.menu.forceRefreshBlueprintData();
+        
         // Centro il titolo ora che this.font è inizializzato
         this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
         
         // Carica le strutture client (solo quelle client)
         loadClientStructures();
         
+        // Richiedi sincronizzazione dati dal server
+        requestDataFromServer();
+        
         // Inizializza i componenti UI
         initComponents();
+    }
+    
+    /**
+     * Richiede sincronizzazione dati dal server
+     */
+    private void requestDataFromServer() {
+        System.out.println("DEBUG Screen: Requesting data from server");
+        
+        var blockEntity = this.menu.getBlockEntity();
+        if (blockEntity == null) {
+            System.out.println("DEBUG Screen: BlockEntity is null");
+            return;
+        }
+        
+        // In single player, proviamo accesso diretto
+        if (this.minecraft != null && this.minecraft.level != null) {
+            var serverBE = this.minecraft.level.getBlockEntity(blockEntity.getBlockPos());
+            if (serverBE instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity serverEntity) {
+                System.out.println("DEBUG Screen: Found server entity, checking data");
+                
+                var vertex1 = serverEntity.getBlueprintVertex1();
+                var vertex2 = serverEntity.getBlueprintVertex2();
+                var center = serverEntity.getBlueprintCenter();
+                
+                System.out.println("DEBUG Screen: Server data - V1: " + vertex1 + ", V2: " + vertex2 + ", Center: " + center);
+                
+                if (vertex1 != null && vertex2 != null && center != null) {
+                    System.out.println("DEBUG Screen: Setting data on client entity");
+                    blockEntity.setBlueprintDataClientSide(vertex1, vertex2, center);
+                    
+                    // Forza la popolazione degli slot dopo aver impostato i dati
+                    this.minecraft.execute(() -> {
+                        System.out.println("DEBUG Screen: Forcing populateAreaBlocks after data sync");
+                        populateAreaBlocks();
+                    });
+                } else {
+                    System.out.println("DEBUG Screen: Server data incomplete");
+                }
+            } else {
+                System.out.println("DEBUG Screen: Server entity not found or wrong type");
+            }
+        }
     }
     
     /**
@@ -121,6 +158,114 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                           .bounds(this.leftPos + ENTRIES_START_X, this.topPos + BUTTONS_ROW_Y, 40, 20)
                           .build();
         addRenderableWidget(saveButton);
+        
+        // Popola gli slot con i blocchi dell'area se disponibili
+        populateAreaBlocks();
+    }
+    
+    /**
+     * Popola gli slot con i blocchi dell'area dalla blueprint
+     */
+    private void populateAreaBlocks() {
+        var blockEntity = this.menu.getBlockEntity();
+        
+        // Debug logging
+        System.out.println("DEBUG: populateAreaBlocks called");
+        System.out.println("DEBUG: blockEntity = " + blockEntity);
+        
+        if (blockEntity != null) {
+            System.out.println("DEBUG: hasValidArea = " + blockEntity.hasValidArea());
+            System.out.println("DEBUG: vertex1 = " + blockEntity.getBlueprintVertex1());
+            System.out.println("DEBUG: vertex2 = " + blockEntity.getBlueprintVertex2());
+            System.out.println("DEBUG: center = " + blockEntity.getBlueprintCenter());
+        } else {
+            System.out.println("DEBUG: blockEntity is null, cannot populate area blocks");
+            return;
+        }
+        
+        if (blockEntity.hasValidArea()) {
+            var vertex1 = blockEntity.getBlueprintVertex1();
+            var vertex2 = blockEntity.getBlueprintVertex2();
+            
+            if (vertex1 != null && vertex2 != null) {
+                // Verifica che l'area sia valida
+                int[] dimensions = calculateDimensions(vertex1, vertex2);
+                System.out.println("DEBUG: dimensions = " + dimensions[0] + "x" + dimensions[1] + "x" + dimensions[2]);
+                
+                if (dimensions[0] <= 64 && dimensions[1] <= 64 && dimensions[2] <= 64) {
+                    System.out.println("DEBUG: Area valida, scansionando blocchi...");
+                    scanAndPopulateBlocks(vertex1, vertex2);
+                } else {
+                    System.out.println("DEBUG: Area troppo grande!");
+                }
+            }
+        }
+    }
+    
+    /**
+     * Scansiona l'area e popola gli slot con i blocchi trovati
+     */
+    private void scanAndPopulateBlocks(net.minecraft.core.BlockPos vertex1, net.minecraft.core.BlockPos vertex2) {
+        if (this.minecraft == null || this.minecraft.level == null) return;
+        
+        // Calcola i bounds dell'area
+        int minX = Math.min(vertex1.getX(), vertex2.getX());
+        int maxX = Math.max(vertex1.getX(), vertex2.getX());
+        int minY = Math.min(vertex1.getY(), vertex2.getY());
+        int maxY = Math.max(vertex1.getY(), vertex2.getY());
+        int minZ = Math.min(vertex1.getZ(), vertex2.getZ());
+        int maxZ = Math.max(vertex1.getZ(), vertex2.getZ());
+        
+        // Mappa per contare i blocchi
+        java.util.Map<net.minecraft.world.item.Item, Integer> blockCounts = new java.util.HashMap<>();
+        
+        // Scansiona tutta l'area
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    var pos = new net.minecraft.core.BlockPos(x, y, z);
+                    var blockState = this.minecraft.level.getBlockState(pos);
+                    var block = blockState.getBlock();
+                    
+                    // Salta blocchi d'aria
+                    if (block == net.minecraft.world.level.block.Blocks.AIR) continue;
+                    
+                    // Ottieni l'item corrispondente al blocco (senza NBT)
+                    var item = block.asItem();
+                    if (item != net.minecraft.world.item.Items.AIR) {
+                        blockCounts.merge(item, 1, Integer::sum);
+                    }
+                }
+            }
+        }
+        
+        // Popola gli slot con i blocchi trovati
+        var itemHandler = this.menu.getBlockEntity().getItemHandler();
+        int slotIndex = 0;
+        
+        for (var entry : blockCounts.entrySet()) {
+            if (slotIndex >= 27) break; // Massimo 27 slot
+            
+            var item = entry.getKey();
+            var count = entry.getValue();
+            
+            // Crea stack senza NBT
+            var stack = new net.minecraft.world.item.ItemStack(item, Math.min(count, 64)); // Usa il massimo standard
+            
+            // Inserisci nello slot tramite il menu
+            if (itemHandler instanceof net.neoforged.neoforge.items.ItemStackHandler handler) {
+                handler.setStackInSlot(slotIndex, stack);
+            }
+            
+            slotIndex++;
+        }
+        
+        // Pulisci gli slot rimanenti
+        if (itemHandler instanceof net.neoforged.neoforge.items.ItemStackHandler handler) {
+            for (int i = slotIndex; i < 27; i++) {
+                handler.setStackInSlot(i, net.minecraft.world.item.ItemStack.EMPTY);
+            }
+        }
     }
     
     /**
@@ -150,7 +295,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         // Renderizza i componenti
         renderEntries(guiGraphics, mouseX, mouseY);
         renderScrollbar(guiGraphics, mouseX, mouseY);
-        renderNewComponents(guiGraphics, mouseX, mouseY);
+        renderNewComponents(guiGraphics, mouseX, mouseY, partialTick);
     }
     
     @Override
@@ -318,16 +463,29 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) { // Left click
-            // Gestisci i vari click nell'ordine di priorità
-            if (handleTinyButtonClick(mouseX, mouseY) ||
-                handleScrollButtonClick(mouseX, mouseY) ||
-                handleButtonClick(mouseX, mouseY) ||
-                handleHandleClick(mouseX, mouseY) ||
-                handleScrollbarClick(mouseX, mouseY) ||
-                handleEntryClick(mouseX, mouseY)) {
-                return true;
-            }
+        // Gestisci i click sui pulsanti della scrollbar
+        if (handleScrollButtonClick(mouseX, mouseY)) {
+            return true;
+        }
+        
+        // Gestisci i click sui tiny button nelle entry
+        if (handleButtonClick(mouseX, mouseY)) {
+            return true;
+        }
+        
+        // Gestisci il click sulla maniglia della scrollbar
+        if (handleHandleClick(mouseX, mouseY)) {
+            return true;
+        }
+        
+        // Gestisci i click sulla scrollbar
+        if (handleScrollbarClick(mouseX, mouseY)) {
+            return true;
+        }
+        
+        // Gestisci i click sulle entry
+        if (handleEntryClick(mouseX, mouseY)) {
+            return true;
         }
         
         return super.mouseClicked(mouseX, mouseY, button);
@@ -511,99 +669,54 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     }
     
     /**
-     * Gestisce i click sui 4 pulsanti tiny (A, C, B, D)
+     * Renderizza i nuovi componenti UI (EditBox, Save button e "Area:")
      */
-    private boolean handleTinyButtonClick(double mouseX, double mouseY) {
-        int baseX = this.leftPos + TINY_BUTTONS_X;
-        int baseY = this.topPos + BUTTONS_ROW_Y;
+    private void renderNewComponents(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        // Testo "Area:" - posizionato dopo il Save button
+        int areaTextX = this.leftPos + ENTRIES_START_X + 50; // 10px dopo il Save button (larghezza 40px)
+        guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.area"), 
+                               areaTextX, this.topPos + BUTTONS_ROW_Y + 6, 0x404040, false);
         
-        // Prima riga: A, C
-        if (isInButtonBounds(mouseX, mouseY, baseX, baseY)) {
-            onTinyButtonClicked("A");
-            return true;
-        }
-        if (isInButtonBounds(mouseX, mouseY, baseX + 8, baseY)) {
-            onTinyButtonClicked("C");
-            return true;
-        }
+        // Informazioni area dalla blueprint
+        var blockEntity = this.menu.getBlockEntity();
         
-        // Seconda riga: B, D
-        if (isInButtonBounds(mouseX, mouseY, baseX, baseY + 8)) {
-            onTinyButtonClicked("B");
-            return true;
-        }
-        if (isInButtonBounds(mouseX, mouseY, baseX + 8, baseY + 8)) {
-            onTinyButtonClicked("D");
-            return true;
+        // Debug per area display
+        if (blockEntity != null) {
+            System.out.println("DEBUG RENDER: hasValidArea = " + blockEntity.hasValidArea());
+        } else {
+            System.out.println("DEBUG RENDER: blockEntity is null");
+            return; // Esci presto se blockEntity è null
         }
         
-        return false;
-    }
-    
-    /**
-     * Verifica se il mouse è dentro i bounds di un pulsante tiny 8x8
-     */
-    private boolean isInButtonBounds(double mouseX, double mouseY, int buttonX, int buttonY) {
-        return mouseX >= buttonX && mouseX < buttonX + 8 && mouseY >= buttonY && mouseY < buttonY + 8;
-    }
-    
-    /**
-     * Gestisce il click su un pulsante tiny specifico
-     */
-    private void onTinyButtonClicked(String buttonType) {
-        if (this.minecraft != null && this.minecraft.player != null) {
-            this.minecraft.player.displayClientMessage(
-                Component.literal("§eClicked tiny button: " + buttonType), 
-                true);
+        if (blockEntity.hasValidArea()) {
+            var vertex1 = blockEntity.getBlueprintVertex1();
+            var vertex2 = blockEntity.getBlueprintVertex2();
+            
+            if (vertex1 != null && vertex2 != null) {
+                int[] dimensions = calculateDimensions(vertex1, vertex2);
+                
+                // Verifica validità (tutte le dimensioni ≤ 64)
+                boolean isValid = dimensions[0] <= 64 && dimensions[1] <= 64 && dimensions[2] <= 64;
+                
+                // Formato testo: "32x45x60 XYZ"
+                String areaText = String.format("%dx%dx%d XYZ", dimensions[0], dimensions[1], dimensions[2]);
+                
+                // Colore: verde se valido, rosso se non valido
+                int color = isValid ? 0x00FF00 : 0xFF0000;
+                
+                // Posizione: sotto l'EditBox, allineato a sinistra
+                int textX = this.leftPos + ENTRIES_START_X;
+                int textY = this.topPos + EDIT_BOX_Y + 25;
+                
+                guiGraphics.drawString(this.font, areaText, textX, textY, color, false);
+                
+                // Se non valido, mostra messaggio di errore
+                if (!isValid) {
+                    String errorText = Component.translatable("gui.iska_utils.area_too_large").getString();
+                    guiGraphics.drawString(this.font, errorText, textX, textY + 12, 0xFF0000, false);
+                }
+            }
         }
-        // TODO: Implementare funzionalità specifiche per ogni pulsante
-    }
-    
-    /**
-     * Renderizza testo "Area:" e 4 pulsanti tiny impilati 2x2
-     */
-    private void renderNewComponents(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // EditBox e pulsante Save vengono renderizzati automaticamente essendo renderableWidgets
-        
-        // Testo "Area:" centrato tra Save e pulsanti tiny
-        Component areaText = Component.translatable("gui.iska_utils.area");
-        int areaTextWidth = this.font.width(areaText);
-        int saveButtonEndX = this.leftPos + ENTRIES_START_X + 40; // Fine pulsante Save
-        int tinyButtonsStartX = this.leftPos + TINY_BUTTONS_X; // Inizio pulsanti tiny
-        int areaTextX = saveButtonEndX + ((tinyButtonsStartX - saveButtonEndX - areaTextWidth) / 2);
-        int areaTextY = this.topPos + BUTTONS_ROW_Y + 6; // Centrato verticalmente con pulsanti
-        
-        guiGraphics.drawString(this.font, areaText, areaTextX, areaTextY, 0x404040, false);
-        
-        // Renderizza 4 pulsanti tiny impilati 2x2 (A C su, B D giù)
-        renderTinyButtons(guiGraphics, mouseX, mouseY);
-    }
-    
-    /**
-     * Renderizza i 4 pulsanti tiny impilati 2x2: AC (sopra), BD (sotto)
-     */
-    private void renderTinyButtons(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        int baseX = this.leftPos + TINY_BUTTONS_X;
-        int baseY = this.topPos + BUTTONS_ROW_Y;
-        
-        // Prima riga: A, C
-        renderSingleTinyButton(guiGraphics, baseX, baseY, TINY_BUTTON_A_U, TINY_BUTTON_A_V, mouseX, mouseY, "A");
-        renderSingleTinyButton(guiGraphics, baseX + 8, baseY, TINY_BUTTON_C_U, TINY_BUTTON_C_V, mouseX, mouseY, "C");
-        
-        // Seconda riga: B, D
-        renderSingleTinyButton(guiGraphics, baseX, baseY + 8, TINY_BUTTON_B_U, TINY_BUTTON_B_V, mouseX, mouseY, "B");
-        renderSingleTinyButton(guiGraphics, baseX + 8, baseY + 8, TINY_BUTTON_D_U, TINY_BUTTON_D_V, mouseX, mouseY, "D");
-    }
-    
-    /**
-     * Renderizza un singolo pulsante tiny con hover effect
-     */
-    private void renderSingleTinyButton(GuiGraphics guiGraphics, int x, int y, int u, int baseV, 
-                                       int mouseX, int mouseY, String buttonType) {
-        boolean isHovered = mouseX >= x && mouseX < x + 8 && mouseY >= y && mouseY < y + 8;
-        int v = isHovered ? baseV + 8 : baseV; // +8 per versione illuminata
-        
-        guiGraphics.blit(TINY_BUTTONS_TEXTURE, x, y, u, v, 8, 8, 64, 96);
     }
     
     /**
@@ -620,11 +733,105 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             return;
         }
         
-        // TODO: Implementare salvataggio struttura
+        // Verifica che il BlockEntity abbia dati blueprint
+        var blockEntity = this.menu.getBlockEntity();
+        if (blockEntity == null || !blockEntity.hasBlueprintData()) {
+            if (this.minecraft != null && this.minecraft.player != null) {
+                this.minecraft.player.displayClientMessage(
+                    Component.translatable("gui.iska_utils.save_error_no_coordinates"), 
+                    true);
+            }
+            return;
+        }
+        
+        // Salva la struttura con le coordinate dal BlockEntity
+        var vertex1 = blockEntity.getBlueprintVertex1();
+        var vertex2 = blockEntity.getBlueprintVertex2();
+        var center = blockEntity.getBlueprintCenter();
+        
         if (this.minecraft != null && this.minecraft.player != null) {
+            // TODO: Implementare il salvataggio effettivo della struttura
+            // Per ora mostra un messaggio di debug con tutti i dati
             this.minecraft.player.displayClientMessage(
-                Component.literal("§aSaving structure as: " + structureName), 
+                Component.translatable("gui.iska_utils.save_success", structureName,
+                    formatPosition(vertex1), formatPosition(vertex2), formatPosition(center)), 
                 true);
+            
+            // Reset dei dati dopo il salvataggio
+            blockEntity.clearBlueprintData();
+            nameEditBox.setValue("");
+        }
+    }
+    
+    /**
+     * Calcola le dimensioni dell'area
+     */
+    private int[] calculateDimensions(net.minecraft.core.BlockPos vertex1, net.minecraft.core.BlockPos vertex2) {
+        int sizeX = Math.abs(vertex2.getX() - vertex1.getX()) + 1;
+        int sizeY = Math.abs(vertex2.getY() - vertex1.getY()) + 1;
+        int sizeZ = Math.abs(vertex2.getZ() - vertex1.getZ()) + 1;
+        return new int[]{sizeX, sizeY, sizeZ};
+    }
+    
+    /**
+     * Formatta una posizione per la visualizzazione
+     */
+    private String formatPosition(net.minecraft.core.BlockPos pos) {
+        return String.format("(%d, %d, %d)", pos.getX(), pos.getY(), pos.getZ());
+    }
+    
+    @Override
+    public void containerTick() {
+        super.containerTick();
+        
+        // Controlla se i dati blueprint sono cambiati e ripopola gli slot
+        if (this.menu.checkAndResetBlueprintDataChanged()) {
+            populateAreaBlocks();
+        }
+        
+        // Controlla periodicamente se ci sono nuovi dati blueprint (ogni 20 tick = 1 secondo)
+        if (minecraft != null && minecraft.level != null && minecraft.level.getGameTime() % 20 == 0) {
+            var blockEntity = this.menu.getBlockEntity();
+            if (blockEntity != null) {
+                // Prima controlla se il client non ha dati ma il server sì
+                if (!blockEntity.hasBlueprintData()) {
+                    // Prova a risincronizzare dal server
+                    var serverBE = minecraft.level.getBlockEntity(blockEntity.getBlockPos());
+                    if (serverBE instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity serverEntity) {
+                        var vertex1 = serverEntity.getBlueprintVertex1();
+                        var vertex2 = serverEntity.getBlueprintVertex2();
+                        var center = serverEntity.getBlueprintCenter();
+                        
+                        if (vertex1 != null && vertex2 != null && center != null) {
+                            System.out.println("DEBUG: Periodic sync found server data, copying to client");
+                            blockEntity.setBlueprintDataClientSide(vertex1, vertex2, center);
+                            populateAreaBlocks();
+                        }
+                    }
+                } else if (blockEntity.hasValidArea()) {
+                    // Se abbiamo dati validi ma gli slot sono vuoti, ripopola
+                    var itemHandler = blockEntity.getItemHandler();
+                    if (itemHandler instanceof net.neoforged.neoforge.items.ItemStackHandler handler) {
+                        boolean hasItems = false;
+                        for (int i = 0; i < 27; i++) {
+                            if (!handler.getStackInSlot(i).isEmpty()) {
+                                hasItems = true;
+                                break;
+                            }
+                        }
+                        if (!hasItems) {
+                            System.out.println("DEBUG: No items in slots but valid area detected, repopulating...");
+                            populateAreaBlocks();
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Aggiorna lo stato del pulsante Save basandosi sulla validità dell'area
+        // PER ORA NON INTERAGIRE CON SAVE - lasciamo sempre abilitato
+        if (saveButton != null) {
+            saveButton.active = true; // Sempre abilitato per ora
         }
     }
 } 

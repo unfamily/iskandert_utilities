@@ -160,13 +160,13 @@ public class ModBlockEntities {
                     }
             );
             
-            // Register energy capability for Structure Saver Machine
+            // Register item handler capability for Structure Saver Machine
             event.registerBlockEntity(
-                    Capabilities.EnergyStorage.BLOCK,
+                    Capabilities.ItemHandler.BLOCK,
                     STRUCTURE_SAVER_MACHINE_BE.get(),
                     (blockEntity, context) -> {
                         if (blockEntity instanceof StructureSaverMachineBlockEntity saverMachineEntity) {
-                            return saverMachineEntity.getEnergyStorage();
+                            return saverMachineEntity.getItemHandler();
                         }
                         return null;
                     }

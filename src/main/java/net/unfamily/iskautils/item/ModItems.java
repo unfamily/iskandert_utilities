@@ -18,6 +18,7 @@ import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.SwissWrenchItem;
 import net.unfamily.iskautils.item.custom.AngelBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
+import net.unfamily.iskautils.item.custom.BlueprintItem;
 
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
@@ -320,15 +321,15 @@ public class ModItems {
     
     public static final DeferredItem<Item> STRUCTURE_SAVER_MACHINE = ITEMS.register("structure_saver_machine",
             () -> new BlockItem(ModBlocks.STRUCTURE_SAVER_MACHINE.get(), ITEM_PROPERTIES));
-            
+
     public static final DeferredItem<Item> STRUCTURE_PLACER = ITEMS.register("structure_placer",
             () -> new StructurePlacerItem(new Item.Properties().stacksTo(1)));
             
     // ===== DEV ITEMS =====
     
-    // Blueprint - Dev-only item (not indexed, for development purposes only)
+    // Blueprint - Strumento per salvare coordinate di vertici
     public static final DeferredItem<Item> BLUEPRINT = ITEMS.register("blueprint",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new BlueprintItem(new Item.Properties().stacksTo(1)));
 
 
 

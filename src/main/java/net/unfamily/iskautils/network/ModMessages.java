@@ -195,6 +195,39 @@ public class ModMessages {
     }
     
     /**
+     * Sends a Structure Saver blueprint sync packet
+     */
+    public static void sendStructureSaverBlueprintSyncPacket(ServerPlayer player, BlockPos machinePos, BlockPos vertex1, BlockPos vertex2, BlockPos center) {
+        LOGGER.info("Sending Structure Saver blueprint sync packet for machine at {}", machinePos);
+        
+        // Sistema semplificato identico agli altri packet in questa classe
+        try {
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                // Gestisce il packet lato client
+                try {
+                    var level = net.minecraft.client.Minecraft.getInstance().level;
+                    if (level != null) {
+                        var blockEntity = level.getBlockEntity(machinePos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity structureSaver) {
+                            structureSaver.setBlueprintDataClientSide(vertex1, vertex2, center);
+                            LOGGER.info("Blueprint sincronizzata con successo sul client via ModMessages");
+                        } else {
+                            LOGGER.warn("BlockEntity at {} is not a StructureSaverMachineBlockEntity", machinePos);
+                        }
+                    } else {
+                        LOGGER.warn("Client level is null, cannot sync blueprint data");
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Errore durante la sincronizzazione blueprint: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            // Ignora errori quando si esegue su server dedicato
+            LOGGER.debug("Blueprint sync packet not sent in dedicated server mode: {}", e.getMessage());
+        }
+    }
+    
+    /**
      * Sends a Structure Placer Machine show packet to toggle preview mode
      */
     public static void sendStructurePlacerMachineShowPacket(BlockPos machinePos) {
