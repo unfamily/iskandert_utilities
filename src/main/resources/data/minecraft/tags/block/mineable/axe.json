@@ -20,6 +20,8 @@
     "iska_utils:rubber_button",
     "iska_utils:time_alterer",
     "iska_utils:weather_alterer",
-    "iska_utils:weather_detector"
+    "iska_utils:weather_detector",
+    "iska_utils:structure_saver_machine",
+    "iska_utils:structure_placer_machine"
   ]
 } 

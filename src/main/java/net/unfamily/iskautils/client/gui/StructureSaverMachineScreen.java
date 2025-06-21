@@ -83,62 +83,22 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     protected void init() {
         super.init();
         
-        // Debug: Forza refresh all'apertura GUI
-        this.menu.forceRefreshBlueprintData();
-        
         // Centro il titolo ora che this.font è inizializzato
         this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
         
         // Carica le strutture client (solo quelle client)
         loadClientStructures();
         
-        // Richiedi sincronizzazione dati dal server
-        requestDataFromServer();
-        
         // Inizializza i componenti UI
         initComponents();
     }
     
     /**
-     * Richiede sincronizzazione dati dal server
+     * Non più necessario richiedere sincronizzazione manuale - ContainerData lo fa automaticamente
      */
     private void requestDataFromServer() {
-        System.out.println("DEBUG Screen: Requesting data from server");
-        
-        var blockEntity = this.menu.getBlockEntity();
-        if (blockEntity == null) {
-            System.out.println("DEBUG Screen: BlockEntity is null");
-            return;
-        }
-        
-        // In single player, proviamo accesso diretto
-        if (this.minecraft != null && this.minecraft.level != null) {
-            var serverBE = this.minecraft.level.getBlockEntity(blockEntity.getBlockPos());
-            if (serverBE instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity serverEntity) {
-                System.out.println("DEBUG Screen: Found server entity, checking data");
-                
-                var vertex1 = serverEntity.getBlueprintVertex1();
-                var vertex2 = serverEntity.getBlueprintVertex2();
-                var center = serverEntity.getBlueprintCenter();
-                
-                System.out.println("DEBUG Screen: Server data - V1: " + vertex1 + ", V2: " + vertex2 + ", Center: " + center);
-                
-                if (vertex1 != null && vertex2 != null && center != null) {
-                    System.out.println("DEBUG Screen: Setting data on client entity");
-                    blockEntity.setBlueprintDataClientSide(vertex1, vertex2, center);
-                    
-                    // Forza la popolazione degli slot dopo aver impostato i dati
-                    this.minecraft.execute(() -> {
-                        System.out.println("DEBUG Screen: Forcing populateAreaBlocks after data sync");
-                        populateAreaBlocks();
-                    });
-                } else {
-                    System.out.println("DEBUG Screen: Server data incomplete");
-                }
-            } else {
-                System.out.println("DEBUG Screen: Server entity not found or wrong type");
-            }
-        }
+        // ContainerData sincronizza automaticamente i dati dal server
+        System.out.println("DEBUG SCREEN: Using ContainerData for automatic sync");
     }
     
     /**
@@ -159,114 +119,15 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                           .build();
         addRenderableWidget(saveButton);
         
-        // Popola gli slot con i blocchi dell'area se disponibili
-        populateAreaBlocks();
+        // Gli slot vengono popolati automaticamente dal server quando l'area viene impostata
     }
     
     /**
      * Popola gli slot con i blocchi dell'area dalla blueprint
      */
-    private void populateAreaBlocks() {
-        var blockEntity = this.menu.getBlockEntity();
-        
-        // Debug logging
-        System.out.println("DEBUG: populateAreaBlocks called");
-        System.out.println("DEBUG: blockEntity = " + blockEntity);
-        
-        if (blockEntity != null) {
-            System.out.println("DEBUG: hasValidArea = " + blockEntity.hasValidArea());
-            System.out.println("DEBUG: vertex1 = " + blockEntity.getBlueprintVertex1());
-            System.out.println("DEBUG: vertex2 = " + blockEntity.getBlueprintVertex2());
-            System.out.println("DEBUG: center = " + blockEntity.getBlueprintCenter());
-        } else {
-            System.out.println("DEBUG: blockEntity is null, cannot populate area blocks");
-            return;
-        }
-        
-        if (blockEntity.hasValidArea()) {
-            var vertex1 = blockEntity.getBlueprintVertex1();
-            var vertex2 = blockEntity.getBlueprintVertex2();
-            
-            if (vertex1 != null && vertex2 != null) {
-                // Verifica che l'area sia valida
-                int[] dimensions = calculateDimensions(vertex1, vertex2);
-                System.out.println("DEBUG: dimensions = " + dimensions[0] + "x" + dimensions[1] + "x" + dimensions[2]);
-                
-                if (dimensions[0] <= 64 && dimensions[1] <= 64 && dimensions[2] <= 64) {
-                    System.out.println("DEBUG: Area valida, scansionando blocchi...");
-                    scanAndPopulateBlocks(vertex1, vertex2);
-                } else {
-                    System.out.println("DEBUG: Area troppo grande!");
-                }
-            }
-        }
-    }
+    // RIMOSSO: populateAreaBlocks ora viene eseguito dal server nel BlockEntity
     
-    /**
-     * Scansiona l'area e popola gli slot con i blocchi trovati
-     */
-    private void scanAndPopulateBlocks(net.minecraft.core.BlockPos vertex1, net.minecraft.core.BlockPos vertex2) {
-        if (this.minecraft == null || this.minecraft.level == null) return;
-        
-        // Calcola i bounds dell'area
-        int minX = Math.min(vertex1.getX(), vertex2.getX());
-        int maxX = Math.max(vertex1.getX(), vertex2.getX());
-        int minY = Math.min(vertex1.getY(), vertex2.getY());
-        int maxY = Math.max(vertex1.getY(), vertex2.getY());
-        int minZ = Math.min(vertex1.getZ(), vertex2.getZ());
-        int maxZ = Math.max(vertex1.getZ(), vertex2.getZ());
-        
-        // Mappa per contare i blocchi
-        java.util.Map<net.minecraft.world.item.Item, Integer> blockCounts = new java.util.HashMap<>();
-        
-        // Scansiona tutta l'area
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    var pos = new net.minecraft.core.BlockPos(x, y, z);
-                    var blockState = this.minecraft.level.getBlockState(pos);
-                    var block = blockState.getBlock();
-                    
-                    // Salta blocchi d'aria
-                    if (block == net.minecraft.world.level.block.Blocks.AIR) continue;
-                    
-                    // Ottieni l'item corrispondente al blocco (senza NBT)
-                    var item = block.asItem();
-                    if (item != net.minecraft.world.item.Items.AIR) {
-                        blockCounts.merge(item, 1, Integer::sum);
-                    }
-                }
-            }
-        }
-        
-        // Popola gli slot con i blocchi trovati
-        var itemHandler = this.menu.getBlockEntity().getItemHandler();
-        int slotIndex = 0;
-        
-        for (var entry : blockCounts.entrySet()) {
-            if (slotIndex >= 27) break; // Massimo 27 slot
-            
-            var item = entry.getKey();
-            var count = entry.getValue();
-            
-            // Crea stack senza NBT
-            var stack = new net.minecraft.world.item.ItemStack(item, Math.min(count, 64)); // Usa il massimo standard
-            
-            // Inserisci nello slot tramite il menu
-            if (itemHandler instanceof net.neoforged.neoforge.items.ItemStackHandler handler) {
-                handler.setStackInSlot(slotIndex, stack);
-            }
-            
-            slotIndex++;
-        }
-        
-        // Pulisci gli slot rimanenti
-        if (itemHandler instanceof net.neoforged.neoforge.items.ItemStackHandler handler) {
-            for (int i = slotIndex; i < 27; i++) {
-                handler.setStackInSlot(i, net.minecraft.world.item.ItemStack.EMPTY);
-            }
-        }
-    }
+    // RIMOSSO: scanAndPopulateBlocks - ora gestito dal server nel BlockEntity
     
     /**
      * Carica le strutture client dal StructureLoader
@@ -677,22 +538,17 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.area"), 
                                areaTextX, this.topPos + BUTTONS_ROW_Y + 6, 0x404040, false);
         
-        // Informazioni area dalla blueprint
-        var blockEntity = this.menu.getBlockEntity();
+        // Informazioni area dai dati sincronizzati
+        boolean hasValidArea = this.menu.getSyncedHasValidArea();
+        var vertex1 = this.menu.getSyncedVertex1();
+        var vertex2 = this.menu.getSyncedVertex2();
         
         // Debug per area display
-        if (blockEntity != null) {
-            System.out.println("DEBUG RENDER: hasValidArea = " + blockEntity.hasValidArea());
-        } else {
-            System.out.println("DEBUG RENDER: blockEntity is null");
-            return; // Esci presto se blockEntity è null
-        }
+        System.out.println("DEBUG RENDER: Synced hasValidArea = " + hasValidArea);
+        System.out.println("DEBUG RENDER: Synced vertex1 = " + vertex1);
+        System.out.println("DEBUG RENDER: Synced vertex2 = " + vertex2);
         
-        if (blockEntity.hasValidArea()) {
-            var vertex1 = blockEntity.getBlueprintVertex1();
-            var vertex2 = blockEntity.getBlueprintVertex2();
-            
-            if (vertex1 != null && vertex2 != null) {
+        if (hasValidArea && vertex1 != null && vertex2 != null) {
                 int[] dimensions = calculateDimensions(vertex1, vertex2);
                 
                 // Verifica validità (tutte le dimensioni ≤ 64)
@@ -701,21 +557,22 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 // Formato testo: "32x45x60 XYZ"
                 String areaText = String.format("%dx%dx%d XYZ", dimensions[0], dimensions[1], dimensions[2]);
                 
-                // Colore: verde se valido, rosso se non valido
-                int color = isValid ? 0x00FF00 : 0xFF0000;
+                // Posizione: subito dopo il testo "Area:" sulla stessa riga
+                int textX = areaTextX + this.font.width(Component.translatable("gui.iska_utils.area")) + 5; // 5px di spazio
+                int textY = this.topPos + BUTTONS_ROW_Y + 6; // Stessa altezza del testo "Area:"
                 
-                // Posizione: sotto l'EditBox, allineato a sinistra
-                int textX = this.leftPos + ENTRIES_START_X;
-                int textY = this.topPos + EDIT_BOX_Y + 25;
+                // Colore neutro (stesso del testo normale)
+                int color = 0x404040;
                 
                 guiGraphics.drawString(this.font, areaText, textX, textY, color, false);
                 
-                // Se non valido, mostra messaggio di errore
+                // Se non valido, mostra messaggio di errore sotto l'EditBox
                 if (!isValid) {
                     String errorText = Component.translatable("gui.iska_utils.area_too_large").getString();
-                    guiGraphics.drawString(this.font, errorText, textX, textY + 12, 0xFF0000, false);
+                    int errorX = this.leftPos + ENTRIES_START_X;
+                    int errorY = this.topPos + EDIT_BOX_Y + 25;
+                    guiGraphics.drawString(this.font, errorText, errorX, errorY, 0xFF0000, false);
                 }
-            }
         }
     }
     
@@ -784,54 +641,13 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     public void containerTick() {
         super.containerTick();
         
-        // Controlla se i dati blueprint sono cambiati e ripopola gli slot
-        if (this.menu.checkAndResetBlueprintDataChanged()) {
-            populateAreaBlocks();
-        }
-        
-        // Controlla periodicamente se ci sono nuovi dati blueprint (ogni 20 tick = 1 secondo)
-        if (minecraft != null && minecraft.level != null && minecraft.level.getGameTime() % 20 == 0) {
-            var blockEntity = this.menu.getBlockEntity();
-            if (blockEntity != null) {
-                // Prima controlla se il client non ha dati ma il server sì
-                if (!blockEntity.hasBlueprintData()) {
-                    // Prova a risincronizzare dal server
-                    var serverBE = minecraft.level.getBlockEntity(blockEntity.getBlockPos());
-                    if (serverBE instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity serverEntity) {
-                        var vertex1 = serverEntity.getBlueprintVertex1();
-                        var vertex2 = serverEntity.getBlueprintVertex2();
-                        var center = serverEntity.getBlueprintCenter();
-                        
-                        if (vertex1 != null && vertex2 != null && center != null) {
-                            System.out.println("DEBUG: Periodic sync found server data, copying to client");
-                            blockEntity.setBlueprintDataClientSide(vertex1, vertex2, center);
-                            populateAreaBlocks();
-                        }
-                    }
-                } else if (blockEntity.hasValidArea()) {
-                    // Se abbiamo dati validi ma gli slot sono vuoti, ripopola
-                    var itemHandler = blockEntity.getItemHandler();
-                    if (itemHandler instanceof net.neoforged.neoforge.items.ItemStackHandler handler) {
-                        boolean hasItems = false;
-                        for (int i = 0; i < 27; i++) {
-                            if (!handler.getStackInSlot(i).isEmpty()) {
-                                hasItems = true;
-                                break;
-                            }
-                        }
-                        if (!hasItems) {
-                            System.out.println("DEBUG: No items in slots but valid area detected, repopulating...");
-                            populateAreaBlocks();
-                        }
-                    }
-                }
-            }
-        }
+        // Con ContainerData, i dati sono sincronizzati automaticamente dal server
+        // Gli slot vengono popolati automaticamente dal server quando l'area viene impostata
         
         // Aggiorna lo stato del pulsante Save basandosi sulla validità dell'area
-        // PER ORA NON INTERAGIRE CON SAVE - lasciamo sempre abilitato
         if (saveButton != null) {
-            saveButton.active = true; // Sempre abilitato per ora
+            boolean hasValidArea = this.menu.getSyncedHasValidArea();
+            saveButton.active = hasValidArea; // Abilita solo se c'è un'area valida
         }
     }
 } 

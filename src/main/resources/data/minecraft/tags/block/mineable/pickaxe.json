@@ -15,6 +15,8 @@
     "iska_utils:wither_proof_stairs",
     "iska_utils:wither_proof_slab",
     "iska_utils:wither_proof_wall",
-    "iska_utils:netherite_bars"
+    "iska_utils:netherite_bars",
+    "iska_utils:structure_saver_machine",
+    "iska_utils:structure_placer_machine"
   ]
 } 

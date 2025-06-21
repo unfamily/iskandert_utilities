@@ -15,6 +15,7 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Block Entity per la macchina Structure Saver
@@ -199,15 +200,114 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     
     /**
      * Rilascia items quando il blocco viene distrutto
+     * NOTA: Gli slot sono solo display, non droppano mai
      */
     public void drops() {
-        if (level != null && !level.isClientSide()) {
-            for (int i = 0; i < itemHandler.getSlots(); i++) {
-                if (!itemHandler.getStackInSlot(i).isEmpty()) {
-                    net.minecraft.world.Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), itemHandler.getStackInSlot(i));
+        // Slot sono solo display - non droppare nulla
+        System.out.println("DEBUG: Structure Saver Machine dropped - no items to drop (display slots only)");
+    }
+    
+    /**
+     * Popola gli slot display con i blocchi dell'area blueprint (SERVER SIDE)
+     */
+    public void populateAreaBlocks() {
+        if (level == null || level.isClientSide()) {
+            return; // Solo server side
+        }
+        
+        System.out.println("DEBUG SERVER: populateAreaBlocks() called");
+        
+        if (!hasValidArea()) {
+            System.out.println("DEBUG SERVER: No valid area, clearing slots");
+            // Pulisci gli slot se non c'è un'area valida
+            for (int i = 0; i < 27; i++) {
+                itemHandler.setStackInSlot(i, ItemStack.EMPTY);
+            }
+            setChanged();
+            return;
+        }
+        
+        // Calcola i bounds dell'area
+        int minX = Math.min(blueprintVertex1.getX(), blueprintVertex2.getX());
+        int maxX = Math.max(blueprintVertex1.getX(), blueprintVertex2.getX());
+        int minY = Math.min(blueprintVertex1.getY(), blueprintVertex2.getY());
+        int maxY = Math.max(blueprintVertex1.getY(), blueprintVertex2.getY());
+        int minZ = Math.min(blueprintVertex1.getZ(), blueprintVertex2.getZ());
+        int maxZ = Math.max(blueprintVertex1.getZ(), blueprintVertex2.getZ());
+        
+        // Verifica che l'area sia valida (≤ 64 per dimensione)
+        int sizeX = maxX - minX + 1;
+        int sizeY = maxY - minY + 1;
+        int sizeZ = maxZ - minZ + 1;
+        
+        if (sizeX > 64 || sizeY > 64 || sizeZ > 64) {
+            System.out.println("DEBUG SERVER: Area too large (" + sizeX + "x" + sizeY + "x" + sizeZ + "), clearing slots");
+            for (int i = 0; i < 27; i++) {
+                itemHandler.setStackInSlot(i, ItemStack.EMPTY);
+            }
+            setChanged();
+            return;
+        }
+        
+        System.out.println("DEBUG SERVER: Scanning area " + sizeX + "x" + sizeY + "x" + sizeZ);
+        
+        // Mappa per contare i blocchi
+        java.util.Map<net.minecraft.world.item.Item, Integer> blockCounts = new java.util.HashMap<>();
+        
+        // Scansiona tutta l'area
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    var pos = new BlockPos(x, y, z);
+                    var blockState = level.getBlockState(pos);
+                    var block = blockState.getBlock();
+                    
+                    // Salta blocchi d'aria
+                    if (block == net.minecraft.world.level.block.Blocks.AIR) continue;
+                    
+                    // Ottieni l'item corrispondente al blocco (senza NBT)
+                    var item = block.asItem();
+                    if (item != net.minecraft.world.item.Items.AIR) {
+                        blockCounts.merge(item, 1, Integer::sum);
+                    }
                 }
             }
         }
+        
+        // Popola gli slot con i blocchi trovati, dividendo in più slot se necessario
+        int slotIndex = 0;
+        
+        for (var entry : blockCounts.entrySet()) {
+            var item = entry.getKey();
+            int remainingCount = entry.getValue();
+            int maxStackSize = new ItemStack(item).getMaxStackSize(); // Usa il max stack size dell'item specifico
+            
+            // Dividi in più slot se la quantità supera il max stack size
+            while (remainingCount > 0 && slotIndex < 27) {
+                int stackSize = Math.min(remainingCount, maxStackSize);
+                var stack = new ItemStack(item, stackSize);
+                
+                // Inserisci nello slot
+                itemHandler.setStackInSlot(slotIndex, stack);
+                
+                remainingCount -= stackSize;
+                slotIndex++;
+            }
+            
+            // Se abbiamo riempito tutti gli slot, interrompi
+            if (slotIndex >= 27) {
+                System.out.println("DEBUG SERVER: Reached maximum slots (27), some items may not be displayed");
+                break;
+            }
+        }
+        
+        // Pulisci gli slot rimanenti
+        for (int i = slotIndex; i < 27; i++) {
+            itemHandler.setStackInSlot(i, ItemStack.EMPTY);
+        }
+        
+        setChanged(); // Forza il salvataggio e la sincronizzazione
+        System.out.println("DEBUG SERVER: Populated " + slotIndex + " slots with blocks from area");
     }
     
     // Getters and setters
@@ -256,6 +356,9 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
         System.out.println("DEBUG BE: hasValidArea = " + hasValidArea());
         
         setChanged(); // Salva i dati
+        
+        // Popola automaticamente gli slot con i blocchi dell'area
+        populateAreaBlocks();
         
         // Forza la sincronizzazione standard del BlockEntity
         if (level != null && !level.isClientSide()) {
