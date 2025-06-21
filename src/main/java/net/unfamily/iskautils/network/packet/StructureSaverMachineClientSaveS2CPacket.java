@@ -88,7 +88,7 @@ public class StructureSaverMachineClientSaveS2CPacket {
             if (player != null) {
                 String operationType = isModifyOperation ? "modificata" : "salvata";
                 player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("§aStruttura " + operationType + ": §f" + structureName), 
+                    net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_saver.client_success", structureName, operationType), 
                     true);
             }
             

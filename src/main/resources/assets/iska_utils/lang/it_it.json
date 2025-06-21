@@ -362,24 +362,26 @@
   
   "gui.iska_utils.structure_saver.mode.normal": "Normale",
   "gui.iska_utils.structure_saver.mode.player": "Giocatore",
-  "gui.iska_utils.structure_saver.mode_tooltip.line1": "§7Modalità di piazzamento struttura:",
-  "gui.iska_utils.structure_saver.mode_tooltip.line2.normal": "§fNormale: §7Piazzamento veloce con meccaniche blocchi standard",
-  "gui.iska_utils.structure_saver.mode_tooltip.line2.player": "§fGiocatore: §7Piazzamento più lento ma attiva trigger solo-giocatore",
-  "gui.iska_utils.structure_saver.mode_tooltip.line3.player": "§7(utile per blocchi che richiedono interazione giocatore)",
+  "gui.iska_utils.structure_saver.mode_tooltip.line1": "Modalità di posizionamento struttura:",
+  "gui.iska_utils.structure_saver.mode_tooltip.line2.normal": "Normale: Piazza blocchi come macchina",
+  "gui.iska_utils.structure_saver.mode_tooltip.line2.player": "Giocatore: Piazza blocchi come giocatore",
+  "gui.iska_utils.structure_saver.mode_tooltip.line3.player": "(Può rompere blocchi, rispetta i permessi)",
   
   "gui.iska_utils.modify": "Modifica",
   
-  "gui.iska_utils.structure_saver.name_hint": "Nome Struttura",
-  "gui.iska_utils.structure_saver.id_hint": "ID Struttura",
+  "gui.iska_utils.structure_saver.name_hint": "Inserisci nome struttura...",
+  "gui.iska_utils.structure_saver.id_hint": "Inserisci ID struttura...",
   
-  "gui.iska_utils.structure_saver.error.machine_not_found": "§cErrore: Impossibile trovare la macchina",
-  "gui.iska_utils.structure_saver.error.invalid_name": "§cNome struttura non valido!",
-  "gui.iska_utils.structure_saver.error.invalid_id": "§cID struttura non valido!",
-  "gui.iska_utils.structure_saver.error.structure_not_found_for_modify": "§cErrore: Struttura da modificare non trovata!",
-  "gui.iska_utils.structure_saver.error.invalid_machine_position": "§cPosizione macchina non valida!",
-  "gui.iska_utils.structure_saver.error.machine_not_found_at_position": "§cStructure Saver Machine non trovata alla posizione: %s",
-  "gui.iska_utils.structure_saver.error.no_blueprint_data": "§cNessun dato blueprint trovato! Importa prima un blueprint con le coordinate.",
-  "gui.iska_utils.structure_saver.error.incomplete_blueprint_data": "§cDati blueprint incompleti!",
-  "gui.iska_utils.structure_saver.error.save_failed": "§cErrore durante il salvataggio: %s",
-  "gui.iska_utils.structure_saver.error.client_save_failed": "§cErrore nel salvataggio: %s"
+  "gui.iska_utils.structure_saver.error.machine_not_found": "Macchina Salvatrice di Strutture non trovata",
+  "gui.iska_utils.structure_saver.error.invalid_name": "Nome struttura non valido",
+  "gui.iska_utils.structure_saver.error.invalid_id": "ID struttura non valido",
+  "gui.iska_utils.structure_saver.error.structure_not_found_for_modify": "Struttura non trovata per la modifica",
+  "gui.iska_utils.structure_saver.error.invalid_machine_position": "Posizione macchina non valida",
+  "gui.iska_utils.structure_saver.error.machine_not_found_at_position": "Macchina Salvatrice di Strutture non trovata alla posizione %s",
+  "gui.iska_utils.structure_saver.error.no_blueprint_data": "Nessun dato blueprint trovato",
+  "gui.iska_utils.structure_saver.error.incomplete_blueprint_data": "Dati blueprint incompleti",
+  "gui.iska_utils.structure_saver.error.save_failed": "Impossibile salvare la struttura: %s",
+  "gui.iska_utils.structure_saver.success": "§aStruttura '§f%s§a' %s con successo!",
+  "gui.iska_utils.structure_saver.command_sent": "§6Comando di %s inviato al client...",
+  "gui.iska_utils.structure_saver.client_success": "§aStruttura %s: §f%s"
 }
