@@ -88,13 +88,24 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     public StructureSaverMachineScreen(StructureSaverMachineMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         
+        System.err.println("=== STRUCTURE SAVER MACHINE SCREEN CONSTRUCTOR ===");
+        System.err.println("Menu: " + (menu != null ? "OK" : "NULL"));
+        System.err.println("Player inventory: " + (playerInventory != null ? "OK" : "NULL"));
+        System.err.println("Title: " + (title != null ? title.getString() : "NULL"));
+        
         // Dimensioni reali della texture (176 x 246 dalla nuova texture)
         this.imageWidth = 176;
         this.imageHeight = 246;
+        
+        System.err.println("Set GUI dimensions: " + this.imageWidth + "x" + this.imageHeight);
     }
     
     @Override
     protected void init() {
+        System.err.println("=== STRUCTURE SAVER MACHINE SCREEN INIT ===");
+        System.err.println("Screen size: " + this.width + "x" + this.height);
+        System.err.println("GUI size: " + this.imageWidth + "x" + this.imageHeight);
+        
         super.init();
         
         // Centro il titolo ora che this.font è inizializzato
@@ -105,6 +116,11 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         
         // Inizializza i componenti UI
         initComponents();
+        
+        System.err.println("=== INIT COMPLETED ===");
+        System.err.println("Save button: " + (saveButton != null ? "CREATED" : "NULL"));
+        System.err.println("Name EditBox: " + (nameEditBox != null ? "CREATED" : "NULL"));
+        System.err.println("ID EditBox: " + (idEditBox != null ? "CREATED" : "NULL"));
     }
     
     /**
@@ -364,211 +380,6 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         // Energia rimossa - nessun tooltip energia
     }
     
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) { // Click sinistro
-            // Verifica click sui pulsanti di selezione (priorità alta)
-            if (handleSelectionButtonClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Verifica click sui pulsanti X (priorità alta)
-            if (handleButtonClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Verifica click sui pulsanti di scroll
-            if (handleScrollButtonClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Verifica click sull'handle per il drag
-            if (handleHandleClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Verifica click sulla scrollbar per il salto
-            if (handleScrollbarClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Verifica click sulle entry
-            if (handleEntryClick(mouseX, mouseY)) {
-                return true;
-            }
-        }
-        
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-    
-    /**
-     * Gestisce i click sui pulsanti di selezione
-     */
-    private boolean handleSelectionButtonClick(double mouseX, double mouseY) {
-        for (int i = 0; i < VISIBLE_ENTRIES; i++) {
-            int entryIndex = scrollOffset + i;
-            if (entryIndex >= clientStructures.size()) continue;
-            
-            int entryX = this.leftPos + ENTRIES_START_X;
-            int entryY = this.topPos + ENTRIES_START_Y + (i * ENTRY_HEIGHT);
-            
-            // Posizione del pulsante di selezione (deve corrispondere a renderSlotAndButton)
-            int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - (BUTTON_SIZE * 2) - 8;
-            int selectionButtonX = slotX + SLOT_SIZE + 2;
-            int selectionButtonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2;
-            
-            if (mouseX >= selectionButtonX && mouseX < selectionButtonX + BUTTON_SIZE &&
-                mouseY >= selectionButtonY && mouseY < selectionButtonY + BUTTON_SIZE) {
-                
-                // Toggle selection (come nel Structure Placer)
-                if (selectedStructureIndex == entryIndex) {
-                    selectedStructureIndex = -1; // Deseleziona se già selezionato
-                } else {
-                    selectedStructureIndex = entryIndex; // Seleziona nuovo
-                }
-                
-                // Suono di click
-                if (this.minecraft != null) {
-                    this.minecraft.getSoundManager().play(
-                        net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                            net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
-                }
-                
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Gestisce i click sui pulsanti di scroll (frecce su/giù)
-     */
-    private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        if (clientStructures.size() <= VISIBLE_ENTRIES) return false;
-        
-        int scrollbarX = this.leftPos + SCROLLBAR_X;
-        
-        // Pulsante SU
-        int upButtonY = this.topPos + BUTTON_UP_Y;
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && 
-            mouseY >= upButtonY && mouseY < upButtonY + HANDLE_SIZE) {
-            scrollUp();
-            return true;
-        }
-        
-        // Pulsante GIÙ
-        int downButtonY = this.topPos + BUTTON_DOWN_Y;
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && 
-            mouseY >= downButtonY && mouseY < downButtonY + HANDLE_SIZE) {
-            scrollDown();
-            return true;
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Gestisce i click sui pulsanti X delle entry
-     */
-    private boolean handleButtonClick(double mouseX, double mouseY) {
-        for (int i = 0; i < VISIBLE_ENTRIES; i++) {
-            int entryIndex = scrollOffset + i;
-            if (entryIndex >= clientStructures.size()) continue;
-            
-            int entryX = this.leftPos + ENTRIES_START_X;
-            int entryY = this.topPos + ENTRIES_START_Y + (i * ENTRY_HEIGHT);
-            
-            // Posizione del pulsante X (deve corrispondere a renderSlotAndButton)
-            int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - (BUTTON_SIZE * 2) - 8;
-            int selectionButtonX = slotX + SLOT_SIZE + 2;
-            int buttonX = selectionButtonX + BUTTON_SIZE + 2; // Pulsante X dopo il pulsante di selezione
-            int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2;
-            
-            if (mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE &&
-                mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE) {
-                
-                selectedEntryIndex = entryIndex;
-                
-                // TODO: Implementare azione per il pulsante X (cancellare/rimuovere)
-                net.unfamily.iskautils.structure.StructureDefinition structure = clientStructures.get(entryIndex);
-                if (this.minecraft != null && this.minecraft.player != null) {
-                    this.minecraft.player.displayClientMessage(
-                        Component.literal("§cX button clicked: " + structure.getId()), 
-                        true);
-                }
-                
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Gestisce click sull'handle della scrollbar per il dragging
-     */
-    private boolean handleHandleClick(double mouseX, double mouseY) {
-        if (clientStructures.size() <= VISIBLE_ENTRIES) return false;
-        
-        int scrollbarX = this.leftPos + SCROLLBAR_X;
-        int scrollbarY = this.topPos + SCROLLBAR_Y;
-        
-        // Calcola posizione handle
-        float scrollRatio = (float) scrollOffset / (clientStructures.size() - VISIBLE_ENTRIES);
-        int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-            mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
-            isDraggingHandle = true;
-            dragStartY = (int) mouseY;
-            dragStartScrollOffset = scrollOffset;
-            return true;
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Gestisce click sulla scrollbar (non sui pulsanti o handle)
-     */
-    private boolean handleScrollbarClick(double mouseX, double mouseY) {
-        if (clientStructures.size() <= VISIBLE_ENTRIES) return false;
-        
-        int scrollbarX = this.leftPos + SCROLLBAR_X;
-        int scrollbarY = this.topPos + SCROLLBAR_Y;
-        
-        if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH &&
-            mouseY >= scrollbarY && mouseY <= scrollbarY + SCROLLBAR_HEIGHT) {
-            
-            // Click su scrollbar - sposta scroll alla posizione del click
-            int clickY = (int) mouseY - scrollbarY;
-            int maxScroll = Math.max(0, clientStructures.size() - VISIBLE_ENTRIES);
-            scrollOffset = Math.min(maxScroll, (clickY * maxScroll) / SCROLLBAR_HEIGHT);
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * Gestisce click sulle entry
-     */
-    private boolean handleEntryClick(double mouseX, double mouseY) {
-        for (int i = 0; i < VISIBLE_ENTRIES; i++) {
-            int entryIndex = scrollOffset + i;
-            if (entryIndex >= clientStructures.size()) break;
-            
-            int entryX = this.leftPos + ENTRIES_START_X;
-            int entryY = this.topPos + ENTRIES_START_Y + (i * ENTRY_HEIGHT);
-            
-            if (mouseX >= entryX && mouseX <= entryX + ENTRY_WIDTH &&
-                mouseY >= entryY && mouseY <= entryY + ENTRY_HEIGHT) {
-                
-                selectedEntryIndex = entryIndex;
-                return true;
-            }
-        }
-        return false;
-    }
-    
     /**
      * Scroll up methods
      */
@@ -671,11 +482,36 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
      * Gestisce il click sul pulsante Save
      */
     private void onSaveButtonClicked() {
+        System.err.println("=== SAVE BUTTON CLICKED ===");
+        
+        // Mostra messaggio nel gioco per conferma
+        if (this.minecraft != null && this.minecraft.player != null) {
+            this.minecraft.player.displayClientMessage(
+                Component.literal("§e[DEBUG] Save button clicked!"), 
+                true);
+        }
+        
         String structureName = nameEditBox.getValue().trim();
+        String structureId = idEditBox.getValue().trim();
+        System.err.println("Structure name: '" + structureName + "'");
+        System.err.println("Structure ID: '" + structureId + "'");
+        
+        // Validazione: entrambi i campi sono obbligatori
         if (structureName.isEmpty()) {
+            System.out.println("ERROR: Structure name is empty");
             if (this.minecraft != null && this.minecraft.player != null) {
                 this.minecraft.player.displayClientMessage(
                     Component.translatable("gui.iska_utils.save_error_empty_name"), 
+                    true);
+            }
+            return;
+        }
+        
+        if (structureId.isEmpty()) {
+            System.out.println("ERROR: Structure ID is empty");
+            if (this.minecraft != null && this.minecraft.player != null) {
+                this.minecraft.player.displayClientMessage(
+                    Component.translatable("gui.iska_utils.save_error_empty_id"), 
                     true);
             }
             return;
@@ -686,7 +522,12 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         var vertex1 = this.menu.getSyncedVertex1();
         var vertex2 = this.menu.getSyncedVertex2();
         
+        System.out.println("Has valid area: " + hasValidArea);
+        System.out.println("Vertex1: " + vertex1);
+        System.out.println("Vertex2: " + vertex2);
+        
         if (!hasValidArea || vertex1 == null || vertex2 == null) {
+            System.out.println("ERROR: No valid blueprint data");
             if (this.minecraft != null && this.minecraft.player != null) {
                 this.minecraft.player.displayClientMessage(
                     Component.translatable("gui.iska_utils.save_error_no_coordinates"), 
@@ -697,7 +538,10 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         
         // Verifica che le dimensioni dell'area siano valide (≤ 64x64x64)
         int[] dimensions = calculateDimensions(vertex1, vertex2);
+        System.out.println("Area dimensions: " + dimensions[0] + "x" + dimensions[1] + "x" + dimensions[2]);
+        
         if (dimensions[0] > 64 || dimensions[1] > 64 || dimensions[2] > 64) {
+            System.out.println("ERROR: Area too large");
             if (this.minecraft != null && this.minecraft.player != null) {
                 this.minecraft.player.displayClientMessage(
                     Component.translatable("gui.iska_utils.area_too_large"), 
@@ -706,17 +550,40 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             return;
         }
         
-        // Invia il packet al server per salvare la struttura
-        var blockEntity = this.menu.getBlockEntity();
-        if (blockEntity != null) {
-            BlockPos machinePos = blockEntity.getBlockPos();
-            net.unfamily.iskautils.network.ModMessages.sendStructureSaverMachineSavePacket(structureName, machinePos);
+        // Invia il packet al server per salvare la struttura usando la posizione sincronizzata
+        BlockPos machinePos = this.menu.getSyncedBlockPos();
+        System.out.println("Synced machine pos: " + machinePos);
+        
+        if (!machinePos.equals(BlockPos.ZERO)) {
+            System.out.println("=== CALLING PACKET SEND METHOD ===");
+            net.unfamily.iskautils.network.ModMessages.sendStructureSaverMachineSavePacket(structureName, structureId, machinePos);
             
-            // Reset dell'editbox dopo l'invio del packet (i dati blueprint verranno puliti dal server)
+            // Reset delle editbox dopo l'invio del packet (i dati blueprint verranno puliti dal server)
             nameEditBox.setValue("");
+            idEditBox.setValue("");
             
             // Ricarica le strutture client per mostrare quella appena salvata nella lista
             loadClientStructures();
+        } else {
+            System.out.println("ERROR: Machine position is ZERO, trying fallback...");
+            
+            // Fallback: prova a ottenere la posizione dal block entity
+            var blockEntity = this.menu.getBlockEntity();
+            if (blockEntity != null) {
+                BlockPos fallbackPos = blockEntity.getBlockPos();
+                System.out.println("Fallback machine pos: " + fallbackPos);
+                net.unfamily.iskautils.network.ModMessages.sendStructureSaverMachineSavePacket(structureName, structureId, fallbackPos);
+                nameEditBox.setValue("");
+                idEditBox.setValue("");
+                loadClientStructures();
+            } else {
+                System.out.println("ERROR: No block entity available, cannot save");
+                if (this.minecraft != null && this.minecraft.player != null) {
+                    this.minecraft.player.displayClientMessage(
+                        Component.literal("§cErrore: Impossibile trovare la macchina"), 
+                        true);
+                }
+            }
         }
     }
     
@@ -747,7 +614,18 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         // Aggiorna lo stato del pulsante Save basandosi sulla validità dell'area
         if (saveButton != null) {
             boolean hasValidArea = this.menu.getSyncedHasValidArea();
+            boolean wasActive = saveButton.active;
             saveButton.active = hasValidArea; // Abilita solo se c'è un'area valida
+            
+            // Log solo quando lo stato cambia
+            if (wasActive != hasValidArea) {
+                System.err.println("Save button active changed: " + hasValidArea);
+                if (this.minecraft != null && this.minecraft.player != null) {
+                    this.minecraft.player.displayClientMessage(
+                        Component.literal("§6[DEBUG] Save button active: " + hasValidArea), 
+                        true);
+                }
+            }
         }
     }
     

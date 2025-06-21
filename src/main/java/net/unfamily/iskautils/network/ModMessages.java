@@ -764,9 +764,10 @@ public class ModMessages {
      * Sends a Structure Saver Machine save packet to the server
      * This simulates a client-to-server packet for saving a structure from the machine
      */
-    public static void sendStructureSaverMachineSavePacket(String structureName, BlockPos machinePos) {
+    public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos) {
         LOGGER.info("=== SENDING STRUCTURE SAVER MACHINE SAVE PACKET ===");
         LOGGER.info("Structure name: '{}'", structureName);
+        LOGGER.info("Structure ID: '{}'", structureId);
         LOGGER.info("Machine pos: {}", machinePos);
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -800,7 +801,7 @@ public class ModMessages {
             }
             
             net.unfamily.iskautils.network.packet.StructureSaverMachineSaveC2SPacket packet = 
-                new net.unfamily.iskautils.network.packet.StructureSaverMachineSaveC2SPacket(structureName, machinePos);
+                new net.unfamily.iskautils.network.packet.StructureSaverMachineSaveC2SPacket(structureName, structureId, machinePos);
             
             // Execute on server thread to properly access BlockEntity
             server.execute(() -> {

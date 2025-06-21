@@ -19,6 +19,7 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
     private final StructureSaverMachineBlockEntity blockEntity;
     private final ContainerLevelAccess levelAccess;
     private final ContainerData containerData;
+    private final BlockPos blockPos;
     
     // 18 slot display (2 righe x 9 slot) - rimossa la seconda riga
     private static final int DISPLAY_SLOTS = 18;
@@ -36,12 +37,16 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
     private static final int HAS_VALID_AREA_INDEX = 9;
     private static final int IS_WORKING_INDEX = 10;
     private static final int WORK_PROGRESS_INDEX = 11;
-    private static final int DATA_COUNT = 12;
+    private static final int MACHINE_POS_X_INDEX = 12;
+    private static final int MACHINE_POS_Y_INDEX = 13;
+    private static final int MACHINE_POS_Z_INDEX = 14;
+    private static final int DATA_COUNT = 15;
     
     public StructureSaverMachineMenu(int containerId, Inventory playerInventory, StructureSaverMachineBlockEntity blockEntity) {
         super(ModMenuTypes.STRUCTURE_SAVER_MACHINE_MENU.get(), containerId);
         
         this.blockEntity = blockEntity;
+        this.blockPos = blockEntity.getBlockPos();
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
         
         // Create container data that syncs with the block entity
@@ -61,6 +66,9 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
                     case HAS_VALID_AREA_INDEX -> blockEntity.hasValidArea() ? 1 : 0;
                     case IS_WORKING_INDEX -> blockEntity.isWorking() ? 1 : 0;
                     case WORK_PROGRESS_INDEX -> blockEntity.getWorkProgress();
+                    case MACHINE_POS_X_INDEX -> blockPos.getX();
+                    case MACHINE_POS_Y_INDEX -> blockPos.getY();
+                    case MACHINE_POS_Z_INDEX -> blockPos.getZ();
                     default -> 0;
                 };
             }
@@ -83,9 +91,15 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
     
     // Costruttore client-side
     public StructureSaverMachineMenu(int containerId, Inventory playerInventory) {
+        this(containerId, playerInventory, BlockPos.ZERO);
+    }
+    
+    // Aggiunto: Costruttore client-side con posizione (per gestione packet)
+    public StructureSaverMachineMenu(int containerId, Inventory playerInventory, BlockPos pos) {
         super(ModMenuTypes.STRUCTURE_SAVER_MACHINE_MENU.get(), containerId);
         
         this.blockEntity = null;
+        this.blockPos = pos;
         this.levelAccess = ContainerLevelAccess.NULL;
         
         // Create dummy container data for client
@@ -208,5 +222,26 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
     
     public StructureSaverMachineBlockEntity getBlockEntity() {
         return blockEntity;
+    }
+    
+    // Aggiunto: Metodi per ottenere la posizione della macchina (seguendo il pattern Structure Placer Machine)
+    public BlockPos getSyncedBlockPos() {
+        // Get position from synced data if available, otherwise use stored position
+        if (this.blockEntity != null) {
+            return this.blockPos; // Server side
+        } else {
+            // Client side - get from synced data
+            int x = this.containerData.get(MACHINE_POS_X_INDEX);
+            int y = this.containerData.get(MACHINE_POS_Y_INDEX);
+            int z = this.containerData.get(MACHINE_POS_Z_INDEX);
+            if (x == 0 && y == 0 && z == 0) {
+                return this.blockPos; // Fallback to stored position
+            }
+            return new BlockPos(x, y, z);
+        }
+    }
+    
+    public BlockPos getBlockPos() {
+        return this.blockPos;
     }
 } 

@@ -35,15 +35,18 @@ public class StructureSaverMachineSaveC2SPacket {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
     private final String structureName;
+    private final String structureId;
     private final BlockPos machinePos;
     
     /**
      * Crea un nuovo packet per salvare una struttura
      * @param structureName Il nome della struttura da salvare
+     * @param structureId L'ID della struttura da salvare
      * @param machinePos La posizione della macchina
      */
-    public StructureSaverMachineSaveC2SPacket(String structureName, BlockPos machinePos) {
+    public StructureSaverMachineSaveC2SPacket(String structureName, String structureId, BlockPos machinePos) {
         this.structureName = structureName;
+        this.structureId = structureId;
         this.machinePos = machinePos;
     }
     
@@ -54,6 +57,7 @@ public class StructureSaverMachineSaveC2SPacket {
     public void handle(ServerPlayer player) {
         LOGGER.info("=== PROCESSING STRUCTURE SAVER MACHINE SAVE REQUEST ===");
         LOGGER.info("Structure name: '{}'", structureName);
+        LOGGER.info("Structure ID: '{}'", structureId);
         LOGGER.info("Machine pos: {}", machinePos);
         
         if (player == null) {
@@ -65,6 +69,11 @@ public class StructureSaverMachineSaveC2SPacket {
         
         if (structureName == null || structureName.trim().isEmpty()) {
             player.displayClientMessage(Component.literal("§cNome struttura non valido!"), true);
+            return;
+        }
+        
+        if (structureId == null || structureId.trim().isEmpty()) {
+            player.displayClientMessage(Component.literal("§cID struttura non valido!"), true);
             return;
         }
         
@@ -98,8 +107,8 @@ public class StructureSaverMachineSaveC2SPacket {
         }
         
         try {
-            // Salva la struttura
-            saveStructure(player, level, structureName, vertex1, vertex2, center);
+            // Salva la struttura con l'ID personalizzato
+            saveStructure(player, level, structureName, structureId, vertex1, vertex2, center);
             
             // Ricarica le strutture per includere quella appena salvata
             StructureLoader.reloadAllDefinitions(true, player);
@@ -120,7 +129,7 @@ public class StructureSaverMachineSaveC2SPacket {
     /**
      * Salva la struttura nel file player_structures.json
      */
-    private void saveStructure(ServerPlayer player, ServerLevel level, String structureName, 
+    private void saveStructure(ServerPlayer player, ServerLevel level, String structureName, String structureId,
                               BlockPos vertex1, BlockPos vertex2, BlockPos center) throws IOException {
         
         // Calcola i bounds dell'area
@@ -170,10 +179,7 @@ public class StructureSaverMachineSaveC2SPacket {
             patternLines.add(layerRows.toArray(new String[0]));
         }
         
-        // Crea la struttura JSON
-        String playerNickname = player.getName().getString();
-        String structureId = "client_" + playerNickname + "_" + structureName.toLowerCase().replaceAll("[^a-z0-9_]", "_");
-        
+        // Crea la struttura JSON usando l'ID fornito dall'utente (senza prefisso)
         JsonObject structureJson = createStructureJson(structureId, structureName, patternLines, blockToCharMap);
         
         // Salva nel file

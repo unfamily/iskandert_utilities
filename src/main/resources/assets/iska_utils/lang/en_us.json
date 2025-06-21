@@ -26,6 +26,7 @@
   "gui.iska_utils.area": "Area:",
   "gui.iska_utils.area_too_large": "Area too large! (max 64x64x64)",
   "gui.iska_utils.save_error_empty_name": "Please enter a structure name",
+  "gui.iska_utils.save_error_empty_id": "Please enter a structure ID",
   "gui.iska_utils.save_error_no_coordinates": "No blueprint data found! Import a blueprint with coordinates first.",
   "gui.iska_utils.update_area": "Area updated",
   
