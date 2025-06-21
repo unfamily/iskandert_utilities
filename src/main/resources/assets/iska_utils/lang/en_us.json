@@ -361,5 +361,28 @@
   "gui.iska_utils.save_error_no_coordinates": "No coordinates imported! Use Shift+Right Click with a complete blueprint first",
   "gui.iska_utils.save_success": "Structure '%s' saved! Area: %s to %s, Center: %s",
   "gui.iska_utils.blueprint_imported_to_machine": "Blueprint imported to machine: %s to %s, center: %s",
-  "gui.iska_utils.structure_saver": "Structure Saver Machine"
+  "gui.iska_utils.structure_saver": "Structure Saver Machine",
+  
+  "gui.iska_utils.structure_saver.mode.normal": "Normal",
+  "gui.iska_utils.structure_saver.mode.player": "Player",
+  "gui.iska_utils.structure_saver.mode_tooltip.line1": "§7Structure placement mode:",
+  "gui.iska_utils.structure_saver.mode_tooltip.line2.normal": "§fNormal: §7Fast placement with standard block mechanics",
+  "gui.iska_utils.structure_saver.mode_tooltip.line2.player": "§fPlayer: §7Slower placement but activates player-only triggers",
+  "gui.iska_utils.structure_saver.mode_tooltip.line3.player": "§7(useful for blocks that need player interaction)",
+  
+  "gui.iska_utils.modify": "Modify",
+  
+  "gui.iska_utils.structure_saver.name_hint": "Structure Name",
+  "gui.iska_utils.structure_saver.id_hint": "Structure ID",
+  
+  "gui.iska_utils.structure_saver.error.machine_not_found": "§cError: Unable to find the machine",
+  "gui.iska_utils.structure_saver.error.invalid_name": "§cInvalid structure name!",
+  "gui.iska_utils.structure_saver.error.invalid_id": "§cInvalid structure ID!",
+  "gui.iska_utils.structure_saver.error.structure_not_found_for_modify": "§cError: Structure to modify not found!",
+  "gui.iska_utils.structure_saver.error.invalid_machine_position": "§cInvalid machine position!",
+  "gui.iska_utils.structure_saver.error.machine_not_found_at_position": "§cStructure Saver Machine not found at position: %s",
+  "gui.iska_utils.structure_saver.error.no_blueprint_data": "§cNo blueprint data found! Import a blueprint with coordinates first.",
+  "gui.iska_utils.structure_saver.error.incomplete_blueprint_data": "§cIncomplete blueprint data!",
+  "gui.iska_utils.structure_saver.error.save_failed": "§cError during saving: %s",
+  "gui.iska_utils.structure_saver.error.client_save_failed": "§cError during saving: %s"
 }

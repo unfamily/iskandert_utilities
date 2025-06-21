@@ -1,0 +1,19 @@
+{
+  "type": "enderio:alloy_smelting",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "enderio"
+    }
+  ],
+  "energy": 32000,
+  "experience": 0.5,
+  "inputs": [
+    {
+      "tag": "c:rubber_chunk"
+    }
+    ],
+  "output": {
+    "id": "iska_utils:plastic_ingot"
+  }
+}

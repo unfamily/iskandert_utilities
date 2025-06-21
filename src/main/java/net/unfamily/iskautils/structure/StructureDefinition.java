@@ -204,7 +204,7 @@ public class StructureDefinition {
             if (icon.getCount() != 1) {
                 iconObj.addProperty("count", icon.getCount());
             }
-            // NBT non è facilmente serializzabile, lo saltiamo per ora
+            // NBT is not easily serializable, we skip it for now
             structureObj.add("icon", iconObj);
         }
         

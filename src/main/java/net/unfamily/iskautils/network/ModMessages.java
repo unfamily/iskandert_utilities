@@ -764,7 +764,15 @@ public class ModMessages {
      * Sends a Structure Saver Machine save packet to the server
      * This simulates a client-to-server packet for saving a structure from the machine
      */
-    public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos) {
+    public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer) {
+        sendStructureSaverMachineSavePacket(structureName, structureId, machinePos, slower, placeAsPlayer, null);
+    }
+    
+    /**
+     * Sends a Structure Saver Machine save/modify packet to the server
+     * This simulates a client-to-server packet for saving or modifying a structure from the machine
+     */
+    public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer, String oldStructureId) {
         LOGGER.info("=== SENDING STRUCTURE SAVER MACHINE SAVE PACKET ===");
         LOGGER.info("Structure name: '{}'", structureName);
         LOGGER.info("Structure ID: '{}'", structureId);
@@ -801,7 +809,7 @@ public class ModMessages {
             }
             
             net.unfamily.iskautils.network.packet.StructureSaverMachineSaveC2SPacket packet = 
-                new net.unfamily.iskautils.network.packet.StructureSaverMachineSaveC2SPacket(structureName, structureId, machinePos);
+                new net.unfamily.iskautils.network.packet.StructureSaverMachineSaveC2SPacket(structureName, structureId, machinePos, slower, placeAsPlayer, oldStructureId);
             
             // Execute on server thread to properly access BlockEntity
             server.execute(() -> {

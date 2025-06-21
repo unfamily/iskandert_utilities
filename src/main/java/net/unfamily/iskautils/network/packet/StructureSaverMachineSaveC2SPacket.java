@@ -37,17 +37,38 @@ public class StructureSaverMachineSaveC2SPacket {
     private final String structureName;
     private final String structureId;
     private final BlockPos machinePos;
+    private final boolean slower;
+    private final boolean placeAsPlayer;
+    private final String oldStructureId; // Per la modifica - null se è un nuovo salvataggio
     
     /**
      * Crea un nuovo packet per salvare una struttura
      * @param structureName Il nome della struttura da salvare
      * @param structureId L'ID della struttura da salvare
      * @param machinePos La posizione della macchina
+     * @param slower Se la struttura deve essere piazzata più lentamente
+     * @param placeAsPlayer Se la struttura deve essere piazzata come se fosse un giocatore
      */
-    public StructureSaverMachineSaveC2SPacket(String structureName, String structureId, BlockPos machinePos) {
+    public StructureSaverMachineSaveC2SPacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer) {
+        this(structureName, structureId, machinePos, slower, placeAsPlayer, null);
+    }
+    
+    /**
+     * Crea un nuovo packet per salvare/modificare una struttura
+     * @param structureName Il nome della struttura da salvare
+     * @param structureId L'ID della struttura da salvare
+     * @param machinePos La posizione della macchina
+     * @param slower Se la struttura deve essere piazzata più lentamente
+     * @param placeAsPlayer Se la struttura deve essere piazzata come se fosse un giocatore
+     * @param oldStructureId L'ID della struttura da modificare (null per nuovo salvataggio)
+     */
+    public StructureSaverMachineSaveC2SPacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer, String oldStructureId) {
         this.structureName = structureName;
         this.structureId = structureId;
         this.machinePos = machinePos;
+        this.slower = slower;
+        this.placeAsPlayer = placeAsPlayer;
+        this.oldStructureId = oldStructureId;
     }
     
     /**
@@ -68,30 +89,55 @@ public class StructureSaverMachineSaveC2SPacket {
         LOGGER.info("Player: {}", player.getName().getString());
         
         if (structureName == null || structureName.trim().isEmpty()) {
-            player.displayClientMessage(Component.literal("§cNome struttura non valido!"), true);
+            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.invalid_name"), true);
             return;
         }
         
         if (structureId == null || structureId.trim().isEmpty()) {
-            player.displayClientMessage(Component.literal("§cID struttura non valido!"), true);
+            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.invalid_id"), true);
             return;
         }
         
-        // Controllo duplicati: verifica se esiste già una struttura con lo stesso ID finale
+        // Controllo per operazioni di salvataggio/modifica
         String playerNickname = player.getName().getString();
         String finalStructureId = "client_" + playerNickname + "_" + structureId;
+        boolean isModifyOperation = (oldStructureId != null);
         
-        // Ottieni tutte le strutture client caricate per verificare duplicati
+        LOGGER.info("Operation type: {}", isModifyOperation ? "MODIFY" : "SAVE");
+        if (isModifyOperation) {
+            LOGGER.info("Old structure ID: {}", oldStructureId);
+        }
+        
+        // Ottieni tutte le strutture client caricate per verificare duplicati/esistenza
         var allClientStructures = net.unfamily.iskautils.structure.StructureLoader.getClientStructures();
-        if (allClientStructures.containsKey(finalStructureId)) {
-            LOGGER.warn("Tentativo di salvare struttura con ID duplicato: {}", finalStructureId);
-            player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id"), true);
-            player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id_hint"), true);
-            return;
+        
+        if (isModifyOperation) {
+            // Verifica che la struttura da modificare esista
+            if (!allClientStructures.containsKey(oldStructureId)) {
+                LOGGER.warn("Tentativo di modificare struttura inesistente: {}", oldStructureId);
+                player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.structure_not_found_for_modify"), true);
+                return;
+            }
+            
+            // Se l'ID cambia, verifica che il nuovo ID non sia già in uso (ma diverso dalla struttura che stiamo modificando)
+            if (!oldStructureId.equals(finalStructureId) && allClientStructures.containsKey(finalStructureId)) {
+                LOGGER.warn("Tentativo di modificare con ID duplicato: {}", finalStructureId);
+                player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id"), true);
+                player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id_hint"), true);
+                return;
+            }
+        } else {
+            // Operazione di salvataggio: verifica che non ci siano duplicati
+            if (allClientStructures.containsKey(finalStructureId)) {
+                LOGGER.warn("Tentativo di salvare struttura con ID duplicato: {}", finalStructureId);
+                player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id"), true);
+                player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id_hint"), true);
+                return;
+            }
         }
         
         if (machinePos == null) {
-            player.displayClientMessage(Component.literal("§cPosizione macchina non valida!"), true);
+            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.invalid_machine_position"), true);
             return;
         }
         
@@ -100,13 +146,13 @@ public class StructureSaverMachineSaveC2SPacket {
         BlockEntity blockEntity = level.getBlockEntity(machinePos);
         
         if (!(blockEntity instanceof StructureSaverMachineBlockEntity machineEntity)) {
-            player.displayClientMessage(Component.literal("§cStructure Saver Machine non trovata alla posizione: " + machinePos), true);
+            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.machine_not_found_at_position", machinePos.toString()), true);
             return;
         }
         
         // Verifica che la macchina abbia i dati blueprint
         if (!machineEntity.hasBlueprintData()) {
-            player.displayClientMessage(Component.literal("§cNessun dato blueprint trovato! Importa prima un blueprint con le coordinate."), true);
+            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.no_blueprint_data"), true);
             return;
         }
         
@@ -115,7 +161,7 @@ public class StructureSaverMachineSaveC2SPacket {
         BlockPos center = machineEntity.getBlueprintCenter();
         
         if (vertex1 == null || vertex2 == null || center == null) {
-            player.displayClientMessage(Component.literal("§cDati blueprint incompleti!"), true);
+            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.incomplete_blueprint_data"), true);
             return;
         }
         
@@ -125,13 +171,14 @@ public class StructureSaverMachineSaveC2SPacket {
             
             if (isSingleplayer) {
                 // Singleplayer: salva direttamente sul server (che è anche il client)
-                saveStructure(player, level, structureName, structureId, vertex1, vertex2, center);
+                saveStructure(player, level, structureName, structureId, vertex1, vertex2, center, slower, placeAsPlayer, isModifyOperation, oldStructureId);
                 
-                // Ricarica le strutture per includere quella appena salvata
+                // Ricarica le strutture per includere quella appena salvata/modificata
                 StructureLoader.reloadAllDefinitions(true, player);
             } else {
                 // Multiplayer: invia comando al client per salvare localmente
                 LOGGER.info("Multiplayer detected - sending save command to client");
+                // TODO: Aggiornare anche il packet S2C per gestire la modifica
                 StructureSaverMachineClientSaveS2CPacket.send(player, structureName, structureId, vertex1, vertex2, center);
             }
             
@@ -139,16 +186,18 @@ public class StructureSaverMachineSaveC2SPacket {
             machineEntity.clearBlueprintData();
             
             if (isSingleplayer) {
-                player.displayClientMessage(Component.literal("§aStruttura '§f" + structureName + "§a' salvata con successo!"), true);
-                LOGGER.info("Player {} saved structure '{}' (singleplayer)", player.getName().getString(), structureName);
+                String operationType = isModifyOperation ? "modificata" : "salvata";
+                player.displayClientMessage(Component.literal("§aStruttura '§f" + structureName + "§a' " + operationType + " con successo!"), true);
+                LOGGER.info("Player {} {} structure '{}' (singleplayer)", player.getName().getString(), isModifyOperation ? "modified" : "saved", structureName);
             } else {
-                player.displayClientMessage(Component.literal("§6Comando di salvataggio inviato al client..."), true);
-                LOGGER.info("Save command for structure '{}' sent to client for player {}", structureName, player.getName().getString());
+                String operationType = isModifyOperation ? "modifica" : "salvataggio";
+                player.displayClientMessage(Component.literal("§6Comando di " + operationType + " inviato al client..."), true);
+                LOGGER.info("{} command for structure '{}' sent to client for player {}", isModifyOperation ? "Modify" : "Save", structureName, player.getName().getString());
             }
             
         } catch (Exception e) {
             LOGGER.error("Errore durante il salvataggio della struttura '{}': {}", structureName, e.getMessage());
-            player.displayClientMessage(Component.literal("§cErrore durante il salvataggio: " + e.getMessage()), true);
+            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.save_failed", e.getMessage()), true);
         }
     }
     
@@ -156,7 +205,8 @@ public class StructureSaverMachineSaveC2SPacket {
      * Salva la struttura nel file player_structures.json
      */
     private void saveStructure(ServerPlayer player, ServerLevel level, String structureName, String structureId,
-                              BlockPos vertex1, BlockPos vertex2, BlockPos center) throws IOException {
+                              BlockPos vertex1, BlockPos vertex2, BlockPos center, boolean slower, boolean placeAsPlayer,
+                              boolean isModifyOperation, String oldStructureId) throws IOException {
         
         // Calcola i bounds dell'area
         int minX = Math.min(vertex1.getX(), vertex2.getX());
@@ -183,24 +233,31 @@ public class StructureSaverMachineSaveC2SPacket {
                 for (int z = minZ; z <= maxZ; z++) {
                     BlockPos pos = new BlockPos(x, y, z);
                     BlockState state = level.getBlockState(pos);
-                    Block block = state.getBlock();
-                    
-                    // Genera la chiave univoca del blocco (include proprietà)
-                    String blockKey = generateBlockKey(state);
                     
                     // Gestisci il carattere speciale per il centro
                     if (pos.equals(center)) {
-                        // Se il blocco del centro ha già un carattere assegnato, usalo per @
-                        // Altrimenti assegna il carattere successivo e poi usa @ per il centro
-                        if (!blockToCharMap.containsKey(blockKey)) {
-                            blockToCharMap.put(blockKey, charAssigner.getNextChar());
+                        // Se il blocco del centro è non solido, usa solo '@' senza aggiungere alla key
+                        if (!state.isSolid()) {
+                            row.append('@');
+                        } else {
+                            // Se è solido, aggiungilo alla key e usa '@' nel pattern
+                            String blockKey = generateBlockKey(state);
+                            if (!blockToCharMap.containsKey(blockKey)) {
+                                blockToCharMap.put(blockKey, charAssigner.getNextChar());
+                            }
+                            row.append('@');
                         }
-                        // Nel pattern, il centro è sempre '@' ma nella key sarà mappato al blocco reale
-                        row.append('@');
                     } else {
-                        // Per tutti gli altri blocchi, assegna un carattere normale
-                        char blockChar = blockToCharMap.computeIfAbsent(blockKey, k -> charAssigner.getNextChar());
-                        row.append(blockChar);
+                        // Per tutti gli altri blocchi, controlla se è solido
+                        if (!state.isSolid()) {
+                            // Blocco non solido: usa spazio nel pattern e non aggiungere alla key
+                            row.append(' ');
+                        } else {
+                            // Blocco solido: assegna carattere normale
+                            String blockKey = generateBlockKey(state);
+                            char blockChar = blockToCharMap.computeIfAbsent(blockKey, k -> charAssigner.getNextChar());
+                            row.append(blockChar);
+                        }
                     }
                 }
                 layerRows.add(row.toString());
@@ -211,10 +268,10 @@ public class StructureSaverMachineSaveC2SPacket {
         }
         
         // Crea la struttura JSON usando l'ID fornito dall'utente (senza prefisso)
-        JsonObject structureJson = createStructureJson(structureId, structureName, patternLines, blockToCharMap, level, center);
+        JsonObject structureJson = createStructureJson(structureId, structureName, patternLines, blockToCharMap, level, center, slower, placeAsPlayer);
         
-        // Salva nel file
-        saveToPlayerStructuresFile(structureJson);
+        // Salva nel file (con eventuale rimozione della struttura vecchia)
+        saveToPlayerStructuresFile(structureJson, isModifyOperation, oldStructureId);
     }
     
     /**
@@ -248,7 +305,7 @@ public class StructureSaverMachineSaveC2SPacket {
      */
     private JsonObject createStructureJson(String structureId, String structureName, 
                                          List<String[]> patternLines, Map<String, Character> blockToCharMap,
-                                         ServerLevel level, BlockPos center) {
+                                         ServerLevel level, BlockPos center, boolean slower, boolean placeAsPlayer) {
         
         JsonObject root = new JsonObject();
         root.addProperty("type", "iska_utils:structure");
@@ -263,6 +320,14 @@ public class StructureSaverMachineSaveC2SPacket {
         
         // Campi opzionali vuoti (seguendo il formato del default_structures.json)
         structureObj.add("can_replace", new JsonArray()); // Array vuoto per can_replace
+        
+        // Aggiungi flag modalità se abilitati
+        if (slower) {
+            structureObj.addProperty("slower", true);
+        }
+        if (placeAsPlayer) {
+            structureObj.addProperty("place_like_player", true);
+        }
         
         // Icona blueprint (formato corretto con type)
         JsonObject icon = new JsonObject();
@@ -291,48 +356,51 @@ public class StructureSaverMachineSaveC2SPacket {
         // Key (mappa caratteri -> definizioni blocchi)
         JsonObject keyObj = new JsonObject();
         
-        // Prima aggiungi la mappatura speciale per '@' (centro) con formato corretto
+        // Aggiungi la mappatura speciale per '@' (centro) solo se il blocco del centro è solido
         BlockState centerState = level.getBlockState(center);
-        String centerBlockKey = generateBlockKey(centerState);
-        
-        // Crea l'oggetto wrapper per '@'
-        JsonObject centerCharObj = new JsonObject();
-        
-        // Display name per il centro
-        String centerDisplayName = centerBlockKey.contains("[") ? centerBlockKey.split("\\[")[0] : centerBlockKey;
-        centerCharObj.addProperty("display", centerDisplayName.replace(":", "."));
-        
-        // Array di alternative per il centro
-        JsonArray centerAlternatives = new JsonArray();
-        JsonObject centerBlockDef = new JsonObject();
-        
-        if (centerBlockKey.contains("[")) {
-            // Blocco con proprietà
-            String[] parts = centerBlockKey.split("\\[", 2);
-            String blockName = parts[0];
-            String propertiesStr = parts[1].replace("]", "");
+        if (centerState.isSolid()) {
+            String centerBlockKey = generateBlockKey(centerState);
             
-            centerBlockDef.addProperty("block", blockName);
+            // Crea l'oggetto wrapper per '@'
+            JsonObject centerCharObj = new JsonObject();
             
-            if (!propertiesStr.isEmpty()) {
-                JsonObject properties = new JsonObject();
-                for (String propPair : propertiesStr.split(",")) {
-                    String[] propKV = propPair.split("=", 2);
-                    if (propKV.length == 2) {
-                        properties.addProperty(propKV[0], propKV[1]);
+            // Display name per il centro
+            String centerDisplayName = centerBlockKey.contains("[") ? centerBlockKey.split("\\[")[0] : centerBlockKey;
+            centerCharObj.addProperty("display", centerDisplayName.replace(":", "."));
+            
+            // Array di alternative per il centro
+            JsonArray centerAlternatives = new JsonArray();
+            JsonObject centerBlockDef = new JsonObject();
+            
+            if (centerBlockKey.contains("[")) {
+                // Blocco con proprietà
+                String[] parts = centerBlockKey.split("\\[", 2);
+                String blockName = parts[0];
+                String propertiesStr = parts[1].replace("]", "");
+                
+                centerBlockDef.addProperty("block", blockName);
+                
+                if (!propertiesStr.isEmpty()) {
+                    JsonObject properties = new JsonObject();
+                    for (String propPair : propertiesStr.split(",")) {
+                        String[] propKV = propPair.split("=", 2);
+                        if (propKV.length == 2) {
+                            properties.addProperty(propKV[0], propKV[1]);
+                        }
                     }
+                    centerBlockDef.add("properties", properties);
                 }
-                centerBlockDef.add("properties", properties);
+            } else {
+                // Blocco semplice
+                centerBlockDef.addProperty("block", centerBlockKey);
             }
-        } else {
-            // Blocco semplice
-            centerBlockDef.addProperty("block", centerBlockKey);
+            
+            centerAlternatives.add(centerBlockDef);
+            centerCharObj.add("alternatives", centerAlternatives);
+            
+            keyObj.add("@", centerCharObj);
         }
-        
-        centerAlternatives.add(centerBlockDef);
-        centerCharObj.add("alternatives", centerAlternatives);
-        
-        keyObj.add("@", centerCharObj);
+        // Se il centro è non solido, non aggiungiamo la chiave '@' al JSON
         
         // Poi aggiungi tutti gli altri blocchi (formato corretto con display e alternatives)
         for (Map.Entry<String, Character> entry : blockToCharMap.entrySet()) {
@@ -389,7 +457,7 @@ public class StructureSaverMachineSaveC2SPacket {
     /**
      * Salva la struttura nel file player_structures.json
      */
-    private void saveToPlayerStructuresFile(JsonObject newStructure) throws IOException {
+    private void saveToPlayerStructuresFile(JsonObject newStructure, boolean isModifyOperation, String oldStructureId) throws IOException {
         LOGGER.info("=== SAVING STRUCTURE TO FILE ===");
         
         String configPath = Config.clientStructurePath;
@@ -430,13 +498,40 @@ public class StructureSaverMachineSaveC2SPacket {
             root = createEmptyPlayerStructuresRoot();
         }
         
-        // Aggiungi la nuova struttura
+        // Gestisci la modifica o il nuovo salvataggio
         JsonArray structuresArray = root.getAsJsonArray("structure");
         JsonArray newStructureArray = newStructure.getAsJsonArray("structure");
         
-        // Aggiungi tutte le strutture dal nuovo oggetto (dovrebbe essere solo una)
+        if (isModifyOperation && oldStructureId != null) {
+            LOGGER.info("=== MODIFY OPERATION: Removing old structure ===");
+            LOGGER.info("Old structure ID to remove: {}", oldStructureId);
+            
+            // Rimuovi la struttura vecchia
+            boolean foundOldStructure = false;
+            for (int i = structuresArray.size() - 1; i >= 0; i--) {
+                JsonObject structure = structuresArray.get(i).getAsJsonObject();
+                if (structure.has("id") && oldStructureId.equals(structure.get("id").getAsString())) {
+                    LOGGER.info("Found and removing old structure at index {}", i);
+                    structuresArray.remove(i);
+                    foundOldStructure = true;
+                    break; // Rimuovi solo la prima occorrenza
+                }
+            }
+            
+            if (!foundOldStructure) {
+                LOGGER.warn("Old structure with ID '{}' not found in file", oldStructureId);
+            }
+        }
+        
+        // Aggiungi la nuova struttura
         for (int i = 0; i < newStructureArray.size(); i++) {
-            structuresArray.add(newStructureArray.get(i));
+            JsonObject newStructureObj = newStructureArray.get(i).getAsJsonObject();
+            if (newStructureObj.has("id")) {
+                LOGGER.info("Adding {} structure with ID: {}", 
+                           isModifyOperation ? "modified" : "new", 
+                           newStructureObj.get("id").getAsString());
+            }
+            structuresArray.add(newStructureObj);
         }
         
         // Salva il file

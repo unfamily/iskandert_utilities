@@ -109,14 +109,13 @@ public class SwissWrenchItem extends Item {
                 else if (blockState.hasProperty(BlockStateProperties.AXIS)) {
                     Direction.Axis current = blockState.getValue(BlockStateProperties.AXIS);
                     
-                    // Rotate only horizontal axes
-                    if (current == Direction.Axis.X) {
-                        level.setBlock(blockPos, blockState.setValue(BlockStateProperties.AXIS, Direction.Axis.Z), 3);
-                        changed = true;
-                    } else if (current == Direction.Axis.Z) {
-                        level.setBlock(blockPos, blockState.setValue(BlockStateProperties.AXIS, Direction.Axis.X), 3);
+                    // Rotate only horizontal axes: X ↔ Z
+                    if (current == Direction.Axis.X || current == Direction.Axis.Z) {
+                        Direction.Axis rotated = (current == Direction.Axis.X) ? Direction.Axis.Z : Direction.Axis.X;
+                        level.setBlock(blockPos, blockState.setValue(BlockStateProperties.AXIS, rotated), 3);
                         changed = true;
                     }
+                    // Y axis doesn't rotate (stays vertical)
                 }
             } else {
                 // Handle specific direction mode
@@ -143,10 +142,19 @@ public class SwissWrenchItem extends Item {
                     changed = true;
                 }
                 // Try to set the direction of the block based on its properties
-                else if (blockState.hasProperty(BlockStateProperties.AXIS) && 
-                         targetDirection.getAxis() != Direction.Axis.Y) {
-                    level.setBlock(blockPos, blockState.setValue(BlockStateProperties.AXIS, targetDirection.getAxis()), 3);
-                    changed = true;
+                else if (blockState.hasProperty(BlockStateProperties.AXIS)) {
+                    // For UP/DOWN directions, rotate horizontal logs to vertical
+                    if (targetDirection == Direction.UP || targetDirection == Direction.DOWN) {
+                        // If log is horizontal (X or Z axis), make it vertical (Y axis)
+                        Direction.Axis currentAxis = blockState.getValue(BlockStateProperties.AXIS);
+                        if (currentAxis == Direction.Axis.X || currentAxis == Direction.Axis.Z) {
+                            level.setBlock(blockPos, blockState.setValue(BlockStateProperties.AXIS, Direction.Axis.Y), 3);
+                            changed = true;
+                        }
+                    } else if (targetDirection.getAxis() != Direction.Axis.Y) {
+                        level.setBlock(blockPos, blockState.setValue(BlockStateProperties.AXIS, targetDirection.getAxis()), 3);
+                        changed = true;
+                    }
                 }
             }
             

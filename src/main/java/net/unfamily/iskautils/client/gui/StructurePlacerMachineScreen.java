@@ -57,6 +57,9 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     protected void init() {
         super.init();
         
+        // Ricarica le strutture all'apertura della GUI usando il flag del config
+        net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(net.unfamily.iskautils.Config.acceptClientStructure);
+        
         // Center the GUI on screen
         this.leftPos = (this.width - this.imageWidth) / 2;
         this.topPos = (this.height - this.imageHeight) / 2;

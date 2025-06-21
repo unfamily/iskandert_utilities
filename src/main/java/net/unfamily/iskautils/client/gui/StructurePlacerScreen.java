@@ -106,6 +106,9 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     protected void init() {
         super.init();
         
+        // Ricarica le strutture all'apertura della GUI usando il flag del config
+        net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(net.unfamily.iskautils.Config.acceptClientStructure);
+        
         // Crea i pulsanti vanilla Save e Cancel
         int saveX = this.leftPos + SAVE_BUTTON_X;
         int cancelX = this.leftPos + CANCEL_BUTTON_X;

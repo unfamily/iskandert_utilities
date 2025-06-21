@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ABA",
+    "CBC",
+    "ABA"
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:paper"
+    },
+    "B": {
+      "tag": "c:dyes/blue"
+    },
+    "C": {
+      "tag": "c:dyes/white"  
+    }
+  },
+  "result": {
+    "id": "iska_utils:blueprint",
+    "count": 1
+  }
+} 

@@ -122,36 +122,36 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
             itemHandler = new ItemStackHandler(DISPLAY_SLOTS);
         }
         
-        // 2 righe di 9 slot con la seconda riga spostata 7 slot più in alto
+        // 2 rows of 9 slots with the second row moved 7 slots higher
         for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = row * 9 + col;
-                int xPos = 8 + col * 18; // GUI coordinate 7 + 1 (spostato +1 a sinistra)
+                int xPos = 8 + col * 18; // GUI coordinate 7 + 1 (moved +1 to the left)
                 
-                // Calcola yPos:
-                // Riga 0: 186 (prima riga)
-                // Riga 1: 215 (seconda riga, posizione specifica richiesta)
+                // Calculate yPos:
+                // Row 0: 186 (first row)
+                // Row 1: 215 (second row, specific position requested)
                 int yPos = switch (row) {
-                    case 0 -> 186; // Prima riga: 186
-                    case 1 -> 215; // Seconda riga: 215 (posizione specifica richiesta)
+                    case 0 -> 186; // First row: 186
+                    case 1 -> 215; // Second row: 215 (specific position requested)
                     default -> 188 + row * 18;
                 };
                 
-                // Slot display-only (non interagibili)
+                // Display-only slots (non-interactive)
                 addSlot(new SlotItemHandler(itemHandler, slotIndex, xPos, yPos) {
                     @Override
                     public boolean mayPlace(ItemStack stack) {
-                        return false; // Non permettere inserimento manuale
+                        return false; // Don't allow manual insertion
                     }
                     
                     @Override
                     public boolean mayPickup(Player player) {
-                        return false; // Non permettere estrazione
+                        return false; // Don't allow extraction
                     }
                     
                     @Override
                     public ItemStack remove(int amount) {
-                        return ItemStack.EMPTY; // Non permettere rimozione
+                        return ItemStack.EMPTY; // Don't allow removal
                     }
                 });
             }
@@ -213,11 +213,10 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
     }
     
     /**
-     * Forza il refresh dei dati blueprint (ora non più necessario con ContainerData)
+     * Forces blueprint data refresh (no longer necessary with ContainerData)
      */
     public void forceRefreshBlueprintData() {
-        // Con ContainerData, la sincronizzazione è automatica
-        System.out.println("DEBUG MENU: ContainerData sync is automatic, no manual refresh needed");
+        // With ContainerData, synchronization is automatic
     }
     
     public StructureSaverMachineBlockEntity getBlockEntity() {

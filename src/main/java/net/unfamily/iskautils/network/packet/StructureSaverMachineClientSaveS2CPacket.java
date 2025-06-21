@@ -80,7 +80,7 @@ public class StructureSaverMachineClientSaveS2CPacket {
             var player = net.minecraft.client.Minecraft.getInstance().player;
             if (player != null) {
                 player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("§cErrore nel salvataggio: " + e.getMessage()), 
+                    net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_saver.error.client_save_failed", e.getMessage()), 
                     true);
             }
         }

@@ -12,6 +12,7 @@ import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.core.BlockPos;
+import net.unfamily.iskautils.Config;
 
 /**
  * Screen per la GUI di selezione strutture della Structure Placer Machine (identica alla StructurePlacerScreen)
@@ -123,6 +124,9 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     @Override
     protected void init() {
         super.init();
+        
+        // Ricarica le strutture all'apertura della GUI usando il flag del config
+        net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(net.unfamily.iskautils.Config.acceptClientStructure);
         
         // Crea i pulsanti vanilla Save e Cancel
         int saveX = this.leftPos + SAVE_BUTTON_X;

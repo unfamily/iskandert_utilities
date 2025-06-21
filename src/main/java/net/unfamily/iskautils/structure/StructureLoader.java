@@ -49,12 +49,12 @@ public class StructureLoader {
             boolean isClient1 = id1.startsWith("client_");
             boolean isClient2 = id2.startsWith("client_");
             
-            // Se uno è client e l'altro no, il non-client viene prima
+            // If one is client and the other is not, the non-client comes first
             if (isClient1 != isClient2) {
-                return isClient1 ? 1 : -1; // Non-client (server) prima
+                return isClient1 ? 1 : -1; // Non-client (server) first
             }
             
-            // Se sono dello stesso tipo, ordine alfabetico
+            // If they are the same type, alphabetical order
             return id1.compareTo(id2);
         };
 
@@ -108,7 +108,6 @@ public class StructureLoader {
             // Create directory if it doesn't exist
             if (!Files.exists(structuresPath)) {
                 Files.createDirectories(structuresPath);
-                LOGGER.info("Created structures directory: {}", structuresPath);
             }
             
             // Salva le strutture client prima del clear (per preservarle durante il reload)
@@ -126,14 +125,13 @@ public class StructureLoader {
             PROTECTED_DEFINITIONS.clear();
             STRUCTURES.clear();
             
-            // Ripristina le strutture client salvate
+            // Restore client structures saved
             STRUCTURES.putAll(clientStructureBackup);
             PROTECTED_DEFINITIONS.putAll(clientProtectedBackup);
             
             // Generate default file if it doesn't exist
             Path defaultStructuresFile = structuresPath.resolve("default_structures.json");
             if (!Files.exists(defaultStructuresFile) || shouldRegenerateDefaultStructures(defaultStructuresFile)) {
-                LOGGER.debug("Generating or regenerating default_structures.json file");
                 generateDefaultStructures(structuresPath);
             }
             
@@ -147,27 +145,18 @@ public class StructureLoader {
             }
             
             int regularStructuresCount = STRUCTURES.size();
-            LOGGER.info("Regular structure scanning completed. Loaded {} structures", regularStructuresCount);
             
             // Scan client structures if enabled and requested
             if (includeClientStructures) {
                 scanClientStructures(forceClientStructures, player);
-            } else {
-                LOGGER.debug("Skipping client structures as requested");
             }
             
             int totalStructuresCount = STRUCTURES.size();
-            LOGGER.info("Total structure scanning completed. Loaded {} structures ({} regular, {} client)", 
-                       totalStructuresCount, regularStructuresCount, totalStructuresCount - regularStructuresCount);
             
             // Generate comprehensive documentation
             StructureDocumentationGenerator.generateDocumentation();
             
         } catch (Exception e) {
-            LOGGER.error("Error while scanning structures directory: {}", e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -190,7 +179,6 @@ public class StructureLoader {
             }
             return false;
         } catch (Exception e) {
-            LOGGER.warn("Error reading default structures file, it will be regenerated: {}", e.getMessage());
             return true;
         }
     }
@@ -305,10 +293,8 @@ public class StructureLoader {
                 "}";
             
             Files.write(defaultStructuresPath, defaultStructuresContent.getBytes());
-            LOGGER.info("Created example structures file: {}", defaultStructuresPath);
             
         } catch (IOException e) {
-            LOGGER.error("Unable to create default structures file: {}", e.getMessage());
         }
     }
 
@@ -333,17 +319,16 @@ public class StructureLoader {
      * @param player Il giocatore specifico (per il nickname delle strutture client)
      */
     private static void scanClientStructures(boolean forceLoad, net.minecraft.server.level.ServerPlayer player) {
-        // Determina se siamo sul server o client
+        // Determine if we're on server or client
         boolean isServer = isRunningOnServer();
         
-        // Se forceLoad è true (reload), carica sempre le strutture client
+        // If forceLoad is true (reload), always load client structures
         if (!forceLoad && isServer && !Config.acceptClientStructure) {
-            LOGGER.debug("Server configured to not accept client structures, skipping");
             return;
         }
         
         if (forceLoad) {
-            // Force loading per reload o singleplayer
+            // Force loading for reload or singleplayer
         }
         
         String clientStructurePath = Config.clientStructurePath;
@@ -355,14 +340,11 @@ public class StructureLoader {
         
         try {
             if (!Files.exists(clientStructuresPath)) {
-                // Crea la directory se non esiste (sia su client che su server per sviluppo)
+                // Create directory if it doesn't exist (both on client and server for development)
                 Files.createDirectories(clientStructuresPath);
-                LOGGER.info("Created client structures directory: {}", clientStructuresPath);
-                // Se la directory è appena stata creata, non ci sono file da scansionare
+                // If the directory was just created, there are no files to scan
                 return;
             }
-            
-            LOGGER.info("Scanning client structures from: {}", clientStructuresPath);
             
             // Scan all JSON files in the client directory
             try (Stream<Path> files = Files.walk(clientStructuresPath)) {
@@ -374,10 +356,6 @@ public class StructureLoader {
             }
             
         } catch (Exception e) {
-            LOGGER.error("Error while scanning client structures directory: {}", e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
         }
     }
     
@@ -409,20 +387,19 @@ public class StructureLoader {
      */
     private static String getCurrentPlayerNickname(net.minecraft.server.level.ServerPlayer specificPlayer) {
         try {
-            // Se abbiamo un giocatore specifico (dal comando), usalo
+            // If we have a specific player (from command), use it
             if (specificPlayer != null) {
                 String nickname = specificPlayer.getName().getString();
-                LOGGER.debug("Using specific player nickname: {}", nickname);
                 return nickname;
             }
             
-            // Controlla se siamo lato server
+            // Check if we're on server side
             boolean isServer = isRunningOnServer();
             
             if (!isServer) {
-                // Siamo lato client - prova a ottenere il giocatore client
+                // We're on client side - try to get the client player
                 try {
-                    // Usa reflection per evitare errori quando la classe client non è disponibile lato server
+                    // Use reflection to avoid errors when client class is not available on server side
                     Class<?> minecraftClass = Class.forName("net.minecraft.client.Minecraft");
                     Object minecraft = minecraftClass.getMethod("getInstance").invoke(null);
                     if (minecraft != null) {
@@ -430,61 +407,54 @@ public class StructureLoader {
                         if (player != null) {
                             Object nameComponent = player.getClass().getMethod("getName").invoke(player);
                             String nickname = (String) nameComponent.getClass().getMethod("getString").invoke(nameComponent);
-                            LOGGER.debug("Using client player nickname: {}", nickname);
                             return nickname;
                         }
                     }
                 } catch (Exception clientException) {
-                    LOGGER.debug("Failed to get client player via reflection: {}", clientException.getMessage());
                 }
             } else {
-                // Siamo lato server - prova a ottenere un giocatore dal server
+                // We're on server side - try to get a player from the server
                 try {
                     MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
                     if (server != null) {
                         var players = server.getPlayerList().getPlayers();
                         if (!players.isEmpty()) {
-                            // Se è singleplayer, prendi il primo giocatore
+                            // If it's singleplayer, take the first player
                             if (server.isSingleplayer()) {
                                 String nickname = players.get(0).getName().getString();
-                                LOGGER.debug("Using singleplayer first player nickname: {}", nickname);
                                 return nickname;
                             } else {
-                                // Se è multiplayer, prova a usare il primo giocatore online (fallback)
+                                // If it's multiplayer, try to use the first online player (fallback)
                                 String nickname = players.get(0).getName().getString();
-                                LOGGER.debug("Using first online player nickname as fallback: {}", nickname);
                                 return nickname;
                             }
                         }
                     }
                 } catch (Exception serverException) {
-                    LOGGER.debug("Failed to get server player: {}", serverException.getMessage());
                 }
             }
             
-            // Fallback: usa un nickname generico basato sul thread/context corrente
+            // Fallback: use a generic nickname based on current thread/context
             String fallbackNickname = generateFallbackNickname();
-            LOGGER.warn("Could not determine player nickname, using fallback: {}", fallbackNickname);
             return fallbackNickname;
             
         } catch (Exception e) {
-            // Fallback finale in caso di errori
+            // Final fallback in case of errors
             String fallbackNickname = generateFallbackNickname();
-            LOGGER.warn("Error determining player nickname: {}, using fallback: {}", e.getMessage(), fallbackNickname);
             return fallbackNickname;
         }
     }
     
     /**
-     * Genera un nickname di fallback quando non riesce a determinare il nickname del giocatore
+     * Generates a fallback nickname when unable to determine player nickname
      */
     private static String generateFallbackNickname() {
         try {
-            // Prova a ottenere informazioni dal sistema per creare un fallback unico
+            // Try to get system information to create a unique fallback
             String systemUser = System.getProperty("user.name", "unknown");
-            long timestamp = System.currentTimeMillis() % 10000; // Ultime 4 cifre del timestamp
+            long timestamp = System.currentTimeMillis() % 10000; // Last 4 digits of timestamp
             
-            // Pulisci il nome utente sistema da caratteri non validi
+            // Clean system username from invalid characters
             systemUser = systemUser.replaceAll("[^a-zA-Z0-9_]", "");
             if (systemUser.length() > 10) {
                 systemUser = systemUser.substring(0, 10);
@@ -494,14 +464,12 @@ public class StructureLoader {
             }
             
             String fallback = systemUser + "_" + timestamp;
-            LOGGER.debug("Generated fallback nickname: {}", fallback);
             return fallback;
             
         } catch (Exception e) {
-            // Fallback assoluto
+            // Absolute fallback
             long timestamp = System.currentTimeMillis() % 10000;
             String absoluteFallback = "player_" + timestamp;
-            LOGGER.debug("Generated absolute fallback nickname: {}", absoluteFallback);
             return absoluteFallback;
         }
     }
@@ -509,37 +477,20 @@ public class StructureLoader {
     /**
      * Scans a single client configuration file for structures
      */
-    private static void scanClientConfigFile(Path configFile, boolean isServer) {
-        scanClientConfigFile(configFile, isServer, null);
-    }
-    
-    /**
-     * Scans a single client configuration file for structures with specific player context
-     */
     private static void scanClientConfigFile(Path configFile, boolean isServer, net.minecraft.server.level.ServerPlayer player) {
-        LOGGER.debug("Scanning client configuration file: {} (server: {})", configFile, isServer);
-        
-        // Ottieni il nickname del giocatore (ora con fallback garantito)
+        // Get player nickname (now with guaranteed fallback)
         String playerNickname = getCurrentPlayerNickname(player);
         
-        // Crea un prefisso unico con il nickname del giocatore
+        // Create unique prefix with player nickname
         String definitionId = "client_" + playerNickname + "_" + configFile.getFileName().toString().replace(".json", "");
-        
-        LOGGER.debug("Client structure will be prefixed as: {}", definitionId);
         
         try (InputStream inputStream = Files.newInputStream(configFile)) {
             parseConfigFromStreamWithPrefix(definitionId, configFile.toString(), inputStream, playerNickname);
             
             if (isServer) {
-                LOGGER.info("Server accepted client structure from player '{}': {}", playerNickname, configFile);
             } else {
-                LOGGER.info("Loaded client structure for player '{}': {}", playerNickname, configFile);
             }
         } catch (Exception e) {
-            LOGGER.error("Error reading client structure file {}: {}", configFile, e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -547,17 +498,11 @@ public class StructureLoader {
      * Scans a single configuration file for structures
      */
     private static void scanConfigFile(Path configFile) {
-        LOGGER.debug("Scanning configuration file: {}", configFile);
-        
         String definitionId = configFile.getFileName().toString().replace(".json", "");
         
         try (InputStream inputStream = Files.newInputStream(configFile)) {
             parseConfigFromStream(definitionId, configFile.toString(), inputStream);
         } catch (Exception e) {
-            LOGGER.error("Error reading structures file {}: {}", configFile, e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -571,13 +516,8 @@ public class StructureLoader {
                 JsonObject json = jsonElement.getAsJsonObject();
                 parseConfigJson(definitionId, filePath, json);
             } else {
-                LOGGER.error("Invalid JSON in structures file: {}", filePath);
             }
         } catch (Exception e) {
-            LOGGER.error("Error parsing structures file {}: {}", filePath, e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
         }
     }
     
@@ -590,18 +530,13 @@ public class StructureLoader {
             if (jsonElement != null && jsonElement.isJsonObject()) {
                 JsonObject json = jsonElement.getAsJsonObject();
                 
-                // Applica il prefisso del giocatore agli ID delle strutture nel JSON
+                // Applies the player prefix to structure IDs in the JSON
                 JsonObject modifiedJson = applyPlayerPrefixToStructureIds(json, playerNickname);
                 
                 parseConfigJson(definitionId, filePath, modifiedJson);
             } else {
-                LOGGER.error("Invalid JSON in client structures file: {}", filePath);
             }
         } catch (Exception e) {
-            LOGGER.error("Error parsing client structures file {}: {}", filePath, e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
         }
     }
     
@@ -610,10 +545,10 @@ public class StructureLoader {
      */
     private static JsonObject applyPlayerPrefixToStructureIds(JsonObject originalJson, String playerNickname) {
         try {
-            // Crea una copia del JSON originale
+            // Creates a copy of the original JSON
             JsonObject modifiedJson = GSON.fromJson(GSON.toJson(originalJson), JsonObject.class);
             
-            // Se ha l'array "structure", modifica gli ID al suo interno
+            // If it has the "structure" array, modify the IDs inside
             if (modifiedJson.has("structure") && modifiedJson.get("structure").isJsonArray()) {
                 JsonArray structuresArray = modifiedJson.getAsJsonArray("structure");
                 
@@ -621,13 +556,11 @@ public class StructureLoader {
                     if (structureElement.isJsonObject()) {
                         JsonObject structureObj = structureElement.getAsJsonObject();
                         
-                        // Se ha un campo "id", aggiungi il prefisso del giocatore
+                        // If it has an "id" field, add the player prefix
                         if (structureObj.has("id")) {
                             String originalId = structureObj.get("id").getAsString();
                             String prefixedId = "client_" + playerNickname + "_" + originalId;
                             structureObj.addProperty("id", prefixedId);
-                            
-                            LOGGER.debug("Modified structure ID: {} -> {}", originalId, prefixedId);
                         }
                     }
                 }
@@ -635,8 +568,7 @@ public class StructureLoader {
             
             return modifiedJson;
         } catch (Exception e) {
-            LOGGER.error("Error applying player prefix to structure IDs: {}", e.getMessage());
-            return originalJson; // Ritorna l'originale in caso di errore
+            return originalJson; // Return the original in case of error
         }
     }
 
@@ -647,7 +579,6 @@ public class StructureLoader {
         try {
             // Check if this is a structure definition file
             if (!json.has("type") || !json.get("type").getAsString().equals("iska_utils:structure")) {
-                LOGGER.debug("Skipped file {} - not a structure definition", filePath);
                 return;
             }
             
@@ -659,7 +590,6 @@ public class StructureLoader {
             
             // Check if this is a protected file
             if (PROTECTED_DEFINITIONS.containsKey(definitionId) && !PROTECTED_DEFINITIONS.get(definitionId)) {
-                LOGGER.debug("Skipped protected structure definition: {}", definitionId);
                 return;
             }
             
@@ -670,10 +600,6 @@ public class StructureLoader {
             processStructuresJson(json);
             
         } catch (Exception e) {
-            LOGGER.error("Error processing structure definition {}: {}", definitionId, e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -682,7 +608,6 @@ public class StructureLoader {
      */
     private static void processStructuresJson(JsonObject json) {
         if (!json.has("structure") || !json.get("structure").isJsonArray()) {
-            LOGGER.error("Structure definition file missing 'structure' array");
             return;
         }
         
@@ -701,7 +626,6 @@ public class StructureLoader {
         try {
             // Get required ID
             if (!structureJson.has("id") || !structureJson.get("id").isJsonPrimitive()) {
-                LOGGER.error("Structure definition missing 'id' field");
                 return;
             }
             
@@ -797,13 +721,7 @@ public class StructureLoader {
             
             // Register structure definition
             STRUCTURES.put(structureId, definition);
-            LOGGER.debug("Registered structure definition: {}", structureId);
-            
         } catch (Exception e) {
-            LOGGER.error("Error processing structure definition: {}", e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -992,12 +910,123 @@ public class StructureLoader {
                         java.util.LinkedHashMap::new
                 ));
     }
+    
+    /**
+     * Gets only player structures from player_structures.json file for the Structure Saver Machine GUI
+     * This is specifically for the modify functionality - only shows structures that can be modified
+     */
+    public static Map<String, StructureDefinition> getPlayerStructuresForSaverMachine() {
+        Map<String, StructureDefinition> playerStructures = new HashMap<>();
+        
+        String clientStructurePath = Config.clientStructurePath;
+        if (clientStructurePath == null || clientStructurePath.trim().isEmpty()) {
+            clientStructurePath = "iska_utils_client/structures";
+        }
+        
+        Path playerStructuresFile = Paths.get(clientStructurePath).resolve("player_structures.json");
+        
+        if (!Files.exists(playerStructuresFile)) {
+            return playerStructures; // Return empty map
+        }
+        
+        try {
+            String jsonContent = Files.readString(playerStructuresFile);
+            JsonElement jsonElement = GSON.fromJson(jsonContent, JsonElement.class);
+            
+            if (jsonElement != null && jsonElement.isJsonObject()) {
+                JsonObject json = jsonElement.getAsJsonObject();
+                
+                if (json.has("structure") && json.get("structure").isJsonArray()) {
+                    JsonArray structuresArray = json.getAsJsonArray("structure");
+                    
+                    for (JsonElement structureElement : structuresArray) {
+                        if (structureElement.isJsonObject()) {
+                            JsonObject structureJson = structureElement.getAsJsonObject();
+                            
+                            try {
+                                StructureDefinition definition = parseStructureDefinitionFromJson(structureJson);
+                                if (definition != null && definition.getId() != null) {
+                                    playerStructures.put(definition.getId(), definition);
+                                }
+                            } catch (Exception e) {
+                            }
+                        }
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+        }
+        
+        return playerStructures;
+    }
+    
+    /**
+     * Helper method to parse a StructureDefinition from a JsonObject
+     * Used specifically by getPlayerStructuresForSaverMachine()
+     */
+    private static StructureDefinition parseStructureDefinitionFromJson(JsonObject structureJson) {
+        if (!structureJson.has("id") || !structureJson.get("id").isJsonPrimitive()) {
+            return null;
+        }
+        
+        String structureId = structureJson.get("id").getAsString();
+        
+        // Create structure definition
+        StructureDefinition definition = new StructureDefinition();
+        definition.setId(structureId);
+        
+        // Parse name
+        if (structureJson.has("name")) {
+            definition.setName(structureJson.get("name").getAsString());
+        } else {
+            definition.setName(structureId); // Use ID as fallback
+        }
+        
+        // Parse optional fields
+        if (structureJson.has("can_force")) {
+            definition.setCanForce(structureJson.get("can_force").getAsBoolean());
+        }
+        
+        if (structureJson.has("slower")) {
+            definition.setSlower(structureJson.get("slower").getAsBoolean());
+        }
+        
+        if (structureJson.has("place_like_player")) {
+            definition.setPlaceAsPlayer(structureJson.get("place_like_player").getAsBoolean());
+        }
+        
+        // Parse description array if present
+        if (structureJson.has("description") && structureJson.get("description").isJsonArray()) {
+            JsonArray descArray = structureJson.getAsJsonArray("description");
+            StringBuilder description = new StringBuilder();
+            for (JsonElement desc : descArray) {
+                if (description.length() > 0) description.append(" ");
+                description.append(desc.getAsString());
+            }
+            definition.setDescription(description.toString());
+        }
+        
+        // Parse icon if present
+        if (structureJson.has("icon") && structureJson.get("icon").isJsonObject()) {
+            JsonObject iconObj = structureJson.getAsJsonObject("icon");
+            if (iconObj.has("item")) {
+                StructureDefinition.IconDefinition icon = new StructureDefinition.IconDefinition();
+                icon.setItem(iconObj.get("item").getAsString());
+                definition.setIcon(icon);
+            }
+        }
+        
+        // Note: We don't parse pattern/key here since this is only for GUI display
+        // The actual structure data isn't needed for the structure saver machine list
+        
+        return definition;
+    }
 
     /**
      * Reloads all structure definitions
      */
     public static void reloadAllDefinitions() {
-        LOGGER.info("Reloading all structure definitions...");
         reloadAllDefinitions(true); // Force reload client structures
     }
     
@@ -1006,7 +1035,6 @@ public class StructureLoader {
      * @param forceClientStructures Se true, carica sempre le strutture client (per singleplayer e reload)
      */
     public static void reloadAllDefinitions(boolean forceClientStructures) {
-        LOGGER.info("Reloading all structure definitions (force client: {})...", forceClientStructures);
         scanConfigDirectory(forceClientStructures);
     }
     
@@ -1016,8 +1044,6 @@ public class StructureLoader {
      * @param player Il giocatore che ha eseguito il comando (per ottenere il nickname per le strutture client)
      */
     public static void reloadAllDefinitions(boolean forceClientStructures, net.minecraft.server.level.ServerPlayer player) {
-        LOGGER.info("Reloading all structure definitions (force client: {}, player: {})...", 
-                   forceClientStructures, player != null ? player.getName().getString() : "console");
         scanConfigDirectory(forceClientStructures, player);
     }
 
@@ -1037,18 +1063,14 @@ public class StructureLoader {
      * @param serverAcceptsClientStructures Flag che indica se il server accetta strutture client
      */
     public static void syncFromServer(Map<String, String> serverStructureData, boolean serverAcceptsClientStructures) {
-        LOGGER.info("Sincronizzazione strutture dal server in corso...");
-        
         // Controlla se siamo in modalità singleplayer - se sì, non sincronizzare
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
             if (minecraft != null && minecraft.hasSingleplayerServer()) {
-                LOGGER.debug("Modalità singleplayer detected, non sincronizzare strutture dal server");
                 return;
             }
         } catch (Exception e) {
             // Se non riusciamo a determinarlo, procedi con la sincronizzazione
-            LOGGER.debug("Non riuscito a determinare se siamo in singleplayer, procedendo con la sincronizzazione");
         }
         
         // Salva le strutture locali protette E le strutture client (se ce ne sono)
@@ -1070,9 +1092,6 @@ public class StructureLoader {
                 localClientProtected.put(structureId, PROTECTED_DEFINITIONS.getOrDefault(structureId, false));
             }
         }
-        
-        LOGGER.debug("Salvate {} strutture protette e {} strutture client prima della sincronizzazione", 
-                    localProtectedStructures.size(), localClientStructures.size());
         
         // Pulisci le strutture esistenti
         STRUCTURES.clear();
@@ -1108,29 +1127,17 @@ public class StructureLoader {
                     }
                 }
             } catch (Exception e) {
-                LOGGER.error("Errore nel parsing della struttura {} ricevuta dal server: {}", structureId, e.getMessage());
             }
         }
         
         // Ripristina le strutture client locali solo se il server lo permette
         if (serverAcceptsClientStructures && !localClientStructures.isEmpty()) {
-            LOGGER.info("Il server accetta strutture client, ripristinando {} strutture client locali salvate...", localClientStructures.size());
-            
             // Ripristina le strutture client salvate
             STRUCTURES.putAll(localClientStructures);
             PROTECTED_DEFINITIONS.putAll(localClientProtected);
-            
-            LOGGER.info("Ripristinate {} strutture client locali", localClientStructures.size());
         } else if (serverAcceptsClientStructures) {
             // Se il server accetta le strutture client ma non ne avevamo salvate, prova a caricarle da disco
-            LOGGER.info("Il server accetta strutture client, tentando di caricare da disco...");
             scanClientStructures();
-            int clientStructuresCount = (int) STRUCTURES.entrySet().stream()
-                    .filter(entry -> entry.getKey().startsWith("client_"))
-                    .count();
-            LOGGER.info("Caricate {} strutture client dal disco", clientStructuresCount);
-        } else {
-            LOGGER.info("Il server non accetta strutture client (o non erano presenti), saltando il ripristino delle strutture client locali");
         }
         
         // Imposta il flag che stiamo usando strutture del server (solo per multiplayer)
@@ -1140,19 +1147,10 @@ public class StructureLoader {
                 .filter(entry -> entry.getKey().startsWith("client_"))
                 .count();
         
-        LOGGER.info("Sincronizzazione completata. Strutture caricate: {} (di cui {} server, {} client, {} protette)", 
-                   STRUCTURES.size(), 
-                   STRUCTURES.size() - finalClientCount - localProtectedStructures.size(),
-                   finalClientCount,
-                   localProtectedStructures.size());
-        LOGGER.info("Client ora utilizza le strutture del server (multiplayer) con client structures: {}", 
-                   serverAcceptsClientStructures ? "abilitate" : "disabilitate");
-        
         // Rigenera la documentazione
         try {
             StructureDocumentationGenerator.generateDocumentation();
         } catch (Exception e) {
-            LOGGER.warn("Errore nella generazione della documentazione dopo la sincronizzazione: {}", e.getMessage());
         }
     }
     
@@ -1169,7 +1167,6 @@ public class StructureLoader {
      */
     public static void resetToLocalStructures() {
         if (usingServerStructures) {
-            LOGGER.info("Ritornando alle strutture locali...");
             usingServerStructures = false;
             scanConfigDirectory(); // Ricarica le strutture locali
         }

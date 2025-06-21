@@ -74,10 +74,6 @@ public class MarkRenderer {
     public void addBillboardMarker(BlockPos pos, int color, int durationTicks) {
         // Add the marker to the map, using a special flag to indicate it's a small cube marker
         billboardMarkers.put(pos, new MarkBlockData(color, Minecraft.getInstance().level.getGameTime() + durationTicks, true));
-        
-        // Debug logging
-        LOGGER.info("Billboard marker added at {} with color {:08x}, duration {} ticks. Total markers: {}", 
-                pos, color, durationTicks, billboardMarkers.size());
     }
     
     /**
