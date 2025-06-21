@@ -1,0 +1,99 @@
+{
+    "type": "iska_utils:structure",
+    "overwritable": true,
+    "structure": [
+        {
+            "id": "iska_utils-wither_grinder",
+            "name": "Iskandert's Wither Grinder",
+            "can_force": true,
+            "can_replace": [
+            ],
+            "icon": {
+                "type": "minecraft:item",
+                "item": "minecraft:wither_skeleton_skull"
+            },
+            "description": ["Easy way to kill withers"],
+            "pattern": [
+                [["   "],["   "],["   "],["   "],["AAA"], ["AAA"], ["AAA"]],
+                [["L@ "],["   "],["   "],["   "],["AAA"], ["A A"], ["AAA"]],
+                [["   "],["   "],["   "],["   "],["AAA"], ["AAA"], ["AAA"]]
+            ],
+            "key": {
+                "A": {
+                    "display": "iska_utils.wither_proof_block",
+                    "alternatives": [
+                        {
+                            "block": "iska_utils:wither_proof_block"
+                        },
+                        {
+                            "block": "mob_grinding_utils:tinted_glass"
+                        }
+                    ]
+                },
+                "@": {
+                    "display": "minecraft.piston",
+                    "alternatives": [
+                        {
+                            "block": "minecraft:piston",
+                            "properties": {
+                                "facing": "up"
+                            }
+                        }
+                    ]
+                },
+                "L": {
+                    "display": "minecraft.lever",
+                    "alternatives": [
+                        {
+                            "block": "minecraft:lever",
+                            "properties": {
+                                "face": "floor",
+                                "facing": "east",
+                                "powered": "false"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "iska_utils-wither_summoning",
+            "name": "Wither Summoning Structure",
+            "can_replace": [],
+            "slower": true,
+            "place_like_player": true,
+            "icon": {
+                "type": "minecraft:item",
+                "item": "minecraft:wither_skeleton_skull"
+            },
+            "description": ["Structure to summon the Wither boss"],
+            "pattern": [
+                [[" @ "],[" A "],["AAA"],["BBB"]]
+            ],
+            "key": {
+                "A": {
+                    "display": "minecraft.soul_sand",
+                    "alternatives": [
+                        {
+                            "block": "minecraft:soul_sand"
+                        },
+                        {
+                            "block": "minecraft:soul_soil"
+                        }
+                    ]
+                },
+                "B": {
+                    "display": "minecraft.wither_skeleton_skull",
+                    "alternatives": [
+                        {
+                            "block": "minecraft:wither_skeleton_skull",
+                            "properties": {
+                                "rotation": "0"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

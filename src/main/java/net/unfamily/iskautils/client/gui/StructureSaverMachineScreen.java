@@ -611,21 +611,9 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         // Con ContainerData, i dati sono sincronizzati automaticamente dal server
         // Gli slot vengono popolati automaticamente dal server quando l'area viene impostata
         
-        // Aggiorna lo stato del pulsante Save basandosi sulla validità dell'area
+        // Il pulsante Save rimane sempre attivo - la validazione viene fatta nel metodo onSaveButtonClicked()
         if (saveButton != null) {
-            boolean hasValidArea = this.menu.getSyncedHasValidArea();
-            boolean wasActive = saveButton.active;
-            saveButton.active = hasValidArea; // Abilita solo se c'è un'area valida
-            
-            // Log solo quando lo stato cambia
-            if (wasActive != hasValidArea) {
-                System.err.println("Save button active changed: " + hasValidArea);
-                if (this.minecraft != null && this.minecraft.player != null) {
-                    this.minecraft.player.displayClientMessage(
-                        Component.literal("§6[DEBUG] Save button active: " + hasValidArea), 
-                        true);
-                }
-            }
+            saveButton.active = true; // Sempre attivo, validazione nel metodo
         }
     }
     

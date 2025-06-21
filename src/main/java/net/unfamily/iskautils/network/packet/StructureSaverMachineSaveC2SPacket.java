@@ -77,6 +77,19 @@ public class StructureSaverMachineSaveC2SPacket {
             return;
         }
         
+        // Controllo duplicati: verifica se esiste già una struttura con lo stesso ID finale
+        String playerNickname = player.getName().getString();
+        String finalStructureId = "client_" + playerNickname + "_" + structureId;
+        
+        // Ottieni tutte le strutture client caricate per verificare duplicati
+        var allClientStructures = net.unfamily.iskautils.structure.StructureLoader.getClientStructures();
+        if (allClientStructures.containsKey(finalStructureId)) {
+            LOGGER.warn("Tentativo di salvare struttura con ID duplicato: {}", finalStructureId);
+            player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id"), true);
+            player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id_hint"), true);
+            return;
+        }
+        
         if (machinePos == null) {
             player.displayClientMessage(Component.literal("§cPosizione macchina non valida!"), true);
             return;
@@ -107,18 +120,31 @@ public class StructureSaverMachineSaveC2SPacket {
         }
         
         try {
-            // Salva la struttura con l'ID personalizzato
-            saveStructure(player, level, structureName, structureId, vertex1, vertex2, center);
+            // Determina se siamo in singleplayer o multiplayer
+            boolean isSingleplayer = player.getServer().isSingleplayer();
             
-            // Ricarica le strutture per includere quella appena salvata
-            StructureLoader.reloadAllDefinitions(true, player);
+            if (isSingleplayer) {
+                // Singleplayer: salva direttamente sul server (che è anche il client)
+                saveStructure(player, level, structureName, structureId, vertex1, vertex2, center);
+                
+                // Ricarica le strutture per includere quella appena salvata
+                StructureLoader.reloadAllDefinitions(true, player);
+            } else {
+                // Multiplayer: invia comando al client per salvare localmente
+                LOGGER.info("Multiplayer detected - sending save command to client");
+                StructureSaverMachineClientSaveS2CPacket.send(player, structureName, structureId, vertex1, vertex2, center);
+            }
             
             // Pulisci i dati blueprint dopo il salvataggio
             machineEntity.clearBlueprintData();
             
-            player.displayClientMessage(Component.literal("§aStruttura '§f" + structureName + "§a' salvata con successo!"), true);
-            LOGGER.info("Player {} saved structure '{}' with coordinates {} to {}", 
-                       player.getName().getString(), structureName, vertex1, vertex2);
+            if (isSingleplayer) {
+                player.displayClientMessage(Component.literal("§aStruttura '§f" + structureName + "§a' salvata con successo!"), true);
+                LOGGER.info("Player {} saved structure '{}' (singleplayer)", player.getName().getString(), structureName);
+            } else {
+                player.displayClientMessage(Component.literal("§6Comando di salvataggio inviato al client..."), true);
+                LOGGER.info("Save command for structure '{}' sent to client for player {}", structureName, player.getName().getString());
+            }
             
         } catch (Exception e) {
             LOGGER.error("Errore durante il salvataggio della struttura '{}': {}", structureName, e.getMessage());
@@ -164,10 +190,15 @@ public class StructureSaverMachineSaveC2SPacket {
                     
                     // Gestisci il carattere speciale per il centro
                     if (pos.equals(center)) {
-                        blockToCharMap.put(blockKey, '@');
+                        // Se il blocco del centro ha già un carattere assegnato, usalo per @
+                        // Altrimenti assegna il carattere successivo e poi usa @ per il centro
+                        if (!blockToCharMap.containsKey(blockKey)) {
+                            blockToCharMap.put(blockKey, charAssigner.getNextChar());
+                        }
+                        // Nel pattern, il centro è sempre '@' ma nella key sarà mappato al blocco reale
                         row.append('@');
                     } else {
-                        // Assegna un carattere al blocco se non esiste già
+                        // Per tutti gli altri blocchi, assegna un carattere normale
                         char blockChar = blockToCharMap.computeIfAbsent(blockKey, k -> charAssigner.getNextChar());
                         row.append(blockChar);
                     }
@@ -180,7 +211,7 @@ public class StructureSaverMachineSaveC2SPacket {
         }
         
         // Crea la struttura JSON usando l'ID fornito dall'utente (senza prefisso)
-        JsonObject structureJson = createStructureJson(structureId, structureName, patternLines, blockToCharMap);
+        JsonObject structureJson = createStructureJson(structureId, structureName, patternLines, blockToCharMap, level, center);
         
         // Salva nel file
         saveToPlayerStructuresFile(structureJson);
@@ -216,7 +247,8 @@ public class StructureSaverMachineSaveC2SPacket {
      * Crea l'oggetto JSON della struttura
      */
     private JsonObject createStructureJson(String structureId, String structureName, 
-                                         List<String[]> patternLines, Map<String, Character> blockToCharMap) {
+                                         List<String[]> patternLines, Map<String, Character> blockToCharMap,
+                                         ServerLevel level, BlockPos center) {
         
         JsonObject root = new JsonObject();
         root.addProperty("type", "iska_utils:structure");
@@ -229,18 +261,28 @@ public class StructureSaverMachineSaveC2SPacket {
         structureObj.addProperty("id", structureId);
         structureObj.addProperty("name", structureName);
         
-        // Icona blueprint
+        // Campi opzionali vuoti (seguendo il formato del default_structures.json)
+        structureObj.add("can_replace", new JsonArray()); // Array vuoto per can_replace
+        
+        // Icona blueprint (formato corretto con type)
         JsonObject icon = new JsonObject();
+        icon.addProperty("type", "minecraft:item");
         icon.addProperty("item", "iska_utils:blueprint");
-        icon.addProperty("count", 1);
         structureObj.add("icon", icon);
         
-        // Pattern (converti List<String[]> in JsonArray)
+        // Descrizione vuota (campo opzionale)
+        JsonArray description = new JsonArray();
+        structureObj.add("description", description);
+        
+        // Pattern (formato corretto: ogni riga wrappata in array)
         JsonArray patternArray = new JsonArray();
         for (String[] layer : patternLines) {
             JsonArray layerArray = new JsonArray();
             for (String row : layer) {
-                layerArray.add(row);
+                // Ogni riga deve essere un array con una singola stringa
+                JsonArray rowArray = new JsonArray();
+                rowArray.add(row);
+                layerArray.add(rowArray);
             }
             patternArray.add(layerArray);
         }
@@ -248,11 +290,64 @@ public class StructureSaverMachineSaveC2SPacket {
         
         // Key (mappa caratteri -> definizioni blocchi)
         JsonObject keyObj = new JsonObject();
+        
+        // Prima aggiungi la mappatura speciale per '@' (centro) con formato corretto
+        BlockState centerState = level.getBlockState(center);
+        String centerBlockKey = generateBlockKey(centerState);
+        
+        // Crea l'oggetto wrapper per '@'
+        JsonObject centerCharObj = new JsonObject();
+        
+        // Display name per il centro
+        String centerDisplayName = centerBlockKey.contains("[") ? centerBlockKey.split("\\[")[0] : centerBlockKey;
+        centerCharObj.addProperty("display", centerDisplayName.replace(":", "."));
+        
+        // Array di alternative per il centro
+        JsonArray centerAlternatives = new JsonArray();
+        JsonObject centerBlockDef = new JsonObject();
+        
+        if (centerBlockKey.contains("[")) {
+            // Blocco con proprietà
+            String[] parts = centerBlockKey.split("\\[", 2);
+            String blockName = parts[0];
+            String propertiesStr = parts[1].replace("]", "");
+            
+            centerBlockDef.addProperty("block", blockName);
+            
+            if (!propertiesStr.isEmpty()) {
+                JsonObject properties = new JsonObject();
+                for (String propPair : propertiesStr.split(",")) {
+                    String[] propKV = propPair.split("=", 2);
+                    if (propKV.length == 2) {
+                        properties.addProperty(propKV[0], propKV[1]);
+                    }
+                }
+                centerBlockDef.add("properties", properties);
+            }
+        } else {
+            // Blocco semplice
+            centerBlockDef.addProperty("block", centerBlockKey);
+        }
+        
+        centerAlternatives.add(centerBlockDef);
+        centerCharObj.add("alternatives", centerAlternatives);
+        
+        keyObj.add("@", centerCharObj);
+        
+        // Poi aggiungi tutti gli altri blocchi (formato corretto con display e alternatives)
         for (Map.Entry<String, Character> entry : blockToCharMap.entrySet()) {
             String blockKey = entry.getKey();
             Character character = entry.getValue();
             
-            JsonArray blockDefs = new JsonArray();
+            // Crea l'oggetto wrapper per il carattere
+            JsonObject charObj = new JsonObject();
+            
+            // Display name (usa il nome del blocco base)
+            String displayName = blockKey.contains("[") ? blockKey.split("\\[")[0] : blockKey;
+            charObj.addProperty("display", displayName.replace(":", "."));
+            
+            // Array di alternative
+            JsonArray alternatives = new JsonArray();
             JsonObject blockDef = new JsonObject();
             
             if (blockKey.contains("[")) {
@@ -278,8 +373,10 @@ public class StructureSaverMachineSaveC2SPacket {
                 blockDef.addProperty("block", blockKey);
             }
             
-            blockDefs.add(blockDef);
-            keyObj.add(character.toString(), blockDefs);
+            alternatives.add(blockDef);
+            charObj.add("alternatives", alternatives);
+            
+            keyObj.add(character.toString(), charObj);
         }
         structureObj.add("key", keyObj);
         
