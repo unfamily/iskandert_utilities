@@ -178,8 +178,8 @@ public class StructureSaverMachineSaveC2SPacket {
             } else {
                 // Multiplayer: invia comando al client per salvare localmente
                 LOGGER.info("Multiplayer detected - sending save command to client");
-                // TODO: Aggiornare anche il packet S2C per gestire la modifica
-                StructureSaverMachineClientSaveS2CPacket.send(player, structureName, structureId, vertex1, vertex2, center);
+                StructureSaverMachineClientSaveS2CPacket.send(player, structureName, structureId, vertex1, vertex2, center, 
+                                                             slower, placeAsPlayer, isModifyOperation, oldStructureId);
             }
             
             // Pulisci i dati blueprint dopo il salvataggio

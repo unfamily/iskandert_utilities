@@ -34,14 +34,20 @@ public class ClientStructureSaver {
      */
     public static void saveStructure(String structureName, String structureId, 
                                    BlockPos vertex1, BlockPos vertex2, BlockPos center, 
-                                   ClientLevel level) throws IOException {
+                                   ClientLevel level, boolean slower, boolean placeAsPlayer,
+                                   boolean isModifyOperation, String oldStructureId) throws IOException {
         
         LOGGER.info("=== SAVING STRUCTURE CLIENT-SIDE ===");
         LOGGER.info("Structure name: '{}'", structureName);
         LOGGER.info("Structure ID: '{}'", structureId);
+        LOGGER.info("Operation type: {}", isModifyOperation ? "MODIFY" : "SAVE");
+        if (isModifyOperation) {
+            LOGGER.info("Old structure ID: {}", oldStructureId);
+        }
         
         // Logica di salvataggio identica a quella del server ma lato client
-        saveToPlayerStructuresFile(createStructureJson(structureName, structureId, vertex1, vertex2, center, level));
+        saveToPlayerStructuresFile(createStructureJson(structureName, structureId, vertex1, vertex2, center, level, slower, placeAsPlayer), 
+                                 isModifyOperation, oldStructureId);
         
         // Ricarica le strutture client
         net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(true);
@@ -49,7 +55,7 @@ public class ClientStructureSaver {
     
     private static JsonObject createStructureJson(String structureName, String structureId, 
                                                 BlockPos vertex1, BlockPos vertex2, BlockPos center, 
-                                                ClientLevel level) {
+                                                ClientLevel level, boolean slower, boolean placeAsPlayer) {
         // Implementazione completa identica al server
         
         // Calcola i limiti dell'area
@@ -147,6 +153,14 @@ public class ClientStructureSaver {
         
         // Campi opzionali vuoti (seguendo il formato del default_structures.json)
         structureObj.add("can_replace", new JsonArray());
+        
+        // Aggiungi flag modalità se abilitati
+        if (slower) {
+            structureObj.addProperty("slower", true);
+        }
+        if (placeAsPlayer) {
+            structureObj.addProperty("place_like_player", true);
+        }
         
         // Icona blueprint (formato corretto con type)
         JsonObject icon = new JsonObject();
@@ -295,7 +309,7 @@ public class ClientStructureSaver {
         return key.toString();
     }
     
-    private static void saveToPlayerStructuresFile(JsonObject newStructure) throws IOException {
+    private static void saveToPlayerStructuresFile(JsonObject newStructure, boolean isModifyOperation, String oldStructureId) throws IOException {
         LOGGER.info("=== SAVING STRUCTURE TO FILE ===");
         
         String configPath = Config.clientStructurePath;
@@ -336,13 +350,40 @@ public class ClientStructureSaver {
             root = createEmptyPlayerStructuresRoot();
         }
         
-        // Aggiungi la nuova struttura
+        // Gestisci la modifica o il nuovo salvataggio
         JsonArray structuresArray = root.getAsJsonArray("structure");
         JsonArray newStructureArray = newStructure.getAsJsonArray("structure");
         
-        // Aggiungi tutte le strutture dal nuovo oggetto (dovrebbe essere solo una)
+        if (isModifyOperation && oldStructureId != null) {
+            LOGGER.info("=== MODIFY OPERATION: Removing old structure ===");
+            LOGGER.info("Old structure ID to remove: {}", oldStructureId);
+            
+            // Rimuovi la struttura vecchia
+            boolean foundOldStructure = false;
+            for (int i = structuresArray.size() - 1; i >= 0; i--) {
+                JsonObject structure = structuresArray.get(i).getAsJsonObject();
+                if (structure.has("id") && oldStructureId.equals(structure.get("id").getAsString())) {
+                    LOGGER.info("Found and removing old structure at index {}", i);
+                    structuresArray.remove(i);
+                    foundOldStructure = true;
+                    break; // Rimuovi solo la prima occorrenza
+                }
+            }
+            
+            if (!foundOldStructure) {
+                LOGGER.warn("Old structure with ID '{}' not found in file", oldStructureId);
+            }
+        }
+        
+        // Aggiungi la nuova struttura
         for (int i = 0; i < newStructureArray.size(); i++) {
-            structuresArray.add(newStructureArray.get(i));
+            JsonObject newStructureObj = newStructureArray.get(i).getAsJsonObject();
+            if (newStructureObj.has("id")) {
+                LOGGER.info("Adding {} structure with ID: {}", 
+                           isModifyOperation ? "modified" : "new", 
+                           newStructureObj.get("id").getAsString());
+            }
+            structuresArray.add(newStructureObj);
         }
         
         // Salva il file

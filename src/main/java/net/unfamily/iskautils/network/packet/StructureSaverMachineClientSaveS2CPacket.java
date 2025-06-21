@@ -17,27 +17,41 @@ public class StructureSaverMachineClientSaveS2CPacket {
     private final BlockPos vertex1;
     private final BlockPos vertex2;
     private final BlockPos center;
+    private final boolean slower;
+    private final boolean placeAsPlayer;
+    private final boolean isModifyOperation;
+    private final String oldStructureId;
     
     public StructureSaverMachineClientSaveS2CPacket(String structureName, String structureId, 
-                                                   BlockPos vertex1, BlockPos vertex2, BlockPos center) {
+                                                   BlockPos vertex1, BlockPos vertex2, BlockPos center,
+                                                   boolean slower, boolean placeAsPlayer,
+                                                   boolean isModifyOperation, String oldStructureId) {
         this.structureName = structureName;
         this.structureId = structureId;
         this.vertex1 = vertex1;
         this.vertex2 = vertex2;
         this.center = center;
+        this.slower = slower;
+        this.placeAsPlayer = placeAsPlayer;
+        this.isModifyOperation = isModifyOperation;
+        this.oldStructureId = oldStructureId;
     }
     
     /**
      * Invia il packet al client per il salvataggio locale
      */
     public static void send(ServerPlayer player, String structureName, String structureId, 
-                           BlockPos vertex1, BlockPos vertex2, BlockPos center) {
-        LOGGER.info("Sending client save packet for structure: {} ({})", structureName, structureId);
+                           BlockPos vertex1, BlockPos vertex2, BlockPos center,
+                           boolean slower, boolean placeAsPlayer,
+                           boolean isModifyOperation, String oldStructureId) {
+        LOGGER.info("Sending client save packet for structure: {} ({}) - Modify: {}", 
+                   structureName, structureId, isModifyOperation);
         
         // Sistema semplificato per compatibilità single player
         try {
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                handleClient(structureName, structureId, vertex1, vertex2, center);
+                handleClient(structureName, structureId, vertex1, vertex2, center, 
+                           slower, placeAsPlayer, isModifyOperation, oldStructureId);
             });
         } catch (Exception e) {
             // Ignora errori quando si esegue su server dedicato
@@ -49,9 +63,12 @@ public class StructureSaverMachineClientSaveS2CPacket {
      * Gestisce il packet lato client - salva la struttura localmente
      */
     private static void handleClient(String structureName, String structureId, 
-                                   BlockPos vertex1, BlockPos vertex2, BlockPos center) {
+                                   BlockPos vertex1, BlockPos vertex2, BlockPos center,
+                                   boolean slower, boolean placeAsPlayer,
+                                   boolean isModifyOperation, String oldStructureId) {
         try {
-            LOGGER.info("Processing client save request for structure: {} ({})", structureName, structureId);
+            LOGGER.info("Processing client save request for structure: {} ({}) - Modify: {}", 
+                       structureName, structureId, isModifyOperation);
             
             var level = net.minecraft.client.Minecraft.getInstance().level;
             if (level == null) {
@@ -61,15 +78,17 @@ public class StructureSaverMachineClientSaveS2CPacket {
             
             // Esegui il salvataggio della struttura lato client
             net.unfamily.iskautils.client.ClientStructureSaver.saveStructure(
-                structureName, structureId, vertex1, vertex2, center, level);
+                structureName, structureId, vertex1, vertex2, center, level,
+                slower, placeAsPlayer, isModifyOperation, oldStructureId);
                 
             LOGGER.info("Structure saved successfully on client");
             
             // Mostra messaggio di successo al giocatore
             var player = net.minecraft.client.Minecraft.getInstance().player;
             if (player != null) {
+                String operationType = isModifyOperation ? "modificata" : "salvata";
                 player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("§aStruttura salvata: §f" + structureName), 
+                    net.minecraft.network.chat.Component.literal("§aStruttura " + operationType + ": §f" + structureName), 
                     true);
             }
             
