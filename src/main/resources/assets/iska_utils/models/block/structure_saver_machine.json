@@ -3,7 +3,7 @@
   "textures": {
     "particle": "iska_utils:block/structure_saver_front",
     "down": "iska_utils:block/structure_builder_buttom",
-    "up": "iska_utils:block/structure_builder_top",
+    "up": "iska_utils:block/structure_saver_top",
     "north": "iska_utils:block/structure_saver_front",
     "south": "iska_utils:block/structure_builder_back",
     "east": "iska_utils:block/structure_builder_side",

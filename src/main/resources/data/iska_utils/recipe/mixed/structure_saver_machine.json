@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BDB",
+    "ACA",
+    "BDB"
+  ],
+  "key": {
+    "A": {
+      "tag": "minecraft:planks"
+    },
+    "B": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "item": "minecraft:clay"
+    },
+    "D": {
+      "tag": "c:gems/lapis"
+    }
+  },
+  "result": {
+    "id": "iska_utils:structure_saver_machine",
+    "count": 1
+  }
+} 

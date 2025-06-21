@@ -759,4 +759,60 @@ public class ModMessages {
             LOGGER.error("Could not request Structure Saver Machine area recalculation: {}", e.getMessage());
         }
     }
+    
+    /**
+     * Sends a Structure Saver Machine save packet to the server
+     * This simulates a client-to-server packet for saving a structure from the machine
+     */
+    public static void sendStructureSaverMachineSavePacket(String structureName, BlockPos machinePos) {
+        LOGGER.info("=== SENDING STRUCTURE SAVER MACHINE SAVE PACKET ===");
+        LOGGER.info("Structure name: '{}'", structureName);
+        LOGGER.info("Machine pos: {}", machinePos);
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            net.minecraft.server.players.PlayerList playerList = server.getPlayerList();
+            if (playerList == null) {
+                LOGGER.error("Player list is null!");
+                return;
+            }
+            
+            java.util.List<net.minecraft.server.level.ServerPlayer> players = playerList.getPlayers();
+            if (players.isEmpty()) {
+                LOGGER.error("No players found on server!");
+                return;
+            }
+            
+            net.minecraft.server.level.ServerPlayer player = players.get(0);
+            if (player == null) {
+                LOGGER.error("First player is null!");
+                return;
+            }
+            
+            net.unfamily.iskautils.network.packet.StructureSaverMachineSaveC2SPacket packet = 
+                new net.unfamily.iskautils.network.packet.StructureSaverMachineSaveC2SPacket(structureName, machinePos);
+            
+            // Execute on server thread to properly access BlockEntity
+            server.execute(() -> {
+                try {
+                    packet.handle(player);
+                } catch (Exception e) {
+                    LOGGER.error("Error executing packet on server thread: {}", e.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Structure Saver Machine save packet: {}", e.getMessage());
+        }
+    }
 } 

@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -76,16 +77,13 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     private EditBox nameEditBox;
     private EditBox idEditBox;
     private Button saveButton;
-    private Button updateButton;
     
-    // Posizioni nuovi componenti - due EditBox lunghe come le entry
-    private static final int NAME_EDIT_BOX_Y = ENTRIES_START_Y + (VISIBLE_ENTRIES * ENTRY_HEIGHT) + 2 - 18; // 2px sotto l'ultima entry, -18px per riga rimossa
+    // Posizioni nuovi componenti - appena sotto le entry
+    private static final int NAME_EDIT_BOX_Y = ENTRIES_START_Y + (VISIBLE_ENTRIES * ENTRY_HEIGHT) + 5; // 5px sotto l'ultima entry
     private static final int ID_EDIT_BOX_Y = NAME_EDIT_BOX_Y + 22; // 22px sotto la prima EditBox
     
     private static final int SAVE_BUTTON_X = ENTRIES_START_X;
     private static final int SAVE_BUTTON_Y = ID_EDIT_BOX_Y + 22; // 22px sotto la seconda EditBox
-    private static final int UPDATE_BUTTON_X = ENTRIES_START_X + ENTRY_WIDTH - 40; // Allineato con la fine delle entry (40px di larghezza pulsante)
-    private static final int UPDATE_BUTTON_Y = SAVE_BUTTON_Y;
     
     public StructureSaverMachineScreen(StructureSaverMachineMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -118,7 +116,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     }
     
     /**
-     * Inizializza le due EditBox e i due pulsanti
+     * Inizializza le due EditBox e il pulsante Save
      */
     private void initComponents() {
         // EditBox per il nome - lunghe come le entry
@@ -141,13 +139,6 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                           .bounds(this.leftPos + SAVE_BUTTON_X, this.topPos + SAVE_BUTTON_Y, 40, 20)
                           .build();
         addRenderableWidget(saveButton);
-        
-        // Pulsante Update - altezza 20px, allineato con la fine delle entry
-        updateButton = Button.builder(Component.translatable("gui.iska_utils.update"), 
-                                     button -> onUpdateButtonClicked())
-                            .bounds(this.leftPos + UPDATE_BUTTON_X, this.topPos + UPDATE_BUTTON_Y, 40, 20)
-                            .build();
-        addRenderableWidget(updateButton);
         
         // Gli slot vengono popolati automaticamente dal server quando l'area viene impostata
     }
@@ -674,27 +665,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         }
     }
     
-    /**
-     * Gestisce il click sul pulsante Update - chiude la GUI e fa ricalcolare i blocchi dell'area
-     */
-    private void onUpdateButtonClicked() {
-        System.out.println("DEBUG: Update button clicked!");
-        
-        // Invia richiesta di ricalcolo al server
-        var blockEntity = this.menu.getBlockEntity();
-        if (blockEntity != null) {
-            System.out.println("DEBUG: Sending recalculate packet for position: " + blockEntity.getBlockPos());
-            net.unfamily.iskautils.network.ModMessages.sendStructureSaverMachineRecalculatePacket(blockEntity.getBlockPos());
-        } else {
-            System.out.println("DEBUG: BlockEntity is null, cannot send recalculate packet");
-        }
-        
-        // Chiude la GUI
-        if (this.minecraft != null) {
-            System.out.println("DEBUG: Closing GUI");
-            this.minecraft.setScreen(null);
-        }
-    }
+
     
     /**
      * Gestisce il click sul pulsante Save
@@ -710,9 +681,12 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             return;
         }
         
-        // Verifica che il BlockEntity abbia dati blueprint
-        var blockEntity = this.menu.getBlockEntity();
-        if (blockEntity == null || !blockEntity.hasBlueprintData()) {
+        // Verifica che ci siano dati blueprint usando i dati sincronizzati
+        boolean hasValidArea = this.menu.getSyncedHasValidArea();
+        var vertex1 = this.menu.getSyncedVertex1();
+        var vertex2 = this.menu.getSyncedVertex2();
+        
+        if (!hasValidArea || vertex1 == null || vertex2 == null) {
             if (this.minecraft != null && this.minecraft.player != null) {
                 this.minecraft.player.displayClientMessage(
                     Component.translatable("gui.iska_utils.save_error_no_coordinates"), 
@@ -721,22 +695,28 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             return;
         }
         
-        // Salva la struttura con le coordinate dal BlockEntity
-        var vertex1 = blockEntity.getBlueprintVertex1();
-        var vertex2 = blockEntity.getBlueprintVertex2();
-        var center = blockEntity.getBlueprintCenter();
+        // Verifica che le dimensioni dell'area siano valide (≤ 64x64x64)
+        int[] dimensions = calculateDimensions(vertex1, vertex2);
+        if (dimensions[0] > 64 || dimensions[1] > 64 || dimensions[2] > 64) {
+            if (this.minecraft != null && this.minecraft.player != null) {
+                this.minecraft.player.displayClientMessage(
+                    Component.translatable("gui.iska_utils.area_too_large"), 
+                    true);
+            }
+            return;
+        }
         
-        if (this.minecraft != null && this.minecraft.player != null) {
-            // TODO: Implementare il salvataggio effettivo della struttura
-            // Per ora mostra un messaggio di debug con tutti i dati
-            this.minecraft.player.displayClientMessage(
-                Component.translatable("gui.iska_utils.save_success", structureName,
-                    formatPosition(vertex1), formatPosition(vertex2), formatPosition(center)), 
-                true);
+        // Invia il packet al server per salvare la struttura
+        var blockEntity = this.menu.getBlockEntity();
+        if (blockEntity != null) {
+            BlockPos machinePos = blockEntity.getBlockPos();
+            net.unfamily.iskautils.network.ModMessages.sendStructureSaverMachineSavePacket(structureName, machinePos);
             
-            // Reset dei dati dopo il salvataggio
-            blockEntity.clearBlueprintData();
+            // Reset dell'editbox dopo l'invio del packet (i dati blueprint verranno puliti dal server)
             nameEditBox.setValue("");
+            
+            // Ricarica le strutture client per mostrare quella appena salvata nella lista
+            loadClientStructures();
         }
     }
     
@@ -768,12 +748,6 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         if (saveButton != null) {
             boolean hasValidArea = this.menu.getSyncedHasValidArea();
             saveButton.active = hasValidArea; // Abilita solo se c'è un'area valida
-        }
-        
-        // Aggiorna lo stato del pulsante Update basandosi sui dati blueprint
-        if (updateButton != null) {
-            boolean hasValidArea = this.menu.getSyncedHasValidArea();
-            updateButton.active = hasValidArea; // Abilita solo se c'è un'area valida da ricalcolare
         }
     }
     

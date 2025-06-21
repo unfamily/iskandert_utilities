@@ -26,6 +26,7 @@
   "gui.iska_utils.area": "Area:",
   "gui.iska_utils.area_too_large": "Area troppo grande! (max 64x64x64)",
   "gui.iska_utils.save_error_empty_name": "Inserisci un nome per la struttura",
+  "gui.iska_utils.save_error_no_coordinates": "Nessun dato blueprint trovato! Importa prima un blueprint con le coordinate.",
   "gui.iska_utils.update_area": "Area aggiornata",
   
   "item.iska_utils.rubber_boots": "Stivali di Gomma",

@@ -116,12 +116,11 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
                 
                 // Calcola yPos:
                 // Riga 0: 186 (prima riga)
-                // Riga 1: 204 (seconda riga, era la terza riga spostata 7 slot più in alto)
-                int baseY = 188;
+                // Riga 1: 215 (seconda riga, posizione specifica richiesta)
                 int yPos = switch (row) {
-                    case 0 -> baseY - 2; // Prima riga: 186
-                    case 1 -> baseY + 18 - 2; // Seconda riga: 204 (era 222, ora spostata 7 slot più in alto = -18px)
-                    default -> baseY + row * 18;
+                    case 0 -> 186; // Prima riga: 186
+                    case 1 -> 215; // Seconda riga: 215 (posizione specifica richiesta)
+                    default -> 188 + row * 18;
                 };
                 
                 // Slot display-only (non interagibili)
