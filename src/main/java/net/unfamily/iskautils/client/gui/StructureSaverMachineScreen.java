@@ -74,9 +74,9 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     public StructureSaverMachineScreen(StructureSaverMachineMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         
-        // Dimensioni reali della texture (aggiornate per la nuova texture)
+        // Dimensioni reali della texture (176 x 246 dalla nuova texture)
         this.imageWidth = 176;
-        this.imageHeight = 200; // Aumentata da 160 a 200 (+40 pixel)
+        this.imageHeight = 246;
     }
     
     @Override
@@ -151,7 +151,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         int y = (this.height - this.imageHeight) / 2;
         
         // Disegna il background specificando esplicitamente le dimensioni della texture
-        guiGraphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, 176, 200);
+        guiGraphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, 176, 246);
         
         // Renderizza i componenti
         renderEntries(guiGraphics, mouseX, mouseY);

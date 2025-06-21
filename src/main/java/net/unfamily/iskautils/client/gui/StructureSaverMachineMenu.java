@@ -96,7 +96,7 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
     }
     
     /**
-     * Aggiunge i 27 slot display (3 righe x 9 slot) a partire da X=7 Y=145
+     * Aggiunge i 27 slot display (3 righe x 9 slot) a partire da X=8 Y=188 (spostato +46px per la nuova texture 176x246)
      */
     private void addDisplaySlots() {
         IItemHandler itemHandler;
@@ -114,11 +114,11 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
                 int slotIndex = row * 9 + col;
                 int xPos = 8 + col * 18; // GUI coordinate 7 + 1 (spostato +1 a sinistra)
                 
-                // Calcola yPos con aggiustamenti per riga:
-                // Riga 0: normale (142)
-                // Riga 1: -1 pixel (159 invece di 160)
-                // Riga 2: -2 pixel (176 invece di 178)
-                int baseY = 142;
+                // Calcola yPos con aggiustamenti per riga (spostato più in basso per la nuova texture):
+                // Riga 0: normale (188) - spostato +46 pixel più in basso (142 + 46)
+                // Riga 1: -1 pixel (205 invece di 206)
+                // Riga 2: -2 pixel (222 invece di 224)
+                int baseY = 188;
                 int yPos = switch (row) {
                     case 0 -> baseY; // Prima riga: normale
                     case 1 -> baseY + 18 - 1; // Seconda riga: -1 pixel
