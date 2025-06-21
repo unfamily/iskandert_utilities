@@ -114,37 +114,43 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
                 int slotIndex = row * 9 + col;
                 int xPos = 8 + col * 18; // GUI coordinate 7 + 1 (spostato +1 a sinistra)
                 
-                // Calcola yPos con aggiustamenti per riga (spostato più in basso per la nuova texture):
-                // Riga 0: normale (188) - spostato +46 pixel più in basso (142 + 46)
-                // Riga 1: -1 pixel (205 invece di 206)
-                // Riga 2: -2 pixel (222 invece di 224)
+                // Calcola yPos con aggiustamenti corretti per riga:
+                // Riga 0: distaccata di 1 pixel dalla seconda riga
+                // Riga 1: distaccata di 1 pixel dalla terza riga  
+                // Riga 2: 222 (perfetta, resta come è)
                 int baseY = 188;
                 int yPos = switch (row) {
-                    case 0 -> baseY; // Prima riga: normale
-                    case 1 -> baseY + 18 - 1; // Seconda riga: -1 pixel
-                    case 2 -> baseY + 36 - 2; // Terza riga: -2 pixel
+                    case 0 -> baseY - 2; // Prima riga: 2 pixel sopra la normale posizione (era -1, ora -2)
+                    case 1 -> baseY + 18 - 2; // Seconda riga: 2 pixel sopra la normale posizione (era -1, ora -2)
+                    case 2 -> baseY + 36 - 2; // Terza riga: resta come è (222)
                     default -> baseY + row * 18;
                 };
                 
-                addSlot(new SlotItemHandler(itemHandler, slotIndex, xPos, yPos));
+                // Slot display-only (non interagibili)
+                addSlot(new SlotItemHandler(itemHandler, slotIndex, xPos, yPos) {
+                    @Override
+                    public boolean mayPlace(ItemStack stack) {
+                        return false; // Non permettere inserimento manuale
+                    }
+                    
+                    @Override
+                    public boolean mayPickup(Player player) {
+                        return false; // Non permettere estrazione
+                    }
+                    
+                    @Override
+                    public ItemStack remove(int amount) {
+                        return ItemStack.EMPTY; // Non permettere rimozione
+                    }
+                });
             }
         }
     }
     
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        ItemStack newStack = ItemStack.EMPTY;
-        Slot slot = this.slots.get(index);
-        
-        if (slot.hasItem()) {
-            ItemStack originalStack = slot.getItem();
-            newStack = originalStack.copy();
-            
-            // Tutti gli slot sono display slots, non c'è movimento tra inventari
-            slot.setChanged();
-        }
-        
-        return newStack;
+        // Tutti gli slot sono display-only, non permettere shift-click
+        return ItemStack.EMPTY;
     }
     
     @Override

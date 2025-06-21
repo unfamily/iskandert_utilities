@@ -8,8 +8,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.Slot;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskautils.network.ModMessages;
 
 public class StructureSaverMachineScreen extends AbstractContainerScreen<StructureSaverMachineMenu> {
     
@@ -36,9 +38,15 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     
     // Button dimensions (primo pulsante del secondo set)
     private static final int BUTTON_SIZE = 8;
-    private static final int BUTTON_U = 0; // Prima colonna del secondo set
-    private static final int BUTTON_NORMAL_V = 16; // Riga 3 (secondo set normale)
-    private static final int BUTTON_HOVERED_V = 24; // Riga 4 (secondo set illuminato)
+    private static final int BUTTON_U = 0; // Prima colonna
+    private static final int BUTTON_NORMAL_V = 24; // Quarta riga (X normale)
+    private static final int BUTTON_HOVERED_V = 32; // Quinta riga (X illuminato)
+    
+    // Pulsanti di selezione a pallino (8x8) - come nel Structure Placer
+    private static final int SELECTION_BUTTON_EMPTY_U = 8; // Seconda colonna (pulsante vuoto)
+    private static final int SELECTION_BUTTON_FILLED_U = 16; // Terza colonna (pulsante pieno)
+    private static final int SELECTION_BUTTON_NORMAL_V = 0; // Prima riga (normale)
+    private static final int SELECTION_BUTTON_HOVERED_V = 8; // Seconda riga (illuminato)
     
     // Slot dimensions
     private static final int SLOT_SIZE = 18;
@@ -59,17 +67,25 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     private int scrollOffset = 0;
     private java.util.List<net.unfamily.iskautils.structure.StructureDefinition> clientStructures;
     private int selectedEntryIndex = -1;
+    private int selectedStructureIndex = -1; // Per tracciare la selezione a pallino (-1 = nessuna selezione)
     private boolean isDraggingHandle = false;
     private int dragStartY = 0;
     private int dragStartScrollOffset = 0;
     
     // Nuovi componenti UI
     private EditBox nameEditBox;
+    private EditBox idEditBox;
     private Button saveButton;
+    private Button updateButton;
     
-    // Posizioni nuovi componenti (spostati ancora più in alto di poco)
-    private static final int EDIT_BOX_Y = ENTRIES_START_Y + (VISIBLE_ENTRIES * ENTRY_HEIGHT) + 2; // 2px sotto l'ultima entry (era 5px)
-    private static final int BUTTONS_ROW_Y = EDIT_BOX_Y + 22; // 22px sotto l'EditBox (era 25px)
+    // Posizioni nuovi componenti - due EditBox lunghe come le entry
+    private static final int NAME_EDIT_BOX_Y = ENTRIES_START_Y + (VISIBLE_ENTRIES * ENTRY_HEIGHT) + 2; // 2px sotto l'ultima entry
+    private static final int ID_EDIT_BOX_Y = NAME_EDIT_BOX_Y + 22; // 22px sotto la prima EditBox
+    
+    private static final int SAVE_BUTTON_X = ENTRIES_START_X;
+    private static final int SAVE_BUTTON_Y = ID_EDIT_BOX_Y + 22; // 22px sotto la seconda EditBox
+    private static final int UPDATE_BUTTON_X = ENTRIES_START_X + ENTRY_WIDTH - 40; // Allineato con la fine delle entry (40px di larghezza pulsante)
+    private static final int UPDATE_BUTTON_Y = SAVE_BUTTON_Y;
     
     public StructureSaverMachineScreen(StructureSaverMachineMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -102,22 +118,36 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     }
     
     /**
-     * Inizializza EditBox, pulsante Save e pulsanti tiny
+     * Inizializza le due EditBox e i due pulsanti
      */
     private void initComponents() {
-        // EditBox per il nome - lungo tutta la entry
-        nameEditBox = new EditBox(this.font, this.leftPos + ENTRIES_START_X, this.topPos + EDIT_BOX_Y, 
+        // EditBox per il nome - lunghe come le entry
+        nameEditBox = new EditBox(this.font, this.leftPos + ENTRIES_START_X, this.topPos + NAME_EDIT_BOX_Y, 
                                  ENTRY_WIDTH, 20, Component.translatable("gui.iska_utils.structure_name"));
         nameEditBox.setMaxLength(64);
-        nameEditBox.setValue("");
+        nameEditBox.setHint(Component.literal("name")); // Hint che si cancella al click
         addRenderableWidget(nameEditBox);
         
-        // Pulsante Save - allineato con l'inizio entry
+        // EditBox per l'ID - lunghe come le entry
+        idEditBox = new EditBox(this.font, this.leftPos + ENTRIES_START_X, this.topPos + ID_EDIT_BOX_Y, 
+                               ENTRY_WIDTH, 20, Component.translatable("gui.iska_utils.structure_id"));
+        idEditBox.setMaxLength(64);
+        idEditBox.setHint(Component.literal("id")); // Hint che si cancella al click
+        addRenderableWidget(idEditBox);
+        
+        // Pulsante Save - altezza 20px come prima
         saveButton = Button.builder(Component.translatable("gui.iska_utils.save"), 
                                    button -> onSaveButtonClicked())
-                          .bounds(this.leftPos + ENTRIES_START_X, this.topPos + BUTTONS_ROW_Y, 40, 20)
+                          .bounds(this.leftPos + SAVE_BUTTON_X, this.topPos + SAVE_BUTTON_Y, 40, 20)
                           .build();
         addRenderableWidget(saveButton);
+        
+        // Pulsante Update - altezza 20px, allineato con la fine delle entry
+        updateButton = Button.builder(Component.translatable("gui.iska_utils.update"), 
+                                     button -> onUpdateButtonClicked())
+                            .bounds(this.leftPos + UPDATE_BUTTON_X, this.topPos + UPDATE_BUTTON_Y, 40, 20)
+                            .build();
+        addRenderableWidget(updateButton);
         
         // Gli slot vengono popolati automaticamente dal server quando l'area viene impostata
     }
@@ -193,15 +223,15 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 
                 // Testo superiore: Nome della struttura
                 String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-                if (structureName.length() > 20) { // Ridotto per far spazio a slot e pulsante
-                    structureName = structureName.substring(0, 17) + "...";
+                if (structureName.length() > 25) { // Aumentato da 20 a 25 caratteri
+                    structureName = structureName.substring(0, 22) + "...";
                 }
                 guiGraphics.drawString(this.font, structureName, scaledTextX, scaledNameY, 0x404040, false);
                 
                 // Testo inferiore: ID della struttura
                 String structureId = structure.getId();
-                if (structureId.length() > 23) { // Ridotto per far spazio a slot e pulsante
-                    structureId = structureId.substring(0, 20) + "...";
+                if (structureId.length() > 28) { // Aumentato da 23 a 28 caratteri
+                    structureId = structureId.substring(0, 25) + "...";
                 }
                 int scaledIdY = (int)((entryY + ENTRY_HEIGHT - (this.font.lineHeight * textScale) - 2) / textScale);
                 guiGraphics.drawString(this.font, structureId, scaledTextX, scaledIdY, 0x666666, false);
@@ -215,11 +245,11 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     }
     
     /**
-     * Renderizza slot e pulsante per una entry (simile a StructureSelectionScreen)
+     * Renderizza slot e pulsanti per una entry (selezione + X)
      */
     private void renderSlotAndButton(GuiGraphics guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
-        // Posizione dello slot: più a sinistra, centrato verticalmente
-        int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - BUTTON_SIZE - 6; // 6 pixel di margine totale
+        // Posizione dello slot: spostato più a sinistra per fare spazio ai due pulsanti
+        int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - (BUTTON_SIZE * 2) - 8; // 8 pixel di margine totale per due pulsanti
         int slotY = entryY + (ENTRY_HEIGHT - SLOT_SIZE) / 2; // Centrato verticalmente
         
         // Disegna lo slot (18x18)
@@ -232,18 +262,35 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             renderStructureIcon(guiGraphics, structure, slotX + 1, slotY + 1); // +1 pixel per centrare nell'slot
         }
         
-        // Posizione del pulsante: subito dopo lo slot, centrato verticalmente
-        int buttonX = slotX + SLOT_SIZE + 2; // 2 pixel di spazio dopo lo slot
+        // Posizione del primo pulsante (selezione): subito dopo lo slot
+        int selectionButtonX = slotX + SLOT_SIZE + 2; // 2 pixel di spazio dopo lo slot
+        int selectionButtonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2; // Centrato verticalmente
+        
+        // Verifica se il mouse è sopra il pulsante di selezione
+        boolean isSelectionHovered = mouseX >= selectionButtonX && mouseX < selectionButtonX + BUTTON_SIZE &&
+                                    mouseY >= selectionButtonY && mouseY < selectionButtonY + BUTTON_SIZE;
+        
+        // Determina il tipo di pulsante di selezione (vuoto o pieno)
+        boolean isSelected = (entryIndex == selectedStructureIndex);
+        int selectionButtonU = isSelected ? SELECTION_BUTTON_FILLED_U : SELECTION_BUTTON_EMPTY_U;
+        int selectionButtonV = isSelectionHovered ? SELECTION_BUTTON_HOVERED_V : SELECTION_BUTTON_NORMAL_V;
+        
+        // Disegna il pulsante di selezione
+        guiGraphics.blit(TINY_BUTTONS_TEXTURE, selectionButtonX, selectionButtonY, selectionButtonU, selectionButtonV, 
+                        BUTTON_SIZE, BUTTON_SIZE, 64, 96);
+        
+        // Posizione del secondo pulsante (X): subito dopo il pulsante di selezione
+        int buttonX = selectionButtonX + BUTTON_SIZE + 2; // 2 pixel di spazio dopo il pulsante di selezione
         int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2; // Centrato verticalmente
         
-        // Verifica se il mouse è sopra il pulsante
+        // Verifica se il mouse è sopra il pulsante X
         boolean isHovered = mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE &&
                            mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE;
         
-        // Usa sempre il primo pulsante del secondo set (primo tipo)
+        // Usa il pulsante con X (secondo set): normale se non hover, illuminato se hover
         int buttonV = isHovered ? BUTTON_HOVERED_V : BUTTON_NORMAL_V;
         
-        // Disegna il pulsante (primo del secondo set)
+        // Disegna il pulsante con X
         guiGraphics.blit(TINY_BUTTONS_TEXTURE, buttonX, buttonY, BUTTON_U, buttonV, 
                         BUTTON_SIZE, BUTTON_SIZE, 64, 96);
     }
@@ -324,32 +371,78 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Gestisci i click sui pulsanti della scrollbar
-        if (handleScrollButtonClick(mouseX, mouseY)) {
-            return true;
-        }
-        
-        // Gestisci i click sui tiny button nelle entry
-        if (handleButtonClick(mouseX, mouseY)) {
-            return true;
-        }
-        
-        // Gestisci il click sulla maniglia della scrollbar
-        if (handleHandleClick(mouseX, mouseY)) {
-            return true;
-        }
-        
-        // Gestisci i click sulla scrollbar
-        if (handleScrollbarClick(mouseX, mouseY)) {
-            return true;
-        }
-        
-        // Gestisci i click sulle entry
-        if (handleEntryClick(mouseX, mouseY)) {
-            return true;
+        if (button == 0) { // Click sinistro
+            // Verifica click sui pulsanti di selezione (priorità alta)
+            if (handleSelectionButtonClick(mouseX, mouseY)) {
+                return true;
+            }
+            
+            // Verifica click sui pulsanti X (priorità alta)
+            if (handleButtonClick(mouseX, mouseY)) {
+                return true;
+            }
+            
+            // Verifica click sui pulsanti di scroll
+            if (handleScrollButtonClick(mouseX, mouseY)) {
+                return true;
+            }
+            
+            // Verifica click sull'handle per il drag
+            if (handleHandleClick(mouseX, mouseY)) {
+                return true;
+            }
+            
+            // Verifica click sulla scrollbar per il salto
+            if (handleScrollbarClick(mouseX, mouseY)) {
+                return true;
+            }
+            
+            // Verifica click sulle entry
+            if (handleEntryClick(mouseX, mouseY)) {
+                return true;
+            }
         }
         
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+    
+    /**
+     * Gestisce i click sui pulsanti di selezione
+     */
+    private boolean handleSelectionButtonClick(double mouseX, double mouseY) {
+        for (int i = 0; i < VISIBLE_ENTRIES; i++) {
+            int entryIndex = scrollOffset + i;
+            if (entryIndex >= clientStructures.size()) continue;
+            
+            int entryX = this.leftPos + ENTRIES_START_X;
+            int entryY = this.topPos + ENTRIES_START_Y + (i * ENTRY_HEIGHT);
+            
+            // Posizione del pulsante di selezione (deve corrispondere a renderSlotAndButton)
+            int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - (BUTTON_SIZE * 2) - 8;
+            int selectionButtonX = slotX + SLOT_SIZE + 2;
+            int selectionButtonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2;
+            
+            if (mouseX >= selectionButtonX && mouseX < selectionButtonX + BUTTON_SIZE &&
+                mouseY >= selectionButtonY && mouseY < selectionButtonY + BUTTON_SIZE) {
+                
+                // Toggle selection (come nel Structure Placer)
+                if (selectedStructureIndex == entryIndex) {
+                    selectedStructureIndex = -1; // Deseleziona se già selezionato
+                } else {
+                    selectedStructureIndex = entryIndex; // Seleziona nuovo
+                }
+                
+                // Suono di click
+                if (this.minecraft != null) {
+                    this.minecraft.getSoundManager().play(
+                        net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                            net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                }
+                
+                return true;
+            }
+        }
+        return false;
     }
     
     /**
@@ -380,7 +473,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     }
     
     /**
-     * Gestisce i click sui pulsanti delle entry
+     * Gestisce i click sui pulsanti X delle entry
      */
     private boolean handleButtonClick(double mouseX, double mouseY) {
         for (int i = 0; i < VISIBLE_ENTRIES; i++) {
@@ -390,9 +483,10 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             int entryX = this.leftPos + ENTRIES_START_X;
             int entryY = this.topPos + ENTRIES_START_Y + (i * ENTRY_HEIGHT);
             
-            // Posizione del pulsante (deve corrispondere a renderSlotAndButton)
-            int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - BUTTON_SIZE - 6;
-            int buttonX = slotX + SLOT_SIZE + 2;
+            // Posizione del pulsante X (deve corrispondere a renderSlotAndButton)
+            int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - (BUTTON_SIZE * 2) - 8;
+            int selectionButtonX = slotX + SLOT_SIZE + 2;
+            int buttonX = selectionButtonX + BUTTON_SIZE + 2; // Pulsante X dopo il pulsante di selezione
             int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2;
             
             if (mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE &&
@@ -400,11 +494,11 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 
                 selectedEntryIndex = entryIndex;
                 
-                // TODO: Implementare azione per salvare la struttura
+                // TODO: Implementare azione per il pulsante X (cancellare/rimuovere)
                 net.unfamily.iskautils.structure.StructureDefinition structure = clientStructures.get(entryIndex);
                 if (this.minecraft != null && this.minecraft.player != null) {
                     this.minecraft.player.displayClientMessage(
-                        Component.literal("§aSaving structure: " + structure.getId()), 
+                        Component.literal("§cX button clicked: " + structure.getId()), 
                         true);
                 }
                 
@@ -530,13 +624,13 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     }
     
     /**
-     * Renderizza i nuovi componenti UI (EditBox, Save button e "Area:")
+     * Renderizza i nuovi componenti UI (Area: info)
      */
     private void renderNewComponents(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Testo "Area:" - posizionato dopo il Save button
-        int areaTextX = this.leftPos + ENTRIES_START_X + 50; // 10px dopo il Save button (larghezza 40px)
+        // Testo "Area:" - sotto i pulsanti, allineato con l'inizio delle entry
+        int areaTextX = this.leftPos + ENTRIES_START_X;
         guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.area"), 
-                               areaTextX, this.topPos + BUTTONS_ROW_Y + 6, 0x404040, false);
+                               areaTextX, this.topPos + SAVE_BUTTON_Y + 25, 0x404040, false);
         
         // Informazioni area dai dati sincronizzati
         boolean hasValidArea = this.menu.getSyncedHasValidArea();
@@ -559,20 +653,42 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 
                 // Posizione: subito dopo il testo "Area:" sulla stessa riga
                 int textX = areaTextX + this.font.width(Component.translatable("gui.iska_utils.area")) + 5; // 5px di spazio
-                int textY = this.topPos + BUTTONS_ROW_Y + 6; // Stessa altezza del testo "Area:"
+                int textY = this.topPos + SAVE_BUTTON_Y + 25; // Stessa altezza del testo "Area:"
                 
                 // Colore neutro (stesso del testo normale)
                 int color = 0x404040;
                 
                 guiGraphics.drawString(this.font, areaText, textX, textY, color, false);
                 
-                // Se non valido, mostra messaggio di errore sotto l'EditBox
+                // Se non valido, mostra messaggio di errore sotto le EditBox
                 if (!isValid) {
                     String errorText = Component.translatable("gui.iska_utils.area_too_large").getString();
                     int errorX = this.leftPos + ENTRIES_START_X;
-                    int errorY = this.topPos + EDIT_BOX_Y + 25;
+                    int errorY = this.topPos + ID_EDIT_BOX_Y + 25;
                     guiGraphics.drawString(this.font, errorText, errorX, errorY, 0xFF0000, false);
                 }
+        }
+    }
+    
+    /**
+     * Gestisce il click sul pulsante Update - chiude la GUI e fa ricalcolare i blocchi dell'area
+     */
+    private void onUpdateButtonClicked() {
+        System.out.println("DEBUG: Update button clicked!");
+        
+        // Invia richiesta di ricalcolo al server
+        var blockEntity = this.menu.getBlockEntity();
+        if (blockEntity != null) {
+            System.out.println("DEBUG: Sending recalculate packet for position: " + blockEntity.getBlockPos());
+            net.unfamily.iskautils.network.ModMessages.sendStructureSaverMachineRecalculatePacket(blockEntity.getBlockPos());
+        } else {
+            System.out.println("DEBUG: BlockEntity is null, cannot send recalculate packet");
+        }
+        
+        // Chiude la GUI
+        if (this.minecraft != null) {
+            System.out.println("DEBUG: Closing GUI");
+            this.minecraft.setScreen(null);
         }
     }
     
@@ -649,5 +765,67 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             boolean hasValidArea = this.menu.getSyncedHasValidArea();
             saveButton.active = hasValidArea; // Abilita solo se c'è un'area valida
         }
+        
+        // Aggiorna lo stato del pulsante Update basandosi sui dati blueprint
+        if (updateButton != null) {
+            boolean hasValidArea = this.menu.getSyncedHasValidArea();
+            updateButton.active = hasValidArea; // Abilita solo se c'è un'area valida da ricalcolare
+        }
+    }
+    
+    @Override
+    protected void renderSlot(GuiGraphics guiGraphics, Slot slot) {
+        ItemStack stack = slot.getItem();
+        
+        // Renderizza l'item nell'slot
+        if (!stack.isEmpty()) {
+            // Renderizza l'icona dell'item
+            guiGraphics.renderItem(stack, this.leftPos + slot.x, this.topPos + slot.y);
+            
+            // Per gli slot del nostro ItemHandler, renderizza il count personalizzato
+            if (slot instanceof net.neoforged.neoforge.items.SlotItemHandler && stack.getCount() > 1) {
+                renderCustomStackCount(guiGraphics, slot, stack);
+            } else if (!(slot instanceof net.neoforged.neoforge.items.SlotItemHandler) && stack.getCount() > 1) {
+                // Per gli slot dell'inventario del giocatore, usa il rendering standard
+                guiGraphics.renderItemDecorations(this.font, stack, this.leftPos + slot.x, this.topPos + slot.y);
+            }
+        }
+        
+        // Renderizza l'overlay se lo slot è disabilitato
+        if (!slot.isActive()) {
+            guiGraphics.fill(this.leftPos + slot.x, this.topPos + slot.y, 
+                           this.leftPos + slot.x + 16, this.topPos + slot.y + 16, 0x80FFFFFF);
+        }
+    }
+    
+    /**
+     * Renderizza lo stack count personalizzato per un singolo slot
+     */
+    private void renderCustomStackCount(GuiGraphics guiGraphics, Slot slot, ItemStack stack) {
+        // Scala del testo per gli stack count (più piccolo del normale)
+        float stackCountScale = 0.7f;
+        
+        // Calcola la posizione dello slot
+        int slotX = this.leftPos + slot.x;
+        int slotY = this.topPos + slot.y;
+        
+        // Posizione per il testo dello stack count (angolo in basso a destra dello slot)
+        String countText = String.valueOf(stack.getCount());
+        
+        // Applica la scala
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().scale(stackCountScale, stackCountScale, 1.0f);
+        
+        // Calcola le posizioni scalate per posizionare il testo nell'angolo in basso a destra
+        float textWidth = this.font.width(countText) * stackCountScale;
+        float textHeight = this.font.lineHeight * stackCountScale;
+        
+        int scaledX = (int)((slotX + 16 - textWidth - 1) / stackCountScale); // -1 pixel di margine dal bordo
+        int scaledY = (int)((slotY + 16 - textHeight) / stackCountScale);
+        
+        // Disegna il testo con ombra (bianco con bordo nero)
+        guiGraphics.drawString(this.font, countText, scaledX, scaledY, 0xFFFFFF, true);
+        
+        guiGraphics.pose().popPose();
     }
 } 

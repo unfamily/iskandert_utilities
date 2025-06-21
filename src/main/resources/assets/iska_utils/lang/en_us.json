@@ -20,10 +20,13 @@
   "item.iska_utils.structure_placer": "Structure Placer",
   "item.iska_utils.blueprint": "Blueprint",
   "gui.iska_utils.structure_name": "Structure Name",
+  "gui.iska_utils.structure_id": "Structure ID",
   "gui.iska_utils.save": "Save",
+  "gui.iska_utils.update": "Update",
   "gui.iska_utils.area": "Area:",
   "gui.iska_utils.area_too_large": "Area too large! (max 64x64x64)",
   "gui.iska_utils.save_error_empty_name": "Please enter a structure name",
+  "gui.iska_utils.update_area": "Area updated",
   
   "item.iska_utils.rubber_boots": "Rubber Boots",
   "block.iska_utils.rubber_log": "Rubber Log",

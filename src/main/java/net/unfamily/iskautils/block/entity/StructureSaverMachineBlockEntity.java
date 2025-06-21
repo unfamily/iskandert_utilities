@@ -25,12 +25,27 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     
     private static final Logger LOGGER = LoggerFactory.getLogger(StructureSaverMachineBlockEntity.class);
     
-    // Item storage per i 27 slot display
+    // Item storage per i 27 slot display (solo visualizzazione, non estraibili)
     private final ItemStackHandler itemHandler = new ItemStackHandler(27) {
         @Override
         protected void onContentsChanged(int slot) {
             super.onContentsChanged(slot);
             setChanged();
+        }
+        
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            // Slot sono solo display - non permettere estrazione
+            return ItemStack.EMPTY;
+        }
+        
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            // Permetti solo inserimento interno (dal populateAreaBlocks)
+            if (!simulate) {
+                return super.insertItem(slot, stack, simulate);
+            }
+            return stack;
         }
     };
     
@@ -45,6 +60,9 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     // Stato operativo
     private boolean isWorking = false;
     private int workProgress = 0;
+    
+    // Flag per richiedere il ricalcolo dell'area
+    private boolean shouldRecalculateArea = false;
     
     public StructureSaverMachineBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.STRUCTURE_SAVER_MACHINE_BE.get(), pos, blockState);
@@ -113,6 +131,9 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
         tag.putBoolean("isWorking", isWorking);
         tag.putInt("workProgress", workProgress);
         
+        // Salva flag ricalcolo area
+        tag.putBoolean("shouldRecalculateArea", shouldRecalculateArea);
+        
         // Salva dati blueprint
         if (blueprintVertex1 != null) {
             tag.putInt("blueprintVertex1X", blueprintVertex1.getX());
@@ -151,6 +172,9 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
         isWorking = tag.getBoolean("isWorking");
         workProgress = tag.getInt("workProgress");
         
+        // Carica flag ricalcolo area
+        shouldRecalculateArea = tag.getBoolean("shouldRecalculateArea");
+        
         // Carica dati blueprint
         if (tag.contains("blueprintVertex1X")) {
             int x1 = tag.getInt("blueprintVertex1X");
@@ -183,6 +207,14 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     public static void tick(Level level, BlockPos pos, BlockState state, StructureSaverMachineBlockEntity blockEntity) {
         if (level.isClientSide()) {
             return; // Solo server side
+        }
+        
+        // Controlla se è richiesto il ricalcolo dell'area
+        if (blockEntity.shouldRecalculateArea) {
+            System.out.println("DEBUG TICK: Ricalcolo area richiesto, eseguendo populateAreaBlocks()");
+            blockEntity.populateAreaBlocks();
+            blockEntity.shouldRecalculateArea = false; // Reset del flag
+            blockEntity.setChanged(); // Salva il cambio
         }
         
         // Logica di tick per operazioni future
@@ -274,29 +306,30 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
             }
         }
         
-        // Popola gli slot con i blocchi trovati, dividendo in più slot se necessario
+        // Popola gli slot con i blocchi trovati, creando più stack se necessario
         int slotIndex = 0;
         
         for (var entry : blockCounts.entrySet()) {
             var item = entry.getKey();
             int remainingCount = entry.getValue();
-            int maxStackSize = new ItemStack(item).getMaxStackSize(); // Usa il max stack size dell'item specifico
             
-            // Dividi in più slot se la quantità supera il max stack size
+            // Crea stack multipli se necessario
             while (remainingCount > 0 && slotIndex < 27) {
-                int stackSize = Math.min(remainingCount, maxStackSize);
+                int stackSize = Math.min(remainingCount, 1024);
                 var stack = new ItemStack(item, stackSize);
                 
                 // Inserisci nello slot
                 itemHandler.setStackInSlot(slotIndex, stack);
                 
-                remainingCount -= stackSize;
                 slotIndex++;
+                remainingCount -= stackSize;
+                
+                System.out.println("DEBUG SERVER: Created stack of " + stackSize + " " + item + " (remaining: " + remainingCount + ")");
             }
             
-            // Se abbiamo riempito tutti gli slot, interrompi
-            if (slotIndex >= 27) {
-                System.out.println("DEBUG SERVER: Reached maximum slots (27), some items may not be displayed");
+            // Se abbiamo finito gli slot ma ci sono ancora blocchi
+            if (remainingCount > 0) {
+                System.out.println("DEBUG SERVER: Reached maximum slots (27), " + remainingCount + " " + item + " blocks not displayed");
                 break;
             }
         }
@@ -448,6 +481,28 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
         this.blueprintVertex2 = null;
         this.blueprintCenter = null;
         setChanged();
+    }
+    
+    /**
+     * Richiede il ricalcolo dell'area al prossimo tick
+     */
+    public void requestAreaRecalculation() {
+        System.out.println("DEBUG BE: requestAreaRecalculation() called");
+        System.out.println("DEBUG BE: hasValidArea() = " + hasValidArea());
+        System.out.println("DEBUG BE: blueprintVertex1 = " + blueprintVertex1);
+        System.out.println("DEBUG BE: blueprintVertex2 = " + blueprintVertex2);
+        
+        // Se abbiamo già dati blueprint validi, ricalcola immediatamente
+        if (hasValidArea()) {
+            System.out.println("DEBUG BE: Has valid area, recalculating immediately");
+            populateAreaBlocks();
+        } else {
+            // Altrimenti usa il flag per il prossimo tick
+            this.shouldRecalculateArea = true;
+            System.out.println("DEBUG BE: No valid area, setting flag for next tick");
+        }
+        setChanged();
+        System.out.println("DEBUG BE: Area recalculation requested - shouldRecalculateArea = " + this.shouldRecalculateArea);
     }
     
     // MenuProvider implementation (per la GUI futura)

@@ -20,10 +20,13 @@
   "item.iska_utils.structure_placer": "Piazzatore di Strutture",
   "item.iska_utils.blueprint": "Progetto Tecnico",
   "gui.iska_utils.structure_name": "Nome Struttura",
+  "gui.iska_utils.structure_id": "ID Struttura",
   "gui.iska_utils.save": "Salva",
+  "gui.iska_utils.update": "Aggiorna",
   "gui.iska_utils.area": "Area:",
   "gui.iska_utils.area_too_large": "Area troppo grande! (max 64x64x64)",
   "gui.iska_utils.save_error_empty_name": "Inserisci un nome per la struttura",
+  "gui.iska_utils.update_area": "Area aggiornata",
   
   "item.iska_utils.rubber_boots": "Stivali di Gomma",
   "block.iska_utils.rubber_log": "Tronco di Caucciù",

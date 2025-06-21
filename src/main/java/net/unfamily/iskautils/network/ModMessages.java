@@ -737,4 +737,26 @@ public class ModMessages {
             LOGGER.error("Errore nell'invio del pacchetto di sincronizzazione strutture: {}", e.getMessage());
         }
     }
+    
+    /**
+     * Sends a Structure Saver Machine recalculate packet to the server
+     */
+    public static void sendStructureSaverMachineRecalculatePacket(BlockPos machinePos) {
+        LOGGER.info("Requesting Structure Saver Machine area recalculation: {}", machinePos);
+        // Simplified implementation per single player compatibility
+        try {
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server != null) {
+                // Trova il BlockEntity della macchina e richiedi il ricalcolo
+                var level = server.getAllLevels().iterator().next(); // Ottieni il primo mondo
+                var blockEntity = level.getBlockEntity(machinePos);
+                if (blockEntity instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity machine) {
+                    machine.requestAreaRecalculation();
+                    LOGGER.info("Area recalculation requested successfully");
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Could not request Structure Saver Machine area recalculation: {}", e.getMessage());
+        }
+    }
 } 
