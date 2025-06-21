@@ -79,7 +79,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     private Button updateButton;
     
     // Posizioni nuovi componenti - due EditBox lunghe come le entry
-    private static final int NAME_EDIT_BOX_Y = ENTRIES_START_Y + (VISIBLE_ENTRIES * ENTRY_HEIGHT) + 2; // 2px sotto l'ultima entry
+    private static final int NAME_EDIT_BOX_Y = ENTRIES_START_Y + (VISIBLE_ENTRIES * ENTRY_HEIGHT) + 2 - 18; // 2px sotto l'ultima entry, -18px per riga rimossa
     private static final int ID_EDIT_BOX_Y = NAME_EDIT_BOX_Y + 22; // 22px sotto la prima EditBox
     
     private static final int SAVE_BUTTON_X = ENTRIES_START_X;
@@ -171,6 +171,10 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(guiGraphics, mouseX, mouseY, partialTick);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+        
+        // Renderizza le quantità personalizzate DOPO tutti gli slot (sopra tutto)
+        renderCustomStackCounts(guiGraphics);
+        
         renderTooltip(guiGraphics, mouseX, mouseY);
     }
     
@@ -627,7 +631,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
      * Renderizza i nuovi componenti UI (Area: info)
      */
     private void renderNewComponents(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Testo "Area:" - sotto i pulsanti, allineato con l'inizio delle entry
+        // Testo "Area:" - sotto i pulsanti, allineato con l'inizio delle entry (spostato 18px più in alto)
         int areaTextX = this.leftPos + ENTRIES_START_X;
         guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.area"), 
                                areaTextX, this.topPos + SAVE_BUTTON_Y + 25, 0x404040, false);
@@ -660,7 +664,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 
                 guiGraphics.drawString(this.font, areaText, textX, textY, color, false);
                 
-                // Se non valido, mostra messaggio di errore sotto le EditBox
+                // Se non valido, mostra messaggio di errore sotto le EditBox (anche questo spostato più in alto)
                 if (!isValid) {
                     String errorText = Component.translatable("gui.iska_utils.area_too_large").getString();
                     int errorX = this.leftPos + ENTRIES_START_X;
@@ -773,28 +777,20 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         }
     }
     
-    @Override
-    protected void renderSlot(GuiGraphics guiGraphics, Slot slot) {
-        ItemStack stack = slot.getItem();
-        
-        // Renderizza l'item nell'slot
-        if (!stack.isEmpty()) {
-            // Renderizza l'icona dell'item
-            guiGraphics.renderItem(stack, this.leftPos + slot.x, this.topPos + slot.y);
-            
-            // Per gli slot del nostro ItemHandler, renderizza il count personalizzato
-            if (slot instanceof net.neoforged.neoforge.items.SlotItemHandler && stack.getCount() > 1) {
-                renderCustomStackCount(guiGraphics, slot, stack);
-            } else if (!(slot instanceof net.neoforged.neoforge.items.SlotItemHandler) && stack.getCount() > 1) {
-                // Per gli slot dell'inventario del giocatore, usa il rendering standard
-                guiGraphics.renderItemDecorations(this.font, stack, this.leftPos + slot.x, this.topPos + slot.y);
+    /**
+     * Renderizza tutte le quantità personalizzate sotto gli item
+     */
+    private void renderCustomStackCounts(GuiGraphics guiGraphics) {
+        for (var slot : this.menu.slots) {
+            if (slot instanceof net.neoforged.neoforge.items.SlotItemHandler) {
+                var stack = slot.getItem();
+                if (!stack.isEmpty()) {
+                    int actualCount = getActualCount(stack);
+                    if (actualCount > 1) {
+                        renderCustomStackCount(guiGraphics, slot, stack);
+                    }
+                }
             }
-        }
-        
-        // Renderizza l'overlay se lo slot è disabilitato
-        if (!slot.isActive()) {
-            guiGraphics.fill(this.leftPos + slot.x, this.topPos + slot.y, 
-                           this.leftPos + slot.x + 16, this.topPos + slot.y + 16, 0x80FFFFFF);
         }
     }
     
@@ -802,30 +798,55 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
      * Renderizza lo stack count personalizzato per un singolo slot
      */
     private void renderCustomStackCount(GuiGraphics guiGraphics, Slot slot, ItemStack stack) {
-        // Scala del testo per gli stack count (più piccolo del normale)
-        float stackCountScale = 0.7f;
+        // Leggi il count reale dall'NBT
+        int actualCount = getActualCount(stack);
+        if (actualCount <= 1) return; // Non mostrare count per 1 item
         
-        // Calcola la posizione dello slot
+        // Scala del testo progressiva in base al numero
+        float stackCountScale;
+        if (actualCount > 9999) {
+            stackCountScale = 0.5f; // 50% per numeri molto grandi (5+ cifre)
+        } else {
+            stackCountScale = 0.7f; // 70% per numeri normali (1-4 cifre)
+        }
+        
+        // Usa le coordinate assolute dello slot
         int slotX = this.leftPos + slot.x;
         int slotY = this.topPos + slot.y;
         
-        // Posizione per il testo dello stack count (angolo in basso a destra dello slot)
-        String countText = String.valueOf(stack.getCount());
+        // Usa il count reale dall'NBT
+        String countText = String.valueOf(actualCount);
         
-        // Applica la scala
+        // Calcola la dimensione del testo alla scala desiderata
+        int scaledTextWidth = (int)(this.font.width(countText) * stackCountScale);
+        
+        // Posiziona il testo SOTTO lo slot, centrato orizzontalmente
+        int finalX = slotX + (16 - scaledTextWidth) / 2;  // Centrato orizzontalmente nello slot
+        int finalY = slotY + 20;  // 4 pixel sotto lo slot (16 + 4), spostato 2px più in basso
+        
+        // Applica la scala solo per il rendering del testo
         guiGraphics.pose().pushPose();
         guiGraphics.pose().scale(stackCountScale, stackCountScale, 1.0f);
         
-        // Calcola le posizioni scalate per posizionare il testo nell'angolo in basso a destra
-        float textWidth = this.font.width(countText) * stackCountScale;
-        float textHeight = this.font.lineHeight * stackCountScale;
+        // Converti la posizione finale per il sistema scalato
+        int scaledX = (int)(finalX / stackCountScale);
+        int scaledY = (int)(finalY / stackCountScale);
         
-        int scaledX = (int)((slotX + 16 - textWidth - 1) / stackCountScale); // -1 pixel di margine dal bordo
-        int scaledY = (int)((slotY + 16 - textHeight) / stackCountScale);
-        
-        // Disegna il testo con ombra (bianco con bordo nero)
-        guiGraphics.drawString(this.font, countText, scaledX, scaledY, 0xFFFFFF, true);
+        // Disegna il testo scuro senza ombra (grigio scuro)
+        guiGraphics.drawString(this.font, countText, scaledX, scaledY, 0x404040, false);
         
         guiGraphics.pose().popPose();
+    }
+    
+    /**
+     * Legge il count reale dall'NBT dell'item
+     */
+    private int getActualCount(ItemStack stack) {
+        var customData = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+        if (customData != null) {
+            var tag = customData.copyTag();
+            return tag.getInt("ActualCount");
+        }
+        return stack.getCount(); // Fallback al count normale
     }
 } 

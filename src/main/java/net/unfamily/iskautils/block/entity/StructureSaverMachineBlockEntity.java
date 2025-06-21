@@ -25,8 +25,8 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     
     private static final Logger LOGGER = LoggerFactory.getLogger(StructureSaverMachineBlockEntity.class);
     
-    // Item storage per i 27 slot display (solo visualizzazione, non estraibili)
-    private final ItemStackHandler itemHandler = new ItemStackHandler(27) {
+    // Item storage per i 18 slot display (solo visualizzazione, non estraibili)
+    private final ItemStackHandler itemHandler = new ItemStackHandler(18) {
         @Override
         protected void onContentsChanged(int slot) {
             super.onContentsChanged(slot);
@@ -252,7 +252,7 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
         if (!hasValidArea()) {
             System.out.println("DEBUG SERVER: No valid area, clearing slots");
             // Pulisci gli slot se non c'è un'area valida
-            for (int i = 0; i < 27; i++) {
+            for (int i = 0; i < 18; i++) {
                 itemHandler.setStackInSlot(i, ItemStack.EMPTY);
             }
             setChanged();
@@ -274,7 +274,7 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
         
         if (sizeX > 64 || sizeY > 64 || sizeZ > 64) {
             System.out.println("DEBUG SERVER: Area too large (" + sizeX + "x" + sizeY + "x" + sizeZ + "), clearing slots");
-            for (int i = 0; i < 27; i++) {
+            for (int i = 0; i < 18; i++) {
                 itemHandler.setStackInSlot(i, ItemStack.EMPTY);
             }
             setChanged();
@@ -306,36 +306,37 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
             }
         }
         
-        // Popola gli slot con i blocchi trovati, creando più stack se necessario
+        // Popola gli slot con i blocchi trovati, sempre 1 item per tipo con count reale
         int slotIndex = 0;
         
         for (var entry : blockCounts.entrySet()) {
-            var item = entry.getKey();
-            int remainingCount = entry.getValue();
-            
-            // Crea stack multipli se necessario
-            while (remainingCount > 0 && slotIndex < 27) {
-                int stackSize = Math.min(remainingCount, 1024);
-                var stack = new ItemStack(item, stackSize);
-                
-                // Inserisci nello slot
-                itemHandler.setStackInSlot(slotIndex, stack);
-                
-                slotIndex++;
-                remainingCount -= stackSize;
-                
-                System.out.println("DEBUG SERVER: Created stack of " + stackSize + " " + item + " (remaining: " + remainingCount + ")");
-            }
-            
-            // Se abbiamo finito gli slot ma ci sono ancora blocchi
-            if (remainingCount > 0) {
-                System.out.println("DEBUG SERVER: Reached maximum slots (27), " + remainingCount + " " + item + " blocks not displayed");
+            if (slotIndex >= 18) {
+                System.out.println("DEBUG SERVER: Reached maximum slots (18), some items may not be displayed");
                 break;
             }
+            
+            var item = entry.getKey();
+            int actualCount = entry.getValue();
+            
+            // Crea sempre una stack da 1 item, ma salva il count reale nel tag NBT
+            var stack = new ItemStack(item, 1);
+            
+            // Salva il count reale nel tag NBT dell'item usando il sistema NeoForge
+            var customTag = new net.minecraft.nbt.CompoundTag();
+            customTag.putInt("ActualCount", actualCount);
+            stack.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, 
+                     net.minecraft.world.item.component.CustomData.of(customTag));
+            
+            // Inserisci nello slot
+            itemHandler.setStackInSlot(slotIndex, stack);
+            
+            slotIndex++;
+            
+            System.out.println("DEBUG SERVER: Created display item " + item + " with actual count: " + actualCount);
         }
         
         // Pulisci gli slot rimanenti
-        for (int i = slotIndex; i < 27; i++) {
+        for (int i = slotIndex; i < 18; i++) {
             itemHandler.setStackInSlot(i, ItemStack.EMPTY);
         }
         

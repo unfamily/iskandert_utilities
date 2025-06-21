@@ -180,11 +180,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
             title += " (Server)";
         }
         
-        // Conta le strutture client
-        int clientStructuresCount = StructureLoader.getClientStructures().size();
-        if (clientStructuresCount > 0) {
-            title += " [" + clientStructuresCount + " Client]";
-        }
+        // Rimozione del conteggio strutture client dal titolo
         
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
         guiGraphics.drawString(this.font, title, titleX, 8, 0x404040, false);

@@ -20,8 +20,8 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
     private final ContainerLevelAccess levelAccess;
     private final ContainerData containerData;
     
-    // 27 slot display (3 righe x 9 slot)
-    private static final int DISPLAY_SLOTS = 27;
+    // 18 slot display (2 righe x 9 slot) - rimossa la seconda riga
+    private static final int DISPLAY_SLOTS = 18;
     
     // ContainerData indices for syncing (seguendo il pattern del Structure Placer Machine)
     private static final int VERTEX1_X_INDEX = 0;
@@ -96,7 +96,7 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
     }
     
     /**
-     * Aggiunge i 27 slot display (3 righe x 9 slot) a partire da X=8 Y=188 (spostato +46px per la nuova texture 176x246)
+     * Aggiunge i 18 slot display (2 righe x 9 slot) a partire da X=8 Y=188 (spostato +46px per la nuova texture 176x246)
      */
     private void addDisplaySlots() {
         IItemHandler itemHandler;
@@ -108,21 +108,19 @@ public class StructureSaverMachineMenu extends AbstractContainerMenu {
             itemHandler = new ItemStackHandler(DISPLAY_SLOTS);
         }
         
-        // 3 righe di 9 slot con aggiustamenti verticali
-        for (int row = 0; row < 3; row++) {
+        // 2 righe di 9 slot con la seconda riga spostata 7 slot più in alto
+        for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = row * 9 + col;
                 int xPos = 8 + col * 18; // GUI coordinate 7 + 1 (spostato +1 a sinistra)
                 
-                // Calcola yPos con aggiustamenti corretti per riga:
-                // Riga 0: distaccata di 1 pixel dalla seconda riga
-                // Riga 1: distaccata di 1 pixel dalla terza riga  
-                // Riga 2: 222 (perfetta, resta come è)
+                // Calcola yPos:
+                // Riga 0: 186 (prima riga)
+                // Riga 1: 204 (seconda riga, era la terza riga spostata 7 slot più in alto)
                 int baseY = 188;
                 int yPos = switch (row) {
-                    case 0 -> baseY - 2; // Prima riga: 2 pixel sopra la normale posizione (era -1, ora -2)
-                    case 1 -> baseY + 18 - 2; // Seconda riga: 2 pixel sopra la normale posizione (era -1, ora -2)
-                    case 2 -> baseY + 36 - 2; // Terza riga: resta come è (222)
+                    case 0 -> baseY - 2; // Prima riga: 186
+                    case 1 -> baseY + 18 - 2; // Seconda riga: 204 (era 222, ora spostata 7 slot più in alto = -18px)
                     default -> baseY + row * 18;
                 };
                 
