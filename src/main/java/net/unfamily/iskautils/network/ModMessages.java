@@ -144,6 +144,48 @@ public class ModMessages {
     }
     
     /**
+     * Sends shop team data to the client
+     */
+    public static void sendShopTeamDataToClient(ServerPlayer player, String teamName, Map<String, Double> teamBalances) {
+        // Simplified implementation for single player compatibility
+        try {
+            // This will be executed on the client side
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                net.unfamily.iskautils.client.gui.ShopScreen.handleTeamDataUpdate(teamName, teamBalances);
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+        }
+    }
+    
+    /**
+     * Sends a shop team data request to the server
+     */
+    public static void sendShopTeamDataRequest() {
+        // Simplified implementation - directly handle on the server side
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+            
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Create and handle the packet
+                        new net.unfamily.iskautils.network.packet.ShopTeamDataRequestC2SPacket().handle(player);
+                    }
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            });
+        } catch (Exception e) {
+            // Ignore errors
+        }
+    }
+    
+    /**
      * Sends a packet to remove a highlighted block
      */
     public static void sendRemoveHighlightPacket(ServerPlayer player, BlockPos pos) {

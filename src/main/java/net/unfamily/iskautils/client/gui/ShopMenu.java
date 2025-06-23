@@ -5,6 +5,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.core.BlockPos;
@@ -22,6 +23,9 @@ public class ShopMenu extends AbstractContainerMenu {
         this.blockEntity = blockEntity;
         this.blockPos = blockEntity.getBlockPos();
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
+        
+        addPlayerInventory(playerInventory);
+        addPlayerHotbar(playerInventory);
     }
 
     // Costruttore client-side (NeoForge factory)
@@ -32,6 +36,9 @@ public class ShopMenu extends AbstractContainerMenu {
         this.blockEntity = null;
         this.blockPos = BlockPos.ZERO;
         this.levelAccess = ContainerLevelAccess.NULL;
+        
+        addPlayerInventory(playerInventory);
+        addPlayerHotbar(playerInventory);
     }
 
     @Override
@@ -41,7 +48,24 @@ public class ShopMenu extends AbstractContainerMenu {
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        return ItemStack.EMPTY;
+        ItemStack itemstack = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        
+        if (slot != null && slot.hasItem()) {
+            ItemStack itemstack1 = slot.getItem();
+            itemstack = itemstack1.copy();
+            
+            // Gli slot 0-35 sono l'inventario del player (0-26 = inventario, 27-35 = hotbar)
+            int inventoryEnd = 36;
+            
+            if (index < inventoryEnd) {
+                // Dallo slot dell'inventario del player: non fare nulla per ora
+                // In futuro qui si potrebbero gestire vendite automatiche al shop
+                return ItemStack.EMPTY;
+            }
+        }
+        
+        return itemstack;
     }
 
     public ShopBlockEntity getBlockEntity() {
@@ -49,5 +73,21 @@ public class ShopMenu extends AbstractContainerMenu {
     }
     public BlockPos getBlockPos() {
         return blockPos;
+    }
+    
+    private void addPlayerInventory(Inventory playerInventory) {
+        // Inventario del giocatore (3 righe x 9 slot) - spostato +1 pixel a destra e +1 pixel in basso
+        for (int i = 0; i < 3; ++i) {
+            for (int l = 0; l < 9; ++l) {
+                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 20 + l * 18, 154 + i * 18));
+            }
+        }
+    }
+    
+    private void addPlayerHotbar(Inventory playerInventory) {
+        // Hotbar del giocatore (1 riga x 9 slot) - spostato +1 pixel a destra e +1 pixel in basso
+        for (int i = 0; i < 9; ++i) {
+            this.addSlot(new Slot(playerInventory, i, 20 + i * 18, 212));
+        }
     }
 } 

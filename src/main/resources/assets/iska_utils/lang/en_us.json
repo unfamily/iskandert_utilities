@@ -96,6 +96,21 @@
   "block.iska_utils.structure_marker": "Structure Marker",
   "block.iska_utils.shop": "Shop",
   
+  "gui.iska_utils.shop.title": "Shop",
+  "gui.iska_utils.shop.back": "Back",
+  "gui.iska_utils.shop.buy": "Buy",
+  "gui.iska_utils.shop.sell": "Sell",
+  "gui.iska_utils.shop.no_valutes": "No currencies available",
+  "gui.iska_utils.shop.tooltip.buy.cost": "Cost: %s %s",
+  "gui.iska_utils.shop.tooltip.buy.click": "Click: Buy 1",
+  "gui.iska_utils.shop.tooltip.buy.ctrl": "Ctrl/Alt: Buy %d",
+  "gui.iska_utils.shop.tooltip.buy.shift": "Shift: Buy %d",
+  "gui.iska_utils.shop.tooltip.sell.price": "Price: %s %s",
+  "gui.iska_utils.shop.tooltip.sell.click": "Click: Sell 1",
+  "gui.iska_utils.shop.tooltip.sell.ctrl": "Ctrl/Alt: Sell %d",
+  "gui.iska_utils.shop.tooltip.sell.shift": "Shift: Sell %d",
+  "gui.iska_utils.shop.no_team": "Not in team",
+  
   "creativetab.iska_utils.tab": "Iskandert's Utilities",
   "itemGroup.iska_utils.command_items": "Iskandert's Command Items",
   
