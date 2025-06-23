@@ -1,0 +1,18 @@
+ {
+    "type": "shop_category",
+    "overwritable": true, //opzionale, se non specificato è false
+    "categories": [
+        {
+            "id": "000_default",
+            "name": "Default",
+            "description": "Default category",
+            "item":"minecraft:gold_nugget"
+        },
+        {
+            "id": "001_food",
+            "name": "Food",
+            "description": "Food category",
+            "item":"minecraft:bread"
+        }
+    ]
+ }

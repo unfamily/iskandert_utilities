@@ -144,6 +144,10 @@ public class ModBlocks {
     public static final DeferredBlock<StructureSaverMachineBlock> STRUCTURE_SAVER_MACHINE = BLOCKS.register("structure_saver_machine",
             () -> new StructureSaverMachineBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
 
+    // Shop Block (allows players to buy and sell items)
+    public static final DeferredBlock<ShopBlock> SHOP = BLOCKS.register("shop",
+            () -> new ShopBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
+
     // Hellfire Igniter (creates fire when activated by redstone)
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
             () -> new HellfireIgniterBlock(HELLFIRE_PROPERTIES));

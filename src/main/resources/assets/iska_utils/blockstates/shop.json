@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "iska_utils:block/shop" },
+    "facing=south": { "model": "iska_utils:block/shop", "y": 180 },
+    "facing=west": { "model": "iska_utils:block/shop", "y": 270 },
+    "facing=east": { "model": "iska_utils:block/shop", "y": 90 }
+  }
+} 

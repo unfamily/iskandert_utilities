@@ -322,6 +322,9 @@ public class ModItems {
     public static final DeferredItem<Item> STRUCTURE_SAVER_MACHINE = ITEMS.register("structure_saver_machine",
             () -> new BlockItem(ModBlocks.STRUCTURE_SAVER_MACHINE.get(), ITEM_PROPERTIES));
 
+    public static final DeferredItem<Item> SHOP = ITEMS.register("shop",
+            () -> new BlockItem(ModBlocks.SHOP.get(), ITEM_PROPERTIES));
+
     public static final DeferredItem<Item> STRUCTURE_PLACER = ITEMS.register("structure_placer",
             () -> new StructurePlacerItem(new Item.Properties().stacksTo(1)));
             

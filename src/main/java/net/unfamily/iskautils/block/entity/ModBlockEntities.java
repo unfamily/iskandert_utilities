@@ -19,6 +19,7 @@ import net.unfamily.iskautils.block.entity.TimeAltererBlockEntity;
 import net.unfamily.iskautils.block.entity.AngelBlockEntity;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity;
+import net.unfamily.iskautils.block.entity.ShopBlockEntity;
 
 import java.util.function.Supplier;
 
@@ -75,6 +76,12 @@ public class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StructureSaverMachineBlockEntity>> STRUCTURE_SAVER_MACHINE_BE =
             BLOCK_ENTITIES.register("structure_saver_machine",
                     () -> BlockEntityType.Builder.of(StructureSaverMachineBlockEntity::new, ModBlocks.STRUCTURE_SAVER_MACHINE.get())
+                            .build(null));
+
+    // Shop Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ShopBlockEntity>> SHOP_BE =
+            BLOCK_ENTITIES.register("shop",
+                    () -> BlockEntityType.Builder.of(ShopBlockEntity::new, ModBlocks.SHOP.get())
                             .build(null));
 
     /**
@@ -167,6 +174,18 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof StructureSaverMachineBlockEntity saverMachineEntity) {
                             return saverMachineEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register item handler capability for Shop
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    SHOP_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof ShopBlockEntity shopEntity) {
+                            return shopEntity.getItemHandler();
                         }
                         return null;
                     }

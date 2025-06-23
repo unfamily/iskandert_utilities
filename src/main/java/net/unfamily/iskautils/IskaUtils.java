@@ -50,6 +50,7 @@ import java.util.concurrent.Executor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskautils.shop.ShopLoader;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)
@@ -96,6 +97,10 @@ public class IskaUtils {
         // Carica solo le definizioni delle strutture server/globali all'avvio
         // Le strutture client saranno caricate quando il giocatore è disponibile
         StructureLoader.scanConfigDirectoryServerOnly();
+        
+        // ===== SHOP SYSTEM =====
+        // Carica e inizializza il sistema shop custom
+        ShopLoader.scanConfigDirectory();
         
         // Register blocks and items
         ModBlocks.register(modEventBus);
@@ -211,6 +216,8 @@ public class IskaUtils {
                           net.unfamily.iskautils.client.gui.StructureSelectionScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_SAVER_MACHINE_MENU.get(),
                           net.unfamily.iskautils.client.gui.StructureSaverMachineScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SHOP_MENU.get(),
+                          net.unfamily.iskautils.client.gui.ShopScreen::new);
         }
     }
 
@@ -345,6 +352,8 @@ public class IskaUtils {
                         CommandItemRegistry.reloadDefinitions();
                         // Reload stage item restrictions
                         net.unfamily.iskautils.iska_utils_stages.StageItemManager.reloadItemRestrictions();
+                        // Reload shop system
+                        ShopLoader.reloadAllConfigurations();
                     }, gameExecutor).thenCompose(preparationBarrier::wait);
                 }
                 

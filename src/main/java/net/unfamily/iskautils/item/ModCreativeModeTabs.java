@@ -136,6 +136,7 @@ public class ModCreativeModeTabs {
                                 // Structure System
                                 pOutput.accept(ModItems.STRUCTURE_PLACER_MACHINE.get());
                                 pOutput.accept(ModItems.STRUCTURE_SAVER_MACHINE.get());
+                                pOutput.accept(ModItems.SHOP.get());
                                 pOutput.accept(ModItems.STRUCTURE_PLACER.get());
                                 pOutput.accept(ModItems.BLUEPRINT.get());
                 

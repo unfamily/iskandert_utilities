@@ -33,4 +33,7 @@ public class ModMenuTypes {
             MENUS.register("structure_saver_machine", () -> 
                 new MenuType<>(StructureSaverMachineMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<ShopMenu>> SHOP_MENU =
+        MENUS.register("shop_menu", () -> new MenuType<>(ShopMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+    
 } 
