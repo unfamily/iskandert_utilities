@@ -179,17 +179,8 @@ public class ModBlockEntities {
                     }
             );
             
-            // Register item handler capability for Shop
-            event.registerBlockEntity(
-                    Capabilities.ItemHandler.BLOCK,
-                    SHOP_BE.get(),
-                    (blockEntity, context) -> {
-                        if (blockEntity instanceof ShopBlockEntity shopEntity) {
-                            return shopEntity.getItemHandler();
-                        }
-                        return null;
-                    }
-            );
+            // Shop Block non registra capability IItemHandler per prevenire interazioni con hopper
+            // Il negozio funziona solo tramite GUI diretta del giocatore
         }
     }
 } 

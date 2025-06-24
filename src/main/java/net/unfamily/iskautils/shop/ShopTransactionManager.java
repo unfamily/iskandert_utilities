@@ -5,6 +5,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.stage.StageRegistry;
 import org.slf4j.Logger;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Items;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Manages shop transactions using team valutes
@@ -16,20 +23,24 @@ public class ShopTransactionManager {
      * Attempts to buy an item from the shop using team valutes
      */
     public static boolean buyItem(ServerPlayer player, String itemId, int quantity) {
-        ShopEntry entry = ShopLoader.getEntry(null, itemId);
+        // Cerca l'entry per itemId indipendentemente dalla categoria
+        ShopEntry entry = findEntryByItemId(itemId);
         if (entry == null) {
-            player.sendSystemMessage(Component.literal("§cItem not found in shop: " + itemId));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "item_not_found", itemId, null);
             return false;
         }
         
         if (entry.buy <= 0) {
-            player.sendSystemMessage(Component.literal("§cThis item cannot be bought"));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "cannot_buy", itemId, null);
             return false;
         }
         
         // Check stage requirements
         if (!checkStageRequirements(player, entry)) {
-            player.sendSystemMessage(Component.literal("§cYou don't meet the stage requirements for this item"));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "stage_requirements", itemId, null);
             return false;
         }
         
@@ -41,28 +52,37 @@ public class ShopTransactionManager {
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
-            player.sendSystemMessage(Component.literal("§cYou must be in a team to use the shop"));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "no_team", itemId, valuteId);
             return false;
         }
         
         // Check team balance
         double teamBalance = teamManager.getTeamValuteBalance(teamName, valuteId);
         if (teamBalance < totalCost) {
-            player.sendSystemMessage(Component.literal(String.format("§cInsufficient team balance. Need %.1f %s, have %.1f", 
-                totalCost, valuteId, teamBalance)));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "insufficient_funds", itemId, valuteId);
             return false;
         }
         
         // Remove valutes from team
         if (!teamManager.removeTeamValutes(teamName, valuteId, totalCost)) {
-            player.sendSystemMessage(Component.literal("§cFailed to process transaction"));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "transaction_failed", itemId, valuteId);
             return false;
         }
         
-        // Give item to player (this would need to be implemented based on your item system)
-        // For now, just send a success message
-        player.sendSystemMessage(Component.literal(String.format("§aSuccessfully bought %d %s for %.1f %s", 
-            quantity, itemId, totalCost, valuteId)));
+        // Give item to player
+        if (!giveItemToPlayer(player, itemId, entry.itemCount)) {
+            // Se non riusciamo a dare l'item, rimborsa i soldi
+            teamManager.addTeamValutes(teamName, valuteId, totalCost);
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "give_item_failed", itemId, valuteId);
+            return false;
+        }
+        
+        // Invia successo al client invece del chat
+        sendTransactionSuccessToClient(player);
         
         LOGGER.info("Player {} bought {}x {} from team {} for {} {}", 
             player.getName().getString(), quantity, itemId, teamName, totalCost, valuteId);
@@ -74,20 +94,24 @@ public class ShopTransactionManager {
      * Attempts to sell an item to the shop using team valutes
      */
     public static boolean sellItem(ServerPlayer player, String itemId, int quantity) {
-        ShopEntry entry = ShopLoader.getEntry(null, itemId);
+        // Cerca l'entry per itemId indipendentemente dalla categoria
+        ShopEntry entry = findEntryByItemId(itemId);
         if (entry == null) {
-            player.sendSystemMessage(Component.literal("§cItem not found in shop: " + itemId));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "item_not_found", itemId, null);
             return false;
         }
         
         if (entry.sell <= 0) {
-            player.sendSystemMessage(Component.literal("§cThis item cannot be sold"));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "cannot_sell", itemId, null);
             return false;
         }
         
         // Check stage requirements
         if (!checkStageRequirements(player, entry)) {
-            player.sendSystemMessage(Component.literal("§cYou don't meet the stage requirements for this item"));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "stage_requirements", itemId, null);
             return false;
         }
         
@@ -99,23 +123,27 @@ public class ShopTransactionManager {
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
-            player.sendSystemMessage(Component.literal("§cYou must be in a team to use the shop"));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "no_team", itemId, valuteId);
             return false;
         }
         
-        // Check if player has the item (this would need to be implemented based on your item system)
-        // For now, we'll assume they have it
+        // Check if player has the item and remove it
+        if (!removeItemFromPlayer(player, itemId, entry.itemCount)) {
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "insufficient_items", itemId, valuteId);
+            return false;
+        }
         
         // Add valutes to team
         if (!teamManager.addTeamValutes(teamName, valuteId, totalReward)) {
-            player.sendSystemMessage(Component.literal("§cFailed to process transaction"));
+            // Invia errore al client invece del chat
+            sendTransactionErrorToClient(player, "transaction_failed", itemId, valuteId);
             return false;
         }
         
-        // Remove item from player (this would need to be implemented based on your item system)
-        // For now, just send a success message
-        player.sendSystemMessage(Component.literal(String.format("§aSuccessfully sold %d %s for %.1f %s", 
-            quantity, itemId, totalReward, valuteId)));
+        // Invia successo al client invece del chat
+        sendTransactionSuccessToClient(player);
         
         LOGGER.info("Player {} sold {}x {} to team {} for {} {}", 
             player.getName().getString(), quantity, itemId, teamName, totalReward, valuteId);
@@ -168,6 +196,62 @@ public class ShopTransactionManager {
     }
     
     /**
+     * Gestisce l'acquisto di item con ripetizioni multiple
+     * Come specificato: x4 o x16 è semplicemente ripetere l'operazione controllando ogni volta i denari
+     */
+    public static void handleBuyItem(ServerPlayer player, String itemId, int multiplier) {
+        System.out.println("DEBUG: handleBuyItem chiamato - itemId: " + itemId + ", multiplier: " + multiplier);
+        
+        int successfulPurchases = 0;
+        
+        for (int i = 0; i < multiplier; i++) {
+            boolean success = buyItem(player, itemId, 1);
+            if (success) {
+                successfulPurchases++;
+                System.out.println("DEBUG: Acquisto " + (i + 1) + "/" + multiplier + " riuscito");
+            } else {
+                System.out.println("DEBUG: Acquisto " + (i + 1) + "/" + multiplier + " fallito - interrompo");
+                break; // Fermiamo qui se non ci sono più soldi
+            }
+        }
+        
+        // Rimuovo i messaggi in chat - il feedback è gestito dal client
+        
+        System.out.println("DEBUG: handleBuyItem completato - acquisti riusciti: " + successfulPurchases + "/" + multiplier);
+        
+        // Aggiorna i dati del team nel client dopo la transazione
+        updatePlayerTeamDataInClient(player);
+    }
+    
+    /**
+     * Gestisce la vendita di item con ripetizioni multiple
+     * Come specificato: x4 o x16 è semplicemente ripetere l'operazione
+     */
+    public static void handleSellItem(ServerPlayer player, String itemId, int multiplier) {
+        System.out.println("DEBUG: handleSellItem chiamato - itemId: " + itemId + ", multiplier: " + multiplier);
+        
+        int successfulSales = 0;
+        
+        for (int i = 0; i < multiplier; i++) {
+            boolean success = sellItem(player, itemId, 1);
+            if (success) {
+                successfulSales++;
+                System.out.println("DEBUG: Vendita " + (i + 1) + "/" + multiplier + " riuscita");
+            } else {
+                System.out.println("DEBUG: Vendita " + (i + 1) + "/" + multiplier + " fallita - interrompo");
+                break; // Fermiamo qui se non ci sono più item da vendere
+            }
+        }
+        
+        // Rimuovo i messaggi in chat - il feedback è gestito dal client
+        
+        System.out.println("DEBUG: handleSellItem completato - vendite riuscite: " + successfulSales + "/" + multiplier);
+        
+        // Aggiorna i dati del team nel client dopo la transazione
+        updatePlayerTeamDataInClient(player);
+    }
+    
+    /**
      * Gets the current team balance for a player
      */
     public static double getPlayerTeamBalance(ServerPlayer player, String valuteId) {
@@ -208,5 +292,155 @@ public class ShopTransactionManager {
         player.sendSystemMessage(Component.literal("§aNull Coins: " + nullCoinBalance));
         
         // Could show other valutes here if needed
+    }
+    
+    /**
+     * Dà un item al giocatore
+     */
+    private static boolean giveItemToPlayer(ServerPlayer player, String itemId, int count) {
+        try {
+            // Converti l'itemId in ItemStack
+            ResourceLocation itemResource = ResourceLocation.parse(itemId);
+            var item = BuiltInRegistries.ITEM.get(itemResource);
+            
+            if (item == Items.AIR) {
+                LOGGER.warn("Item non trovato: {}", itemId);
+                return false;
+            }
+            
+            ItemStack itemStack = new ItemStack(item, count);
+            
+            // Aggiungi l'item all'inventario del giocatore
+            Inventory inventory = player.getInventory();
+            boolean added = inventory.add(itemStack);
+            
+            if (!added) {
+                // Se l'inventario è pieno, droppa l'item nel mondo
+                player.drop(itemStack, false);
+                // Rimuovo messaggio in chat - il feedback è gestito dal client
+            }
+            
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("Errore nel dare item {} al giocatore {}: {}", itemId, player.getName().getString(), e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Rimuove un item dall'inventario del giocatore
+     */
+    private static boolean removeItemFromPlayer(ServerPlayer player, String itemId, int count) {
+        try {
+            // Converti l'itemId in ItemStack
+            ResourceLocation itemResource = ResourceLocation.parse(itemId);
+            var item = BuiltInRegistries.ITEM.get(itemResource);
+            
+            if (item == Items.AIR) {
+                LOGGER.warn("Item non trovato: {}", itemId);
+                return false;
+            }
+            
+            Inventory inventory = player.getInventory();
+            
+            // Conta quanti item ha il giocatore
+            int totalCount = 0;
+            for (int i = 0; i < inventory.getContainerSize(); i++) {
+                ItemStack stack = inventory.getItem(i);
+                if (stack.getItem() == item) {
+                    totalCount += stack.getCount();
+                }
+            }
+            
+            if (totalCount < count) {
+                return false; // Non ha abbastanza item
+            }
+            
+            // Rimuovi gli item
+            int remainingToRemove = count;
+            for (int i = 0; i < inventory.getContainerSize() && remainingToRemove > 0; i++) {
+                ItemStack stack = inventory.getItem(i);
+                if (stack.getItem() == item) {
+                    int toRemove = Math.min(remainingToRemove, stack.getCount());
+                    stack.shrink(toRemove);
+                    remainingToRemove -= toRemove;
+                    
+                    if (stack.isEmpty()) {
+                        inventory.setItem(i, ItemStack.EMPTY);
+                    }
+                }
+            }
+            
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("Errore nel rimuovere item {} dal giocatore {}: {}", itemId, player.getName().getString(), e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Aggiorna i dati del team nel client del giocatore
+     */
+    private static void updatePlayerTeamDataInClient(ServerPlayer player) {
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        String teamName = teamManager.getPlayerTeam(player);
+        
+        if (teamName != null) {
+            // Ottieni tutti i balance del team
+            Map<String, Double> teamBalances = new HashMap<>();
+            
+            // Ottieni tutte le valute disponibili e i loro balance
+            Map<String, ShopValute> allValutes = ShopLoader.getValutes();
+            for (String valuteId : allValutes.keySet()) {
+                double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
+                teamBalances.put(valuteId, balance);
+            }
+            
+            // Invia i dati aggiornati al client
+            net.unfamily.iskautils.network.ModMessages.sendShopTeamDataToClient(player, teamName, teamBalances);
+        }
+    }
+    
+    /**
+     * Trova una ShopEntry per itemId, indipendentemente dalla categoria
+     */
+    private static ShopEntry findEntryByItemId(String itemId) {
+        Map<String, ShopEntry> allEntries = ShopLoader.getEntries();
+        
+        for (ShopEntry entry : allEntries.values()) {
+            if (itemId.equals(entry.item)) {
+                return entry;
+            }
+        }
+        
+        return null; // Item non trovato
+    }
+    
+    /**
+     * Invia un errore di transazione al client
+     */
+    private static void sendTransactionErrorToClient(ServerPlayer player, String errorType, String itemId, String valuteId) {
+        try {
+            // Simplified implementation for single player compatibility
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                net.unfamily.iskautils.client.gui.ShopScreen.handleTransactionError(errorType, itemId, valuteId);
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server or if client is not available
+        }
+    }
+    
+    /**
+     * Invia un successo di transazione al client
+     */
+    private static void sendTransactionSuccessToClient(ServerPlayer player) {
+        try {
+            // Simplified implementation for single player compatibility
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                net.unfamily.iskautils.client.gui.ShopScreen.handleTransactionSuccess();
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server or if client is not available
+        }
     }
 } 

@@ -54,7 +54,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     private static final int BUTTONS_SPACING = 3; // Spazio tra Buy e Sell (era 2)
     
     // Costanti per l'area informazioni a destra
-    private static final int INFO_AREA_X = 195; // Spostato più a sinistra (era 205)
+    private static final int INFO_AREA_X = 185; // Spostato ulteriormente a sinistra (era 195, scrollbar finisce a 182)
     private static final int INFO_AREA_WIDTH = 35; // Larghezza dell'area informazioni
     private static final int BACK_BUTTON_WIDTH = 30; // Ridotto per stare nell'area
     private static final int BACK_BUTTON_HEIGHT = 15;
@@ -88,6 +88,16 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     private String playerTeamName = null;
     private Map<String, Double> playerTeamBalances = new HashMap<>();
     private static ShopScreen currentInstance = null; // Per il callback statico
+    
+    // Area di feedback per messaggi di errore/successo
+    private String feedbackMessage = null;
+    private int feedbackColor = 0xFFFFFF;
+    private long feedbackClearTime = 0;
+    private static final long FEEDBACK_DISPLAY_TIME = 3000; // 3 secondi
+    // Calcola la posizione del feedback al centro tra quinta entry e inventario (Y=154)
+    private static final int INVENTORY_Y = 154; // Y dell'inventario principale (dal ShopMenu)
+    private static final int FIFTH_ENTRY_END = ENTRY_START_Y + (ENTRIES * ENTRY_HEIGHT); // Fine quinta entry (Y=140)
+    private static final int FEEDBACK_Y_OFFSET = FIFTH_ENTRY_END + ((INVENTORY_Y - FIFTH_ENTRY_END) / 2) - 4; // Centrato (Y=147-4=143)
 
     public ShopScreen(ShopMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -147,6 +157,9 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         
         // Area informazioni a destra
         renderInfoArea(guiGraphics, mouseX, mouseY);
+        
+        // Renderizza l'area di feedback
+        updateAndRenderFeedback(guiGraphics, x, y);
     }
     
 
@@ -197,13 +210,21 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) { // Click sinistro
-            if (handleScrollButtonClick(mouseX, mouseY) ||
-                handleHandleClick(mouseX, mouseY) ||
-                handleScrollbarClick(mouseX, mouseY) ||
-                handleEntryClick(mouseX, mouseY)) {
+            if (handleScrollButtonClick(mouseX, mouseY)) {
+                return true;
+            }
+            if (handleHandleClick(mouseX, mouseY)) {
+                return true;
+            }
+            if (handleScrollbarClick(mouseX, mouseY)) {
+                return true;
+            }
+            if (handleEntryClick(mouseX, mouseY)) {
                 return true;
             }
         }
+        
+        // Gestisci i pulsanti vanilla (inclusi Buy/Sell) dopo i nostri handler
         return super.mouseClicked(mouseX, mouseY, button);
     }
     
@@ -435,9 +456,11 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
             guiGraphics.renderItem(categoryIcon, slotX + 1, slotY + 1);
         }
         
-        // Disegna il nome della categoria
-        Component categoryName = Component.literal(category.name);
-        guiGraphics.drawString(this.font, categoryName, textX, textY, 0x404040, false);
+        // Disegna il nome della categoria (scalato)
+        // Per le categorie, il testo può andare fino alla fine dell'entry (no pulsanti)
+        int maxTextWidth = entryX + ENTRY_WIDTH - textX - 5; // 5px di margine dal bordo destro
+        
+        renderScaledText(guiGraphics, category.name, textX, textY, maxTextWidth, 0x404040);
     }
     
     /**
@@ -461,10 +484,16 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
             guiGraphics.renderItemDecorations(this.font, itemStack, slotX + 1, slotY + 1);
         }
         
-        // Disegna il nome dell'item (nome display)
+        // Disegna il nome dell'item (nome display scalato)
         String displayName = getItemDisplayName(item.item);
-        Component itemName = Component.literal(displayName);
-        guiGraphics.drawString(this.font, itemName, textX, textY, 0x404040, false);
+        
+        // Calcola la larghezza massima disponibile per il testo
+        // Dal textX fino ai pulsanti (con un po' di margine)
+        int buyButtonStartX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
+        int maxTextWidth = buyButtonStartX - textX - 5; // 5px di margine dai pulsanti
+        
+        // Renderizza il testo scalato
+        renderScaledText(guiGraphics, displayName, textX, textY, maxTextWidth, 0x404040);
         
         // Calcola posizioni per i pulsanti Buy/Sell (alla fine dell'entry e centrati verticalmente)
         int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3; // 3 pixel dal bordo destro
@@ -523,8 +552,29 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
                         return true;
                     }
                 } else {
-                    // Click su item - non fare nulla per ora (nessun acquisto/vendita)
+                    // In modalità item, controlla se il click è sui pulsanti Buy/Sell
                     if (actualIndex < availableItems.size()) {
+                        ShopEntry item = availableItems.get(actualIndex);
+                        
+                        // Calcola le posizioni dei pulsanti Buy/Sell
+                        int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
+                        int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
+                        int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
+                        
+                        // Se il click è nell'area dei pulsanti, non gestirlo qui
+                        boolean clickOnBuyButton = item.buy > 0 && 
+                            mouseX >= buyButtonX && mouseX < buyButtonX + BUTTON_WIDTH &&
+                            mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT;
+                            
+                        boolean clickOnSellButton = item.sell > 0 && 
+                            mouseX >= sellButtonX && mouseX < sellButtonX + BUTTON_WIDTH &&
+                            mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT;
+                        
+                        if (clickOnBuyButton || clickOnSellButton) {
+                            return false; // Lascia che super.mouseClicked gestisca i pulsanti
+                        }
+                        
+                        // Click su item ma non sui pulsanti - per ora non fare nulla
                         playButtonSound();
                         return true;
                     }
@@ -579,7 +629,10 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         // Titolo centrato - usa il nome della categoria corrente
         Component titleComponent = Component.literal(currentCategoryName);
         int titleWidth = this.font.width(titleComponent);
-        int titleX = (this.imageWidth - titleWidth) / 2;
+        // Centra il titolo nell'area delle entry (da ENTRY_START_X a ENTRY_START_X + ENTRY_WIDTH)
+        int entryAreaStart = ENTRY_START_X; // 30
+        int entryAreaWidth = ENTRY_WIDTH; // 140
+        int titleX = entryAreaStart + (entryAreaWidth - titleWidth) / 2;
         guiGraphics.drawString(this.font, titleComponent, titleX, 7, 0x404040, false);
         
         // Non renderizzare "Inventory" - rimosso
@@ -658,14 +711,8 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         // Istruzioni
         tooltip.add(Component.literal(""));
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.click"));
-        
-        // Calcola quantità per Ctrl/Alt
-        ItemStack stack = getItemStackFromString(item.item);
-        int maxStackSize = stack.getMaxStackSize();
-        int quarterStack = Math.max(1, maxStackSize / 4);
-        
-        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.ctrl", quarterStack));
-        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.shift", maxStackSize));
+        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.ctrl"));
+        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.shift"));
         
         return tooltip;
     }
@@ -683,14 +730,8 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         // Istruzioni
         tooltip.add(Component.literal(""));
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.click"));
-        
-        // Calcola quantità per Ctrl/Alt
-        ItemStack stack = getItemStackFromString(item.item);
-        int maxStackSize = stack.getMaxStackSize();
-        int quarterStack = Math.max(1, maxStackSize / 4);
-        
-        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.ctrl", quarterStack));
-        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.shift", maxStackSize));
+        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.ctrl"));
+        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.shift"));
         
         return tooltip;
     }
@@ -713,12 +754,20 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
      */
     private void renderAvailableCurrencies(GuiGraphics guiGraphics, int guiX, int guiY) {
         int startY = guiY + CURRENCIES_START_Y;
-        int textX = guiX + INFO_AREA_X + 2; // 2px di margine dal bordo sinistro dell'area (era 3)
+        int textX = guiX + BACK_BUTTON_X; // Allineato con il pulsante Back
         
         // Se il giocatore non è in un team
         if (playerTeamName == null) {
             Component noTeamText = Component.translatable("gui.iska_utils.shop.no_team");
-            guiGraphics.drawString(this.font, noTeamText, textX, startY, 0x808080, false);
+            
+            // Applica scaling 0.77 per rimpicciolire il testo
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(textX, startY, 0);
+            guiGraphics.pose().scale(0.77f, 0.77f, 1.0f);
+            
+            guiGraphics.drawString(this.font, noTeamText, 0, 0, 0x808080, false);
+            
+            guiGraphics.pose().popPose();
             return;
         }
         
@@ -729,13 +778,8 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
             // Ottieni il balance reale del team per questa valuta
             double balance = playerTeamBalances.getOrDefault(valute.id, 0.0);
             
-            // Formatta il balance (mostra come intero se è un numero intero, altrimenti con decimali)
-            String balanceStr;
-            if (balance == Math.floor(balance)) {
-                balanceStr = String.valueOf((int)balance);
-            } else {
-                balanceStr = String.format("%.1f", balance);
-            }
+            // Formatta il balance con abbreviazioni per numeri grandi
+            String balanceStr = formatLargeNumber(balance);
             
             String balanceText = balanceStr + " " + (valute.charSymbol != null ? valute.charSymbol : valute.id);
             Component currencyText = Component.literal(balanceText);
@@ -751,6 +795,39 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         if (availableValutes.isEmpty()) {
             Component noValutesText = Component.translatable("gui.iska_utils.shop.no_valutes");
             guiGraphics.drawString(this.font, noValutesText, textX, startY, 0x808080, false);
+        }
+    }
+    
+    /**
+     * Formatta un valore numerico con abbreviazioni per numeri grandi
+     * @param value Il valore da formattare
+     * @return Stringa formattata (es: 10K, 1.5M, 2.3B)
+     */
+    private String formatLargeNumber(double value) {
+        if (value < 10000) {
+            // Sotto i 10.000, mostra il numero normale
+            if (value == Math.floor(value)) {
+                return String.valueOf((int)value);
+            } else {
+                return String.format("%.1f", value);
+            }
+        }
+        
+        String[] suffixes = {"", "K", "M", "B", "T", "P", "E"}; // K=migliaia, M=milioni, B=miliardi, T=trilioni
+        int suffixIndex = 0;
+        double formattedValue = value;
+        
+        // Trova il suffisso appropriato
+        while (formattedValue >= 1000 && suffixIndex < suffixes.length - 1) {
+            formattedValue /= 1000;
+            suffixIndex++;
+        }
+        
+        // Formatta il numero con 1 decimale se necessario
+        if (formattedValue == Math.floor(formattedValue)) {
+            return String.format("%.0f%s", formattedValue, suffixes[suffixIndex]);
+        } else {
+            return String.format("%.1f%s", formattedValue, suffixes[suffixIndex]);
         }
     }
     
@@ -776,6 +853,68 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     }
     
     /**
+     * Ottiene il nome della valuta invece dell'ID
+     */
+    private String getCurrencyName(String valuteId) {
+        if (valuteId == null) return "?";
+        ShopValute valute = availableValutes.get(valuteId);
+        if (valute != null && valute.name != null && !valute.name.trim().isEmpty()) {
+            return valute.name;
+        }
+        return valuteId; // Fallback sull'ID
+    }
+    
+    /**
+     * Mostra un messaggio di feedback nell'area sottostante
+     */
+    private void showFeedback(String message, int color) {
+        this.feedbackMessage = message;
+        this.feedbackColor = color;
+        this.feedbackClearTime = System.currentTimeMillis() + FEEDBACK_DISPLAY_TIME;
+    }
+    
+    /**
+     * Mostra un messaggio di errore di fondi insufficienti
+     */
+    private void showInsufficientFundsError(String currencyName) {
+        Component message = Component.translatable("gui.iska_utils.shop.feedback.insufficient_funds", currencyName);
+        showFeedback(message.getString(), 0xFF4444); // Rosso
+    }
+    
+    /**
+     * Mostra un messaggio di errore di oggetti insufficienti
+     */
+    private void showInsufficientItemsError() {
+        Component message = Component.translatable("gui.iska_utils.shop.feedback.insufficient_items");
+        showFeedback(message.getString(), 0xFF4444); // Rosso
+    }
+    
+    /**
+     * Nasconde il messaggio di feedback (successo)
+     */
+    private void hideFeedback() {
+        this.feedbackMessage = null;
+        this.feedbackClearTime = 0;
+    }
+    
+    /**
+     * Aggiorna e renderizza l'area di feedback
+     */
+    private void updateAndRenderFeedback(GuiGraphics guiGraphics, int guiX, int guiY) {
+        // Controlla se è tempo di nascondere il messaggio
+        if (feedbackMessage != null && System.currentTimeMillis() >= feedbackClearTime) {
+            hideFeedback();
+        }
+        
+        // Renderizza il messaggio se presente
+        if (feedbackMessage != null) {
+            int textX = guiX + ENTRY_START_X + 5; // 5px di margine
+            int textY = guiY + FEEDBACK_Y_OFFSET;
+            guiGraphics.drawString(this.font, feedbackMessage, textX, textY, feedbackColor, false);
+        }
+    }
+    
+    /**
      * Aggiorna i pulsanti Buy/Sell dinamici basandosi sulle entry visibili
      */
     private void updateBuySellButtons() {
@@ -795,7 +934,9 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         
         for (int i = 0; i < visibleEntries; i++) {
             int entryIndex = scrollOffset + i;
-            if (entryIndex >= availableItems.size()) break;
+            if (entryIndex >= availableItems.size()) {
+                break;
+            }
             
             ShopEntry item = availableItems.get(entryIndex);
             int entryY = this.topPos + ENTRY_START_Y + i * ENTRY_HEIGHT;
@@ -808,9 +949,8 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
                 Component buyText = Component.translatable("gui.iska_utils.shop.buy");
                 
                 Button buyButton = Button.builder(buyText, button -> {
-                    // TODO: Implementare logica di acquisto
-                    String currencySymbol = getCurrencySymbol(item.valute);
-                    System.out.println("Buy " + item.item + " for " + item.buy + " " + currencySymbol);
+                    int multiplier = calculateMultiplier();
+                    handleBuyButtonClick(item, multiplier);
                 }).bounds(buyButtonX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
                 
                 buyButtons.add(buyButton);
@@ -825,9 +965,8 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
                 Component sellText = Component.translatable("gui.iska_utils.shop.sell");
                 
                 Button sellButton = Button.builder(sellText, button -> {
-                    // TODO: Implementare logica di vendita
-                    String currencySymbol = getCurrencySymbol(item.valute);
-                    System.out.println("Sell " + item.item + " for " + item.sell + " " + currencySymbol);
+                    int multiplier = calculateMultiplier();
+                    handleSellButtonClick(item, multiplier);
                 }).bounds(sellButtonX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
                 
                 sellButtons.add(sellButton);
@@ -864,6 +1003,128 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
             currentInstance = null;
         }
     }
+    
+    /**
+     * Gestisce il click di acquisto
+     */
+    private void handleBuyButtonClick(ShopEntry item, int multiplier) {
+        // Controlla se il giocatore è in un team
+        if (playerTeamName == null) {
+            Component message = Component.translatable("gui.iska_utils.shop.feedback.no_team");
+            showFeedback(message.getString(), 0xFF4444);
+            return;
+        }
+        
+        // Controlla i fondi prima di inviare al server
+        String valuteId = item.valute != null ? item.valute : "null_coin";
+        double currentBalance = playerTeamBalances.getOrDefault(valuteId, 0.0);
+        double totalCost = item.buy * multiplier;
+        
+        if (currentBalance < totalCost) {
+            String currencyName = getCurrencyName(valuteId);
+            showInsufficientFundsError(currencyName);
+            playButtonSound(); // Suono anche per il fallimento
+            return;
+        }
+        
+        // Nascondi il feedback se presente (successo)
+        hideFeedback();
+        
+        // Invia il packet al server
+        net.unfamily.iskautils.network.ModMessages.sendShopBuyItemPacket(item.item, multiplier);
+        
+        playButtonSound();
+    }
+    
+    /**
+     * Gestisce il click di vendita
+     */
+    private void handleSellButtonClick(ShopEntry item, int multiplier) {
+        // Controlla se il giocatore è in un team
+        if (playerTeamName == null) {
+            Component message = Component.translatable("gui.iska_utils.shop.feedback.no_team");
+            showFeedback(message.getString(), 0xFF4444);
+            return;
+        }
+        
+        // Per la vendita non possiamo facilmente controllare l'inventario dal client
+        // quindi mostriamo solo l'errore se il server ci informa del fallimento
+        // Per ora nascondiamo il feedback e inviamo al server
+        hideFeedback();
+        
+        // Invia il packet al server
+        net.unfamily.iskautils.network.ModMessages.sendShopSellItemPacket(item.item, multiplier);
+        
+        playButtonSound();
+    }
 
+    /**
+     * Metodo statico per gestire errori di transazione dal server
+     */
+    public static void handleTransactionError(String errorType, String itemId, String valuteId) {
+        if (currentInstance != null) {
+            if ("insufficient_funds".equals(errorType)) {
+                String currencyName = currentInstance.getCurrencyName(valuteId);
+                currentInstance.showInsufficientFundsError(currencyName);
+            } else if ("insufficient_items".equals(errorType)) {
+                currentInstance.showInsufficientItemsError();
+            } else if ("no_team".equals(errorType)) {
+                Component message = Component.translatable("gui.iska_utils.shop.feedback.no_team");
+                currentInstance.showFeedback(message.getString(), 0xFF4444);
+            } else {
+                Component message = Component.translatable("gui.iska_utils.shop.feedback.transaction_error");
+                currentInstance.showFeedback(message.getString(), 0xFF4444);
+            }
+        }
+    }
+    
+    /**
+     * Metodo statico per gestire il successo delle transazioni dal server
+     */
+    public static void handleTransactionSuccess() {
+        if (currentInstance != null) {
+            currentInstance.hideFeedback();
+        }
+    }
 
+    /**
+     * Renderizza testo scalato per adattarsi alla larghezza disponibile
+     */
+    private void renderScaledText(GuiGraphics guiGraphics, String text, int x, int y, int maxWidth, int color) {
+        Component textComponent = Component.literal(text);
+        int textWidth = this.font.width(textComponent);
+        
+        if (textWidth <= maxWidth) {
+            // Il testo sta già nella larghezza disponibile
+            guiGraphics.drawString(this.font, textComponent, x, y, color, false);
+        } else {
+            // Il testo è troppo lungo, dobbiamo scalarlo
+            float scale = (float) maxWidth / textWidth;
+            
+            // Applica la trasformazione di scaling
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(x, y, 0);
+            guiGraphics.pose().scale(scale, scale, 1.0f);
+            
+            // Renderizza il testo scalato alla posizione (0,0) nella matrice trasformata
+            guiGraphics.drawString(this.font, textComponent, 0, 0, color, false);
+            
+            // Ripristina la matrice
+            guiGraphics.pose().popPose();
+        }
+    }
+
+    /**
+     * Calcola il moltiplicatore basandosi sui modificatori premuti
+     * Come specificato: click normale = 1, ctrl/alt = 4, shift = 16
+     */
+    private int calculateMultiplier() {
+        if (Screen.hasShiftDown()) {
+            return 16;
+        } else if (Screen.hasControlDown() || Screen.hasAltDown()) {
+            return 4;
+        } else {
+            return 1;
+        }
+    }
 } 

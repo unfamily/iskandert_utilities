@@ -866,4 +866,66 @@ public class ModMessages {
             LOGGER.error("Could not send Structure Saver Machine save packet: {}", e.getMessage());
         }
     }
+
+    /**
+     * Sends a shop buy item packet to the server
+     */
+    public static void sendShopBuyItemPacket(String itemId, int quantity) {
+        System.out.println("DEBUG: sendShopBuyItemPacket chiamato - itemId: " + itemId + ", quantity: " + quantity);
+        
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+            
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Create and handle the packet
+                        new net.unfamily.iskautils.network.packet.ShopBuyItemC2SPacket(itemId, quantity).handle(player);
+                    }
+                } catch (Exception e) {
+                    System.err.println("DEBUG: Errore nell'invio del packet buy: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("DEBUG: Errore nel sendShopBuyItemPacket: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Sends a shop sell item packet to the server
+     */
+    public static void sendShopSellItemPacket(String itemId, int quantity) {
+        System.out.println("DEBUG: sendShopSellItemPacket chiamato - itemId: " + itemId + ", quantity: " + quantity);
+        
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+            
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Create and handle the packet
+                        new net.unfamily.iskautils.network.packet.ShopSellItemC2SPacket(itemId, quantity).handle(player);
+                    }
+                } catch (Exception e) {
+                    System.err.println("DEBUG: Errore nell'invio del packet sell: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("DEBUG: Errore nel sendShopSellItemPacket: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 } 
