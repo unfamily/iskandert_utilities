@@ -15,6 +15,8 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.WallBlock;
+import net.unfamily.iskautils.block.ShopBlock;
+import net.unfamily.iskautils.block.AutoShopBlock;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -147,6 +149,10 @@ public class ModBlocks {
     // Shop Block (allows players to buy and sell items)
     public static final DeferredBlock<ShopBlock> SHOP = BLOCKS.register("shop",
             () -> new ShopBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
+
+    // Auto Shop Block (allows automatic buying and selling of items)
+    public static final DeferredBlock<AutoShopBlock> AUTO_SHOP = BLOCKS.register("auto_shop",
+            () -> new AutoShopBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
 
     // Hellfire Igniter (creates fire when activated by redstone)
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",

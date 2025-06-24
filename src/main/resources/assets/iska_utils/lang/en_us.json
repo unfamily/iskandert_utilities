@@ -95,8 +95,10 @@
   "block.iska_utils.structure_saver_machine": "Structure Saver Machine",
   "block.iska_utils.structure_marker": "Structure Marker",
   "block.iska_utils.shop": "Shop",
+  "block.iska_utils.auto_shop": "Auto Shop",
   
   "gui.iska_utils.shop.title": "Shop",
+  "gui.iska_utils.auto_shop.title": "Auto Shop",
   "gui.iska_utils.shop.back": "Back",
   "gui.iska_utils.shop.buy": "Buy",
   "gui.iska_utils.shop.sell": "Sell",

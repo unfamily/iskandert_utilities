@@ -11,6 +11,7 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.unfamily.iskautils.item.ModItems;
 
 import java.util.Map;
 
@@ -137,6 +138,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.STRUCTURE_PLACER_MACHINE.get());
                                 pOutput.accept(ModItems.STRUCTURE_SAVER_MACHINE.get());
                                 pOutput.accept(ModItems.SHOP.get());
+                                pOutput.accept(ModItems.AUTO_SHOP.get());
                                 pOutput.accept(ModItems.STRUCTURE_PLACER.get());
                                 pOutput.accept(ModItems.BLUEPRINT.get());
                 

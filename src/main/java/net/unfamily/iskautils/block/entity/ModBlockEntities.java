@@ -20,6 +20,11 @@ import net.unfamily.iskautils.block.entity.AngelBlockEntity;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity;
 import net.unfamily.iskautils.block.entity.ShopBlockEntity;
+import net.unfamily.iskautils.block.entity.AutoShopBlockEntity;
+import net.unfamily.iskautils.block.StructurePlacerMachineBlock;
+import net.unfamily.iskautils.block.StructureSaverMachineBlock;
+import net.unfamily.iskautils.block.ShopBlock;
+import net.unfamily.iskautils.block.AutoShopBlock;
 
 import java.util.function.Supplier;
 
@@ -82,6 +87,12 @@ public class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ShopBlockEntity>> SHOP_BE =
             BLOCK_ENTITIES.register("shop",
                     () -> BlockEntityType.Builder.of(ShopBlockEntity::new, ModBlocks.SHOP.get())
+                            .build(null));
+
+    // Auto Shop Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AutoShopBlockEntity>> AUTO_SHOP_BE =
+            BLOCK_ENTITIES.register("auto_shop",
+                    () -> BlockEntityType.Builder.of(AutoShopBlockEntity::new, ModBlocks.AUTO_SHOP.get())
                             .build(null));
 
     /**

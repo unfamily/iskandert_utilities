@@ -325,6 +325,9 @@ public class ModItems {
     public static final DeferredItem<Item> SHOP = ITEMS.register("shop",
             () -> new BlockItem(ModBlocks.SHOP.get(), ITEM_PROPERTIES));
 
+    public static final DeferredItem<Item> AUTO_SHOP = ITEMS.register("auto_shop",
+            () -> new BlockItem(ModBlocks.AUTO_SHOP.get(), ITEM_PROPERTIES));
+
     public static final DeferredItem<Item> STRUCTURE_PLACER = ITEMS.register("structure_placer",
             () -> new StructurePlacerItem(new Item.Properties().stacksTo(1)));
             

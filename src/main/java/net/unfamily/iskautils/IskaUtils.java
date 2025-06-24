@@ -51,6 +51,18 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.shop.ShopLoader;
+import net.unfamily.iskautils.client.gui.StructureSaverMachineScreen;
+import net.unfamily.iskautils.client.gui.ShopScreen;
+import net.unfamily.iskautils.client.gui.AutoShopScreen;
+import net.unfamily.iskautils.client.gui.ModMenuTypes;
+import net.unfamily.iskautils.client.gui.StructurePlacerScreen;
+import net.unfamily.iskautils.client.gui.StructurePlacerMachineScreen;
+import net.unfamily.iskautils.client.gui.StructureSelectionScreen;
+import net.unfamily.iskautils.client.gui.StructureSaverMachineScreen;
+import net.unfamily.iskautils.client.gui.ShopScreen;
+import net.unfamily.iskautils.client.gui.AutoShopScreen;
+import net.unfamily.iskautils.client.gui.ShopMenu;
+import net.unfamily.iskautils.client.gui.AutoShopMenu;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)
@@ -218,6 +230,8 @@ public class IskaUtils {
                           net.unfamily.iskautils.client.gui.StructureSaverMachineScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SHOP_MENU.get(),
                           net.unfamily.iskautils.client.gui.ShopScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.AUTO_SHOP_MENU.get(),
+                          net.unfamily.iskautils.client.gui.AutoShopScreen::new);
         }
     }
 
