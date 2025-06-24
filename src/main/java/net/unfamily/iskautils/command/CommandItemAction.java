@@ -219,10 +219,11 @@ public class CommandItemAction {
                     currentState = registry.hasWorldStage(condition.getStage());
                 } else if ("player".equalsIgnoreCase(condition.getStageType())) {
                     currentState = registry.hasPlayerStage(player, condition.getStage());
+                } else if ("team".equalsIgnoreCase(condition.getStageType())) {
+                    currentState = registry.hasPlayerTeamStage(player, condition.getStage());
                 }
-                com.mojang.logging.LogUtils.getLogger().debug("  Stage[{}] {}.{}: actual={}, expected={}", 
-                    i, condition.getStageType(), condition.getStage(), 
-                    currentState, condition.shouldBeSet());
+                com.mojang.logging.LogUtils.getLogger().debug("  Stage {}: {} (type: {}, current: {})", 
+                    i, condition.getStage(), condition.getStageType(), currentState);
             }
             
             com.mojang.logging.LogUtils.getLogger().debug("Current state of stages being checked (indices {}):", conditionIndices);
@@ -234,10 +235,11 @@ public class CommandItemAction {
                         currentState = registry.hasWorldStage(condition.getStage());
                     } else if ("player".equalsIgnoreCase(condition.getStageType())) {
                         currentState = registry.hasPlayerStage(player, condition.getStage());
+                    } else if ("team".equalsIgnoreCase(condition.getStageType())) {
+                        currentState = registry.hasPlayerTeamStage(player, condition.getStage());
                     }
-                    com.mojang.logging.LogUtils.getLogger().debug("  Stage[{}] {}.{}: actual={}, expected={}, match={}", 
-                        index, condition.getStageType(), condition.getStage(), 
-                        currentState, condition.shouldBeSet(), currentState == condition.shouldBeSet());
+                    com.mojang.logging.LogUtils.getLogger().debug("  Stage[{}] {}: actual={}, expected={}, match={}", 
+                        index, condition.getStage(), currentState, condition.shouldBeSet(), currentState == condition.shouldBeSet());
                 }
             }
         }
@@ -272,9 +274,8 @@ public class CommandItemAction {
                     currentState = registry.hasWorldStage(condition.getStage());
                 } else if ("player".equalsIgnoreCase(condition.getStageType())) {
                     currentState = registry.hasPlayerStage(player, condition.getStage());
-                } else if ("dimension".equalsIgnoreCase(condition.getStageType())) {
-                    String dimensionKey = player.level().dimension().location().toString();
-                    currentState = dimensionKey.equals(condition.getStage());
+                } else if ("team".equalsIgnoreCase(condition.getStageType())) {
+                    currentState = registry.hasPlayerTeamStage(player, condition.getStage());
                 }
                 
                 // La condizione è soddisfatta se lo stato attuale corrisponde a quello atteso
@@ -319,9 +320,8 @@ public class CommandItemAction {
                     currentState = registry.hasWorldStage(condition.getStage());
                 } else if ("player".equalsIgnoreCase(condition.getStageType())) {
                     currentState = registry.hasPlayerStage(player, condition.getStage());
-                } else if ("dimension".equalsIgnoreCase(condition.getStageType())) {
-                    String dimensionKey = player.level().dimension().location().toString();
-                    currentState = dimensionKey.equals(condition.getStage());
+                } else if ("team".equalsIgnoreCase(condition.getStageType())) {
+                    currentState = registry.hasPlayerTeamStage(player, condition.getStage());
                 }
                 
                 // La condizione è soddisfatta se lo stato attuale corrisponde a quello atteso
@@ -362,9 +362,8 @@ public class CommandItemAction {
                 currentState = registry.hasWorldStage(condition.getStage());
             } else if ("player".equalsIgnoreCase(condition.getStageType())) {
                 currentState = registry.hasPlayerStage(player, condition.getStage());
-            } else if ("dimension".equalsIgnoreCase(condition.getStageType())) {
-                String dimensionKey = player.level().dimension().location().toString();
-                currentState = dimensionKey.equals(condition.getStage());
+            } else if ("team".equalsIgnoreCase(condition.getStageType())) {
+                currentState = registry.hasPlayerTeamStage(player, condition.getStage());
             }
             
             // La condizione è soddisfatta se lo stato attuale corrisponde a quello atteso

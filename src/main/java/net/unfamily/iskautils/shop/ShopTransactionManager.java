@@ -12,6 +12,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 /**
  * Manages shop transactions using team valutes
@@ -73,7 +75,7 @@ public class ShopTransactionManager {
         }
         
         // Give item to player
-        if (!giveItemToPlayer(player, itemId, entry.itemCount)) {
+        if (!giveItemToPlayer(player, entry, entry.itemCount)) {
             // Se non riusciamo a dare l'item, rimborsa i soldi
             teamManager.addTeamValutes(teamName, valuteId, totalCost);
             // Invia errore al client invece del chat
@@ -129,7 +131,7 @@ public class ShopTransactionManager {
         }
         
         // Check if player has the item and remove it
-        if (!removeItemFromPlayer(player, itemId, entry.itemCount)) {
+        if (!removeItemFromPlayer(player, entry, entry.itemCount)) {
             // Invia errore al client invece del chat
             sendTransactionErrorToClient(player, "insufficient_items", itemId, valuteId);
             return false;
@@ -179,8 +181,13 @@ public class ShopTransactionManager {
                     stageMet = (hasWorldStage == stage.is);
                     break;
                     
+                case "team":
+                    boolean hasTeamStage = registry.hasPlayerTeamStage(player, stage.stage);
+                    stageMet = (hasTeamStage == stage.is);
+                    break;
+                    
                 default:
-                    LOGGER.warn("Unknown stage type: {} for stage: {}", stage.stageType, stage.stage);
+                    LOGGER.warn("Unknown stage type: {}", stage.stageType);
                     stageMet = false;
                     break;
             }
@@ -297,32 +304,26 @@ public class ShopTransactionManager {
     /**
      * Dà un item al giocatore
      */
-    private static boolean giveItemToPlayer(ServerPlayer player, String itemId, int count) {
+    private static boolean giveItemToPlayer(ServerPlayer player, ShopEntry entry, int count) {
         try {
-            // Converti l'itemId in ItemStack
-            ResourceLocation itemResource = ResourceLocation.parse(itemId);
+            // Parsing semplice degli item
+            ResourceLocation itemResource = ResourceLocation.parse(entry.item);
             var item = BuiltInRegistries.ITEM.get(itemResource);
-            
             if (item == Items.AIR) {
-                LOGGER.warn("Item non trovato: {}", itemId);
+                LOGGER.warn("Item non trovato: {}", entry.item);
                 return false;
             }
-            
             ItemStack itemStack = new ItemStack(item, count);
             
             // Aggiungi l'item all'inventario del giocatore
             Inventory inventory = player.getInventory();
             boolean added = inventory.add(itemStack);
-            
             if (!added) {
-                // Se l'inventario è pieno, droppa l'item nel mondo
                 player.drop(itemStack, false);
-                // Rimuovo messaggio in chat - il feedback è gestito dal client
             }
-            
             return true;
         } catch (Exception e) {
-            LOGGER.error("Errore nel dare item {} al giocatore {}: {}", itemId, player.getName().getString(), e.getMessage());
+            LOGGER.error("Errore nel dare item {} al giocatore {}: {}", entry.item, player.getName().getString(), e.getMessage());
             return false;
         }
     }
@@ -330,14 +331,14 @@ public class ShopTransactionManager {
     /**
      * Rimuove un item dall'inventario del giocatore
      */
-    private static boolean removeItemFromPlayer(ServerPlayer player, String itemId, int count) {
+    private static boolean removeItemFromPlayer(ServerPlayer player, ShopEntry entry, int count) {
         try {
             // Converti l'itemId in ItemStack
-            ResourceLocation itemResource = ResourceLocation.parse(itemId);
+            ResourceLocation itemResource = ResourceLocation.parse(entry.item);
             var item = BuiltInRegistries.ITEM.get(itemResource);
             
             if (item == Items.AIR) {
-                LOGGER.warn("Item non trovato: {}", itemId);
+                LOGGER.warn("Item non trovato: {}", entry.item);
                 return false;
             }
             
@@ -373,7 +374,7 @@ public class ShopTransactionManager {
             
             return true;
         } catch (Exception e) {
-            LOGGER.error("Errore nel rimuovere item {} dal giocatore {}: {}", itemId, player.getName().getString(), e.getMessage());
+            LOGGER.error("Errore nel rimuovere item {} dal giocatore {}: {}", entry.item, player.getName().getString(), e.getMessage());
             return false;
         }
     }

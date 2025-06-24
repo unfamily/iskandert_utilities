@@ -5,6 +5,6 @@ package net.unfamily.iskautils.shop;
  */
 public class ShopStage {
     public String stage;
-    public String stageType; // "world" or "player"
+    public String stageType; // "world", "player", or "team"
     public boolean is;
 } 

@@ -693,6 +693,20 @@ public class MacroCommand {
                 LOGGER.warn("Error checking world stage status: {}", e.getMessage());
                 hasStage = false;
             }
+        } else if (requirement.getType() == StageType.TEAM) {
+            try {
+                // Try to use actual stage registry for team stages
+                hasStage = StageRegistry.playerTeamHasStage(player, requirement.getStageId());
+                
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Checking team stage '{}' for player {}: {}", 
+                        requirement.getStageId(), player.getName().getString(), hasStage);
+                }
+            } catch (Exception e) {
+                // Fallback to debug mode or if StageRegistry is not available
+                LOGGER.warn("Error checking team stage status: {}", e.getMessage());
+                hasStage = false;
+            }
         }
         
         // Check if the player has the stage or not, based on whether it's required or not
@@ -1435,6 +1449,20 @@ public class MacroCommand {
                     LOGGER.warn("Error checking world stage status: {}", e.getMessage());
                     hasStage = false;
                 }
+            } else if (requirement.getType() == StageType.TEAM) {
+                try {
+                    // Try to use actual stage registry for team stages
+                    hasStage = StageRegistry.playerTeamHasStage(player, requirement.getStageId());
+                    
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Checking team stage '{}' for player {}: {}", 
+                            requirement.getStageId(), player.getName().getString(), hasStage);
+                    }
+                } catch (Exception e) {
+                    // Fallback to debug mode or if StageRegistry is not available
+                    LOGGER.warn("Error checking team stage status: {}", e.getMessage());
+                    hasStage = false;
+                }
             }
             
             // Check if the player has the stage or not, based on whether it's required or not
@@ -1446,8 +1474,9 @@ public class MacroCommand {
      * Type of stage requirement
      */
     public enum StageType {
-        PLAYER,    // Stage related to player progression
-        WORLD;     // Stage related to world state
+        PLAYER,     // Stage related to player progression
+        WORLD,      // Stage related to world progression
+        TEAM;       // Stage related to team progression
         
         public static StageType fromString(String type) {
             try {

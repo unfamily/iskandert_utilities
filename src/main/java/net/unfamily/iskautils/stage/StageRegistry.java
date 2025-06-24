@@ -15,18 +15,20 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
+import net.unfamily.iskautils.shop.ShopTeamManager;
 import org.slf4j.Logger;
 
 import java.util.*;
 
 
 /**
- * Registry for game stages (player, world)
+ * Registry for game stages (player, world, team)
  */
 public class StageRegistry {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String PLAYER_STAGES_OBJECTIVE = "iska_player_stage";
     private static final String WORLD_STAGE_DATA_NAME = "iska_utils_world_stages";
+    private static final String TEAM_STAGE_DATA_NAME = "iska_utils_team_stages";
     
     private static StageRegistry INSTANCE;
     
@@ -84,6 +86,26 @@ public class StageRegistry {
     }
     
     /**
+     * Checks if a team has a specific stage
+     */
+    public boolean hasTeamStage(String teamName, String stage) {
+        TeamStageData data = getTeamStageData(server.getLevel(Level.OVERWORLD));
+        return data != null && data.hasTeamStage(teamName, stage);
+    }
+    
+    /**
+     * Checks if the player's team has a specific stage
+     */
+    public boolean hasPlayerTeamStage(ServerPlayer player, String stage) {
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        String teamName = teamManager.getPlayerTeam(player);
+        if (teamName == null) {
+            return false; // Player not in a team
+        }
+        return hasTeamStage(teamName, stage);
+    }
+    
+    /**
      * Gets player stage data
      */
     private PlayerStageData getPlayerStageData(ServerPlayer player) {
@@ -115,6 +137,21 @@ public class StageRegistry {
         return level.getDataStorage().computeIfAbsent(
             new SavedData.Factory<>(WorldStageData::new, WorldStageData::load),
             WORLD_STAGE_DATA_NAME
+        );
+    }
+    
+    /**
+     * Gets team stage data
+     */
+    public TeamStageData getTeamStageData(ServerLevel level) {
+        if (level == null) {
+            LOGGER.warn("Overworld not available, can't access team stages");
+            return null;
+        }
+        
+        return level.getDataStorage().computeIfAbsent(
+            new SavedData.Factory<>(TeamStageData::new, TeamStageData::load),
+            TEAM_STAGE_DATA_NAME
         );
     }
     
@@ -159,6 +196,40 @@ public class StageRegistry {
     }
     
     /**
+     * Sets a team stage
+     */
+    public boolean setTeamStage(String teamName, String stage, boolean value) {
+        TeamStageData data = getTeamStageData(server.getLevel(Level.OVERWORLD));
+        if (data == null) {
+            LOGGER.error("Failed to access team stage data");
+            return false;
+        }
+        
+        if (value) {
+            data.addTeamStage(teamName, stage);
+        } else {
+            data.removeTeamStage(teamName, stage);
+        }
+        
+        data.setDirty();
+        LOGGER.info("Set team stage '{}' to {} for team '{}'", stage, value, teamName);
+        return true;
+    }
+    
+    /**
+     * Sets a stage for the player's team
+     */
+    public boolean setPlayerTeamStage(ServerPlayer player, String stage, boolean value) {
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        String teamName = teamManager.getPlayerTeam(player);
+        if (teamName == null) {
+            LOGGER.warn("Player {} is not in a team, cannot set team stage", player.getName().getString());
+            return false;
+        }
+        return setTeamStage(teamName, stage, value);
+    }
+    
+    /**
      * Gets all player stages for a player
      */
     public List<String> getPlayerStages(ServerPlayer player) {
@@ -181,6 +252,29 @@ public class StageRegistry {
     }
     
     /**
+     * Gets all team stages for a specific team
+     */
+    public List<String> getTeamStages(String teamName) {
+        TeamStageData data = getTeamStageData(server.getLevel(Level.OVERWORLD));
+        if (data == null) {
+            return Collections.emptyList();
+        }
+        return data.getTeamStages(teamName);
+    }
+    
+    /**
+     * Gets all team stages for the player's team
+     */
+    public List<String> getPlayerTeamStages(ServerPlayer player) {
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        String teamName = teamManager.getPlayerTeam(player);
+        if (teamName == null) {
+            return Collections.emptyList();
+        }
+        return getTeamStages(teamName);
+    }
+    
+    /**
      * Gets all registered stages (across all types)
      */
     public Set<String> getAllRegisteredStages() {
@@ -188,6 +282,12 @@ public class StageRegistry {
         
         // Add world stages
         result.addAll(getWorldStages());
+        
+        // Add team stages
+        TeamStageData teamData = getTeamStageData(server.getLevel(Level.OVERWORLD));
+        if (teamData != null) {
+            result.addAll(teamData.getAllTeamStages());
+        }
         
         // Add player stages - this would require scanning all players
         // which might be expensive, so we'll skip it for now
@@ -233,6 +333,45 @@ public class StageRegistry {
         }
         
         return getInstance(server).hasWorldStage(stage);
+    }
+    
+    /**
+     * Checks if a team has a specific stage (static method for scripts)
+     * @param level The level/world
+     * @param teamName The team name
+     * @param stage The stage name
+     * @return True if the team has the stage
+     */
+    public static boolean teamHasStage(LevelAccessor level, String teamName, String stage) {
+        if (!(level instanceof ServerLevel serverLevel) || level.isClientSide()) {
+            return false;
+        }
+        
+        MinecraftServer server = serverLevel.getServer();
+        if (server == null) {
+            return false;
+        }
+        
+        return getInstance(server).hasTeamStage(teamName, stage);
+    }
+    
+    /**
+     * Checks if the player's team has a specific stage (static method for scripts)
+     * @param player The player entity
+     * @param stage The stage name
+     * @return True if the player's team has the stage
+     */
+    public static boolean playerTeamHasStage(Entity player, String stage) {
+        if (!(player instanceof ServerPlayer serverPlayer) || player.level().isClientSide()) {
+            return false;
+        }
+        
+        MinecraftServer server = ((ServerPlayer) player).getServer();
+        if (server == null) {
+            return false;
+        }
+        
+        return getInstance(server).hasPlayerTeamStage(serverPlayer, stage);
     }
     
     /**
@@ -309,6 +448,84 @@ public class StageRegistry {
         }
         
         return getInstance(server).setWorldStage(stage, false);
+    }
+    
+    /**
+     * Adds a stage to a team (static method for scripts)
+     * @param level The level/world
+     * @param teamName The team name
+     * @param stage The stage name
+     * @return True if successful
+     */
+    public static boolean addTeamStage(LevelAccessor level, String teamName, String stage) {
+        if (!(level instanceof ServerLevel serverLevel) || level.isClientSide()) {
+            return false;
+        }
+        
+        MinecraftServer server = serverLevel.getServer();
+        if (server == null) {
+            return false;
+        }
+        
+        return getInstance(server).setTeamStage(teamName, stage, true);
+    }
+    
+    /**
+     * Removes a stage from a team (static method for scripts)
+     * @param level The level/world
+     * @param teamName The team name
+     * @param stage The stage name
+     * @return True if successful
+     */
+    public static boolean removeTeamStage(LevelAccessor level, String teamName, String stage) {
+        if (!(level instanceof ServerLevel serverLevel) || level.isClientSide()) {
+            return false;
+        }
+        
+        MinecraftServer server = serverLevel.getServer();
+        if (server == null) {
+            return false;
+        }
+        
+        return getInstance(server).setTeamStage(teamName, stage, false);
+    }
+    
+    /**
+     * Adds a stage to the player's team (static method for scripts)
+     * @param player The player entity
+     * @param stage The stage name
+     * @return True if successful
+     */
+    public static boolean addPlayerTeamStage(Entity player, String stage) {
+        if (!(player instanceof ServerPlayer serverPlayer) || player.level().isClientSide()) {
+            return false;
+        }
+        
+        MinecraftServer server = ((ServerPlayer) player).getServer();
+        if (server == null) {
+            return false;
+        }
+        
+        return getInstance(server).setPlayerTeamStage(serverPlayer, stage, true);
+    }
+    
+    /**
+     * Removes a stage from the player's team (static method for scripts)
+     * @param player The player entity
+     * @param stage The stage name
+     * @return True if successful
+     */
+    public static boolean removePlayerTeamStage(Entity player, String stage) {
+        if (!(player instanceof ServerPlayer serverPlayer) || player.level().isClientSide()) {
+            return false;
+        }
+        
+        MinecraftServer server = ((ServerPlayer) player).getServer();
+        if (server == null) {
+            return false;
+        }
+        
+        return getInstance(server).setPlayerTeamStage(serverPlayer, stage, false);
     }
     
     /**
@@ -530,6 +747,120 @@ public class StageRegistry {
          */
         public List<String> getStages() {
             return new ArrayList<>(stages);
+        }
+    }
+    
+    /**
+     * Team stage data saved in world data
+     */
+    public static class TeamStageData extends SavedData {
+        private final Map<String, List<String>> teamStages = new HashMap<>();
+        
+        public TeamStageData() {
+        }
+        
+        public static TeamStageData load(CompoundTag tag, HolderLookup.Provider provider) {
+            TeamStageData data = new TeamStageData();
+            
+            if (tag.contains("team_stages")) {
+                CompoundTag teamsTag = tag.getCompound("team_stages");
+                for (String teamName : teamsTag.getAllKeys()) {
+                    ListTag stagesList = teamsTag.getList(teamName, 8); // 8 is the NBT tag type for String
+                    List<String> stages = new ArrayList<>();
+                    for (int i = 0; i < stagesList.size(); i++) {
+                        stages.add(stagesList.getString(i));
+                    }
+                    data.teamStages.put(teamName, stages);
+                }
+            }
+            
+            return data;
+        }
+        
+        @Override
+        public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
+            CompoundTag teamsTag = new CompoundTag();
+            
+            for (Map.Entry<String, List<String>> entry : teamStages.entrySet()) {
+                ListTag stagesList = new ListTag();
+                for (String stage : entry.getValue()) {
+                    stagesList.add(StringTag.valueOf(stage));
+                }
+                teamsTag.put(entry.getKey(), stagesList);
+            }
+            
+            tag.put("team_stages", teamsTag);
+            return tag;
+        }
+        
+        /**
+         * Check if a team has a specific stage
+         */
+        public boolean hasTeamStage(String teamName, String stage) {
+            List<String> stages = teamStages.get(teamName);
+            return stages != null && stages.contains(stage);
+        }
+        
+        /**
+         * Add a stage to a team
+         */
+        public void addTeamStage(String teamName, String stage) {
+            teamStages.computeIfAbsent(teamName, k -> new ArrayList<>());
+            List<String> stages = teamStages.get(teamName);
+            if (!stages.contains(stage)) {
+                stages.add(stage);
+                setDirty();
+                LOGGER.debug("[TeamStageData] Stage {} aggiunto al team {}", stage, teamName);
+            } else {
+                LOGGER.debug("[TeamStageData] Stage {} già presente per il team {}", stage, teamName);
+            }
+        }
+        
+        /**
+         * Remove a stage from a team
+         */
+        public void removeTeamStage(String teamName, String stage) {
+            List<String> stages = teamStages.get(teamName);
+            if (stages != null && stages.remove(stage)) {
+                setDirty();
+                LOGGER.debug("[TeamStageData] Stage {} rimosso dal team {}", stage, teamName);
+            }
+        }
+        
+        /**
+         * Get all stages for a specific team
+         */
+        public List<String> getTeamStages(String teamName) {
+            List<String> stages = teamStages.get(teamName);
+            return stages != null ? new ArrayList<>(stages) : new ArrayList<>();
+        }
+        
+        /**
+         * Get all team stages across all teams
+         */
+        public Set<String> getAllTeamStages() {
+            Set<String> allStages = new HashSet<>();
+            for (List<String> stages : teamStages.values()) {
+                allStages.addAll(stages);
+            }
+            return allStages;
+        }
+        
+        /**
+         * Get all teams that have stages
+         */
+        public Set<String> getAllTeams() {
+            return new HashSet<>(teamStages.keySet());
+        }
+        
+        /**
+         * Remove all stages for a team (when team is deleted)
+         */
+        public void removeTeam(String teamName) {
+            if (teamStages.remove(teamName) != null) {
+                setDirty();
+                LOGGER.debug("[TeamStageData] Rimossi tutti gli stage per il team {}", teamName);
+            }
         }
     }
 } 

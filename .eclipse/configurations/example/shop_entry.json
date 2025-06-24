@@ -1,18 +1,44 @@
 {
     "type": "shop_entry",
-    "overwritable": true, //opzionale, se non specificato è false
+    "overwritable": true,
     "entries": [
         {
             "in_category": "001_food",
             "item": "minecraft:bread",
-            "item_count": 1, //opzionale, se non specificato è 1
-            "valute": "null_coin", //opzionale se non specificato la valuta è la prima valuta disponibile
-            "buy":1.0, //opzionale, se non specificato è 0.0 (richiesto almeno uno dei due)
-            "sell":0.5, //opzionale, se non specificato è 0.0 (richiesto almeno uno dei due)
+            "item_count": 1,
+            "valute": "null_coin",
+            "buy": 1.0,
+            "sell": 0.5,
             "stages": [
-                {"stage": "obtanied_wheat", "stage_type": "world", "is": true},
+                {"stage": "obtained_wheat", "stage_type": "world", "is": true},
                 {"stage": "farmer", "stage_type": "player", "is": true},
                 {"stage": "tiered_farmer", "stage_type": "player", "is": false}
+            ]
+        },
+        {
+            "in_category": "002_tools",
+            "item": "minecraft:diamond_pickaxe",
+            "item_count": 1,
+            "valute": "null_coin",
+            "buy": 50.0,
+            "sell": 25.0,
+            "stages": [
+                {"stage": "diamond_miner", "stage_type": "player", "is": true},
+                {"stage": "advanced_mining", "stage_type": "team", "is": true}
+            ]
+        },
+        {
+            "in_category": "003_weapons",
+            "item": "minecraft:netherite_sword",
+            "nbt": "[damage=32,unbreakable={},repair_cost=4,fire_resistant={},rarity='epic',max_damage=999,minecraft:custom_name='[{text:\"tttttttt\"}]']",
+            "item_count": 1,
+            "valute": "null_coin",
+            "buy": 100.0,
+            "sell": 50.0,
+            "stages": [
+                {"stage": "nether_explorer", "stage_type": "player", "is": true},
+                {"stage": "combat_master", "stage_type": "player", "is": true},
+                {"stage": "war_team", "stage_type": "team", "is": true}
             ]
         }
     ]

@@ -271,7 +271,7 @@ public class MacroLoader {
                 "  - `DEF_OR`: Deferred evaluation where at least one per-action stage must be satisfied (OR logic)\n" +
                 "- `stages`: Array of game stages that must be unlocked to use this macro [optional]\n" +
                 "  - `{\"stage\": \"stage_id\", \"stage_type\": \"player\", \"is\": true}`: ID of a required game stage and its type\n" +
-                "    - `stage_type` can be: \"player\" (default), \"world\", or \"dimension\"\n" +
+                "    - `stage_type` can be: \"player\" (default), \"world\", or \"team\"\n" +
                 "    - `is`: Whether the stage must be present (`true`, default) or absent (`false`)\n" +
                 "- `parameters`: Array of parameter definitions for the command [optional]\n" +
                 "  - `type`: Type of parameter (`string`, `word`, `int`, `float`, `double`, `boolean`, `target`, `static`) [**required**]\n" +
@@ -302,7 +302,7 @@ public class MacroLoader {
                 "\n" +
                 "- **Player Stages**: Related to individual player progression (default type)\n" +
                 "- **World Stages**: Related to global world state or events\n" +
-                "- **Dimension Stages**: Related to specific dimensions (like Nether or End)\n" +
+                "- **Team Stages**: Related to the player's team progression\n" +
                 "\n" +
                 "You can specify the stage type using the `stage_type` field in each stage requirement.\n" +
                 "\n" +
@@ -386,8 +386,8 @@ public class MacroLoader {
                 "- Each sub-command has its own dedicated code block for maximum flexibility\n" +
                 "\n" +
                 "Additionally, you can use the `is` field to create negative requirements:\n" +
-                "- `\"is\": true` (default): The player/world/dimension MUST have the specified stage\n" +
-                "- `\"is\": false`: The player/world/dimension MUST NOT have the specified stage\n" +
+                "- `\"is\": true` (default): The player/world/team MUST have the specified stage\n" +
+                "- `\"is\": false`: The player/world/team MUST NOT have the specified stage\n" +
                 "\n" +
                 "This allows you to create conditions like \"player must have stage A but must not have stage B\".\n" +
                 "\n" +

@@ -229,7 +229,7 @@ public class CommandItemLoader {
                 "\n" +
 
                 "### Stage Condition Fields\n" +
-                "- `stage_type`: Type of stage, e.g., \"player\" or \"world\" (optional, default: \"player\")\n" +
+                "- `stage_type`: Type of stage, e.g., \"player\", \"world\", or \"team\" (optional, default: \"player\")\n" +
                 "- `stage`: Name of the stage (required)\n" +
                 "- `is`: Whether the stage should be set (true) or not set (false) (optional, default: true)\n\n" +
                 

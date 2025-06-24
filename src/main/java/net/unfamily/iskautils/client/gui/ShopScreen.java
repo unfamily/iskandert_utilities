@@ -467,6 +467,16 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
      * Renderizza una entry di item
      */
     private void renderItemEntry(GuiGraphics guiGraphics, int entryX, int entryY, ShopEntry item) {
+        // Controlla se l'item è bloccato
+        boolean isBlocked = isItemBlocked(item);
+        
+        // Se bloccato, applica overlay rosso
+        if (isBlocked) {
+            // Overlay rosso semi-trasparente
+            guiGraphics.fill(entryX, entryY, entryX + ENTRY_WIDTH, entryY + ENTRY_HEIGHT, 
+                            0x80FF0000); // Rosso con alpha
+        }
+        
         // Posizioni
         int slotX = entryX + 3; // 3 pixel dal bordo sinistro
         int slotY = entryY + 3; // 3 pixel dal bordo superiore
@@ -646,6 +656,19 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
+        
+        // Controlla se il mouse è su un'entry bloccata
+        if (!showingCategories) {
+            int entryIndex = getEntryUnderMouse(mouseX, mouseY);
+            if (entryIndex >= 0 && entryIndex < availableItems.size()) {
+                ShopEntry item = availableItems.get(entryIndex);
+                if (isItemBlocked(item)) {
+                    List<Component> tooltip = createMissingStagesTooltip(item);
+                    guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+                    return;
+                }
+            }
+        }
         
         // Renderizza i tooltip per i pulsanti Buy/Sell
         renderButtonTooltips(guiGraphics, mouseX, mouseY);
@@ -1127,5 +1150,132 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         } else {
             return 1;
         }
+    }
+
+    /**
+     * Controlla se un item ha stage mancanti
+     */
+    private List<String> getMissingStages(ShopEntry item) {
+        List<String> missingStages = new ArrayList<>();
+        
+        if (item.stages != null && this.minecraft != null && this.minecraft.player != null) {
+            try {
+                // Ottieni il server player per i controlli stage
+                net.minecraft.server.MinecraftServer server = this.minecraft.getSingleplayerServer();
+                if (server != null) {
+                    // Trova il server player corrispondente al client player
+                    net.minecraft.server.level.ServerPlayer serverPlayer = null;
+                    for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
+                        if (player.getName().getString().equals(this.minecraft.player.getName().getString())) {
+                            serverPlayer = player;
+                            break;
+                        }
+                    }
+                    
+                    if (serverPlayer != null) {
+                        // Ottieni il registry degli stage
+                        net.unfamily.iskautils.stage.StageRegistry registry = 
+                            net.unfamily.iskautils.stage.StageRegistry.getInstance(server);
+                        
+                        // Controlla ogni stage richiesto
+                        for (net.unfamily.iskautils.shop.ShopStage stage : item.stages) {
+                            boolean hasStage = false;
+                            
+                            switch (stage.stageType.toLowerCase()) {
+                                case "player":
+                                    hasStage = registry.hasPlayerStage(serverPlayer, stage.stage);
+                                    break;
+                                case "world":
+                                    hasStage = registry.hasWorldStage(stage.stage);
+                                    break;
+                                case "team":
+                                    hasStage = registry.hasPlayerTeamStage(serverPlayer, stage.stage);
+                                    break;
+                            }
+                            
+                            // Se lo stage non è presente quando dovrebbe essere, o viceversa
+                            if (hasStage != stage.is) {
+                                missingStages.add(stage.stageType + ":" + stage.stage);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Ignora errori - in caso di problemi, non mostrare stage mancanti
+            }
+        }
+        
+        return missingStages;
+    }
+    
+    /**
+     * Controlla se un item è bloccato da stage mancanti
+     */
+    private boolean isItemBlocked(ShopEntry item) {
+        return !getMissingStages(item).isEmpty();
+    }
+    
+    /**
+     * Crea il tooltip per gli stage mancanti
+     */
+    private List<Component> createMissingStagesTooltip(ShopEntry item) {
+        List<Component> tooltip = new ArrayList<>();
+        List<String> missingStages = getMissingStages(item);
+        
+        if (!missingStages.isEmpty()) {
+            // Raggruppa stage mancanti per tipo
+            Map<String, List<String>> missingByType = new HashMap<>();
+            
+            for (String missingStage : missingStages) {
+                String[] parts = missingStage.split(":", 2);
+                if (parts.length == 2) {
+                    String type = parts[0];
+                    String stage = parts[1];
+                    missingByType.computeIfAbsent(type, k -> new ArrayList<>()).add(stage);
+                }
+            }
+            
+            // Crea tooltip strutturato
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.missing_stages"));
+            tooltip.add(Component.literal(""));
+            
+            for (Map.Entry<String, List<String>> entry : missingByType.entrySet()) {
+                String type = entry.getKey();
+                List<String> stages = entry.getValue();
+                
+                String typeLabel = switch (type.toLowerCase()) {
+                    case "world" -> "World:";
+                    case "player" -> "Player:";
+                    case "team" -> "Team:";
+                    default -> type + ":";
+                };
+                
+                tooltip.add(Component.literal(typeLabel));
+                for (String stage : stages) {
+                    tooltip.add(Component.literal("  -" + stage));
+                }
+            }
+        }
+        
+        return tooltip;
+    }
+    
+    /**
+     * Ottiene l'indice dell'entry sotto il mouse
+     */
+    private int getEntryUnderMouse(int mouseX, int mouseY) {
+        int x = (this.width - this.imageWidth) / 2;
+        int y = (this.height - this.imageHeight) / 2;
+        
+        for (int i = 0; i < ENTRIES; i++) {
+            int entryX = x + ENTRY_START_X;
+            int entryY = y + ENTRY_START_Y + i * ENTRY_HEIGHT;
+            
+            if (mouseX >= entryX && mouseX < entryX + ENTRY_WIDTH &&
+                mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT) {
+                return scrollOffset + i;
+            }
+        }
+        return -1;
     }
 } 

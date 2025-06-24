@@ -109,6 +109,7 @@
   "gui.iska_utils.shop.tooltip.sell.click": "Click: Sell x1",
   "gui.iska_utils.shop.tooltip.sell.ctrl": "Ctrl/Alt: Sell x4",
   "gui.iska_utils.shop.tooltip.sell.shift": "Shift: Sell x16",
+  "gui.iska_utils.shop.tooltip.missing_stages": "Missing Stages:",
   "gui.iska_utils.shop.no_team": "Not in team",
   "gui.iska_utils.shop.feedback.insufficient_funds": "Insufficient funds: %s",
   "gui.iska_utils.shop.feedback.insufficient_items": "Insufficient items",

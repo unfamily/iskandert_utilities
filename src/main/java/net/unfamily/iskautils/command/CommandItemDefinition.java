@@ -338,10 +338,10 @@ public class CommandItemDefinition {
                 boolean hasWorldStage = registry.hasWorldStage(stageId);
                 return hasWorldStage == shouldBeSet;
                 
-            case "dimension":
-                // Check if the player is in the specified dimension
-                String dimensionKey = player.level().dimension().location().toString();
-                return dimensionKey.equals(stageId) == shouldBeSet;
+            case "team":
+                // Check if the player's team has the stage
+                boolean hasTeamStage = registry.hasPlayerTeamStage(player, stageId);
+                return hasTeamStage == shouldBeSet;
                 
             default:
                 return false;

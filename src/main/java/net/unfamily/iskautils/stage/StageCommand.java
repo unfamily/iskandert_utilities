@@ -41,18 +41,28 @@ public class StageCommand {
         COMMAND_USAGE.put("list_all", "/iska_utils_stage list all [target player]");
         COMMAND_USAGE.put("list_player", "/iska_utils_stage list player [target player]");
         COMMAND_USAGE.put("list_world", "/iska_utils_stage list world");
+        COMMAND_USAGE.put("list_team", "/iska_utils_stage list team <team_name>");
+        COMMAND_USAGE.put("list_team_player", "/iska_utils_stage list team_player [target player]");
         
         COMMAND_USAGE.put("set_player", "/iska_utils_stage set player [target player] <stage> [value=true] [silent=false]");
         COMMAND_USAGE.put("set_world", "/iska_utils_stage set world <stage> [value=true] [silent=false]");
+        COMMAND_USAGE.put("set_team", "/iska_utils_stage set team <team_name> <stage> [value=true] [silent=false]");
+        COMMAND_USAGE.put("set_team_player", "/iska_utils_stage set team_player [target player] <stage> [value=true] [silent=false]");
         
         COMMAND_USAGE.put("add_player", "/iska_utils_stage add player [target player] <stage> [silent=false]");
         COMMAND_USAGE.put("add_world", "/iska_utils_stage add world <stage> [silent=false]");
+        COMMAND_USAGE.put("add_team", "/iska_utils_stage add team <team_name> <stage> [silent=false]");
+        COMMAND_USAGE.put("add_team_player", "/iska_utils_stage add team_player [target player] <stage> [silent=false]");
         
         COMMAND_USAGE.put("remove_player", "/iska_utils_stage remove player [target player] <stage> [silent=false]");
         COMMAND_USAGE.put("remove_world", "/iska_utils_stage remove world <stage> [silent=false]");
+        COMMAND_USAGE.put("remove_team", "/iska_utils_stage remove team <team_name> <stage> [silent=false]");
+        COMMAND_USAGE.put("remove_team_player", "/iska_utils_stage remove team_player [target player] <stage> [silent=false]");
         
         COMMAND_USAGE.put("clear_player", "/iska_utils_stage clear player [target player] [silent=false]");
         COMMAND_USAGE.put("clear_world", "/iska_utils_stage clear world [silent=false]");
+        COMMAND_USAGE.put("clear_team", "/iska_utils_stage clear team <team_name> [silent=false]");
+        COMMAND_USAGE.put("clear_team_player", "/iska_utils_stage clear team_player [target player] [silent=false]");
         COMMAND_USAGE.put("clear_all", "/iska_utils_stage clear all [target player] [silent=false]");
     }
     
@@ -68,25 +78,31 @@ public class StageCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
             Commands.literal("iska_utils_stage")
-                .requires(source -> source.hasPermission(2)) // Require OP level 2
+                .requires(source -> source.hasPermission(2))
                 
                 // LIST commands
                 .then(Commands.literal("list")
                     .then(Commands.literal("all")
                         .executes(StageCommand::listAllStages)
                         .then(Commands.argument("target", EntityArgument.player())
-                        .executes(StageCommand::listAllStagesForTarget)))
+                            .executes(StageCommand::listAllStagesForTarget)))
                     .then(Commands.literal("player")
                         .executes(StageCommand::listPlayerStages)
                         .then(Commands.argument("target", EntityArgument.player())
-                        .executes(StageCommand::listPlayerStagesForTarget)))
+                            .executes(StageCommand::listPlayerStagesForTarget)))
                     .then(Commands.literal("world")
-                        .executes(StageCommand::listWorldStages)))
+                        .executes(StageCommand::listWorldStages))
+                    .then(Commands.literal("team")
+                        .then(Commands.argument("team_name", StringArgumentType.string())
+                            .executes(StageCommand::listTeamStages)))
+                    .then(Commands.literal("team_player")
+                        .executes(StageCommand::listTeamPlayerStages)
+                        .then(Commands.argument("target", EntityArgument.player())
+                            .executes(StageCommand::listTeamPlayerStagesForTarget))))
                 
-                // SET command
+                // SET commands
                 .then(Commands.literal("set")
                     .then(Commands.literal("player")
-                        // Versione con target esplicito
                         .then(Commands.argument("target", EntityArgument.player())
                             .then(Commands.argument("stage", StringArgumentType.string())
                                 .executes(ctx -> setPlayerStage(ctx, true, false))
@@ -94,89 +110,142 @@ public class StageCommand {
                                     .executes(ctx -> setPlayerStage(ctx, null, false))
                                     .then(Commands.argument("silent", BoolArgumentType.bool())
                                         .executes(ctx -> setPlayerStage(ctx, null, null))))))
-                        // Versione senza target (usa il player che esegue il comando)
                         .then(Commands.argument("stage", StringArgumentType.string())
                             .executes(ctx -> setPlayerStageForSelf(ctx, true, false))
                             .then(Commands.argument("value", BoolArgumentType.bool())
                                 .executes(ctx -> setPlayerStageForSelf(ctx, null, false))
                                 .then(Commands.argument("silent", BoolArgumentType.bool())
                                     .executes(ctx -> setPlayerStageForSelf(ctx, null, null))))))
-                    
                     .then(Commands.literal("world")
                         .then(Commands.argument("stage", StringArgumentType.string())
-                        .executes(ctx -> setWorldStage(ctx, true, false))
-                        .then(Commands.argument("value", BoolArgumentType.bool())
-                        .executes(ctx -> setWorldStage(ctx, null, false))
-                        .then(Commands.argument("silent", BoolArgumentType.bool())
-                        .executes(ctx -> setWorldStage(ctx, null, null)))))))
+                            .executes(ctx -> setWorldStage(ctx, true, false))
+                            .then(Commands.argument("value", BoolArgumentType.bool())
+                                .executes(ctx -> setWorldStage(ctx, null, false))
+                                .then(Commands.argument("silent", BoolArgumentType.bool())
+                                    .executes(ctx -> setWorldStage(ctx, null, null))))))
+                    .then(Commands.literal("team")
+                        .then(Commands.argument("team_name", StringArgumentType.string())
+                            .then(Commands.argument("stage", StringArgumentType.string())
+                                .executes(ctx -> setTeamStage(ctx, true, false))
+                                .then(Commands.argument("value", BoolArgumentType.bool())
+                                    .executes(ctx -> setTeamStage(ctx, null, false))
+                                    .then(Commands.argument("silent", BoolArgumentType.bool())
+                                        .executes(ctx -> setTeamStage(ctx, null, null)))))))
+                    .then(Commands.literal("team_player")
+                        .then(Commands.argument("target", EntityArgument.player())
+                            .then(Commands.argument("stage", StringArgumentType.string())
+                                .executes(ctx -> setTeamPlayerStage(ctx, true, false))
+                                .then(Commands.argument("value", BoolArgumentType.bool())
+                                    .executes(ctx -> setTeamPlayerStage(ctx, null, false))
+                                    .then(Commands.argument("silent", BoolArgumentType.bool())
+                                        .executes(ctx -> setTeamPlayerStage(ctx, null, null))))))
+                        .then(Commands.argument("stage", StringArgumentType.string())
+                            .executes(ctx -> setTeamPlayerStageForSelf(ctx, true, false))
+                            .then(Commands.argument("value", BoolArgumentType.bool())
+                                .executes(ctx -> setTeamPlayerStageForSelf(ctx, null, false))
+                                .then(Commands.argument("silent", BoolArgumentType.bool())
+                                    .executes(ctx -> setTeamPlayerStageForSelf(ctx, null, null)))))))
                 
-                // ADD command (alias for set with value=true)
+                // ADD commands
                 .then(Commands.literal("add")
                     .then(Commands.literal("player")
-                        // Versione con target esplicito
                         .then(Commands.argument("target", EntityArgument.player())
                             .then(Commands.argument("stage", StringArgumentType.string())
                                 .executes(ctx -> setPlayerStage(ctx, true, false))
                                 .then(Commands.argument("silent", BoolArgumentType.bool())
                                     .executes(ctx -> setPlayerStage(ctx, true, null)))))
-                        // Versione senza target (usa il player che esegue il comando)
                         .then(Commands.argument("stage", StringArgumentType.string())
                             .executes(ctx -> setPlayerStageForSelf(ctx, true, false))
                             .then(Commands.argument("silent", BoolArgumentType.bool())
                                 .executes(ctx -> setPlayerStageForSelf(ctx, true, null)))))
-                    
                     .then(Commands.literal("world")
                         .then(Commands.argument("stage", StringArgumentType.string())
-                        .executes(ctx -> setWorldStage(ctx, true, false))
-                        .then(Commands.argument("silent", BoolArgumentType.bool())
-                        .executes(ctx -> setWorldStage(ctx, true, null))))))
+                            .executes(ctx -> setWorldStage(ctx, true, false))
+                            .then(Commands.argument("silent", BoolArgumentType.bool())
+                                .executes(ctx -> setWorldStage(ctx, true, null)))))
+                    .then(Commands.literal("team")
+                        .then(Commands.argument("team_name", StringArgumentType.string())
+                            .then(Commands.argument("stage", StringArgumentType.string())
+                                .executes(ctx -> setTeamStage(ctx, true, false))
+                                .then(Commands.argument("silent", BoolArgumentType.bool())
+                                    .executes(ctx -> setTeamStage(ctx, true, null))))))
+                    .then(Commands.literal("team_player")
+                        .then(Commands.argument("target", EntityArgument.player())
+                            .then(Commands.argument("stage", StringArgumentType.string())
+                                .executes(ctx -> setTeamPlayerStage(ctx, true, false))
+                                .then(Commands.argument("silent", BoolArgumentType.bool())
+                                    .executes(ctx -> setTeamPlayerStage(ctx, true, null)))))
+                        .then(Commands.argument("stage", StringArgumentType.string())
+                            .executes(ctx -> setTeamPlayerStageForSelf(ctx, true, false))
+                            .then(Commands.argument("silent", BoolArgumentType.bool())
+                                .executes(ctx -> setTeamPlayerStageForSelf(ctx, true, null))))))
                 
-                // REMOVE command (alias for set with value=false)
+                // REMOVE commands
                 .then(Commands.literal("remove")
                     .then(Commands.literal("player")
-                        // Versione con target esplicito
                         .then(Commands.argument("target", EntityArgument.player())
                             .then(Commands.argument("stage", StringArgumentType.string())
                                 .executes(ctx -> setPlayerStage(ctx, false, false))
                                 .then(Commands.argument("silent", BoolArgumentType.bool())
                                     .executes(ctx -> setPlayerStage(ctx, false, null)))))
-                        // Versione senza target (usa il player che esegue il comando)
                         .then(Commands.argument("stage", StringArgumentType.string())
                             .executes(ctx -> setPlayerStageForSelf(ctx, false, false))
                             .then(Commands.argument("silent", BoolArgumentType.bool())
                                 .executes(ctx -> setPlayerStageForSelf(ctx, false, null)))))
-                    
                     .then(Commands.literal("world")
                         .then(Commands.argument("stage", StringArgumentType.string())
-                        .executes(ctx -> setWorldStage(ctx, false, false))
-                        .then(Commands.argument("silent", BoolArgumentType.bool())
-                        .executes(ctx -> setWorldStage(ctx, false, null))))))
+                            .executes(ctx -> setWorldStage(ctx, false, false))
+                            .then(Commands.argument("silent", BoolArgumentType.bool())
+                                .executes(ctx -> setWorldStage(ctx, false, null)))))
+                    .then(Commands.literal("team")
+                        .then(Commands.argument("team_name", StringArgumentType.string())
+                            .then(Commands.argument("stage", StringArgumentType.string())
+                                .executes(ctx -> setTeamStage(ctx, false, false))
+                                .then(Commands.argument("silent", BoolArgumentType.bool())
+                                    .executes(ctx -> setTeamStage(ctx, false, null))))))
+                    .then(Commands.literal("team_player")
+                        .then(Commands.argument("target", EntityArgument.player())
+                            .then(Commands.argument("stage", StringArgumentType.string())
+                                .executes(ctx -> setTeamPlayerStage(ctx, false, false))
+                                .then(Commands.argument("silent", BoolArgumentType.bool())
+                                    .executes(ctx -> setTeamPlayerStage(ctx, false, null)))))
+                        .then(Commands.argument("stage", StringArgumentType.string())
+                            .executes(ctx -> setTeamPlayerStageForSelf(ctx, false, false))
+                            .then(Commands.argument("silent", BoolArgumentType.bool())
+                                .executes(ctx -> setTeamPlayerStageForSelf(ctx, false, null))))))
                 
-                // CLEAR command (removes all stages)
+                // CLEAR commands
                 .then(Commands.literal("clear")
                     .then(Commands.literal("player")
-                        // Versione con target esplicito
                         .then(Commands.argument("target", EntityArgument.player())
                             .executes(ctx -> clearPlayerStages(ctx, false))
                             .then(Commands.argument("silent", BoolArgumentType.bool())
                                 .executes(ctx -> clearPlayerStages(ctx, null))))
-                        // Versione senza target (usa il player che esegue il comando)
                         .executes(ctx -> clearPlayerStagesForSelf(ctx, false))
                         .then(Commands.argument("silent", BoolArgumentType.bool())
                             .executes(ctx -> clearPlayerStagesForSelf(ctx, null))))
-                    
                     .then(Commands.literal("world")
                         .executes(ctx -> clearWorldStages(ctx, false))
                         .then(Commands.argument("silent", BoolArgumentType.bool())
-                        .executes(ctx -> clearWorldStages(ctx, null))))
-                    
+                            .executes(ctx -> clearWorldStages(ctx, null))))
+                    .then(Commands.literal("team")
+                        .then(Commands.argument("team_name", StringArgumentType.string())
+                            .executes(ctx -> clearTeamStages(ctx, false))
+                            .then(Commands.argument("silent", BoolArgumentType.bool())
+                                .executes(ctx -> clearTeamStages(ctx, null)))))
+                    .then(Commands.literal("team_player")
+                        .then(Commands.argument("target", EntityArgument.player())
+                            .executes(ctx -> clearTeamPlayerStages(ctx, false))
+                            .then(Commands.argument("silent", BoolArgumentType.bool())
+                                .executes(ctx -> clearTeamPlayerStages(ctx, null))))
+                        .executes(ctx -> clearTeamPlayerStagesForSelf(ctx, false))
+                        .then(Commands.argument("silent", BoolArgumentType.bool())
+                            .executes(ctx -> clearTeamPlayerStagesForSelf(ctx, null))))
                     .then(Commands.literal("all")
-                        // Versione con target esplicito
                         .then(Commands.argument("target", EntityArgument.player())
                             .executes(ctx -> clearAllStages(ctx, false))
                             .then(Commands.argument("silent", BoolArgumentType.bool())
                                 .executes(ctx -> clearAllStages(ctx, null))))
-                        // Versione senza target (usa il player che esegue il comando)
                         .executes(ctx -> clearAllStagesForSelf(ctx, false))
                         .then(Commands.argument("silent", BoolArgumentType.bool())
                             .executes(ctx -> clearAllStagesForSelf(ctx, null)))))
@@ -334,6 +403,84 @@ public class StageCommand {
         } catch (Exception e) {
             LOGGER.error("Error in listWorldStages command", e);
             sendUsage(context.getSource(), "list_world");
+            return 0;
+        }
+    }
+    
+    /**
+     * Lists team stages for a specific team
+     */
+    private static int listTeamStages(CommandContext<CommandSourceStack> context) {
+        try {
+            CommandSourceStack source = context.getSource();
+            StageRegistry registry = StageRegistry.getInstance(source.getServer());
+            
+            // Get the team name
+            String teamName = StringArgumentType.getString(context, "team_name");
+            
+            source.sendSuccess(() -> Component.literal("§6===== Team Stages for " + teamName + " ====="), false);
+            
+            List<String> teamStages = registry.getTeamStages(teamName);
+            String teamStagesText = teamStages.isEmpty() ? "§7(none)" : "§b" + String.join(", ", teamStages);
+            source.sendSuccess(() -> Component.literal("§bTeam Stages: " + teamStagesText), false);
+            
+            return 1;
+        } catch (Exception e) {
+            LOGGER.error("Error in listTeamStages command", e);
+            sendUsage(context.getSource(), "list_team");
+            return 0;
+        }
+    }
+    
+    /**
+     * Lists team stages for the player executing the command
+     */
+    private static int listTeamPlayerStages(CommandContext<CommandSourceStack> context) {
+        try {
+            CommandSourceStack source = context.getSource();
+            StageRegistry registry = StageRegistry.getInstance(source.getServer());
+            
+            source.sendSuccess(() -> Component.literal("§6===== Team Player Stages ====="), false);
+            
+            try {
+                ServerPlayer player = source.getPlayerOrException();
+                List<String> teamPlayerStages = registry.getPlayerTeamStages(player);
+                String teamPlayerStagesText = teamPlayerStages.isEmpty() ? "§7(none)" : "§b" + String.join(", ", teamPlayerStages);
+                source.sendSuccess(() -> Component.literal("§bTeam Player Stages (for you): " + teamPlayerStagesText), false);
+            } catch (CommandSyntaxException e) {
+                source.sendSuccess(() -> Component.literal("§7(Run as player to see your team stages)"), false);
+            }
+            
+            return 1;
+        } catch (Exception e) {
+            LOGGER.error("Error in listTeamPlayerStages command", e);
+            sendUsage(context.getSource(), "list_team_player");
+            return 0;
+        }
+    }
+    
+    /**
+     * Lists team stages for a specific target player
+     */
+    private static int listTeamPlayerStagesForTarget(CommandContext<CommandSourceStack> context) {
+        try {
+            CommandSourceStack source = context.getSource();
+            StageRegistry registry = StageRegistry.getInstance(source.getServer());
+            
+            // Get the target player
+            ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "target");
+            String playerName = targetPlayer.getName().getString();
+            
+            source.sendSuccess(() -> Component.literal("§6===== Team Player Stages for " + playerName + " ====="), false);
+            
+            List<String> teamPlayerStages = registry.getPlayerTeamStages(targetPlayer);
+            String teamPlayerStagesText = teamPlayerStages.isEmpty() ? "§7(none)" : "§b" + String.join(", ", teamPlayerStages);
+            source.sendSuccess(() -> Component.literal("§bTeam Player Stages: " + teamPlayerStagesText), false);
+            
+            return 1;
+        } catch (CommandSyntaxException e) {
+            LOGGER.error("Error in listTeamPlayerStagesForTarget command", e);
+            sendUsage(context.getSource(), "list_team_player");
             return 0;
         }
     }
@@ -672,6 +819,228 @@ public class StageCommand {
         } catch (Exception e) {
             LOGGER.error("Error in clearAllStagesForSelf command", e);
             sendUsage(context.getSource(), "clear_all");
+            return 0;
+        }
+    }
+    
+    /**
+     * Sets a team stage
+     */
+    private static int setTeamStage(CommandContext<CommandSourceStack> context, Boolean valueOverride, Boolean silentOverride) {
+        try {
+            CommandSourceStack source = context.getSource();
+            StageRegistry registry = StageRegistry.getInstance(source.getServer());
+            
+            // Get command arguments
+            String teamName = StringArgumentType.getString(context, "team_name");
+            String stage = StringArgumentType.getString(context, "stage");
+            
+            // Get optional arguments or use defaults
+            boolean value = valueOverride != null 
+                ? valueOverride 
+                : BoolArgumentType.getBool(context, "value");
+                
+            boolean silent = silentOverride != null
+                ? silentOverride
+                : context.getArgument("silent", Boolean.class);
+            
+            // Set the stage
+            boolean success = registry.setTeamStage(teamName, stage, value);
+            
+            if (success && !silent) {
+                Component message = value 
+                    ? Component.literal("Added stage §a" + stage + "§r to team §b" + teamName)
+                    : Component.literal("Removed stage §c" + stage + "§r from team §b" + teamName);
+                    
+                source.sendSuccess(() -> message, true);
+            }
+            
+            return success ? 1 : 0;
+        } catch (Exception e) {
+            LOGGER.error("Error in setTeamStage command", e);
+            sendUsage(context.getSource(), valueOverride == null ? "set_team" : (valueOverride ? "add_team" : "remove_team"));
+            return 0;
+        }
+    }
+    
+    /**
+     * Sets a team player stage for a specific target player
+     */
+    private static int setTeamPlayerStage(CommandContext<CommandSourceStack> context, Boolean valueOverride, Boolean silentOverride) {
+        try {
+            CommandSourceStack source = context.getSource();
+            StageRegistry registry = StageRegistry.getInstance(source.getServer());
+            
+            // Get command arguments
+            ServerPlayer player = EntityArgument.getPlayer(context, "target");
+            String stage = StringArgumentType.getString(context, "stage");
+            
+            // Get optional arguments or use defaults
+            boolean value = valueOverride != null 
+                ? valueOverride 
+                : BoolArgumentType.getBool(context, "value");
+                
+            boolean silent = silentOverride != null
+                ? silentOverride
+                : context.getArgument("silent", Boolean.class);
+            
+            // Set the stage
+            boolean success = registry.setPlayerTeamStage(player, stage, value);
+            
+            if (success && !silent) {
+                Component message = value 
+                    ? Component.literal("Added team stage §a" + stage + "§r to player §e" + player.getName().getString())
+                    : Component.literal("Removed team stage §c" + stage + "§r from player §e" + player.getName().getString());
+                    
+                source.sendSuccess(() -> message, true);
+                
+                // Also notify the target player
+                Component playerMessage = value 
+                    ? Component.literal("§aYour team gained the stage: §e" + stage)
+                    : Component.literal("§cYour team lost the stage: §e" + stage);
+                    
+                player.sendSystemMessage(playerMessage);
+            }
+            
+            return success ? 1 : 0;
+        } catch (CommandSyntaxException e) {
+            LOGGER.error("Error in setTeamPlayerStage command", e);
+            sendUsage(context.getSource(), valueOverride == null ? "set_team_player" : (valueOverride ? "add_team_player" : "remove_team_player"));
+            return 0;
+        }
+    }
+    
+    /**
+     * Sets a team player stage for the player executing the command
+     */
+    private static int setTeamPlayerStageForSelf(CommandContext<CommandSourceStack> context, Boolean valueOverride, Boolean silentOverride) {
+        try {
+            CommandSourceStack source = context.getSource();
+            
+            // Ottieni il giocatore che esegue il comando
+            ServerPlayer player = source.getPlayerOrException();
+            
+            // Get command arguments
+            String stage = StringArgumentType.getString(context, "stage");
+            
+            // Get optional arguments or use defaults
+            boolean value = valueOverride != null 
+                ? valueOverride 
+                : BoolArgumentType.getBool(context, "value");
+                
+            boolean silent = silentOverride != null
+                ? silentOverride
+                : context.getArgument("silent", Boolean.class);
+            
+            // Imposta lo stage usando il registry
+            StageRegistry registry = StageRegistry.getInstance(source.getServer());
+            boolean success = registry.setPlayerTeamStage(player, stage, value);
+            
+            if (success && !silent) {
+                Component message = value 
+                    ? Component.literal("Added team stage §a" + stage + "§r to you")
+                    : Component.literal("Removed team stage §c" + stage + "§r from you");
+                    
+                source.sendSuccess(() -> message, true);
+                
+                // Also notify the player
+                Component playerMessage = value 
+                    ? Component.literal("§aYour team gained the stage: §e" + stage)
+                    : Component.literal("§cYour team lost the stage: §e" + stage);
+                    
+                player.sendSystemMessage(playerMessage);
+            }
+            
+            return success ? 1 : 0;
+        } catch (CommandSyntaxException e) {
+            LOGGER.error("Error executing command: {}", e.getMessage());
+            context.getSource().sendFailure(Component.literal("§cThis command must be executed by a player"));
+            return 0;
+        } catch (Exception e) {
+            LOGGER.error("Error in setTeamPlayerStageForSelf command", e);
+            sendUsage(context.getSource(), valueOverride == null ? "set_team_player" : (valueOverride ? "add_team_player" : "remove_team_player"));
+            return 0;
+        }
+    }
+
+    /**
+     * Cancella tutti gli stage di un team specifico
+     */
+    private static int clearTeamStages(CommandContext<CommandSourceStack> context, Boolean silentOverride) {
+        try {
+            CommandSourceStack source = context.getSource();
+            StageRegistry registry = StageRegistry.getInstance(source.getServer());
+            String teamName = StringArgumentType.getString(context, "team_name");
+            List<String> teamStages = registry.getTeamStages(teamName);
+            int stageCount = teamStages.size();
+            for (String stage : teamStages) {
+                registry.setTeamStage(teamName, stage, false);
+            }
+            boolean silent = silentOverride != null ? silentOverride : false;
+            if (!silent) {
+                String feedback = "§aCleared " + stageCount + " team stages for " + teamName;
+                source.sendSuccess(() -> Component.literal(feedback), true);
+            }
+            return stageCount;
+        } catch (Exception e) {
+            LOGGER.error("Error in clearTeamStages command", e);
+            sendUsage(context.getSource(), "clear_team");
+            return 0;
+        }
+    }
+
+    /**
+     * Cancella tutti gli stage del team di un player specifico
+     */
+    private static int clearTeamPlayerStages(CommandContext<CommandSourceStack> context, Boolean silentOverride) {
+        try {
+            CommandSourceStack source = context.getSource();
+            StageRegistry registry = StageRegistry.getInstance(source.getServer());
+            ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "target");
+            List<String> teamStages = registry.getPlayerTeamStages(targetPlayer);
+            int stageCount = teamStages.size();
+            for (String stage : teamStages) {
+                registry.setPlayerTeamStage(targetPlayer, stage, false);
+            }
+            boolean silent = silentOverride != null ? silentOverride : false;
+            if (!silent) {
+                String feedback = "§aCleared " + stageCount + " team stages for player " + targetPlayer.getName().getString();
+                source.sendSuccess(() -> Component.literal(feedback), true);
+            }
+            return stageCount;
+        } catch (CommandSyntaxException e) {
+            LOGGER.error("Error in clearTeamPlayerStages command", e);
+            sendUsage(context.getSource(), "clear_team_player");
+            return 0;
+        }
+    }
+
+    /**
+     * Cancella tutti gli stage del team del player che esegue il comando
+     */
+    private static int clearTeamPlayerStagesForSelf(CommandContext<CommandSourceStack> context, Boolean silentOverride) {
+        try {
+            CommandSourceStack source = context.getSource();
+            ServerPlayer player = source.getPlayerOrException();
+            StageRegistry registry = StageRegistry.getInstance(source.getServer());
+            List<String> teamStages = registry.getPlayerTeamStages(player);
+            int stageCount = teamStages.size();
+            for (String stage : teamStages) {
+                registry.setPlayerTeamStage(player, stage, false);
+            }
+            boolean silent = silentOverride != null ? silentOverride : false;
+            if (!silent) {
+                String feedback = "§aCleared " + stageCount + " team stages for you";
+                source.sendSuccess(() -> Component.literal(feedback), true);
+            }
+            return stageCount;
+        } catch (CommandSyntaxException e) {
+            LOGGER.error("Error executing command: {}", e.getMessage());
+            context.getSource().sendFailure(Component.literal("§cThis command must be executed by a player"));
+            return 0;
+        } catch (Exception e) {
+            LOGGER.error("Error in clearTeamPlayerStagesForSelf command", e);
+            sendUsage(context.getSource(), "clear_team_player");
             return 0;
         }
     }

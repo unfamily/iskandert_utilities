@@ -203,6 +203,8 @@ public class StageItemHandler {
             return StageRegistry.playerHasStage(player, condition.stage);
         } else if ("world".equals(condition.stageType)) {
             return StageRegistry.worldHasStage(level, condition.stage);
+        } else if ("team".equals(condition.stageType)) {
+            return StageRegistry.playerTeamHasStage(player, condition.stage);
         }
         return false;
     }
