@@ -771,6 +771,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
             return;
         }
         
+        
         int lineIndex = 0;
         for (ShopValute valute : availableValutes.values()) {
             int textY = startY + lineIndex * 10; // 10px di spaziatura tra le righe
