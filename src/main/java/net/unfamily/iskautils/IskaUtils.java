@@ -32,7 +32,6 @@ import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
-import net.unfamily.iskautils.item.custom.ScannerItem;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ModWoodTypes;
@@ -51,18 +50,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.shop.ShopLoader;
-import net.unfamily.iskautils.client.gui.StructureSaverMachineScreen;
-import net.unfamily.iskautils.client.gui.ShopScreen;
-import net.unfamily.iskautils.client.gui.AutoShopScreen;
-import net.unfamily.iskautils.client.gui.ModMenuTypes;
-import net.unfamily.iskautils.client.gui.StructurePlacerScreen;
-import net.unfamily.iskautils.client.gui.StructurePlacerMachineScreen;
-import net.unfamily.iskautils.client.gui.StructureSelectionScreen;
-import net.unfamily.iskautils.client.gui.StructureSaverMachineScreen;
-import net.unfamily.iskautils.client.gui.ShopScreen;
-import net.unfamily.iskautils.client.gui.AutoShopScreen;
-import net.unfamily.iskautils.client.gui.ShopMenu;
-import net.unfamily.iskautils.client.gui.AutoShopMenu;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)

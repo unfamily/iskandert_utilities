@@ -48,6 +48,10 @@ public class ShopCommand {
                     
                     try {
                         ShopLoader.reloadAllConfigurations();
+                        
+                        // Notifica le GUI client del reload
+                        notifyClientGUIReload();
+                        
                         source.sendSuccess(() -> Component.literal("Shop system reloaded successfully!"), false);
                         return 1;
                     } catch (Exception e) {
@@ -169,6 +173,23 @@ public class ShopCommand {
         
         if (!found) {
             source.sendSuccess(() -> Component.literal("No entries found for category: " + categoryId), false);
+        }
+    }
+    
+    /**
+     * Notifica le GUI client del reload (eseguito su client)
+     */
+    private static void notifyClientGUIReload() {
+        try {
+            // Questo viene eseguito su server, ma deve notificare il client
+            // Su server integrato (single player), possiamo chiamare direttamente le GUI
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                net.unfamily.iskautils.client.gui.ShopScreen.notifyReload();
+                net.unfamily.iskautils.client.gui.AutoShopScreen.notifyReload();
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+            LOGGER.debug("Could not notify client GUI reload (dedicated server): {}", e.getMessage());
         }
     }
 } 

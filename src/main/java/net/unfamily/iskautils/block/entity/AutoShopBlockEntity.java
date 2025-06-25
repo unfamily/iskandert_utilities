@@ -35,14 +35,22 @@ public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
         
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            // TODO: Implementare validazione basata su configurazione shop
             return true;
+        }
+    };
+    
+    // Slot custom per la funzione encapsulated (1 slot)
+    private final ItemStackHandler encapsulatedSlot = new ItemStackHandler(1) {
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
         }
     };
     
     // Stato del negozio (semplificato)
     private boolean isActive = false;
     private String currentCategory = "000_default";
+    private String selectedValute = "unset"; // Valuta selezionata, default a "unset"
     
     public AutoShopBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.AUTO_SHOP_BE.get(), pos, blockState);
@@ -59,21 +67,55 @@ public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
     }
     
     @Override
-    protected void saveAdditional(CompoundTag nbt, HolderLookup.Provider provider) {
-        super.saveAdditional(nbt, provider);
-        
-        // Salva solo i dati essenziali
-        nbt.putBoolean("isActive", this.isActive);
-        nbt.putString("currentCategory", this.currentCategory);
+    public void onDataPacket(net.minecraft.network.Connection net, net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider lookupProvider) {
+        super.onDataPacket(net, pkt, lookupProvider);
+        if (pkt.getTag() != null) {
+            loadAdditional(pkt.getTag(), lookupProvider);
+        }
     }
     
     @Override
-    protected void loadAdditional(CompoundTag nbt, HolderLookup.Provider provider) {
-        super.loadAdditional(nbt, provider);
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         
-        // Carica solo i dati essenziali
-        this.isActive = nbt.getBoolean("isActive");
-        this.currentCategory = nbt.getString("currentCategory");
+        // Salva item handler
+        tag.put("inventory", itemHandler.serializeNBT(registries));
+        
+        // Salva encapsulated slot
+        tag.put("encapsulatedSlot", encapsulatedSlot.serializeNBT(registries));
+        
+        // Salva stato del negozio
+        CompoundTag shopData = new CompoundTag();
+        shopData.putBoolean("isActive", isActive);
+        shopData.putString("currentCategory", currentCategory);
+        shopData.putString("selectedValute", selectedValute);
+        tag.put("shopData", shopData);
+    }
+    
+    @Override
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        
+        // Carica item handler
+        if (tag.contains("inventory")) {
+            itemHandler.deserializeNBT(registries, tag.getCompound("inventory"));
+        }
+        
+        // Carica encapsulated slot
+        if (tag.contains("encapsulatedSlot")) {
+            encapsulatedSlot.deserializeNBT(registries, tag.getCompound("encapsulatedSlot"));
+        }
+        
+        // Carica stato del negozio
+        if (tag.contains("shopData")) {
+            CompoundTag shopData = tag.getCompound("shopData");
+            this.isActive = shopData.getBoolean("isActive");
+            this.currentCategory = shopData.getString("currentCategory");
+            this.selectedValute = shopData.getString("selectedValute");
+            if (this.selectedValute.isEmpty()) {
+                this.selectedValute = "unset"; // Fallback se vuoto
+            }
+        }
     }
     
     @Override
@@ -105,6 +147,19 @@ public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
     
     public void setCurrentCategory(String category) {
         this.currentCategory = category;
+        setChanged();
+    }
+    
+    public ItemStackHandler getEncapsulatedSlot() {
+        return encapsulatedSlot;
+    }
+    
+    public String getSelectedValute() {
+        return this.selectedValute;
+    }
+    
+    public void setSelectedValute(String valute) {
+        this.selectedValute = valute != null ? valute : "unset";
         setChanged();
     }
     

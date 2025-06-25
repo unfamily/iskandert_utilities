@@ -15,11 +15,13 @@ import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopValute;
+import net.unfamily.iskautils.shop.ItemConverter;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
+public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
     private static final ResourceLocation ENTRY_TEXTURE =
@@ -72,7 +74,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     // Modalità della GUI
     private boolean showingCategories = true; // true = mostra categorie, false = mostra item
     private String currentCategoryId = null;
-    private String currentCategoryName = "Shop";
+    protected String currentCategoryName = "Shop";
     
     // Dati del shop
     private List<ShopCategory> availableCategories = new ArrayList<>();
@@ -89,6 +91,15 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     private Map<String, Double> playerTeamBalances = new HashMap<>();
     private static ShopScreen currentInstance = null; // Per il callback statico
     
+    /**
+     * Notifica tutte le istanze aperte di ShopScreen di ricaricare i dati
+     */
+    public static void notifyReload() {
+        if (currentInstance != null) {
+            currentInstance.reloadShopData();
+        }
+    }
+    
     // Area di feedback per messaggi di errore/successo
     private String feedbackMessage = null;
     private int feedbackColor = 0xFFFFFF;
@@ -99,7 +110,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     private static final int FIFTH_ENTRY_END = ENTRY_START_Y + (ENTRIES * ENTRY_HEIGHT); // Fine quinta entry (Y=140)
     private static final int FEEDBACK_Y_OFFSET = FIFTH_ENTRY_END + ((INVENTORY_Y - FIFTH_ENTRY_END) / 2) - 4; // Centrato (Y=147-4=143)
 
-    public ShopScreen(ShopMenu menu, Inventory playerInventory, Component title) {
+    public ShopScreen(AbstractContainerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = GUI_WIDTH;
         this.imageHeight = GUI_HEIGHT;
@@ -395,6 +406,17 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     }
     
     /**
+     * Ricarica i dati del shop (per reload del sistema)
+     */
+    public void reloadShopData() {
+        loadShopData();
+        
+        // Aggiorna i pulsanti
+        updateBackButtonState();
+        updateBuySellButtons();
+    }
+    
+    /**
      * Carica i dati del shop dal sistema
      */
     private void loadShopData() {
@@ -486,7 +508,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         // Disegna lo slot (18x18)
         guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
         
-        // Ottieni l'ItemStack per l'item
+        // Ottieni l'ItemStack per l'item (supporta data components inline)
         ItemStack itemStack = getItemStackFromString(item.item);
         if (!itemStack.isEmpty()) {
             itemStack.setCount(item.itemCount);
@@ -514,27 +536,17 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     }
     
     /**
-     * Converte una stringa item ID in ItemStack
+     * Converte una stringa item ID in ItemStack utilizzando il nuovo sistema 1.21.1
      */
     private ItemStack getItemStackFromString(String itemId) {
-        try {
-            ResourceLocation itemResource = ResourceLocation.parse(itemId);
-            var item = BuiltInRegistries.ITEM.get(itemResource);
-            if (item != Items.AIR) {
-                return new ItemStack(item);
-            }
-        } catch (Exception e) {
-            // Fallback su stone se l'item non è valido
-        }
-        return new ItemStack(Items.STONE);
+        return ItemConverter.parseItemString(itemId, 1);
     }
     
     /**
      * Ottiene il nome display di un item
      */
     private String getItemDisplayName(String itemId) {
-        ItemStack stack = getItemStackFromString(itemId);
-        return stack.getHoverName().getString();
+        return ItemConverter.getItemDisplayName(itemId);
     }
     
     /**

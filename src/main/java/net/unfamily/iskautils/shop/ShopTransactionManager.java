@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskautils.shop.ItemConverter;
 import org.slf4j.Logger;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Inventory;
@@ -302,18 +303,17 @@ public class ShopTransactionManager {
     }
     
     /**
-     * Dà un item al giocatore
+     * Dà un item al giocatore utilizzando il nuovo sistema di parsing 1.21.1
      */
     private static boolean giveItemToPlayer(ServerPlayer player, ShopEntry entry, int count) {
         try {
-            // Parsing semplice degli item
-            ResourceLocation itemResource = ResourceLocation.parse(entry.item);
-            var item = BuiltInRegistries.ITEM.get(itemResource);
-            if (item == Items.AIR) {
-                LOGGER.warn("Item non trovato: {}", entry.item);
+            // Usa il nuovo sistema di parsing che supporta data components
+            ItemStack itemStack = ItemConverter.parseItemString(entry.item, count);
+            
+            if (itemStack.isEmpty()) {
+                LOGGER.warn("Impossibile parsare l'item: {}", entry.item);
                 return false;
             }
-            ItemStack itemStack = new ItemStack(item, count);
             
             // Aggiungi l'item all'inventario del giocatore
             Inventory inventory = player.getInventory();
@@ -330,15 +330,18 @@ public class ShopTransactionManager {
     
     /**
      * Rimuove un item dall'inventario del giocatore
+     * Nota: Per la vendita, confronta solo il tipo base dell'item (senza data components)
+     * per permettere di vendere qualsiasi versione dell'item
      */
     private static boolean removeItemFromPlayer(ServerPlayer player, ShopEntry entry, int count) {
         try {
-            // Converti l'itemId in ItemStack
-            ResourceLocation itemResource = ResourceLocation.parse(entry.item);
+            // Per la vendita, usa solo l'ID base dell'item senza components
+            String baseItemId = extractBaseItemId(entry.item);
+            ResourceLocation itemResource = ResourceLocation.parse(baseItemId);
             var item = BuiltInRegistries.ITEM.get(itemResource);
             
             if (item == Items.AIR) {
-                LOGGER.warn("Item non trovato: {}", entry.item);
+                LOGGER.warn("Item non trovato: {}", baseItemId);
                 return false;
             }
             
@@ -404,17 +407,34 @@ public class ShopTransactionManager {
     
     /**
      * Trova una ShopEntry per itemId, indipendentemente dalla categoria
+     * Confronta usando l'ID base dell'item (senza data components)
      */
     private static ShopEntry findEntryByItemId(String itemId) {
         Map<String, ShopEntry> allEntries = ShopLoader.getEntries();
+        String baseItemId = extractBaseItemId(itemId);
         
         for (ShopEntry entry : allEntries.values()) {
-            if (itemId.equals(entry.item)) {
+            String entryBaseItemId = extractBaseItemId(entry.item);
+            if (baseItemId.equals(entryBaseItemId)) {
                 return entry;
             }
         }
         
         return null; // Item non trovato
+    }
+    
+    /**
+     * Estrae l'ID base di un item rimuovendo i data components
+     * Es: "minecraft:diamond_sword[enchantments={...}]" -> "minecraft:diamond_sword"
+     */
+    private static String extractBaseItemId(String itemString) {
+        if (itemString == null) return null;
+        
+        int bracketIndex = itemString.indexOf('[');
+        if (bracketIndex != -1) {
+            return itemString.substring(0, bracketIndex);
+        }
+        return itemString;
     }
     
     /**

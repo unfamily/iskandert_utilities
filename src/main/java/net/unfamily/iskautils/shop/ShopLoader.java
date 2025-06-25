@@ -17,6 +17,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Stream;
 
 /**
@@ -217,7 +219,9 @@ public class ShopLoader {
                 continue;
             }
             
-            String entryKey = category != null ? category + ":" + item : item;
+            // Usa solo l'ID base dell'item per la chiave, senza data components
+            String baseItemId = extractBaseItemId(item);
+            String entryKey = category != null ? category + ":" + baseItemId : baseItemId;
             
             if (PROTECTED_ENTRIES.containsKey(entryKey) && PROTECTED_ENTRIES.get(entryKey)) {
                 LOGGER.debug("Entry {} protected, ignoring override from {}", entryKey, fileName);
@@ -378,44 +382,9 @@ public class ShopLoader {
     public static void reloadAllConfigurations() {
         LOGGER.info("Reloading all shop configurations...");
         
-        Map<String, ShopValute> protectedValutes = new HashMap<>();
-        Map<String, ShopCategory> protectedCategories = new HashMap<>();
-        Map<String, ShopEntry> protectedEntries = new HashMap<>();
-        
-        for (String id : VALUTES.keySet()) {
-            if (PROTECTED_VALUTES.getOrDefault(id, false)) {
-                protectedValutes.put(id, VALUTES.get(id));
-            }
-        }
-        
-        for (String id : CATEGORIES.keySet()) {
-            if (PROTECTED_CATEGORIES.getOrDefault(id, false)) {
-                protectedCategories.put(id, CATEGORIES.get(id));
-            }
-        }
-        
-        for (String id : ENTRIES.keySet()) {
-            if (PROTECTED_ENTRIES.getOrDefault(id, false)) {
-                protectedEntries.put(id, ENTRIES.get(id));
-            }
-        }
-        
+        // Semplicemente ricarica tutto da zero - nessuna protezione delle entry in memoria
+        // Il flag 'overwritable' serve solo per la rigenerazione automatica dei file fisici
         scanConfigDirectory();
-        
-        for (String id : protectedValutes.keySet()) {
-            VALUTES.put(id, protectedValutes.get(id));
-            PROTECTED_VALUTES.put(id, true);
-        }
-        
-        for (String id : protectedCategories.keySet()) {
-            CATEGORIES.put(id, protectedCategories.get(id));
-            PROTECTED_CATEGORIES.put(id, true);
-        }
-        
-        for (String id : protectedEntries.keySet()) {
-            ENTRIES.put(id, protectedEntries.get(id));
-            PROTECTED_ENTRIES.put(id, true);
-        }
         
         LOGGER.info("Shop configurations reload completed");
     }
@@ -442,7 +411,22 @@ public class ShopLoader {
     }
     
     public static ShopEntry getEntry(String category, String item) {
-        String key = category != null ? category + ":" + item : item;
+        String baseItemId = extractBaseItemId(item);
+        String key = category != null ? category + ":" + baseItemId : baseItemId;
         return ENTRIES.get(key);
+    }
+    
+    /**
+     * Estrae l'ID base di un item rimuovendo i data components
+     * Es: "minecraft:diamond_sword[enchantments={...}]" -> "minecraft:diamond_sword"
+     */
+    private static String extractBaseItemId(String itemString) {
+        if (itemString == null) return null;
+        
+        int bracketIndex = itemString.indexOf('[');
+        if (bracketIndex != -1) {
+            return itemString.substring(0, bracketIndex);
+        }
+        return itemString;
     }
 } 

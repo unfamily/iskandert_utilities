@@ -5,7 +5,7 @@ package net.unfamily.iskautils.shop;
  */
 public class ShopEntry {
     public String inCategory;
-    public String item;
+    public String item; // Supporta anche data components: "minecraft:diamond_sword[enchantments={...}]"
     public int itemCount;
     public String valute;
     public double buy;

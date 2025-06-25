@@ -28,7 +28,8 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -40,7 +41,7 @@ import java.util.List;
  * Handles network messages for the mod
  */
 public class ModMessages {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ModMessages.class);
+    private static final Logger LOGGER = LogUtils.getLogger();
     
     // Simplified version to avoid NeoForge networking compatibility issues
     
@@ -48,8 +49,8 @@ public class ModMessages {
      * Registers network messages for the mod
      */
     public static void register() {
-        LOGGER.info("Registering network messages for {}", IskaUtils.MOD_ID);
-        // Simplified implementation - actual registration is handled by NeoForge
+        LOGGER.info("Registering packets for " + IskaUtils.MOD_ID);
+        
     }
     
     /**
@@ -152,6 +153,7 @@ public class ModMessages {
             // This will be executed on the client side
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 net.unfamily.iskautils.client.gui.ShopScreen.handleTeamDataUpdate(teamName, teamBalances);
+                net.unfamily.iskautils.client.gui.AutoShopScreen.handleTeamDataUpdate(teamName, teamBalances);
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
@@ -926,6 +928,33 @@ public class ModMessages {
         } catch (Exception e) {
             System.err.println("DEBUG: Errore nel sendShopSellItemPacket: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Invia il packet per settare lo slot encapsulato dell'Auto Shop
+     */
+    public static void sendAutoShopSetEncapsulatedPacket(BlockPos pos) {
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+            
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Create and handle the packet
+                        new AutoShopSetEncapsulatedC2SPacket(pos).handle(player);
+                    }
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            });
+        } catch (Exception e) {
+            // Ignore errors
         }
     }
 } 
