@@ -25,4 +25,33 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu> {
         int y = (this.height - this.imageHeight) / 2;
         guiGraphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
     }
+    
+    @Override
+    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // Non chiamiamo super.renderLabels() per evitare titolo duplicato e scritta inventory
+        
+        // Titolo centrato in alto
+        Component title = Component.translatable("block.iska_utils.auto_shop");
+        int titleWidth = this.font.width(title);
+        guiGraphics.drawString(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
+        
+        // Testo accanto alla slot selezionata (slot 0)
+        Component selectText = Component.translatable("gui.iska_utils.auto_shop.select_item");
+        guiGraphics.drawString(this.font, selectText, 75, 25, 0x404040, false);
+        
+        // Testo accanto alla slot encapsulated (slot 1)
+        Component encapsulatedText = Component.translatable("gui.iska_utils.auto_shop.encapsulated_item");
+        guiGraphics.drawString(this.font, encapsulatedText, 75, 50, 0x404040, false);
+    }
+    
+    @Override
+    protected void renderTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        super.renderTooltip(guiGraphics, mouseX, mouseY);
+    }
+
+    @Override
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
+    }
 } 

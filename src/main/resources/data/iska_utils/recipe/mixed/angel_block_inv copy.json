@@ -1,24 +1,23 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "misc",
   "pattern": [
-    "ABA",
+    "BAB",
     "ACA",
-    "ABA"
+    "BAB"
   ],
   "key": {
     "A": {
-      "tag": "c:ingots/iron"
+      "tag": "c:nuggets/gold"
     },
     "B": {
-      "tag": "c:gems/diamond"
+      "tag": "c:feathers"
     },
     "C": {
-      "tag": "c:chests/ender"
+      "tag": "c:obsidians"
     }
   },
   "result": {
-    "id": "iska_utils:shop",
+    "id": "iska_utils:angel_block",
     "count": 1
   }
 } 

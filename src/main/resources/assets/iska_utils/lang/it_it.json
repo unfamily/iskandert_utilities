@@ -99,6 +99,8 @@
   
   "gui.iska_utils.shop.title": "Negozio",
   "gui.iska_utils.auto_shop.title": "Negozio Automatico",
+  "gui.iska_utils.auto_shop.select_item": "Item Selected",
+  "gui.iska_utils.auto_shop.encapsulated_item": "Cassetto dello shop",
   "gui.iska_utils.shop.back": "Indietro",
   "gui.iska_utils.shop.buy": "Compra",
   "gui.iska_utils.shop.sell": "Vendi",

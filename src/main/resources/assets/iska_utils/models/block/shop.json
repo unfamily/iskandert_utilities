@@ -1,6 +1,9 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/orientable",
   "textures": {
-    "all": "iska_utils:block/shop"
+    "front": "iska_utils:block/shop_front",
+    "side": "iska_utils:block/shop_side",
+    "top": "iska_utils:block/shop_side",
+    "bottom": "iska_utils:block/shop_side"
   }
 } 

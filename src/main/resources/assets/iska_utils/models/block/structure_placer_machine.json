@@ -1,7 +1,7 @@
 {
   "parent": "block/cube",
   "textures": {
-    "particle": "iska_utils:block/structure_builder_front",
+    "particle": "iska_utils:block/structure_builder_top",
     "down": "iska_utils:block/structure_builder_buttom",
     "up": "iska_utils:block/structure_builder_top",
     "north": "iska_utils:block/structure_builder_front",

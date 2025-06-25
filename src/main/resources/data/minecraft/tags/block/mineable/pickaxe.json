@@ -17,6 +17,8 @@
     "iska_utils:wither_proof_wall",
     "iska_utils:netherite_bars",
     "iska_utils:structure_saver_machine",
-    "iska_utils:structure_placer_machine"
+    "iska_utils:structure_placer_machine",
+    "iska_utils:auto_shop",
+    "iska_utils:shop"
   ]
 } 

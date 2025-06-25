@@ -137,10 +137,13 @@ public class ModCreativeModeTabs {
                                 // Structure System
                                 pOutput.accept(ModItems.STRUCTURE_PLACER_MACHINE.get());
                                 pOutput.accept(ModItems.STRUCTURE_SAVER_MACHINE.get());
-                                pOutput.accept(ModItems.SHOP.get());
-                                pOutput.accept(ModItems.AUTO_SHOP.get());
+
                                 pOutput.accept(ModItems.STRUCTURE_PLACER.get());
                                 pOutput.accept(ModItems.BLUEPRINT.get());
+                                
+                                // Shops
+                                pOutput.accept(ModItems.SHOP.get());
+                                pOutput.accept(ModItems.AUTO_SHOP.get());
                 
                 // Structure Monouse Items
                 Map<String, DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem>> monouseItems = 

@@ -13,6 +13,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.minecraft.world.entity.player.Player;
+import java.util.Map;
 
 /**
  * Block Entity per l'Auto Shop Block
@@ -36,6 +37,18 @@ public class AutoShopBlockEntity extends BlockEntity {
         public ItemStack extractItem(int slot, int amount, boolean simulate) {
             // Permetti sempre l'estrazione
             return super.extractItem(slot, amount, simulate);
+        }
+    };
+    
+    // Slot per l'item selezionato (per auto compra/vendi)
+    private final ItemStackHandler selectedSlot = new ItemStackHandler(1) {
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+        }
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return true;
         }
     };
     
@@ -77,6 +90,9 @@ public class AutoShopBlockEntity extends BlockEntity {
         // Salva encapsulated slot
         tag.put("encapsulatedSlot", encapsulatedSlot.serializeNBT(registries));
         
+        // Salva selected slot
+        tag.put("selectedSlot", selectedSlot.serializeNBT(registries));
+        
         // Salva stato del negozio
         CompoundTag shopData = new CompoundTag();
         shopData.putBoolean("isActive", isActive);
@@ -101,7 +117,6 @@ public class AutoShopBlockEntity extends BlockEntity {
         // Salva il selectedItem solo se non è vuoto e valido
         if (!selectedItem.isEmpty() && selectedItem.getItem() != null) {
             LOGGER.info("AutoShopBlockEntity.saveAdditional: Saving selectedItem: {}", selectedItem.getItem().toString());
-            LOGGER.info("AutoShopBlockEntity.saveAdditional: selectedItem count: {}", selectedItem.getCount());
             CompoundTag selectedTag = new CompoundTag();
             selectedItem.save(registries, selectedTag);
             LOGGER.info("AutoShopBlockEntity.saveAdditional: selectedTag content: {}", selectedTag.toString());
@@ -122,6 +137,11 @@ public class AutoShopBlockEntity extends BlockEntity {
         // Carica encapsulated slot
         if (tag.contains("encapsulatedSlot")) {
             encapsulatedSlot.deserializeNBT(registries, tag.getCompound("encapsulatedSlot"));
+        }
+        
+        // Carica selected slot
+        if (tag.contains("selectedSlot")) {
+            selectedSlot.deserializeNBT(registries, tag.getCompound("selectedSlot"));
         }
         
         // Carica stato del negozio
@@ -219,6 +239,10 @@ public class AutoShopBlockEntity extends BlockEntity {
         return encapsulatedSlot;
     }
     
+    public ItemStackHandler getSelectedSlot() {
+        return selectedSlot;
+    }
+    
     public String getSelectedValute() {
         return this.selectedValute;
     }
@@ -258,14 +282,15 @@ public class AutoShopBlockEntity extends BlockEntity {
         if (item.isEmpty()) {
             this.selectedItem = ItemStack.EMPTY;
         } else {
-            // Crea una copia dell'item e poi imposta il count a 1
+            // Crea una copia dell'item con count 1, preservando i NBT
             this.selectedItem = item.copy();
             this.selectedItem.setCount(1);
             
-            // Debug: verifica cosa contiene l'item dopo la creazione
-            LOGGER.info("AutoShopBlockEntity.setSelectedItem: After creation - Item: {}, Count: {}", 
+            // Debug: verifica cosa contiene l'item dopo la copia
+            LOGGER.info("AutoShopBlockEntity.setSelectedItem: After copy - Item: {}, Count: {}, Has NBT: {}", 
                 this.selectedItem.getItem().toString(),
-                this.selectedItem.getCount());
+                this.selectedItem.getCount(),
+                this.selectedItem.getComponents() != null);
         }
         
         LOGGER.info("AutoShopBlockEntity.setSelectedItem: selectedItem now set to: {}", 
@@ -307,6 +332,22 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
     
     /**
+     * Cerca una ShopEntry per un item specifico in tutte le categorie
+     */
+    private static net.unfamily.iskautils.shop.ShopEntry findEntryForItem(String itemId) {
+        Map<String, net.unfamily.iskautils.shop.ShopEntry> allEntries = net.unfamily.iskautils.shop.ShopLoader.getEntries();
+        
+        for (Map.Entry<String, net.unfamily.iskautils.shop.ShopEntry> entryMap : allEntries.entrySet()) {
+            net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
+            if (entry.item.equals(itemId)) {
+                return entry;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
      * Tick del blocco (chiamato dal server)
      */
     public static void tick(Level level, BlockPos pos, BlockState state, AutoShopBlockEntity entity) {
@@ -345,7 +386,7 @@ public class AutoShopBlockEntity extends BlockEntity {
 
             // Trova la ShopEntry per l'item
             String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-            net.unfamily.iskautils.shop.ShopEntry entry = net.unfamily.iskautils.shop.ShopLoader.getEntry(null, itemId);
+            net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(itemId);
             if (entry == null || entry.sell <= 0) {
                 return;
             }
@@ -387,13 +428,18 @@ public class AutoShopBlockEntity extends BlockEntity {
                 }
             }
 
-            // Rimuovi 1 item dalla slot
-            ItemStack removed = slot.extractItem(0, 1, false);
+            // Controlla che ci siano abbastanza item nella slot
+            if (stack.getCount() < entry.itemCount) {
+                return;
+            }
+
+            // Rimuovi il count corretto dalla slot
+            ItemStack removed = slot.extractItem(0, entry.itemCount, false);
             if (removed.isEmpty()) {
                 return;
             }
 
-            // Accredita i soldi al team
+            // Accredita i soldi al team (solo il valore singolo)
             teamManager.addTeamValutes(teamName, valuteId, entry.sell);
             entity.setChanged();
         }
@@ -406,14 +452,16 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return;
             }
 
-            // Controlla se c'è un item selezionato
-            if (entity.getSelectedItem().isEmpty()) {
+            // Controlla se c'è un item nella selected slot
+            ItemStackHandler selectedSlot = entity.getSelectedSlot();
+            ItemStack selectedStack = selectedSlot.getStackInSlot(0);
+            if (selectedStack.isEmpty()) {
                 return;
             }
 
             // Trova la ShopEntry per l'item selezionato
-            String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(entity.getSelectedItem().getItem()).toString();
-            net.unfamily.iskautils.shop.ShopEntry entry = net.unfamily.iskautils.shop.ShopLoader.getEntry(null, itemId);
+            String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(selectedStack.getItem()).toString();
+            net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(itemId);
             if (entry == null || entry.buy <= 0) {
                 return;
             }
@@ -467,7 +515,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             }
 
             // Crea l'item selezionato e mettilo nella slot
-            ItemStack itemToCreate = entity.getSelectedItem().copy();
+            ItemStack itemToCreate = selectedStack.copy();
             itemToCreate.setCount(entry.itemCount); // Usa itemCount dalla ShopEntry
             slot.setStackInSlot(0, itemToCreate);
             entity.setChanged();

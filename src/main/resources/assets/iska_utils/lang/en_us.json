@@ -99,6 +99,8 @@
   
   "gui.iska_utils.shop.title": "Shop",
   "gui.iska_utils.auto_shop.title": "Auto Shop",
+  "gui.iska_utils.auto_shop.select_item": "Item Selected",
+  "gui.iska_utils.auto_shop.encapsulated_item": "Shop Drawer",
   "gui.iska_utils.shop.back": "Back",
   "gui.iska_utils.shop.buy": "Buy",
   "gui.iska_utils.shop.sell": "Sell",

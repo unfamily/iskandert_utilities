@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.mojang.logging.LogUtils;
 import net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -947,6 +948,33 @@ public class ModMessages {
                     if (player != null) {
                         // Create and handle the packet
                         new AutoShopSetEncapsulatedC2SPacket(pos).handle(player);
+                    }
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            });
+        } catch (Exception e) {
+            // Ignore errors
+        }
+    }
+
+    /**
+     * Invia il packet per settare lo slot selectedItem dell'Auto Shop
+     */
+    public static void sendAutoShopSelectedItemPacket(BlockPos pos, ItemStack stack) {
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+            
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Create and handle the packet
+                        new net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket(pos, stack).handle(player);
                     }
                 } catch (Exception e) {
                     // Ignore errors

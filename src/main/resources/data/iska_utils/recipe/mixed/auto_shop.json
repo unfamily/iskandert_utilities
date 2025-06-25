@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "iska_utils:shop"
+    },
+    {
+      "item": "minecraft:hopper"
+    },
+    {
+      "tag": "c:storage_blocks/copper"
+    }
+  ],
+  "result": {
+    "id": "iska_utils:auto_shop",
+    "count": 1
+  }
+} 
