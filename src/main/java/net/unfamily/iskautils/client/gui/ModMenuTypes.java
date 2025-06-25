@@ -4,8 +4,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.client.gui.ShopMenu;
-import net.unfamily.iskautils.client.gui.AutoShopMenu;
 
 /**
  * Registrazione dei MenuType per le GUI personalizzate

@@ -185,7 +185,6 @@ public class ShopCommand {
             // Su server integrato (single player), possiamo chiamare direttamente le GUI
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 net.unfamily.iskautils.client.gui.ShopScreen.notifyReload();
-                net.unfamily.iskautils.client.gui.AutoShopScreen.notifyReload();
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server

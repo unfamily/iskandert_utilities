@@ -2,7 +2,7 @@ package net.unfamily.iskautils.block;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -21,6 +21,13 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.block.entity.AutoShopBlockEntity;
 import org.jetbrains.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.items.ItemStackHandler;
 
 /**
  * Blocco per l'Auto Shop
@@ -65,15 +72,91 @@ public class AutoShopBlock extends BaseEntityBlock {
     }
     
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
-            BlockEntity entity = level.getBlockEntity(pos);
-            if (entity instanceof AutoShopBlockEntity autoShopEntity) {
-                serverPlayer.openMenu(autoShopEntity);
-                return InteractionResult.CONSUME;
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        
+        // Salva il giocatore che ha piazzato questo Auto Shop
+        if (!level.isClientSide() && placer instanceof ServerPlayer serverPlayer) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof AutoShopBlockEntity autoShopEntity) {
+                autoShopEntity.setPlacedByPlayer(serverPlayer.getUUID());
             }
         }
-        return InteractionResult.SUCCESS;
+    }
+    
+    
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
+        
+        BlockEntity entity = level.getBlockEntity(pos);
+        if (!(entity instanceof AutoShopBlockEntity autoShop)) {
+            return InteractionResult.PASS;
+        }
+        
+        // Shift + tasto destro: cambia valuta
+        if (player.isShiftKeyDown()) {
+            cycleValute(autoShop, player);
+            return InteractionResult.SUCCESS;
+        }
+        
+        // Tasto destro normale: apri la GUI
+        if (player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
+                @Override
+                public net.minecraft.network.chat.Component getDisplayName() {
+                    return net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop");
+                }
+                @Override
+                public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int id, net.minecraft.world.entity.player.Inventory inv, Player player) {
+                    return new net.unfamily.iskautils.client.gui.AutoShopMenu(id, inv, autoShop);
+                }
+            }, pos);
+        }
+        return InteractionResult.CONSUME;
+    }
+    
+    /**
+     * Cicla tra le valute disponibili
+     */
+    private void cycleValute(AutoShopBlockEntity autoShop, Player player) {
+        Map<String, net.unfamily.iskautils.shop.ShopValute> availableValutes = 
+            net.unfamily.iskautils.shop.ShopLoader.getValutes();
+        List<String> valuteIds = new ArrayList<>();
+        valuteIds.add("unset"); // Prima opzione
+        valuteIds.addAll(availableValutes.keySet());
+        
+        String currentValute = autoShop.getSelectedValute();
+        int currentIndex = valuteIds.indexOf(currentValute);
+        if (currentIndex == -1) currentIndex = 0;
+        
+        // Passa alla prossima valuta
+        int nextIndex = (currentIndex + 1) % valuteIds.size();
+        String newValute = valuteIds.get(nextIndex);
+        
+        autoShop.setSelectedValute(newValute);
+        
+        // Messaggio di feedback
+        String valuteName = "unset".equals(newValute) ? "Unset" : 
+            availableValutes.get(newValute).name;
+        player.displayClientMessage(
+            net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.valute_changed", valuteName),
+            true
+        );
+    }
+    
+    /**
+     * Cambia la modalità tra Auto Buy e Auto Sell
+     */
+    private void toggleAutoMode(AutoShopBlockEntity autoShop, Player player) {
+        autoShop.toggleAutoMode();
+        String modeName = autoShop.isAutoBuyMode() ? "Auto Buy" : "Auto Sell";
+        player.displayClientMessage(
+            net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.mode_changed", modeName),
+            true
+        );
     }
     
     @Override
@@ -97,4 +180,17 @@ public class AutoShopBlock extends BaseEntityBlock {
         return createTickerHelper(blockEntityType, ModBlockEntities.AUTO_SHOP_BE.get(),
                 AutoShopBlockEntity::tick);
     }
+
+    @Override
+	public void attack(BlockState blockstate, Level world, BlockPos pos, Player entity) {
+        if (!world.isClientSide()) {
+            BlockEntity blockEntity = world.getBlockEntity(pos);
+            if (blockEntity instanceof AutoShopBlockEntity autoShop) {
+                // Tasto sinistro: cambia modalità Buy/Sell
+                toggleAutoMode(autoShop, entity);
+            }
+        }
+		
+		super.attack(blockstate, world, pos, entity);
+	}
 } 

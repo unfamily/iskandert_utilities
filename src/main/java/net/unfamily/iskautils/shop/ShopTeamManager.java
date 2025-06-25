@@ -238,10 +238,42 @@ public class ShopTeamManager {
     }
     
     /**
+     * Gets a team by its unique ID
+     */
+    public Team getTeamById(UUID teamId) {
+        TeamData data = getTeamData();
+        return data.getTeamById(teamId);
+    }
+    
+    /**
+     * Gets a team's unique ID by name
+     */
+    public UUID getTeamIdByName(String teamName) {
+        TeamData data = getTeamData();
+        return data.getTeamIdByName(teamName);
+    }
+    
+    /**
+     * Gets a team's name by its unique ID
+     */
+    public String getTeamNameById(UUID teamId) {
+        Team team = getTeamById(teamId);
+        return team != null ? team.getName() : null;
+    }
+    
+    /**
+     * Gets a player's team by UUID
+     */
+    public String getPlayerTeam(UUID playerId) {
+        return getTeamData().getPlayerTeam(playerId);
+    }
+    
+    /**
      * Team data saved in world storage
      */
     public static class TeamData extends SavedData {
         private final Map<String, Team> teams = new HashMap<>();
+        private final Map<UUID, Team> teamsById = new HashMap<>(); // Mappa per accesso tramite ID
         private final Map<UUID, String> playerTeams = new HashMap<>();
         private final Map<UUID, Set<String>> playerInvitations = new HashMap<>();
         
@@ -257,6 +289,7 @@ public class ShopTeamManager {
                     CompoundTag teamTag = teamsTag.getCompound(teamName);
                     Team team = Team.load(teamTag);
                     data.teams.put(teamName, team);
+                    data.teamsById.put(team.getTeamId(), team); // Popola la mappa per ID
                     
                     // Update player-team mapping
                     for (UUID playerId : team.getMembers()) {
@@ -319,6 +352,7 @@ public class ShopTeamManager {
             
             Team team = new Team(teamName, leader);
             teams.put(teamName, team);
+            teamsById.put(team.getTeamId(), team);
             playerTeams.put(leader, teamName);
             setDirty();
             
@@ -338,6 +372,7 @@ public class ShopTeamManager {
             }
             
             teams.remove(teamName);
+            teamsById.remove(team.getTeamId()); // Rimuovi dalla mappa per ID
             setDirty();
             
             LOGGER.info("Deleted team '{}' by leader {}", teamName, player);
@@ -435,6 +470,15 @@ public class ShopTeamManager {
         
         public Set<String> getAllTeams() {
             return new HashSet<>(teams.keySet());
+        }
+        
+        public Team getTeamById(UUID teamId) {
+            return teamsById.get(teamId);
+        }
+        
+        public UUID getTeamIdByName(String teamName) {
+            Team team = teams.get(teamName);
+            return team != null ? team.getTeamId() : null;
         }
         
         public boolean invitePlayerToTeam(String teamName, UUID inviter, UUID invitee) {
@@ -614,6 +658,7 @@ public class ShopTeamManager {
             teams.remove(oldTeamName);
             team.setName(newTeamName);
             teams.put(newTeamName, team);
+            // teamsById rimane invariata perché l'ID del team non cambia
             
             // Update player-team mapping for all members
             for (UUID memberId : team.getMembers()) {
@@ -631,6 +676,7 @@ public class ShopTeamManager {
      * Represents a team
      */
     public static class Team {
+        private UUID teamId; // ID univoco immutabile del team
         private String name;
         private UUID leader;
         private final Set<UUID> members;
@@ -638,6 +684,7 @@ public class ShopTeamManager {
         private final Map<String, Double> valuteBalances;
         
         public Team(String name, UUID leader) {
+            this.teamId = UUID.randomUUID(); // Genera un ID univoco
             this.name = name;
             this.leader = leader;
             this.members = new HashSet<>();
@@ -646,6 +693,23 @@ public class ShopTeamManager {
             
             // Add leader as first member
             this.members.add(leader);
+        }
+        
+        // Costruttore per il caricamento da NBT
+        private Team(UUID teamId, String name, UUID leader) {
+            this.teamId = teamId;
+            this.name = name;
+            this.leader = leader;
+            this.members = new HashSet<>();
+            this.assistants = new HashSet<>();
+            this.valuteBalances = new HashMap<>();
+            
+            // Add leader as first member
+            this.members.add(leader);
+        }
+        
+        public UUID getTeamId() {
+            return teamId;
         }
         
         public String getName() {
@@ -708,6 +772,7 @@ public class ShopTeamManager {
         
         public CompoundTag save() {
             CompoundTag tag = new CompoundTag();
+            tag.putUUID("teamId", teamId);
             tag.putString("name", name);
             tag.putUUID("leader", leader);
             
@@ -733,10 +798,11 @@ public class ShopTeamManager {
         }
         
         public static Team load(CompoundTag tag) {
+            UUID teamId = tag.getUUID("teamId");
             String name = tag.getString("name");
             UUID leader = tag.getUUID("leader");
             
-            Team team = new Team(name, leader);
+            Team team = new Team(teamId, name, leader);
             
             if (tag.contains("members")) {
                 ListTag membersTag = tag.getList("members", 8); // String tag type

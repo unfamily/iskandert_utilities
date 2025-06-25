@@ -408,5 +408,9 @@
   "gui.iska_utils.structure_saver.error.save_failed": "Failed to save structure: %s",
   "gui.iska_utils.structure_saver.success": "§aStructure '§f%s§a' %s successfully!",
   "gui.iska_utils.structure_saver.command_sent": "§6%s command sent to client...",
-  "gui.iska_utils.structure_saver.client_success": "§aStructure %s: §f%s"
+  "gui.iska_utils.structure_saver.client_success": "§aStructure %s: §f%s",
+  
+  "block.iska_utils.auto_shop.valute_changed": "Auto Shop currency changed to: %s",
+  "block.iska_utils.auto_shop.mode_changed": "Auto Shop mode changed to: %s",
+  "block.iska_utils.auto_shop.selected_item_set": "Selected item set: %s"
 }

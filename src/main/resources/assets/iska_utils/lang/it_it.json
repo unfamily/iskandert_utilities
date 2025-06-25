@@ -405,5 +405,8 @@
   "gui.iska_utils.structure_saver.error.save_failed": "Impossibile salvare la struttura: %s",
   "gui.iska_utils.structure_saver.success": "§aStruttura '§f%s§a' %s con successo!",
   "gui.iska_utils.structure_saver.command_sent": "§6Comando di %s inviato al client...",
-  "gui.iska_utils.structure_saver.client_success": "§aStruttura %s: §f%s"
+  "gui.iska_utils.structure_saver.client_success": "§aStruttura %s: §f%s",
+  "block.iska_utils.auto_shop.valute_changed": "Valuta Auto Shop cambiata a: %s",
+  "block.iska_utils.auto_shop.mode_changed": "Modalità Auto Shop cambiata a: %s",
+  "block.iska_utils.auto_shop.selected_item_set": "Item selezionato impostato: %s"
 }

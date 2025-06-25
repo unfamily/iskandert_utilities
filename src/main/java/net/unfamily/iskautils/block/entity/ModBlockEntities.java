@@ -11,20 +11,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
-import net.unfamily.iskautils.block.entity.HellfireIgniterBlockEntity;
-import net.unfamily.iskautils.block.entity.RubberLogEmptyBlockEntity;
-import net.unfamily.iskautils.block.entity.RubberSapExtractorBlockEntity;
-import net.unfamily.iskautils.block.entity.WeatherAltererBlockEntity;
-import net.unfamily.iskautils.block.entity.TimeAltererBlockEntity;
-import net.unfamily.iskautils.block.entity.AngelBlockEntity;
-import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
-import net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity;
-import net.unfamily.iskautils.block.entity.ShopBlockEntity;
-import net.unfamily.iskautils.block.entity.AutoShopBlockEntity;
-import net.unfamily.iskautils.block.StructurePlacerMachineBlock;
-import net.unfamily.iskautils.block.StructureSaverMachineBlock;
-import net.unfamily.iskautils.block.ShopBlock;
-import net.unfamily.iskautils.block.AutoShopBlock;
 
 import java.util.function.Supplier;
 
@@ -185,6 +171,18 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof StructureSaverMachineBlockEntity saverMachineEntity) {
                             return saverMachineEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register item handler capability for Auto Shop Block (encapsulated slot only)
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    AUTO_SHOP_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof AutoShopBlockEntity autoShopEntity) {
+                            return autoShopEntity.getEncapsulatedSlot();
                         }
                         return null;
                     }

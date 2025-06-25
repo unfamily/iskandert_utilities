@@ -3,47 +3,39 @@ package net.unfamily.iskautils.block.entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.minecraft.world.item.ItemStack;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Block Entity per l'Auto Shop Block
- * Gestisce l'interfaccia del negozio automatico e le transazioni
+ * Gestisce l'estrazione automatica di item tramite hopper e dispositivi simili
  */
-public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
+public class AutoShopBlockEntity extends BlockEntity {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(AutoShopBlockEntity.class);
     
-    // Item storage per gli slot del negozio (visualizzazione e transazioni)
-    private final ItemStackHandler itemHandler = new ItemStackHandler(36) { // 4 righe x 9 slot
-        @Override
-        protected void onContentsChanged(int slot) {
-            super.onContentsChanged(slot);
-            setChanged();
-        }
-        
-        @Override
-        public boolean isItemValid(int slot, ItemStack stack) {
-            return true;
-        }
-    };
-    
-    // Slot custom per la funzione encapsulated (1 slot)
+    // Slot custom per la funzione encapsulated (1 slot) - esposto per l'estrazione automatica
     private final ItemStackHandler encapsulatedSlot = new ItemStackHandler(1) {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
+        }
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return true;
+        }
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            // Permetti sempre l'estrazione
+            return super.extractItem(slot, amount, simulate);
         }
     };
     
@@ -51,19 +43,13 @@ public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
     private boolean isActive = false;
     private String currentCategory = "000_default";
     private String selectedValute = "unset"; // Valuta selezionata, default a "unset"
+    private UUID ownerTeamId = null; // ID del team del player che ha piazzato l'AutoShop
+    private UUID placedByPlayer = null; // UUID del giocatore che ha piazzato l'Auto Shop
+    private ItemStack selectedItem = ItemStack.EMPTY; // Item selezionato per la slot encapsulata
+    private boolean autoBuyMode = true; // true = Auto Buy, false = Auto Sell
     
     public AutoShopBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.AUTO_SHOP_BE.get(), pos, blockState);
-    }
-    
-    @Override
-    public Component getDisplayName() {
-        return Component.translatable("block.iska_utils.auto_shop");
-    }
-    
-    @Override
-    public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
-        return new net.unfamily.iskautils.client.gui.AutoShopMenu(containerId, playerInventory, this);
     }
     
     @Override
@@ -75,11 +61,18 @@ public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
     }
     
     @Override
+    public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
+    }
+    
+    @Override
+    public net.minecraft.nbt.CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
+    }
+    
+    @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        
-        // Salva item handler
-        tag.put("inventory", itemHandler.serializeNBT(registries));
         
         // Salva encapsulated slot
         tag.put("encapsulatedSlot", encapsulatedSlot.serializeNBT(registries));
@@ -88,18 +81,43 @@ public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
         CompoundTag shopData = new CompoundTag();
         shopData.putBoolean("isActive", isActive);
         shopData.putString("currentCategory", currentCategory);
+        
+        // Salva sempre la valuta (anche se è "unset")
         shopData.putString("selectedValute", selectedValute);
+        
+        // Salva sempre la modalità (buy/sell)
+        shopData.putBoolean("autoBuyMode", autoBuyMode);
+        
+        // Salva l'ID del team del proprietario se presente
+        if (ownerTeamId != null) {
+            shopData.putUUID("ownerTeamId", ownerTeamId);
+        }
+        
+        // Salva il placedByPlayer solo se non è vuoto
+        if (placedByPlayer != null) {
+            shopData.putUUID("placedByPlayer", placedByPlayer);
+        }
+        
+        // Salva il selectedItem solo se non è vuoto e valido
+        if (!selectedItem.isEmpty() && selectedItem.getItem() != null) {
+            LOGGER.info("AutoShopBlockEntity.saveAdditional: Saving selectedItem: {}", selectedItem.getItem().toString());
+            LOGGER.info("AutoShopBlockEntity.saveAdditional: selectedItem count: {}", selectedItem.getCount());
+            CompoundTag selectedTag = new CompoundTag();
+            selectedItem.save(registries, selectedTag);
+            LOGGER.info("AutoShopBlockEntity.saveAdditional: selectedTag content: {}", selectedTag.toString());
+            // Salva sempre l'item se è valido, anche se il tag è vuoto (può succedere per item semplici)
+            shopData.put("selectedItem", selectedTag);
+            LOGGER.info("AutoShopBlockEntity.saveAdditional: selectedItem saved successfully");
+        } else {
+            LOGGER.info("AutoShopBlockEntity.saveAdditional: selectedItem is empty or null, not saving");
+        }
+        
         tag.put("shopData", shopData);
     }
     
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        
-        // Carica item handler
-        if (tag.contains("inventory")) {
-            itemHandler.deserializeNBT(registries, tag.getCompound("inventory"));
-        }
         
         // Carica encapsulated slot
         if (tag.contains("encapsulatedSlot")) {
@@ -111,9 +129,60 @@ public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
             CompoundTag shopData = tag.getCompound("shopData");
             this.isActive = shopData.getBoolean("isActive");
             this.currentCategory = shopData.getString("currentCategory");
-            this.selectedValute = shopData.getString("selectedValute");
-            if (this.selectedValute.isEmpty()) {
-                this.selectedValute = "unset"; // Fallback se vuoto
+            
+            // Carica la valuta se presente, altrimenti usa "unset"
+            if (shopData.contains("selectedValute")) {
+                this.selectedValute = shopData.getString("selectedValute");
+                if (this.selectedValute.isEmpty()) {
+                    this.selectedValute = "unset"; // Fallback se vuoto
+                }
+            } else {
+                this.selectedValute = "unset"; // Default se non presente
+            }
+            
+            // Carica la modalità se presente
+            if (shopData.contains("autoBuyMode")) {
+                this.autoBuyMode = shopData.getBoolean("autoBuyMode");
+            } else {
+                this.autoBuyMode = true; // Default se non presente
+            }
+            
+            // Carica l'ID del team del proprietario se presente
+            if (shopData.contains("ownerTeamId")) {
+                this.ownerTeamId = shopData.getUUID("ownerTeamId");
+            } else {
+                this.ownerTeamId = null; // Default se non presente
+            }
+            
+            // Carica il placedByPlayer se presente
+            if (shopData.contains("placedByPlayer")) {
+                this.placedByPlayer = shopData.getUUID("placedByPlayer");
+            } else {
+                this.placedByPlayer = null; // Default se non presente
+            }
+            
+            // Carica il selectedItem se presente
+            if (shopData.contains("selectedItem")) {
+                LOGGER.info("AutoShopBlockEntity.loadAdditional: Found selectedItem tag");
+                try {
+                    CompoundTag selectedTag = shopData.getCompound("selectedItem");
+                    LOGGER.info("AutoShopBlockEntity.loadAdditional: selectedTag content: {}", selectedTag.toString());
+                    // Prova a caricare l'item anche se il tag è vuoto (può succedere per item semplici)
+                    this.selectedItem = ItemStack.parse(registries, selectedTag).orElse(ItemStack.EMPTY);
+                    LOGGER.info("AutoShopBlockEntity.loadAdditional: Parsed selectedItem: {}", 
+                        this.selectedItem.isEmpty() ? "EMPTY" : this.selectedItem.getItem().toString());
+                    // Verifica che l'item caricato sia valido
+                    if (this.selectedItem.isEmpty() || this.selectedItem.getItem() == null) {
+                        this.selectedItem = ItemStack.EMPTY;
+                        LOGGER.warn("AutoShopBlockEntity: Invalid selectedItem loaded, resetting to EMPTY");
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("AutoShopBlockEntity: Error loading selectedItem", e);
+                    this.selectedItem = ItemStack.EMPTY;
+                }
+            } else {
+                LOGGER.info("AutoShopBlockEntity.loadAdditional: No selectedItem tag found");
+                this.selectedItem = ItemStack.EMPTY; // Default se non presente
             }
         }
     }
@@ -127,10 +196,6 @@ public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
     }
     
     // Metodi per accesso ai dati
-    
-    public IItemHandler getItemHandler() {
-        return this.itemHandler;
-    }
     
     public boolean isActive() {
         return this.isActive;
@@ -163,6 +228,84 @@ public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
         setChanged();
     }
     
+    public UUID getOwnerTeamId() {
+        return this.ownerTeamId;
+    }
+    
+    public void setOwnerTeamId(UUID teamId) {
+        this.ownerTeamId = teamId;
+        setChanged();
+    }
+    
+    public String getOwnerTeamName() {
+        if (this.ownerTeamId != null && this.level != null && !this.level.isClientSide()) {
+            if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                return net.unfamily.iskautils.shop.ShopTeamManager.getInstance(serverLevel)
+                        .getTeamNameById(this.ownerTeamId);
+            }
+        }
+        return null;
+    }
+    
+    public ItemStack getSelectedItem() {
+        return this.selectedItem;
+    }
+    
+    public void setSelectedItem(ItemStack item) {
+        LOGGER.info("AutoShopBlockEntity.setSelectedItem called with: {}", 
+            item.isEmpty() ? "EMPTY" : item.getItem().toString());
+        
+        if (item.isEmpty()) {
+            this.selectedItem = ItemStack.EMPTY;
+        } else {
+            // Crea una copia dell'item e poi imposta il count a 1
+            this.selectedItem = item.copy();
+            this.selectedItem.setCount(1);
+            
+            // Debug: verifica cosa contiene l'item dopo la creazione
+            LOGGER.info("AutoShopBlockEntity.setSelectedItem: After creation - Item: {}, Count: {}", 
+                this.selectedItem.getItem().toString(),
+                this.selectedItem.getCount());
+        }
+        
+        LOGGER.info("AutoShopBlockEntity.setSelectedItem: selectedItem now set to: {}", 
+            this.selectedItem.isEmpty() ? "EMPTY" : this.selectedItem.getItem().toString());
+        
+        setChanged();
+    }
+    
+    public boolean hasSelectedItem() {
+        return !this.selectedItem.isEmpty();
+    }
+    
+    public void clearSelectedItem() {
+        this.selectedItem = ItemStack.EMPTY;
+        setChanged();
+    }
+    
+    public boolean isAutoBuyMode() {
+        return this.autoBuyMode;
+    }
+    
+    public void setAutoBuyMode(boolean autoBuyMode) {
+        this.autoBuyMode = autoBuyMode;
+        setChanged();
+    }
+    
+    public void toggleAutoMode() {
+        this.autoBuyMode = !this.autoBuyMode;
+        setChanged();
+    }
+    
+    public UUID getPlacedByPlayer() {
+        return placedByPlayer;
+    }
+    
+    public void setPlacedByPlayer(UUID placedByPlayer) {
+        this.placedByPlayer = placedByPlayer;
+        setChanged();
+    }
+    
     /**
      * Tick del blocco (chiamato dal server)
      */
@@ -170,7 +313,164 @@ public class AutoShopBlockEntity extends BlockEntity implements MenuProvider {
         if (level.isClientSide()) {
             return;
         }
-        
-        // TODO: Implementare logica di tick se necessario
+
+        // Recupera il team del proprietario (necessario per entrambe le modalità)
+        if (entity.getPlacedByPlayer() == null) {
+            return;
+        }
+        net.minecraft.server.level.ServerLevel serverLevel = (net.minecraft.server.level.ServerLevel) level;
+        net.unfamily.iskautils.shop.ShopTeamManager teamManager = net.unfamily.iskautils.shop.ShopTeamManager.getInstance(serverLevel);
+        String teamName = teamManager.getPlayerTeam(entity.getPlacedByPlayer());
+        if (teamName == null) {
+            return;
+        }
+
+        // Recupera il ServerPlayer del piazzatore (se online) - necessario per stage player
+        net.minecraft.server.level.ServerPlayer placerPlayer = serverLevel.getServer().getPlayerList().getPlayer(entity.getPlacedByPlayer());
+
+        // Controlla che ci sia una valuta selezionata valida
+        String valuteId = entity.getSelectedValute();
+        if (valuteId == null || valuteId.equals("unset")) {
+            return;
+        }
+
+        // Modalità SELL
+        if (!entity.isAutoBuyMode()) {
+            // Controlla se c'è un item nella encapsulated slot
+            ItemStackHandler slot = entity.getEncapsulatedSlot();
+            ItemStack stack = slot.getStackInSlot(0);
+            if (stack.isEmpty()) {
+                return;
+            }
+
+            // Trova la ShopEntry per l'item
+            String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+            net.unfamily.iskautils.shop.ShopEntry entry = net.unfamily.iskautils.shop.ShopLoader.getEntry(null, itemId);
+            if (entry == null || entry.sell <= 0) {
+                return;
+            }
+
+            // Controlla che la valuta corrisponda
+            String entryValute = entry.valute != null ? entry.valute : "null_coin";
+            if (!entryValute.equals(valuteId)) {
+                return;
+            }
+
+            // Controlla gli stage richiesti
+            net.unfamily.iskautils.stage.StageRegistry registry = net.unfamily.iskautils.stage.StageRegistry.getInstance(serverLevel.getServer());
+            if (entry.stages != null && entry.stages.length > 0 && registry != null) {
+                boolean hasAllStages = true;
+                for (var stage : entry.stages) {
+                    boolean stageMet = false;
+                    String type = stage.stageType != null ? stage.stageType.toLowerCase() : "world";
+                    if ("player".equals(type)) {
+                        if (placerPlayer == null) {
+                            hasAllStages = false;
+                            break;
+                        }
+                        boolean hasPlayerStage = registry.hasPlayerStage(placerPlayer, stage.stage);
+                        stageMet = (hasPlayerStage == stage.is);
+                    } else if ("team".equals(type)) {
+                        boolean hasTeamStage = registry.hasTeamStage(teamName, stage.stage);
+                        stageMet = (hasTeamStage == stage.is);
+                    } else if ("world".equals(type)) {
+                        boolean hasWorldStage = registry.hasWorldStage(stage.stage);
+                        stageMet = (hasWorldStage == stage.is);
+                    }
+                    if (!stageMet) {
+                        hasAllStages = false;
+                        break;
+                    }
+                }
+                if (!hasAllStages) {
+                    return;
+                }
+            }
+
+            // Rimuovi 1 item dalla slot
+            ItemStack removed = slot.extractItem(0, 1, false);
+            if (removed.isEmpty()) {
+                return;
+            }
+
+            // Accredita i soldi al team
+            teamManager.addTeamValutes(teamName, valuteId, entry.sell);
+            entity.setChanged();
+        }
+        // Modalità BUY
+        else {
+            // Controlla se la slot è vuota (solo se vuota può comprare)
+            ItemStackHandler slot = entity.getEncapsulatedSlot();
+            ItemStack stack = slot.getStackInSlot(0);
+            if (!stack.isEmpty()) {
+                return;
+            }
+
+            // Controlla se c'è un item selezionato
+            if (entity.getSelectedItem().isEmpty()) {
+                return;
+            }
+
+            // Trova la ShopEntry per l'item selezionato
+            String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(entity.getSelectedItem().getItem()).toString();
+            net.unfamily.iskautils.shop.ShopEntry entry = net.unfamily.iskautils.shop.ShopLoader.getEntry(null, itemId);
+            if (entry == null || entry.buy <= 0) {
+                return;
+            }
+
+            // Controlla che la valuta corrisponda
+            String entryValute = entry.valute != null ? entry.valute : "null_coin";
+            if (!entryValute.equals(valuteId)) {
+                return;
+            }
+
+            // Controlla gli stage richiesti
+            net.unfamily.iskautils.stage.StageRegistry registry = net.unfamily.iskautils.stage.StageRegistry.getInstance(serverLevel.getServer());
+            if (entry.stages != null && entry.stages.length > 0 && registry != null) {
+                boolean hasAllStages = true;
+                for (var stage : entry.stages) {
+                    boolean stageMet = false;
+                    String type = stage.stageType != null ? stage.stageType.toLowerCase() : "world";
+                    if ("player".equals(type)) {
+                        if (placerPlayer == null) {
+                            hasAllStages = false;
+                            break;
+                        }
+                        boolean hasPlayerStage = registry.hasPlayerStage(placerPlayer, stage.stage);
+                        stageMet = (hasPlayerStage == stage.is);
+                    } else if ("team".equals(type)) {
+                        boolean hasTeamStage = registry.hasTeamStage(teamName, stage.stage);
+                        stageMet = (hasTeamStage == stage.is);
+                    } else if ("world".equals(type)) {
+                        boolean hasWorldStage = registry.hasWorldStage(stage.stage);
+                        stageMet = (hasWorldStage == stage.is);
+                    }
+                    if (!stageMet) {
+                        hasAllStages = false;
+                        break;
+                    }
+                }
+                if (!hasAllStages) {
+                    return;
+                }
+            }
+
+            // Controlla i fondi del team
+            double teamBalance = teamManager.getTeamValuteBalance(teamName, valuteId);
+            if (teamBalance < entry.buy) {
+                return; // Fondi insufficienti
+            }
+
+            // Scala i soldi dal team
+            if (!teamManager.removeTeamValutes(teamName, valuteId, entry.buy)) {
+                return; // Fallimento nella rimozione
+            }
+
+            // Crea l'item selezionato e mettilo nella slot
+            ItemStack itemToCreate = entity.getSelectedItem().copy();
+            itemToCreate.setCount(entry.itemCount); // Usa itemCount dalla ShopEntry
+            slot.setStackInSlot(0, itemToCreate);
+            entity.setChanged();
+        }
     }
 } 

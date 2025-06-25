@@ -153,7 +153,6 @@ public class ModMessages {
             // This will be executed on the client side
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 net.unfamily.iskautils.client.gui.ShopScreen.handleTeamDataUpdate(teamName, teamBalances);
-                net.unfamily.iskautils.client.gui.AutoShopScreen.handleTeamDataUpdate(teamName, teamBalances);
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
@@ -957,4 +956,5 @@ public class ModMessages {
             // Ignore errors
         }
     }
+
 } 
