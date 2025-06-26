@@ -20,7 +20,7 @@ import net.unfamily.iskautils.Config;
 public class StructureSelectionScreen extends AbstractContainerScreen<StructureSelectionMenu> {
     
     // Background texture
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/structure_selector.png");
+    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/structure_selector.png");
     private static final ResourceLocation ENTRY_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
     private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
     private static final ResourceLocation TINY_BUTTONS_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/tiny_buttons.png");

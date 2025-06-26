@@ -54,6 +54,10 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
                                 pOutput.accept(ModItems.PLASTIC_INGOT.get());
 
+                                // Shops
+                                pOutput.accept(ModItems.SHOP.get());
+                                pOutput.accept(ModItems.AUTO_SHOP.get());
+
                                 // Rubber Wood Variants
                                 pOutput.accept(ModItems.RUBBER_STAIRS.get());
                                 pOutput.accept(ModItems.RUBBER_SLAB.get());
@@ -140,17 +144,13 @@ public class ModCreativeModeTabs {
 
                                 pOutput.accept(ModItems.STRUCTURE_PLACER.get());
                                 pOutput.accept(ModItems.BLUEPRINT.get());
-                                
-                                // Shops
-                                pOutput.accept(ModItems.SHOP.get());
-                                pOutput.accept(ModItems.AUTO_SHOP.get());
                 
-                // Structure Monouse Items
-                Map<String, DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem>> monouseItems = 
-                    net.unfamily.iskautils.structure.StructureMonouseRegistry.getAllItems();
-                for (DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem> itemHolder : monouseItems.values()) {
-                    pOutput.accept(itemHolder.get());
-                }
+                                // Structure Monouse Items
+                                Map<String, DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem>> monouseItems = 
+                                    net.unfamily.iskautils.structure.StructureMonouseRegistry.getAllItems();
+                                for (DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem> itemHolder : monouseItems.values()) {
+                                    pOutput.accept(itemHolder.get());
+                                }
                                 
                                 // Artifacts
                                 pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());
