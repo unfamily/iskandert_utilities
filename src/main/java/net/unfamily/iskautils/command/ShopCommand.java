@@ -120,8 +120,11 @@ public class ShopCommand {
         
         source.sendSuccess(() -> Component.literal("=== Available Valutes ==="), false);
         for (ShopValute valute : valutes.values()) {
+            // Use localized name and format with symbol after
+            String localizedName = Component.translatable(valute.name).getString();
+            String formattedName = localizedName + " " + valute.charSymbol;
             source.sendSuccess(() -> Component.literal(
-                String.format("- %s (%s): %s", valute.id, valute.name, valute.charSymbol)
+                String.format("- %s (%s): %s", valute.id, formattedName, valute.charSymbol)
             ), false);
         }
     }
@@ -177,18 +180,17 @@ public class ShopCommand {
     }
     
     /**
-     * Notifica le GUI client del reload (eseguito su client)
+     * Notifies client GUIs of reload (executed on client)
      */
     private static void notifyClientGUIReload() {
         try {
-            // Questo viene eseguito su server, ma deve notificare il client
-            // Su server integrato (single player), possiamo chiamare direttamente le GUI
+            // This runs on server, but must notify the client
+            // On integrated server (single player), we can call GUIs directly
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 net.unfamily.iskautils.client.gui.ShopScreen.notifyReload();
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
-            LOGGER.debug("Could not notify client GUI reload (dedicated server): {}", e.getMessage());
         }
     }
 } 

@@ -95,8 +95,6 @@ public class ShopLoader {
     
     private static void scanConfigFile(Path filePath) {
         try {
-            LOGGER.debug("Scanning file: {}", filePath.getFileName());
-            
             try (InputStream inputStream = Files.newInputStream(filePath);
                  InputStreamReader reader = new InputStreamReader(inputStream)) {
                 
@@ -121,7 +119,6 @@ public class ShopLoader {
                         processEntriesFile(json, overwritable, filePath.getFileName().toString());
                         break;
                     default:
-                        LOGGER.debug("File {} ignored - unrecognized type: {}", filePath.getFileName(), type);
                         break;
                 }
             }
@@ -150,7 +147,6 @@ public class ShopLoader {
             }
             
             if (PROTECTED_VALUTES.containsKey(id) && PROTECTED_VALUTES.get(id)) {
-                LOGGER.debug("Valute {} protected, ignoring override from {}", id, fileName);
                 continue;
             }
             
@@ -161,8 +157,6 @@ public class ShopLoader {
             
             VALUTES.put(id, valute);
             PROTECTED_VALUTES.put(id, !overwritable);
-            
-            LOGGER.debug("Loaded valute: {} ({})", id, valute.name);
         }
     }
     
@@ -185,7 +179,6 @@ public class ShopLoader {
             }
             
             if (PROTECTED_CATEGORIES.containsKey(id) && PROTECTED_CATEGORIES.get(id)) {
-                LOGGER.debug("Category {} protected, ignoring override from {}", id, fileName);
                 continue;
             }
             
@@ -197,8 +190,6 @@ public class ShopLoader {
             
             CATEGORIES.put(id, category);
             PROTECTED_CATEGORIES.put(id, !overwritable);
-            
-            LOGGER.debug("Loaded category: {} ({})", id, category.name);
         }
     }
     
@@ -222,19 +213,18 @@ public class ShopLoader {
                 continue;
             }
             
-            // Se non c'è un ID specifico, genera uno automatico basato su item e categoria
+            // If no specific ID, generate one automatically based on item and category
             String entryKey;
             if (id != null && !id.trim().isEmpty()) {
                 entryKey = id.trim();
             } else {
-                // Fallback: usa il vecchio sistema per compatibilità
+                // Fallback: use old system for compatibility
                 String baseItemId = extractBaseItemId(item);
                 entryKey = category != null ? category + ":" + baseItemId : baseItemId;
                 LOGGER.warn("Entry without ID found in {}, using fallback key: {}", fileName, entryKey);
             }
             
             if (PROTECTED_ENTRIES.containsKey(entryKey) && PROTECTED_ENTRIES.get(entryKey)) {
-                LOGGER.debug("Entry {} protected, ignoring override from {}", entryKey, fileName);
                 continue;
             }
             
@@ -266,8 +256,6 @@ public class ShopLoader {
             
             ENTRIES.put(entryKey, entry);
             PROTECTED_ENTRIES.put(entryKey, !overwritable);
-            
-            LOGGER.debug("Loaded entry: {} (ID: {}) in category {}", item, entryKey, category != null ? category : "default");
         }
     }
     
@@ -369,16 +357,13 @@ public class ShopLoader {
                     if (json.has("overwritable")) {
                         boolean overwritable = json.get("overwritable").getAsBoolean();
                         if (overwritable) {
-                            LOGGER.debug("Found {} with overwritable: true, will regenerate", filePath.getFileName());
                             return true;
                         } else {
-                            LOGGER.debug("Found {} with overwritable: false, will not regenerate", filePath.getFileName());
                             return false;
                         }
                     }
                     
                     // If no overwritable field, default to true (regenerate)
-                    LOGGER.debug("Found {} without overwritable field, assuming true", filePath.getFileName());
                     return true;
                 }
             }
@@ -393,8 +378,8 @@ public class ShopLoader {
     public static void reloadAllConfigurations() {
         LOGGER.info("Reloading all shop configurations...");
         
-        // Semplicemente ricarica tutto da zero - nessuna protezione delle entry in memoria
-        // Il flag 'overwritable' serve solo per la rigenerazione automatica dei file fisici
+        // Simply reload everything from scratch - no protection of entries in memory
+        // The 'overwritable' flag is only for automatic regeneration of physical files
         scanConfigDirectory();
         
         LOGGER.info("Shop configurations reload completed");
@@ -422,12 +407,12 @@ public class ShopLoader {
     }
     
     public static ShopEntry getEntry(String category, String item) {
-        // Prima prova con l'ID diretto se disponibile
+        // First try with direct ID if available
         String baseItemId = extractBaseItemId(item);
         String key = category != null ? category + ":" + baseItemId : baseItemId;
         ShopEntry entry = ENTRIES.get(key);
         
-        // Se non trovato con la chiave diretta, cerca nell'intera mappa
+        // If not found with direct key, search in entire map
         if (entry == null) {
             for (ShopEntry e : ENTRIES.values()) {
                 if (category != null && !category.equals(e.inCategory)) {
@@ -444,22 +429,22 @@ public class ShopLoader {
     }
     
     /**
-     * Ottiene una ShopEntry tramite il suo ID univoco
+     * Gets a ShopEntry by its unique ID
      */
     public static ShopEntry getEntryById(String id) {
         return ENTRIES.get(id);
     }
     
     /**
-     * Ottiene tutti gli ID delle valute disponibili per l'autocompletamento
+     * Gets all available valute IDs for autocompletion
      */
     public static List<String> getAllValuteIds() {
         return new ArrayList<>(VALUTES.keySet());
     }
     
     /**
-     * Estrae l'ID base di un item rimuovendo i data components
-     * Es: "minecraft:diamond_sword[enchantments={...}]" -> "minecraft:diamond_sword"
+     * Extracts the base ID of an item by removing data components
+     * Ex: "minecraft:diamond_sword[enchantments={...}]" -> "minecraft:diamond_sword"
      */
     private static String extractBaseItemId(String itemString) {
         if (itemString == null) return null;

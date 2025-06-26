@@ -11,34 +11,35 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.core.BlockPos;
 import net.unfamily.iskautils.block.entity.ShopBlockEntity;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.minecraft.network.chat.Component;
+import net.unfamily.iskautils.block.entity.AutoShopBlockEntity;
+import org.jetbrains.annotations.Nullable;
 
 public class ShopMenu extends AbstractContainerMenu {
     private final ShopBlockEntity blockEntity;
     private final ContainerLevelAccess levelAccess;
     private final BlockPos blockPos;
 
-    // Costruttore server-side
+    // Server-side constructor
     public ShopMenu(int containerId, Inventory playerInventory, ShopBlockEntity blockEntity) {
         super(ModMenuTypes.SHOP_MENU.get(), containerId);
         this.blockEntity = blockEntity;
         this.blockPos = blockEntity.getBlockPos();
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
         
-        addPlayerInventory(playerInventory);
-        addPlayerHotbar(playerInventory);
+        addPlayerInventorySlots(playerInventory);
     }
 
-    // Costruttore client-side (NeoForge factory)
+    // Client-side constructor (NeoForge factory)
     public ShopMenu(int containerId, Inventory playerInventory) {
         super(ModMenuTypes.SHOP_MENU.get(), containerId);
-        // Client-side: non abbiamo accesso diretto alla BlockEntity
-        // I dati verranno sincronizzati tramite packet se necessario
+        // Client-side: we don't have direct access to BlockEntity
+        // Data will be synchronized via packet if needed
         this.blockEntity = null;
         this.blockPos = BlockPos.ZERO;
         this.levelAccess = ContainerLevelAccess.NULL;
         
-        addPlayerInventory(playerInventory);
-        addPlayerHotbar(playerInventory);
+        addPlayerInventorySlots(playerInventory);
     }
 
     @Override
@@ -55,13 +56,22 @@ public class ShopMenu extends AbstractContainerMenu {
             ItemStack itemstack1 = slot.getItem();
             itemstack = itemstack1.copy();
             
-            // Gli slot 0-35 sono l'inventario del player (0-26 = inventario, 27-35 = hotbar)
-            int inventoryEnd = 36;
+            if (index < 36) {
+                // Moving from player to shop
+                if (!this.moveItemStackTo(itemstack1, 36, this.slots.size(), false)) {
+                    return ItemStack.EMPTY;
+                }
+            } else {
+                // Moving from shop to player
+                if (!this.moveItemStackTo(itemstack1, 0, 36, false)) {
+                    return ItemStack.EMPTY;
+                }
+            }
             
-            if (index < inventoryEnd) {
-                // Dallo slot dell'inventario del player: non fare nulla per ora
-                // In futuro qui si potrebbero gestire vendite automatiche al shop
-                return ItemStack.EMPTY;
+            if (itemstack1.isEmpty()) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
             }
         }
         
@@ -75,19 +85,39 @@ public class ShopMenu extends AbstractContainerMenu {
         return blockPos;
     }
     
-    private void addPlayerInventory(Inventory playerInventory) {
-        // Inventario del giocatore (3 righe x 9 slot) - spostato +1 pixel a destra e +1 pixel in basso
-        for (int i = 0; i < 3; ++i) {
-            for (int l = 0; l < 9; ++l) {
-                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 20 + l * 18, 154 + i * 18));
+    private void addPlayerInventorySlots(Inventory playerInventory) {
+        // Slots 0-35 are player inventory (0-26 = inventory, 27-35 = hotbar)
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                int slotIndex = col + row * 9 + 9; // +9 to skip hotbar
+                
+                // From player inventory slot: do nothing for now
+                // In the future automatic sales to shop could be handled here
+                this.addSlot(new Slot(playerInventory, slotIndex, 8 + col * 18, 154 + row * 18) {
+                    @Override
+                    public boolean mayPickup(Player playerIn) {
+                        return true;
+                    }
+                });
             }
         }
-    }
-    
-    private void addPlayerHotbar(Inventory playerInventory) {
-        // Hotbar del giocatore (1 riga x 9 slot) - spostato +1 pixel a destra e +1 pixel in basso
-        for (int i = 0; i < 9; ++i) {
-            this.addSlot(new Slot(playerInventory, i, 20 + i * 18, 212));
+        
+        // Player inventory (3 rows x 9 slots) - moved +1 pixel right and +1 pixel down
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                int slotIndex = col + row * 9 + 9; // +9 to skip hotbar
+                int xPos = 8 + col * 18; // GUI coordinate 7 + 1 (slot padding)
+                int yPos = 154 + row * 18; // GUI coordinate 153 + 1 (slot padding)
+                this.addSlot(new Slot(playerInventory, slotIndex, xPos, yPos));
+            }
+        }
+        
+        // Player hotbar (1 row x 9 slots) - moved +1 pixel right and +1 pixel down
+        for (int col = 0; col < 9; col++) {
+            int slotIndex = col;
+            int xPos = 8 + col * 18; // GUI coordinate 7 + 1
+            int yPos = 212; // Below inventory (154 + 3*18 = 208, +4 spacing)
+            this.addSlot(new Slot(playerInventory, slotIndex, xPos, yPos));
         }
     }
 } 

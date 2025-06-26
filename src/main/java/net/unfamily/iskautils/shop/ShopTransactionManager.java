@@ -24,26 +24,26 @@ public class ShopTransactionManager {
     
     /**
      * Attempts to buy an item from the shop using team valutes
-     * @param entryId L'ID univoco della ShopEntry (non l'itemId)
+     * @param entryId The unique ID of the ShopEntry (not the itemId)
      */
     public static boolean buyItem(ServerPlayer player, String entryId, int quantity) {
-        // Cerca l'entry tramite ID univoco
+        // Find entry by unique ID
         ShopEntry entry = ShopLoader.getEntryById(entryId);
         if (entry == null) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "item_not_found", entryId, null);
             return false;
         }
         
         if (entry.buy <= 0) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "cannot_buy", entryId, null);
             return false;
         }
         
         // Check stage requirements
         if (!checkStageRequirements(player, entry)) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "stage_requirements", entryId, null);
             return false;
         }
@@ -56,7 +56,7 @@ public class ShopTransactionManager {
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "no_team", entryId, valuteId);
             return false;
         }
@@ -64,28 +64,28 @@ public class ShopTransactionManager {
         // Check team balance
         double teamBalance = teamManager.getTeamValuteBalance(teamName, valuteId);
         if (teamBalance < totalCost) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "insufficient_funds", entryId, valuteId);
             return false;
         }
         
         // Remove valutes from team
         if (!teamManager.removeTeamValutes(teamName, valuteId, totalCost)) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "transaction_failed", entryId, valuteId);
             return false;
         }
         
-        // Give item to player - ora usa l'item esatto della entry
+        // Give item to player - now uses the exact item from the entry
         if (!giveItemToPlayer(player, entry, entry.itemCount * quantity)) {
-            // Se non riusciamo a dare l'item, rimborsa i soldi
+            // If we can't give the item, refund the money
             teamManager.addTeamValutes(teamName, valuteId, totalCost);
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "give_item_failed", entryId, valuteId);
             return false;
         }
         
-        // Invia successo al client invece del chat
+        // Send success to client instead of chat
         sendTransactionSuccessToClient(player);
         
         LOGGER.info("Player {} bought {}x {} (entry: {}) from team {} for {} {}", 
@@ -96,26 +96,26 @@ public class ShopTransactionManager {
     
     /**
      * Attempts to sell an item to the shop using team valutes
-     * @param entryId L'ID univoco della ShopEntry (non l'itemId)
+     * @param entryId The unique ID of the ShopEntry (not the itemId)
      */
     public static boolean sellItem(ServerPlayer player, String entryId, int quantity) {
-        // Cerca l'entry tramite ID univoco
+        // Find entry by unique ID
         ShopEntry entry = ShopLoader.getEntryById(entryId);
         if (entry == null) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "item_not_found", entryId, null);
             return false;
         }
         
         if (entry.sell <= 0) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "cannot_sell", entryId, null);
             return false;
         }
         
         // Check stage requirements
         if (!checkStageRequirements(player, entry)) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "stage_requirements", entryId, null);
             return false;
         }
@@ -128,26 +128,26 @@ public class ShopTransactionManager {
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "no_team", entryId, valuteId);
             return false;
         }
         
         // Check if player has the item and remove it  
         if (!removeItemFromPlayer(player, entry, entry.itemCount * quantity)) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "insufficient_items", entryId, valuteId);
             return false;
         }
         
         // Add valutes to team
         if (!teamManager.addTeamValutes(teamName, valuteId, totalReward)) {
-            // Invia errore al client invece del chat
+            // Send error to client instead of chat
             sendTransactionErrorToClient(player, "transaction_failed", entryId, valuteId);
             return false;
         }
         
-        // Invia successo al client invece del chat
+        // Send success to client instead of chat
         sendTransactionSuccessToClient(player);
         
         LOGGER.info("Player {} sold {}x {} (entry: {}) to team {} for {} {}", 
@@ -206,60 +206,44 @@ public class ShopTransactionManager {
     }
     
     /**
-     * Gestisce l'acquisto di item con ripetizioni multiple
-     * Come specificato: x4 o x16 è semplicemente ripetere l'operazione controllando ogni volta i denari
-     * @param entryId L'ID univoco della ShopEntry
+     * Handles item purchase with multiple repetitions
+     * As specified: x4 or x16 is simply repeating the operation checking money each time
+     * @param entryId The unique ID of the ShopEntry
      */
     public static void handleBuyItem(ServerPlayer player, String entryId, int multiplier) {
-        System.out.println("DEBUG: handleBuyItem chiamato - entryId: " + entryId + ", multiplier: " + multiplier);
-        
         int successfulPurchases = 0;
         
         for (int i = 0; i < multiplier; i++) {
             boolean success = buyItem(player, entryId, 1);
             if (success) {
                 successfulPurchases++;
-                System.out.println("DEBUG: Acquisto " + (i + 1) + "/" + multiplier + " riuscito");
             } else {
-                System.out.println("DEBUG: Acquisto " + (i + 1) + "/" + multiplier + " fallito - interrompo");
-                break; // Fermiamo qui se non ci sono più soldi
+                break; // Stop here if there's no more money
             }
         }
         
-        // Rimuovo i messaggi in chat - il feedback è gestito dal client
-        
-        System.out.println("DEBUG: handleBuyItem completato - acquisti riusciti: " + successfulPurchases + "/" + multiplier);
-        
-        // Aggiorna i dati del team nel client dopo la transazione
+        // Update team data in client after transaction
         updatePlayerTeamDataInClient(player);
     }
     
     /**
-     * Gestisce la vendita di item con ripetizioni multiple
-     * Come specificato: x4 o x16 è semplicemente ripetere l'operazione
-     * @param entryId L'ID univoco della ShopEntry
+     * Handles item sale with multiple repetitions
+     * As specified: x4 or x16 is simply repeating the operation
+     * @param entryId The unique ID of the ShopEntry
      */
     public static void handleSellItem(ServerPlayer player, String entryId, int multiplier) {
-        System.out.println("DEBUG: handleSellItem chiamato - entryId: " + entryId + ", multiplier: " + multiplier);
-        
         int successfulSales = 0;
         
         for (int i = 0; i < multiplier; i++) {
             boolean success = sellItem(player, entryId, 1);
             if (success) {
                 successfulSales++;
-                System.out.println("DEBUG: Vendita " + (i + 1) + "/" + multiplier + " riuscita");
             } else {
-                System.out.println("DEBUG: Vendita " + (i + 1) + "/" + multiplier + " fallita - interrompo");
-                break; // Fermiamo qui se non ci sono più item da vendere
+                break; // Stop here if there are no more items to sell
             }
         }
         
-        // Rimuovo i messaggi in chat - il feedback è gestito dal client
-        
-        System.out.println("DEBUG: handleSellItem completato - vendite riuscite: " + successfulSales + "/" + multiplier);
-        
-        // Aggiorna i dati del team nel client dopo la transazione
+        // Update team data in client after transaction
         updatePlayerTeamDataInClient(player);
     }
     
@@ -299,27 +283,31 @@ public class ShopTransactionManager {
         player.sendSystemMessage(Component.literal("§6=== Team Balance ==="));
         player.sendSystemMessage(Component.literal("§eTeam: " + teamName));
         
-        // Show null_coin balance
-        double nullCoinBalance = teamManager.getTeamValuteBalance(teamName, "null_coin");
-        player.sendSystemMessage(Component.literal("§aNull Coins: " + nullCoinBalance));
-        
-        // Could show other valutes here if needed
+        // Show all available valutes with localized names and symbols
+        Map<String, ShopValute> allValutes = ShopLoader.getValutes();
+        for (String valuteId : allValutes.keySet()) {
+            ShopValute valute = allValutes.get(valuteId);
+            double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
+            String localizedName = Component.translatable(valute.name).getString();
+            String formattedName = localizedName + " " + valute.charSymbol;
+            player.sendSystemMessage(Component.literal("§a" + formattedName + ": " + balance));
+        }
     }
     
     /**
-     * Dà un item al giocatore utilizzando il nuovo sistema di parsing 1.21.1
+     * Gives an item to the player using the new 1.21.1 parsing system
      */
     private static boolean giveItemToPlayer(ServerPlayer player, ShopEntry entry, int count) {
         try {
-            // Usa il nuovo sistema di parsing che supporta data components
+            // Use the new parsing system that supports data components
             ItemStack itemStack = ItemConverter.parseItemString(entry.item, count);
             
             if (itemStack.isEmpty()) {
-                LOGGER.warn("Impossibile parsare l'item: {}", entry.item);
+                LOGGER.warn("Unable to parse item: {}", entry.item);
                 return false;
             }
             
-            // Aggiungi l'item all'inventario del giocatore
+            // Add item to player inventory
             Inventory inventory = player.getInventory();
             boolean added = inventory.add(itemStack);
             if (!added) {
@@ -327,31 +315,31 @@ public class ShopTransactionManager {
             }
             return true;
         } catch (Exception e) {
-            LOGGER.error("Errore nel dare item {} al giocatore {}: {}", entry.item, player.getName().getString(), e.getMessage());
+            LOGGER.error("Error giving item {} to player {}: {}", entry.item, player.getName().getString(), e.getMessage());
             return false;
         }
     }
     
     /**
-     * Rimuove un item dall'inventario del giocatore
-     * Nota: Per la vendita, confronta solo il tipo base dell'item (senza data components)
-     * per permettere di vendere qualsiasi versione dell'item
+     * Removes an item from player inventory
+     * Note: For selling, only compares the base item type (without data components)
+     * to allow selling any version of the item
      */
     private static boolean removeItemFromPlayer(ServerPlayer player, ShopEntry entry, int count) {
         try {
-            // Per la vendita, usa solo l'ID base dell'item senza components
+            // For selling, use only the base item ID without components
             String baseItemId = extractBaseItemId(entry.item);
             ResourceLocation itemResource = ResourceLocation.parse(baseItemId);
             var item = BuiltInRegistries.ITEM.get(itemResource);
             
             if (item == Items.AIR) {
-                LOGGER.warn("Item non trovato: {}", baseItemId);
+                LOGGER.warn("Item not found: {}", baseItemId);
                 return false;
             }
             
             Inventory inventory = player.getInventory();
             
-            // Conta quanti item ha il giocatore
+            // Count how many items the player has
             int totalCount = 0;
             for (int i = 0; i < inventory.getContainerSize(); i++) {
                 ItemStack stack = inventory.getItem(i);
@@ -361,10 +349,10 @@ public class ShopTransactionManager {
             }
             
             if (totalCount < count) {
-                return false; // Non ha abbastanza item
+                return false; // Not enough items
             }
             
-            // Rimuovi gli item
+            // Remove items
             int remainingToRemove = count;
             for (int i = 0; i < inventory.getContainerSize() && remainingToRemove > 0; i++) {
                 ItemStack stack = inventory.getItem(i);
@@ -381,37 +369,37 @@ public class ShopTransactionManager {
             
             return true;
         } catch (Exception e) {
-            LOGGER.error("Errore nel rimuovere item {} dal giocatore {}: {}", entry.item, player.getName().getString(), e.getMessage());
+            LOGGER.error("Error removing item {} from player {}: {}", entry.item, player.getName().getString(), e.getMessage());
             return false;
         }
     }
     
     /**
-     * Aggiorna i dati del team nel client del giocatore
+     * Updates team data in the player's client
      */
     private static void updatePlayerTeamDataInClient(ServerPlayer player) {
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName != null) {
-            // Ottieni tutti i balance del team
+            // Get all team balances
             Map<String, Double> teamBalances = new HashMap<>();
             
-            // Ottieni tutte le valute disponibili e i loro balance
+            // Get all available valutes and their balances
             Map<String, ShopValute> allValutes = ShopLoader.getValutes();
             for (String valuteId : allValutes.keySet()) {
                 double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
                 teamBalances.put(valuteId, balance);
             }
             
-            // Invia i dati aggiornati al client
+            // Send updated data to client
             net.unfamily.iskautils.network.ModMessages.sendShopTeamDataToClient(player, teamName, teamBalances);
         }
     }
     
     /**
-     * Trova una ShopEntry per itemId, indipendentemente dalla categoria
-     * Confronta usando l'ID base dell'item (senza data components)
+     * Finds a ShopEntry by itemId, regardless of category
+     * Compares using the base item ID (without data components)
      */
     private static ShopEntry findEntryByItemId(String itemId) {
         Map<String, ShopEntry> allEntries = ShopLoader.getEntries();
@@ -424,12 +412,12 @@ public class ShopTransactionManager {
             }
         }
         
-        return null; // Item non trovato
+        return null; // Item not found
     }
     
     /**
-     * Estrae l'ID base di un item rimuovendo i data components
-     * Es: "minecraft:diamond_sword[enchantments={...}]" -> "minecraft:diamond_sword"
+     * Extracts the base ID of an item by removing data components
+     * Ex: "minecraft:diamond_sword[enchantments={...}]" -> "minecraft:diamond_sword"
      */
     private static String extractBaseItemId(String itemString) {
         if (itemString == null) return null;

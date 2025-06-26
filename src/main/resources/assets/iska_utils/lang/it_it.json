@@ -99,7 +99,7 @@
   
   "gui.iska_utils.shop.title": "Negozio",
   "gui.iska_utils.auto_shop.title": "Negozio Automatico",
-  "gui.iska_utils.auto_shop.select_item": "Item Selected",
+  "gui.iska_utils.auto_shop.select_item": "Item Selezionato",
   "gui.iska_utils.auto_shop.encapsulated_item": "Cassetto dello shop",
   "gui.iska_utils.shop.back": "Indietro",
   "gui.iska_utils.shop.buy": "Compra",
@@ -410,5 +410,9 @@
   "gui.iska_utils.structure_saver.client_success": "§aStruttura %s: §f%s",
   "block.iska_utils.auto_shop.valute_changed": "Valuta Auto Shop cambiata a: %s",
   "block.iska_utils.auto_shop.mode_changed": "Modalità Auto Shop cambiata a: %s",
-  "block.iska_utils.auto_shop.selected_item_set": "Item selezionato impostato: %s"
+  "block.iska_utils.auto_shop.selected_item_set": "Item selezionato impostato: %s",
+  "shop.valute.null_coin": "Moneta Nulla",
+  "shop.category.default": "Categoria Predefinita",
+  "shop.category.default.desc": "Categoria di default",
+  "gui.iska_utils.shop.category.tooltip": "Descrizione categoria"
 }

@@ -414,5 +414,9 @@
   
   "block.iska_utils.auto_shop.valute_changed": "Auto Shop currency changed to: %s",
   "block.iska_utils.auto_shop.mode_changed": "Auto Shop mode changed to: %s",
-  "block.iska_utils.auto_shop.selected_item_set": "Selected item set: %s"
+  "block.iska_utils.auto_shop.selected_item_set": "Selected item set: %s",
+  "shop.valute.null_coin": "Null Coin",
+  "shop.category.default": "Default",
+  "shop.category.default.desc": "Default category",
+  "gui.iska_utils.shop.category.tooltip": "Category description"
 }

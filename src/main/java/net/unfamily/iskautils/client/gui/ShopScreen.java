@@ -39,76 +39,68 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final int ENTRY_START_X = 30; // (200-140)/2
     private static final int ENTRY_START_Y = 20;
     
-    // Scrollbar constants (dalla StructurePlacerScreen)
+    // Scrollbar constants (from StructurePlacerScreen)
     private static final int SCROLLBAR_WIDTH = 8;
     private static final int SCROLLBAR_HEIGHT = 34;
     private static final int HANDLE_SIZE = 8;
     
-    // Posizioni scrollbar (accanto alla prima entry)
-    private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 4; // 4 pixel di margine
-    private static final int BUTTON_UP_Y = ENTRY_START_Y; // Pulsante SU all'inizio
-    private static final int SCROLLBAR_Y = ENTRY_START_Y + HANDLE_SIZE; // Scrollbar sotto il pulsante SU
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT; // Pulsante GIÙ subito dopo
+    // Scrollbar positions (next to first entry)
+    private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 4; // 4 pixel margin
+    private static final int BUTTON_UP_Y = ENTRY_START_Y; // UP button at start
+    private static final int SCROLLBAR_Y = ENTRY_START_Y + HANDLE_SIZE; // Scrollbar under UP button
+    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT; // DOWN button right after
     
-    // Costanti per i pulsanti Buy/Sell
-    private static final int BUTTON_WIDTH = 30; // Allargati (era 25)
-    private static final int BUTTON_HEIGHT = 12; // Più alti (era 10) 
-    private static final int BUTTONS_SPACING = 3; // Spazio tra Buy e Sell (era 2)
+    // Buy/Sell button constants
+    private static final int BUTTON_WIDTH = 30; // Widened (was 25)
+    private static final int BUTTON_HEIGHT = 12; // Taller (was 10)
+    private static final int BUTTONS_SPACING = 3; // Space between Buy and Sell (was 2)
     
-    // Costanti per l'area informazioni a destra
-    private static final int INFO_AREA_X = 185; // Spostato ulteriormente a sinistra (era 195, scrollbar finisce a 182)
-    private static final int INFO_AREA_WIDTH = 35; // Larghezza dell'area informazioni
-    private static final int BACK_BUTTON_WIDTH = 30; // Ridotto per stare nell'area
+    // Right info area constants
+    private static final int INFO_AREA_X = 185; // Moved further left (was 195, scrollbar ends at 182)
+    private static final int INFO_AREA_WIDTH = 35; // Info area width
+    private static final int BACK_BUTTON_WIDTH = 30; // Reduced to fit in area
     private static final int BACK_BUTTON_HEIGHT = 15;
-    private static final int BACK_BUTTON_X = INFO_AREA_X + 2; // Spostato più a sinistra (era centrato)
-    private static final int BACK_BUTTON_Y = 20; // Stesso livello delle entry
-    private static final int CURRENCIES_START_Y = BACK_BUTTON_Y + BACK_BUTTON_HEIGHT + 10; // 10px sotto il pulsante
+    private static final int BACK_BUTTON_X = INFO_AREA_X + 2; // Moved more left (was centered)
+    private static final int BACK_BUTTON_Y = 20; // Same level as entries
+    private static final int CURRENCIES_START_Y = BACK_BUTTON_Y + BACK_BUTTON_HEIGHT + 10; // 10px under button
     
-    // Variabili per lo scrolling
+    // Scrolling variables
     private int scrollOffset = 0;
     private int totalShopEntries = 0;
     private boolean isDraggingHandle = false;
     private int dragStartY = 0;
     private int dragStartScrollOffset = 0;
-    
-    // Modalità della GUI
-    private boolean showingCategories = true; // true = mostra categorie, false = mostra item
+
+    // GUI mode
+    private boolean showingCategories = true; // true = show categories, false = show items
     private String currentCategoryId = null;
     protected String currentCategoryName = "Shop";
     
-    // Dati del shop
+    // Shop data
     private List<ShopCategory> availableCategories = new ArrayList<>();
     private List<ShopEntry> availableItems = new ArrayList<>();
     private Map<String, ShopValute> availableValutes = new HashMap<>();
     
-    // Pulsanti vanilla
+    // Vanilla buttons
     private Button backButton;
     private List<Button> buyButtons = new ArrayList<>();
     private List<Button> sellButtons = new ArrayList<>();
     
-    // Dati del team del giocatore
+    // Player team data
     private String playerTeamName = null;
     private Map<String, Double> playerTeamBalances = new HashMap<>();
-    private static ShopScreen currentInstance = null; // Per il callback statico
+    private static ShopScreen currentInstance = null; // For static callback
     
-    /**
-     * Notifica tutte le istanze aperte di ShopScreen di ricaricare i dati
-     */
-    public static void notifyReload() {
-        if (currentInstance != null) {
-            currentInstance.reloadShopData();
-        }
-    }
-    
-    // Area di feedback per messaggi di errore/successo
+    // Feedback area for error/success messages
     private String feedbackMessage = null;
     private int feedbackColor = 0xFFFFFF;
     private long feedbackClearTime = 0;
-    private static final long FEEDBACK_DISPLAY_TIME = 3000; // 3 secondi
-    // Calcola la posizione del feedback al centro tra quinta entry e inventario (Y=154)
-    private static final int INVENTORY_Y = 154; // Y dell'inventario principale (dal ShopMenu)
-    private static final int FIFTH_ENTRY_END = ENTRY_START_Y + (ENTRIES * ENTRY_HEIGHT); // Fine quinta entry (Y=140)
-    private static final int FEEDBACK_Y_OFFSET = FIFTH_ENTRY_END + ((INVENTORY_Y - FIFTH_ENTRY_END) / 2) - 4; // Centrato (Y=147-4=143)
+    private static final long FEEDBACK_DISPLAY_TIME = 3000; // 3 seconds
+    
+    // Calculate feedback position centered between fifth entry and inventory (Y=154)
+    private static final int INVENTORY_Y = 154; // Y of main inventory (from ShopMenu)
+    private static final int FIFTH_ENTRY_END = ENTRY_START_Y + (ENTRIES * ENTRY_HEIGHT); // End of fifth entry (Y=140)
+    private static final int FEEDBACK_Y_OFFSET = FIFTH_ENTRY_END + ((INVENTORY_Y - FIFTH_ENTRY_END) / 2) - 4; // Centered (Y=147-4=143)
 
     public ShopScreen(AbstractContainerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -129,133 +121,145 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     protected void init() {
         super.init();
         
-        // Crea il pulsante Back vanilla
-        int buttonX = this.leftPos + BACK_BUTTON_X;
-        int buttonY = this.topPos + BACK_BUTTON_Y;
+        // Load shop data
+        loadShopData();
         
-        this.backButton = Button.builder(Component.translatable("gui.iska_utils.shop.back"), button -> {
+        // Register this instance for callback
+        currentInstance = this;
+        
+        // Create vanilla Back button
+        backButton = Button.builder(Component.translatable("gui.iska_utils.shop.back"), button -> {
             if (!showingCategories) {
                 navigateBackToCategories();
             }
-        }).bounds(buttonX, buttonY, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT).build();
+        }).bounds(this.leftPos + BACK_BUTTON_X, this.topPos + BACK_BUTTON_Y, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT).build();
         
         this.addRenderableWidget(backButton);
         
-        // Aggiorna lo stato del pulsante e crea i pulsanti Buy/Sell
+        // Update button state and create Buy/Sell buttons
         updateBackButtonState();
         updateBuySellButtons();
     }
 
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
+        int guiX = this.leftPos;
+        int guiY = this.topPos;
         
-        // Sfondo principale
-        guiGraphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, 240, 240);
+        // Main background
+        guiGraphics.blit(TEXTURE, guiX, guiY, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
-        // Entry del shop
+        // Shop entries - always render 5 entries, even if some are empty
         for (int i = 0; i < ENTRIES; i++) {
-            int entryY = y + ENTRY_START_Y + i * ENTRY_HEIGHT;
-            guiGraphics.blit(ENTRY_TEXTURE, x + ENTRY_START_X, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
+            int entryIndex = scrollOffset + i;
+            int entryX = guiX + ENTRY_START_X;
+            int entryY = guiY + ENTRY_START_Y + i * ENTRY_HEIGHT;
             
-            // Renderizza il contenuto della entry (slot + testo)
-            renderEntryContent(guiGraphics, x + ENTRY_START_X, entryY, i);
+            // Render entry background first (always visible)
+            guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
+            
+            // Render entry content only if there's data to show
+            if (showingCategories) {
+                if (entryIndex < availableCategories.size()) {
+                    ShopCategory category = availableCategories.get(entryIndex);
+                    renderCategoryEntry(guiGraphics, entryX, entryY, category);
+                }
+            } else {
+                if (entryIndex < availableItems.size()) {
+                    ShopEntry item = availableItems.get(entryIndex);
+                    renderItemEntry(guiGraphics, entryX, entryY, item);
+                }
+            }
         }
         
-        // Scrollbar (solo accanto alla prima entry)
+        // Scrollbar (only next to first entry)
         renderScrollbar(guiGraphics, mouseX, mouseY);
         
-        // Area informazioni a destra
+        // Right info area
         renderInfoArea(guiGraphics, mouseX, mouseY);
         
-        // Renderizza l'area di feedback
-        updateAndRenderFeedback(guiGraphics, x, y);
+        // Render feedback area
+        updateAndRenderFeedback(guiGraphics, guiX, guiY);
     }
     
-
-    
-
-    
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
+        // Only show scrollbar if there are more entries than can fit
+        if (totalShopEntries <= ENTRIES) return;
         
-        int scrollbarX = x + SCROLLBAR_X;
-        int scrollbarY = y + SCROLLBAR_Y;
-        int buttonUpY = y + BUTTON_UP_Y;
-        int buttonDownY = y + BUTTON_DOWN_Y;
+        int guiX = this.leftPos;
+        int guiY = this.topPos;
         
-        // Disegna la scrollbar completa (8 pixel larghe, altezza 34)
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0, 0, 
-                        SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        // Draw scrollbar background (8 pixels wide, height 34)
+        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
         
-        // Pulsante SU (8x8 pixel) - sopra la scrollbar
-        boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                           mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
-        int upTextureY = upHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, 
-                        SCROLLBAR_WIDTH * 2, upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        // UP button (8x8 pixels) - above scrollbar
+        boolean upButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+                                  mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE);
+        int upButtonV = upButtonHovered ? HANDLE_SIZE : 0;
+        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_UP_Y, SCROLLBAR_WIDTH * 2, upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
-        // Pulsante GIÙ (8x8 pixel) - sotto la scrollbar  
-        boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                             mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
-        int downTextureY = downHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, 
-                        SCROLLBAR_WIDTH * 3, downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        // DOWN button (8x8 pixels) - below scrollbar
+        boolean downButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+                                    mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE);
+        int downButtonV = downButtonHovered ? HANDLE_SIZE : 0;
+        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
-        // Handle (8x8 pixel) - sempre visibile, ma mobile solo se necessario
-        float scrollRatio = 0;
+        // Handle (8x8 pixels) - position based on scroll offset
         if (totalShopEntries > ENTRIES) {
-            scrollRatio = (float) scrollOffset / (totalShopEntries - ENTRIES);
+            double scrollRatio = (double) scrollOffset / (totalShopEntries - ENTRIES);
+            int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+            
+            boolean handleHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
+                                    mouseY >= handleY && mouseY < handleY + HANDLE_SIZE);
+            int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
+            guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         }
-        int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        
-        boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                               mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, handleY, 
-                        SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
     }
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) { // Click sinistro
+        if (button == 0) { // Left click
+            // Handle scrollbar clicks first
             if (handleScrollButtonClick(mouseX, mouseY)) {
                 return true;
             }
+            
+            // Handle handle drag start
             if (handleHandleClick(mouseX, mouseY)) {
                 return true;
             }
+            
+            // Handle scrollbar area clicks
             if (handleScrollbarClick(mouseX, mouseY)) {
                 return true;
             }
+            
+            // Handle entry clicks
             if (handleEntryClick(mouseX, mouseY)) {
                 return true;
             }
         }
         
-        // Gestisci i pulsanti vanilla (inclusi Buy/Sell) dopo i nostri handler
+        // Handle vanilla buttons (including Buy/Sell) after our handlers
         return super.mouseClicked(mouseX, mouseY, button);
     }
     
     private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
-        int scrollbarX = x + SCROLLBAR_X;
-        int buttonUpY = y + BUTTON_UP_Y;
-        int buttonDownY = y + BUTTON_DOWN_Y;
+        if (totalShopEntries <= ENTRIES) return false;
         
-        // Pulsante SU
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-            mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE) {
+        int guiX = this.leftPos;
+        int guiY = this.topPos;
+        
+        // UP button
+        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+            mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE) {
             scrollUp();
             return true;
         }
         
-        // Pulsante GIÙ
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-            mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE) {
+        // DOWN button
+        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+            mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE) {
             scrollDown();
             return true;
         }
@@ -482,7 +486,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Per le categorie, il testo può andare fino alla fine dell'entry (no pulsanti)
         int maxTextWidth = entryX + ENTRY_WIDTH - textX - 5; // 5px di margine dal bordo destro
         
-        renderScaledText(guiGraphics, category.name, textX, textY, maxTextWidth, 0x404040);
+        renderScaledText(guiGraphics, Component.translatable(category.name).getString(), textX, textY, maxTextWidth, 0x404040);
     }
     
     /**
@@ -613,7 +617,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private void navigateToCategory(ShopCategory category) {
         showingCategories = false;
         currentCategoryId = category.id;
-        currentCategoryName = category.name;
+        currentCategoryName = Component.translatable(category.name).getString();
         
         // Carica gli item di questa categoria
         Map<String, ShopEntry> allEntries = ShopLoader.getEntries();
@@ -660,10 +664,6 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Non renderizzare "Inventory" - rimosso
     }
     
-
-    
-
-    
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
@@ -676,6 +676,20 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 ShopEntry item = availableItems.get(entryIndex);
                 if (isItemBlocked(item)) {
                     List<Component> tooltip = createMissingStagesTooltip(item);
+                    guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+                    return;
+                }
+            }
+        }
+        
+        // Tooltip per le categorie
+        if (showingCategories) {
+            int entryIndex = getEntryUnderMouse(mouseX, mouseY);
+            if (entryIndex >= 0 && entryIndex < availableCategories.size()) {
+                ShopCategory category = availableCategories.get(entryIndex);
+                if (category.description != null && !category.description.trim().isEmpty()) {
+                    List<Component> tooltip = new ArrayList<>();
+                    tooltip.add(Component.translatable(category.description));
                     guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
                     return;
                 }
@@ -781,8 +795,6 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Renderizza le valute disponibili
         renderAvailableCurrencies(guiGraphics, x, y);
     }
-    
-
     
     /**
      * Renderizza le valute disponibili con i balance reali del team
@@ -895,7 +907,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         if (valuteId == null) return "?";
         ShopValute valute = availableValutes.get(valuteId);
         if (valute != null && valute.name != null && !valute.name.trim().isEmpty()) {
-            return valute.name;
+            return Component.translatable(valute.name).getString();
         }
         return valuteId; // Fallback sull'ID
     }
@@ -944,7 +956,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         // Renderizza il messaggio se presente
         if (feedbackMessage != null) {
-            int textX = guiX + ENTRY_START_X + 5; // 5px di margine
+            // Allinea con la prima slot dell'inventario del player (8px dal bordo sinistro)
+            int textX = guiX + 8;
             int textY = guiY + FEEDBACK_Y_OFFSET;
             guiGraphics.drawString(this.font, feedbackMessage, textX, textY, feedbackColor, false);
         }
@@ -1289,5 +1302,14 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             }
         }
         return -1;
+    }
+
+    /**
+     * Notifies all open ShopScreen instances to reload data
+     */
+    public static void notifyReload() {
+        if (currentInstance != null) {
+            currentInstance.reloadShopData();
+        }
     }
 } 

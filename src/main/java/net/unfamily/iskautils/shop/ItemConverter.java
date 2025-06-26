@@ -15,19 +15,19 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 /**
- * Utilizza il sistema di parsing di Minecraft 1.21.1 per convertire le stringhe item usando il sistema di parsing di Minecraft 1.21.1 per supportare i data components
+ * Uses Minecraft 1.21.1 parsing system to convert item strings using Minecraft 1.21.1 parsing system to support data components
  */
 public class ItemConverter {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-        /**
-     * Converte una stringa item nel formato di Minecraft 1.21.1 in ItemStack
-     * Supporta sia il formato semplice "minecraft:diamond_sword" che quello con components
+    /**
+     * Converts an item string in Minecraft 1.21.1 format to ItemStack
+     * Supports both simple format "minecraft:diamond_sword" and with components
      * "minecraft:diamond_sword[damage=500,enchantments={sharpness:3}]"
      * 
-     * @param itemString La stringa che rappresenta l'item
-     * @param count Il numero di item nello stack
-     * @return ItemStack corrispondente o ItemStack.EMPTY se non valido
+     * @param itemString The string representing the item
+     * @param count The number of items in the stack
+     * @return Corresponding ItemStack or ItemStack.EMPTY if not valid
      */
     public static ItemStack parseItemString(String itemString, int count) {
         if (itemString == null || itemString.trim().isEmpty()) {
@@ -35,47 +35,46 @@ public class ItemConverter {
         }
         
         try {
-            // Ottieni il server per il registry lookup
+            // Get server for registry lookup
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
             if (server == null) {
-                LOGGER.warn("Server non disponibile per il parsing dell'item: {}", itemString);
+                LOGGER.warn("Server not available for item parsing: {}", itemString);
                 return fallbackParsing(itemString, count);
             }
             
             try {
-                // Usa direttamente ItemParser come fa il comando /give
+                // Use ItemParser directly like the /give command does
                 HolderLookup.Provider registryAccess = server.registryAccess();
                 ItemParser itemParser = new ItemParser(registryAccess);
                 StringReader reader = new StringReader(itemString);
                 
-                // Parsa la stringa per ottenere ItemResult
+                // Parse string to get ItemResult
                 ItemParser.ItemResult itemResult = itemParser.parse(reader);
                 
-                // Crea ItemInput e poi l'ItemStack finale
+                // Create ItemInput and then the final ItemStack
                 ItemInput itemInput = new ItemInput(itemResult.item(), itemResult.components());
                 ItemStack result = itemInput.createItemStack(count, false);
                 
-                LOGGER.debug("Item parsato con successo: {} -> {}", itemString, result);
                 return result;
                 
             } catch (CommandSyntaxException e) {
-                LOGGER.warn("Errore nel parsing dell'item '{}': {}. Tentativo fallback.", itemString, e.getMessage());
+                LOGGER.warn("Error parsing item '{}': {}. Attempting fallback.", itemString, e.getMessage());
                 return fallbackParsing(itemString, count);
             }
             
         } catch (Exception e) {
-            LOGGER.error("Errore imprevisto durante il parsing dell'item '{}': {}", itemString, e.getMessage());
+            LOGGER.error("Unexpected error during item parsing '{}': {}", itemString, e.getMessage());
             return fallbackParsing(itemString, count);
         }
     }
     
     /**
-     * Metodo di fallback che usa il parsing semplice per compatibilità
-     * con le stringhe che contengono solo l'ID dell'item
+     * Fallback method that uses simple parsing for compatibility
+     * with strings that contain only the item ID
      */
     private static ItemStack fallbackParsing(String itemString, int count) {
         try {
-            // Rimuovi eventuali components per ottenere solo l'ID dell'item
+            // Remove any components to get only the item ID
             String itemId = extractItemId(itemString);
             
             ResourceLocation itemResource = ResourceLocation.parse(itemId);
@@ -83,21 +82,20 @@ public class ItemConverter {
             
             if (item != Items.AIR) {
                 ItemStack stack = new ItemStack(item, count);
-                LOGGER.debug("Item parsato con fallback: {} -> {}", itemString, stack);
                 return stack;
             }
         } catch (Exception e) {
-            LOGGER.warn("Fallback parsing fallito per '{}': {}", itemString, e.getMessage());
+            LOGGER.warn("Fallback parsing failed for '{}': {}", itemString, e.getMessage());
         }
         
-        // Ultimo fallback: restituisci stone
-        LOGGER.warn("Impossibile parsare l'item '{}', usando stone come fallback", itemString);
+        // Last fallback: return stone
+        LOGGER.warn("Unable to parse item '{}', using stone as fallback", itemString);
         return new ItemStack(Items.STONE, count);
     }
     
     /**
-     * Estrae l'ID dell'item da una stringa che potrebbe contenere components
-     * Es: "minecraft:diamond_sword[damage=500]" -> "minecraft:diamond_sword"
+     * Extracts the item ID from a string that might contain components
+     * Ex: "minecraft:diamond_sword[damage=500]" -> "minecraft:diamond_sword"
      */
     private static String extractItemId(String itemString) {
         int bracketIndex = itemString.indexOf('[');
@@ -108,14 +106,14 @@ public class ItemConverter {
     }
     
     /**
-     * Converte una stringa item con un singolo item (count = 1)
+     * Converts an item string with a single item (count = 1)
      */
     public static ItemStack parseItemString(String itemString) {
         return parseItemString(itemString, 1);
     }
     
     /**
-     * Verifica se una stringa può essere parsata come item valido
+     * Verifies if a string can be parsed as a valid item
      */
     public static boolean isValidItemString(String itemString) {
         if (itemString == null || itemString.trim().isEmpty()) {
@@ -131,13 +129,13 @@ public class ItemConverter {
     }
     
     /**
-     * Ottiene il nome display di un item dalla sua stringa
+     * Gets the display name of an item from its string
      */
     public static String getItemDisplayName(String itemString) {
         ItemStack stack = parseItemString(itemString, 1);
         if (!stack.isEmpty()) {
             return stack.getHoverName().getString();
         }
-        return itemString; // Fallback al nome originale
+        return itemString; // Fallback to original name
     }
 } 

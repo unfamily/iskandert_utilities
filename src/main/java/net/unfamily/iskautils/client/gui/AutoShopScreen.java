@@ -35,11 +35,11 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu> {
         int titleWidth = this.font.width(title);
         guiGraphics.drawString(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
         
-        // Testo accanto alla slot selezionata (slot 0)
+        // Testo accanto alla slot selezionata (slot 0) - spostato un po' più in alto
         Component selectText = Component.translatable("gui.iska_utils.auto_shop.select_item");
         guiGraphics.drawString(this.font, selectText, 75, 25, 0x404040, false);
         
-        // Testo accanto alla slot encapsulated (slot 1)
+        // Testo accanto alla slot encapsulated (slot 1) - spostato un po' più in alto
         Component encapsulatedText = Component.translatable("gui.iska_utils.auto_shop.encapsulated_item");
         guiGraphics.drawString(this.font, encapsulatedText, 75, 50, 0x404040, false);
     }

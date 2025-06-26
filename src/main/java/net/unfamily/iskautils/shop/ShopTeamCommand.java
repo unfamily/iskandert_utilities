@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
 
 /**
  * Command for managing shop teams
@@ -719,9 +720,15 @@ public class ShopTeamCommand {
             source.sendSuccess(() -> Component.literal("  - " + memberName), false);
         }
         
-        // Show valute balances
-        double nullCoinBalance = teamManager.getTeamValuteBalance(teamName, "null_coin");
-        source.sendSuccess(() -> Component.literal("Null Coins: " + nullCoinBalance), false);
+        // Show all valute balances with localized names and symbols
+        Map<String, ShopValute> allValutes = ShopLoader.getValutes();
+        for (String valuteId : allValutes.keySet()) {
+            ShopValute valute = allValutes.get(valuteId);
+            double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
+            String localizedName = Component.translatable(valute.name).getString();
+            String formattedName = localizedName + " " + valute.charSymbol;
+            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + formattedName), false);
+        }
         
         return 1;
     }
@@ -768,7 +775,14 @@ public class ShopTeamCommand {
         }
         
         double nullCoinBalance = teamManager.getTeamValuteBalance(teamName, "null_coin");
-        source.sendSuccess(() -> Component.literal("Your team has " + nullCoinBalance + " null_coin"), false);
+        ShopValute nullCoin = ShopLoader.getValutes().get("null_coin");
+        if (nullCoin != null) {
+            String localizedName = Component.translatable(nullCoin.name).getString();
+            String formattedName = localizedName + " " + nullCoin.charSymbol;
+            source.sendSuccess(() -> Component.literal("Your team has " + nullCoinBalance + " " + formattedName), false);
+        } else {
+            source.sendSuccess(() -> Component.literal("Your team has " + nullCoinBalance + " null_coin"), false);
+        }
         return 1;
     }
     
@@ -784,7 +798,14 @@ public class ShopTeamCommand {
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
         double balance = teamManager.getTeamValuteBalance(teamName, "null_coin");
         
-        source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " null_coin"), false);
+        ShopValute nullCoin = ShopLoader.getValutes().get("null_coin");
+        if (nullCoin != null) {
+            String localizedName = Component.translatable(nullCoin.name).getString();
+            String formattedName = localizedName + " " + nullCoin.charSymbol;
+            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + formattedName), false);
+        } else {
+            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " null_coin"), false);
+        }
         return 1;
     }
     
@@ -801,33 +822,18 @@ public class ShopTeamCommand {
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
         double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
         
-        source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + valuteId), false);
+        ShopValute valute = ShopLoader.getValutes().get(valuteId);
+        String valuteDisplay;
+        if (valute != null) {
+            String localizedName = Component.translatable(valute.name).getString();
+            valuteDisplay = localizedName + " " + valute.charSymbol;
+        } else {
+            valuteDisplay = valuteId;
+        }
+        
+        source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + valuteDisplay), false);
         return 1;
     }
-    
-    private static int addValutes(CommandContext<CommandSourceStack> context) {
-        CommandSourceStack source = context.getSource();
-        String teamName = StringArgumentType.getString(context, "teamName");
-        String valuteId = StringArgumentType.getString(context, "valuteId");
-        double amount = DoubleArgumentType.getDouble(context, "amount");
-        
-        if (source.getPlayer() == null) {
-            source.sendFailure(Component.literal("This command can only be used by players"));
-            return 0;
-        }
-        
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
-        
-        if (teamManager.addTeamValutes(teamName, valuteId, amount)) {
-            source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteId + " to team '" + teamName + "'!"), false);
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to add valutes to team. Team might not exist."));
-            return 0;
-        }
-    }
-    
-    // ===== ADD VALUTE COMMANDS =====
     
     private static int addValuteToOwnTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
@@ -848,7 +854,15 @@ public class ShopTeamCommand {
         }
         
         if (teamManager.addTeamValutes(teamName, valuteId, amount)) {
-            source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteId + " to your team '" + teamName + "'!"), false);
+            ShopValute valute = ShopLoader.getValutes().get(valuteId);
+            String valuteDisplay;
+            if (valute != null) {
+                String localizedName = Component.translatable(valute.name).getString();
+                valuteDisplay = localizedName + " " + valute.charSymbol;
+            } else {
+                valuteDisplay = valuteId;
+            }
+            source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteDisplay + " to your team '" + teamName + "'!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to add valutes to team."));
@@ -870,7 +884,15 @@ public class ShopTeamCommand {
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
         
         if (teamManager.addTeamValutes(teamName, valuteId, amount)) {
-            source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteId + " to team '" + teamName + "'!"), false);
+            ShopValute valute = ShopLoader.getValutes().get(valuteId);
+            String valuteDisplay;
+            if (valute != null) {
+                String localizedName = Component.translatable(valute.name).getString();
+                valuteDisplay = localizedName + " " + valute.charSymbol;
+            } else {
+                valuteDisplay = valuteId;
+            }
+            source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteDisplay + " to team '" + teamName + "'!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to add valutes to team. Team might not exist."));
@@ -894,7 +916,15 @@ public class ShopTeamCommand {
             }
             
             if (teamManager.addTeamValutes(teamName, valuteId, amount)) {
-                source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteId + " to " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
+                ShopValute valute = ShopLoader.getValutes().get(valuteId);
+                String valuteDisplay;
+                if (valute != null) {
+                    String localizedName = Component.translatable(valute.name).getString();
+                    valuteDisplay = localizedName + " " + valute.charSymbol;
+                } else {
+                    valuteDisplay = valuteId;
+                }
+                source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteDisplay + " to " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
                 return 1;
             } else {
                 source.sendFailure(Component.literal("Failed to add valutes to team."));
@@ -905,8 +935,6 @@ public class ShopTeamCommand {
             return 0;
         }
     }
-    
-    // ===== REMOVE VALUTE COMMANDS =====
     
     private static int removeValuteFromOwnTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
@@ -927,7 +955,15 @@ public class ShopTeamCommand {
         }
         
         if (teamManager.removeTeamValutes(teamName, valuteId, amount)) {
-            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteId + " from your team '" + teamName + "'!"), false);
+            ShopValute valute = ShopLoader.getValutes().get(valuteId);
+            String valuteDisplay;
+            if (valute != null) {
+                String localizedName = Component.translatable(valute.name).getString();
+                valuteDisplay = localizedName + " " + valute.charSymbol;
+            } else {
+                valuteDisplay = valuteId;
+            }
+            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteDisplay + " from your team '" + teamName + "'!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to remove valutes from team. Insufficient balance or team doesn't exist."));
@@ -949,7 +985,15 @@ public class ShopTeamCommand {
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
         
         if (teamManager.removeTeamValutes(teamName, valuteId, amount)) {
-            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteId + " from team '" + teamName + "'!"), false);
+            ShopValute valute = ShopLoader.getValutes().get(valuteId);
+            String valuteDisplay;
+            if (valute != null) {
+                String localizedName = Component.translatable(valute.name).getString();
+                valuteDisplay = localizedName + " " + valute.charSymbol;
+            } else {
+                valuteDisplay = valuteId;
+            }
+            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteDisplay + " from team '" + teamName + "'!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to remove valutes from team. Insufficient balance or team doesn't exist."));
@@ -973,7 +1017,15 @@ public class ShopTeamCommand {
             }
             
             if (teamManager.removeTeamValutes(teamName, valuteId, amount)) {
-                source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteId + " from " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
+                ShopValute valute = ShopLoader.getValutes().get(valuteId);
+                String valuteDisplay;
+                if (valute != null) {
+                    String localizedName = Component.translatable(valute.name).getString();
+                    valuteDisplay = localizedName + " " + valute.charSymbol;
+                } else {
+                    valuteDisplay = valuteId;
+                }
+                source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteDisplay + " from " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
                 return 1;
             } else {
                 source.sendFailure(Component.literal("Failed to remove valutes from team. Insufficient balance or team doesn't exist."));
@@ -984,8 +1036,6 @@ public class ShopTeamCommand {
             return 0;
         }
     }
-    
-    // ===== SET VALUTE COMMANDS =====
     
     private static int setValuteForOwnTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
@@ -1051,18 +1101,27 @@ public class ShopTeamCommand {
         
         boolean success;
         if (difference > 0) {
-            // Dobbiamo aggiungere valute
+            // We need to add valutes
             success = teamManager.addTeamValutes(teamName, valuteId, difference);
         } else if (difference < 0) {
-            // Dobbiamo rimuovere valute
+            // We need to remove valutes
             success = teamManager.removeTeamValutes(teamName, valuteId, Math.abs(difference));
         } else {
-            // Il balance è già quello desiderato
+            // Balance is already at desired amount
             success = true;
         }
         
+        ShopValute valute = ShopLoader.getValutes().get(valuteId);
+        String valuteDisplay;
+        if (valute != null) {
+            String localizedName = Component.translatable(valute.name).getString();
+            valuteDisplay = localizedName + " " + valute.charSymbol;
+        } else {
+            valuteDisplay = valuteId;
+        }
+        
         if (success) {
-            source.sendSuccess(() -> Component.literal("Set " + valuteId + " balance for team '" + teamName + "' to " + targetAmount + "!"), false);
+            source.sendSuccess(() -> Component.literal("Set " + valuteDisplay + " balance for team '" + teamName + "' to " + targetAmount + "!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to set valutes for team. Team might not exist."));
@@ -1107,16 +1166,16 @@ public class ShopTeamCommand {
     }
     
     /**
-     * Suggerisce gli ID delle valute disponibili per l'autocompletamento
+     * Suggests available valute IDs for autocompletion
      */
     private static CompletableFuture<Suggestions> suggestValutes(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        // Ottiene tutti gli ID delle valute disponibili dal ShopLoader
+        // Gets all available valute IDs from ShopLoader
         List<String> valuteIds = ShopLoader.getAllValuteIds();
         return SharedSuggestionProvider.suggest(valuteIds, builder);
     }
     
     /**
-     * Suggerisce i nomi dei team esistenti per l'autocompletamento
+     * Suggests existing team names for autocompletion
      */
     private static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         CommandSourceStack source = context.getSource();

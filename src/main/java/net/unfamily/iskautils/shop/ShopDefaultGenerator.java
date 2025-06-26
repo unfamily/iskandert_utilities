@@ -58,7 +58,7 @@ public class ShopDefaultGenerator {
             // Default valute
             JsonObject nullCoin = new JsonObject();
             nullCoin.addProperty("id", "null_coin");
-            nullCoin.addProperty("name", "Null Coin");
+            nullCoin.addProperty("name", "shop.valute.null_coin");
             nullCoin.addProperty("char_symbol", "∅");
             valutes.add(nullCoin);
             
@@ -114,8 +114,8 @@ public class ShopDefaultGenerator {
             // Default category
             JsonObject defaultCategory = new JsonObject();
             defaultCategory.addProperty("id", "000_default");
-            defaultCategory.addProperty("name", "Default");
-            defaultCategory.addProperty("description", "Default category");
+            defaultCategory.addProperty("name", "shop.category.default");
+            defaultCategory.addProperty("description", "shop.category.default.desc");
             defaultCategory.addProperty("item", "minecraft:gold_nugget");
             categories.add(defaultCategory);
             

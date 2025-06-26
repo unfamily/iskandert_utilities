@@ -197,30 +197,20 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     private void onShowPressed() {
         // Get the machine position from the menu (synced from server)
         BlockPos machinePos = this.menu.getSyncedBlockPos();
-        System.out.println("=== DEBUG onShowPressed ===");
-        System.out.println("Machine position from menu: " + machinePos);
-        System.out.println("Is ZERO? " + machinePos.equals(BlockPos.ZERO));
         
         if (!machinePos.equals(BlockPos.ZERO)) {
-            System.out.println("Calling sendStructurePlacerMachineShowPacket...");
             // Send show packet to toggle preview mode
             net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineShowPacket(machinePos);
         } else {
-            System.out.println("Position is ZERO, not calling packet method");
-            
             // Try to get position from block entity as fallback
             if (this.minecraft != null && this.minecraft.level != null) {
                 StructurePlacerMachineBlockEntity blockEntity = this.menu.getBlockEntityFromLevel(this.minecraft.level);
                 if (blockEntity != null) {
                     BlockPos actualPos = blockEntity.getBlockPos();
-                    System.out.println("Found block entity at: " + actualPos);
                     net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineShowPacket(actualPos);
-                } else {
-                    System.out.println("No block entity found nearby");
                 }
             }
         }
-        System.out.println("=== END DEBUG onShowPressed ===");
     }
     
     private void onRotatePressed() {
@@ -233,11 +223,8 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     }
     
     private void onSetInventoryPressed() {
-        System.out.println("=== onSetInventoryPressed() CALLED ===");
-        
         // Get the machine position from the menu (synced from server)
         BlockPos machinePos = this.menu.getSyncedBlockPos();
-        System.out.println("DEBUG: getSyncedBlockPos() returned: " + machinePos);
         
         if (!machinePos.equals(BlockPos.ZERO)) {
             // Determine the mode based on modifier keys
@@ -252,65 +239,23 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             
             // Use the same approach as all other buttons
             net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineSetInventoryPacket(machinePos, mode);
-            System.out.println("DEBUG: Sent packet mode " + mode + " via ModMessages like other buttons");
         } else {
-            System.out.println("DEBUG: Position is ZERO, trying fallback...");
-            
-            // Debug fallback process step by step
-            if (this.minecraft != null) {
-                System.out.println("DEBUG: Minecraft instance OK");
-                if (this.minecraft.level != null) {
-                    System.out.println("DEBUG: Level instance OK");
+            // Try fallback method
+            if (this.minecraft != null && this.minecraft.level != null) {
+                StructurePlacerMachineBlockEntity blockEntity = this.menu.getBlockEntityFromLevel(this.minecraft.level);
+                if (blockEntity != null) {
+                    BlockPos actualPos = blockEntity.getBlockPos();
                     
-                    StructurePlacerMachineBlockEntity blockEntity = this.menu.getBlockEntityFromLevel(this.minecraft.level);
-                    System.out.println("DEBUG: getBlockEntityFromLevel returned: " + (blockEntity != null ? "FOUND" : "NULL"));
-                    
-                    if (blockEntity != null) {
-                        BlockPos actualPos = blockEntity.getBlockPos();
-                        System.out.println("DEBUG: Found block entity at: " + actualPos);
-                        
-                        // Determine mode again for fallback
-                        int mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_NORMAL;
-                        if (hasShiftDown()) {
-                            mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_SHIFT;
-                        } else if (hasControlDown() || hasAltDown()) {
-                            mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_CTRL;
-                        }
-                        
-                        net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineSetInventoryPacket(actualPos, mode);
-                        System.out.println("DEBUG: Sent packet mode " + mode + " via fallback position: " + actualPos);
-                    } else {
-                        System.out.println("DEBUG: No block entity found nearby");
-                        
-                        // Debug: Try manual search around player
-                        if (this.minecraft.player != null) {
-                            BlockPos playerPos = this.minecraft.player.blockPosition();
-                            System.out.println("DEBUG: Player position: " + playerPos);
-                            System.out.println("DEBUG: Searching manually in 8x8x8 area...");
-                            
-                            boolean found = false;
-                            for (int x = -4; x <= 4 && !found; x++) {
-                                for (int y = -4; y <= 4 && !found; y++) {
-                                    for (int z = -4; z <= 4 && !found; z++) {
-                                        BlockPos searchPos = playerPos.offset(x, y, z);
-                                        net.minecraft.world.level.block.entity.BlockEntity be = this.minecraft.level.getBlockEntity(searchPos);
-                                        if (be instanceof StructurePlacerMachineBlockEntity machineEntity) {
-                                            System.out.println("DEBUG: MANUAL SEARCH found machine at: " + searchPos);
-                                            found = true;
-                                        }
-                                    }
-                                }
-                            }
-                            if (!found) {
-                                System.out.println("DEBUG: MANUAL SEARCH found no machines in 8x8x8 area");
-                            }
-                        }
+                    // Determine mode again for fallback
+                    int mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_NORMAL;
+                    if (hasShiftDown()) {
+                        mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_SHIFT;
+                    } else if (hasControlDown() || hasAltDown()) {
+                        mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_CTRL;
                     }
-                } else {
-                    System.out.println("DEBUG: Level is NULL");
+                    
+                    net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineSetInventoryPacket(actualPos, mode);
                 }
-            } else {
-                System.out.println("DEBUG: Minecraft is NULL");
             }
         }
     }
