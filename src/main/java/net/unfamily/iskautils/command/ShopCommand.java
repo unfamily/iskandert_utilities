@@ -13,7 +13,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
-import net.unfamily.iskautils.shop.ShopValute;
+import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopTeamCommand;
 import net.unfamily.iskautils.shop.ShopTransactionManager;
@@ -66,7 +66,13 @@ public class ShopCommand {
                     showShopInfo(source);
                     return 1;
                 }))
-            .then(Commands.literal("valutes")
+            .then(Commands.literal("currencies")
+                .executes(context -> {
+                    CommandSourceStack source = context.getSource();
+                    showValutes(source);
+                    return 1;
+                }))
+            .then(Commands.literal("valutes") // legacy command
                 .executes(context -> {
                     CommandSourceStack source = context.getSource();
                     showValutes(source);
@@ -105,26 +111,26 @@ public class ShopCommand {
     }
     
     private static void showShopInfo(CommandSourceStack source) {
-        Map<String, ShopValute> valutes = ShopLoader.getValutes();
+        Map<String, ShopCurrency> currencies = ShopLoader.getCurrencies();
         Map<String, ShopCategory> categories = ShopLoader.getCategories();
         Map<String, ShopEntry> entries = ShopLoader.getEntries();
         
         source.sendSuccess(() -> Component.literal("=== Shop System Info ==="), false);
-        source.sendSuccess(() -> Component.literal("Loaded valutes: " + valutes.size()), false);
+        source.sendSuccess(() -> Component.literal("Loaded currencies: " + currencies.size()), false);
         source.sendSuccess(() -> Component.literal("Loaded categories: " + categories.size()), false);
         source.sendSuccess(() -> Component.literal("Loaded entries: " + entries.size()), false);
     }
     
     private static void showValutes(CommandSourceStack source) {
-        Map<String, ShopValute> valutes = ShopLoader.getValutes();
+        Map<String, ShopCurrency> currencies = ShopLoader.getCurrencies();
         
-        source.sendSuccess(() -> Component.literal("=== Available Valutes ==="), false);
-        for (ShopValute valute : valutes.values()) {
+        source.sendSuccess(() -> Component.literal("=== Available Currencies ==="), false);
+        for (ShopCurrency currency : currencies.values()) {
             // Use localized name and format with symbol after
-            String localizedName = Component.translatable(valute.name).getString();
-            String formattedName = localizedName + " " + valute.charSymbol;
+            String localizedName = Component.translatable(currency.name).getString();
+            String formattedName = localizedName + " " + currency.charSymbol;
             source.sendSuccess(() -> Component.literal(
-                String.format("- %s (%s): %s", valute.id, formattedName, valute.charSymbol)
+                String.format("- %s (%s): %s", currency.id, formattedName, currency.charSymbol)
             ), false);
         }
     }

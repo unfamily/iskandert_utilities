@@ -8,7 +8,8 @@ public class ShopEntry {
     public String inCategory;
     public String item; // Also supports data components: "minecraft:diamond_sword[enchantments={...}]"
     public int itemCount;
-    public String valute;
+    public String currency;
+    public String valute; // Legacy field for backward compatibility
     public double buy;
     public double sell;
     public ShopStage[] stages;

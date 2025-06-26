@@ -281,13 +281,13 @@ public class ShopTransactionManager {
         player.sendSystemMessage(Component.literal("§6=== Team Balance ==="));
         player.sendSystemMessage(Component.literal("§eTeam: " + teamName));
         
-        // Show all available valutes with localized names and symbols
-        Map<String, ShopValute> allValutes = ShopLoader.getValutes();
-        for (String valuteId : allValutes.keySet()) {
-            ShopValute valute = allValutes.get(valuteId);
+        // Show all available currencies with localized names and symbols
+        Map<String, ShopCurrency> allCurrencies = ShopLoader.getCurrencies();
+        for (String valuteId : allCurrencies.keySet()) {
+            ShopCurrency currency = allCurrencies.get(valuteId);
             double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
-            String localizedName = Component.translatable(valute.name).getString();
-            String formattedName = localizedName + " " + valute.charSymbol;
+            String localizedName = Component.translatable(currency.name).getString();
+            String formattedName = localizedName + " " + currency.charSymbol;
             player.sendSystemMessage(Component.literal("§a" + formattedName + ": " + balance));
         }
     }
@@ -383,9 +383,9 @@ public class ShopTransactionManager {
             // Get all team balances
             Map<String, Double> teamBalances = new HashMap<>();
             
-            // Get all available valutes and their balances
-            Map<String, ShopValute> allValutes = ShopLoader.getValutes();
-            for (String valuteId : allValutes.keySet()) {
+            // Get all available currencies and their balances
+            Map<String, ShopCurrency> allCurrencies = ShopLoader.getCurrencies();
+            for (String valuteId : allCurrencies.keySet()) {
                 double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
                 teamBalances.put(valuteId, balance);
             }

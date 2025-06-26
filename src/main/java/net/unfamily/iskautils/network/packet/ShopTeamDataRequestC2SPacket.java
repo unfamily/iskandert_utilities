@@ -8,7 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.shop.ShopTeamManager;
-import net.unfamily.iskautils.shop.ShopValute;
+import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.network.ModMessages;
 
@@ -44,12 +44,12 @@ public record ShopTeamDataRequestC2SPacket() implements CustomPacketPayload {
         Map<String, Double> teamBalances = null;
         if (teamName != null) {
             teamBalances = new java.util.HashMap<>();
-            Map<String, ShopValute> valutes = ShopLoader.getValutes();
+            Map<String, ShopCurrency> currencies = ShopLoader.getCurrencies();
             
             // Ottieni il balance per ogni valuta
-            for (String valuteId : valutes.keySet()) {
-                double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
-                teamBalances.put(valuteId, balance);
+            for (String currencyId : currencies.keySet()) {
+                double balance = teamManager.getTeamValuteBalance(teamName, currencyId);
+                teamBalances.put(currencyId, balance);
             }
         }
         

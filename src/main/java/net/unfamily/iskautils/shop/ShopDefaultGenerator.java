@@ -19,22 +19,22 @@ public class ShopDefaultGenerator {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
     /**
-     * Generates default valutes file
+     * Generates default currencies file
      */
-    public static void generateDefaultValutes(Path configPath) {
+    public static void generateDefaultCurrencies(Path configPath) {
         try {
-            Path valutesFile = configPath.resolve("default_valutes.json");
+            Path currenciesFile = configPath.resolve("default_currencies.json");
             
             // Check if file exists and if it's overwritable
-            if (Files.exists(valutesFile)) {
+            if (Files.exists(currenciesFile)) {
                 try {
-                    String content = Files.readString(valutesFile);
+                    String content = Files.readString(currenciesFile);
                     JsonObject existingJson = GSON.fromJson(content, JsonObject.class);
                     
                     if (existingJson != null && existingJson.has("overwritable")) {
                         boolean overwritable = existingJson.get("overwritable").getAsBoolean();
                         if (!overwritable) {
-                            LOGGER.info("Skipping default valutes file generation - file is protected");
+                            LOGGER.info("Skipping default currencies file generation - file is protected");
                             return;
                         } else {
                             LOGGER.info("File exists and is overwritable, will regenerate");
@@ -43,35 +43,42 @@ public class ShopDefaultGenerator {
                         LOGGER.info("File exists but no overwritable flag found, will regenerate");
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("Error reading existing valutes file, will regenerate: {}", e.getMessage());
+                    LOGGER.warn("Error reading existing currencies file, will regenerate: {}", e.getMessage());
                 }
             } else {
                 LOGGER.info("File does not exist, will create new");
             }
             
             JsonObject root = new JsonObject();
-            root.addProperty("type", "shop_valute");
+            root.addProperty("type", "shop_currency");
             root.addProperty("overwritable", true);
             
-            JsonArray valutes = new JsonArray();
+            JsonArray currencies = new JsonArray();
             
-            // Default valute
+            // Default currency
             JsonObject nullCoin = new JsonObject();
             nullCoin.addProperty("id", "null_coin");
-            nullCoin.addProperty("name", "shop.valute.null_coin");
+            nullCoin.addProperty("name", "shop.currency.null_coin");
             nullCoin.addProperty("char_symbol", "∅");
-            valutes.add(nullCoin);
+            currencies.add(nullCoin);
             
-            root.add("valutes", valutes);
+            root.add("currencies", currencies);
             
             String jsonContent = GSON.toJson(root);
-            Files.write(valutesFile, jsonContent.getBytes());
+            Files.write(currenciesFile, jsonContent.getBytes());
             
-            LOGGER.info("Generated default valutes file: {}", valutesFile);
+            LOGGER.info("Generated default currencies file: {}", currenciesFile);
             
         } catch (IOException e) {
-            LOGGER.error("Error generating default valutes file: {}", e.getMessage());
+            LOGGER.error("Error generating default currencies file: {}", e.getMessage());
         }
+    }
+    
+    /**
+     * Legacy method for backward compatibility
+     */
+    public static void generateDefaultValutes(Path configPath) {
+        generateDefaultCurrencies(configPath);
     }
     
     /**
@@ -174,7 +181,7 @@ public class ShopDefaultGenerator {
             breadEntry.addProperty("in_category", "000_default");
             breadEntry.addProperty("item", "minecraft:bread");
             breadEntry.addProperty("item_count", 1);
-            breadEntry.addProperty("valute", "null_coin");
+            breadEntry.addProperty("currency", "null_coin");
             breadEntry.addProperty("buy", 1.0);
             breadEntry.addProperty("sell", 0.5);
             entries.add(breadEntry);

@@ -103,11 +103,11 @@ public class ShopTeamCommand {
                 .executes(ShopTeamCommand::ownTeamBalance)
                 .then(Commands.argument("teamName", StringArgumentType.word())
                     .executes(ShopTeamCommand::getBalance)
-                    .then(Commands.argument("valuteId", StringArgumentType.word())
+                    .then(Commands.argument("currencyId", StringArgumentType.word())
                         .executes(ShopTeamCommand::getValuteBalance))))
             .then(Commands.literal("addValute")
                 .requires(source -> source.hasPermission(2)) // Admin only
-                .then(Commands.argument("valuteId", StringArgumentType.word())
+                .then(Commands.argument("currencyId", StringArgumentType.word())
                     .suggests(ShopTeamCommand::suggestValutes)
                     .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
                         .executes(ShopTeamCommand::addValuteToOwnTeam)
@@ -120,7 +120,7 @@ public class ShopTeamCommand {
                                 .executes(ShopTeamCommand::addValuteToPlayerTeam))))))
             .then(Commands.literal("removeValute")
                 .requires(source -> source.hasPermission(2)) // Admin only
-                .then(Commands.argument("valuteId", StringArgumentType.word())
+                .then(Commands.argument("currencyId", StringArgumentType.word())
                     .suggests(ShopTeamCommand::suggestValutes)
                     .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
                         .executes(ShopTeamCommand::removeValuteFromOwnTeam)
@@ -133,7 +133,7 @@ public class ShopTeamCommand {
                                 .executes(ShopTeamCommand::removeValuteFromPlayerTeam))))))
             .then(Commands.literal("setCurrency")
                 .requires(source -> source.hasPermission(2)) // Admin only
-                .then(Commands.argument("valuteId", StringArgumentType.word())
+                .then(Commands.argument("currencyId", StringArgumentType.word())
                     .suggests(ShopTeamCommand::suggestValutes)
                     .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
                         .executes(ShopTeamCommand::setValuteForOwnTeam)
@@ -720,13 +720,13 @@ public class ShopTeamCommand {
             source.sendSuccess(() -> Component.literal("  - " + memberName), false);
         }
         
-        // Show all valute balances with localized names and symbols
-        Map<String, ShopValute> allValutes = ShopLoader.getValutes();
-        for (String valuteId : allValutes.keySet()) {
-            ShopValute valute = allValutes.get(valuteId);
-            double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
-            String localizedName = Component.translatable(valute.name).getString();
-            String formattedName = localizedName + " " + valute.charSymbol;
+        // Show all currency balances with localized names and symbols
+        Map<String, ShopCurrency> allCurrencies = ShopLoader.getCurrencies();
+        for (String currencyId : allCurrencies.keySet()) {
+            ShopCurrency currency = allCurrencies.get(currencyId);
+            double balance = teamManager.getTeamValuteBalance(teamName, currencyId);
+            String localizedName = Component.translatable(currency.name).getString();
+            String formattedName = localizedName + " " + currency.charSymbol;
             source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + formattedName), false);
         }
         
@@ -775,7 +775,7 @@ public class ShopTeamCommand {
         }
         
         double nullCoinBalance = teamManager.getTeamValuteBalance(teamName, "null_coin");
-        ShopValute nullCoin = ShopLoader.getValutes().get("null_coin");
+        ShopCurrency nullCoin = ShopLoader.getValutes().get("null_coin");
         if (nullCoin != null) {
             String localizedName = Component.translatable(nullCoin.name).getString();
             String formattedName = localizedName + " " + nullCoin.charSymbol;
@@ -798,7 +798,7 @@ public class ShopTeamCommand {
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
         double balance = teamManager.getTeamValuteBalance(teamName, "null_coin");
         
-        ShopValute nullCoin = ShopLoader.getValutes().get("null_coin");
+        ShopCurrency nullCoin = ShopLoader.getValutes().get("null_coin");
         if (nullCoin != null) {
             String localizedName = Component.translatable(nullCoin.name).getString();
             String formattedName = localizedName + " " + nullCoin.charSymbol;
@@ -812,7 +812,7 @@ public class ShopTeamCommand {
     private static int getValuteBalance(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         String teamName = StringArgumentType.getString(context, "teamName");
-        String valuteId = StringArgumentType.getString(context, "valuteId");
+        String currencyId = StringArgumentType.getString(context, "currencyId");
         
         if (source.getPlayer() == null) {
             source.sendFailure(Component.literal("This command can only be used by players"));
@@ -820,24 +820,24 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
-        double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
+        double balance = teamManager.getTeamValuteBalance(teamName, currencyId);
         
-        ShopValute valute = ShopLoader.getValutes().get(valuteId);
-        String valuteDisplay;
-        if (valute != null) {
-            String localizedName = Component.translatable(valute.name).getString();
-            valuteDisplay = localizedName + " " + valute.charSymbol;
+        ShopCurrency currency = ShopLoader.getValutes().get(currencyId);
+        String currencyDisplay;
+        if (currency != null) {
+            String localizedName = Component.translatable(currency.name).getString();
+            currencyDisplay = localizedName + " " + currency.charSymbol;
         } else {
-            valuteDisplay = valuteId;
+            currencyDisplay = currencyId;
         }
         
-        source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + valuteDisplay), false);
+        source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + currencyDisplay), false);
         return 1;
     }
     
     private static int addValuteToOwnTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        String valuteId = StringArgumentType.getString(context, "valuteId");
+        String currencyId = StringArgumentType.getString(context, "currencyId");
         double amount = DoubleArgumentType.getDouble(context, "amount");
         
         if (source.getPlayer() == null) {
@@ -853,26 +853,26 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        if (teamManager.addTeamValutes(teamName, valuteId, amount)) {
-            ShopValute valute = ShopLoader.getValutes().get(valuteId);
-            String valuteDisplay;
-            if (valute != null) {
-                String localizedName = Component.translatable(valute.name).getString();
-                valuteDisplay = localizedName + " " + valute.charSymbol;
+        if (teamManager.addTeamValutes(teamName, currencyId, amount)) {
+            ShopCurrency currency = ShopLoader.getValutes().get(currencyId);
+            String currencyDisplay;
+            if (currency != null) {
+                String localizedName = Component.translatable(currency.name).getString();
+                currencyDisplay = localizedName + " " + currency.charSymbol;
             } else {
-                valuteDisplay = valuteId;
+                currencyDisplay = currencyId;
             }
-            source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteDisplay + " to your team '" + teamName + "'!"), false);
+            source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to your team '" + teamName + "'!"), false);
             return 1;
         } else {
-            source.sendFailure(Component.literal("Failed to add valutes to team."));
+            source.sendFailure(Component.literal("Failed to add currencys to team."));
             return 0;
         }
     }
     
     private static int addValuteToTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        String valuteId = StringArgumentType.getString(context, "valuteId");
+        String currencyId = StringArgumentType.getString(context, "currencyId");
         double amount = DoubleArgumentType.getDouble(context, "amount");
         String teamName = StringArgumentType.getString(context, "teamName");
         
@@ -883,26 +883,26 @@ public class ShopTeamCommand {
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
         
-        if (teamManager.addTeamValutes(teamName, valuteId, amount)) {
-            ShopValute valute = ShopLoader.getValutes().get(valuteId);
-            String valuteDisplay;
-            if (valute != null) {
-                String localizedName = Component.translatable(valute.name).getString();
-                valuteDisplay = localizedName + " " + valute.charSymbol;
+        if (teamManager.addTeamValutes(teamName, currencyId, amount)) {
+            ShopCurrency currency = ShopLoader.getValutes().get(currencyId);
+            String currencyDisplay;
+            if (currency != null) {
+                String localizedName = Component.translatable(currency.name).getString();
+                currencyDisplay = localizedName + " " + currency.charSymbol;
             } else {
-                valuteDisplay = valuteId;
+                currencyDisplay = currencyId;
             }
-            source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteDisplay + " to team '" + teamName + "'!"), false);
+            source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to team '" + teamName + "'!"), false);
             return 1;
         } else {
-            source.sendFailure(Component.literal("Failed to add valutes to team. Team might not exist."));
+            source.sendFailure(Component.literal("Failed to add currencys to team. Team might not exist."));
             return 0;
         }
     }
     
     private static int addValuteToPlayerTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        String valuteId = StringArgumentType.getString(context, "valuteId");
+        String currencyId = StringArgumentType.getString(context, "currencyId");
         double amount = DoubleArgumentType.getDouble(context, "amount");
         
         try {
@@ -915,19 +915,19 @@ public class ShopTeamCommand {
                 return 0;
             }
             
-            if (teamManager.addTeamValutes(teamName, valuteId, amount)) {
-                ShopValute valute = ShopLoader.getValutes().get(valuteId);
-                String valuteDisplay;
-                if (valute != null) {
-                    String localizedName = Component.translatable(valute.name).getString();
-                    valuteDisplay = localizedName + " " + valute.charSymbol;
+            if (teamManager.addTeamValutes(teamName, currencyId, amount)) {
+                ShopCurrency currency = ShopLoader.getValutes().get(currencyId);
+                String currencyDisplay;
+                if (currency != null) {
+                    String localizedName = Component.translatable(currency.name).getString();
+                    currencyDisplay = localizedName + " " + currency.charSymbol;
                 } else {
-                    valuteDisplay = valuteId;
+                    currencyDisplay = currencyId;
                 }
-                source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteDisplay + " to " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
+                source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
                 return 1;
             } else {
-                source.sendFailure(Component.literal("Failed to add valutes to team."));
+                source.sendFailure(Component.literal("Failed to add currencys to team."));
                 return 0;
             }
         } catch (Exception e) {
@@ -938,7 +938,7 @@ public class ShopTeamCommand {
     
     private static int removeValuteFromOwnTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        String valuteId = StringArgumentType.getString(context, "valuteId");
+        String currencyId = StringArgumentType.getString(context, "currencyId");
         double amount = DoubleArgumentType.getDouble(context, "amount");
         
         if (source.getPlayer() == null) {
@@ -954,26 +954,26 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        if (teamManager.removeTeamValutes(teamName, valuteId, amount)) {
-            ShopValute valute = ShopLoader.getValutes().get(valuteId);
-            String valuteDisplay;
-            if (valute != null) {
-                String localizedName = Component.translatable(valute.name).getString();
-                valuteDisplay = localizedName + " " + valute.charSymbol;
+        if (teamManager.removeTeamValutes(teamName, currencyId, amount)) {
+            ShopCurrency currency = ShopLoader.getValutes().get(currencyId);
+            String currencyDisplay;
+            if (currency != null) {
+                String localizedName = Component.translatable(currency.name).getString();
+                currencyDisplay = localizedName + " " + currency.charSymbol;
             } else {
-                valuteDisplay = valuteId;
+                currencyDisplay = currencyId;
             }
-            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteDisplay + " from your team '" + teamName + "'!"), false);
+            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from your team '" + teamName + "'!"), false);
             return 1;
         } else {
-            source.sendFailure(Component.literal("Failed to remove valutes from team. Insufficient balance or team doesn't exist."));
+            source.sendFailure(Component.literal("Failed to remove currencys from team. Insufficient balance or team doesn't exist."));
             return 0;
         }
     }
     
     private static int removeValuteFromTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        String valuteId = StringArgumentType.getString(context, "valuteId");
+        String currencyId = StringArgumentType.getString(context, "currencyId");
         double amount = DoubleArgumentType.getDouble(context, "amount");
         String teamName = StringArgumentType.getString(context, "teamName");
         
@@ -984,26 +984,26 @@ public class ShopTeamCommand {
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
         
-        if (teamManager.removeTeamValutes(teamName, valuteId, amount)) {
-            ShopValute valute = ShopLoader.getValutes().get(valuteId);
-            String valuteDisplay;
-            if (valute != null) {
-                String localizedName = Component.translatable(valute.name).getString();
-                valuteDisplay = localizedName + " " + valute.charSymbol;
+        if (teamManager.removeTeamValutes(teamName, currencyId, amount)) {
+            ShopCurrency currency = ShopLoader.getValutes().get(currencyId);
+            String currencyDisplay;
+            if (currency != null) {
+                String localizedName = Component.translatable(currency.name).getString();
+                currencyDisplay = localizedName + " " + currency.charSymbol;
             } else {
-                valuteDisplay = valuteId;
+                currencyDisplay = currencyId;
             }
-            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteDisplay + " from team '" + teamName + "'!"), false);
+            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from team '" + teamName + "'!"), false);
             return 1;
         } else {
-            source.sendFailure(Component.literal("Failed to remove valutes from team. Insufficient balance or team doesn't exist."));
+            source.sendFailure(Component.literal("Failed to remove currencys from team. Insufficient balance or team doesn't exist."));
             return 0;
         }
     }
     
     private static int removeValuteFromPlayerTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        String valuteId = StringArgumentType.getString(context, "valuteId");
+        String currencyId = StringArgumentType.getString(context, "currencyId");
         double amount = DoubleArgumentType.getDouble(context, "amount");
         
         try {
@@ -1016,19 +1016,19 @@ public class ShopTeamCommand {
                 return 0;
             }
             
-            if (teamManager.removeTeamValutes(teamName, valuteId, amount)) {
-                ShopValute valute = ShopLoader.getValutes().get(valuteId);
-                String valuteDisplay;
-                if (valute != null) {
-                    String localizedName = Component.translatable(valute.name).getString();
-                    valuteDisplay = localizedName + " " + valute.charSymbol;
+            if (teamManager.removeTeamValutes(teamName, currencyId, amount)) {
+                ShopCurrency currency = ShopLoader.getValutes().get(currencyId);
+                String currencyDisplay;
+                if (currency != null) {
+                    String localizedName = Component.translatable(currency.name).getString();
+                    currencyDisplay = localizedName + " " + currency.charSymbol;
                 } else {
-                    valuteDisplay = valuteId;
+                    currencyDisplay = currencyId;
                 }
-                source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteDisplay + " from " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
+                source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
                 return 1;
             } else {
-                source.sendFailure(Component.literal("Failed to remove valutes from team. Insufficient balance or team doesn't exist."));
+                source.sendFailure(Component.literal("Failed to remove currencys from team. Insufficient balance or team doesn't exist."));
                 return 0;
             }
         } catch (Exception e) {
@@ -1039,7 +1039,7 @@ public class ShopTeamCommand {
     
     private static int setValuteForOwnTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        String valuteId = StringArgumentType.getString(context, "valuteId");
+        String currencyId = StringArgumentType.getString(context, "currencyId");
         double amount = DoubleArgumentType.getDouble(context, "amount");
         
         if (source.getPlayer() == null) {
@@ -1055,12 +1055,12 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        return setTeamValute(source, teamManager, teamName, valuteId, amount);
+        return setTeamValute(source, teamManager, teamName, currencyId, amount);
     }
     
     private static int setValuteForTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        String valuteId = StringArgumentType.getString(context, "valuteId");
+        String currencyId = StringArgumentType.getString(context, "currencyId");
         double amount = DoubleArgumentType.getDouble(context, "amount");
         String teamName = StringArgumentType.getString(context, "teamName");
         
@@ -1070,12 +1070,12 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
-        return setTeamValute(source, teamManager, teamName, valuteId, amount);
+        return setTeamValute(source, teamManager, teamName, currencyId, amount);
     }
     
     private static int setValuteForPlayerTeam(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        String valuteId = StringArgumentType.getString(context, "valuteId");
+        String currencyId = StringArgumentType.getString(context, "currencyId");
         double amount = DoubleArgumentType.getDouble(context, "amount");
         
         try {
@@ -1088,43 +1088,43 @@ public class ShopTeamCommand {
                 return 0;
             }
             
-            return setTeamValute(source, teamManager, teamName, valuteId, amount);
+            return setTeamValute(source, teamManager, teamName, currencyId, amount);
         } catch (Exception e) {
             source.sendFailure(Component.literal("Player not found or error occurred"));
             return 0;
         }
     }
     
-    private static int setTeamValute(CommandSourceStack source, ShopTeamManager teamManager, String teamName, String valuteId, double targetAmount) {
-        double currentBalance = teamManager.getTeamValuteBalance(teamName, valuteId);
+    private static int setTeamValute(CommandSourceStack source, ShopTeamManager teamManager, String teamName, String currencyId, double targetAmount) {
+        double currentBalance = teamManager.getTeamValuteBalance(teamName, currencyId);
         double difference = targetAmount - currentBalance;
         
         boolean success;
         if (difference > 0) {
-            // We need to add valutes
-            success = teamManager.addTeamValutes(teamName, valuteId, difference);
+            // We need to add currencys   
+            success = teamManager.addTeamValutes(teamName, currencyId, difference);
         } else if (difference < 0) {
-            // We need to remove valutes
-            success = teamManager.removeTeamValutes(teamName, valuteId, Math.abs(difference));
+            // We need to remove currencys
+            success = teamManager.removeTeamValutes(teamName, currencyId, Math.abs(difference));
         } else {
             // Balance is already at desired amount
             success = true;
         }
         
-        ShopValute valute = ShopLoader.getValutes().get(valuteId);
-        String valuteDisplay;
-        if (valute != null) {
-            String localizedName = Component.translatable(valute.name).getString();
-            valuteDisplay = localizedName + " " + valute.charSymbol;
+        ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
+        String currencyDisplay;
+        if (currency != null) {
+            String localizedName = Component.translatable(currency.name).getString();
+            currencyDisplay = localizedName + " " + currency.charSymbol;
         } else {
-            valuteDisplay = valuteId;
+            currencyDisplay = currencyId;
         }
         
         if (success) {
-            source.sendSuccess(() -> Component.literal("Set " + valuteDisplay + " balance for team '" + teamName + "' to " + targetAmount + "!"), false);
+            source.sendSuccess(() -> Component.literal("Set " + currencyDisplay + " balance for team '" + teamName + "' to " + targetAmount + "!"), false);
             return 1;
         } else {
-            source.sendFailure(Component.literal("Failed to set valutes for team. Team might not exist."));
+            source.sendFailure(Component.literal("Failed to set currencys for team. Team might not exist."));
             return 0;
         }
     }
@@ -1166,12 +1166,12 @@ public class ShopTeamCommand {
     }
     
     /**
-     * Suggests available valute IDs for autocompletion
+     * Suggests available currency IDs for autocompletion
      */
     private static CompletableFuture<Suggestions> suggestValutes(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        // Gets all available valute IDs from ShopLoader
-        List<String> valuteIds = ShopLoader.getAllValuteIds();
-        return SharedSuggestionProvider.suggest(valuteIds, builder);
+        // Gets all available currency IDs from ShopLoader
+        List<String> currencyIds = ShopLoader.getAllValuteIds();
+        return SharedSuggestionProvider.suggest(currencyIds, builder);
     }
     
     /**

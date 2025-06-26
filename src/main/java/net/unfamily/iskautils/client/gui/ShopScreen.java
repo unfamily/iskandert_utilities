@@ -14,7 +14,7 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopEntry;
-import net.unfamily.iskautils.shop.ShopValute;
+import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ItemConverter;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
@@ -79,7 +79,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     // Shop data
     private List<ShopCategory> availableCategories = new ArrayList<>();
     private List<ShopEntry> availableItems = new ArrayList<>();
-    private Map<String, ShopValute> availableValutes = new HashMap<>();
+    private Map<String, ShopCurrency> availableCurrencies = new HashMap<>();
     
     // Vanilla buttons
     private Button backButton;
@@ -425,7 +425,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     private void loadShopData() {
         Map<String, ShopCategory> categories = ShopLoader.getCategories();
-        availableValutes = ShopLoader.getValutes();
+        availableCurrencies = ShopLoader.getCurrencies();
         
         // Converte in lista e ordina per ID
         availableCategories = categories.values().stream()
@@ -820,16 +820,16 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         
         int lineIndex = 0;
-        for (ShopValute valute : availableValutes.values()) {
+        for (ShopCurrency currency : availableCurrencies.values()) {
             int textY = startY + lineIndex * 10; // 10px di spaziatura tra le righe
             
             // Ottieni il balance reale del team per questa valuta
-            double balance = playerTeamBalances.getOrDefault(valute.id, 0.0);
+            double balance = playerTeamBalances.getOrDefault(currency.id, 0.0);
             
             // Formatta il balance con abbreviazioni per numeri grandi
             String balanceStr = formatLargeNumber(balance);
             
-            String balanceText = balanceStr + " " + (valute.charSymbol != null ? valute.charSymbol : valute.id);
+            String balanceText = balanceStr + " " + (currency.charSymbol != null ? currency.charSymbol : currency.id);
             Component currencyText = Component.literal(balanceText);
             
             // Colore: rosso se balance è 0, normale altrimenti
@@ -840,7 +840,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         }
         
         // Se non ci sono valute configurate, mostra un messaggio
-        if (availableValutes.isEmpty()) {
+        if (availableCurrencies.isEmpty()) {
             Component noValutesText = Component.translatable("gui.iska_utils.shop.no_valutes");
             guiGraphics.drawString(this.font, noValutesText, textX, startY, 0x808080, false);
         }
@@ -893,9 +893,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     private String getCurrencySymbol(String valuteId) {
         if (valuteId == null) return "?";
-        ShopValute valute = availableValutes.get(valuteId);
-        if (valute != null && valute.charSymbol != null) {
-            return valute.charSymbol;
+        ShopCurrency currency = availableCurrencies.get(valuteId);
+        if (currency != null && currency.charSymbol != null) {
+            return currency.charSymbol;
         }
         return valuteId; // Fallback sull'ID
     }
@@ -905,9 +905,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     private String getCurrencyName(String valuteId) {
         if (valuteId == null) return "?";
-        ShopValute valute = availableValutes.get(valuteId);
-        if (valute != null && valute.name != null && !valute.name.trim().isEmpty()) {
-            return Component.translatable(valute.name).getString();
+        ShopCurrency currency = availableCurrencies.get(valuteId);
+        if (currency != null && currency.name != null && !currency.name.trim().isEmpty()) {
+            return Component.translatable(currency.name).getString();
         }
         return valuteId; // Fallback sull'ID
     }
@@ -956,9 +956,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         // Renderizza il messaggio se presente
         if (feedbackMessage != null) {
-            // Allinea con la prima slot dell'inventario del player (8px dal bordo sinistro)
-            int textX = guiX + 8;
-            int textY = guiY + FEEDBACK_Y_OFFSET;
+            // Posiziona sempre a 20, 154
+            int textX = guiX + 20;
+            int textY = guiY + 154;
             guiGraphics.drawString(this.font, feedbackMessage, textX, textY, feedbackColor, false);
         }
     }

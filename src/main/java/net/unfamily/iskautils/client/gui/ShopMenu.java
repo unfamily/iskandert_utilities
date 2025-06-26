@@ -86,36 +86,20 @@ public class ShopMenu extends AbstractContainerMenu {
     }
     
     private void addPlayerInventorySlots(Inventory playerInventory) {
-        // Slots 0-35 are player inventory (0-26 = inventory, 27-35 = hotbar)
+        // Player inventory (3 rows x 9 slots) - starting at 20, 154
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = col + row * 9 + 9; // +9 to skip hotbar
-                
-                // From player inventory slot: do nothing for now
-                // In the future automatic sales to shop could be handled here
-                this.addSlot(new Slot(playerInventory, slotIndex, 8 + col * 18, 154 + row * 18) {
-                    @Override
-                    public boolean mayPickup(Player playerIn) {
-                        return true;
-                    }
-                });
-            }
-        }
-        
-        // Player inventory (3 rows x 9 slots) - moved +1 pixel right and +1 pixel down
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                int slotIndex = col + row * 9 + 9; // +9 to skip hotbar
-                int xPos = 8 + col * 18; // GUI coordinate 7 + 1 (slot padding)
-                int yPos = 154 + row * 18; // GUI coordinate 153 + 1 (slot padding)
+                int xPos = 20 + col * 18; // Starting at x=20
+                int yPos = 154 + row * 18; // Starting at y=154
                 this.addSlot(new Slot(playerInventory, slotIndex, xPos, yPos));
             }
         }
         
-        // Player hotbar (1 row x 9 slots) - moved +1 pixel right and +1 pixel down
+        // Player hotbar (1 row x 9 slots) - starting at 20, 212
         for (int col = 0; col < 9; col++) {
             int slotIndex = col;
-            int xPos = 8 + col * 18; // GUI coordinate 7 + 1
+            int xPos = 20 + col * 18; // Starting at x=20
             int yPos = 212; // Below inventory (154 + 3*18 = 208, +4 spacing)
             this.addSlot(new Slot(playerInventory, slotIndex, xPos, yPos));
         }

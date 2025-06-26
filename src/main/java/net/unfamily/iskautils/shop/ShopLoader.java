@@ -30,11 +30,11 @@ public class ShopLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
-    private static final Map<String, ShopValute> VALUTES = new HashMap<>();
+    private static final Map<String, ShopCurrency> CURRENCIES = new HashMap<>();
     private static final Map<String, ShopCategory> CATEGORIES = new HashMap<>();
     private static final Map<String, ShopEntry> ENTRIES = new HashMap<>();
     
-    private static final Map<String, Boolean> PROTECTED_VALUTES = new HashMap<>();
+    private static final Map<String, Boolean> PROTECTED_CURRENCIES = new HashMap<>();
     private static final Map<String, Boolean> PROTECTED_CATEGORIES = new HashMap<>();
     private static final Map<String, Boolean> PROTECTED_ENTRIES = new HashMap<>();
     
@@ -70,10 +70,10 @@ public class ShopLoader {
             // Check and regenerate default files if needed
             checkAndRegenerateDefaultFiles(configPath);
             
-            VALUTES.clear();
+            CURRENCIES.clear();
             CATEGORIES.clear();
             ENTRIES.clear();
-            PROTECTED_VALUTES.clear();
+            PROTECTED_CURRENCIES.clear();
             PROTECTED_CATEGORIES.clear();
             PROTECTED_ENTRIES.clear();
             
@@ -108,8 +108,9 @@ public class ShopLoader {
                 boolean overwritable = json.has("overwritable") ? json.get("overwritable").getAsBoolean() : false;
                 
                 switch (type) {
-                    case "shop_valute":
-                        processValutesFile(json, overwritable, filePath.getFileName().toString());
+                    case "shop_currency":
+                    case "shop_valute": // backward compatibility
+                        processCurrenciesFile(json, overwritable, filePath.getFileName().toString());
                         break;
                     case "shop_category":
                         processCategoriesFile(json, overwritable, filePath.getFileName().toString());
@@ -127,35 +128,35 @@ public class ShopLoader {
         }
     }
     
-    private static void processValutesFile(JsonObject json, boolean overwritable, String fileName) {
-        if (!json.has("valutes") || !json.get("valutes").isJsonArray()) {
-            LOGGER.warn("File {} does not contain valid 'valutes' array", fileName);
+    private static void processCurrenciesFile(JsonObject json, boolean overwritable, String fileName) {
+        if (!json.has("currencies") || !json.get("currencies").isJsonArray()) {
+            LOGGER.warn("File {} does not contain valid 'currencies' array", fileName);
             return;
         }
         
-        JsonArray valutesArray = json.get("valutes").getAsJsonArray();
-        for (JsonElement element : valutesArray) {
+        JsonArray currenciesArray = json.get("currencies").getAsJsonArray();
+        for (JsonElement element : currenciesArray) {
             if (!element.isJsonObject()) continue;
             
-            JsonObject valuteObj = element.getAsJsonObject();
-            String id = valuteObj.has("id") ? valuteObj.get("id").getAsString() : null;
+            JsonObject currencyObj = element.getAsJsonObject();
+            String id = currencyObj.has("id") ? currencyObj.get("id").getAsString() : null;
             
             if (id == null || id.trim().isEmpty()) {
-                LOGGER.warn("Valute without valid ID found in {}", fileName);
+                LOGGER.warn("Currency without valid ID found in {}", fileName);
                 continue;
             }
             
-            if (PROTECTED_VALUTES.containsKey(id) && PROTECTED_VALUTES.get(id)) {
+            if (PROTECTED_CURRENCIES.containsKey(id) && PROTECTED_CURRENCIES.get(id)) {
                 continue;
             }
             
-            ShopValute valute = new ShopValute();
-            valute.id = id;
-            valute.name = valuteObj.has("name") ? valuteObj.get("name").getAsString() : id;
-            valute.charSymbol = valuteObj.has("char_symbol") ? valuteObj.get("char_symbol").getAsString() : "§";
+            ShopCurrency currency = new ShopCurrency();
+            currency.id = id;
+            currency.name = currencyObj.has("name") ? currencyObj.get("name").getAsString() : id;
+            currency.charSymbol = currencyObj.has("char_symbol") ? currencyObj.get("char_symbol").getAsString() : "§";
             
-            VALUTES.put(id, valute);
-            PROTECTED_VALUTES.put(id, !overwritable);
+            CURRENCIES.put(id, currency);
+            PROTECTED_CURRENCIES.put(id, !overwritable);
         }
     }
     
@@ -232,7 +233,17 @@ public class ShopLoader {
             entry.inCategory = category;
             entry.item = item;
             entry.itemCount = entryObj.has("item_count") ? entryObj.get("item_count").getAsInt() : 1;
-            entry.valute = entryObj.has("valute") ? entryObj.get("valute").getAsString() : null;
+            // Support both currency and legacy valute fields
+            if (entryObj.has("currency")) {
+                entry.currency = entryObj.get("currency").getAsString();
+                entry.valute = entry.currency; // For backward compatibility
+            } else if (entryObj.has("valute")) {
+                entry.valute = entryObj.get("valute").getAsString();
+                entry.currency = entry.valute; // For forward compatibility
+            } else {
+                entry.currency = null;
+                entry.valute = null;
+            }
             entry.buy = entryObj.has("buy") ? entryObj.get("buy").getAsDouble() : 0.0;
             entry.sell = entryObj.has("sell") ? entryObj.get("sell").getAsDouble() : 0.0;
             
@@ -266,8 +277,8 @@ public class ShopLoader {
                 "This directory contains configuration files for the custom shop system.\n\n" +
                 "## File Structure\n\n" +
                 "The shop system uses three types of files:\n\n" +
-                "### 1. shop_valutes.json - Valutes\n" +
-                "Defines available valutes in the shop system.\n\n" +
+                "### 1. shop_currency.json - Currencies\n" +
+                "Defines available currencies in the shop system.\n\n" +
                 "### 2. shop_category.json - Categories\n" +
                 "Defines product categories in the shop.\n\n" +
                 "### 3. shop_entry.json - Shop Entries\n" +
@@ -291,7 +302,7 @@ public class ShopLoader {
     
     private static void generateDefaultConfigurations(Path configPath) {
         try {
-            ShopDefaultGenerator.generateDefaultValutes(configPath);
+            ShopDefaultGenerator.generateDefaultCurrencies(configPath);
             ShopDefaultGenerator.generateDefaultCategories(configPath);
             ShopDefaultGenerator.generateDefaultEntries(configPath);
 
@@ -305,14 +316,14 @@ public class ShopLoader {
      */
     private static void checkAndRegenerateDefaultFiles(Path configPath) {
         try {
-            // Check default valutes file
-            Path defaultValutesFile = configPath.resolve("default_valutes.json");
-            if (!Files.exists(defaultValutesFile)) {
-                LOGGER.info("Generating default_valutes.json file");
-                ShopDefaultGenerator.generateDefaultValutes(configPath);
-            } else if (shouldRegenerateDefaultFile(defaultValutesFile)) {
-                LOGGER.info("Regenerating default_valutes.json file (overwritable: true)");
-                ShopDefaultGenerator.generateDefaultValutes(configPath);
+            // Check default currencies file
+            Path defaultCurrenciesFile = configPath.resolve("default_currencies.json");
+            if (!Files.exists(defaultCurrenciesFile)) {
+                LOGGER.info("Generating default_currencies.json file");
+                ShopDefaultGenerator.generateDefaultCurrencies(configPath);
+            } else if (shouldRegenerateDefaultFile(defaultCurrenciesFile)) {
+                LOGGER.info("Regenerating default_currencies.json file (overwritable: true)");
+                ShopDefaultGenerator.generateDefaultCurrencies(configPath);
             }
             
             // Check default categories file
@@ -385,8 +396,13 @@ public class ShopLoader {
     }
     
     // Getter methods
-    public static Map<String, ShopValute> getValutes() {
-        return new HashMap<>(VALUTES);
+    public static Map<String, ShopCurrency> getCurrencies() {
+        return new HashMap<>(CURRENCIES);
+    }
+    
+    // Legacy method name for backward compatibility
+    public static Map<String, ShopCurrency> getValutes() {
+        return getCurrencies();
     }
     
     public static Map<String, ShopCategory> getCategories() {
@@ -397,8 +413,13 @@ public class ShopLoader {
         return new HashMap<>(ENTRIES);
     }
     
-    public static ShopValute getValute(String id) {
-        return VALUTES.get(id);
+    public static ShopCurrency getCurrency(String id) {
+        return CURRENCIES.get(id);
+    }
+    
+    // Legacy method name for backward compatibility
+    public static ShopCurrency getValute(String id) {
+        return getCurrency(id);
     }
     
     public static ShopCategory getCategory(String id) {
@@ -435,10 +456,15 @@ public class ShopLoader {
     }
     
     /**
-     * Gets all available valute IDs for autocompletion
+     * Gets all available currency IDs for autocompletion
      */
+    public static List<String> getAllCurrencyIds() {
+        return new ArrayList<>(CURRENCIES.keySet());
+    }
+    
+    // Legacy method name for backward compatibility
     public static List<String> getAllValuteIds() {
-        return new ArrayList<>(VALUTES.keySet());
+        return getAllCurrencyIds();
     }
     
     /**

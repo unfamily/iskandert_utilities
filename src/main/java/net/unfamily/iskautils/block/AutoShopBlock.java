@@ -128,11 +128,11 @@ public class AutoShopBlock extends BaseEntityBlock {
      * Cicla tra le valute disponibili
      */
     private void cycleValute(AutoShopBlockEntity autoShop, Player player) {
-        Map<String, net.unfamily.iskautils.shop.ShopValute> availableValutes = 
-            net.unfamily.iskautils.shop.ShopLoader.getValutes();
+                Map<String, net.unfamily.iskautils.shop.ShopCurrency> availableCurrencies =
+                net.unfamily.iskautils.shop.ShopLoader.getCurrencies();
         List<String> valuteIds = new ArrayList<>();
         valuteIds.add("unset"); // Prima opzione
-        valuteIds.addAll(availableValutes.keySet());
+        valuteIds.addAll(availableCurrencies.keySet());
         
         String currentValute = autoShop.getSelectedValute();
         int currentIndex = valuteIds.indexOf(currentValute);
@@ -150,9 +150,9 @@ public class AutoShopBlock extends BaseEntityBlock {
                 net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.currency_changed.unset"),
                 true);
         } else {
-            net.unfamily.iskautils.shop.ShopValute valute = availableValutes.get(newValute);
-            String valuteName = net.minecraft.network.chat.Component.translatable(valute.name).getString();
-            String valuteSymbol = valute.charSymbol != null ? valute.charSymbol : newValute;
+            net.unfamily.iskautils.shop.ShopCurrency currency = availableCurrencies.get(newValute);
+            String valuteName = net.minecraft.network.chat.Component.translatable(currency.name).getString();
+            String valuteSymbol = currency.charSymbol != null ? currency.charSymbol : newValute;
             
             // Concatena il simbolo alla fine del messaggio tradotto
             String fullMessage = net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.currency_changed", valuteName).getString() + " " + valuteSymbol;

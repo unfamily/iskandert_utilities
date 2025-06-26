@@ -103,28 +103,49 @@ public class ShopTeamManager {
         return data.getTeamLeader(teamName);
     }
     
+        /**
+     * Adds currency to a team's balance
+     */
+    public boolean addTeamCurrency(String teamName, String currencyId, double amount) {
+        TeamData data = getTeamData();
+        return data.addTeamValutes(teamName, currencyId, amount);
+    }
+    
     /**
-     * Adds valutes to a team's balance
+     * Adds valutes to a team's balance (legacy method)
      */
     public boolean addTeamValutes(String teamName, String valuteId, double amount) {
+        return addTeamCurrency(teamName, valuteId, amount);
+    }
+
+    /**
+     * Removes currency from a team's balance
+     */
+    public boolean removeTeamCurrency(String teamName, String currencyId, double amount) {
         TeamData data = getTeamData();
-        return data.addTeamValutes(teamName, valuteId, amount);
+        return data.removeTeamValutes(teamName, currencyId, amount);
     }
     
     /**
-     * Removes valutes from a team's balance
+     * Removes valutes from a team's balance (legacy method)
      */
     public boolean removeTeamValutes(String teamName, String valuteId, double amount) {
-        TeamData data = getTeamData();
-        return data.removeTeamValutes(teamName, valuteId, amount);
+        return removeTeamCurrency(teamName, valuteId, amount);
     }
     
     /**
-     * Gets a team's valute balance
+     * Gets a team's currency balance
+     */
+    public double getTeamCurrencyBalance(String teamName, String currencyId) {
+        TeamData data = getTeamData();
+        return data.getTeamValuteBalance(teamName, currencyId);
+    }
+    
+    /**
+     * Gets a team's valute balance (legacy method)
      */
     public double getTeamValuteBalance(String teamName, String valuteId) {
-        TeamData data = getTeamData();
-        return data.getTeamValuteBalance(teamName, valuteId);
+        return getTeamCurrencyBalance(teamName, valuteId);
     }
     
     /**

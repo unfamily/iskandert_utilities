@@ -1,9 +1,9 @@
 package net.unfamily.iskautils.shop;
 
 /**
- * Represents a valute in the shop system
+ * Represents a currency in the shop system
  */
-public class ShopValute {
+public class ShopCurrency {
     public String id;
     public String name;
     public String charSymbol;
