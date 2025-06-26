@@ -62,7 +62,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final int BACK_BUTTON_HEIGHT = 15;
     private static final int BACK_BUTTON_X = INFO_AREA_X + 2; // Moved more left (was centered)
     private static final int BACK_BUTTON_Y = 20; // Same level as entries
-    private static final int CURRENCIES_START_Y = BACK_BUTTON_Y + BACK_BUTTON_HEIGHT + 10; // 10px under button
+    private static final int CURRENCIES_START_Y = BACK_BUTTON_Y + BACK_BUTTON_HEIGHT + 13; // Spostato da 10px a 13px sotto il pulsante
     
     // Scrolling variables
     private int scrollOffset = 0;
@@ -659,7 +659,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int entryAreaStart = ENTRY_START_X; // 30
         int entryAreaWidth = ENTRY_WIDTH; // 140
         int titleX = entryAreaStart + (entryAreaWidth - titleWidth) / 2;
-        guiGraphics.drawString(this.font, titleComponent, titleX, 7, 0x404040, false);
+        guiGraphics.drawString(this.font, titleComponent, titleX, 9, 0x404040, false); // Spostato da Y=7 a Y=9
         
         // Non renderizzare "Inventory" - rimosso
     }
@@ -946,19 +946,19 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Aggiorna e renderizza l'area di feedback
+     * Update and render the feedback area
      */
     private void updateAndRenderFeedback(GuiGraphics guiGraphics, int guiX, int guiY) {
-        // Controlla se è tempo di nascondere il messaggio
+        // Check if it's time to hide the message
         if (feedbackMessage != null && System.currentTimeMillis() >= feedbackClearTime) {
             hideFeedback();
         }
         
-        // Renderizza il messaggio se presente
+        // Render the message if present
         if (feedbackMessage != null) {
-            // Posiziona sempre a 20, 154
+            
             int textX = guiX + 20;
-            int textY = guiY + 154;
+            int textY = guiY + 143;
             guiGraphics.drawString(this.font, feedbackMessage, textX, textY, feedbackColor, false);
         }
     }
