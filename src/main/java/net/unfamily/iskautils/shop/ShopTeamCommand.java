@@ -131,7 +131,7 @@ public class ShopTeamCommand {
                         .then(Commands.literal("player")
                             .then(Commands.argument("player", EntityArgument.player())
                                 .executes(ShopTeamCommand::removeValuteFromPlayerTeam))))))
-            .then(Commands.literal("setValute")
+            .then(Commands.literal("setCurrency")
                 .requires(source -> source.hasPermission(2)) // Admin only
                 .then(Commands.argument("valuteId", StringArgumentType.word())
                     .suggests(ShopTeamCommand::suggestValutes)

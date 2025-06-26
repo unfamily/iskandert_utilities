@@ -147,21 +147,19 @@ public class AutoShopBlock extends BaseEntityBlock {
         // Messaggio di feedback con traduzione e simbolo
         if ("unset".equals(newValute)) {
             player.displayClientMessage(
-                net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.valute_changed.unset"),
-                true
-            );
+                net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.currency_changed.unset"),
+                true);
         } else {
             net.unfamily.iskautils.shop.ShopValute valute = availableValutes.get(newValute);
             String valuteName = net.minecraft.network.chat.Component.translatable(valute.name).getString();
             String valuteSymbol = valute.charSymbol != null ? valute.charSymbol : newValute;
             
             // Concatena il simbolo alla fine del messaggio tradotto
-            String fullMessage = net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.valute_changed", valuteName).getString() + " " + valuteSymbol;
+            String fullMessage = net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.currency_changed", valuteName).getString() + " " + valuteSymbol;
             
             player.displayClientMessage(
                 net.minecraft.network.chat.Component.literal(fullMessage),
-                true
-            );
+                true);
         }
     }
     
