@@ -32,7 +32,7 @@ public class StructurePlacerGuiOpenC2SPacket {
             return;
         }
         
-        // Invia un messaggio temporaneo - la GUI verrà aperta lato client
+                    // Send a temporary message - GUI will be opened client-side
         player.displayClientMessage(Component.literal("§6Opening Structure Selector GUI..."), true);
         
         // Packet functionality implemented

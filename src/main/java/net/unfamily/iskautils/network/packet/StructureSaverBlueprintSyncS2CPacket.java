@@ -30,10 +30,10 @@ public class StructureSaverBlueprintSyncS2CPacket {
      * Invia il packet al client usando il sistema semplificato (identico a ModMessages)
      */
     public static void send(ServerPlayer player, BlockPos machinePos, BlockPos vertex1, BlockPos vertex2, BlockPos center) {
-        LOGGER.info("Sending blueprint sync packet for machine at {}", machinePos);
+
         
         // Sistema semplificato identico a quello usato in ModMessages
-        // Funziona in single player e verrà ignorato su server dedicato
+        // Works in single player and will be ignored on dedicated server
         try {
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 handleClient(machinePos, vertex1, vertex2, center);
@@ -49,7 +49,7 @@ public class StructureSaverBlueprintSyncS2CPacket {
      */
     private static void handleClient(BlockPos machinePos, BlockPos vertex1, BlockPos vertex2, BlockPos center) {
         try {
-            LOGGER.info("Processing blueprint sync packet for machine at {}", machinePos);
+    
             
             var level = net.minecraft.client.Minecraft.getInstance().level;
             if (level != null) {
@@ -57,7 +57,7 @@ public class StructureSaverBlueprintSyncS2CPacket {
                 if (blockEntity instanceof StructureSaverMachineBlockEntity structureSaver) {
                     // Aggiorna i dati blueprint nel BlockEntity client-side
                     structureSaver.setBlueprintDataClientSide(vertex1, vertex2, center);
-                    LOGGER.info("Blueprint sincronizzata con successo sul client");
+            
                 } else {
                     LOGGER.warn("BlockEntity at {} is not a StructureSaverMachineBlockEntity", machinePos);
                 }

@@ -88,8 +88,7 @@ public class ShopTransactionManager {
         // Send success to client instead of chat
         sendTransactionSuccessToClient(player);
         
-        LOGGER.info("Player {} bought {}x {} (entry: {}) from team {} for {} {}", 
-            player.getName().getString(), quantity, entry.item, entryId, teamName, totalCost, valuteId);
+
         
         return true;
     }
@@ -150,8 +149,7 @@ public class ShopTransactionManager {
         // Send success to client instead of chat
         sendTransactionSuccessToClient(player);
         
-        LOGGER.info("Player {} sold {}x {} (entry: {}) to team {} for {} {}", 
-            player.getName().getString(), quantity, entry.item, entryId, teamName, totalReward, valuteId);
+
         
         return true;
     }
@@ -430,7 +428,7 @@ public class ShopTransactionManager {
     }
     
     /**
-     * Invia un errore di transazione al client
+     * Sends a transaction error to the client
      */
     private static void sendTransactionErrorToClient(ServerPlayer player, String errorType, String itemId, String valuteId) {
         try {
@@ -444,7 +442,7 @@ public class ShopTransactionManager {
     }
     
     /**
-     * Invia un successo di transazione al client
+     * Sends a transaction success to the client
      */
     private static void sendTransactionSuccessToClient(ServerPlayer player) {
         try {

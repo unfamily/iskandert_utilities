@@ -57,14 +57,8 @@ public class StructurePlacerMachineSaveC2SPacket {
         }
         
         // Trova la macchina alla posizione specificata
-        LOGGER.info("Looking for Structure Placer Machine at position: {}", machinePos);
-        LOGGER.info("Player level: {}", player.level().dimension().location());
-        LOGGER.info("Player position: {}", player.blockPosition());
-        
+
         BlockEntity blockEntity = player.level().getBlockEntity(machinePos);
-        LOGGER.info("Found BlockEntity: {} (type: {})", 
-                   blockEntity != null ? "YES" : "NO", 
-                   blockEntity != null ? blockEntity.getClass().getSimpleName() : "NULL");
         
         if (blockEntity != null && !(blockEntity instanceof StructurePlacerMachineBlockEntity)) {
             LOGGER.warn("BlockEntity is not a StructurePlacerMachineBlockEntity, it's: {}", blockEntity.getClass().getName());

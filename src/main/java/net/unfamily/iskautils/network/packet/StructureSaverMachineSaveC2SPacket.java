@@ -76,17 +76,14 @@ public class StructureSaverMachineSaveC2SPacket {
      * @param player The player who sent the packet
      */
     public void handle(ServerPlayer player) {
-        LOGGER.info("=== PROCESSING STRUCTURE SAVER MACHINE SAVE REQUEST ===");
-        LOGGER.info("Structure name: '{}'", structureName);
-        LOGGER.info("Structure ID: '{}'", structureId);
-        LOGGER.info("Machine pos: {}", machinePos);
+
         
         if (player == null) {
             LOGGER.error("Server player is null while handling StructureSaverMachineSaveC2SPacket");
             return;
         }
         
-        LOGGER.info("Player: {}", player.getName().getString());
+
         
         if (structureName == null || structureName.trim().isEmpty()) {
             player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.invalid_name"), true);
@@ -103,10 +100,7 @@ public class StructureSaverMachineSaveC2SPacket {
         String finalStructureId = "client_" + playerNickname + "_" + structureId;
         boolean isModifyOperation = (oldStructureId != null);
         
-        LOGGER.info("Operation type: {}", isModifyOperation ? "MODIFY" : "SAVE");
-        if (isModifyOperation) {
-            LOGGER.info("Old structure ID: {}", oldStructureId);
-        }
+
         
         // Get all loaded client structures to check for duplicates/existence
         var allClientStructures = net.unfamily.iskautils.structure.StructureLoader.getClientStructures();
@@ -177,7 +171,7 @@ public class StructureSaverMachineSaveC2SPacket {
                 StructureLoader.reloadAllDefinitions(true, player);
             } else {
                 // Multiplayer: send command to client to save locally
-                LOGGER.info("Multiplayer detected - sending save command to client");
+
                 StructureSaverMachineClientSaveS2CPacket.send(player, structureName, structureId, vertex1, vertex2, center, 
                                                              slower, placeAsPlayer, isModifyOperation, oldStructureId);
             }
@@ -188,11 +182,11 @@ public class StructureSaverMachineSaveC2SPacket {
             if (isSingleplayer) {
                 String operationType = isModifyOperation ? "modified" : "saved";
                 player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.success", structureName, operationType), true);
-                LOGGER.info("Player {} {} structure '{}' (singleplayer)", player.getName().getString(), isModifyOperation ? "modified" : "saved", structureName);
+
             } else {
                 String operationType = isModifyOperation ? "modification" : "save";
                 player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.command_sent", operationType), true);
-                LOGGER.info("{} command for structure '{}' sent to client for player {}", isModifyOperation ? "Modify" : "Save", structureName, player.getName().getString());
+
             }
             
         } catch (Exception e) {
@@ -464,20 +458,15 @@ public class StructureSaverMachineSaveC2SPacket {
      * Saves the structure to the player_structures.json file
      */
     private void saveToPlayerStructuresFile(JsonObject newStructure, boolean isModifyOperation, String oldStructureId) throws IOException {
-        LOGGER.info("=== SAVING STRUCTURE TO FILE ===");
+
         
         String configPath = Config.clientStructurePath;
         if (configPath == null || configPath.trim().isEmpty()) {
             configPath = "iska_utils_client/structures";
         }
         
-        LOGGER.info("Config path: '{}'", configPath);
-        
         Path structuresDir = Paths.get(configPath);
         Path playerStructuresFile = structuresDir.resolve("player_structures.json");
-        
-        LOGGER.info("Structures directory: {}", structuresDir.toAbsolutePath());
-        LOGGER.info("Player structures file: {}", playerStructuresFile.toAbsolutePath());
         
         // Create directory if it doesn't exist
         if (!Files.exists(structuresDir)) {
@@ -509,15 +498,14 @@ public class StructureSaverMachineSaveC2SPacket {
         JsonArray newStructureArray = newStructure.getAsJsonArray("structure");
         
         if (isModifyOperation && oldStructureId != null) {
-            LOGGER.info("=== MODIFY OPERATION: Removing old structure ===");
-            LOGGER.info("Old structure ID to remove: {}", oldStructureId);
+
             
             // Remove old structure
             boolean foundOldStructure = false;
             for (int i = structuresArray.size() - 1; i >= 0; i--) {
                 JsonObject structure = structuresArray.get(i).getAsJsonObject();
                 if (structure.has("id") && oldStructureId.equals(structure.get("id").getAsString())) {
-                    LOGGER.info("Found and removing old structure at index {}", i);
+
                     structuresArray.remove(i);
                     foundOldStructure = true;
                     break; // Remove only the first occurrence
@@ -533,23 +521,16 @@ public class StructureSaverMachineSaveC2SPacket {
         for (int i = 0; i < newStructureArray.size(); i++) {
             JsonObject newStructureObj = newStructureArray.get(i).getAsJsonObject();
             if (newStructureObj.has("id")) {
-                LOGGER.info("Adding {} structure with ID: {}", 
-                           isModifyOperation ? "modified" : "new", 
-                           newStructureObj.get("id").getAsString());
+                
             }
             structuresArray.add(newStructureObj);
         }
         
         // Save file
         String jsonContent = GSON.toJson(root);
-        LOGGER.info("Writing JSON content ({} characters) to file...", jsonContent.length());
         
         Files.writeString(playerStructuresFile, jsonContent, 
                          StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        
-        LOGGER.info("=== STRUCTURE SUCCESSFULLY SAVED ===");
-        LOGGER.info("File path: {}", playerStructuresFile.toAbsolutePath());
-        LOGGER.info("File size: {} bytes", Files.size(playerStructuresFile));
     }
     
     /**

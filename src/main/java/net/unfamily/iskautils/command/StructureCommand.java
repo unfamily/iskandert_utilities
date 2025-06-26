@@ -25,13 +25,13 @@ import net.unfamily.iskautils.structure.StructurePlacer;
 import org.slf4j.Logger;
 
 /**
- * Gestore di comando per il piazzamento delle strutture
+ * Command handler for structure placement
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class StructureCommand {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    // Messaggi di errore
+    // Error messages
     private static final SimpleCommandExceptionType ERROR_STRUCTURE_NOT_FOUND = new SimpleCommandExceptionType(
             Component.translatable("commands.iska_utils.structure.error.not_found"));
     
@@ -40,12 +40,12 @@ public class StructureCommand {
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        LOGGER.info("Registering structure commands");
+
         register(event.getDispatcher());
     }
     
     /**
-     * Provider di suggerimenti per gli ID delle strutture
+     * Suggestion provider for structure IDs
      */
     private static final SuggestionProvider<CommandSourceStack> SUGGEST_STRUCTURE_IDS = 
         (context, builder) -> {
@@ -54,41 +54,41 @@ public class StructureCommand {
         };
     
     /**
-     * Registra il comando delle strutture
+     * Registers the structure command
      */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
             Commands.literal("iska_utils_structure")
-                .requires(source -> source.hasPermission(2)) // Richiede livello OP 2
+                .requires(source -> source.hasPermission(2)) // Requires OP level 2
                 
-                // Comando per listare le strutture disponibili
+                // Command to list available structures
                 .then(Commands.literal("list")
                     .executes(StructureCommand::listStructures))
                 
-                // Comando per ricaricare le strutture
+                // Command to reload structures
                 .then(Commands.literal("reload")
                     .executes(StructureCommand::reloadStructures))
                     
-                // Comando per ottenere informazioni su una struttura specifica
+                // Command to get information about a specific structure
                 .then(Commands.literal("info")
                     .then(Commands.argument("structure_id", StringArgumentType.string())
                         .suggests(SUGGEST_STRUCTURE_IDS)
                         .executes(StructureCommand::showStructureInfo)))
                 
-                // Comando principale per piazzare una struttura
+                // Main command to place a structure
                 .then(Commands.literal("place")
                     .then(Commands.argument("structure_id", StringArgumentType.string())
                         .suggests(SUGGEST_STRUCTURE_IDS)
                         .then(Commands.argument("pos", BlockPosArgument.blockPos())
                             .executes(StructureCommand::placeStructure))))
                 
-                // Mostra l'aiuto se nessun sotto-comando è specificato
+                // Show help if no sub-command is specified
                 .executes(StructureCommand::showUsage)
         );
     }
     
     /**
-     * Mostra l'utilizzo del comando
+     * Shows command usage
      */
     private static int showUsage(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
@@ -101,7 +101,7 @@ public class StructureCommand {
     }
 
     /**
-     * Lista tutte le strutture disponibili
+     * Lists all available structures
      */
     private static int listStructures(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
@@ -121,12 +121,12 @@ public class StructureCommand {
             String name = structure.getName() != null ? structure.getName() : structure.getId();
             String structureId = structure.getId();
             
-            // Indica se è una struttura client e di quale giocatore
+            // Indicates if it's a client structure and which player
             String prefix = "§a";
             if (structureId.startsWith("client_")) {
-                prefix = "§b"; // Blu per le strutture client
+                prefix = "§b"; // Blue for client structures
                 
-                // Estrai il nome del giocatore dall'ID se possibile
+                // Extract player name from ID if possible
                 String[] parts = structureId.split("_", 3); // ["client", "nickname", "resto"]
                 if (parts.length >= 2) {
                     String playerName = parts[1];
@@ -156,7 +156,7 @@ public class StructureCommand {
     }
 
     /**
-     * Ricarica le definizioni delle strutture
+     * Reloads structure definitions
      */
     private static int reloadStructures(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
@@ -164,27 +164,27 @@ public class StructureCommand {
         try {
             int oldCount = StructureLoader.getAllStructures().size();
             
-            // Determina se siamo in singleplayer o multiplayer
+            // Determine if we're in singleplayer or multiplayer
             boolean isSingleplayer = source.getServer() != null && source.getServer().isSingleplayer();
             
-            // Ottieni il giocatore se disponibile (per caricare le sue strutture client)
+            // Get the player if available (to load their client structures)
             ServerPlayer commandPlayer = null;
             try {
                 commandPlayer = source.getPlayerOrException();
             } catch (CommandSyntaxException e) {
-                // Comando eseguito dalla console
+                // Command executed from console
                 LOGGER.debug("Command executed from console, no specific player available");
             }
             
             if (isSingleplayer) {
-                // Singleplayer: forza sempre il caricamento delle strutture client
-                LOGGER.info("Reloading structures in singleplayer mode - including client structures");
+                // Singleplayer: always force loading of client structures
+    
                 StructureLoader.reloadAllDefinitions(true, commandPlayer);
                 source.sendSuccess(() -> Component.literal("§7Singleplayer mode: Client structures included"), false);
             } else {
-                // Multiplayer: usa il flag di configurazione del server
-                LOGGER.info("Reloading structures in multiplayer mode - respecting server configuration");
-                StructureLoader.reloadAllDefinitions(true, commandPlayer); // Forza il reload sul server
+                // Multiplayer: use the server configuration flag
+    
+                StructureLoader.reloadAllDefinitions(true, commandPlayer); // Force reload on server
                 source.sendSuccess(() -> Component.literal("§7Multiplayer mode: Client structures based on server config"), false);
             }
             
@@ -194,7 +194,7 @@ public class StructureCommand {
             source.sendSuccess(() -> Component.literal("§aStructures reloaded successfully!"), false);
             source.sendSuccess(() -> Component.literal("§7Structures loaded: §a" + (newCount - clientStructures.size()) + " §7regular + §b" + clientStructures.size() + " §7client = §f" + newCount + " §7total (previous: §c" + oldCount + "§7)"), false);
             
-            // Sincronizza le strutture ricaricate con tutti i client connessi (solo in multiplayer)
+            // Synchronize reloaded structures with all connected clients (multiplayer only)
             if (!isSingleplayer) {
                 try {
                     if (source.getServer() != null) {
@@ -220,7 +220,7 @@ public class StructureCommand {
     }
 
     /**
-     * Mostra informazioni dettagliate su una struttura specifica
+     * Shows detailed information about a specific structure
      */
     private static int showStructureInfo(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
@@ -262,23 +262,23 @@ public class StructureCommand {
     }
 
     /**
-     * Piazza una struttura nelle coordinate specificate
+     * Places a structure at the specified coordinates
      */
     private static int placeStructure(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
         String structureId = StringArgumentType.getString(context, "structure_id");
         BlockPos pos = BlockPosArgument.getBlockPos(context, "pos");
         
-        // Verifica che la struttura esista
+        // Verify that the structure exists
         StructureDefinition structure = StructureLoader.getStructure(structureId);
         if (structure == null) {
             throw ERROR_STRUCTURE_NOT_FOUND.create();
         }
         
-        // Ottieni il livello del server
+        // Get the server level
         ServerLevel level = source.getLevel();
         
-        // Ottieni il giocatore se disponibile (per controlli di stage)
+        // Get the player if available (for stage checks)
         ServerPlayer player = null;
         try {
             player = source.getPlayerOrException();
@@ -288,7 +288,7 @@ public class StructureCommand {
         }
         
         try {
-            // Tenta di piazzare la struttura
+            // Attempt to place the structure
             boolean success = StructurePlacer.placeStructure(level, pos, structure, player);
             
             if (success) {

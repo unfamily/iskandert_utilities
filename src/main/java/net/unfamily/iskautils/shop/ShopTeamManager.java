@@ -280,7 +280,7 @@ public class ShopTeamManager {
      */
     public static class TeamData extends SavedData {
         private final Map<String, Team> teams = new HashMap<>();
-        private final Map<UUID, Team> teamsById = new HashMap<>(); // Mappa per accesso tramite ID
+        private final Map<UUID, Team> teamsById = new HashMap<>(); // Map for access by ID
         private final Map<UUID, String> playerTeams = new HashMap<>();
         private final Map<UUID, Set<String>> playerInvitations = new HashMap<>();
         
@@ -296,7 +296,7 @@ public class ShopTeamManager {
                     CompoundTag teamTag = teamsTag.getCompound(teamName);
                     Team team = Team.load(teamTag);
                     data.teams.put(teamName, team);
-                    data.teamsById.put(team.getTeamId(), team); // Popola la mappa per ID
+                    data.teamsById.put(team.getTeamId(), team); // Populate the ID map
                     
                     // Update player-team mapping
                     for (UUID playerId : team.getMembers()) {
@@ -363,7 +363,7 @@ public class ShopTeamManager {
             playerTeams.put(leader, teamName);
             setDirty();
             
-            LOGGER.info("Created team '{}' with leader {}", teamName, leader);
+
             return true;
         }
         
@@ -379,10 +379,10 @@ public class ShopTeamManager {
             }
             
             teams.remove(teamName);
-            teamsById.remove(team.getTeamId()); // Rimuovi dalla mappa per ID
+            teamsById.remove(team.getTeamId()); // Remove from ID map
             setDirty();
             
-            LOGGER.info("Deleted team '{}' by leader {}", teamName, player);
+
             return true;
         }
         
@@ -400,7 +400,7 @@ public class ShopTeamManager {
             playerTeams.put(player, teamName);
             setDirty();
             
-            LOGGER.info("Added player {} to team '{}'", player, teamName);
+
             return true;
         }
         
@@ -422,7 +422,7 @@ public class ShopTeamManager {
             playerTeams.remove(player);
             setDirty();
             
-            LOGGER.info("Removed player {} from team '{}'", player, teamName);
+
             return true;
         }
         
@@ -449,7 +449,7 @@ public class ShopTeamManager {
             team.addValutes(valuteId, amount);
             setDirty();
             
-            LOGGER.info("Added {} {} to team '{}'", amount, valuteId, teamName);
+
             return true;
         }
         
@@ -466,7 +466,7 @@ public class ShopTeamManager {
             team.removeValutes(valuteId, amount);
             setDirty();
             
-            LOGGER.info("Removed {} {} from team '{}'", amount, valuteId, teamName);
+
             return true;
         }
         
@@ -506,7 +506,6 @@ public class ShopTeamManager {
             playerInvitations.computeIfAbsent(invitee, k -> new HashSet<>()).add(teamName);
             setDirty();
             
-            LOGGER.info("Player {} invited {} to team '{}'", inviter, invitee, teamName);
             return true;
         }
         
@@ -537,7 +536,6 @@ public class ShopTeamManager {
             
             setDirty();
             
-            LOGGER.info("Player {} accepted invitation to team '{}'", player, teamName);
             return true;
         }
         
@@ -565,7 +563,6 @@ public class ShopTeamManager {
             playerTeams.remove(player);
             setDirty();
             
-            LOGGER.info("Player {} left team '{}'", player, teamName);
             return true;
         }
         
@@ -590,7 +587,6 @@ public class ShopTeamManager {
             team.setLeader(newLeader);
             setDirty();
             
-            LOGGER.info("Leadership of team '{}' transferred from {} to {}", teamName, currentLeader, newLeader);
             return true;
         }
         
@@ -615,7 +611,6 @@ public class ShopTeamManager {
             team.addAssistant(assistant);
             setDirty();
             
-            LOGGER.info("Player {} added as assistant to team '{}'", assistant, teamName);
             return true;
         }
         
@@ -632,7 +627,6 @@ public class ShopTeamManager {
             team.removeAssistant(assistant);
             setDirty();
             
-            LOGGER.info("Player {} removed as assistant from team '{}'", assistant, teamName);
             return true;
         }
         
@@ -665,7 +659,7 @@ public class ShopTeamManager {
             teams.remove(oldTeamName);
             team.setName(newTeamName);
             teams.put(newTeamName, team);
-            // teamsById rimane invariata perché l'ID del team non cambia
+            // teamsById remains unchanged because the team ID doesn't change
             
             // Update player-team mapping for all members
             for (UUID memberId : team.getMembers()) {
@@ -674,7 +668,7 @@ public class ShopTeamManager {
             
             setDirty();
             
-            LOGGER.info("Team '{}' renamed to '{}' by {}", oldTeamName, newTeamName, player);
+
             return true;
         }
     }
@@ -683,7 +677,7 @@ public class ShopTeamManager {
      * Represents a team
      */
     public static class Team {
-        private UUID teamId; // ID univoco immutabile del team
+        private UUID teamId; // Unique immutable team ID
         private String name;
         private UUID leader;
         private final Set<UUID> members;
@@ -691,7 +685,7 @@ public class ShopTeamManager {
         private final Map<String, Double> valuteBalances;
         
         public Team(String name, UUID leader) {
-            this.teamId = UUID.randomUUID(); // Genera un ID univoco
+            this.teamId = UUID.randomUUID(); // Generate a unique ID
             this.name = name;
             this.leader = leader;
             this.members = new HashSet<>();
@@ -702,7 +696,7 @@ public class ShopTeamManager {
             this.members.add(leader);
         }
         
-        // Costruttore per il caricamento da NBT
+        // Constructor for loading from NBT
         private Team(UUID teamId, String name, UUID leader) {
             this.teamId = teamId;
             this.name = name;

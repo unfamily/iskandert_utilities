@@ -202,7 +202,7 @@ public class AutoShopBlock extends BaseEntityBlock {
         if (!world.isClientSide()) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof AutoShopBlockEntity autoShop) {
-                // Tasto sinistro: cambia modalità Buy/Sell
+                // Left click: toggle Buy/Sell mode
                 toggleAutoMode(autoShop, entity);
             }
         }

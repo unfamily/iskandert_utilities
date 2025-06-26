@@ -98,10 +98,10 @@ public class AutoShopBlockEntity extends BlockEntity {
         shopData.putBoolean("isActive", isActive);
         shopData.putString("currentCategory", currentCategory);
         
-        // Salva sempre la valuta (anche se è "unset")
+        // Always save the currency (even if it's "unset")
         shopData.putString("selectedValute", selectedValute);
         
-        // Salva sempre la modalità (buy/sell)
+        // Always save the mode (buy/sell)
         shopData.putBoolean("autoBuyMode", autoBuyMode);
         
         // Salva l'ID del team del proprietario se presente
@@ -109,23 +109,18 @@ public class AutoShopBlockEntity extends BlockEntity {
             shopData.putUUID("ownerTeamId", ownerTeamId);
         }
         
-        // Salva il placedByPlayer solo se non è vuoto
+        // Save placedByPlayer only if not empty
         if (placedByPlayer != null) {
             shopData.putUUID("placedByPlayer", placedByPlayer);
         }
         
-        // Salva il selectedItem solo se non è vuoto e valido
+        // Save selectedItem only if not empty and valid
         if (!selectedItem.isEmpty() && selectedItem.getItem() != null) {
-            LOGGER.info("AutoShopBlockEntity.saveAdditional: Saving selectedItem: {}", selectedItem.getItem().toString());
             CompoundTag selectedTag = new CompoundTag();
             selectedItem.save(registries, selectedTag);
-            LOGGER.info("AutoShopBlockEntity.saveAdditional: selectedTag content: {}", selectedTag.toString());
-            // Salva sempre l'item se è valido, anche se il tag è vuoto (può succedere per item semplici)
+            // Always save the item if valid, even if tag is empty (can happen for simple items)
             shopData.put("selectedItem", selectedTag);
-            LOGGER.info("AutoShopBlockEntity.saveAdditional: selectedItem saved successfully");
-        } else {
-            LOGGER.info("AutoShopBlockEntity.saveAdditional: selectedItem is empty or null, not saving");
-        }
+        } 
         
         tag.put("shopData", shopData);
     }
@@ -160,7 +155,7 @@ public class AutoShopBlockEntity extends BlockEntity {
                 this.selectedValute = "unset"; // Default se non presente
             }
             
-            // Carica la modalità se presente
+            // Load mode if present
             if (shopData.contains("autoBuyMode")) {
                 this.autoBuyMode = shopData.getBoolean("autoBuyMode");
             } else {
@@ -183,14 +178,10 @@ public class AutoShopBlockEntity extends BlockEntity {
             
             // Carica il selectedItem se presente
             if (shopData.contains("selectedItem")) {
-                LOGGER.info("AutoShopBlockEntity.loadAdditional: Found selectedItem tag");
                 try {
                     CompoundTag selectedTag = shopData.getCompound("selectedItem");
-                    LOGGER.info("AutoShopBlockEntity.loadAdditional: selectedTag content: {}", selectedTag.toString());
-                    // Prova a caricare l'item anche se il tag è vuoto (può succedere per item semplici)
+                    // Try to load the item even if tag is empty (can happen for simple items)
                     this.selectedItem = ItemStack.parse(registries, selectedTag).orElse(ItemStack.EMPTY);
-                    LOGGER.info("AutoShopBlockEntity.loadAdditional: Parsed selectedItem: {}", 
-                        this.selectedItem.isEmpty() ? "EMPTY" : this.selectedItem.getItem().toString());
                     // Verifica che l'item caricato sia valido
                     if (this.selectedItem.isEmpty() || this.selectedItem.getItem() == null) {
                         this.selectedItem = ItemStack.EMPTY;
@@ -201,7 +192,7 @@ public class AutoShopBlockEntity extends BlockEntity {
                     this.selectedItem = ItemStack.EMPTY;
                 }
             } else {
-                LOGGER.info("AutoShopBlockEntity.loadAdditional: No selectedItem tag found");
+
                 this.selectedItem = ItemStack.EMPTY; // Default se non presente
             }
         }
@@ -276,8 +267,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
     
     public void setSelectedItem(ItemStack item) {
-        LOGGER.info("AutoShopBlockEntity.setSelectedItem called with: {}", 
-            item.isEmpty() ? "EMPTY" : item.getItem().toString());
+
         
         if (item.isEmpty()) {
             this.selectedItem = ItemStack.EMPTY;
@@ -286,15 +276,10 @@ public class AutoShopBlockEntity extends BlockEntity {
             this.selectedItem = item.copy();
             this.selectedItem.setCount(1);
             
-            // Debug: verifica cosa contiene l'item dopo la copia
-            LOGGER.info("AutoShopBlockEntity.setSelectedItem: After copy - Item: {}, Count: {}, Has NBT: {}", 
-                this.selectedItem.getItem().toString(),
-                this.selectedItem.getCount(),
-                this.selectedItem.getComponents() != null);
+
         }
         
-        LOGGER.info("AutoShopBlockEntity.setSelectedItem: selectedItem now set to: {}", 
-            this.selectedItem.isEmpty() ? "EMPTY" : this.selectedItem.getItem().toString());
+
         
         setChanged();
     }
@@ -370,7 +355,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             return;
         }
 
-        // Recupera il team del proprietario (necessario per entrambe le modalità)
+        // Get the owner's team (needed for both modes)
         if (entity.getPlacedByPlayer() == null) {
             return;
         }
@@ -390,9 +375,9 @@ public class AutoShopBlockEntity extends BlockEntity {
             return;
         }
 
-        // Modalità SELL
+        // SELL mode
         if (!entity.isAutoBuyMode()) {
-            // Controlla se c'è un item nella encapsulated slot
+            // Check if there's an item in the encapsulated slot
             ItemStackHandler slot = entity.getEncapsulatedSlot();
             ItemStack stack = slot.getStackInSlot(0);
             if (stack.isEmpty()) {
@@ -400,7 +385,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             }
 
             // Determina quale template usare per la ricerca della ShopEntry
-            // Se c'è un template nella selected slot, usalo, altrimenti usa l'item stesso
+            // If there's a template in the selected slot, use it, otherwise use the item itself
             ItemStackHandler selectedSlot = entity.getSelectedSlot();
             ItemStack templateStack = selectedSlot.getStackInSlot(0);
             ItemStack templateItem;
@@ -413,7 +398,7 @@ public class AutoShopBlockEntity extends BlockEntity {
                 templateItem = stack;
             }
 
-            // Trova la ShopEntry usando il template più appropriato
+            // Find ShopEntry using the most appropriate template
             net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(templateItem);
             if (entry == null || entry.sell <= 0) {
                 return;
@@ -471,16 +456,16 @@ public class AutoShopBlockEntity extends BlockEntity {
             teamManager.addTeamValutes(teamName, valuteId, entry.sell);
             entity.setChanged();
         }
-        // Modalità BUY
+        // BUY mode
         else {
-            // Controlla se la slot è vuota (solo se vuota può comprare)
+            // Check if the slot is empty (can only buy if empty)
             ItemStackHandler slot = entity.getEncapsulatedSlot();
             ItemStack stack = slot.getStackInSlot(0);
             if (!stack.isEmpty()) {
                 return;
             }
 
-            // Controlla se c'è un item nella selected slot
+            // Check if there's an item in the selected slot
             ItemStackHandler selectedSlot = entity.getSelectedSlot();
             ItemStack selectedStack = selectedSlot.getStackInSlot(0);
             if (selectedStack.isEmpty()) {

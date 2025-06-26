@@ -32,7 +32,7 @@ public class CreateMarker {
     private static final Logger LOGGER = LogUtils.getLogger();
     
     // Default values for debug
-    private static final String DEFAULT_COLOR = "33FF0000"; // Rosso semi-trasparente
+    private static final String DEFAULT_COLOR = "33FF0000"; // Semi-transparent red
     private static final int DEFAULT_DURATION = 1200; // 60 seconds (20 tick = 1 second)
     
     // Command usage messages map
@@ -143,33 +143,33 @@ public class CreateMarker {
     }
     
     /**
-     * Converte una stringa esadecimale in un valore intero
-     * Supporta formati come "RRGGBB" o "AARRGGBB"
+     * Converts a hexadecimal string to an integer value
+     * Supports formats like "RRGGBB" or "AARRGGBB"
      */
     private static int parseHexColor(String hexColor) {
-        // Rimuovi eventuali prefissi "0x" o "#"
+        // Remove any "0x" or "#" prefixes
         if (hexColor.startsWith("0x") || hexColor.startsWith("0X")) {
             hexColor = hexColor.substring(2);
         } else if (hexColor.startsWith("#")) {
             hexColor = hexColor.substring(1);
         }
         
-        // Se il colore è in formato RGB (6 caratteri), aggiungi l'alfa
+        // If the color is in RGB format (6 characters), add alpha
         if (hexColor.length() == 6) {
-            hexColor = "33" + hexColor; // Aggiungi alfa semi-trasparente (33 = ~20%)
+            hexColor = "33" + hexColor; // Add semi-transparent alpha (33 = ~20%)
         }
         
-        // Assicurati che la stringa abbia 8 caratteri (AARRGGBB)
+        // Ensure the string has 8 characters (AARRGGBB)
         if (hexColor.length() != 8) {
             LOGGER.warn("Invalid hex color format: {}. Using default color.", hexColor);
-            return 0x33FF0000; // Rosso semi-trasparente come default
+            return 0x33FF0000; // Semi-transparent red as default
         }
         
         try {
             return (int) Long.parseLong(hexColor, 16);
         } catch (NumberFormatException e) {
             LOGGER.warn("Invalid hex color format: {}. Using default color.", hexColor);
-            return 0x33FF0000; // Rosso semi-trasparente come default
+            return 0x33FF0000; // Semi-transparent red as default
         }
     }
     

@@ -39,7 +39,7 @@ public class ShopLoader {
     private static final Map<String, Boolean> PROTECTED_ENTRIES = new HashMap<>();
     
     public static void scanConfigDirectory() {
-        LOGGER.info("Scanning configuration directory for shop system...");
+
         
         try {
             String externalScriptsBasePath = Config.externalScriptsPath;
@@ -50,7 +50,7 @@ public class ShopLoader {
             Path configPath = Paths.get(externalScriptsBasePath, "iska_utils_shop");
             if (!Files.exists(configPath)) {
                 Files.createDirectories(configPath);
-                LOGGER.info("Created directory for shop system: {}", configPath.toAbsolutePath());
+
                 createReadme(configPath);
                 generateDefaultConfigurations(configPath);
                 return;
@@ -61,7 +61,7 @@ public class ShopLoader {
                 return;
             }
             
-            LOGGER.info("Scanning shop directory: {}", configPath.toAbsolutePath());
+
             
             // Always regenerate README
             createReadme(configPath);
@@ -85,8 +85,7 @@ public class ShopLoader {
                      .forEach(ShopLoader::scanConfigFile);
             }
             
-            LOGGER.info("Shop directory scan completed. Configurations found: {} valutes, {} categories, {} entries", 
-                       VALUTES.size(), CATEGORIES.size(), ENTRIES.size());
+
             
         } catch (Exception e) {
             LOGGER.error("Error during shop directory scan: {}", e.getMessage());
@@ -295,7 +294,7 @@ public class ShopLoader {
             ShopDefaultGenerator.generateDefaultValutes(configPath);
             ShopDefaultGenerator.generateDefaultCategories(configPath);
             ShopDefaultGenerator.generateDefaultEntries(configPath);
-            LOGGER.info("Generated default configurations for shop system");
+
         } catch (Exception e) {
             LOGGER.error("Error generating default configurations: {}", e.getMessage());
         }
@@ -376,13 +375,13 @@ public class ShopLoader {
     }
     
     public static void reloadAllConfigurations() {
-        LOGGER.info("Reloading all shop configurations...");
+
         
         // Simply reload everything from scratch - no protection of entries in memory
         // The 'overwritable' flag is only for automatic regeneration of physical files
         scanConfigDirectory();
         
-        LOGGER.info("Shop configurations reload completed");
+
     }
     
     // Getter methods

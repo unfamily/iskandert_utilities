@@ -62,7 +62,7 @@ public record StructureSyncS2CPacket(Map<String, String> structureData, boolean 
      */
     public static void handle(StructureSyncS2CPacket packet) {
         try {
-            LOGGER.info("Ricevuta sincronizzazione strutture dal server: {} strutture", packet.structureData.size());
+            LOGGER.info("Received structure synchronization from server: {} structures", packet.structureData.size());
             
             // Sincronizza le strutture ricevute dal server nel StructureLoader client-side
             StructureLoader.syncFromServer(packet.structureData, packet.acceptClientStructures);

@@ -36,10 +36,10 @@ public class StructureLoader {
     private static boolean usingServerStructures = false;
 
     /**
-     * Comparatore personalizzato per ordinare le strutture:
-     * 1. Strutture server prima (non iniziano con "client_")
-     * 2. Strutture client dopo (iniziano con "client_")
-     * 3. All'interno di ogni gruppo, ordine alfabetico per ID
+     * Custom comparator for sorting structures:
+     * 1. Server structures first (don't start with "client_")
+     * 2. Client structures after (start with "client_")
+     * 3. Within each group, alphabetical order by ID
      */
     private static final java.util.Comparator<Map.Entry<String, StructureDefinition>> STRUCTURE_COMPARATOR = 
         (entry1, entry2) -> {
@@ -75,7 +75,7 @@ public class StructureLoader {
     
     /**
      * Scans the configuration directory for structure definitions
-     * @param forceClientStructures Se true, carica sempre le strutture client (per singleplayer e reload)
+     * @param forceClientStructures If true, always load client structures (for singleplayer and reload)
      */
     public static void scanConfigDirectory(boolean forceClientStructures) {
         scanConfigDirectory(forceClientStructures, null);
@@ -83,8 +83,8 @@ public class StructureLoader {
     
     /**
      * Scans the configuration directory for structure definitions with specific player context
-     * @param forceClientStructures Se true, carica sempre le strutture client (per singleplayer e reload)
-     * @param player Il giocatore specifico (per il nickname delle strutture client)
+     * @param forceClientStructures If true, always load client structures (for singleplayer and reload)
+     * @param player The specific player (for client structure nickname)
      */
     public static void scanConfigDirectory(boolean forceClientStructures, net.minecraft.server.level.ServerPlayer player) {
         scanConfigDirectoryInternal(forceClientStructures, player, true); // Include client structures
@@ -92,9 +92,9 @@ public class StructureLoader {
     
     /**
      * Internal method that does the actual directory scanning
-     * @param forceClientStructures Se true, carica sempre le strutture client (per singleplayer e reload)
-     * @param player Il giocatore specifico (per il nickname delle strutture client)
-     * @param includeClientStructures Se true, include le strutture client nel caricamento
+     * @param forceClientStructures If true, always load client structures (for singleplayer and reload)
+     * @param player The specific player (for client structure nickname)
+     * @param includeClientStructures If true, include client structures in loading
      */
     private static void scanConfigDirectoryInternal(boolean forceClientStructures, net.minecraft.server.level.ServerPlayer player, boolean includeClientStructures) {
         String configPath = Config.externalScriptsPath;
@@ -110,7 +110,7 @@ public class StructureLoader {
                 Files.createDirectories(structuresPath);
             }
             
-            // Salva le strutture client prima del clear (per preservarle durante il reload)
+            // Save client structures before clear (to preserve them during reload)
             Map<String, StructureDefinition> clientStructureBackup = new HashMap<>();
             Map<String, Boolean> clientProtectedBackup = new HashMap<>();
             
@@ -125,7 +125,7 @@ public class StructureLoader {
             PROTECTED_DEFINITIONS.clear();
             STRUCTURES.clear();
             
-            // Restore client structures saved
+            // Restore saved client structures
             STRUCTURES.putAll(clientStructureBackup);
             PROTECTED_DEFINITIONS.putAll(clientProtectedBackup);
             
@@ -307,7 +307,7 @@ public class StructureLoader {
     
     /**
      * Scans client structures if enabled
-     * @param forceLoad Se true, carica sempre le strutture client (per singleplayer e reload)
+     * @param forceLoad If true, always load client structures (for singleplayer and reload)
      */
     private static void scanClientStructures(boolean forceLoad) {
         scanClientStructures(forceLoad, null);
@@ -315,8 +315,8 @@ public class StructureLoader {
     
     /**
      * Scans client structures if enabled with specific player context
-     * @param forceLoad Se true, carica sempre le strutture client (per singleplayer e reload)
-     * @param player Il giocatore specifico (per il nickname delle strutture client)
+     * @param forceLoad If true, always load client structures (for singleplayer and reload)
+     * @param player The specific player (for client structure nickname)
      */
     private static void scanClientStructures(boolean forceLoad, net.minecraft.server.level.ServerPlayer player) {
         // Determine if we're on server or client
@@ -364,11 +364,11 @@ public class StructureLoader {
      */
     private static boolean isRunningOnServer() {
         try {
-            // Prova a ottenere il server corrente
+            // Try to get the current server
             MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
             return server != null;
         } catch (Exception e) {
-            // Se non riusciamo a determinarlo, assumiamo che siamo sul client
+            // If we can't determine it, assume we're on the client
             return false;
         }
     }
@@ -382,8 +382,8 @@ public class StructureLoader {
     
     /**
      * Gets the current player nickname for prefixing client structures with specific player context
-     * @param specificPlayer Il giocatore specifico (per il nickname delle strutture client)
-     * @return Il nickname del giocatore o un fallback se non determinabile
+     * @param specificPlayer The specific player (for client structure nickname)
+     * @return The player's nickname or a fallback if not determinable
      */
     private static String getCurrentPlayerNickname(net.minecraft.server.level.ServerPlayer specificPlayer) {
         try {
@@ -862,7 +862,7 @@ public class StructureLoader {
             return getAllStructures();
         }
         
-        // Se siamo sul server, filtra le strutture client se il flag è disabilitato
+                    // If we're on the server, filter client structures if the flag is disabled
         if (!Config.acceptClientStructure) {
             return STRUCTURES.entrySet().stream()
                     .filter(entry -> !entry.getKey().startsWith("client_"))
@@ -883,8 +883,8 @@ public class StructureLoader {
      * Gets structures to sync to clients (NEVER includes client structures from server)
      */
     public static Map<String, StructureDefinition> getStructuresForSync() {
-        // Le strutture client del server NON devono mai essere sincronizzate ai client
-        // Ogni client deve usare le sue strutture client locali
+        // Server client structures should NEVER be synchronized to clients
+        // Each client must use its own local client structures
         return STRUCTURES.entrySet().stream()
                 .filter(entry -> !entry.getKey().startsWith("client_"))
                 .sorted(STRUCTURE_COMPARATOR)
@@ -1032,7 +1032,7 @@ public class StructureLoader {
     
     /**
      * Reloads all structure definitions with control over client structure loading
-     * @param forceClientStructures Se true, carica sempre le strutture client (per singleplayer e reload)
+     * @param forceClientStructures If true, always load client structures (for singleplayer and reload)
      */
     public static void reloadAllDefinitions(boolean forceClientStructures) {
         scanConfigDirectory(forceClientStructures);
@@ -1040,8 +1040,8 @@ public class StructureLoader {
     
     /**
      * Reloads all structure definitions with control over client structure loading and specific player context
-     * @param forceClientStructures Se true, carica sempre le strutture client (per singleplayer e reload)
-     * @param player Il giocatore che ha eseguito il comando (per ottenere il nickname per le strutture client)
+     * @param forceClientStructures If true, always load client structures (for singleplayer and reload)
+     * @param player The player who executed the command (to get the nickname for client structures)
      */
     public static void reloadAllDefinitions(boolean forceClientStructures, net.minecraft.server.level.ServerPlayer player) {
         scanConfigDirectory(forceClientStructures, player);
@@ -1058,22 +1058,22 @@ public class StructureLoader {
     }
     
     /**
-     * Sincronizza le strutture ricevute dal server (solo lato client in multiplayer)
-     * @param serverStructureData Mappa delle strutture del server in formato JSON
-     * @param serverAcceptsClientStructures Flag che indica se il server accetta strutture client
+     * Synchronizes structures received from the server (client-side only in multiplayer)
+     * @param serverStructureData Map of server structures in JSON format
+     * @param serverAcceptsClientStructures Flag indicating if the server accepts client structures
      */
     public static void syncFromServer(Map<String, String> serverStructureData, boolean serverAcceptsClientStructures) {
-        // Controlla se siamo in modalità singleplayer - se sì, non sincronizzare
+        // Check if we're in singleplayer mode - if so, don't synchronize
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
             if (minecraft != null && minecraft.hasSingleplayerServer()) {
                 return;
             }
         } catch (Exception e) {
-            // Se non riusciamo a determinarlo, procedi con la sincronizzazione
+            // If we can't determine it, proceed with synchronization
         }
         
-        // Salva le strutture locali protette E le strutture client (se ce ne sono)
+        // Save local protected structures AND client structures (if any)
         Map<String, StructureDefinition> localProtectedStructures = new HashMap<>();
         Map<String, StructureDefinition> localClientStructures = new HashMap<>();
         Map<String, Boolean> localClientProtected = new HashMap<>();
@@ -1081,40 +1081,40 @@ public class StructureLoader {
         for (Map.Entry<String, StructureDefinition> entry : STRUCTURES.entrySet()) {
             String structureId = entry.getKey();
             
-            // Salva strutture protette (non client)
+            // Save protected structures (non-client)
             if (!structureId.startsWith("client_") && PROTECTED_DEFINITIONS.getOrDefault(structureId, false)) {
                 localProtectedStructures.put(structureId, entry.getValue());
             }
             
-            // Salva SEMPRE le strutture client (per ripristinarle se il server lo permette)
+            // ALWAYS save client structures (to restore them if the server allows it)
             if (structureId.startsWith("client_")) {
                 localClientStructures.put(structureId, entry.getValue());
                 localClientProtected.put(structureId, PROTECTED_DEFINITIONS.getOrDefault(structureId, false));
             }
         }
         
-        // Pulisci le strutture esistenti
+        // Clear existing structures
         STRUCTURES.clear();
         PROTECTED_DEFINITIONS.clear();
         
-        // Ripristina le strutture protette locali
+        // Restore local protected structures
         STRUCTURES.putAll(localProtectedStructures);
         for (String protectedId : localProtectedStructures.keySet()) {
             PROTECTED_DEFINITIONS.put(protectedId, true);
         }
         
-        // Carica le strutture dal server
+        // Load structures from server
         for (Map.Entry<String, String> entry : serverStructureData.entrySet()) {
             String structureId = entry.getKey();
             String jsonData = entry.getValue();
             
             try {
-                // Parse il JSON e crea la struttura
+                // Parse JSON and create the structure
                 JsonElement jsonElement = GSON.fromJson(jsonData, JsonElement.class);
                 if (jsonElement != null && jsonElement.isJsonObject()) {
                     JsonObject json = jsonElement.getAsJsonObject();
                     
-                    // Se ha il campo "structure", estrai l'array
+                    // If it has the "structure" field, extract the array
                     if (json.has("structure")) {
                         JsonArray structureArray = json.getAsJsonArray("structure");
                         if (structureArray.size() > 0) {
@@ -1122,7 +1122,7 @@ public class StructureLoader {
                             processStructureDefinition(structureObj);
                         }
                     } else {
-                        // Altrimenti, tratta l'oggetto come una definizione di struttura
+                        // Otherwise, treat the object as a structure definition
                         processStructureDefinition(json);
                     }
                 }
@@ -1130,24 +1130,24 @@ public class StructureLoader {
             }
         }
         
-        // Ripristina le strutture client locali solo se il server lo permette
+        // Restore local client structures only if the server allows it
         if (serverAcceptsClientStructures && !localClientStructures.isEmpty()) {
-            // Ripristina le strutture client salvate
+            // Restore saved client structures
             STRUCTURES.putAll(localClientStructures);
             PROTECTED_DEFINITIONS.putAll(localClientProtected);
         } else if (serverAcceptsClientStructures) {
-            // Se il server accetta le strutture client ma non ne avevamo salvate, prova a caricarle da disco
+            // If the server accepts client structures but we had none saved, try to load them from disk
             scanClientStructures();
         }
         
-        // Imposta il flag che stiamo usando strutture del server (solo per multiplayer)
+        // Set the flag that we're using server structures (only for multiplayer)
         usingServerStructures = true;
         
         int finalClientCount = (int) STRUCTURES.entrySet().stream()
                 .filter(entry -> entry.getKey().startsWith("client_"))
                 .count();
         
-        // Rigenera la documentazione
+        // Regenerate documentation
         try {
             StructureDocumentationGenerator.generateDocumentation();
         } catch (Exception e) {
@@ -1155,20 +1155,20 @@ public class StructureLoader {
     }
     
     /**
-     * Verifica se il client sta attualmente utilizzando strutture sincronizzate dal server
-     * @return true se le strutture provengono dal server, false se sono locali
+     * Checks if the client is currently using structures synchronized from the server
+     * @return true if structures come from the server, false if they are local
      */
     public static boolean isUsingServerStructures() {
         return usingServerStructures;
     }
     
     /**
-     * Forza il ritorno alle strutture locali (ad esempio dopo disconnessione dal server)
+     * Forces return to local structures (e.g., after disconnection from server)
      */
     public static void resetToLocalStructures() {
         if (usingServerStructures) {
             usingServerStructures = false;
-            scanConfigDirectory(); // Ricarica le strutture locali
+            scanConfigDirectory(); // Reload local structures
         }
     }
 } 

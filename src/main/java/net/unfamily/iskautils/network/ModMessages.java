@@ -224,7 +224,7 @@ public class ModMessages {
      * This simulates a client-to-server packet for saving the selected structure
      */
     public static void sendStructurePlacerSavePacket(String structureId) {
-        LOGGER.info("Sending Structure Placer save packet: {}", structureId);
+
         // Simplified implementation - directly handle on the server side
         try {
             net.minecraft.server.level.ServerPlayer player = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer().getPlayerList().getPlayers().get(0);
@@ -242,7 +242,7 @@ public class ModMessages {
      * Sends a Structure Saver blueprint sync packet
      */
     public static void sendStructureSaverBlueprintSyncPacket(ServerPlayer player, BlockPos machinePos, BlockPos vertex1, BlockPos vertex2, BlockPos center) {
-        LOGGER.info("Sending Structure Saver blueprint sync packet for machine at {}", machinePos);
+
         
         // Sistema semplificato identico agli altri packet in questa classe
         try {
@@ -393,7 +393,7 @@ public class ModMessages {
      * Sends a Structure Placer Machine Redstone Mode packet to the server
      */
     public static void sendStructurePlacerMachineRedstoneModePacket(BlockPos machinePos) {
-        LOGGER.info("Sending Structure Placer Machine redstone mode packet: {}", machinePos);
+
         
         // Use simplified approach like other machine buttons
         try {
@@ -748,13 +748,13 @@ public class ModMessages {
      */
     public static void sendStructureSyncPacket(ServerPlayer player) {
         try {
-            // Controlla se siamo in modalità singleplayer
+            // Check if we're in singleplayer mode
             boolean isSingleplayer = player.getServer().isSingleplayer();
             
             if (isSingleplayer) {
                 LOGGER.debug("Modalità singleplayer detected, skipping structure sync for player {}", 
                            player.getName().getString());
-                return; // In singleplayer, il client ha già le sue strutture locali
+                return; // In singleplayer, the client already has its local structures
             }
             
             // Ottieni SOLO le strutture da sincronizzare (MAI le strutture client del server)
@@ -773,7 +773,7 @@ public class ModMessages {
                 net.unfamily.iskautils.network.packet.StructureSyncS2CPacket.create(serverStructures, net.unfamily.iskautils.Config.acceptClientStructure);
             
             // TODO: In un server dedicato, qui invieresti il vero pacchetto al client
-            // Per ora logga solo che la sincronizzazione è necessaria
+            // For now just log that synchronization is needed
             LOGGER.info("TODO: Inviare pacchetto di sincronizzazione strutture al client {} su server dedicato", 
                        player.getName().getString());
             
@@ -786,7 +786,7 @@ public class ModMessages {
      * Sends a Structure Saver Machine recalculate packet to the server
      */
     public static void sendStructureSaverMachineRecalculatePacket(BlockPos machinePos) {
-        LOGGER.info("Requesting Structure Saver Machine area recalculation: {}", machinePos);
+
         // Simplified implementation per single player compatibility
         try {
             net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
@@ -817,10 +817,8 @@ public class ModMessages {
      * This simulates a client-to-server packet for saving or modifying a structure from the machine
      */
     public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer, String oldStructureId) {
-        LOGGER.info("=== SENDING STRUCTURE SAVER MACHINE SAVE PACKET ===");
-        LOGGER.info("Structure name: '{}'", structureName);
-        LOGGER.info("Structure ID: '{}'", structureId);
-        LOGGER.info("Machine pos: {}", machinePos);
+
+
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
             if (minecraft == null) {

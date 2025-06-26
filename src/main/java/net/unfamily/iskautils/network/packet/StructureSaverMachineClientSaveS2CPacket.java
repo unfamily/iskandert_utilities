@@ -44,10 +44,9 @@ public class StructureSaverMachineClientSaveS2CPacket {
                            BlockPos vertex1, BlockPos vertex2, BlockPos center,
                            boolean slower, boolean placeAsPlayer,
                            boolean isModifyOperation, String oldStructureId) {
-        LOGGER.info("Sending client save packet for structure: {} ({}) - Modify: {}", 
-                   structureName, structureId, isModifyOperation);
         
-        // Sistema semplificato per compatibilità single player
+        
+        // Simplified system for single player compatibility
         try {
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 handleClient(structureName, structureId, vertex1, vertex2, center, 
@@ -67,8 +66,7 @@ public class StructureSaverMachineClientSaveS2CPacket {
                                    boolean slower, boolean placeAsPlayer,
                                    boolean isModifyOperation, String oldStructureId) {
         try {
-            LOGGER.info("Processing client save request for structure: {} ({}) - Modify: {}", 
-                       structureName, structureId, isModifyOperation);
+            
             
             var level = net.minecraft.client.Minecraft.getInstance().level;
             if (level == null) {
@@ -81,7 +79,7 @@ public class StructureSaverMachineClientSaveS2CPacket {
                 structureName, structureId, vertex1, vertex2, center, level,
                 slower, placeAsPlayer, isModifyOperation, oldStructureId);
                 
-            LOGGER.info("Structure saved successfully on client");
+
             
             // Mostra messaggio di successo al giocatore
             var player = net.minecraft.client.Minecraft.getInstance().player;

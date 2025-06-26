@@ -30,11 +30,11 @@ public class ShopCommand {
     
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        LOGGER.info("Registering shop commands");
+
         register(event.getDispatcher());
         
         // Register team commands
-        LOGGER.info("Registering shop team commands");
+
         ShopTeamCommand.register(event.getDispatcher());
     }
     
@@ -49,7 +49,7 @@ public class ShopCommand {
                     try {
                         ShopLoader.reloadAllConfigurations();
                         
-                        // Notifica le GUI client del reload
+                        // Notify client GUIs of the reload
                         notifyClientGUIReload();
                         
                         source.sendSuccess(() -> Component.literal("Shop system reloaded successfully!"), false);

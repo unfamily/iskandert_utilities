@@ -39,7 +39,7 @@ public class AutoShopSetEncapsulatedC2SPacket {
         if (itemToSet.isEmpty()) {
             itemToSet = player.getMainHandItem();
             if (itemToSet.isEmpty()) {
-                // Se la mano è vuota, svuota lo slot
+                // If hand is empty, clear the slot
                 autoShop.getEncapsulatedSlot().setStackInSlot(0, ItemStack.EMPTY);
             } else {
                 // Altrimenti, copia l'item nella slot (1 item alla volta)

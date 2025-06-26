@@ -37,13 +37,7 @@ public class ClientStructureSaver {
                                    ClientLevel level, boolean slower, boolean placeAsPlayer,
                                    boolean isModifyOperation, String oldStructureId) throws IOException {
         
-        LOGGER.info("=== SAVING STRUCTURE CLIENT-SIDE ===");
-        LOGGER.info("Structure name: '{}'", structureName);
-        LOGGER.info("Structure ID: '{}'", structureId);
-        LOGGER.info("Operation type: {}", isModifyOperation ? "MODIFY" : "SAVE");
-        if (isModifyOperation) {
-            LOGGER.info("Old structure ID: {}", oldStructureId);
-        }
+
         
         // Logica di salvataggio identica a quella del server ma lato client
         saveToPlayerStructuresFile(createStructureJson(structureName, structureId, vertex1, vertex2, center, level, slower, placeAsPlayer), 
@@ -70,7 +64,7 @@ public class ClientStructureSaver {
         int sizeY = maxY - minY + 1;
         int sizeZ = maxZ - minZ + 1;
         
-        LOGGER.info("Area size: {}x{}x{}", sizeX, sizeY, sizeZ);
+
         
         // Mappa per assegnare caratteri ai blocchi (escludendo @)
         Map<String, Character> blockToCharMap = new HashMap<>();
@@ -137,7 +131,7 @@ public class ClientStructureSaver {
             patternLines.add(rows.toArray(new String[0]));
         }
         
-        LOGGER.info("Generated pattern with {} layers, {} unique blocks", patternLines.size(), blockToCharMap.size());
+
         
         // Crea il JSON della struttura
         JsonObject root = new JsonObject();
@@ -310,20 +304,15 @@ public class ClientStructureSaver {
     }
     
     private static void saveToPlayerStructuresFile(JsonObject newStructure, boolean isModifyOperation, String oldStructureId) throws IOException {
-        LOGGER.info("=== SAVING STRUCTURE TO FILE ===");
+
         
         String configPath = Config.clientStructurePath;
         if (configPath == null || configPath.trim().isEmpty()) {
             configPath = "iska_utils_client/structures";
         }
         
-        LOGGER.info("Config path: '{}'", configPath);
-        
         Path structuresDir = Paths.get(configPath);
         Path playerStructuresFile = structuresDir.resolve("player_structures.json");
-        
-        LOGGER.info("Structures directory: {}", structuresDir.toAbsolutePath());
-        LOGGER.info("Player structures file: {}", playerStructuresFile.toAbsolutePath());
         
         // Crea la directory se non esiste
         if (!Files.exists(structuresDir)) {
@@ -355,15 +344,14 @@ public class ClientStructureSaver {
         JsonArray newStructureArray = newStructure.getAsJsonArray("structure");
         
         if (isModifyOperation && oldStructureId != null) {
-            LOGGER.info("=== MODIFY OPERATION: Removing old structure ===");
-            LOGGER.info("Old structure ID to remove: {}", oldStructureId);
+
             
             // Rimuovi la struttura vecchia
             boolean foundOldStructure = false;
             for (int i = structuresArray.size() - 1; i >= 0; i--) {
                 JsonObject structure = structuresArray.get(i).getAsJsonObject();
                 if (structure.has("id") && oldStructureId.equals(structure.get("id").getAsString())) {
-                    LOGGER.info("Found and removing old structure at index {}", i);
+
                     structuresArray.remove(i);
                     foundOldStructure = true;
                     break; // Rimuovi solo la prima occorrenza
@@ -379,21 +367,16 @@ public class ClientStructureSaver {
         for (int i = 0; i < newStructureArray.size(); i++) {
             JsonObject newStructureObj = newStructureArray.get(i).getAsJsonObject();
             if (newStructureObj.has("id")) {
-                LOGGER.info("Adding {} structure with ID: {}", 
-                           isModifyOperation ? "modified" : "new", 
-                           newStructureObj.get("id").getAsString());
+                
             }
             structuresArray.add(newStructureObj);
         }
         
         // Salva il file
         String jsonContent = GSON.toJson(root);
-        LOGGER.info("Writing JSON content ({} characters) to file...", jsonContent.length());
         
         Files.writeString(playerStructuresFile, jsonContent, 
                          StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        
-        LOGGER.info("Structure saved successfully to player_structures.json");
     }
     
     /**

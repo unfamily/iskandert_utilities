@@ -157,8 +157,8 @@ public class StructureDefinition {
     }
     
     /**
-     * Serializza questa definizione di struttura in formato JSON
-     * @return Una stringa JSON rappresentante questa struttura
+     * Serializes this structure definition to JSON format
+     * @return A JSON string representing this structure
      */
     public String toJson() {
         Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -169,7 +169,7 @@ public class StructureDefinition {
         JsonArray structureArray = new JsonArray();
         JsonObject structureObj = new JsonObject();
         
-        // Aggiungi i campi base
+        // Add base fields
         if (id != null) structureObj.addProperty("id", id);
         if (name != null) structureObj.addProperty("name", name);
         if (description != null) structureObj.addProperty("description", description);
@@ -178,7 +178,7 @@ public class StructureDefinition {
         if (placeAsPlayer) structureObj.addProperty("place_like_player", placeAsPlayer);
         if (overwritable) structureObj.addProperty("overwritable", overwritable);
         
-        // Aggiungi can_replace se presente
+        // Add can_replace if present
         if (canReplace != null && !canReplace.isEmpty()) {
             JsonArray canReplaceArray = new JsonArray();
             for (String replace : canReplace) {
@@ -187,7 +187,7 @@ public class StructureDefinition {
             structureObj.add("can_replace", canReplaceArray);
         }
         
-        // Aggiungi stages se presente
+        // Add stages if present
         if (stages != null && !stages.isEmpty()) {
             JsonArray stagesArray = new JsonArray();
             for (String stage : stages) {
@@ -196,7 +196,7 @@ public class StructureDefinition {
             structureObj.add("stages", stagesArray);
         }
         
-        // Aggiungi icon se presente
+        // Add icon if present
         if (icon != null && icon.getItem() != null) {
             JsonObject iconObj = new JsonObject();
             iconObj.addProperty("type", "minecraft:item");
@@ -208,7 +208,7 @@ public class StructureDefinition {
             structureObj.add("icon", iconObj);
         }
         
-        // Aggiungi pattern se presente
+        // Add pattern if present
         if (pattern != null) {
             JsonArray patternArray = new JsonArray();
             for (String[][][] yLayer : pattern) {
@@ -229,7 +229,7 @@ public class StructureDefinition {
             structureObj.add("pattern", patternArray);
         }
         
-        // Aggiungi key se presente
+        // Add key if present
         if (key != null && !key.isEmpty()) {
             JsonObject keyObj = new JsonObject();
             for (Map.Entry<String, List<BlockDefinition>> entry : key.entrySet()) {

@@ -268,7 +268,7 @@ public class CommandItemAction {
                 
                 CommandItemDefinition.StageCondition condition = allStages.get(index);
                 
-                // Verifica diretta dallo stage registry per avere lo stato più aggiornato
+                // Direct verification from stage registry to get the most up-to-date state
                 boolean currentState = false;
                 if ("world".equalsIgnoreCase(condition.getStageType())) {
                     currentState = registry.hasWorldStage(condition.getStage());
@@ -278,7 +278,7 @@ public class CommandItemAction {
                     currentState = registry.hasPlayerTeamStage(player, condition.getStage());
                 }
                 
-                // La condizione è soddisfatta se lo stato attuale corrisponde a quello atteso
+                // The condition is satisfied if the current state matches the expected one
                 boolean conditionMet = (currentState == condition.shouldBeSet());
                 
                 com.mojang.logging.LogUtils.getLogger().debug("DEF_AND condition at index {} ({}: {}): actual={}, expected={}, match={}", 
@@ -314,7 +314,7 @@ public class CommandItemAction {
                 
                 CommandItemDefinition.StageCondition condition = allStages.get(index);
                 
-                // Verifica diretta dallo stage registry per avere lo stato più aggiornato
+                // Direct verification from stage registry to get the most up-to-date state
                 boolean currentState = false;
                 if ("world".equalsIgnoreCase(condition.getStageType())) {
                     currentState = registry.hasWorldStage(condition.getStage());
@@ -324,7 +324,7 @@ public class CommandItemAction {
                     currentState = registry.hasPlayerTeamStage(player, condition.getStage());
                 }
                 
-                // La condizione è soddisfatta se lo stato attuale corrisponde a quello atteso
+                // The condition is satisfied if the current state matches the expected one
                 boolean conditionMet = (currentState == condition.shouldBeSet());
                 
                 com.mojang.logging.LogUtils.getLogger().debug("DEF_OR condition at index {} ({}: {}): actual={}, expected={}, match={}", 
@@ -356,7 +356,7 @@ public class CommandItemAction {
             
             CommandItemDefinition.StageCondition condition = allStages.get(index);
             
-            // Verifica diretta dallo stage registry per avere lo stato più aggiornato
+            // Direct verification from stage registry to get the most up-to-date state
             boolean currentState = false;
             if ("world".equalsIgnoreCase(condition.getStageType())) {
                 currentState = registry.hasWorldStage(condition.getStage());
@@ -366,7 +366,7 @@ public class CommandItemAction {
                 currentState = registry.hasPlayerTeamStage(player, condition.getStage());
             }
             
-            // La condizione è soddisfatta se lo stato attuale corrisponde a quello atteso
+            // The condition is satisfied if the current state matches the expected one
             boolean conditionMet = (currentState == condition.shouldBeSet());
             
             com.mojang.logging.LogUtils.getLogger().debug("Default AND condition at index {} ({}: {}): actual={}, expected={}, match={}", 
