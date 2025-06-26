@@ -269,6 +269,13 @@ public class ShopTeamManager {
     }
     
     /**
+     * Gets all team names for autocompletion
+     */
+    public List<String> getAllTeamNames() {
+        return new ArrayList<>(getAllTeams());
+    }
+    
+    /**
      * Team data saved in world storage
      */
     public static class TeamData extends SavedData {

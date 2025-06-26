@@ -7,11 +7,11 @@ import net.unfamily.iskautils.shop.ShopTransactionManager;
  * Packet per l'acquisto di item dal shop
  */
 public class ShopBuyItemC2SPacket {
-    private final String itemId;
+    private final String entryId;
     private final int quantity;
     
-    public ShopBuyItemC2SPacket(String itemId, int quantity) {
-        this.itemId = itemId;
+    public ShopBuyItemC2SPacket(String entryId, int quantity) {
+        this.entryId = entryId;
         this.quantity = quantity;
     }
     
@@ -20,9 +20,9 @@ public class ShopBuyItemC2SPacket {
      */
     public void handle(ServerPlayer player) {
         System.out.println("DEBUG: ShopBuyItemC2SPacket.handle chiamato - player: " + player.getName().getString() + 
-                          ", itemId: " + itemId + ", quantity: " + quantity);
+                          ", entryId: " + entryId + ", quantity: " + quantity);
         
         // Gestisci l'acquisto tramite il ShopTransactionManager
-        ShopTransactionManager.handleBuyItem(player, itemId, quantity);
+        ShopTransactionManager.handleBuyItem(player, entryId, quantity);
     }
 } 

@@ -5,12 +5,17 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
+
+import java.util.concurrent.CompletableFuture;
 
 import java.util.List;
 import java.util.UUID;
@@ -98,10 +103,46 @@ public class ShopTeamCommand {
                 .then(Commands.argument("teamName", StringArgumentType.word())
                     .executes(ShopTeamCommand::getBalance)
                     .then(Commands.argument("valuteId", StringArgumentType.word())
-                        .executes(ShopTeamCommand::getValuteBalance)
-                        .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
-                            .requires(source -> source.hasPermission(2)) // Admin only for adding valutes
-                            .executes(ShopTeamCommand::addValutes)))))
+                        .executes(ShopTeamCommand::getValuteBalance))))
+            .then(Commands.literal("addValute")
+                .requires(source -> source.hasPermission(2)) // Admin only
+                .then(Commands.argument("valuteId", StringArgumentType.word())
+                    .suggests(ShopTeamCommand::suggestValutes)
+                    .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
+                        .executes(ShopTeamCommand::addValuteToOwnTeam)
+                        .then(Commands.literal("team")
+                            .then(Commands.argument("teamName", StringArgumentType.word())
+                                .suggests(ShopTeamCommand::suggestTeams)
+                                .executes(ShopTeamCommand::addValuteToTeam)))
+                        .then(Commands.literal("player")
+                            .then(Commands.argument("player", EntityArgument.player())
+                                .executes(ShopTeamCommand::addValuteToPlayerTeam))))))
+            .then(Commands.literal("removeValute")
+                .requires(source -> source.hasPermission(2)) // Admin only
+                .then(Commands.argument("valuteId", StringArgumentType.word())
+                    .suggests(ShopTeamCommand::suggestValutes)
+                    .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
+                        .executes(ShopTeamCommand::removeValuteFromOwnTeam)
+                        .then(Commands.literal("team")
+                            .then(Commands.argument("teamName", StringArgumentType.word())
+                                .suggests(ShopTeamCommand::suggestTeams)
+                                .executes(ShopTeamCommand::removeValuteFromTeam)))
+                        .then(Commands.literal("player")
+                            .then(Commands.argument("player", EntityArgument.player())
+                                .executes(ShopTeamCommand::removeValuteFromPlayerTeam))))))
+            .then(Commands.literal("setValute")
+                .requires(source -> source.hasPermission(2)) // Admin only
+                .then(Commands.argument("valuteId", StringArgumentType.word())
+                    .suggests(ShopTeamCommand::suggestValutes)
+                    .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
+                        .executes(ShopTeamCommand::setValuteForOwnTeam)
+                        .then(Commands.literal("team")
+                            .then(Commands.argument("teamName", StringArgumentType.word())
+                                .suggests(ShopTeamCommand::suggestTeams)
+                                .executes(ShopTeamCommand::setValuteForTeam)))
+                        .then(Commands.literal("player")
+                            .then(Commands.argument("player", EntityArgument.player())
+                                .executes(ShopTeamCommand::setValuteForPlayerTeam))))))
             .then(Commands.literal("invitations")
                 .executes(ShopTeamCommand::listInvitations)));
     }
@@ -786,6 +827,249 @@ public class ShopTeamCommand {
         }
     }
     
+    // ===== ADD VALUTE COMMANDS =====
+    
+    private static int addValuteToOwnTeam(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String valuteId = StringArgumentType.getString(context, "valuteId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        
+        if (source.getPlayer() == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        
+        if (teamName == null) {
+            source.sendFailure(Component.literal("You are not in a team"));
+            return 0;
+        }
+        
+        if (teamManager.addTeamValutes(teamName, valuteId, amount)) {
+            source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteId + " to your team '" + teamName + "'!"), false);
+            return 1;
+        } else {
+            source.sendFailure(Component.literal("Failed to add valutes to team."));
+            return 0;
+        }
+    }
+    
+    private static int addValuteToTeam(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String valuteId = StringArgumentType.getString(context, "valuteId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        String teamName = StringArgumentType.getString(context, "teamName");
+        
+        if (source.getPlayer() == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        
+        if (teamManager.addTeamValutes(teamName, valuteId, amount)) {
+            source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteId + " to team '" + teamName + "'!"), false);
+            return 1;
+        } else {
+            source.sendFailure(Component.literal("Failed to add valutes to team. Team might not exist."));
+            return 0;
+        }
+    }
+    
+    private static int addValuteToPlayerTeam(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String valuteId = StringArgumentType.getString(context, "valuteId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        
+        try {
+            ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
+            ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
+            String teamName = teamManager.getPlayerTeam(targetPlayer);
+            
+            if (teamName == null) {
+                source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
+                return 0;
+            }
+            
+            if (teamManager.addTeamValutes(teamName, valuteId, amount)) {
+                source.sendSuccess(() -> Component.literal("Added " + amount + " " + valuteId + " to " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
+                return 1;
+            } else {
+                source.sendFailure(Component.literal("Failed to add valutes to team."));
+                return 0;
+            }
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("Player not found or error occurred"));
+            return 0;
+        }
+    }
+    
+    // ===== REMOVE VALUTE COMMANDS =====
+    
+    private static int removeValuteFromOwnTeam(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String valuteId = StringArgumentType.getString(context, "valuteId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        
+        if (source.getPlayer() == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        
+        if (teamName == null) {
+            source.sendFailure(Component.literal("You are not in a team"));
+            return 0;
+        }
+        
+        if (teamManager.removeTeamValutes(teamName, valuteId, amount)) {
+            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteId + " from your team '" + teamName + "'!"), false);
+            return 1;
+        } else {
+            source.sendFailure(Component.literal("Failed to remove valutes from team. Insufficient balance or team doesn't exist."));
+            return 0;
+        }
+    }
+    
+    private static int removeValuteFromTeam(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String valuteId = StringArgumentType.getString(context, "valuteId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        String teamName = StringArgumentType.getString(context, "teamName");
+        
+        if (source.getPlayer() == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        
+        if (teamManager.removeTeamValutes(teamName, valuteId, amount)) {
+            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteId + " from team '" + teamName + "'!"), false);
+            return 1;
+        } else {
+            source.sendFailure(Component.literal("Failed to remove valutes from team. Insufficient balance or team doesn't exist."));
+            return 0;
+        }
+    }
+    
+    private static int removeValuteFromPlayerTeam(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String valuteId = StringArgumentType.getString(context, "valuteId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        
+        try {
+            ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
+            ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
+            String teamName = teamManager.getPlayerTeam(targetPlayer);
+            
+            if (teamName == null) {
+                source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
+                return 0;
+            }
+            
+            if (teamManager.removeTeamValutes(teamName, valuteId, amount)) {
+                source.sendSuccess(() -> Component.literal("Removed " + amount + " " + valuteId + " from " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
+                return 1;
+            } else {
+                source.sendFailure(Component.literal("Failed to remove valutes from team. Insufficient balance or team doesn't exist."));
+                return 0;
+            }
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("Player not found or error occurred"));
+            return 0;
+        }
+    }
+    
+    // ===== SET VALUTE COMMANDS =====
+    
+    private static int setValuteForOwnTeam(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String valuteId = StringArgumentType.getString(context, "valuteId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        
+        if (source.getPlayer() == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        
+        if (teamName == null) {
+            source.sendFailure(Component.literal("You are not in a team"));
+            return 0;
+        }
+        
+        return setTeamValute(source, teamManager, teamName, valuteId, amount);
+    }
+    
+    private static int setValuteForTeam(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String valuteId = StringArgumentType.getString(context, "valuteId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        String teamName = StringArgumentType.getString(context, "teamName");
+        
+        if (source.getPlayer() == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        return setTeamValute(source, teamManager, teamName, valuteId, amount);
+    }
+    
+    private static int setValuteForPlayerTeam(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String valuteId = StringArgumentType.getString(context, "valuteId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        
+        try {
+            ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
+            ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
+            String teamName = teamManager.getPlayerTeam(targetPlayer);
+            
+            if (teamName == null) {
+                source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
+                return 0;
+            }
+            
+            return setTeamValute(source, teamManager, teamName, valuteId, amount);
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("Player not found or error occurred"));
+            return 0;
+        }
+    }
+    
+    private static int setTeamValute(CommandSourceStack source, ShopTeamManager teamManager, String teamName, String valuteId, double targetAmount) {
+        double currentBalance = teamManager.getTeamValuteBalance(teamName, valuteId);
+        double difference = targetAmount - currentBalance;
+        
+        boolean success;
+        if (difference > 0) {
+            // Dobbiamo aggiungere valute
+            success = teamManager.addTeamValutes(teamName, valuteId, difference);
+        } else if (difference < 0) {
+            // Dobbiamo rimuovere valute
+            success = teamManager.removeTeamValutes(teamName, valuteId, Math.abs(difference));
+        } else {
+            // Il balance è già quello desiderato
+            success = true;
+        }
+        
+        if (success) {
+            source.sendSuccess(() -> Component.literal("Set " + valuteId + " balance for team '" + teamName + "' to " + targetAmount + "!"), false);
+            return 1;
+        } else {
+            source.sendFailure(Component.literal("Failed to set valutes for team. Team might not exist."));
+            return 0;
+        }
+    }
+    
     private static int listInvitations(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         
@@ -820,5 +1104,28 @@ public class ShopTeamCommand {
             // Ignore errors
         }
         return playerId.toString();
+    }
+    
+    /**
+     * Suggerisce gli ID delle valute disponibili per l'autocompletamento
+     */
+    private static CompletableFuture<Suggestions> suggestValutes(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+        // Ottiene tutti gli ID delle valute disponibili dal ShopLoader
+        List<String> valuteIds = ShopLoader.getAllValuteIds();
+        return SharedSuggestionProvider.suggest(valuteIds, builder);
+    }
+    
+    /**
+     * Suggerisce i nomi dei team esistenti per l'autocompletamento
+     */
+    private static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+        CommandSourceStack source = context.getSource();
+        if (source.getPlayer() == null) {
+            return Suggestions.empty();
+        }
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        List<String> teamNames = teamManager.getAllTeamNames();
+        return SharedSuggestionProvider.suggest(teamNames, builder);
     }
 } 

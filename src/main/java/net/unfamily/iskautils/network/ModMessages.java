@@ -872,8 +872,8 @@ public class ModMessages {
     /**
      * Sends a shop buy item packet to the server
      */
-    public static void sendShopBuyItemPacket(String itemId, int quantity) {
-        System.out.println("DEBUG: sendShopBuyItemPacket chiamato - itemId: " + itemId + ", quantity: " + quantity);
+    public static void sendShopBuyItemPacket(String entryId, int quantity) {
+        System.out.println("DEBUG: sendShopBuyItemPacket chiamato - entryId: " + entryId + ", quantity: " + quantity);
         
         // Simplified implementation for single player compatibility
         try {
@@ -887,7 +887,7 @@ public class ModMessages {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         // Create and handle the packet
-                        new net.unfamily.iskautils.network.packet.ShopBuyItemC2SPacket(itemId, quantity).handle(player);
+                        new net.unfamily.iskautils.network.packet.ShopBuyItemC2SPacket(entryId, quantity).handle(player);
                     }
                 } catch (Exception e) {
                     System.err.println("DEBUG: Errore nell'invio del packet buy: " + e.getMessage());
@@ -903,8 +903,8 @@ public class ModMessages {
     /**
      * Sends a shop sell item packet to the server
      */
-    public static void sendShopSellItemPacket(String itemId, int quantity) {
-        System.out.println("DEBUG: sendShopSellItemPacket chiamato - itemId: " + itemId + ", quantity: " + quantity);
+    public static void sendShopSellItemPacket(String entryId, int quantity) {
+        System.out.println("DEBUG: sendShopSellItemPacket chiamato - entryId: " + entryId + ", quantity: " + quantity);
         
         // Simplified implementation for single player compatibility
         try {
@@ -918,7 +918,7 @@ public class ModMessages {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         // Create and handle the packet
-                        new net.unfamily.iskautils.network.packet.ShopSellItemC2SPacket(itemId, quantity).handle(player);
+                        new net.unfamily.iskautils.network.packet.ShopSellItemC2SPacket(entryId, quantity).handle(player);
                     }
                 } catch (Exception e) {
                     System.err.println("DEBUG: Errore nell'invio del packet sell: " + e.getMessage());

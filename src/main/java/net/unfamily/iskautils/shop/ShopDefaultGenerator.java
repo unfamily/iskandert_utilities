@@ -170,6 +170,7 @@ public class ShopDefaultGenerator {
             
             // Default bread entry
             JsonObject breadEntry = new JsonObject();
+            breadEntry.addProperty("id", "bread_default");
             breadEntry.addProperty("in_category", "000_default");
             breadEntry.addProperty("item", "minecraft:bread");
             breadEntry.addProperty("item_count", 1);

@@ -332,19 +332,34 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
     
     /**
-     * Cerca una ShopEntry per un item specifico in tutte le categorie
+     * Cerca una ShopEntry per un item specifico confrontando direttamente gli ItemStack
      */
-    private static net.unfamily.iskautils.shop.ShopEntry findEntryForItem(String itemId) {
+    private static net.unfamily.iskautils.shop.ShopEntry findEntryForItem(ItemStack templateItem) {
         Map<String, net.unfamily.iskautils.shop.ShopEntry> allEntries = net.unfamily.iskautils.shop.ShopLoader.getEntries();
         
+        // Prima cerca un match esatto (stesso item con stessi NBT)
         for (Map.Entry<String, net.unfamily.iskautils.shop.ShopEntry> entryMap : allEntries.entrySet()) {
             net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
-            if (entry.item.equals(itemId)) {
-                return entry;
+            
+            // Converti l'entry in ItemStack per il confronto
+            ItemStack entryItem = net.unfamily.iskautils.shop.ItemConverter.parseItemString(entry.item, 1);
+            if (!entryItem.isEmpty() && ItemStack.isSameItemSameComponents(templateItem, entryItem)) {
+                return entry; // Match esatto trovato
             }
         }
         
-        return null;
+        // Se non trova match esatto, cerca per tipo di item (senza NBT)
+        for (Map.Entry<String, net.unfamily.iskautils.shop.ShopEntry> entryMap : allEntries.entrySet()) {
+            net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
+            
+            // Converti l'entry in ItemStack per il confronto
+            ItemStack entryItem = net.unfamily.iskautils.shop.ItemConverter.parseItemString(entry.item, 1);
+            if (!entryItem.isEmpty() && templateItem.is(entryItem.getItem())) {
+                return entry; // Match per tipo trovato
+            }
+        }
+        
+        return null; // Entry non trovata
     }
     
     /**
@@ -384,9 +399,22 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return;
             }
 
-            // Trova la ShopEntry per l'item
-            String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-            net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(itemId);
+            // Determina quale template usare per la ricerca della ShopEntry
+            // Se c'è un template nella selected slot, usalo, altrimenti usa l'item stesso
+            ItemStackHandler selectedSlot = entity.getSelectedSlot();
+            ItemStack templateStack = selectedSlot.getStackInSlot(0);
+            ItemStack templateItem;
+            
+            if (!templateStack.isEmpty()) {
+                // Usa il template dalla selected slot
+                templateItem = templateStack;
+            } else {
+                // Usa l'item dalla encapsulated slot come template
+                templateItem = stack;
+            }
+
+            // Trova la ShopEntry usando il template più appropriato
+            net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(templateItem);
             if (entry == null || entry.sell <= 0) {
                 return;
             }
@@ -459,8 +487,8 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return;
             }
 
-            // Trova la ShopEntry per l'item selezionato
-            String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(selectedStack.getItem()).toString();
+            // Trova la ShopEntry per l'item selezionato - usa la rappresentazione completa dell'item
+            ItemStack itemId = selectedStack; // Include NBT/data components
             net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(itemId);
             if (entry == null || entry.buy <= 0) {
                 return;
@@ -514,9 +542,9 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return; // Fallimento nella rimozione
             }
 
-            // Crea l'item selezionato e mettilo nella slot
-            ItemStack itemToCreate = selectedStack.copy();
-            itemToCreate.setCount(entry.itemCount); // Usa itemCount dalla ShopEntry
+            // Crea l'item dalla entry trovata (non dal template)
+            // Questo previene la duplicazione di NBT che non esistono nello shop
+            ItemStack itemToCreate = net.unfamily.iskautils.shop.ItemConverter.parseItemString(entry.item, entry.itemCount);
             slot.setStackInSlot(0, itemToCreate);
             entity.setChanged();
         }

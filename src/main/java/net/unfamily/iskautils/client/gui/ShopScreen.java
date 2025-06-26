@@ -1066,8 +1066,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Nascondi il feedback se presente (successo)
         hideFeedback();
         
-        // Invia il packet al server
-        net.unfamily.iskautils.network.ModMessages.sendShopBuyItemPacket(item.item, multiplier);
+        // Invia il packet al server - usa l'ID univoco della entry
+        net.unfamily.iskautils.network.ModMessages.sendShopBuyItemPacket(item.id, multiplier);
         
         playButtonSound();
     }
@@ -1088,8 +1088,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Per ora nascondiamo il feedback e inviamo al server
         hideFeedback();
         
-        // Invia il packet al server
-        net.unfamily.iskautils.network.ModMessages.sendShopSellItemPacket(item.item, multiplier);
+        // Invia il packet al server - usa l'ID univoco della entry
+        net.unfamily.iskautils.network.ModMessages.sendShopSellItemPacket(item.id, multiplier);
         
         playButtonSound();
     }

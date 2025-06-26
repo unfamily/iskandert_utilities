@@ -15,7 +15,9 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
@@ -211,6 +213,7 @@ public class ShopLoader {
             if (!element.isJsonObject()) continue;
             
             JsonObject entryObj = element.getAsJsonObject();
+            String id = entryObj.has("id") ? entryObj.get("id").getAsString() : null;
             String item = entryObj.has("item") ? entryObj.get("item").getAsString() : null;
             String category = entryObj.has("in_category") ? entryObj.get("in_category").getAsString() : null;
             
@@ -219,9 +222,16 @@ public class ShopLoader {
                 continue;
             }
             
-            // Usa solo l'ID base dell'item per la chiave, senza data components
-            String baseItemId = extractBaseItemId(item);
-            String entryKey = category != null ? category + ":" + baseItemId : baseItemId;
+            // Se non c'è un ID specifico, genera uno automatico basato su item e categoria
+            String entryKey;
+            if (id != null && !id.trim().isEmpty()) {
+                entryKey = id.trim();
+            } else {
+                // Fallback: usa il vecchio sistema per compatibilità
+                String baseItemId = extractBaseItemId(item);
+                entryKey = category != null ? category + ":" + baseItemId : baseItemId;
+                LOGGER.warn("Entry without ID found in {}, using fallback key: {}", fileName, entryKey);
+            }
             
             if (PROTECTED_ENTRIES.containsKey(entryKey) && PROTECTED_ENTRIES.get(entryKey)) {
                 LOGGER.debug("Entry {} protected, ignoring override from {}", entryKey, fileName);
@@ -229,6 +239,7 @@ public class ShopLoader {
             }
             
             ShopEntry entry = new ShopEntry();
+            entry.id = entryKey;
             entry.inCategory = category;
             entry.item = item;
             entry.itemCount = entryObj.has("item_count") ? entryObj.get("item_count").getAsInt() : 1;
@@ -256,7 +267,7 @@ public class ShopLoader {
             ENTRIES.put(entryKey, entry);
             PROTECTED_ENTRIES.put(entryKey, !overwritable);
             
-            LOGGER.debug("Loaded entry: {} in category {}", item, category != null ? category : "default");
+            LOGGER.debug("Loaded entry: {} (ID: {}) in category {}", item, entryKey, category != null ? category : "default");
         }
     }
     
@@ -411,9 +422,39 @@ public class ShopLoader {
     }
     
     public static ShopEntry getEntry(String category, String item) {
+        // Prima prova con l'ID diretto se disponibile
         String baseItemId = extractBaseItemId(item);
         String key = category != null ? category + ":" + baseItemId : baseItemId;
-        return ENTRIES.get(key);
+        ShopEntry entry = ENTRIES.get(key);
+        
+        // Se non trovato con la chiave diretta, cerca nell'intera mappa
+        if (entry == null) {
+            for (ShopEntry e : ENTRIES.values()) {
+                if (category != null && !category.equals(e.inCategory)) {
+                    continue;
+                }
+                String entryBaseItemId = extractBaseItemId(e.item);
+                if (baseItemId.equals(entryBaseItemId)) {
+                    return e;
+                }
+            }
+        }
+        
+        return entry;
+    }
+    
+    /**
+     * Ottiene una ShopEntry tramite il suo ID univoco
+     */
+    public static ShopEntry getEntryById(String id) {
+        return ENTRIES.get(id);
+    }
+    
+    /**
+     * Ottiene tutti gli ID delle valute disponibili per l'autocompletamento
+     */
+    public static List<String> getAllValuteIds() {
+        return new ArrayList<>(VALUTES.keySet());
     }
     
     /**
