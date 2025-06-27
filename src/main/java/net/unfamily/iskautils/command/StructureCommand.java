@@ -292,6 +292,11 @@ public class StructureCommand {
             boolean success = StructurePlacer.placeStructure(level, pos, structure, player);
             
             if (success) {
+                // Add to placement history for undo functionality if player exists
+                if (player != null) {
+                    net.unfamily.iskautils.structure.StructurePlacementHistory.addPlacement(player, pos, structureId, 0);
+                }
+                
                 source.sendSuccess(() -> Component.literal("§aStructure §f" + structureId + " §aplaced successfully at §f" + 
                     pos.getX() + ", " + pos.getY() + ", " + pos.getZ()), false);
                 return 1;

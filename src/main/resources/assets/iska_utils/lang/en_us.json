@@ -137,6 +137,13 @@
   "key.iska_utils.vector_vertical_decrease": "Vector Charm Vertical Setting (Decrease)",
   "key.iska_utils.vector_horizontal_decrease": "Vector Charm Horizontal Setting (Decrease)",
   "key.iska_utils.portable_dislocator": "Activate Portable Dislocator",
+  "key.iska_utils.structure_undo": "Disassemble Last Structure",
+  
+  "message.iska_utils.structure_undo.no_history": "§eNo structures to disassemble",
+  "message.iska_utils.structure_undo.structure_not_found": "§cStructure definition not found: %s",
+  "message.iska_utils.structure_undo.no_positions": "§cNo positions calculated for the structure!",
+  "message.iska_utils.structure_undo.success": "§aDisassembly completed! §f%s §aremoved §7(%d blocks removed, %d skipped)",
+  "message.iska_utils.structure_undo.no_blocks": "§cNo blocks to remove for §f%s §c(structure not found or already modified)",
   
   "vectorcharm.factor.none": "None",
   "vectorcharm.factor.slow": "Slow",

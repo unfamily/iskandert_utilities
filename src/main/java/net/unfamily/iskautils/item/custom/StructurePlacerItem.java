@@ -266,6 +266,9 @@ public class StructurePlacerItem extends Item {
             // Show green success markers UN ONE BLOCK MORE UP ONLY FOR THE ACTUALLY PLACED BLOCKS
             showSuccessMarkers((ServerLevel) player.level(), blockAllocation, structure, isForced);
             
+            // Add to placement history for undo functionality
+            net.unfamily.iskautils.structure.StructurePlacementHistory.addPlacement(player, centerPos, structure.getId(), getRotation(stack));
+            
             String structureName = structure.getName() != null ? structure.getName() : structure.getId();
             if (isForced) {
                 player.displayClientMessage(Component.literal("§aStructure §f" + structureName + " §apartially placed! (Some blocks skipped)"), true);

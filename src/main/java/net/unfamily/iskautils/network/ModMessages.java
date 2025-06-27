@@ -77,6 +77,43 @@ public class ModMessages {
     }
     
     /**
+     * Sends a Structure Undo packet to the server
+     */
+    public static void sendStructureUndoPacket() {
+        LOGGER.debug("Sending Structure Undo packet to server");
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+            
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Directly call the undo functionality
+                        boolean success = net.unfamily.iskautils.structure.StructurePlacementHistory.undoLastPlacement(player);
+                        
+                        if (!success) {
+                            int historySize = net.unfamily.iskautils.structure.StructurePlacementHistory.getHistorySize(player);
+                            if (historySize == 0) {
+                                player.displayClientMessage(net.minecraft.network.chat.Component.literal("§cNessuna struttura da annullare!"), true);
+                            } else {
+                                player.displayClientMessage(net.minecraft.network.chat.Component.literal("§cImpossibile annullare l'ultima struttura!"), true);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to handle structure undo: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send structure undo packet: {}", e.getMessage());
+        }
+    }
+    
+    /**
      * Sends a packet to add a highlighted block
      * This is a simplified implementation that directly calls the client handler
      * in single player mode, but would use actual packets in multiplayer

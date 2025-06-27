@@ -354,6 +354,11 @@ public class Config
                     "Default: true")
             .define("002_accept_client_structure", true);
 
+    public static final ModConfigSpec.BooleanValue ALLOW_CLIENT_STRUCTURE_PLAYER_LIKE = BUILDER
+            .comment("If true, the client structure are placed like players",
+                    "Default: true")
+            .define("003_allow_client_structure_player_like", true);
+
     private static final ModConfigSpec.BooleanValue ARTIFACTS_INFO= BUILDER
             .comment("If false not desplay where obtain the artifacts or mod dependecy required for obtain it (only for lootable artifacts)")
             .define("100_artifacts_info", true);
@@ -413,6 +418,7 @@ public class Config
     public static int structurePlacerMachineEnergyBuffer;
     public static String clientStructurePath;
     public static boolean acceptClientStructure;
+    public static boolean allowClientStructurePlayerLike;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -463,6 +469,7 @@ public class Config
         // Client Structure Path logic
         clientStructurePath = CLIENT_STRUCTURE_PATH.get();
         acceptClientStructure = ACCEPT_CLIENT_STRUCTURE.get();
+        allowClientStructurePlayerLike = ALLOW_CLIENT_STRUCTURE_PLAYER_LIKE.get();
         
         System.out.println("Structure Placer Machine config loaded: energyConsume=" + structurePlacerMachineEnergyConsume + 
             ", energyBuffer=" + structurePlacerMachineEnergyBuffer);

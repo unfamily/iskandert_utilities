@@ -33,6 +33,7 @@ public class KeyBindings {
     private static final String KEY_VECTOR_VERTICAL_DECREASE = "key.iska_utils.vector_vertical_decrease";
     private static final String KEY_VECTOR_HORIZONTAL_DECREASE = "key.iska_utils.vector_horizontal_decrease";
     private static final String KEY_PORTABLE_DISLOCATOR = "key.iska_utils.portable_dislocator";
+    private static final String KEY_STRUCTURE_UNDO = "key.iska_utils.structure_undo";
 
     // Vector Charm keys
     public static final KeyMapping VECTOR_VERTICAL_KEY = new KeyMapping(
@@ -84,6 +85,15 @@ public class KeyBindings {
             KEY_CATEGORY_ISKA_UTILS
     );
 
+    // Structure Undo key
+    public static final KeyMapping STRUCTURE_UNDO_KEY = new KeyMapping(
+            KEY_STRUCTURE_UNDO,
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_U,  // U key for undo
+            KEY_CATEGORY_ISKA_UTILS
+    );
+
     /**
      * Registers key bindings
      */
@@ -95,6 +105,7 @@ public class KeyBindings {
         event.register(VECTOR_VERTICAL_DECREASE_KEY);
         event.register(VECTOR_HORIZONTAL_DECREASE_KEY);
         event.register(PORTABLE_DISLOCATOR_KEY);
+        event.register(STRUCTURE_UNDO_KEY);
         LOGGER.info("Registered all key mappings");
     }
 
@@ -183,6 +194,14 @@ public class KeyBindings {
                                      Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
             }
         }
+    }
+    
+    /**
+     * Checks if the structure undo key has been pressed and consumes the event
+     * @return true if the key was pressed, false otherwise
+     */
+    public static boolean consumeStructureUndoKeyClick() {
+        return STRUCTURE_UNDO_KEY.consumeClick();
     }
     
     /**

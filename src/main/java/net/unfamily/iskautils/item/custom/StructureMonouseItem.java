@@ -190,6 +190,9 @@ public class StructureMonouseItem extends Item {
                 // Give the items specified in the definition
                 giveItemsToPlayer(serverPlayer);
                 
+                // Add to placement history for undo functionality
+                net.unfamily.iskautils.structure.StructurePlacementHistory.addPlacement(serverPlayer, pos, structure.getId(), rotation);
+                
                 String structureName = structure.getName() != null ? structure.getName() : structure.getId();
                 player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.placed_successfully", structureName), true);
                 

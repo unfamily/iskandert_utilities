@@ -75,6 +75,11 @@ public class ClientEvents {
         // Check keys only if there is no GUI open
         if (Minecraft.getInstance().screen == null && Minecraft.getInstance().player != null) {
             KeyBindings.checkKeys();
+            
+            // Check structure undo key
+            if (KeyBindings.consumeStructureUndoKeyClick()) {
+                net.unfamily.iskautils.network.ModMessages.sendStructureUndoPacket();
+            }
         }
         
         // We no longer apply movement here, as it's done directly by the item tick methods

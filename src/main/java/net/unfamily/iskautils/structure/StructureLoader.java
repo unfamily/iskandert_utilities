@@ -652,12 +652,12 @@ public class StructureLoader {
                 definition.setSlower(structureJson.get("slower").getAsBoolean());
             }
             
-            // Parse place_like_player - DISABLED for client structures
+            // Parse place_like_player - CONFIGURABLE for client structures
             if (structureJson.has("place_like_player")) {
                 boolean placeAsPlayer = structureJson.get("place_like_player").getAsBoolean();
-                // For client structures, always disable place_like_player
+                // For client structures, respect the config setting
                 if (structureId.startsWith("client_")) {
-                    placeAsPlayer = false;
+                    placeAsPlayer = placeAsPlayer && net.unfamily.iskautils.Config.allowClientStructurePlayerLike;
                 }
                 definition.setPlaceAsPlayer(placeAsPlayer);
             }
@@ -1012,12 +1012,12 @@ public class StructureLoader {
             definition.setSlower(structureJson.get("slower").getAsBoolean());
         }
         
-        // Parse place_like_player - DISABLED for client structures
+        // Parse place_like_player - CONFIGURABLE for client structures
         if (structureJson.has("place_like_player")) {
             boolean placeAsPlayer = structureJson.get("place_like_player").getAsBoolean();
-            // For client structures, always disable place_like_player
+            // For client structures, respect the config setting
             if (structureId.startsWith("client_")) {
-                placeAsPlayer = false;
+                placeAsPlayer = placeAsPlayer && net.unfamily.iskautils.Config.allowClientStructurePlayerLike;
             }
             definition.setPlaceAsPlayer(placeAsPlayer);
         }

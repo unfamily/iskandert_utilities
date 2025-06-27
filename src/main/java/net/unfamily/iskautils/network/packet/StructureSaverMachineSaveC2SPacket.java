@@ -325,7 +325,7 @@ public class StructureSaverMachineSaveC2SPacket {
         if (slower) {
             structureObj.addProperty("slower", true);
         }
-        // place_like_player is always disabled for client structures
+        // place_like_player is configurable for client structures based on server config
         // if (placeAsPlayer) {
         //     structureObj.addProperty("place_like_player", true);
         // }
