@@ -454,8 +454,13 @@ public class StructurePlacerItem extends Item {
     
     /**
      * Allocate a single block from player inventory
+     * In creative mode, creates a "fake" allocation without consuming items
      */
     private AllocatedBlock allocateBlockFromInventory(ServerPlayer player, List<StructureDefinition.BlockDefinition> blockDefinitions) {
+        // In creative mode, create fake allocation without consuming items
+        if (player.isCreative()) {
+            return createCreativeAllocation(blockDefinitions);
+        }
         for (int i = 0; i < player.getInventory().items.size(); i++) {
             ItemStack stack = player.getInventory().items.get(i);
             
@@ -504,13 +509,30 @@ public class StructurePlacerItem extends Item {
             }
         }
         
-        return null; // Not found
+                return null; // Not found
     }
-    
+
+    /**
+     * Creates a fake allocation for creative mode - no items consumed
+     */
+    private AllocatedBlock createCreativeAllocation(List<StructureDefinition.BlockDefinition> blockDefinitions) {
+        if (blockDefinitions != null && !blockDefinitions.isEmpty()) {
+            StructureDefinition.BlockDefinition blockDef = blockDefinitions.get(0);
+            // Create fake allocation with empty stacks
+            return new AllocatedBlock(blockDef, -1, ItemStack.EMPTY, ItemStack.EMPTY);
+        }
+        return null;
+    }
+
     /**
      * Restore allocated blocks to player inventory
+     * In creative mode, does nothing since no items were consumed
      */
     private void restoreAllocatedBlocks(ServerPlayer player, java.util.Collection<AllocatedBlock> allocatedBlocks) {
+        // In creative mode, don't restore items since none were consumed
+        if (player.isCreative()) {
+            return;
+        }
         for (AllocatedBlock allocated : allocatedBlocks) {
             ItemStack consumedStack = allocated.getConsumedStack();
             

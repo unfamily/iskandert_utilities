@@ -159,8 +159,10 @@ public class StructurePlacementHistory {
             }
         }
 
-        // Give materials back to player
-        giveMaterialsToPlayer(player, recoveredMaterials, structure);
+        // Give materials back to player (only in survival mode)
+        if (!player.isCreative()) {
+            giveMaterialsToPlayer(player, recoveredMaterials, structure);
+        }
 
         // Feedback to player
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();

@@ -563,8 +563,13 @@ public class StructureMonouseItem extends Item {
     
     /**
      * Gives the specified items to the player
+     * In creative mode, does nothing since items are not needed
      */
     private void giveItemsToPlayer(ServerPlayer player) {
+        // In creative mode, don't give items since they have access to everything
+        if (player.isCreative()) {
+            return;
+        }
         for (StructureMonouseDefinition.GiveItem giveItem : definition.getGiveItems()) {
             try {
                 ResourceLocation itemLocation = ResourceLocation.parse(giveItem.getItem());
