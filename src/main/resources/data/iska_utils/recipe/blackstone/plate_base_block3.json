@@ -1,15 +1,18 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "AAA"
+    "BAB"
   ],
   "key": {
     "A": {
-      "tag": "c:plastic_or_rubber"
+      "tag": "c:stones/cooked"
+    },
+    "B": {
+      "item": "minecraft:dried_kelp"
     }
   },
   "result": {
     "id": "iska_utils:plate_base_block",
-    "count": 6
+    "count": 1
   }
 } 
