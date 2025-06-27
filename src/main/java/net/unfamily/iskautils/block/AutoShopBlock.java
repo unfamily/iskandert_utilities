@@ -117,7 +117,7 @@ public class AutoShopBlock extends BaseEntityBlock {
         // Check if the player can use this AutoShop
         if (player instanceof ServerPlayer serverPlayer) {
             if (!autoShop.canPlayerUse(serverPlayer)) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("You cannot use this AutoShop. You must belong to the team that placed it."));
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.team.error"));
                 return InteractionResult.FAIL;
             }
         }
