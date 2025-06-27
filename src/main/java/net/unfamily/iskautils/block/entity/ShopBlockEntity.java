@@ -18,15 +18,15 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Block Entity per il Shop Block
- * Gestisce l'interfaccia del negozio e le transazioni
+ * Block Entity for Shop Block
+ * Manages shop interface and transactions
  */
 public class ShopBlockEntity extends BlockEntity implements MenuProvider {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ShopBlockEntity.class);
     
-    // Item storage per gli slot del negozio (visualizzazione e transazioni)
-    private final ItemStackHandler itemHandler = new ItemStackHandler(36) { // 4 righe x 9 slot
+    // Item storage for shop slots (display and transactions)
+    private final ItemStackHandler itemHandler = new ItemStackHandler(36) { // 4 rows x 9 slots
         @Override
         protected void onContentsChanged(int slot) {
             super.onContentsChanged(slot);
@@ -35,12 +35,11 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
         
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            // TODO: Implementare validazione basata su configurazione shop
             return true;
         }
     };
     
-    // Stato del negozio (semplificato)
+    // Shop state (simplified)
     private boolean isActive = false;
     private String currentCategory = "000_default";
     
@@ -62,7 +61,7 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
     protected void saveAdditional(CompoundTag nbt, HolderLookup.Provider provider) {
         super.saveAdditional(nbt, provider);
         
-        // Salva solo i dati essenziali
+        // Save only essential data
         nbt.putBoolean("isActive", this.isActive);
         nbt.putString("currentCategory", this.currentCategory);
     }
@@ -71,7 +70,7 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
     protected void loadAdditional(CompoundTag nbt, HolderLookup.Provider provider) {
         super.loadAdditional(nbt, provider);
         
-        // Carica solo i dati essenziali
+        // Load only essential data
         this.isActive = nbt.getBoolean("isActive");
         this.currentCategory = nbt.getString("currentCategory");
     }
@@ -84,7 +83,7 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
     
-    // Metodi per accesso ai dati
+    // Methods for data access
     
     public IItemHandler getItemHandler() {
         return this.itemHandler;
@@ -109,13 +108,11 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
     }
     
     /**
-     * Tick del blocco (chiamato dal server)
+     * Block tick (called by server)
      */
     public static void tick(Level level, BlockPos pos, BlockState state, ShopBlockEntity entity) {
         if (level.isClientSide()) {
             return;
         }
-        
-        // TODO: Implementare logica di tick se necessario
     }
 } 

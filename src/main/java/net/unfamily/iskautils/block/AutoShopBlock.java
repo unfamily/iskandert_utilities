@@ -29,9 +29,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import java.util.UUID;
 
 /**
- * Blocco per l'Auto Shop
+ * Block for Auto Shop
  */
 public class AutoShopBlock extends BaseEntityBlock {
     
@@ -81,11 +82,22 @@ public class AutoShopBlock extends BaseEntityBlock {
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         
-        // Salva il giocatore che ha piazzato questo Auto Shop
+        // Save the player who placed this Auto Shop and their team
         if (!level.isClientSide() && placer instanceof ServerPlayer serverPlayer) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof AutoShopBlockEntity autoShopEntity) {
                 autoShopEntity.setPlacedByPlayer(serverPlayer.getUUID());
+                
+                // Save also the team ID of the player if they belong to a team
+                net.unfamily.iskautils.shop.ShopTeamManager teamManager = 
+                    net.unfamily.iskautils.shop.ShopTeamManager.getInstance(serverPlayer.serverLevel());
+                String teamName = teamManager.getPlayerTeam(serverPlayer);
+                if (teamName != null) {
+                    UUID teamId = teamManager.getTeamIdByName(teamName);
+                    if (teamId != null) {
+                        autoShopEntity.setOwnerTeamId(teamId);
+                    }
+                }
             }
         }
     }
@@ -102,13 +114,21 @@ public class AutoShopBlock extends BaseEntityBlock {
             return InteractionResult.PASS;
         }
         
-        // Shift + tasto destro: cambia valuta
+        // Check if the player can use this AutoShop
+        if (player instanceof ServerPlayer serverPlayer) {
+            if (!autoShop.canPlayerUse(serverPlayer)) {
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("You cannot use this AutoShop. You must belong to the team that placed it."));
+                return InteractionResult.FAIL;
+            }
+        }
+        
+        // Shift + right click: change currency
         if (player.isShiftKeyDown()) {
-            cycleValute(autoShop, player);
+            cycleCurrencies(autoShop, player);
             return InteractionResult.SUCCESS;
         }
         
-        // Tasto destro normale: apri la GUI
+        // Normal right click: open GUI
         if (player instanceof ServerPlayer serverPlayer) {
             serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
                 @Override
@@ -125,37 +145,37 @@ public class AutoShopBlock extends BaseEntityBlock {
     }
     
     /**
-     * Cicla tra le valute disponibili
+     * Cycles through available currencies
      */
-    private void cycleValute(AutoShopBlockEntity autoShop, Player player) {
+    private void cycleCurrencies(AutoShopBlockEntity autoShop, Player player) {
                 Map<String, net.unfamily.iskautils.shop.ShopCurrency> availableCurrencies =
                 net.unfamily.iskautils.shop.ShopLoader.getCurrencies();
-        List<String> valuteIds = new ArrayList<>();
-        valuteIds.add("unset"); // Prima opzione
-        valuteIds.addAll(availableCurrencies.keySet());
+        List<String> currencyIds = new ArrayList<>();
+        currencyIds.add("unset"); // First option
+        currencyIds.addAll(availableCurrencies.keySet());
         
-        String currentValute = autoShop.getSelectedValute();
-        int currentIndex = valuteIds.indexOf(currentValute);
+        String currentCurrency = autoShop.getSelectedValute();
+        int currentIndex = currencyIds.indexOf(currentCurrency);
         if (currentIndex == -1) currentIndex = 0;
         
-        // Passa alla prossima valuta
-        int nextIndex = (currentIndex + 1) % valuteIds.size();
-        String newValute = valuteIds.get(nextIndex);
+        // Move to next currency
+        int nextIndex = (currentIndex + 1) % currencyIds.size();
+        String newCurrency = currencyIds.get(nextIndex);
         
-        autoShop.setSelectedValute(newValute);
+        autoShop.setSelectedValute(newCurrency);
         
-        // Messaggio di feedback con traduzione e simbolo
-        if ("unset".equals(newValute)) {
+        // Feedback message with translation and symbol
+        if ("unset".equals(newCurrency)) {
             player.displayClientMessage(
                 net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.currency_changed.unset"),
                 true);
         } else {
-            net.unfamily.iskautils.shop.ShopCurrency currency = availableCurrencies.get(newValute);
-            String valuteName = net.minecraft.network.chat.Component.translatable(currency.name).getString();
-            String valuteSymbol = currency.charSymbol != null ? currency.charSymbol : newValute;
+            net.unfamily.iskautils.shop.ShopCurrency currency = availableCurrencies.get(newCurrency);
+            String currencyName = net.minecraft.network.chat.Component.translatable(currency.name).getString();
+            String currencySymbol = currency.charSymbol != null ? currency.charSymbol : newCurrency;
             
-            // Concatena il simbolo alla fine del messaggio tradotto
-            String fullMessage = net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.currency_changed", valuteName).getString() + " " + valuteSymbol;
+            // Concatenate symbol at the end of translated message
+            String fullMessage = net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.currency_changed", currencyName).getString() + " " + currencySymbol;
             
             player.displayClientMessage(
                 net.minecraft.network.chat.Component.literal(fullMessage),
@@ -164,7 +184,7 @@ public class AutoShopBlock extends BaseEntityBlock {
     }
     
     /**
-     * Cambia la modalità tra Auto Buy e Auto Sell
+     * Toggles between Auto Buy and Auto Sell mode
      */
     private void toggleAutoMode(AutoShopBlockEntity autoShop, Player player) {
         autoShop.toggleAutoMode();
@@ -180,7 +200,7 @@ public class AutoShopBlock extends BaseEntityBlock {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof AutoShopBlockEntity autoShopEntity) {
-                // TODO: Implementare drops se necessario
+
             }
         }
         super.onRemove(state, level, pos, newState, isMoving);
@@ -202,6 +222,13 @@ public class AutoShopBlock extends BaseEntityBlock {
         if (!world.isClientSide()) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof AutoShopBlockEntity autoShop) {
+                
+                if (entity instanceof ServerPlayer serverPlayer) {
+                    if (!autoShop.canPlayerUse(serverPlayer)) {
+                        entity.sendSystemMessage(net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.team.error"));
+                    }
+                }
+                
                 // Left click: toggle Buy/Sell mode
                 toggleAutoMode(autoShop, entity);
             }

@@ -14,16 +14,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.minecraft.world.entity.player.Player;
 import java.util.Map;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Block Entity per l'Auto Shop Block
- * Gestisce l'estrazione automatica di item tramite hopper e dispositivi simili
+ * Block Entity for Auto Shop Block
+ * Manages automatic item extraction via hopper and similar devices
  */
 public class AutoShopBlockEntity extends BlockEntity {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(AutoShopBlockEntity.class);
     
-    // Slot custom per la funzione encapsulated (1 slot) - esposto per l'estrazione automatica
+    // Custom slot for encapsulated function (1 slot) - exposed for automatic extraction
     private final ItemStackHandler encapsulatedSlot = new ItemStackHandler(1) {
         @Override
         protected void onContentsChanged(int slot) {
@@ -35,12 +36,12 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
         @Override
         public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            // Permetti sempre l'estrazione
+            // Always allow extraction
             return super.extractItem(slot, amount, simulate);
         }
     };
     
-    // Slot per l'item selezionato (per auto compra/vendi)
+    // Slot for selected item (for auto buy/sell)
     private final ItemStackHandler selectedSlot = new ItemStackHandler(1) {
         @Override
         protected void onContentsChanged(int slot) {
@@ -52,13 +53,13 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
     };
     
-    // Stato del negozio (semplificato)
+    // Shop state (simplified)
     private boolean isActive = false;
     private String currentCategory = "000_default";
-    private String selectedValute = "unset"; // Valuta selezionata, default a "unset"
-    private UUID ownerTeamId = null; // ID del team del player che ha piazzato l'AutoShop
-    private UUID placedByPlayer = null; // UUID del giocatore che ha piazzato l'Auto Shop
-    private ItemStack selectedItem = ItemStack.EMPTY; // Item selezionato per la slot encapsulata
+    private String selectedValute = "unset"; // Selected currency, default to "unset"
+    private UUID ownerTeamId = null; // Team ID of the player who placed the AutoShop
+    private UUID placedByPlayer = null; // UUID of the player who placed the Auto Shop
+    private ItemStack selectedItem = ItemStack.EMPTY; // Selected item for encapsulated slot
     private boolean autoBuyMode = true; // true = Auto Buy, false = Auto Sell
     
     public AutoShopBlockEntity(BlockPos pos, BlockState blockState) {
@@ -87,13 +88,13 @@ public class AutoShopBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         
-        // Salva encapsulated slot
+        // Save encapsulated slot
         tag.put("encapsulatedSlot", encapsulatedSlot.serializeNBT(registries));
         
-        // Salva selected slot
+        // Save selected slot
         tag.put("selectedSlot", selectedSlot.serializeNBT(registries));
         
-        // Salva stato del negozio
+        // Save shop state
         CompoundTag shopData = new CompoundTag();
         shopData.putBoolean("isActive", isActive);
         shopData.putString("currentCategory", currentCategory);
@@ -104,7 +105,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         // Always save the mode (buy/sell)
         shopData.putBoolean("autoBuyMode", autoBuyMode);
         
-        // Salva l'ID del team del proprietario se presente
+        // Save owner team ID if present
         if (ownerTeamId != null) {
             shopData.putUUID("ownerTeamId", ownerTeamId);
         }
@@ -129,60 +130,60 @@ public class AutoShopBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         
-        // Carica encapsulated slot
+        // Load encapsulated slot
         if (tag.contains("encapsulatedSlot")) {
             encapsulatedSlot.deserializeNBT(registries, tag.getCompound("encapsulatedSlot"));
         }
         
-        // Carica selected slot
+        // Load selected slot
         if (tag.contains("selectedSlot")) {
             selectedSlot.deserializeNBT(registries, tag.getCompound("selectedSlot"));
         }
         
-        // Carica stato del negozio
+        // Load shop state
         if (tag.contains("shopData")) {
             CompoundTag shopData = tag.getCompound("shopData");
             this.isActive = shopData.getBoolean("isActive");
             this.currentCategory = shopData.getString("currentCategory");
             
-            // Carica la valuta se presente, altrimenti usa "unset"
+            // Load currency if present, otherwise use "unset"
             if (shopData.contains("selectedValute")) {
                 this.selectedValute = shopData.getString("selectedValute");
                 if (this.selectedValute.isEmpty()) {
-                    this.selectedValute = "unset"; // Fallback se vuoto
+                    this.selectedValute = "unset"; // Fallback if empty
                 }
             } else {
-                this.selectedValute = "unset"; // Default se non presente
+                this.selectedValute = "unset"; // Default if not present
             }
             
             // Load mode if present
             if (shopData.contains("autoBuyMode")) {
                 this.autoBuyMode = shopData.getBoolean("autoBuyMode");
             } else {
-                this.autoBuyMode = true; // Default se non presente
+                this.autoBuyMode = true; // Default if not present
             }
             
-            // Carica l'ID del team del proprietario se presente
+            // Load owner team ID if present
             if (shopData.contains("ownerTeamId")) {
                 this.ownerTeamId = shopData.getUUID("ownerTeamId");
             } else {
-                this.ownerTeamId = null; // Default se non presente
+                this.ownerTeamId = null; // Default if not present
             }
             
-            // Carica il placedByPlayer se presente
+            // Load placedByPlayer if present
             if (shopData.contains("placedByPlayer")) {
                 this.placedByPlayer = shopData.getUUID("placedByPlayer");
             } else {
-                this.placedByPlayer = null; // Default se non presente
+                this.placedByPlayer = null; // Default if not present
             }
             
-            // Carica il selectedItem se presente
+            // Load selectedItem if present
             if (shopData.contains("selectedItem")) {
                 try {
                     CompoundTag selectedTag = shopData.getCompound("selectedItem");
                     // Try to load the item even if tag is empty (can happen for simple items)
                     this.selectedItem = ItemStack.parse(registries, selectedTag).orElse(ItemStack.EMPTY);
-                    // Verifica che l'item caricato sia valido
+                    // Verify that loaded item is valid
                     if (this.selectedItem.isEmpty() || this.selectedItem.getItem() == null) {
                         this.selectedItem = ItemStack.EMPTY;
                         LOGGER.warn("AutoShopBlockEntity: Invalid selectedItem loaded, resetting to EMPTY");
@@ -193,7 +194,7 @@ public class AutoShopBlockEntity extends BlockEntity {
                 }
             } else {
 
-                this.selectedItem = ItemStack.EMPTY; // Default se non presente
+                this.selectedItem = ItemStack.EMPTY; // Default if not present
             }
         }
     }
@@ -206,7 +207,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
     }
     
-    // Metodi per accesso ai dati
+    // Methods for data access
     
     public boolean isActive() {
         return this.isActive;
@@ -272,7 +273,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         if (item.isEmpty()) {
             this.selectedItem = ItemStack.EMPTY;
         } else {
-            // Crea una copia dell'item con count 1, preservando i NBT
+            // Create a copy of the item with count 1, preserving NBT
             this.selectedItem = item.copy();
             this.selectedItem.setCount(1);
             
@@ -317,38 +318,85 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
     
     /**
-     * Cerca una ShopEntry per un item specifico confrontando direttamente gli ItemStack
+     * Checks if a player can use this AutoShop
+     * Verifies that the player still belongs to the saved team
+     * And that the player who placed the AutoShop is still in the team
+     */
+    public boolean canPlayerUse(ServerPlayer player) {
+        // If there's no saved team, only the player who placed it can use it
+        if (ownerTeamId == null) {
+            return player.getUUID().equals(placedByPlayer);
+        }
+        
+        // If there's a saved team, check that the player still belongs to that team
+        if (level != null && !level.isClientSide()) {
+            net.unfamily.iskautils.shop.ShopTeamManager teamManager = 
+                net.unfamily.iskautils.shop.ShopTeamManager.getInstance(player.serverLevel());
+            
+            // Get player's team
+            String playerTeamName = teamManager.getPlayerTeam(player);
+            if (playerTeamName == null) {
+                return false; // Player is not in a team
+            }
+            
+            // Get player's team ID
+            UUID playerTeamId = teamManager.getTeamIdByName(playerTeamName);
+            if (playerTeamId == null) {
+                return false; // Player's team not found
+            }
+            
+            // Check that it's the same team
+            if (!playerTeamId.equals(ownerTeamId)) {
+                return false; // Player is not in the saved team
+            }
+            
+            // Check that the player who placed the AutoShop is still in the team
+            if (placedByPlayer != null) {
+                String placerTeamName = teamManager.getPlayerTeam(placedByPlayer);
+                if (placerTeamName == null || !placerTeamName.equals(playerTeamName)) {
+                    return false; // The placer is no longer in the team
+                }
+            }
+            
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Searches for a ShopEntry for a specific item by directly comparing ItemStacks
      */
     private static net.unfamily.iskautils.shop.ShopEntry findEntryForItem(ItemStack templateItem) {
         Map<String, net.unfamily.iskautils.shop.ShopEntry> allEntries = net.unfamily.iskautils.shop.ShopLoader.getEntries();
         
-        // Prima cerca un match esatto (stesso item con stessi NBT)
+        // First look for exact match (same item with same NBT)
         for (Map.Entry<String, net.unfamily.iskautils.shop.ShopEntry> entryMap : allEntries.entrySet()) {
             net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
             
-            // Converti l'entry in ItemStack per il confronto
+            // Convert entry to ItemStack for comparison
             ItemStack entryItem = net.unfamily.iskautils.shop.ItemConverter.parseItemString(entry.item, 1);
             if (!entryItem.isEmpty() && ItemStack.isSameItemSameComponents(templateItem, entryItem)) {
-                return entry; // Match esatto trovato
+                return entry; // Exact match found
             }
         }
         
-        // Se non trova match esatto, cerca per tipo di item (senza NBT)
+        // If no exact match found, search by item type (without NBT)
         for (Map.Entry<String, net.unfamily.iskautils.shop.ShopEntry> entryMap : allEntries.entrySet()) {
             net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
             
-            // Converti l'entry in ItemStack per il confronto
+            // Convert entry to ItemStack for comparison
             ItemStack entryItem = net.unfamily.iskautils.shop.ItemConverter.parseItemString(entry.item, 1);
             if (!entryItem.isEmpty() && templateItem.is(entryItem.getItem())) {
-                return entry; // Match per tipo trovato
+                return entry; // Type match found
             }
         }
         
-        return null; // Entry non trovata
+        return null; // Entry not found
     }
     
     /**
-     * Tick del blocco (chiamato dal server)
+     * Block tick (called by server)
      */
     public static void tick(Level level, BlockPos pos, BlockState state, AutoShopBlockEntity entity) {
         if (level.isClientSide()) {
@@ -356,22 +404,34 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
 
         // Get the owner's team (needed for both modes)
-        if (entity.getPlacedByPlayer() == null) {
+        if (entity.getOwnerTeamId() == null) {
             return;
         }
         net.minecraft.server.level.ServerLevel serverLevel = (net.minecraft.server.level.ServerLevel) level;
         net.unfamily.iskautils.shop.ShopTeamManager teamManager = net.unfamily.iskautils.shop.ShopTeamManager.getInstance(serverLevel);
-        String teamName = teamManager.getPlayerTeam(entity.getPlacedByPlayer());
-        if (teamName == null) {
-            return;
+        
+        // Get team using saved ID
+        net.unfamily.iskautils.shop.ShopTeamManager.Team team = teamManager.getTeamById(entity.getOwnerTeamId());
+        if (team == null) {
+            return; // Team no longer exists
+        }
+        
+        String teamName = team.getName();
+
+        // Check that the player who placed the AutoShop is still in the team
+        if (entity.getPlacedByPlayer() != null) {
+            String placerTeamName = teamManager.getPlayerTeam(entity.getPlacedByPlayer());
+            if (placerTeamName == null || !placerTeamName.equals(teamName)) {
+                return; // The placer is no longer in the team, block the AutoShop
+            }
         }
 
-        // Recupera il ServerPlayer del piazzatore (se online) - necessario per stage player
+        // Retrieve the placer's ServerPlayer (if online) - needed for player stage
         net.minecraft.server.level.ServerPlayer placerPlayer = serverLevel.getServer().getPlayerList().getPlayer(entity.getPlacedByPlayer());
 
-        // Controlla che ci sia una valuta selezionata valida
-        String valuteId = entity.getSelectedValute();
-        if (valuteId == null || valuteId.equals("unset")) {
+        // Check that there's a valid selected currency
+        String currencyId = entity.getSelectedValute();
+        if (currencyId == null || currencyId.equals("unset")) {
             return;
         }
 
@@ -384,17 +444,17 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return;
             }
 
-            // Determina quale template usare per la ricerca della ShopEntry
+            // Determine which template to use for ShopEntry search
             // If there's a template in the selected slot, use it, otherwise use the item itself
             ItemStackHandler selectedSlot = entity.getSelectedSlot();
             ItemStack templateStack = selectedSlot.getStackInSlot(0);
             ItemStack templateItem;
             
             if (!templateStack.isEmpty()) {
-                // Usa il template dalla selected slot
+                // Use template from selected slot
                 templateItem = templateStack;
             } else {
-                // Usa l'item dalla encapsulated slot come template
+                // Use item from encapsulated slot as template
                 templateItem = stack;
             }
 
@@ -404,13 +464,13 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return;
             }
 
-            // Controlla che la valuta corrisponda
-            String entryValute = entry.valute != null ? entry.valute : "null_coin";
-            if (!entryValute.equals(valuteId)) {
+            // Check that currency matches
+            String entryCurrency = entry.valute != null ? entry.valute : "null_coin";
+            if (!entryCurrency.equals(currencyId)) {
                 return;
             }
 
-            // Controlla gli stage richiesti
+            // Check required stages
             net.unfamily.iskautils.stage.StageRegistry registry = net.unfamily.iskautils.stage.StageRegistry.getInstance(serverLevel.getServer());
             if (entry.stages != null && entry.stages.length > 0 && registry != null) {
                 boolean hasAllStages = true;
@@ -441,19 +501,19 @@ public class AutoShopBlockEntity extends BlockEntity {
                 }
             }
 
-            // Controlla che ci siano abbastanza item nella slot
+            // Check that there are enough items in the slot
             if (stack.getCount() < entry.itemCount) {
                 return;
             }
 
-            // Rimuovi il count corretto dalla slot
+            // Remove correct count from slot
             ItemStack removed = slot.extractItem(0, entry.itemCount, false);
             if (removed.isEmpty()) {
                 return;
             }
 
-            // Accredita i soldi al team (solo il valore singolo)
-            teamManager.addTeamValutes(teamName, valuteId, entry.sell);
+            // Credit money to team (only single value)
+            teamManager.addTeamValutes(teamName, currencyId, entry.sell);
             entity.setChanged();
         }
         // BUY mode
@@ -472,20 +532,20 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return;
             }
 
-            // Trova la ShopEntry per l'item selezionato - usa la rappresentazione completa dell'item
+            // Find ShopEntry for selected item - use complete item representation
             ItemStack itemId = selectedStack; // Include NBT/data components
             net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(itemId);
             if (entry == null || entry.buy <= 0) {
                 return;
             }
 
-            // Controlla che la valuta corrisponda
-            String entryValute = entry.valute != null ? entry.valute : "null_coin";
-            if (!entryValute.equals(valuteId)) {
+            // Check that currency matches
+            String entryCurrency = entry.valute != null ? entry.valute : "null_coin";
+            if (!entryCurrency.equals(currencyId)) {
                 return;
             }
 
-            // Controlla gli stage richiesti
+            // Check required stages
             net.unfamily.iskautils.stage.StageRegistry registry = net.unfamily.iskautils.stage.StageRegistry.getInstance(serverLevel.getServer());
             if (entry.stages != null && entry.stages.length > 0 && registry != null) {
                 boolean hasAllStages = true;
@@ -516,19 +576,19 @@ public class AutoShopBlockEntity extends BlockEntity {
                 }
             }
 
-            // Controlla i fondi del team
-            double teamBalance = teamManager.getTeamValuteBalance(teamName, valuteId);
+            // Check team funds
+            double teamBalance = teamManager.getTeamValuteBalance(teamName, currencyId);
             if (teamBalance < entry.buy) {
-                return; // Fondi insufficienti
+                return; // Insufficient funds
             }
 
-            // Scala i soldi dal team
-            if (!teamManager.removeTeamValutes(teamName, valuteId, entry.buy)) {
-                return; // Fallimento nella rimozione
+            // Deduct money from team
+            if (!teamManager.removeTeamValutes(teamName, currencyId, entry.buy)) {
+                return; // Removal failed
             }
 
-            // Crea l'item dalla entry trovata (non dal template)
-            // Questo previene la duplicazione di NBT che non esistono nello shop
+            // Create item from found entry (not from template)
+            // This prevents duplication of NBT that don't exist in the shop
             ItemStack itemToCreate = net.unfamily.iskautils.shop.ItemConverter.parseItemString(entry.item, entry.itemCount);
             slot.setStackInSlot(0, itemToCreate);
             entity.setChanged();

@@ -419,5 +419,6 @@
   "shop.currency.null_coin": "Null Coin",
   "shop.category.default": "Default",
   "shop.category.default.desc": "Default category",
-  "gui.iska_utils.shop.category.tooltip": "Category description"
+  "gui.iska_utils.shop.category.tooltip": "Category description",
+  "block.iska_utils.auto_shop.team.error": "You can't use this AutoShop. Break it to get it back."
 }

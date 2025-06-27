@@ -15,7 +15,6 @@ import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
-import net.unfamily.iskautils.shop.ShopTeamCommand;
 import net.unfamily.iskautils.shop.ShopTransactionManager;
 import org.slf4j.Logger;
 

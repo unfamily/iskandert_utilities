@@ -415,5 +415,6 @@
   "shop.currency.null_coin": "Moneta Nulla",
   "shop.category.default": "Categoria Predefinita",
   "shop.category.default.desc": "Categoria di default",
-  "gui.iska_utils.shop.category.tooltip": "Descrizione categoria"
+  "gui.iska_utils.shop.category.tooltip": "Descrizione categoria",
+  "block.iska_utils.auto_shop.team.error": "Non puoi usare questo AutoShop. Rompi il blocco per riprenderlo."
 }

@@ -24,7 +24,7 @@ import net.unfamily.iskautils.block.entity.ShopBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Blocco per il Shop
+ * Block for Shop
  */
 public class ShopBlock extends BaseEntityBlock {
     
@@ -87,7 +87,7 @@ public class ShopBlock extends BaseEntityBlock {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof ShopBlockEntity shopEntity) {
-                // TODO: Implementare drops se necessario
+                
             }
         }
         super.onRemove(state, level, pos, newState, isMoving);

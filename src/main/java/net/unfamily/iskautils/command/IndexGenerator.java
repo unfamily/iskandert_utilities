@@ -71,29 +71,59 @@ public class IndexGenerator {
         // Stage commands
         sb.append("### `/iska_utils_stage add|remove|list|set|clear`\n\n");
         sb.append("- `add` - Adds a stage, with parameters:\n");
-        sb.append("  * `world` or `player` to indicate the stage type (if `player`, a target must be specified)\n");
+        sb.append("  * `world`, `player`, or `team` to indicate the stage type (if `player` or `team`, a target must be specified)\n");
         sb.append("  * `stage` - The string identifier for the stage (recommended to avoid spaces)\n");
         sb.append("  * `silent` - Optional boolean (`true|false`, default `false`) to suppress chat feedback\n\n");
         
         sb.append("- `remove` - Removes a stage, with parameters:\n");
-        sb.append("  * `world` or `player` to indicate the stage type (if `player`, a target must be specified)\n");
+        sb.append("  * `world`, `player`, or `team` to indicate the stage type (if `player` or `team`, a target must be specified)\n");
         sb.append("  * `stage` - The string identifier for the stage to remove\n");
         sb.append("  * `silent` - Optional boolean (`true|false`, default `false`) to suppress chat feedback\n\n");
         
         sb.append("- `list` - Displays stages, with parameters:\n");
         sb.append("  * `world` - Shows stages saved for the world\n");
         sb.append("  * `player` - Shows stages saved for the player (target is an optional parameter, default `@s`)\n");
-        sb.append("  * `all` - Shows stages saved for both world and player (target is an optional parameter, default `@s`)\n\n");
+        sb.append("  * `team` - Shows stages saved for the team (target is an optional parameter, default `@s`)\n");
+        sb.append("  * `all` - Shows stages saved for world, player, and team (target is an optional parameter, default `@s`)\n\n");
         
         sb.append("- `set` - Similar to add/remove, with parameters:\n");
-        sb.append("  * `world` or `player` to indicate the stage type (if `player`, a target must be specified)\n");
+        sb.append("  * `world`, `player`, or `team` to indicate the stage type (if `player` or `team`, a target must be specified)\n");
         sb.append("  * `stage` - The string identifier for the stage\n");
         sb.append("  * `value` - Boolean (`true|false`) where `true` adds the stage and `false` removes it\n");
         sb.append("  * `silent` - Optional boolean (`true|false`, default `false`) to suppress chat feedback\n\n");
         
         sb.append("- `clear` - Removes all stages, with parameters:\n");
-        sb.append("  * `world` or `player` or `all` to indicate which stages to clear (if `player` or `all`, target can be specified, default `@s`)\n");
+        sb.append("  * `world`, `player`, `team`, or `all` to indicate which stages to clear (if `player`, `team`, or `all`, target can be specified, default `@s`)\n");
         sb.append("  * `silent` - Optional boolean (`true|false`, default `false`) to suppress chat feedback\n\n");
+        
+        // Shop commands
+        sb.append("### `/iska_utils_shop reload|info|currencies|categories|entries|balance`\n\n");
+        sb.append("- `reload` - Reloads all shop configurations from files\n");
+        sb.append("- `info` - Shows general information about the shop system\n");
+        sb.append("- `currencies` - Lists all available currencies\n");
+        sb.append("- `categories` - Lists all available categories\n");
+        sb.append("- `entries` - Lists all shop entries (optionally filtered by category)\n");
+        sb.append("- `balance` - Shows the current team's balance\n\n");
+        
+        // Team commands
+        sb.append("### `/iska_utils_team`\n\n");
+        sb.append("Team management commands for the shop system:\n\n");
+        sb.append("- `create <teamName>` - Creates a new team\n");
+        sb.append("- `delete [teamName]` - Deletes own team or specified team (admin only)\n");
+        sb.append("- `rename <newName> [teamName]` - Renames own team or specified team\n");
+        sb.append("- `transfer <newLeader> [teamName]` - Transfers team leadership\n");
+        sb.append("- `add <player> [teamName]` - Adds player to team (admin only)\n");
+        sb.append("- `remove <player> [teamName]` - Removes player from team\n");
+        sb.append("- `info [teamName]` - Shows team information\n");
+        sb.append("- `list` - Lists all teams\n");
+        sb.append("- `balance [teamName] [currencyId]` - Shows team balance\n");
+        sb.append("- `addCurrency <currencyId> <amount> [team|player] [target]` - Adds currency to team (admin only)\n");
+        sb.append("- `removeCurrency <currencyId> <amount> [team|player] [target]` - Removes currency from team (admin only)\n");
+        sb.append("- `setCurrency <currencyId> <amount> [team|player] [target]` - Sets team currency balance (admin only)\n");
+        sb.append("- `invite <player> [teamName]` - Invites player to team\n");
+        sb.append("- `accept <teamName>` - Accepts team invitation\n");
+        sb.append("- `leave` - Leaves current team\n");
+        sb.append("- `assistant add|remove|list <player> [teamName]` - Manages team assistants\n\n");
         
         // Scripting System
         sb.append("## Scripting System\n\n");
@@ -120,6 +150,16 @@ public class IndexGenerator {
         
         sb.append("- `iska_utils:structure_monouse_item` - For declaring monouse items that give materials and place structures as rewards.\n");
         sb.append("  * Location: `" + Config.externalScriptsPath + "/iska_utils_structures/`\n\n");
+        
+        sb.append("- `iska_utils:shop_currency` - For declaring custom currencies for the shop system.\n");
+        sb.append("  * Location: `" + Config.externalScriptsPath + "/shop/currencies/`\n\n");
+        
+        sb.append("- `iska_utils:shop_category` - For declaring categories to organize shop entries.\n");
+        sb.append("  * Location: `" + Config.externalScriptsPath + "/shop/categories/`\n\n");
+        
+        sb.append("- `iska_utils:shop_entry` - For declaring items available in the shop with prices and properties.\n");
+        sb.append("  * Location: `" + Config.externalScriptsPath + "/shop/entries/`\n");
+        sb.append("  * Documentation: See README.txt in the shop folder for complete examples and NBT support\n\n");
         
         // Advanced Features
         sb.append("## Advanced Features\n\n");
