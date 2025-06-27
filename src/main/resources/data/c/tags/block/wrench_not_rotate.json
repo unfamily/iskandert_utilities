@@ -19,6 +19,8 @@
     "iska_utils:iska_utils_poison",
     "iska_utils:iska_utils_slowness",
     "iska_utils:iska_utils_weakness",
-    "iska_utils:plate_base_block"
+    "iska_utils:plate_base_block",
+    "#c:clusters",
+    "oritech:uranium_crystal"
   ]
 }
