@@ -95,14 +95,7 @@ public class ModMessages {
                         // Directly call the undo functionality
                         boolean success = net.unfamily.iskautils.structure.StructurePlacementHistory.undoLastPlacement(player);
                         
-                        if (!success) {
-                            int historySize = net.unfamily.iskautils.structure.StructurePlacementHistory.getHistorySize(player);
-                            if (historySize == 0) {
-                                player.displayClientMessage(net.minecraft.network.chat.Component.literal("§cNessuna struttura da annullare!"), true);
-                            } else {
-                                player.displayClientMessage(net.minecraft.network.chat.Component.literal("§cImpossibile annullare l'ultima struttura!"), true);
-                            }
-                        }
+                        // Success/failure messages are already handled in StructurePlacementHistory.undoLastPlacement()
                     }
                 } catch (Exception e) {
                     LOGGER.warn("Failed to handle structure undo: {}", e.getMessage());

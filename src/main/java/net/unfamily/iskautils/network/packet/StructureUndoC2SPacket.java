@@ -26,16 +26,8 @@ public class StructureUndoC2SPacket {
     public static void handle(StructureUndoC2SPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
-                boolean success = StructurePlacementHistory.undoLastPlacement(serverPlayer);
-                
-                if (!success) {
-                    int historySize = StructurePlacementHistory.getHistorySize(serverPlayer);
-                    if (historySize == 0) {
-                        serverPlayer.displayClientMessage(Component.literal("§cNessuna struttura da annullare!"), true);
-                    } else {
-                        serverPlayer.displayClientMessage(Component.literal("§cImpossibile annullare l'ultima struttura!"), true);
-                    }
-                }
+                // Success/failure messages are already handled in StructurePlacementHistory.undoLastPlacement()
+                StructurePlacementHistory.undoLastPlacement(serverPlayer);
             }
         });
     }
