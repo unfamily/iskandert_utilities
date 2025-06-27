@@ -152,9 +152,10 @@ public class ClientStructureSaver {
         if (slower) {
             structureObj.addProperty("slower", true);
         }
-        if (placeAsPlayer) {
-            structureObj.addProperty("place_like_player", true);
-        }
+        // place_like_player is always disabled for client structures
+        // if (placeAsPlayer) {
+        //     structureObj.addProperty("place_like_player", true);
+        // }
         
         // Icona blueprint (formato corretto con type)
         JsonObject icon = new JsonObject();

@@ -325,9 +325,10 @@ public class StructureSaverMachineSaveC2SPacket {
         if (slower) {
             structureObj.addProperty("slower", true);
         }
-        if (placeAsPlayer) {
-            structureObj.addProperty("place_like_player", true);
-        }
+        // place_like_player is always disabled for client structures
+        // if (placeAsPlayer) {
+        //     structureObj.addProperty("place_like_player", true);
+        // }
         
         // Blueprint icon (correct format with type)
         JsonObject icon = new JsonObject();

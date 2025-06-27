@@ -652,9 +652,19 @@ public class StructureLoader {
                 definition.setSlower(structureJson.get("slower").getAsBoolean());
             }
             
-            // Parse place_like_player
+            // Parse place_like_player - DISABLED for client structures
             if (structureJson.has("place_like_player")) {
-                definition.setPlaceAsPlayer(structureJson.get("place_like_player").getAsBoolean());
+                boolean placeAsPlayer = structureJson.get("place_like_player").getAsBoolean();
+                // For client structures, always disable place_like_player
+                if (structureId.startsWith("client_")) {
+                    placeAsPlayer = false;
+                }
+                definition.setPlaceAsPlayer(placeAsPlayer);
+            }
+            
+            // Parse overwritable
+            if (structureJson.has("overwritable")) {
+                definition.setOverwritable(structureJson.get("overwritable").getAsBoolean());
             }
             
             // Parse can_replace
@@ -817,6 +827,11 @@ public class StructureLoader {
                 blockDef.setBlock(blockDefJson.get("block").getAsString());
             }
             
+            // Parse display for individual blocks
+            if (blockDefJson.has("display")) {
+                blockDef.setDisplay(blockDefJson.get("display").getAsString());
+            }
+            
             // Parse properties
             if (blockDefJson.has("properties") && blockDefJson.get("properties").isJsonObject()) {
                 JsonObject propsJson = blockDefJson.getAsJsonObject("properties");
@@ -825,6 +840,11 @@ public class StructureLoader {
                     properties.put(propKey, propsJson.get(propKey).getAsString());
                 }
                 blockDef.setProperties(properties);
+            }
+            
+            // Parse ignore_placement
+            if (blockDefJson.has("ignore_placement")) {
+                blockDef.setIgnorePlacement(blockDefJson.get("ignore_placement").getAsBoolean());
             }
             
             blockDefs.add(blockDef);
@@ -992,8 +1012,19 @@ public class StructureLoader {
             definition.setSlower(structureJson.get("slower").getAsBoolean());
         }
         
+        // Parse place_like_player - DISABLED for client structures
         if (structureJson.has("place_like_player")) {
-            definition.setPlaceAsPlayer(structureJson.get("place_like_player").getAsBoolean());
+            boolean placeAsPlayer = structureJson.get("place_like_player").getAsBoolean();
+            // For client structures, always disable place_like_player
+            if (structureId.startsWith("client_")) {
+                placeAsPlayer = false;
+            }
+            definition.setPlaceAsPlayer(placeAsPlayer);
+        }
+        
+        // Parse overwritable
+        if (structureJson.has("overwritable")) {
+            definition.setOverwritable(structureJson.get("overwritable").getAsBoolean());
         }
         
         // Parse description array if present

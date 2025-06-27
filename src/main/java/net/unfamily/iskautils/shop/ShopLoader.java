@@ -274,26 +274,175 @@ public class ShopLoader {
             Path readmePath = configPath.resolve("README.md");
             
             String readmeContent = "# Iska Utils - Shop System\n\n" +
-                "This directory contains configuration files for the custom shop system.\n\n" +
-                "## File Structure\n\n" +
-                "The shop system uses three types of files:\n\n" +
+                "Complete shop system with team support, multiple currencies, categories and stages.\n\n" +
+                "## Configuration Files\n\n" +
+                "The system uses three types of JSON files:\n\n" +
                 "### 1. shop_currency.json - Currencies\n" +
                 "Defines available currencies in the shop system.\n\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"type\": \"shop_currency\",\n" +
+                "  \"overwritable\": true,\n" +
+                "  \"currencies\": [\n" +
+                "    {\n" +
+                "      \"id\": \"null_coin\",\n" +
+                "      \"name\": \"shop.currency.null_coin\",\n" +
+                "      \"char_symbol\": \"∅\"\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"id\": \"emerald\",\n" +
+                "      \"name\": \"shop.currency.emerald\",\n" +
+                "      \"char_symbol\": \"💎\"\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "```\n\n" +
+                "**Fields:**\n" +
+                "- `id`: Unique identifier for the currency\n" +
+                "- `name`: Translation key for the currency name\n" +
+                "- `char_symbol`: Symbol displayed next to the name\n\n" +
                 "### 2. shop_category.json - Categories\n" +
                 "Defines product categories in the shop.\n\n" +
-                "### 3. shop_entry.json - Shop Entries\n" +
-                "Defines specific products in the shop.\n\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"type\": \"shop_category\",\n" +
+                "  \"overwritable\": true,\n" +
+                "  \"categories\": [\n" +
+                "    {\n" +
+                "      \"id\": \"000_default\",\n" +
+                "      \"name\": \"shop.category.default\",\n" +
+                "      \"description\": \"shop.category.default.desc\",\n" +
+                "      \"item\": \"minecraft:gold_nugget\"\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"id\": \"tools\",\n" +
+                "      \"name\": \"shop.category.tools\",\n" +
+                "      \"description\": \"shop.category.tools.desc\",\n" +
+                "      \"item\": \"minecraft:diamond_pickaxe\"\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "```\n\n" +
+                "**Fields:**\n" +
+                "- `id`: Unique identifier for the category\n" +
+                "- `name`: Translation key for the category name\n" +
+                "- `description`: Translation key for the category description\n" +
+                "- `item`: Item ID used as icon for the category\n\n" +
+                "### 3. shop_entry.json - Shop Products\n" +
+                "Defines specific products available in the shop.\n\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"type\": \"shop_entry\",\n" +
+                "  \"overwritable\": true,\n" +
+                "  \"entries\": [\n" +
+                "    {\n" +
+                "      \"id\": \"bread_default\",\n" +
+                "      \"in_category\": \"000_default\",\n" +
+                "      \"item\": \"minecraft:bread\",\n" +
+                "      \"item_count\": 1,\n" +
+                "      \"currency\": \"null_coin\",\n" +
+                "      \"buy\": 1.0,\n" +
+                "      \"sell\": 0.5\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"id\": \"diamond_pickaxe_silk\",\n" +
+                "      \"in_category\": \"tools\",\n" +
+                "      \"item\": \"minecraft:diamond_pickaxe[custom_name='\"Silky\"',repair_cost=1,enchantments={levels:{\"minecraft:silk_touch\":1}}]\",\n" +
+                "      \"item_count\": 1,\n" +
+                "      \"currency\": \"emerald\",\n" +
+                "      \"buy\": 50.0,\n" +
+                "      \"sell\": 25.0,\n" +
+                "      \"stages\": [\n" +
+                "        {\n" +
+                "          \"stage\": \"advanced_tools\",\n" +
+                "          \"stage_type\": \"world\",\n" +
+                "          \"is\": true\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "```\n\n" +
+                "**Fields:**\n" +
+                "- `id`: Unique identifier for the product\n" +
+                "- `in_category`: Category ID this product belongs to\n" +
+                "- `item`: Item ID (supports compound tags)\n" +
+                "- `item_count`: Number of items in the stack\n" +
+                "- `currency`: Currency ID for this product\n" +
+                "- `buy`: Price to buy the item\n" +
+                "- `sell`: Price to sell the item\n" +
+                "- `stages`: Array of required stages (optional)\n\n" +
+                "## 🎯 Stage System\n\n" +
+                "Stages allow unlocking products based on player/world progress.\n\n" +
+                "```json\n" +
+                "\"stages\": [\n" +
+                "  {\n" +
+                "    \"stage\": \"advanced_tools\",\n" +
+                "    \"stage_type\": \"world\",\n" +
+                "    \"is\": true\n" +
+                "  },\n" +
+                "  {\n" +
+                "    \"stage\": \"vip_player\",\n" +
+                "    \"stage_type\": \"player\",\n" +
+                "    \"is\": true\n" +
+                "  },\n" +
+                "  {\n" +
+                "    \"stage\": \"team_premium\",\n" +
+                "    \"stage_type\": \"team\",\n" +
+                "    \"is\": true\n" +
+                "  }\n" +
+                "]\n" +
+                "```\n\n" +
+                "**Stage Types:**\n" +
+                "- `world`: World stage (all players)\n" +
+                "- `player`: Player stage (single player)\n" +
+                "- `team`: Team stage (all team members)\n\n" +
+                "**Fields:**\n" +
+                "- `stage`: Stage name\n" +
+                "- `stage_type`: Stage type (world/player/team)\n" +
+                "- `is`: true = stage must be active, false = stage must be inactive\n\n" +
+                "## 🏷️ Compound Tag Support\n\n" +
+                "The `item` field supports compound tags to specify items with custom properties.\n\n" +
+                "### Compound Tag Examples:\n\n" +
+                "**1. Enchanted Item:**\n" +
+                "```json\n" +
+                "\"item\": \"minecraft:diamond_pickaxe[enchantments={levels:{\"minecraft:silk_touch\":1,\"minecraft:efficiency\":5}}]\"\n" +
+                "```\n\n" +
+                "**2. Custom Named Item:**\n" +
+                "```json\n" +
+                "\"item\": \"minecraft:diamond_sword[custom_name='\\\"Excalibur\\\"',repair_cost=0]\"\n" +
+                "```\n\n" +
+                "**3. Damaged Item:**\n" +
+                "```json\n" +
+                "\"item\": \"minecraft:diamond_pickaxe[damage=100]\"\n" +
+                "```\n\n" +
+                "**4. Item with Lore:**\n" +
+                "```json\n" +
+                "\"item\": \"minecraft:diamond_helmet[custom_name='\\\"Magic Helmet\\\"',display={lore:['\\\"Special helmet\\\"','\\\"With magic powers\\\"']}]\"\n" +
+                "```\n\n" +
+                "**5. Colored Item:**\n" +
+                "```json\n" +
+                "\"item\": \"minecraft:leather_chestplate[display={color:16711680}]\"\n" +
+                "```\n\n" +
+                "**6. Complex NBT Item:**\n" +
+                "```json\n" +
+                "\"item\": \"minecraft:book[pages:['\\\"{\\\\\\\"text\\\\\\\":\\\\\\\"Magical spell\\\\\\\"}\\\"'],title:\\\"Spellbook\\\",author:\\\"Wizard\\\"]\"\n" +
+                "```\n\n" +
                 "## Overwritable System\n\n" +
-                "- If a file has `overwritable: false`, it cannot be overwritten by other files\n" +
-                "- If a file has `overwritable: true`, it can be overwritten by files loaded later\n" +
+                "- `overwritable: false` = File cannot be overwritten by other files\n" +
+                "- `overwritable: true` = File can be overwritten by files loaded later\n" +
                 "- Files are processed in alphabetical order\n\n" +
                 "## Subdirectory Search\n\n" +
                 "The system automatically searches for files in all subdirectories of the shop directory.\n\n" +
                 "---\n" +
                 "Generated by Iska Utils";
             
-            Files.write(readmePath, readmeContent.getBytes());
-            LOGGER.info("Created README.md in {}", readmePath);
+            // Force overwrite the README file always
+            Files.write(readmePath, readmeContent.getBytes(), 
+                       java.nio.file.StandardOpenOption.CREATE, 
+                       java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
+            
+            LOGGER.info("Updated README.md in {}", readmePath);
             
         } catch (IOException e) {
             LOGGER.error("Error creating README.md: {}", e.getMessage());

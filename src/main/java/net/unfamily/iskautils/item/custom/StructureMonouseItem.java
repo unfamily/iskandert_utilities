@@ -623,7 +623,9 @@ public class StructureMonouseItem extends Item {
         if (!definition.getGiveItems().isEmpty()) {
             tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.will_give"));
             for (StructureMonouseDefinition.GiveItem giveItem : definition.getGiveItems()) {
-                tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.give_item", giveItem.getCount(), giveItem.getItem()));
+                String itemId = giveItem.getItem();
+                String itemDisplayName = getItemDisplayName(itemId);
+                tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.give_item", giveItem.getCount(), itemDisplayName));
             }
         }
         
@@ -728,5 +730,66 @@ public class StructureMonouseItem extends Item {
             // Silent failure for invalid tags in item context
             return false;
         }
+    }
+
+    /**
+     * Gets the display name for an item ID in the format "modid: item.displayname"
+     */
+    private String getItemDisplayName(String itemId) {
+        if (itemId == null || itemId.isEmpty()) {
+            return "Unknown";
+        }
+        
+        // Parse the item ID to get modid and path
+        String modid = "minecraft";
+        String path = itemId;
+        
+        if (itemId.contains(":")) {
+            String[] parts = itemId.split(":", 2);
+            modid = parts[0];
+            path = parts[1];
+        }
+        
+        // Try to get the item from registry
+        try {
+            ResourceLocation resourceLocation = ResourceLocation.fromNamespaceAndPath(modid, path);
+            Item item = BuiltInRegistries.ITEM.get(resourceLocation);
+            
+            if (item != null && item != Items.AIR) {
+                // Get the localized name
+                String localizedName = Component.translatable(item.getDescriptionId()).getString();
+                
+                // Format modid properly
+                String formattedModid = formatModName(modid);
+                
+                // Format as "ModName: localizedname"
+                return formattedModid + ": " + localizedName;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Error getting display name for item: {}", itemId);
+        }
+        
+        // Fallback: return the original ID
+        return itemId;
+    }
+    
+    /**
+     * Format mod name from namespace
+     */
+    private String formatModName(String namespace) {
+        if (namespace.length() <= 1) return namespace.toUpperCase();
+        
+        // Split by underscore and capitalize each word
+        String[] parts = namespace.split("_");
+        StringBuilder result = new StringBuilder();
+        
+        for (String part : parts) {
+            if (result.length() > 0) result.append(" ");
+            if (part.length() > 0) {
+                result.append(part.substring(0, 1).toUpperCase()).append(part.substring(1));
+            }
+        }
+        
+        return result.toString();
     }
 } 
