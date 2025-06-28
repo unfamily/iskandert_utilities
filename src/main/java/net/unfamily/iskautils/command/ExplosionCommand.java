@@ -49,17 +49,11 @@ public class ExplosionCommand {
                             .then(Commands.argument("tick_interval", IntegerArgumentType.integer(0))
                                 .then(Commands.argument("damage", FloatArgumentType.floatArg(0.0f))
                                     .then(Commands.argument("break_unbreakable", BoolArgumentType.bool())
-                                        .then(Commands.argument("hollow_mode", BoolArgumentType.bool())
-                                            // Without coordinates (use player position)
-                                            .executes(ExplosionCommand::startExplosionAtPlayer)
-                                            // With coordinates
-                                            .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                                                .executes(ExplosionCommand::startExplosionAtCoords)))
-                                        // Default hollow_mode = true for backward compatibility (without coordinates)
-                                        .executes(ExplosionCommand::startExplosionAtPlayerDefault)
-                                        // Default hollow_mode = true for backward compatibility (with coordinates)
+                                        // Without coordinates (use player position)
+                                        .executes(ExplosionCommand::startExplosionAtPlayer)
+                                        // With coordinates
                                         .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                                            .executes(ExplosionCommand::startExplosionAtCoordsDefault))))))))
+                                            .executes(ExplosionCommand::startExplosionAtCoords))))))))
                 
                 // STOP command (stops all explosions)
                 .then(Commands.literal("stop")
@@ -76,14 +70,13 @@ public class ExplosionCommand {
     private static int showUsage(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         source.sendSuccess(() -> Component.translatable("commands.iska_utils.explosion.usage.title"), false);
-        source.sendSuccess(() -> Component.literal("§a/iska_utils_explosion start <horizontal_radius> <vertical_radius> <tick_interval> <damage> <break_unbreakable> [hollow_mode] [x y z]"), false);
+        source.sendSuccess(() -> Component.literal("§a/iska_utils_explosion start <horizontal_radius> <vertical_radius> <tick_interval> <damage> <break_unbreakable> [x y z]"), false);
         source.sendSuccess(() -> Component.literal("§a/iska_utils_explosion stop"), false);
         source.sendSuccess(() -> Component.translatable("commands.iska_utils.explosion.usage.horizontal"), false);
         source.sendSuccess(() -> Component.translatable("commands.iska_utils.explosion.usage.vertical"), false);
         source.sendSuccess(() -> Component.translatable("commands.iska_utils.explosion.usage.interval"), false);
         source.sendSuccess(() -> Component.translatable("commands.iska_utils.explosion.usage.damage"), false);
         source.sendSuccess(() -> Component.translatable("commands.iska_utils.explosion.usage.break_unbreakable"), false);
-        source.sendSuccess(() -> Component.translatable("commands.iska_utils.explosion.usage.hollow_mode"), false);
         return 1;
     }
     
@@ -100,11 +93,10 @@ public class ExplosionCommand {
         int tickInterval = IntegerArgumentType.getInteger(context, "tick_interval");
         float damage = FloatArgumentType.getFloat(context, "damage");
         boolean breakUnbreakable = BoolArgumentType.getBool(context, "break_unbreakable");
-        boolean hollowMode = BoolArgumentType.getBool(context, "hollow_mode");
             
         BlockPos center = player.blockPosition();
         
-        return startExplosion(source, level, center, horizontalRadius, verticalRadius, tickInterval, damage, breakUnbreakable, hollowMode);
+        return startExplosion(source, level, center, horizontalRadius, verticalRadius, tickInterval, damage, breakUnbreakable);
     }
     
     /**
@@ -119,63 +111,26 @@ public class ExplosionCommand {
         int tickInterval = IntegerArgumentType.getInteger(context, "tick_interval");
         float damage = FloatArgumentType.getFloat(context, "damage");
         boolean breakUnbreakable = BoolArgumentType.getBool(context, "break_unbreakable");
-        boolean hollowMode = BoolArgumentType.getBool(context, "hollow_mode");
         BlockPos center = BlockPosArgument.getBlockPos(context, "pos");
         
-        return startExplosion(source, level, center, horizontalRadius, verticalRadius, tickInterval, damage, breakUnbreakable, hollowMode);
-    }
-    
-    /**
-     * Starts an explosion at the player's position (with default hollow_mode = true)
-     */
-    private static int startExplosionAtPlayerDefault(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        CommandSourceStack source = context.getSource();
-        ServerPlayer player = source.getPlayerOrException();
-        ServerLevel level = source.getLevel();
-        
-        int horizontalRadius = IntegerArgumentType.getInteger(context, "horizontal_radius");
-        int verticalRadius = IntegerArgumentType.getInteger(context, "vertical_radius");
-        int tickInterval = IntegerArgumentType.getInteger(context, "tick_interval");
-        float damage = FloatArgumentType.getFloat(context, "damage");
-        boolean breakUnbreakable = BoolArgumentType.getBool(context, "break_unbreakable");
-            
-        BlockPos center = player.blockPosition();
-        
-        return startExplosion(source, level, center, horizontalRadius, verticalRadius, tickInterval, damage, breakUnbreakable, true);
-    }
-    
-    /**
-     * Starts an explosion at the specified coordinates (with default hollow_mode = true)
-     */
-    private static int startExplosionAtCoordsDefault(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        CommandSourceStack source = context.getSource();
-        ServerLevel level = source.getLevel();
-        
-        int horizontalRadius = IntegerArgumentType.getInteger(context, "horizontal_radius");
-        int verticalRadius = IntegerArgumentType.getInteger(context, "vertical_radius");
-        int tickInterval = IntegerArgumentType.getInteger(context, "tick_interval");
-        float damage = FloatArgumentType.getFloat(context, "damage");
-        boolean breakUnbreakable = BoolArgumentType.getBool(context, "break_unbreakable");
-        BlockPos center = BlockPosArgument.getBlockPos(context, "pos");
-        
-        return startExplosion(source, level, center, horizontalRadius, verticalRadius, tickInterval, damage, breakUnbreakable, true);
+        return startExplosion(source, level, center, horizontalRadius, verticalRadius, tickInterval, damage, breakUnbreakable);
     }
     
     /**
      * Common method to start an explosion
      */
     private static int startExplosion(CommandSourceStack source, ServerLevel level, BlockPos center,
-                                    int horizontalRadius, int verticalRadius, int tickInterval, float damage, boolean breakUnbreakable, boolean hollowMode) {
+                                    int horizontalRadius, int verticalRadius, int tickInterval, float damage, boolean breakUnbreakable) {
         
-        ExplosionSystem.createExplosion(level, center, horizontalRadius, verticalRadius, tickInterval, damage, breakUnbreakable, hollowMode);
+        ExplosionSystem.createExplosion(level, center, horizontalRadius, verticalRadius, tickInterval, damage, breakUnbreakable);
         
         source.sendSuccess(() -> Component.translatable("commands.iska_utils.explosion.created",
             center.getX(), center.getY(), center.getZ(), 
             horizontalRadius, verticalRadius, tickInterval, 0
         ), true);
         
-        LOGGER.info("Created explosion at center {} with radii {}x{}, interval {} ticks, damage {}, break unbreakable: {}, hollow: {}", 
-            center, horizontalRadius, verticalRadius, tickInterval, damage, breakUnbreakable, hollowMode);
+        LOGGER.info("Created explosion at center {} with radii {}x{}, interval {} ticks, damage {}, break unbreakable: {}", 
+            center, horizontalRadius, verticalRadius, tickInterval, damage, breakUnbreakable);
         
         return 1;
     }

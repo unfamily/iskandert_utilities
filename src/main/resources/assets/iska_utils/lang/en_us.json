@@ -433,12 +433,14 @@
   "commands.iska_utils.explosion.usage.command": "/iska_utils_explosion start <horizontal_radius> <vertical_radius> <tick_interval> <damage> <break_unbreakable> [x y z]",
   "commands.iska_utils.explosion.usage.damage": "- damage: Damage to deal to entities (min: 0.0, no limit)",
   "commands.iska_utils.explosion.usage.break_unbreakable": "- break_unbreakable: Whether to break bedrock and barriers (true/false)",
-  "commands.iska_utils.explosion.usage.hollow_mode": "- hollow_mode: If true, only break blocks on the edge of each layer reducing lag (default: true)",
   "commands.iska_utils.explosion.usage.horizontal": "- horizontal_radius: X/Z radius of the ellipse (min: 1, no limit)",
   "commands.iska_utils.explosion.usage.vertical": "- vertical_radius: Y radius of the ellipse (1-1000)",
   "commands.iska_utils.explosion.usage.interval": "- tick_interval: How often to expand (0=instant, no limit)",
   "commands.iska_utils.explosion.usage.location": "The explosion occurs at the player's position",
   "commands.iska_utils.explosion.created": "Explosion created! Center: %d, %d, %d | Radii: %dx%d | Tick: %d",
   "commands.iska_utils.explosion.stopped": "Stopped %d active explosions",
-  "commands.iska_utils.explosion.none_active": "No active explosions to stop"
+  "commands.iska_utils.explosion.none_active": "No active explosions to stop",
+  
+  "block.iska_utils.chaotic_tnt": "Chaotic TNT",
+  "item.iska_utils.chaotic_tnt": "Chaotic TNT"
 }

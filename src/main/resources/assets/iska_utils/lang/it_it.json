@@ -203,7 +203,6 @@
   "commands.iska_utils.explosion.usage.command": "/iska_utils_explosion start <raggio_orizzontale> <raggio_verticale> <tick_interval> <danno> <rompi_indistruttibili> [x y z]",
   "commands.iska_utils.explosion.usage.damage": "- danno: Danno da infliggere alle entità (min: 0.0, no limite)",
   "commands.iska_utils.explosion.usage.break_unbreakable": "- rompi_indistruttibili: Se rompere bedrock e barriere (true/false)",
-  "commands.iska_utils.explosion.usage.hollow_mode": "- modalita_vuota: Se true, rompe solo blocchi sul bordo di ogni layer riducendo la lag (default: true)",
   "commands.iska_utils.explosion.usage.horizontal": "- raggio_orizzontale: Raggio X/Z dell'ellisse (min: 1, no limite)",
   "commands.iska_utils.explosion.usage.vertical": "- raggio_verticale: Raggio Y dell'ellisse (1-1000)",
   "commands.iska_utils.explosion.usage.interval": "- tick_interval: Ogni quanti tick espandere (0=istantaneo, no limite)",
@@ -436,5 +435,8 @@
   "shop.category.default": "Categoria Predefinita",
   "shop.category.default.desc": "Categoria di default",
   "gui.iska_utils.shop.category.tooltip": "Descrizione categoria",
-  "block.iska_utils.auto_shop.team.error": "Non puoi usare questo AutoShop. Rompi il blocco per riprenderlo."
+  "block.iska_utils.auto_shop.team.error": "Non puoi usare questo AutoShop. Rompi il blocco per riprenderlo.",
+
+  "block.iska_utils.chaotic_tnt": "TNT Caotica",
+  "item.iska_utils.chaotic_tnt": "TNT Caotica"
 }

@@ -303,7 +303,7 @@ public class ModItems {
 
     // ===== ANGEL BLOCK =====
     public static final DeferredItem<Item> ANGEL_BLOCK = ITEMS.register("angel_block",
-            () -> new AngelBlockItem(ModBlocks.ANGEL_BLOCK.get(), ITEM_PROPERTIES));
+            () -> new AngelBlockItem(ModBlocks.ANGEL_BLOCK.get(), new Item.Properties().stacksTo(64)));
 
     // ===== DEV BLOCKS =====
     public static final DeferredItem<Item> SCAN_BLOCK = ITEMS.register("scan_block",
@@ -336,6 +336,10 @@ public class ModItems {
     // Blueprint - Strumento per salvare coordinate di vertici
     public static final DeferredItem<Item> BLUEPRINT = ITEMS.register("blueprint",
             () -> new BlueprintItem(new Item.Properties().stacksTo(1)));
+
+    // Chaotic TNT Block
+    public static final DeferredItem<Item> CHAOTIC_TNT = ITEMS.register("chaotic_tnt",
+            () -> new BlockItem(ModBlocks.CHAOTIC_TNT.get(), ITEM_PROPERTIES));
 
 
 

@@ -42,7 +42,7 @@ public class ExplosionSystem {
             // Check if explosion should be instant (tickInterval = 0) or if it's time to process
             if (explosion.tickInterval == 0) {
                 // Instant explosion - process all layers at once
-                while (explosion.currentLayer < explosion.layers.size()) {
+                while (explosion.currentRadius <= explosion.maxRadius) {
                     processExplosionLayer(explosion);
                 }
                 iterator.remove();
@@ -70,7 +70,7 @@ public class ExplosionSystem {
      */
     public static UUID createExplosion(ServerLevel level, BlockPos center, 
                                      int horizontalRadius, int verticalRadius, int tickInterval) {
-        return createExplosion(level, center, horizontalRadius, verticalRadius, tickInterval, 0.0f, false, true);
+        return createExplosion(level, center, horizontalRadius, verticalRadius, tickInterval, 0.0f, false);
     }
     
     /**
@@ -82,12 +82,11 @@ public class ExplosionSystem {
      * @param tickInterval How often to expand (in ticks)
      * @param explosionDamage Damage to deal to entities (0 = no damage)
      * @param breakUnbreakable Whether to break unbreakable blocks like bedrock
-     * @param hollowMode If true, only break blocks on the edge (shell) of each layer
      * @return The UUID of the created explosion
      */
     public static UUID createExplosion(ServerLevel level, BlockPos center, 
                                      int horizontalRadius, int verticalRadius, int tickInterval,
-                                     float explosionDamage, boolean breakUnbreakable, boolean hollowMode) {
+                                     float explosionDamage, boolean breakUnbreakable) {
         
         // Create explosion data
         ExplosionData explosion = new ExplosionData(
@@ -98,17 +97,14 @@ public class ExplosionSystem {
             verticalRadius,
             tickInterval,
             explosionDamage,
-            breakUnbreakable,
-            hollowMode
+            breakUnbreakable
         );
-        
-        // No pre-calculation needed - layers are calculated dynamically
         
         // Add to active explosions list
         ACTIVE_EXPLOSIONS.put(explosion.id, explosion);
         
-        LOGGER.info("Created explosion {} at center {} with radii {}x{}, interval {} ticks, damage {}, break unbreakable: {}, hollow: {}", 
-            explosion.id, center, horizontalRadius, verticalRadius, tickInterval, explosionDamage, breakUnbreakable, hollowMode);
+        LOGGER.info("Created explosion {} at center {} with radii {}x{}, interval {} ticks, damage {}, break unbreakable: {}", 
+            explosion.id, center, horizontalRadius, verticalRadius, tickInterval, explosionDamage, breakUnbreakable);
         
         return explosion.id;
     }
@@ -136,16 +132,18 @@ public class ExplosionSystem {
      * @return true if the explosion is completed
      */
     private static boolean processExplosionLayer(ExplosionData explosion) {
-        if (explosion.currentLayer >= explosion.layers.size()) {
+        if (explosion.currentRadius > explosion.maxRadius) {
             return true; // Explosion completed
         }
         
-        List<BlockPos> layerBlocks = explosion.layers.get(explosion.currentLayer);
         int blocksProcessed = 0;
         int entitiesKilled = 0;
         
+        // Calculate blocks for current radius dynamically
+        List<BlockPos> currentLayerBlocks = calculateLayerBlocks(explosion, explosion.currentRadius);
+        
         // Process all blocks in the current layer
-        for (BlockPos pos : layerBlocks) {
+        for (BlockPos pos : currentLayerBlocks) {
             if (explosion.level.isInWorldBounds(pos)) {
                 BlockState currentState = explosion.level.getBlockState(pos);
                 
@@ -184,17 +182,61 @@ public class ExplosionSystem {
             }
         }
         
-        explosion.currentLayer++;
+        explosion.currentRadius++;
         
-        String logMessage = "Processed layer {}/{} of explosion {} - {} blocks destroyed";
+        String logMessage = "Processed radius {}/{} of explosion {} - {} blocks destroyed";
         if (explosion.explosionDamage > 0) {
             logMessage += ", {} entities damaged";
-            LOGGER.debug(logMessage, explosion.currentLayer, explosion.layers.size(), explosion.id, blocksProcessed, entitiesKilled);
+            LOGGER.debug(logMessage, explosion.currentRadius, explosion.maxRadius, explosion.id, blocksProcessed, entitiesKilled);
         } else {
-            LOGGER.debug(logMessage, explosion.currentLayer, explosion.layers.size(), explosion.id, blocksProcessed);
+            LOGGER.debug(logMessage, explosion.currentRadius, explosion.maxRadius, explosion.id, blocksProcessed);
         }
         
-        return explosion.currentLayer >= explosion.layers.size();
+        return explosion.currentRadius > explosion.maxRadius;
+    }
+    
+    /**
+     * Calculates blocks for a specific radius dynamically
+     */
+    private static List<BlockPos> calculateLayerBlocks(ExplosionData explosion, int radius) {
+        List<BlockPos> layerBlocks = new ArrayList<>();
+        
+        // Calculate 3D ellipse with progressive expansion
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    // Skip if outside our ellipse bounds
+                    if (Math.abs(x) > explosion.horizontalRadius || 
+                        Math.abs(y) > explosion.verticalRadius || 
+                        Math.abs(z) > explosion.horizontalRadius) {
+                        continue;
+                    }
+                    
+                    // Normalized 3D ellipse formula
+                    double distanceX = (double) x / explosion.horizontalRadius;
+                    double distanceY = (double) y / explosion.verticalRadius;
+                    double distanceZ = (double) z / explosion.horizontalRadius;
+                    
+                    double ellipseDistance = distanceX * distanceX + 
+                                           distanceY * distanceY + 
+                                           distanceZ * distanceZ;
+                    
+                    // Block is inside ellipse if distance <= 1
+                    if (ellipseDistance <= 1.0) {
+                        // Calculate real euclidean distance from center
+                        double euclideanDistance = Math.sqrt(x * x + y * y + z * z);
+                        
+                        // Only include blocks at exactly this radius (for progressive expansion)
+                        if (Math.abs(euclideanDistance - radius) < 0.5) {
+                            BlockPos pos = explosion.center.offset(x, y, z);
+                            layerBlocks.add(pos);
+                        }
+                    }
+                }
+            }
+        }
+        
+        return layerBlocks;
     }
     
     /**
@@ -209,15 +251,14 @@ public class ExplosionSystem {
         public final int tickInterval;
         public final float explosionDamage;
         public final boolean breakUnbreakable;
-        public final boolean hollowMode;
         
-        public final List<List<BlockPos>> layers = new ArrayList<>();
-        public int currentLayer = 0;
+        public final int maxRadius;
+        public int currentRadius = 0;
         public int tickCount = 0;
         
         public ExplosionData(UUID id, ServerLevel level, BlockPos center, 
                            int horizontalRadius, int verticalRadius, int tickInterval,
-                           float explosionDamage, boolean breakUnbreakable, boolean hollowMode) {
+                           float explosionDamage, boolean breakUnbreakable) {
             this.id = id;
             this.level = level;
             this.center = center;
@@ -226,126 +267,9 @@ public class ExplosionSystem {
             this.tickInterval = tickInterval;
             this.explosionDamage = explosionDamage;
             this.breakUnbreakable = breakUnbreakable;
-            this.hollowMode = hollowMode;
-        }
-        
-        /**
-         * Calculates all layers of the progressive 3D ellipse
-         * The algorithm expands from center outward creating concentric layers
-         */
-        public void calculateLayers() {
-            if (hollowMode) {
-                calculateHollowLayers();
-            } else {
-                calculateSolidLayers();
-            }
-        }
-        
-        /**
-         * Calculates solid layers where each layer includes all blocks from center to current distance
-         */
-        private void calculateSolidLayers() {
-            // Map to organize blocks by euclidean distance from center
-            Map<Integer, List<BlockPos>> layerMap = new HashMap<>();
             
-            // Calculate 3D ellipse with progressive expansion
-            for (int x = -horizontalRadius; x <= horizontalRadius; x++) {
-                for (int y = -verticalRadius; y <= verticalRadius; y++) {
-                    for (int z = -horizontalRadius; z <= horizontalRadius; z++) {
-                        // Normalized 3D ellipse formula
-                        double distanceX = (double) x / horizontalRadius;
-                        double distanceY = (double) y / verticalRadius;
-                        double distanceZ = (double) z / horizontalRadius;
-                        
-                        double ellipseDistance = distanceX * distanceX + 
-                                               distanceY * distanceY + 
-                                               distanceZ * distanceZ;
-                        
-                        // Block is inside ellipse if distance <= 1
-                        if (ellipseDistance <= 1.0) {
-                            BlockPos pos = center.offset(x, y, z);
-                            
-                            // Calculate real euclidean distance from center (for concentric layers)
-                            double euclideanDistance = Math.sqrt(x * x + y * y + z * z);
-                            
-                            // Convert to discrete layer (each layer represents about 1-2 blocks distance)
-                            int layerDistance = (int) Math.round(euclideanDistance);
-                            
-                            layerMap.computeIfAbsent(layerDistance, k -> new ArrayList<>()).add(pos);
-                        }
-                    }
-                }
-            }
-            
-            // Convert map to ordered list by layer (from center outward)
-            int maxLayer = layerMap.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
-            for (int i = 0; i <= maxLayer; i++) {
-                List<BlockPos> layerBlocks = layerMap.getOrDefault(i, new ArrayList<>());
-                if (!layerBlocks.isEmpty()) {
-                    layers.add(layerBlocks);
-                }
-            }
-            
-            LOGGER.debug("Calculated {} solid layers for elliptical explosion {}x{}", 
-                layers.size(), horizontalRadius, verticalRadius);
-        }
-        
-        /**
-         * Calculates hollow layers where each layer only includes blocks on the edge/border of that distance
-         */
-        private void calculateHollowLayers() {
-            // Set to track all blocks that have been included in previous layers
-            Set<BlockPos> processedBlocks = new HashSet<>();
-            
-            // Calculate each layer progressively, excluding blocks from previous layers
-            for (int currentRadius = 0; currentRadius <= Math.max(horizontalRadius, verticalRadius); currentRadius++) {
-                List<BlockPos> currentLayerBlocks = new ArrayList<>();
-                
-                // Calculate all blocks at current expansion level
-                for (int x = -currentRadius; x <= currentRadius; x++) {
-                    for (int y = -currentRadius; y <= currentRadius; y++) {
-                        for (int z = -currentRadius; z <= currentRadius; z++) {
-                            // Skip if outside our ellipse bounds
-                            if (Math.abs(x) > horizontalRadius || Math.abs(y) > verticalRadius || Math.abs(z) > horizontalRadius) {
-                                continue;
-                            }
-                            
-                            // Normalized 3D ellipse formula
-                            double distanceX = (double) x / horizontalRadius;
-                            double distanceY = (double) y / verticalRadius;
-                            double distanceZ = (double) z / horizontalRadius;
-                            
-                            double ellipseDistance = distanceX * distanceX + 
-                                                   distanceY * distanceY + 
-                                                   distanceZ * distanceZ;
-                            
-                            // Block is inside ellipse if distance <= 1
-                            if (ellipseDistance <= 1.0) {
-                                BlockPos pos = center.offset(x, y, z);
-                                
-                                // Only add if not already processed in previous layers
-                                if (!processedBlocks.contains(pos)) {
-                                    currentLayerBlocks.add(pos);
-                                    processedBlocks.add(pos);
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Add layer if it has blocks
-                if (!currentLayerBlocks.isEmpty()) {
-                    layers.add(currentLayerBlocks);
-                }
-                
-                // If we've processed all possible blocks within our ellipse, stop
-                if (currentRadius >= Math.max(horizontalRadius, verticalRadius)) {
-                    break;
-                }
-            }
-            
-            LOGGER.debug("Calculated {} hollow layers for elliptical explosion {}x{}", 
-                layers.size(), horizontalRadius, verticalRadius);
+            // Calculate max radius based on the larger of horizontal and vertical radius
+            this.maxRadius = Math.max(horizontalRadius, verticalRadius);
         }
     }
 } 

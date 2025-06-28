@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "unstable=false": {
+      "model": "iska_utils:block/chaotic_tnt"
+    },
+    "unstable=true": {
+      "model": "iska_utils:block/chaotic_tnt"
+    }
+  }
+} 

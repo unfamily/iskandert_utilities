@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.WallBlock;
 import net.unfamily.iskautils.block.ShopBlock;
 import net.unfamily.iskautils.block.AutoShopBlock;
+import net.unfamily.iskautils.block.ChaoticTntBlock;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -378,10 +379,18 @@ public class ModBlocks {
     // Un blocco che può essere piazzato in aria e si rompe facilmente
     public static final DeferredBlock<AngelBlock> ANGEL_BLOCK = BLOCKS.register("angel_block",
         () -> new AngelBlock(BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_BLACK) // Colore nero come l'ossidiana
-            .strength(0.5F) // Si rompe facilmente
-            .sound(SoundType.STONE) // Suono della pietra
-            .noOcclusion()));
+            .mapColor(MapColor.STONE)
+            .strength(0.0F)
+            .sound(SoundType.STONE)
+            .noOcclusion()
+            .noCollission()
+            .isRedstoneConductor((state, level, pos) -> false)
+            .pushReaction(PushReaction.DESTROY)
+            .isViewBlocking((state, level, pos) -> false)));
+
+    // Chaotic TNT Block (massive explosion with various triggers)
+    public static final DeferredBlock<ChaoticTntBlock> CHAOTIC_TNT = BLOCKS.register("chaotic_tnt",
+            () -> new ChaoticTntBlock());
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
