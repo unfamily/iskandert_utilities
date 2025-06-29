@@ -1,12 +1,30 @@
 {
   "replace": false,
   "values": [
-    "#c:rubber",
-    "#c:plastics",
-    "#c:plates/plastic",
-    "#c:ingots/plastic",
-    "#pneumaticcraft:plastic_sheets",
-    "mekanism:hdpe_sheet"
+    {
+      "required": false,
+      "id": "#c:rubber"
+    },
+    {
+      "required": false,
+      "id": "#c:plastics"
+    },
+    {
+      "required": false,
+      "id": "#c:plates/plastic"
+    },
+    {
+      "required": false,
+      "id": "#c:ingots/plastic"
+    },
+    {
+      "required": false,
+      "id": "#pneumaticcraft:plastic_sheets"
+    },
+    {
+      "required": false,
+      "id": "mekanism:hdpe_sheet"
+    }
   ]
 }
 

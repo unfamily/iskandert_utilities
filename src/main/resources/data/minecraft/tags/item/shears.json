@@ -1,7 +1,13 @@
 {
   "replace": false,
   "values": [
-    "#c:tools/shears",
-    "#c:tools/shear"
+    {
+      "required": false,
+      "id": "#c:tools/shears"
+    },
+    {
+      "required": false,
+      "id": "#c:tools/shear"
+    }
   ]
 } 
