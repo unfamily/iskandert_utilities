@@ -438,5 +438,9 @@
   "block.iska_utils.auto_shop.team.error": "Non puoi usare questo AutoShop. Rompi il blocco per riprenderlo.",
 
   "block.iska_utils.chaotic_tnt": "TNT Caotica",
-  "item.iska_utils.chaotic_tnt": "TNT Caotica"
+  "item.iska_utils.chaotic_tnt": "TNT Caotica",
+
+  "item.iska_utils.auto_shop.tooltip.usage": "§7Metti l'item nella slot 'Item Selezionato' per specificare cosa comprare/vendere",
+  "item.iska_utils.auto_shop.tooltip.modes": "§7Tasto sinistro: cambia modalità tra §aAuto-Compra §7e §cAuto-Vendita",
+  "item.iska_utils.auto_shop.tooltip.currency": "§7Shift + Tasto destro: imposta la valuta per le transazioni"
 }

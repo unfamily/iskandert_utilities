@@ -19,6 +19,7 @@ import net.unfamily.iskautils.item.custom.SwissWrenchItem;
 import net.unfamily.iskautils.item.custom.AngelBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
 import net.unfamily.iskautils.item.custom.BlueprintItem;
+import net.unfamily.iskautils.item.custom.AutoShopItem;
 
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
@@ -316,7 +317,7 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.SHOP.get(), ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> AUTO_SHOP = ITEMS.register("auto_shop",
-            () -> new BlockItem(ModBlocks.AUTO_SHOP.get(), ITEM_PROPERTIES));
+            () -> new AutoShopItem(ModBlocks.AUTO_SHOP.get(), ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> STRUCTURE_PLACER = ITEMS.register("structure_placer",
             () -> new StructurePlacerItem(new Item.Properties().stacksTo(1)));

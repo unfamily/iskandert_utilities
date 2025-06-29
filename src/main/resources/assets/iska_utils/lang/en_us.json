@@ -442,5 +442,9 @@
   "commands.iska_utils.explosion.none_active": "No active explosions to stop",
   
   "block.iska_utils.chaotic_tnt": "Chaotic TNT",
-  "item.iska_utils.chaotic_tnt": "Chaotic TNT"
+  "item.iska_utils.chaotic_tnt": "Chaotic TNT",
+
+  "item.iska_utils.auto_shop.tooltip.usage": "§7Put item in 'Selected Item' slot to specify what to buy/sell",
+  "item.iska_utils.auto_shop.tooltip.modes": "§7Left click: switch between §aAuto-Buy §7and §cAuto-Sell §7modes",
+  "item.iska_utils.auto_shop.tooltip.currency": "§7Shift + Right click: set currency for transactions"
 }
