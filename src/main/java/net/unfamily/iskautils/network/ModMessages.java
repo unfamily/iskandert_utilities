@@ -51,7 +51,25 @@ public class ModMessages {
      */
     public static void register() {
         LOGGER.info("Registering packets for " + IskaUtils.MOD_ID);
+        // Registration is now handled by the RegisterPayloadHandlersEvent
+        // See registerPayloads() method below
+    }
+    
+    /**
+     * Registers payload handlers for NeoForge networking
+     */
+    @net.neoforged.bus.api.SubscribeEvent
+    public static void registerPayloads(net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent event) {
+        final net.neoforged.neoforge.network.registration.PayloadRegistrar registrar = event.registrar(IskaUtils.MOD_ID).versioned("1");
         
+        // Register Structure Sync S2C Packet (Server to Client)
+        registrar.playToClient(
+            net.unfamily.iskautils.network.packet.StructureSyncS2CPacket.TYPE,
+            net.unfamily.iskautils.network.packet.StructureSyncS2CPacket.STREAM_CODEC,
+            (packet, context) -> net.unfamily.iskautils.network.packet.StructureSyncS2CPacket.handle(packet, context)
+        );
+        
+        LOGGER.info("Registered {} networking packets", 1);
     }
     
     /**
@@ -274,17 +292,17 @@ public class ModMessages {
     public static void sendStructureSaverBlueprintSyncPacket(ServerPlayer player, BlockPos machinePos, BlockPos vertex1, BlockPos vertex2, BlockPos center) {
 
         
-        // Sistema semplificato identico agli altri packet in questa classe
+        // Simplified system identical to other packets in this class
         try {
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                // Gestisce il packet lato client
+                // Handle packet on client side
                 try {
                     var level = net.minecraft.client.Minecraft.getInstance().level;
                     if (level != null) {
                         var blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity structureSaver) {
                             structureSaver.setBlueprintDataClientSide(vertex1, vertex2, center);
-                            LOGGER.info("Blueprint sincronizzata con successo sul client via ModMessages");
+                            LOGGER.info("Blueprint synchronized successfully on client via ModMessages");
                         } else {
                             LOGGER.warn("BlockEntity at {} is not a StructureSaverMachineBlockEntity", machinePos);
                         }
@@ -292,11 +310,11 @@ public class ModMessages {
                         LOGGER.warn("Client level is null, cannot sync blueprint data");
                     }
                 } catch (Exception e) {
-                    LOGGER.error("Errore durante la sincronizzazione blueprint: {}", e.getMessage());
+                    LOGGER.error("Error during blueprint synchronization: {}", e.getMessage());
                 }
             });
         } catch (Exception e) {
-            // Ignora errori quando si esegue su server dedicato
+            // Ignore errors when running on dedicated server
             LOGGER.debug("Blueprint sync packet not sent in dedicated server mode: {}", e.getMessage());
         }
     }
@@ -773,8 +791,8 @@ public class ModMessages {
     }
     
     /**
-     * Invia le strutture del server al client per sincronizzazione
-     * Questo permette al client di vedere tutte le strutture disponibili sul server
+     * Sends server structures to client for synchronization
+     * This allows the client to see all available structures on the server
      */
     public static void sendStructureSyncPacket(ServerPlayer player) {
         try {
@@ -782,33 +800,46 @@ public class ModMessages {
             boolean isSingleplayer = player.getServer().isSingleplayer();
             
             if (isSingleplayer) {
-                LOGGER.debug("Modalità singleplayer detected, skipping structure sync for player {}", 
+                LOGGER.debug("Singleplayer mode detected, skipping structure sync for player {}", 
                            player.getName().getString());
                 return; // In singleplayer, the client already has its local structures
             }
             
-            // Ottieni SOLO le strutture da sincronizzare (MAI le strutture client del server)
+            // Get ONLY structures to synchronize (NEVER server client structures)
             Map<String, StructureDefinition> serverStructures = StructureLoader.getStructuresForSync();
             
             if (serverStructures.isEmpty()) {
-                LOGGER.debug("Nessuna struttura da sincronizzare per il player {}", player.getName().getString());
+                LOGGER.debug("No structures to synchronize for player {}", player.getName().getString());
                 return;
             }
             
-            LOGGER.info("Sincronizzando {} strutture al client per player {} (dedicated server)", 
+            LOGGER.info("Synchronizing {} structures to client for player {} (dedicated server)", 
                        serverStructures.size(), player.getName().getString());
             
-            // Crea il pacchetto di sincronizzazione con il flag del server
+            // Create synchronization packet with server flag
             net.unfamily.iskautils.network.packet.StructureSyncS2CPacket packet = 
                 net.unfamily.iskautils.network.packet.StructureSyncS2CPacket.create(serverStructures, net.unfamily.iskautils.Config.acceptClientStructure);
             
-            // TODO: In un server dedicato, qui invieresti il vero pacchetto al client
-            // For now just log that synchronization is needed
-            LOGGER.info("TODO: Inviare pacchetto di sincronizzazione strutture al client {} su server dedicato", 
-                       player.getName().getString());
+            // Send the real packet to client using NeoForge networking system
+            try {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, packet);
+                LOGGER.info("Successfully synchronized structures to client {} via real networking", 
+                           player.getName().getString());
+            } catch (Exception networkError) {
+                LOGGER.error("Error sending structure sync packet to {}: {}", 
+                           player.getName().getString(), networkError.getMessage());
+                // Fallback: try simplified method as backup
+                try {
+                    net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                        net.unfamily.iskautils.network.packet.StructureSyncS2CPacket.handle(packet);
+                    });
+                } catch (Exception fallbackError) {
+                    LOGGER.error("Synchronization fallback also failed: {}", fallbackError.getMessage());
+                }
+            }
             
         } catch (Exception e) {
-            LOGGER.error("Errore nell'invio del pacchetto di sincronizzazione strutture: {}", e.getMessage());
+            LOGGER.error("Error sending structure synchronization packet: {}", e.getMessage());
         }
     }
     
@@ -817,12 +848,12 @@ public class ModMessages {
      */
     public static void sendStructureSaverMachineRecalculatePacket(BlockPos machinePos) {
 
-        // Simplified implementation per single player compatibility
+        // Simplified implementation for single player compatibility
         try {
             net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
             if (server != null) {
-                // Trova il BlockEntity della macchina e richiedi il ricalcolo
-                var level = server.getAllLevels().iterator().next(); // Ottieni il primo mondo
+                // Find the machine BlockEntity and request recalculation
+                var level = server.getAllLevels().iterator().next(); // Get the first world
                 var blockEntity = level.getBlockEntity(machinePos);
                 if (blockEntity instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity machine) {
                     machine.requestAreaRecalculation();
@@ -918,12 +949,12 @@ public class ModMessages {
                         new net.unfamily.iskautils.network.packet.ShopBuyItemC2SPacket(entryId, quantity).handle(player);
                     }
                 } catch (Exception e) {
-                    System.err.println("DEBUG: Errore nell'invio del packet buy: " + e.getMessage());
+                    System.err.println("DEBUG: Error sending buy packet: " + e.getMessage());
                     e.printStackTrace();
                 }
             });
         } catch (Exception e) {
-            System.err.println("DEBUG: Errore nel sendShopBuyItemPacket: " + e.getMessage());
+            System.err.println("DEBUG: Error in sendShopBuyItemPacket: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -949,12 +980,12 @@ public class ModMessages {
                         new net.unfamily.iskautils.network.packet.ShopSellItemC2SPacket(entryId, quantity).handle(player);
                     }
                 } catch (Exception e) {
-                    System.err.println("DEBUG: Errore nell'invio del packet sell: " + e.getMessage());
+                    System.err.println("DEBUG: Error sending sell packet: " + e.getMessage());
                     e.printStackTrace();
                 }
             });
         } catch (Exception e) {
-            System.err.println("DEBUG: Errore nel sendShopSellItemPacket: " + e.getMessage());
+            System.err.println("DEBUG: Error in sendShopSellItemPacket: " + e.getMessage());
             e.printStackTrace();
         }
     }

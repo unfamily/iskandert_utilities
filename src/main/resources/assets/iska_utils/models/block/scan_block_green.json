@@ -2,5 +2,6 @@
   "parent": "minecraft:block/cube_all",
   "textures": {
     "all": "iska_utils:block/scan_block_green"
-  }
+  },
+  "render_type": "translucent"
 } 

@@ -202,6 +202,8 @@ kubejs/external_scripts/iska_utils_structures/
 - **`place_like_player`**: Simulate player placement (triggers events)
 - **`can_replace`**: List of blocks/tags that can be replaced
 - **`stages`**: Required progression stages (ALL must be completed)
+- **`machine`**: Visibility in Structure Placer Machine GUI (default: true)
+- **`hidden`**: Only visible via commands, not placeable normally (default: false)
 
 ---
 

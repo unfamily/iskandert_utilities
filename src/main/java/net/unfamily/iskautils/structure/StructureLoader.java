@@ -729,6 +729,16 @@ public class StructureLoader {
                 definition.setStages(stages);
             }
             
+            // Parse machine visibility parameter (default: true)
+            if (structureJson.has("machine")) {
+                definition.setMachine(structureJson.get("machine").getAsBoolean());
+            }
+            
+            // Parse hidden parameter (default: false)
+            if (structureJson.has("hidden")) {
+                definition.setHidden(structureJson.get("hidden").getAsBoolean());
+            }
+            
             // Register structure definition
             STRUCTURES.put(structureId, definition);
         } catch (Exception e) {
@@ -932,6 +942,38 @@ public class StructureLoader {
     }
     
     /**
+     * Gets structures visible in Structure Placer Machine GUI
+     * Filters out structures with machine=false
+     */
+    public static Map<String, StructureDefinition> getMachineVisibleStructures() {
+        return getAllStructures().entrySet().stream()
+                .filter(entry -> entry.getValue().isMachine()) // Only include structures where machine=true
+                .sorted(STRUCTURE_COMPARATOR)
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        java.util.LinkedHashMap::new
+                ));
+    }
+    
+    /**
+     * Gets structures visible via commands only
+     * Returns structures with hidden=true
+     */
+    public static Map<String, StructureDefinition> getCommandOnlyStructures() {
+        return getAllStructures().entrySet().stream()
+                .filter(entry -> entry.getValue().isHidden()) // Only include structures where hidden=true
+                .sorted(STRUCTURE_COMPARATOR)
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        java.util.LinkedHashMap::new
+                ));
+    }
+    
+    /**
      * Gets only player structures from player_structures.json file for the Structure Saver Machine GUI
      * This is specifically for the modify functionality - only shows structures that can be modified
      */
@@ -1025,6 +1067,16 @@ public class StructureLoader {
         // Parse overwritable
         if (structureJson.has("overwritable")) {
             definition.setOverwritable(structureJson.get("overwritable").getAsBoolean());
+        }
+        
+        // Parse machine visibility parameter (default: true)
+        if (structureJson.has("machine")) {
+            definition.setMachine(structureJson.get("machine").getAsBoolean());
+        }
+        
+        // Parse hidden parameter (default: false)
+        if (structureJson.has("hidden")) {
+            definition.setHidden(structureJson.get("hidden").getAsBoolean());
         }
         
         // Parse description array if present

@@ -305,16 +305,6 @@ public class ModItems {
     public static final DeferredItem<Item> ANGEL_BLOCK = ITEMS.register("angel_block",
             () -> new AngelBlockItem(ModBlocks.ANGEL_BLOCK.get(), new Item.Properties().stacksTo(64)));
 
-    // ===== DEV BLOCKS =====
-    public static final DeferredItem<Item> SCAN_BLOCK = ITEMS.register("scan_block",
-            () -> new BlockItem(ModBlocks.SCAN_BLOCK.get(), ITEM_PROPERTIES));
-            
-    public static final DeferredItem<Item> SCAN_BLOCK_RED = ITEMS.register("scan_block_red",
-            () -> new BlockItem(ModBlocks.SCAN_BLOCK_RED.get(), ITEM_PROPERTIES));
-            
-    public static final DeferredItem<Item> SCAN_BLOCK_GREEN = ITEMS.register("scan_block_green",
-            () -> new BlockItem(ModBlocks.SCAN_BLOCK_GREEN.get(), ITEM_PROPERTIES));
-
     // ===== STRUCTURE SYSTEM =====
     public static final DeferredItem<Item> STRUCTURE_PLACER_MACHINE = ITEMS.register("structure_placer_machine",
             () -> new BlockItem(ModBlocks.STRUCTURE_PLACER_MACHINE.get(), ITEM_PROPERTIES));

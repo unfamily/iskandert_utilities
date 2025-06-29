@@ -120,6 +120,9 @@ public class IskaUtils {
         // Register GUI MenuTypes
         net.unfamily.iskautils.client.gui.ModMenuTypes.MENUS.register(modEventBus);
         
+        // Register ModMessages as event subscriber for payload registration
+        modEventBus.register(ModMessages.class);
+        
         // Register Curios integration if it's installed
         if (ModUtils.isCuriosLoaded()) {
             CuriosIntegration.register(modEventBus);

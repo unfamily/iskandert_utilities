@@ -30,6 +30,8 @@ public class StructureDefinition {
     private boolean slower = false; // If true, apply delay to each individual block instead of layers
     private boolean placeAsPlayer = false; // If true, place blocks as if done by a player
     private List<String> stages;
+    private boolean machine = true; // If false, not visible in Structure Placer Machine GUI
+    private boolean hidden = false; // If true, only visible via commands
 
     /**
      * Definition of an icon for the structure
@@ -96,6 +98,10 @@ public class StructureDefinition {
     public void setPlaceAsPlayer(boolean placeAsPlayer) { this.placeAsPlayer = placeAsPlayer; }
     public List<String> getStages() { return stages; }
     public void setStages(List<String> stages) { this.stages = stages; }
+    public boolean isMachine() { return machine; }
+    public void setMachine(boolean machine) { this.machine = machine; }
+    public boolean isHidden() { return hidden; }
+    public void setHidden(boolean hidden) { this.hidden = hidden; }
 
     /**
      * Finds the position of the structure's center (character '@')
@@ -177,6 +183,8 @@ public class StructureDefinition {
         if (slower) structureObj.addProperty("slower", slower);
         if (placeAsPlayer) structureObj.addProperty("place_like_player", placeAsPlayer);
         if (overwritable) structureObj.addProperty("overwritable", overwritable);
+        if (!machine) structureObj.addProperty("machine", machine); // Only save if false (non-default)
+        if (hidden) structureObj.addProperty("hidden", hidden); // Only save if true (non-default)
         
         // Add can_replace if present
         if (canReplace != null && !canReplace.isEmpty()) {

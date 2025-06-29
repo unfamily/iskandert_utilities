@@ -58,7 +58,29 @@ public record StructureSyncS2CPacket(Map<String, String> structureData, boolean 
     }
     
     /**
-     * Gestisce il pacchetto lato client (versione semplificata)
+     * Gestisce il pacchetto lato client con il context di NeoForge
+     */
+    public static void handle(StructureSyncS2CPacket packet, net.neoforged.neoforge.network.handling.IPayloadContext context) {
+        // Esegui sul main thread per sicurezza
+        context.enqueueWork(() -> {
+            try {
+                LOGGER.info("Received structure synchronization from server: {} structures", packet.structureData.size());
+                
+                // Sincronizza le strutture ricevute dal server nel StructureLoader client-side
+                StructureLoader.syncFromServer(packet.structureData, packet.acceptClientStructures);
+                
+                LOGGER.info("Strutture sincronizzate con successo dal server");
+            } catch (Exception e) {
+                LOGGER.error("Errore durante la sincronizzazione delle strutture: {}", e.getMessage(), e);
+            }
+        }).exceptionally(throwable -> {
+            LOGGER.error("Errore nell'esecuzione dell'handler di sincronizzazione strutture: {}", throwable.getMessage(), throwable);
+            return null;
+        });
+    }
+    
+    /**
+     * Gestisce il pacchetto lato client (versione semplificata per retrocompatibilità)
      */
     public static void handle(StructureSyncS2CPacket packet) {
         try {

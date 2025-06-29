@@ -93,10 +93,11 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     }
     
     /**
-     * Carica le strutture disponibili dal StructureLoader (già ordinate)
+     * Carica le strutture disponibili dal StructureLoader (già ordinate e filtrate per machine GUI)
      */
     private void loadAvailableStructures() {
-        var structureMap = StructureLoader.getAllStructures();
+        // Use getMachineVisibleStructures to filter out machine=false structures
+        var structureMap = StructureLoader.getMachineVisibleStructures();
         this.availableStructures = new java.util.ArrayList<>(structureMap.values());
         
         this.totalEntries = availableStructures.size();
