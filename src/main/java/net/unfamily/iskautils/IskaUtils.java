@@ -7,8 +7,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
 import net.unfamily.iskautils.item.PortableDislocatorItem;
+import net.unfamily.iskautils.network.NetworkHandler;
+import net.unfamily.iskautils.block.AngelBlock;
+import net.unfamily.iskautils.block.AngelBlockNoDrop;
+import net.unfamily.iskautils.block.RaftNoDropBlock;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -34,6 +39,19 @@ public class IskaUtils
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MOD_ID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID);
 
+    // Blocks
+    public static final RegistryObject<Block> ANGEL_BLOCK = BLOCKS.register("angel_block", AngelBlock::new);
+    public static final RegistryObject<Block> ANGEL_BLOCK_NO_DROP = BLOCKS.register("angel_block_no_drop", AngelBlockNoDrop::new);
+    public static final RegistryObject<Block> RAFT_NO_DROP = BLOCKS.register("raft_no_drop", RaftNoDropBlock::new);
+    
+    // Block Items
+    public static final RegistryObject<Item> ANGEL_BLOCK_ITEM = ITEMS.register("angel_block", 
+            () -> new BlockItem(ANGEL_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> ANGEL_BLOCK_NO_DROP_ITEM = ITEMS.register("angel_block_no_drop", 
+            () -> new BlockItem(ANGEL_BLOCK_NO_DROP.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RAFT_NO_DROP_ITEM = ITEMS.register("raft_no_drop", 
+            () -> new BlockItem(RAFT_NO_DROP.get(), new Item.Properties()));
+
     // Items
     public static final RegistryObject<Item> PORTABLE_DISLOCATOR = ITEMS.register("portable_dislocator", 
             () -> new PortableDislocatorItem(new Item.Properties()));
@@ -45,6 +63,9 @@ public class IskaUtils
             .icon(() -> PORTABLE_DISLOCATOR.get().getDefaultInstance())
             .displayItems((parameters, output) -> {
                 output.accept(PORTABLE_DISLOCATOR.get());
+                output.accept(ANGEL_BLOCK_ITEM.get());
+                output.accept(ANGEL_BLOCK_NO_DROP_ITEM.get());
+                output.accept(RAFT_NO_DROP_ITEM.get());
             }).build());
 
     public IskaUtils(FMLJavaModLoadingContext context)
@@ -65,6 +86,9 @@ public class IskaUtils
     private void commonSetup(final FMLCommonSetupEvent event)
     {
         LOGGER.info("IskaUtils mod initialized");
+        
+        // Register network packets
+        NetworkHandler.register();
     }
 
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)

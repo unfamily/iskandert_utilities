@@ -92,6 +92,7 @@
   "block.iska_utils.time_alterer": "Alteratore del Tempo",
 
   "block.iska_utils.angel_block": "Blocco Angelico",
+  "block.iska_utils.angel_block_no_drop": "Blocco Angelico",
   "block.iska_utils.structure_saver_machine": "Macchina Salvatrice di Strutture",
   "block.iska_utils.structure_marker": "Marcatore di Strutture",
   "block.iska_utils.shop": "Negozio",
