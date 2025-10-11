@@ -1,4 +1,4 @@
-#Adds some useful things to improve tech modpack player gameplay.
+Adds some useful things to improve tech modpack player gameplay.
 
 The mod adds:
 
