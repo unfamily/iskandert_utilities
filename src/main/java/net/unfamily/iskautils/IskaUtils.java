@@ -66,6 +66,9 @@ public class IskaUtils {
         // If we are on the client, also register client setup
         if (FMLEnvironment.dist == Dist.CLIENT) {
             modEventBus.addListener(this::clientSetup);
+
+            // Register GUI MenuTypes (client-only)
+            net.unfamily.iskautils.client.gui.ModMenuTypes.MENUS.register(modEventBus);
         }
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
@@ -116,10 +119,7 @@ public class IskaUtils {
         
         // Register Structure Monouse Items system
         net.unfamily.iskautils.structure.StructureMonouseRegistry.register(modEventBus);
-        
-        // Register GUI MenuTypes
-        net.unfamily.iskautils.client.gui.ModMenuTypes.MENUS.register(modEventBus);
-        
+
         // Register ModMessages as event subscriber for payload registration
         modEventBus.register(ModMessages.class);
         
