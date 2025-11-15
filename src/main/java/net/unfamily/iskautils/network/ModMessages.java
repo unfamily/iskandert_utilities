@@ -3,6 +3,8 @@ package net.unfamily.iskautils.network;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
@@ -97,6 +99,7 @@ public class ModMessages {
     /**
      * Sends a Structure Undo packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructureUndoPacket() {
         LOGGER.debug("Sending Structure Undo packet to server");
         // Simplified implementation for single player compatibility
@@ -211,6 +214,7 @@ public class ModMessages {
     /**
      * Sends a shop team data request to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendShopTeamDataRequest() {
         // Simplified implementation - directly handle on the server side
         try {
@@ -271,6 +275,7 @@ public class ModMessages {
      * Sends a Structure Placer save packet to the server
      * This simulates a client-to-server packet for saving the selected structure
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerSavePacket(String structureId) {
 
         // Simplified implementation - directly handle on the server side
@@ -322,6 +327,7 @@ public class ModMessages {
     /**
      * Sends a Structure Placer Machine show packet to toggle preview mode
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineShowPacket(BlockPos machinePos) {
         try {
             // Get the server from single player or dedicated server
@@ -385,6 +391,7 @@ public class ModMessages {
      * Sends a Structure Placer Machine Rotate packet to the server
      * This simulates a client-to-server packet for rotating the structure
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineRotatePacket(BlockPos machinePos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -440,6 +447,7 @@ public class ModMessages {
     /**
      * Sends a Structure Placer Machine Redstone Mode packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineRedstoneModePacket(BlockPos machinePos) {
 
         
@@ -494,6 +502,7 @@ public class ModMessages {
      * Sends a Structure Placer Machine Set Inventory packet to the server
      * Mode: 0 = normal, 1 = shift+click, 2 = ctrl/alt+click
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineSetInventoryPacket(BlockPos machinePos, int mode) {
         // Simplified implementation - directly handle on the server side
         try {
@@ -741,6 +750,7 @@ public class ModMessages {
      * Sends a Structure Placer Machine save packet to the server
      * This simulates a client-to-server packet for saving the selected structure in the machine
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineSavePacket(String structureId, BlockPos machinePos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -846,6 +856,7 @@ public class ModMessages {
     /**
      * Sends a Structure Saver Machine recalculate packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineRecalculatePacket(BlockPos machinePos) {
 
         // Simplified implementation for single player compatibility
@@ -869,6 +880,7 @@ public class ModMessages {
      * Sends a Structure Saver Machine save packet to the server
      * This simulates a client-to-server packet for saving a structure from the machine
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer) {
         sendStructureSaverMachineSavePacket(structureName, structureId, machinePos, slower, placeAsPlayer, null);
     }
@@ -877,6 +889,7 @@ public class ModMessages {
      * Sends a Structure Saver Machine save/modify packet to the server
      * This simulates a client-to-server packet for saving or modifying a structure from the machine
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer, String oldStructureId) {
 
 
@@ -931,6 +944,7 @@ public class ModMessages {
     /**
      * Sends a shop buy item packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendShopBuyItemPacket(String entryId, int quantity) {
         System.out.println("DEBUG: sendShopBuyItemPacket chiamato - entryId: " + entryId + ", quantity: " + quantity);
         
@@ -962,6 +976,7 @@ public class ModMessages {
     /**
      * Sends a shop sell item packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendShopSellItemPacket(String entryId, int quantity) {
         System.out.println("DEBUG: sendShopSellItemPacket chiamato - entryId: " + entryId + ", quantity: " + quantity);
         
@@ -993,6 +1008,7 @@ public class ModMessages {
     /**
      * Invia il packet per settare lo slot encapsulato dell'Auto Shop
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopSetEncapsulatedPacket(BlockPos pos) {
         // Simplified implementation for single player compatibility
         try {
@@ -1020,6 +1036,7 @@ public class ModMessages {
     /**
      * Invia il packet per settare lo slot selectedItem dell'Auto Shop
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopSelectedItemPacket(BlockPos pos, ItemStack stack) {
         // Simplified implementation for single player compatibility
         try {
