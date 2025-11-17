@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "iska_utils:item/burning_brazier"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "damage": 1.0
+      },
+      "model": "iska_utils:item/burning_brazier_unlit"
+    }
+  ]
+} 

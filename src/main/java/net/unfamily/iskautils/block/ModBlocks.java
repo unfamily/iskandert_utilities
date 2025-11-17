@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.WallBlock;
 import net.unfamily.iskautils.block.ShopBlock;
 import net.unfamily.iskautils.block.AutoShopBlock;
+import net.unfamily.iskautils.block.BurningFlameBlock;
 import net.unfamily.iskautils.block.ChaoticTntBlock;
 
 public class ModBlocks {
@@ -366,6 +367,22 @@ public class ModBlocks {
     // Chaotic TNT Block (massive explosion with various triggers)
     public static final DeferredBlock<ChaoticTntBlock> CHAOTIC_TNT = BLOCKS.register("chaotic_tnt",
             () -> new ChaoticTntBlock());
+
+    // ===== BURNING FLAME BLOCK =====
+    private static final BlockBehaviour.Properties BURNING_FLAME_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_ORANGE)
+            .noCollission()
+            .instabreak()
+            .sound(SoundType.WOOL)
+            .lightLevel((state) -> 15)
+            .noOcclusion()
+            .replaceable()
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false);
+
+    // Burning Flame Block (provides light like a torch, fragile to liquids)
+    public static final DeferredBlock<BurningFlameBlock> BURNING_FLAME = BLOCKS.register("burning_flame",
+            () -> new BurningFlameBlock(BURNING_FLAME_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

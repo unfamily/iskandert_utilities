@@ -446,5 +446,9 @@
 
   "item.iska_utils.auto_shop.tooltip.usage": "§7Put item in 'Selected Item' slot to specify what to buy/sell",
   "item.iska_utils.auto_shop.tooltip.modes": "§7Left click: switch between §aAuto-Buy §7and §cAuto-Sell §7modes",
-  "item.iska_utils.auto_shop.tooltip.currency": "§7Shift + Right click: set currency for transactions"
+  "item.iska_utils.auto_shop.tooltip.currency": "§7Shift + Right click: set currency for transactions",
+
+  "item.iska_utils.burning_brazier": "Burning Brazier",
+  "block.iska_utils.burning_flame": "Burning Flame",
+  "tooltip.iska_utils.burning_brazier.desc0": "§4Emits a fire so strong that it will illuminate your path permanently"
 }

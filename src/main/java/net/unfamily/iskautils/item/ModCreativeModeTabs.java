@@ -137,7 +137,10 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SCANNER_CHIP.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP_ORES.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP_MOBS.get());
-                                
+
+                                // Burning Brazier
+                                pOutput.accept(ModItems.BURNING_BRAZIER.get());
+
                                 // Structure System
                                 pOutput.accept(ModItems.STRUCTURE_PLACER_MACHINE.get());
                                 pOutput.accept(ModItems.STRUCTURE_SAVER_MACHINE.get());

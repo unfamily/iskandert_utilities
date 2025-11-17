@@ -18,6 +18,7 @@ import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.SwissWrenchItem;
 import net.unfamily.iskautils.item.custom.AngelBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
+import net.unfamily.iskautils.item.custom.BurningBrazierItem;
 import net.unfamily.iskautils.item.custom.BlueprintItem;
 import net.unfamily.iskautils.item.custom.AutoShopItem;
 
@@ -332,7 +333,11 @@ public class ModItems {
     public static final DeferredItem<Item> CHAOTIC_TNT = ITEMS.register("chaotic_tnt",
             () -> new BlockItem(ModBlocks.CHAOTIC_TNT.get(), ITEM_PROPERTIES));
 
+    // ===== BURNING BRAZIER ITEM =====
 
+    // Burning Brazier (places burning flame blocks when light level is low)
+    public static final DeferredItem<Item> BURNING_BRAZIER = ITEMS.register("burning_brazier",
+            () -> new BurningBrazierItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
