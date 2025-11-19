@@ -14,6 +14,7 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.VectorCharmData;
 import net.unfamily.iskautils.data.VectorFactorType;
+import net.unfamily.iskautils.network.ModMessages;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ public class KeyBindings {
     private static final String KEY_VECTOR_HORIZONTAL_DECREASE = "key.iska_utils.vector_horizontal_decrease";
     private static final String KEY_PORTABLE_DISLOCATOR = "key.iska_utils.portable_dislocator";
     private static final String KEY_STRUCTURE_UNDO = "key.iska_utils.structure_undo";
+    private static final String KEY_BURNING_BRAZIER_TOGGLE = "key.iska_utils.burning_brazier_toggle";
 
     // Vector Charm keys
     public static final KeyMapping VECTOR_VERTICAL_KEY = new KeyMapping(
@@ -94,6 +96,15 @@ public class KeyBindings {
             KEY_CATEGORY_ISKA_UTILS
     );
 
+    // Burning Brazier auto-placement toggle key
+    public static final KeyMapping BURNING_BRAZIER_TOGGLE_KEY = new KeyMapping(
+            KEY_BURNING_BRAZIER_TOGGLE,
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_B,  // B key for brazier
+            KEY_CATEGORY_ISKA_UTILS
+    );
+
     /**
      * Registers key bindings
      */
@@ -106,6 +117,7 @@ public class KeyBindings {
         event.register(VECTOR_HORIZONTAL_DECREASE_KEY);
         event.register(PORTABLE_DISLOCATOR_KEY);
         event.register(STRUCTURE_UNDO_KEY);
+        event.register(BURNING_BRAZIER_TOGGLE_KEY);
         LOGGER.info("Registered all key mappings");
     }
 
@@ -190,8 +202,14 @@ public class KeyBindings {
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
                 // Send message to player
-                player.displayClientMessage(Component.translatable("message.iska_utils.vector_horizontal_factor", 
+                player.displayClientMessage(Component.translatable("message.iska_utils.vector_horizontal_factor",
                                      Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
+            }
+
+            // Key for Burning Brazier auto-placement toggle
+            if (BURNING_BRAZIER_TOGGLE_KEY.consumeClick()) {
+                // Send toggle request to server
+                ModMessages.sendBurningBrazierTogglePacket();
             }
         }
     }
@@ -210,5 +228,13 @@ public class KeyBindings {
      */
     public static boolean consumeDislocatorKeyClick() {
         return PORTABLE_DISLOCATOR_KEY.consumeClick();
+    }
+
+    /**
+     * Checks if the burning brazier toggle key has been pressed and consumes the event
+     * @return true if the key was pressed, false otherwise
+     */
+    public static boolean consumeBurningBrazierToggleKeyClick() {
+        return BURNING_BRAZIER_TOGGLE_KEY.consumeClick();
     }
 } 

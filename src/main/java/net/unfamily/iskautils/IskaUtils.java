@@ -34,6 +34,7 @@ import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.shop.ShopTeamManager;
+import net.unfamily.iskautils.data.BurningBrazierData;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ModWoodTypes;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
@@ -233,7 +234,10 @@ public class IskaUtils {
         @SubscribeEvent
         public static void onServerStarting(ServerStartingEvent event) {
             VectorCharmData.getInstance();
-            
+
+            // Initialize Burning Brazier data (will be loaded automatically when needed)
+            // BurningBrazierData.get(event.getServer().overworld());
+
             // Commands registration happens via RegisterCommandsEvent
         }
         
@@ -380,6 +384,7 @@ public class IskaUtils {
                 }
                 // Clean up expired team invitations
                 ShopTeamManager.getInstance(event.getServer().overworld()).getTeamDataInstance().cleanupExpiredInvitations();
+                // Note: Burning Brazier data is saved automatically when modified
             }
         }
     }

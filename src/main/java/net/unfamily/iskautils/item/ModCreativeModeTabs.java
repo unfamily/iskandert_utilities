@@ -138,26 +138,24 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SCANNER_CHIP_ORES.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP_MOBS.get());
 
-                                // Burning Brazier
-                                pOutput.accept(ModItems.BURNING_BRAZIER.get());
-
                                 // Structure System
                                 pOutput.accept(ModItems.STRUCTURE_PLACER_MACHINE.get());
                                 pOutput.accept(ModItems.STRUCTURE_SAVER_MACHINE.get());
 
                                 pOutput.accept(ModItems.STRUCTURE_PLACER.get());
                                 pOutput.accept(ModItems.BLUEPRINT.get());
-                
+
                                 // Structure Monouse Items
-                                Map<String, DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem>> monouseItems = 
+                                Map<String, DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem>> monouseItems =
                                     net.unfamily.iskautils.structure.StructureMonouseRegistry.getAllItems();
                                 for (DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem> itemHolder : monouseItems.values()) {
                                     pOutput.accept(itemHolder.get());
                                 }
-                                
+
                                 // Artifacts
                                 pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());
                                 pOutput.accept(ModItems.MINING_EQUITIZER.get());
+                                pOutput.accept(ModItems.BURNING_BRAZIER.get());
 
 
                             }).build());

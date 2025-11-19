@@ -339,6 +339,10 @@ public class ModItems {
     public static final DeferredItem<Item> BURNING_BRAZIER = ITEMS.register("burning_brazier",
             () -> new BurningBrazierItem(new Item.Properties().stacksTo(1)));
 
+    // Burning Flame Block Item (not indexed in creative tab)
+    public static final DeferredItem<Item> BURNING_FLAME = ITEMS.register("burning_flame",
+            () -> new BlockItem(ModBlocks.BURNING_FLAME.get(), ITEM_PROPERTIES));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
         

@@ -14,6 +14,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.client.KeyBindings;
+import net.unfamily.iskautils.data.BurningBrazierData;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,12 +25,12 @@ import java.util.List;
 
 /**
  * Burning Brazier Item - Places burning flame blocks when light level is low
- * Has 5120 durability and consumes 1 durability per successful placement.
+ * Has 512 durability and consumes 1 durability per successful placement.
  */
 public class BurningBrazierItem extends Item {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BurningBrazierItem.class);
-    private static final int MAX_DURABILITY = 5120;
+    private static final int MAX_DURABILITY = 512;
 
     public BurningBrazierItem(Properties properties) {
         super(properties.durability(MAX_DURABILITY));
@@ -44,6 +48,16 @@ public class BurningBrazierItem extends Item {
             return InteractionResult.SUCCESS;
         }
 
+        // Get the clicked block state
+        BlockState clickedState = level.getBlockState(clickedPos);
+
+        // If clicking on a burning flame, remove it and restore durability
+        if (clickedState.getBlock() == ModBlocks.BURNING_FLAME.get()) {
+            level.destroyBlock(clickedPos, false);
+            stack.setDamageValue(Math.max(0, stack.getDamageValue() - 1));
+            return InteractionResult.SUCCESS;
+        }
+
         // Check if item has durability left
         if (stack.getDamageValue() >= MAX_DURABILITY) {
             return InteractionResult.FAIL;
@@ -52,16 +66,8 @@ public class BurningBrazierItem extends Item {
         // Get the position where we want to place the flame (above the clicked block)
         BlockPos placePos = clickedPos.above();
 
-        // Check if there's already a burning flame at the target position
-        BlockState targetState = level.getBlockState(placePos);
-        if (targetState.getBlock() == ModBlocks.BURNING_FLAME.get()) {
-            // Remove the flame and restore durability
-            level.destroyBlock(placePos, false);
-            stack.setDamageValue(Math.max(0, stack.getDamageValue() - 1));
-            return InteractionResult.SUCCESS;
-        }
-
         // Check if the target position is air
+        BlockState targetState = level.getBlockState(placePos);
         if (!targetState.isAir()) {
             return InteractionResult.FAIL;
         }
@@ -89,6 +95,11 @@ public class BurningBrazierItem extends Item {
         // Only work on server side and only if entity is a player
         if (level.isClientSide || !(entity instanceof ServerPlayer player)) {
             return;
+        }
+
+        // Check if auto-placement is enabled for this player
+        if (!BurningBrazierData.getAutoPlacementEnabledFromPlayer(player)) {
+            return; // Auto-placement is disabled
         }
 
         // Check if item has durability left
@@ -123,11 +134,17 @@ public class BurningBrazierItem extends Item {
     }
 
     @Override
+    @OnlyIn(Dist.CLIENT)
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
 
+        // Get the keybind name
+        String keybindName = KeyBindings.BURNING_BRAZIER_TOGGLE_KEY.getTranslatedKeyMessage().getString();
+
         // Show description
         tooltip.add(Component.translatable("tooltip.iska_utils.burning_brazier.desc0"));
+        tooltip.add(Component.translatable("tooltip.iska_utils.burning_brazier.desc1", keybindName));
+        tooltip.add(Component.translatable("tooltip.iska_utils.burning_brazier.desc2"));
     }
 
 

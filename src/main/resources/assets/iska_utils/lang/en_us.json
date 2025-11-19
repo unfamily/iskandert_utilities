@@ -138,6 +138,7 @@
   "key.iska_utils.vector_horizontal_decrease": "Vector Charm Horizontal Setting (Decrease)",
   "key.iska_utils.portable_dislocator": "Activate Portable Dislocator",
   "key.iska_utils.structure_undo": "Disassemble Last Structure",
+  "key.iska_utils.burning_brazier_toggle": "Toggle Burning Brazier Auto-Placement",
   
   "message.iska_utils.structure_undo.no_history": "§eNo structures to disassemble",
   "message.iska_utils.structure_undo.structure_not_found": "§cStructure definition not found: %s",
@@ -157,6 +158,8 @@
   "message.iska_utils.vector_horizontal_factor": "Vector Charm horizontal factor set to: %s",
   "message.iska_utils.vector_hover_mode.hover": "Vector Charm mode: hover",
   "message.iska_utils.vector_hover_mode.off": "Vector Charm mode: default",
+  "message.iska_utils.burning_brazier_auto_placement.enabled": "Burning Brazier auto-placement: §aenabled",
+  "message.iska_utils.burning_brazier_auto_placement.disabled": "Burning Brazier auto-placement: §cdisabled",
   
   "item.iska_utils.portable_dislocator.tooltip.main": "Press %s to teleport near compass coordinates (200-300 blocks away)",
   "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Teleports near compass coordinates (200-300 blocks away)",
@@ -450,5 +453,7 @@
 
   "item.iska_utils.burning_brazier": "Burning Brazier",
   "block.iska_utils.burning_flame": "Burning Flame",
-  "tooltip.iska_utils.burning_brazier.desc0": "§4Emits a fire so strong that it will illuminate your path permanently"
+  "tooltip.iska_utils.burning_brazier.desc0": "§fEmits a fire so strong that it will illuminate your path permanently",
+  "tooltip.iska_utils.burning_brazier.desc1": "§7Press §f%s §7to toggle automatic flame placement",
+  "tooltip.iska_utils.burning_brazier.desc2": "§7Right-click on flames to remove and recharge"
 }

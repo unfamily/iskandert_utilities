@@ -267,17 +267,6 @@ public class StructureMonouseLoader {
                 "                    \"count\": 4\n" +
                 "                }\n" +
                 "            ]\n" +
-                "        },\n" +
-                "        {\n" +
-                "            \"id\": \"iska_utils-aggressive_example\",\n" +
-                "            \"place\": \"iska_utils-wither_grinder\",\n" +
-                "            \"aggressive\": true,\n" +
-                "            \"give\": [\n" +
-                "                {\n" +
-                "                    \"item\": \"minecraft:diamond\",\n" +
-                "                    \"count\": 1\n" +
-                "                }\n" +
-                "            ]\n" +
                 "        }\n" +
                 "    ]\n" +
                 "}";

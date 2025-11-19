@@ -1043,7 +1043,7 @@ public class ModMessages {
             // Get the server from single player or dedicated server
             net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
             if (server == null) return;
-            
+
             // Create and handle the packet on server thread
             server.execute(() -> {
                 try {
@@ -1058,6 +1058,42 @@ public class ModMessages {
             });
         } catch (Exception e) {
             // Ignore errors
+        }
+    }
+
+    /**
+     * Sends a Burning Brazier toggle packet to the server
+     * This toggles the auto-placement state for the Burning Brazier item
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendBurningBrazierTogglePacket() {
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Toggle the Burning Brazier auto-placement state
+                        boolean currentState = net.unfamily.iskautils.data.BurningBrazierData.getAutoPlacementEnabledFromPlayer(player);
+                        boolean newState = !currentState;
+
+                        net.unfamily.iskautils.data.BurningBrazierData.setAutoPlacementEnabledToPlayer(player, newState);
+
+                        // Send message to player
+                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.burning_brazier_auto_placement." +
+                                                     (newState ? "enabled" : "disabled")), true);
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to toggle Burning Brazier auto-placement: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send Burning Brazier toggle packet: {}", e.getMessage());
         }
     }
 
