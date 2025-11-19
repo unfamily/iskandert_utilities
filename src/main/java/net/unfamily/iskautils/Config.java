@@ -365,6 +365,23 @@ public class Config
 
     static {
         BUILDER.pop(); // End of dev category
+
+        // Category for Evil Things (fun but fiery!)
+        BUILDER.comment("Evil Things - Fun but Fiery!").push("evil_things");
+    }
+
+    private static final ModConfigSpec.BooleanValue BURNING_BRAZIER_SUPER_HOT = BUILDER
+            .comment("If true, makes the Burning Brazier extra hot - when placing a flame, set on fire the player!",
+                    "Also activates automatically if player has stage 'iska_utils_internal-flame_curse'")
+            .define("000_burning_brazier_super_hot", false);
+
+    private static final ModConfigSpec.BooleanValue BURNING_FLAME_SUPER_HOT = BUILDER
+            .comment("If true, makes Burning Flame blocks extra hot - mobs & players touching them will catch fire!",
+                    "Also activates automatically if world has stage 'iska_utils_internal-flame_curse'")
+            .define("001_burning_flame_super_hot", false);
+
+    static {
+        BUILDER.pop(); // End of evil_things category
     }
 
     static final ModConfigSpec SPEC = BUILDER.build();
@@ -419,6 +436,8 @@ public class Config
     public static String clientStructurePath;
     public static boolean acceptClientStructure;
     public static boolean allowClientStructurePlayerLike;
+    public static boolean burningBrazierSuperHot;
+    public static boolean burningFlameSuperHot;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -470,6 +489,10 @@ public class Config
         clientStructurePath = CLIENT_STRUCTURE_PATH.get();
         acceptClientStructure = ACCEPT_CLIENT_STRUCTURE.get();
         allowClientStructurePlayerLike = ALLOW_CLIENT_STRUCTURE_PLAYER_LIKE.get();
+
+        // Evil Things configuration
+        burningBrazierSuperHot = BURNING_BRAZIER_SUPER_HOT.get();
+        burningFlameSuperHot = BURNING_FLAME_SUPER_HOT.get();
         
         System.out.println("Structure Placer Machine config loaded: energyConsume=" + structurePlacerMachineEnergyConsume + 
             ", energyBuffer=" + structurePlacerMachineEnergyBuffer);

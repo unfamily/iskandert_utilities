@@ -16,6 +16,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.data.BurningBrazierData;
+import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.stage.StageRegistry;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
@@ -82,6 +84,18 @@ public class BurningBrazierItem extends Item {
         BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();
         level.setBlock(placePos, flameState, 3);
 
+        // If super hot mode is enabled OR player has flame curse stage, set the player on fire
+        boolean shouldBurn = Config.burningBrazierSuperHot;
+
+        if (!shouldBurn) {
+            // Check if player has the flame curse stage
+            shouldBurn = StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-flame_curse");
+        }
+
+        if (shouldBurn) {
+            serverPlayer.setRemainingFireTicks(5 * 20); // 5 seconds of fire (5 * 20 ticks)
+        }
+
         // Consume durability
         stack.setDamageValue(stack.getDamageValue() + 1);
 
@@ -128,6 +142,18 @@ public class BurningBrazierItem extends Item {
         // Place burning flame
         BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();
         level.setBlock(flamePos, flameState, 3);
+
+        // If super hot mode is enabled OR player has flame curse stage, set the player on fire
+        boolean shouldBurn = Config.burningBrazierSuperHot;
+
+        if (!shouldBurn) {
+            // Check if player has the flame curse stage
+            shouldBurn = StageRegistry.playerHasStage(player, "iska_utils_internal-flame_curse");
+        }
+
+        if (shouldBurn) {
+            player.setRemainingFireTicks(5 * 20); // 5 seconds of fire (5 * 20 ticks)
+        }
 
         // Consume durability (reduce by 1)
         stack.setDamageValue(stack.getDamageValue() + 1);

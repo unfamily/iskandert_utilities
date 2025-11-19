@@ -1,7 +1,10 @@
 package net.unfamily.iskautils.block;
 
+import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.stage.StageRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -67,6 +70,23 @@ public class BurningFlameBlock extends Block {
     }
 
     @Override
+    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+        if (!level.isClientSide && entity instanceof net.minecraft.world.entity.LivingEntity livingEntity) {
+            // Check if super hot mode is enabled OR world has the flame curse stage
+            boolean shouldBurn = Config.burningFlameSuperHot;
+
+            if (!shouldBurn) {
+                // Check if world has the flame curse stage
+                shouldBurn = StageRegistry.worldHasStage(level, "iska_utils_internal-flame_curse");
+            }
+
+            if (shouldBurn) {
+                livingEntity.setRemainingFireTicks(5 * 20); // 5 seconds of fire (5 * 20 ticks)
+            }
+        }
+    }
+
+    @Override
     protected void randomTick(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
         super.randomTick(state, level, pos, random);
 
@@ -88,4 +108,5 @@ public class BurningFlameBlock extends Block {
             }
         }
     }
+
 }
