@@ -78,6 +78,12 @@ public class ShopTeamCommand {
                     .then(Commands.argument("teamName", StringArgumentType.word())
                         .requires(source -> source.hasPermission(2)) // Admin only for other teams
                         .executes(ShopTeamCommand::inviteToTeam))))
+            .then(Commands.literal("cancelInvite")
+                .then(Commands.argument("player", EntityArgument.player())
+                    .executes(ShopTeamCommand::cancelInviteFromOwnTeam)
+                    .then(Commands.argument("teamName", StringArgumentType.word())
+                        .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                        .executes(ShopTeamCommand::cancelInviteFromTeam))))
             .then(Commands.literal("accept")
                 .then(Commands.argument("teamName", StringArgumentType.word())
                     .executes(ShopTeamCommand::acceptInvitation)))
@@ -1168,6 +1174,55 @@ public class ShopTeamCommand {
         return playerId.toString();
     }
     
+    private static int cancelInviteFromOwnTeam(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayer();
+
+        if (player == null) {
+            source.sendFailure(Component.literal("This command can only be executed by a player"));
+            return 0;
+        }
+
+        ServerPlayer invitee = EntityArgument.getPlayer(context, "player");
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        String teamName = teamManager.getPlayerTeam(player);
+
+        if (teamName == null) {
+            source.sendFailure(Component.literal("You are not in a team"));
+            return 0;
+        }
+
+        if (teamManager.cancelTeamInvitation(teamName, player, invitee)) {
+            source.sendSuccess(() -> Component.literal("Cancelled invitation for '" + invitee.getName().getString() + "' to join team '" + teamName + "'"), false);
+        } else {
+            source.sendFailure(Component.literal("Failed to cancel invitation. You might not be authorized or there might be no invitation."));
+        }
+
+        return 1;
+    }
+
+    private static int cancelInviteFromTeam(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayer();
+
+        if (player == null) {
+            source.sendFailure(Component.literal("This command can only be executed by a player"));
+            return 0;
+        }
+
+        ServerPlayer invitee = EntityArgument.getPlayer(context, "player");
+        String teamName = StringArgumentType.getString(context, "teamName");
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+
+        if (teamManager.cancelTeamInvitation(teamName, player, invitee)) {
+            source.sendSuccess(() -> Component.literal("Cancelled invitation for '" + invitee.getName().getString() + "' to join team '" + teamName + "'"), false);
+        } else {
+            source.sendFailure(Component.literal("Failed to cancel invitation. You might not be authorized or there might be no invitation."));
+        }
+
+        return 1;
+    }
+
     /**
      * Suggests available currency IDs for autocompletion
      */

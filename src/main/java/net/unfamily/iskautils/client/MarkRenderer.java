@@ -260,16 +260,15 @@ public class MarkRenderer {
             double actualDistance = mc.player.position().distanceTo(
                 new Vec3(nearestBlockPos.getX() + 0.5, nearestBlockPos.getY() + 0.5, nearestBlockPos.getZ() + 0.5));
             
-            String markerType = isNearestBillboard ? "Marker" : "Blocco";
-            
             // Per i blocchi evidenziati, verifichiamo ancora una volta che non siano aria
             if (!isNearestBillboard && mc.level.getBlockState(nearestBlockPos).isAir()) {
                 // Se il blocco è aria, mostra solo il testo senza distanza
                 mc.player.displayClientMessage(Component.literal(nearestText), true);
             } else {
                 // Altrimenti mostra il testo completo con distanza
+                String distanceText = String.format("%.1f", actualDistance) + "m";
                 mc.player.displayClientMessage(
-                    Component.literal(nearestText + " (" + markerType + ", " + String.format("%.1f", actualDistance) + "m)"), 
+                    Component.literal(nearestText + " (" + distanceText + ")"),
                     true);
             }
         }

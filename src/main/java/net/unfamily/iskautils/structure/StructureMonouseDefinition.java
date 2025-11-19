@@ -11,6 +11,7 @@ public class StructureMonouseDefinition {
     private String structureId;
     private String placeName;
     private List<GiveItem> giveItems = new ArrayList<>();
+    private boolean aggressive = false;
     
     /**
      * Represents an item to give to the player after placement
@@ -50,4 +51,7 @@ public class StructureMonouseDefinition {
     public List<GiveItem> getGiveItems() { return giveItems; }
     public void setGiveItems(List<GiveItem> giveItems) { this.giveItems = giveItems; }
     public void addGiveItem(GiveItem giveItem) { this.giveItems.add(giveItem); }
+
+    public boolean isAggressive() { return aggressive; }
+    public void setAggressive(boolean aggressive) { this.aggressive = aggressive; }
 } 

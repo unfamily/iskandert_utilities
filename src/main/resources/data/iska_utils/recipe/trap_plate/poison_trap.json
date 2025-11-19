@@ -7,12 +7,7 @@
   ],
   "key": {
    "A": {
-    "item": "minecraft:potion",
-    "components": {
-      "minecraft:potion_contents": {
-        "potion": "minecraft:poison"
-      }
-    }
+    "item": "minecraft:poisonous_potato"
    },
    "B": {
     "item": "iska_utils:plate_base_block"

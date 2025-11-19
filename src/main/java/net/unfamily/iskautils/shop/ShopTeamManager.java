@@ -46,6 +46,16 @@ public class ShopTeamManager {
             TEAM_DATA_NAME
         );
     }
+
+    /**
+     * Gets the team data (for internal use)
+     */
+    public TeamData getTeamDataInstance() {
+        return level.getDataStorage().computeIfAbsent(
+            new SavedData.Factory<>(TeamData::new, TeamData::load),
+            TEAM_DATA_NAME
+        );
+    }
     
     /**
      * Creates a new team
@@ -251,6 +261,14 @@ public class ShopTeamManager {
     }
     
     /**
+     * Cancels a team invitation (only leader or assistants can do this)
+     */
+    public boolean cancelTeamInvitation(String teamName, ServerPlayer canceller, ServerPlayer invitee) {
+        TeamData data = getTeamData();
+        return data.cancelTeamInvitation(teamName, canceller.getUUID(), invitee.getUUID());
+    }
+
+    /**
      * Renames a team
      */
     public boolean renameTeam(String oldTeamName, String newTeamName, ServerPlayer player) {
@@ -303,7 +321,7 @@ public class ShopTeamManager {
         private final Map<String, Team> teams = new HashMap<>();
         private final Map<UUID, Team> teamsById = new HashMap<>(); // Map for access by ID
         private final Map<UUID, String> playerTeams = new HashMap<>();
-        private final Map<UUID, Set<String>> playerInvitations = new HashMap<>();
+        private final Map<UUID, Map<String, Long>> playerInvitations = new HashMap<>(); // teamName -> timestamp
         
         public TeamData() {
         }
@@ -331,10 +349,10 @@ public class ShopTeamManager {
                 for (String playerIdStr : invitationsTag.getAllKeys()) {
                     try {
                         UUID playerId = UUID.fromString(playerIdStr);
-                        ListTag teamList = invitationsTag.getList(playerIdStr, 8); // String tag type
-                        Set<String> invitations = new HashSet<>();
-                        for (int i = 0; i < teamList.size(); i++) {
-                            invitations.add(teamList.getString(i));
+                        CompoundTag playerInvitationsTag = invitationsTag.getCompound(playerIdStr);
+                        Map<String, Long> invitations = new HashMap<>();
+                        for (String teamName : playerInvitationsTag.getAllKeys()) {
+                            invitations.put(teamName, playerInvitationsTag.getLong(teamName));
                         }
                         data.playerInvitations.put(playerId, invitations);
                     } catch (IllegalArgumentException e) {
@@ -357,12 +375,12 @@ public class ShopTeamManager {
             tag.put("teams", teamsTag);
             
             CompoundTag invitationsTag = new CompoundTag();
-            for (Map.Entry<UUID, Set<String>> entry : playerInvitations.entrySet()) {
-                ListTag teamList = new ListTag();
-                for (String teamName : entry.getValue()) {
-                    teamList.add(StringTag.valueOf(teamName));
+            for (Map.Entry<UUID, Map<String, Long>> entry : playerInvitations.entrySet()) {
+                CompoundTag playerInvitationsTag = new CompoundTag();
+                for (Map.Entry<String, Long> invitationEntry : entry.getValue().entrySet()) {
+                    playerInvitationsTag.putLong(invitationEntry.getKey(), invitationEntry.getValue());
                 }
-                invitationsTag.put(entry.getKey().toString(), teamList);
+                invitationsTag.put(entry.getKey().toString(), playerInvitationsTag);
             }
             tag.put("invitations", invitationsTag);
             
@@ -523,16 +541,16 @@ public class ShopTeamManager {
                 return false; // Invitee already in a team
             }
             
-            // Add invitation
-            playerInvitations.computeIfAbsent(invitee, k -> new HashSet<>()).add(teamName);
+            // Add invitation with timestamp
+            playerInvitations.computeIfAbsent(invitee, k -> new HashMap<>()).put(teamName, System.currentTimeMillis());
             setDirty();
             
             return true;
         }
         
         public boolean acceptTeamInvitation(UUID player, String teamName) {
-            Set<String> invitations = playerInvitations.get(player);
-            if (invitations == null || !invitations.contains(teamName)) {
+            Map<String, Long> invitations = playerInvitations.get(player);
+            if (invitations == null || !invitations.containsKey(teamName)) {
                 return false; // No invitation for this team
             }
             
@@ -554,15 +572,29 @@ public class ShopTeamManager {
             if (invitations.isEmpty()) {
                 playerInvitations.remove(player);
             }
-            
             setDirty();
             
             return true;
         }
         
         public List<String> getPlayerInvitations(UUID player) {
-            Set<String> invitations = playerInvitations.get(player);
-            return invitations != null ? new ArrayList<>(invitations) : new ArrayList<>();
+            Map<String, Long> invitations = playerInvitations.get(player);
+            if (invitations == null) {
+                return new ArrayList<>();
+            }
+
+            // Filter out expired invitations (older than 24 hours = 86400000 milliseconds)
+            long currentTime = System.currentTimeMillis();
+            long expiryTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+            List<String> validInvitations = new ArrayList<>();
+            for (Map.Entry<String, Long> entry : invitations.entrySet()) {
+                if (currentTime - entry.getValue() < expiryTime) {
+                    validInvitations.add(entry.getKey());
+                }
+            }
+
+            return validInvitations;
         }
         
         public boolean leaveTeam(UUID player) {
@@ -661,6 +693,32 @@ public class ShopTeamManager {
             return team != null && team.getAssistants().contains(player);
         }
         
+        public boolean cancelTeamInvitation(String teamName, UUID canceller, UUID invitee) {
+            Team team = teams.get(teamName);
+            if (team == null) {
+                return false; // Team doesn't exist
+            }
+
+            // Only leader or assistants can cancel invitations
+            if (!team.getLeader().equals(canceller) && !team.getAssistants().contains(canceller)) {
+                return false; // Canceller is not authorized
+            }
+
+            Map<String, Long> invitations = playerInvitations.get(invitee);
+            if (invitations == null || !invitations.containsKey(teamName)) {
+                return false; // No invitation to cancel
+            }
+
+            // Remove the invitation
+            invitations.remove(teamName);
+            if (invitations.isEmpty()) {
+                playerInvitations.remove(invitee);
+            }
+            setDirty();
+
+            return true;
+        }
+
         public boolean renameTeam(String oldTeamName, String newTeamName, UUID player) {
             Team team = teams.get(oldTeamName);
             if (team == null) {
@@ -691,6 +749,37 @@ public class ShopTeamManager {
             
 
             return true;
+        }
+
+        public void cleanupExpiredInvitations() {
+            long currentTime = System.currentTimeMillis();
+            long expiryTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+            boolean changed = false;
+            Iterator<Map.Entry<UUID, Map<String, Long>>> playerIterator = playerInvitations.entrySet().iterator();
+
+            while (playerIterator.hasNext()) {
+                Map.Entry<UUID, Map<String, Long>> playerEntry = playerIterator.next();
+                Map<String, Long> invitations = playerEntry.getValue();
+
+                Iterator<Map.Entry<String, Long>> invitationIterator = invitations.entrySet().iterator();
+                while (invitationIterator.hasNext()) {
+                    Map.Entry<String, Long> invitationEntry = invitationIterator.next();
+                    if (currentTime - invitationEntry.getValue() >= expiryTime) {
+                        invitationIterator.remove();
+                        changed = true;
+                    }
+                }
+
+                if (invitations.isEmpty()) {
+                    playerIterator.remove();
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                setDirty();
+            }
         }
     }
     

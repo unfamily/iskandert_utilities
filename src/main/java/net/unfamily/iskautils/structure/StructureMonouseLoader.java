@@ -175,6 +175,11 @@ public class StructureMonouseLoader {
                 definition.setPlaceName(structureId);
             }
             
+            // Parse aggressive flag
+            if (structureJson.has("aggressive")) {
+                definition.setAggressive(structureJson.get("aggressive").getAsBoolean());
+            }
+
             // Parse give items array
             if (structureJson.has("give") && structureJson.get("give").isJsonArray()) {
                 JsonArray giveArray = structureJson.getAsJsonArray("give");
@@ -243,7 +248,7 @@ public class StructureMonouseLoader {
         try {
             Path defaultMonousePath = configPath.resolve("default_monouse.json");
             
-            String defaultMonouseContent = 
+            String defaultMonouseContent =
                 "{\n" +
                 "    \"type\": \"iska_utils:structure_monouse_item\",\n" +
                 "    \"overwritable\": true,\n" +
@@ -251,6 +256,7 @@ public class StructureMonouseLoader {
                 "        {\n" +
                 "            \"id\": \"iska_utils-wither_grinder\",\n" +
                 "            \"place\": \"iska_utils-wither_grinder\",\n" +
+                "            \"aggressive\": false,\n" +
                 "            \"give\": [\n" +
                 "                {\n" +
                 "                    \"item\": \"minecraft:wither_skeleton_skull\",\n" +
@@ -259,6 +265,17 @@ public class StructureMonouseLoader {
                 "                {\n" +
                 "                    \"item\": \"minecraft:soul_sand\",\n" +
                 "                    \"count\": 4\n" +
+                "                }\n" +
+                "            ]\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"id\": \"iska_utils-aggressive_example\",\n" +
+                "            \"place\": \"iska_utils-wither_grinder\",\n" +
+                "            \"aggressive\": true,\n" +
+                "            \"give\": [\n" +
+                "                {\n" +
+                "                    \"item\": \"minecraft:diamond\",\n" +
+                "                    \"count\": 1\n" +
                 "                }\n" +
                 "            ]\n" +
                 "        }\n" +

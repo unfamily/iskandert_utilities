@@ -33,6 +33,7 @@ import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
 import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskautils.shop.ShopTeamManager;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ModWoodTypes;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
@@ -377,6 +378,8 @@ public class IskaUtils {
                 if (event.getServer().overworld() != null) {
                     PotionPlateBlock.cleanupCooldowns(event.getServer().overworld());
                 }
+                // Clean up expired team invitations
+                ShopTeamManager.getInstance(event.getServer().overworld()).getTeamDataInstance().cleanupExpiredInvitations();
             }
         }
     }

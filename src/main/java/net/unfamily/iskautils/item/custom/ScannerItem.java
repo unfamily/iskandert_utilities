@@ -53,7 +53,7 @@ public class ScannerItem extends Item {
     private static final String CLEAR_MARKERS_TAG = "ClearMarkers";
     private static final String ENERGY_TAG = "Energy"; 
     private boolean clear_markers=false;
-    private static final int TTL_MULTIPLIER = 5;
+    private static final int TTL_MULTIPLIER = 1;
     
     // Map to track active markers by scanner ID
     private static final Map<UUID, List<BlockPos>> ACTIVE_MARKERS = new HashMap<>();

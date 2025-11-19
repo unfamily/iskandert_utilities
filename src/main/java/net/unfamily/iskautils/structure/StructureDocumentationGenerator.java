@@ -216,36 +216,58 @@ kubejs/external_scripts/iska_utils_structures/
 
 ### 🎯 Pattern Format Explanation
 Patterns use a 3D array structure: **`[X][Y][Z]`**
-- **X-axis**: West ← → East positions
-- **Y-axis**: Bottom ↑ Top layers (height)  
-- **Z-axis**: North ↕ South strings (each character = 1 block)
+- **X-axis**: West ← → East positions (within each string)
+- **Y-axis**: Top ↓ Bottom layers (height) - viewed from above
+- **Z-axis**: North ↕ South rows (each array element = 1 row)
 
 ### Pattern Examples
 
-#### Simple 3x3 Platform
+#### Simple 3x3 Stone Platform
 ```json
 "pattern": [
-    [["AAA"], ["AAA"], ["AAA"]]
-]
+    // Y-axis layers:   Y0      Y1      Y2
+    [["AAA"], ["AAA"], ["AAA"]]  // Single solid layer of stone
+],
+"key": {
+    "A": {
+        "display": "minecraft:stone",
+        "alternatives": [{"block": "minecraft:stone"}]
+    },
+    "@": {
+        "display": "minecraft:air",
+        "alternatives": [{"block": "minecraft:air"}]
+    }
+}
 ```
 
-#### Multi-Layer Tower (4 layers high)
+#### Simple Tower with Center Marker
 ```json
 "pattern": [
-    [["AAA"], ["ABA"], ["AAA"]],  // Layer 1 (ground)
-    [["   "], [" C "], ["   "]],  // Layer 2 
-    [["   "], [" D "], ["   "]],  // Layer 3
-    [["   "], [" E "], ["   "]]   // Layer 4 (top)
-]
+    // Each array element = one Y-level column (center block only)
+    [[" @ "], [" A "], [" B "], [" C "]]   // Y=0:@, Y=1:Stone, Y=2:Iron, Y=3:Gold
+],
+"key": {
+    "A": {"display": "minecraft:stone", "alternatives": [{"block": "minecraft:stone"}]},
+    "B": {"display": "minecraft:iron_block", "alternatives": [{"block": "minecraft:iron_block"}]},
+    "C": {"display": "minecraft:gold_block", "alternatives": [{"block": "minecraft:gold_block"}]},
+    "@": {"display": "minecraft:air", "alternatives": [{"block": "minecraft:air"}]}
+}
 ```
 
-#### Complex Structure with Center Marker
+#### 5x5 House Foundation
 ```json
 "pattern": [
-    [["AAAAA"], ["A   A"], ["A @ A"], ["A   A"], ["AAAAA"]],  // 5x5 foundation
-    [["BBBBB"], ["B   B"], ["B   B"], ["B   B"], ["BBBBB"]],  // Walls
-    [["CCCCC"], ["CCCCC"], ["CCCCC"], ["CCCCC"], ["CCCCC"]]   // Roof
-]
+    [["CCCCC"],["WWWWW"],["WWWWW"]], 
+    [["CCCCC"],["W   W"],["W   W"]], 
+    [["CC@CC"],["W   W"],["W   W"]], 
+    [["CCCCC"],["W   W"],["W   W"]],
+    [["CCCCC"],["WWWWW"],["WWWWW"]]
+],
+"key": {
+    "C": {"display": "minecraft:cobblestone", "alternatives": [{"block": "minecraft:cobblestone"}]},
+    "W": {"display": "minecraft:oak_planks", "alternatives": [{"block": "minecraft:oak_planks"}]},
+    "@": {"display": "cobblestone", "alternatives": [{"block": "minecraft:cobblestone"}]}
+}
 ```
 
 ### 🔤 Special Pattern Characters
@@ -511,6 +533,23 @@ The system processes replacements in this order:
 - **`id`**: Structure ID to reference (must match existing structure)
 - **`place`**: Which structure definition to actually place
 - **`give`**: Array of items given to player on activation
+- **`aggressive`**: Force placement ignoring all existing blocks (default: false)
+
+### 🎯 Aggressive Placement
+When `aggressive` is **true**, the monouse item will place the structure **regardless of what blocks are already there**:
+- ✅ **Ignores all existing blocks** (unlike `can_force` which only replaces specific blocks)
+- ✅ **Always places the structure** even in occupied spaces
+- ✅ **Perfect for guaranteed placement** in any situation
+- ⚠️ **May destroy existing builds** - use with caution
+
+```json
+{
+    "id": "my_mod-aggressive_structure",
+    "place": "my_mod-structure",
+    "aggressive": true,
+    "give": [{"item": "minecraft:diamond", "count": 1}]
+}
+```
 
 ### 🎮 How Monouse Items Work
 1. Player right-clicks with monouse item
