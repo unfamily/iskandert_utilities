@@ -698,7 +698,7 @@ public class MacroLoader {
             "        {\"execute\": \"kubejs reload server-scripts\"},\n" +
             "        {\"execute\": \"reload\"},\n" +
             "        {\"delay\": 20},\n" +
-            "        {\"execute\": \"custommachinery reload\"}\n" +
+//            "        {\"execute\": \"custommachinery reload\"}\n" +
             "      ]\n" +
             "    }\n" +
             "  ]\n" +

@@ -1,5 +1,11 @@
 {
   "type": "minecraft:crafting_shaped",
+  "conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "iska_utils:iska_utils_freeze"
+    }
+  ],
   "pattern": [
     " C ",
     "CAC",
