@@ -138,6 +138,11 @@ public class ModItems {
     // Mining Equitizer - Custom item that negates flying mining speed penalty
     public static final DeferredItem<Item> MINING_EQUITIZER = ITEMS.register("mining_equitizer",
             () -> new MiningEquitizer(new Item.Properties().stacksTo(1)));
+    
+    // Dolly - Tool for picking up and moving blocks with their contents
+    // Has 512 durability, works on blocks up to iron mining level
+    public static final DeferredItem<Item> DOLLY = ITEMS.register("dolly",
+            () -> new net.unfamily.iskautils.item.custom.DollyItem(new Item.Properties().stacksTo(1)));
             
     // ===== RUBBER TREE ITEMS =====
     
@@ -342,6 +347,10 @@ public class ModItems {
     // Burning Flame Block Item (not indexed in creative tab)
     public static final DeferredItem<Item> BURNING_FLAME = ITEMS.register("burning_flame",
             () -> new BlockItem(ModBlocks.BURNING_FLAME.get(), ITEM_PROPERTIES));
+
+    // ===== DEEP DRAWERS =====
+    public static final DeferredItem<Item> DEEP_DRAWERS = ITEMS.register("deep_drawers",
+            () -> new net.unfamily.iskautils.item.custom.DeepDrawersBlockItem(ModBlocks.DEEP_DRAWERS.get(), ITEM_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

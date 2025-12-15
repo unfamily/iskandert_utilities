@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "  B",
+    "  C",
+    "DAC"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:storage_blocks/rubber"
+    },
+    "B": {
+      "tag": "c:ingots/plastic"
+    },
+    "C": {
+      "tag": "c:bars/iron"
+    },
+    "D": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "result": {
+    "id": "iska_utils:dolly",
+    "count": 1
+  }
+} 

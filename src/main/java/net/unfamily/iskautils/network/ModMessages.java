@@ -1060,7 +1060,50 @@ public class ModMessages {
             // Ignore errors
         }
     }
+    
+    /**
+     * Sends a Deep Drawers scroll packet to the server
+     * Updates the scroll offset for the Deep Drawers GUI
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendDeepDrawersScrollPacket(BlockPos pos, int scrollOffset) {
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
 
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Create and handle the packet
+                        new net.unfamily.iskautils.network.packet.DeepDrawersScrollC2SPacket(pos, scrollOffset).handle(player);
+                    }
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            });
+        } catch (Exception e) {
+            // Ignore errors
+        }
+    }
+
+    /**
+     * Sends a Deep Drawers sync slots packet to a player (Server to Client)
+     * Synchronizes the visible slot contents after scrolling
+     */
+    public static void sendToPlayer(net.unfamily.iskautils.network.packet.DeepDrawersSyncSlotsS2CPacket packet, ServerPlayer player) {
+        try {
+            // Direct call for single player compatibility
+            // Execute on client thread to ensure GUI is accessible
+            net.minecraft.client.Minecraft.getInstance().execute(() -> packet.handle());
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send Deep Drawers sync packet to player: {}", e.getMessage());
+        }
+    }
+    
     /**
      * Sends a Burning Brazier toggle packet to the server
      * This toggles the auto-placement state for the Burning Brazier item

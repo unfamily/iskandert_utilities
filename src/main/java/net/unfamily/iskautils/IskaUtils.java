@@ -224,6 +224,8 @@ public class IskaUtils {
                           net.unfamily.iskautils.client.gui.ShopScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.AUTO_SHOP_MENU.get(),
                           net.unfamily.iskautils.client.gui.AutoShopScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.DEEP_DRAWERS_MENU.get(),
+                          net.unfamily.iskautils.client.gui.DeepDrawersScreen::new);
         }
     }
 

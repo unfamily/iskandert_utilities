@@ -81,6 +81,12 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(AutoShopBlockEntity::new, ModBlocks.AUTO_SHOP.get())
                             .build(null));
 
+    // Deep Drawers Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DeepDrawersBlockEntity>> DEEP_DRAWERS_BE =
+            BLOCK_ENTITIES.register("deep_drawers",
+                    () -> BlockEntityType.Builder.of(DeepDrawersBlockEntity::new, ModBlocks.DEEP_DRAWERS.get())
+                            .build(null));
+
     /**
      * Registra tutte le entità blocco
      */
@@ -190,6 +196,18 @@ public class ModBlockEntities {
             
             // Shop Block non registra capability IItemHandler per prevenire interazioni con hopper
             // Il negozio funziona solo tramite GUI diretta del giocatore
+            
+            // Register item handler capability for Deep Drawers
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    DEEP_DRAWERS_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof DeepDrawersBlockEntity deepDrawersEntity) {
+                            return deepDrawersEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
         }
     }
 } 

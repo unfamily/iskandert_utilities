@@ -377,10 +377,10 @@
   "block.iska_utils.scan_block_red": "Blocco Scan (Rosso)",
   "block.iska_utils.scan_block_green": "Blocco Scan (Verde)",
   "gui.iska_utils.structure_placer_machine.redstone_mode": "Modalità Redstone",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.none": "Nessuna",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.low": "Bassa",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.high": "Alta",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.pulse": "Impulso",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.none": "Modalità Redstone: Ignora",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.low": "Modalità Redstone: Bassa",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.high": "Modalità Redstone: Alta",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.pulse": "Modalità Redstone: Impulso",
 
   "item.iska_utils.blueprint.vertex1_saved": "Vertice 1 salvato: %s",
   "item.iska_utils.blueprint.vertex2_saved": "Vertice 2 salvato: %s", 
@@ -451,5 +451,20 @@
   "block.iska_utils.burning_flame": "Fiamma Bruciante",
   "tooltip.iska_utils.burning_brazier.desc0": "§fEmette una fiamma talmente tanto forte che illuminerà il tuo cammino permanentemente",
   "tooltip.iska_utils.burning_brazier.desc1": "§7Premi §f%s §7per attivare/disattivare il piazzamento automatico delle fiamme",
-  "tooltip.iska_utils.burning_brazier.desc2": "§7Tasto destro sulle fiamme per rimuoverle e ricaricare"
+  "tooltip.iska_utils.burning_brazier.desc2": "§7Tasto destro sulle fiamme per rimuoverle e ricaricare",
+
+  "block.iska_utils.deep_drawers": "Cassettiera Profonda",
+  "item.iska_utils.deep_drawers": "Cassettiera Profonda",
+  "container.iska_utils.deep_drawers": "Cassettiera Profonda",
+  "tooltip.iska_utils.deep_drawers.desc0": "Una cassettiera molto capiente ma accetta solo oggetti normalmente non impilabili",
+  "message.iska_utils.deep_drawers.cannot_break": "§cNon puoi rompere la Cassettiera Profonda se contiene oggetti!",
+
+  "item.iska_utils.dolly": "Carrello",
+  "tooltip.iska_utils.dolly.contains": "§7Contiene: §f%s",
+  "tooltip.iska_utils.dolly.empty": "§7Vuoto - Shift+Click per raccogliere un blocco",
+  "message.iska_utils.dolly.indestructible": "§cQuesto blocco non può essere raccolto (indistruttibile)!",
+  "message.iska_utils.dolly.too_hard": "§cQuesto blocco è troppo duro per essere raccolto (richiede strumenti migliori)!",
+  "message.iska_utils.dolly.not_allowed": "§cQuesto blocco non è permesso dalla configurazione del Carrello!",
+  "message.iska_utils.dolly.picked_up": "§aRaccolto: §f%s",
+  "message.iska_utils.dolly.placed": "§aPiazzato: §f%s"
 }

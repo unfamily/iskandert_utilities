@@ -27,6 +27,7 @@ public class ModCreativeModeTabs {
                             .displayItems((pParameters, pOutput) -> {
                                 // Custom Items
                                 pOutput.accept(ModItems.SWISS_WRENCH.get());
+                                pOutput.accept(ModItems.DOLLY.get());
                                 pOutput.accept(ModItems.VECTOR_CHARM.get());
                                 pOutput.accept(ModItems.PORTABLE_DISLOCATOR.get());
                                 pOutput.accept(ModItems.BASE_MODULE.get());
@@ -53,6 +54,9 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_BLOCK.get());
                                 pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
                                 pOutput.accept(ModItems.PLASTIC_INGOT.get());
+
+                                // Deep Drawers
+                                pOutput.accept(ModItems.DEEP_DRAWERS.get());
 
                                 // Shops
                                 pOutput.accept(ModItems.SHOP.get());
@@ -141,7 +145,6 @@ public class ModCreativeModeTabs {
                                 // Structure System
                                 pOutput.accept(ModItems.STRUCTURE_PLACER_MACHINE.get());
                                 pOutput.accept(ModItems.STRUCTURE_SAVER_MACHINE.get());
-
                                 pOutput.accept(ModItems.STRUCTURE_PLACER.get());
                                 pOutput.accept(ModItems.BLUEPRINT.get());
 

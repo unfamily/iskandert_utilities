@@ -39,4 +39,7 @@ public class ModMenuTypes {
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<AutoShopMenu>> AUTO_SHOP_MENU =
         MENUS.register("auto_shop_menu", () -> new MenuType<>(AutoShopMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<DeepDrawersMenu>> DEEP_DRAWERS_MENU =
+        MENUS.register("deep_drawers_menu", () -> new MenuType<>(DeepDrawersMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+    
 } 

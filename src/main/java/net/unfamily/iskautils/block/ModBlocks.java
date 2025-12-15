@@ -384,6 +384,17 @@ public class ModBlocks {
     public static final DeferredBlock<BurningFlameBlock> BURNING_FLAME = BLOCKS.register("burning_flame",
             () -> new BurningFlameBlock(BURNING_FLAME_PROPERTIES));
 
+    // ===== DEEP DRAWERS =====
+    private static final BlockBehaviour.Properties DEEP_DRAWERS_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL)
+            .strength(5.0f, 6.0f)
+            .sound(SoundType.COPPER)
+            .requiresCorrectToolForDrops();
+
+    // Deep Drawers Block (massive storage for non-stackable items)
+    public static final DeferredBlock<DeepDrawersBlock> DEEP_DRAWERS = BLOCKS.register("deep_drawers",
+            () -> new DeepDrawersBlock(DEEP_DRAWERS_PROPERTIES));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

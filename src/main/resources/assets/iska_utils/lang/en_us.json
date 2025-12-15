@@ -360,10 +360,10 @@
   "gui.iska_utils.structure_placer_machine.none_selected": "None",
   "gui.iska_utils.structure_placer_machine.preview_enabled": "Preview enabled",
   "gui.iska_utils.structure_placer_machine.redstone_mode": "Redstone Mode",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.none": "None",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.low": "Low",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.high": "High",
-  "gui.iska_utils.structure_placer_machine.redstone_mode.pulse": "Pulse",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.none": "Redstone Mode: Ignore",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.low": "Redstone Mode: Low",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.high": "Redstone Mode: High",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.pulse": "Redstone Mode: Pulse",
   
   "block.iska_utils.scan_block_red": "Scan Block (Red)",
   "block.iska_utils.scan_block_green": "Scan Block (Green)",
@@ -455,5 +455,20 @@
   "block.iska_utils.burning_flame": "Burning Flame",
   "tooltip.iska_utils.burning_brazier.desc0": "§fEmits a fire so strong that it will illuminate your path permanently",
   "tooltip.iska_utils.burning_brazier.desc1": "§7Press §f%s §7to toggle automatic flame placement",
-  "tooltip.iska_utils.burning_brazier.desc2": "§7Right-click on flames to remove and recharge"
+  "tooltip.iska_utils.burning_brazier.desc2": "§7Right-click on flames to remove and recharge",
+
+  "block.iska_utils.deep_drawers": "Deep Drawers",
+  "item.iska_utils.deep_drawers": "Deep Drawers",
+  "container.iska_utils.deep_drawers": "Deep Drawers",
+  "tooltip.iska_utils.deep_drawers.desc0": "A very large storage block that can only contain non-stackable items",
+  "message.iska_utils.deep_drawers.cannot_break": "§cCannot break Deep Drawers while it contains items!",
+
+  "item.iska_utils.dolly": "Dolly",
+  "tooltip.iska_utils.dolly.contains": "§7Contains: §f%s",
+  "tooltip.iska_utils.dolly.empty": "§7Empty - Shift+Click to pick up a block",
+  "message.iska_utils.dolly.indestructible": "§cThis block cannot be picked up (indestructible)!",
+  "message.iska_utils.dolly.too_hard": "§cThis block is too hard to pick up (requires better tools)!",
+  "message.iska_utils.dolly.not_allowed": "§cThis block is not allowed by the Dolly configuration!",
+  "message.iska_utils.dolly.picked_up": "§aPicked up: §f%s",
+  "message.iska_utils.dolly.placed": "§aPlaced: §f%s"
 }

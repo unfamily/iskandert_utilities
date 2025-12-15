@@ -19,6 +19,7 @@
     "iska_utils:structure_saver_machine",
     "iska_utils:structure_placer_machine",
     "iska_utils:auto_shop",
-    "iska_utils:shop"
+    "iska_utils:shop",
+    "iska_utils:deep_drawers"
   ]
 } 
