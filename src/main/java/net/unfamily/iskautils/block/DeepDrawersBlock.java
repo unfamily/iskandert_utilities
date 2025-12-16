@@ -115,8 +115,13 @@ public class DeepDrawersBlock extends BaseEntityBlock {
             if (entity instanceof DeepDrawersBlockEntity deepDrawers) {
                 // Open Deep Drawers GUI
                 serverPlayer.openMenu(new net.minecraft.world.SimpleMenuProvider(
-                    (containerId, playerInventory, playerEntity) -> 
-                        new net.unfamily.iskautils.client.gui.DeepDrawersMenu(containerId, playerInventory, deepDrawers),
+                    (containerId, playerInventory, playerEntity) -> {
+                        net.unfamily.iskautils.client.gui.DeepDrawersMenu menu = 
+                            new net.unfamily.iskautils.client.gui.DeepDrawersMenu(containerId, playerInventory, deepDrawers);
+                        // Send all slots to client when menu opens
+                        menu.sendAllSlotsToClient(serverPlayer);
+                        return menu;
+                    },
                     Component.translatable("container.iska_utils.deep_drawers")
                 ), pos);
                 return net.minecraft.world.InteractionResult.CONSUME;

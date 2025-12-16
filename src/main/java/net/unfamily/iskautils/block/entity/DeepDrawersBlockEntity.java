@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.client.gui.DeepDrawersMenu;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -34,6 +35,9 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     
     // Cached slot count from config
     private int maxSlots;
+    
+    // Scroll offset for GUI (persisted in NBT)
+    private int scrollOffset = 0;
     
     // Custom item handler for hopper/pipe interaction
     private final IItemHandler itemHandler = new DeepDrawersItemHandler();
@@ -101,12 +105,42 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         return new HashMap<>(storage);
     }
     
+    /**
+     * Gets the current scroll offset for the GUI
+     * @return the scroll offset
+     */
+    public int getScrollOffset() {
+        return scrollOffset;
+    }
+    
+    /**
+     * Sets the scroll offset for the GUI and marks the block entity as changed
+     * @param offset the new scroll offset
+     */
+    public void setScrollOffset(int offset) {
+        if (offset < 0) {
+            offset = 0;
+        }
+        int maxOffset = Math.max(0, maxSlots - DeepDrawersMenu.VISIBLE_SLOTS);
+        if (offset > maxOffset) {
+            offset = maxOffset;
+        }
+        
+        if (this.scrollOffset != offset) {
+            this.scrollOffset = offset;
+            setChanged();
+        }
+    }
+    
     @Override
     protected void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.saveAdditional(tag, provider);
         
         // Save max slots (in case config changes)
         tag.putInt("MaxSlots", this.maxSlots);
+        
+        // Save scroll offset
+        tag.putInt("ScrollOffset", this.scrollOffset);
         
         // Save storage using ListTag format (like ItemStackHandler does internally)
         ListTag itemsList = new ListTag();
@@ -131,6 +165,12 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         this.maxSlots = tag.getInt("MaxSlots");
         if (this.maxSlots <= 0) {
             this.maxSlots = Config.deepDrawersSlotCount;
+        }
+        
+        // Load scroll offset
+        this.scrollOffset = tag.getInt("ScrollOffset");
+        if (this.scrollOffset < 0) {
+            this.scrollOffset = 0;
         }
         
         // Clear and load storage

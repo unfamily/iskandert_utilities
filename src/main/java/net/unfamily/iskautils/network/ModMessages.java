@@ -1067,26 +1067,33 @@ public class ModMessages {
      */
     @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawersScrollPacket(BlockPos pos, int scrollOffset) {
+        LOGGER.info("Client: Sending DeepDrawersScrollPacket: pos={}, offset={}", pos, scrollOffset);
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
             net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
-            if (server == null) return;
+            if (server == null) {
+                LOGGER.warn("Client: Cannot send DeepDrawersScrollPacket: server is null");
+                return;
+            }
 
             // Create and handle the packet on server thread
             server.execute(() -> {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
+                        LOGGER.info("Client: Executing DeepDrawersScrollPacket on server thread: pos={}, offset={}", pos, scrollOffset);
                         // Create and handle the packet
                         new net.unfamily.iskautils.network.packet.DeepDrawersScrollC2SPacket(pos, scrollOffset).handle(player);
+                    } else {
+                        LOGGER.warn("Client: Cannot send DeepDrawersScrollPacket: player is null");
                     }
                 } catch (Exception e) {
-                    // Ignore errors
+                    LOGGER.error("Client: Error executing DeepDrawersScrollPacket", e);
                 }
             });
         } catch (Exception e) {
-            // Ignore errors
+            LOGGER.error("Client: Error in sendDeepDrawersScrollPacket", e);
         }
     }
 

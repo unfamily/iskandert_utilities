@@ -143,6 +143,11 @@ public class ModItems {
     // Has 512 durability, works on blocks up to iron mining level
     public static final DeferredItem<Item> DOLLY = ITEMS.register("dolly",
             () -> new net.unfamily.iskautils.item.custom.DollyItem(new Item.Properties().stacksTo(1)));
+    
+    // Hard Dolly - Tool for picking up and moving blocks with their contents
+    // Has 4096 durability, works on blocks up to iron mining level, separate config from regular dolly
+    public static final DeferredItem<Item> DOLLY_HARD = ITEMS.register("dolly_hard",
+            () -> new net.unfamily.iskautils.item.custom.HardDollyItem(new Item.Properties().stacksTo(1)));
             
     // ===== RUBBER TREE ITEMS =====
     

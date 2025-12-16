@@ -232,7 +232,7 @@
   "item.iska_utils.scanner.tooltip.no_target": "Nessun target impostato",
   "item.iska_utils.scanner.tooltip.chip_info0": "Può essere usato con un Chip Scanner nella mano secondaria per trasferire il target (Shift+click destro senza puntare un target)",
   "item.iska_utils.scanner.tooltip.chip_info1": "(Lo scanner deve avere un po' di energia e deve avere già un target impostato)",
-  "item.iska_utils.scanner.tooltip.chip_info2": "(Lo scanner deve avere già un target impostato)",
+  "item.iska_utils.scanner.tooltip.chdollyip_info2": "(Lo scanner deve avere già un target impostato)",
   "item.iska_utils.scanner.tooltip.instruction0": "Shift+click destro su un blocco o un mob per salvarlo",
   "item.iska_utils.scanner.tooltip.instruction1": "Click destro per cancellare i marker",
   "item.iska_utils.scanner.max_markers_reached": "Numero massimo di marker raggiunto: %d",
@@ -459,12 +459,21 @@
   "tooltip.iska_utils.deep_drawers.desc0": "Una cassettiera molto capiente ma accetta solo oggetti normalmente non impilabili",
   "message.iska_utils.deep_drawers.cannot_break": "§cNon puoi rompere la Cassettiera Profonda se contiene oggetti!",
 
-  "item.iska_utils.dolly": "Carrello",
+  "item.iska_utils.dolly": "Dolly",
   "tooltip.iska_utils.dolly.contains": "§7Contiene: §f%s",
   "tooltip.iska_utils.dolly.empty": "§7Vuoto - Shift+Click per raccogliere un blocco",
   "message.iska_utils.dolly.indestructible": "§cQuesto blocco non può essere raccolto (indistruttibile)!",
   "message.iska_utils.dolly.too_hard": "§cQuesto blocco è troppo duro per essere raccolto (richiede strumenti migliori)!",
-  "message.iska_utils.dolly.not_allowed": "§cQuesto blocco non è permesso dalla configurazione del Carrello!",
+  "message.iska_utils.dolly.not_allowed": "§cQuesto blocco non è permesso dalla configurazione del Dolly!",
   "message.iska_utils.dolly.picked_up": "§aRaccolto: §f%s",
-  "message.iska_utils.dolly.placed": "§aPiazzato: §f%s"
+  "message.iska_utils.dolly.placed": "§aPiazzato: §f%s",
+
+  "item.iska_utils.dolly_hard": "Dolly Rinforzato",
+  "tooltip.iska_utils.dolly_hard.contains": "§7Contiene: §f%s",
+  "tooltip.iska_utils.dolly_hard.empty": "§7Vuoto - Shift+Click per raccogliere un blocco",
+  "message.iska_utils.dolly_hard.indestructible": "§cQuesto blocco non può essere raccolto (indistruttibile)!",
+  "message.iska_utils.dolly_hard.too_hard": "§cQuesto blocco è troppo duro per essere raccolto (richiede strumenti migliori)!",
+  "message.iska_utils.dolly_hard.not_allowed": "§cQuesto blocco non è permesso dalla configurazione del Dolly Rinforzato!",
+  "message.iska_utils.dolly_hard.picked_up": "§aRaccolto: §f%s",
+  "message.iska_utils.dolly_hard.placed": "§aPiazzato: §f%s"
 }

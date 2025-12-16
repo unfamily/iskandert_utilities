@@ -8,6 +8,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.network.ModMessages;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Screen for the Deep Drawers GUI
@@ -19,6 +21,8 @@ import org.jetbrains.annotations.NotNull;
  * - Drag-to-scroll support
  */
 public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeepDrawersScreen.class);
     
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer.png");
@@ -60,8 +64,22 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     @Override
     protected void init() {
         super.init();
-        // Load current scroll offset from menu
+        // Load current scroll offset from menu (synced from server)
+        // This ensures the scrollbar starts at the saved position
         this.scrollOffset = menu.getScrollOffset();
+        LOGGER.debug("DeepDrawersScreen.init: Initialized scrollOffset from menu: {}", this.scrollOffset);
+    }
+    
+    @Override
+    public void containerTick() {
+        super.containerTick();
+        // Sync scroll offset from menu in case it was updated from server
+        // This handles the case where ContainerData syncs after init()
+        int menuOffset = menu.getScrollOffset();
+        if (menuOffset != this.scrollOffset) {
+            LOGGER.debug("DeepDrawersScreen.containerTick: Syncing scrollOffset from menu: {} -> {}", this.scrollOffset, menuOffset);
+            this.scrollOffset = menuOffset;
+        }
     }
     
     @Override
@@ -132,8 +150,11 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     @Override
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         // Sync scroll offset from menu (in case it was updated by server via ContainerData)
-        if (this.scrollOffset != menu.getScrollOffset()) {
-            this.scrollOffset = menu.getScrollOffset();
+        // This ensures the scrollbar position is always up-to-date
+        int menuOffset = menu.getScrollOffset();
+        if (menuOffset != this.scrollOffset) {
+            LOGGER.debug("DeepDrawersScreen.render: Syncing scrollOffset from menu: {} -> {}", this.scrollOffset, menuOffset);
+            this.scrollOffset = menuOffset;
         }
         
         super.render(guiGraphics, mouseX, mouseY, partialTick);
@@ -202,9 +223,9 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         int guiY = this.topPos;
         
         int maxScrollOffset = menu.getMaxScrollOffset();
-        if (maxScrollOffset > 0) {
-            double scrollRatio = (double) scrollOffset / maxScrollOffset;
-            int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+            if (maxScrollOffset > 0) {
+                double scrollRatio = (double) scrollOffset / maxScrollOffset;
+                int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
             
             if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
                 mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
@@ -230,8 +251,8 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         int guiX = this.leftPos;
         int guiY = this.topPos;
         
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + SCROLLBAR_Y && mouseY < guiY + SCROLLBAR_Y + SCROLLBAR_HEIGHT) {
+            if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+                mouseY >= guiY + SCROLLBAR_Y && mouseY < guiY + SCROLLBAR_Y + SCROLLBAR_HEIGHT) {
             
             // Calculate new scroll position based on click
             float clickRatio = (float)(mouseY - (guiY + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT;

@@ -214,6 +214,38 @@ public class Config
                             "#minecraft:needs_iron_tool"
                     ),
                     obj -> obj instanceof String);
+    
+    // Hard Dolly Configuration (in general_utilities category)
+    // Hard Dolly has no limits - can pick up any block except indestructible ones (hardness < 0)
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> HARD_DOLLY_WHITELIST = BUILDER
+            .comment("List of block tags/IDs that can be picked up by the Hard Dolly",
+                    "Tags starting with # are block tags (e.g. #minecraft:mineable/pickaxe)",
+                    "Blocks without # are block IDs (e.g. minecraft:chest, minecraft:furnace)",
+                    "Empty list (default) means ALL blocks are allowed (except indestructible ones with hardness < 0)",
+                    "If whitelist is not empty, only blocks matching these tags/IDs will be allowed")
+            .defineList("510_hard_dolly_whitelist", 
+                       java.util.Collections.emptyList(), 
+                       obj -> obj instanceof String);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> HARD_DOLLY_BLACKLIST = BUILDER
+            .comment("List of block tags/IDs that are explicitly forbidden from being picked up by the Hard Dolly",
+                    "This blacklist ALWAYS takes priority over the whitelist",
+                    "Tags starting with # are block tags, blocks without # are block IDs",
+                    "Empty list (default) means no blocks are blacklisted",
+                    "Examples: minecraft:bedrock, minecraft:end_portal_frame, #c:ores")
+            .defineList("511_hard_dolly_blacklist",
+                    java.util.Collections.emptyList(),
+                    obj -> obj instanceof String);
+    
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> HARD_DOLLY_ALLOWED_MINING_LEVEL_TAGS = BUILDER
+            .comment("List of block tags that represent allowed mining levels for the Hard Dolly",
+                    "Empty list (default) means NO mining level check - all blocks allowed except indestructible ones (hardness < 0)",
+                    "Tags must start with #",
+                    "If not empty, only blocks matching these mining level tags can be picked up",
+                    "Examples: #minecraft:mineable/pickaxe, #minecraft:needs_stone_tool, #minecraft:needs_iron_tool")
+            .defineList("512_hard_dolly_allowed_mining_level_tags",
+                    java.util.Collections.emptyList(),
+                    obj -> obj instanceof String);
             
     static {
         BUILDER.pop(); // End of general_utilities category
@@ -508,6 +540,9 @@ public class Config
     public static java.util.List<String> dollyWhitelist;
     public static java.util.List<String> dollyBlacklist;
     public static java.util.List<String> dollyAllowedMiningLevelTags;
+    public static java.util.List<String> hardDollyWhitelist;
+    public static java.util.List<String> hardDollyBlacklist;
+    public static java.util.List<String> hardDollyAllowedMiningLevelTags;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -573,6 +608,11 @@ public class Config
         dollyWhitelist = new java.util.ArrayList<>(DOLLY_WHITELIST.get());
         dollyBlacklist = new java.util.ArrayList<>(DOLLY_BLACKLIST.get());
         dollyAllowedMiningLevelTags = new java.util.ArrayList<>(DOLLY_ALLOWED_MINING_LEVEL_TAGS.get());
+        
+        // Hard Dolly configuration
+        hardDollyWhitelist = new java.util.ArrayList<>(HARD_DOLLY_WHITELIST.get());
+        hardDollyBlacklist = new java.util.ArrayList<>(HARD_DOLLY_BLACKLIST.get());
+        hardDollyAllowedMiningLevelTags = new java.util.ArrayList<>(HARD_DOLLY_ALLOWED_MINING_LEVEL_TAGS.get());
 
         // If the energy required is 0, the energy stored is 0 automatically
         if (electricTreetapEnergyConsume <= 0) {

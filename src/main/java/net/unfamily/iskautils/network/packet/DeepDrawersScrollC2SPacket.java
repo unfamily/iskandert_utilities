@@ -33,33 +33,34 @@ public class DeepDrawersScrollC2SPacket {
      * Handles the packet on the server
      */
     public void handle(ServerPlayer player) {
-        if (player == null || player.level() == null) return;
+        if (player == null || player.level() == null) {
+            LOGGER.warn("DeepDrawersScrollC2SPacket.handle: player or level is null");
+            return;
+        }
         
         // Get the BlockEntity
         var blockEntity = player.level().getBlockEntity(pos);
-        if (!(blockEntity instanceof DeepDrawersBlockEntity deepDrawers)) return;
-        
-        // Verify the player has the correct menu open
-        if (!(player.containerMenu instanceof DeepDrawersMenu menu)) return;
-        
-        // Update the scroll offset in the menu
-        // This will update the viewHandler on the server
-        menu.setScrollOffset(scrollOffset);
-        
-        // Get the visible slots content from the item handler
-        IItemHandler itemHandler = deepDrawers.getItemHandler();
-        List<ItemStack> visibleStacks = new ArrayList<>();
-        
-        for (int i = 0; i < DeepDrawersMenu.VISIBLE_SLOTS; i++) {
-            int actualSlot = scrollOffset + i;
-            ItemStack stack = itemHandler.getStackInSlot(actualSlot);
-            visibleStacks.add(stack.copy());
+        if (!(blockEntity instanceof DeepDrawersBlockEntity deepDrawers)) {
+            LOGGER.warn("DeepDrawersScrollC2SPacket.handle: BlockEntity is not DeepDrawersBlockEntity at pos {}", pos);
+            return;
         }
         
-        // Send the updated slots back to the client
-        ModMessages.sendToPlayer(new DeepDrawersSyncSlotsS2CPacket(scrollOffset, visibleStacks), player);
+        // Verify the player has the correct menu open
+        if (!(player.containerMenu instanceof DeepDrawersMenu menu)) {
+            LOGGER.warn("DeepDrawersScrollC2SPacket.handle: Player menu is not DeepDrawersMenu. Menu type: {}", 
+                       player.containerMenu != null ? player.containerMenu.getClass().getName() : "null");
+            return;
+        }
         
-        LOGGER.debug("Scroll packet handled: offset={}, sent {} stacks to client", scrollOffset, visibleStacks.size());
+        // Update the menu's scroll offset
+        // Note: We don't save to BlockEntity - scrollOffset resets to 0 when GUI opens
+        int oldOffset = menu.getScrollOffset();
+        LOGGER.debug("DeepDrawersScrollC2SPacket.handle: Updating scrollOffset from {} to {}", oldOffset, scrollOffset);
+        menu.setScrollOffset(scrollOffset);
+        
+        // NOTE: We no longer send slot data when scrolling because all slots are sent
+        // to the client when the menu opens. The client has all data in memory and
+        // can display any slot range instantly without waiting for server response.
     }
 }
 

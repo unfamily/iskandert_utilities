@@ -470,5 +470,14 @@
   "message.iska_utils.dolly.too_hard": "§cThis block is too hard to pick up (requires better tools)!",
   "message.iska_utils.dolly.not_allowed": "§cThis block is not allowed by the Dolly configuration!",
   "message.iska_utils.dolly.picked_up": "§aPicked up: §f%s",
-  "message.iska_utils.dolly.placed": "§aPlaced: §f%s"
+  "message.iska_utils.dolly.placed": "§aPlaced: §f%s",
+
+  "item.iska_utils.dolly_hard": "Hard Dolly",
+  "tooltip.iska_utils.dolly_hard.contains": "§7Contains: §f%s",
+  "tooltip.iska_utils.dolly_hard.empty": "§7Empty - Shift+Click to pick up a block",
+  "message.iska_utils.dolly_hard.indestructible": "§cThis block cannot be picked up (indestructible)!",
+  "message.iska_utils.dolly_hard.too_hard": "§cThis block is too hard to pick up (requires better tools)!",
+  "message.iska_utils.dolly_hard.not_allowed": "§cThis block is not allowed by the Hard Dolly configuration!",
+  "message.iska_utils.dolly_hard.picked_up": "§aPicked up: §f%s",
+  "message.iska_utils.dolly_hard.placed": "§aPlaced: §f%s"
 }

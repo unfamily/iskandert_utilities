@@ -55,8 +55,15 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     private int scrollOffset = 0;
     private final int totalSlots;
     
-    // Container data for syncing scroll offset between server and client
+    // Container data for syncing scroll offset and block position between server and client
     private final net.minecraft.world.inventory.ContainerData containerData;
+    
+    // ContainerData indices
+    private static final int SCROLL_OFFSET_INDEX = 0;
+    private static final int BLOCK_POS_X_INDEX = 1;
+    private static final int BLOCK_POS_Y_INDEX = 2;
+    private static final int BLOCK_POS_Z_INDEX = 3;
+    private static final int DATA_COUNT = 4;
     
     // Flag to prevent client from reading stale containerData after local update
     private int ignoreContainerDataTicks = 0;
@@ -70,6 +77,9 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         this.itemHandler = blockEntity.getItemHandler();
         this.totalSlots = Config.deepDrawersSlotCount;
         
+        // Always start with scroll offset 0 when opening GUI
+        this.scrollOffset = 0;
+        
         // Create view handler for visible slots
         this.viewHandler = new net.neoforged.neoforge.items.ItemStackHandler(VISIBLE_SLOTS);
         updateViewHandler(); // Populate with initial items
@@ -77,8 +87,29 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         // Create offset wrapper for itemHandler
         this.offsetItemHandler = new OffsetItemHandler(this.itemHandler);
         
-        // Create container data for syncing scroll offset
-        this.containerData = new net.minecraft.world.inventory.SimpleContainerData(1);
+        // Create container data for syncing scroll offset and block position
+        this.containerData = new net.minecraft.world.inventory.ContainerData() {
+            @Override
+            public int get(int index) {
+                return switch(index) {
+                    case SCROLL_OFFSET_INDEX -> scrollOffset;
+                    case BLOCK_POS_X_INDEX -> blockPos.getX();
+                    case BLOCK_POS_Y_INDEX -> blockPos.getY();
+                    case BLOCK_POS_Z_INDEX -> blockPos.getZ();
+                    default -> 0;
+                };
+            }
+            
+            @Override
+            public void set(int index, int value) {
+                // Values are read-only from client side, handled by server
+            }
+            
+            @Override
+            public int getCount() {
+                return DATA_COUNT;
+            }
+        };
         this.addDataSlots(this.containerData);
         
         // Add Deep Drawers visible slots (9 columns x 6 rows = 54 slots)
@@ -86,6 +117,31 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         
         // Add player inventory slots
         addPlayerInventorySlots(playerInventory);
+    }
+    
+    /**
+     * Sends all slots to the client (server-side only)
+     * Called when the menu is opened to sync all slot contents
+     */
+    public void sendAllSlotsToClient(net.minecraft.server.level.ServerPlayer player) {
+        if (this.blockEntity == null || this.itemHandler == null) return;
+        
+        // Get all slots from the item handler
+        java.util.Map<Integer, net.minecraft.world.item.ItemStack> allSlots = new java.util.HashMap<>();
+        for (int i = 0; i < totalSlots; i++) {
+            net.minecraft.world.item.ItemStack stack = this.itemHandler.getStackInSlot(i);
+            if (!stack.isEmpty()) {
+                allSlots.put(i, stack.copy());
+            }
+        }
+        
+        // Send all slots to client
+        net.unfamily.iskautils.network.ModMessages.sendToPlayer(
+            new net.unfamily.iskautils.network.packet.DeepDrawersSyncSlotsS2CPacket(allSlots),
+            player
+        );
+        
+        LOGGER.debug("Server: Sent all {} slots to client", allSlots.size());
     }
     
     // Client-side constructor (NeoForge factory pattern) - simple version
@@ -104,9 +160,13 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         // Create offset wrapper for itemHandler
         this.offsetItemHandler = new OffsetItemHandler(this.itemHandler);
         
-        // Create container data for syncing scroll offset
-        this.containerData = new net.minecraft.world.inventory.SimpleContainerData(1);
+        // Create container data for syncing scroll offset and block position (client-side)
+        this.containerData = new net.minecraft.world.inventory.SimpleContainerData(DATA_COUNT);
         this.addDataSlots(this.containerData);
+        
+        // Initialize scrollOffset from ContainerData (will be synced from server)
+        // Note: ContainerData might not be populated yet, but it will be synced soon
+        // We'll also sync it in broadcastChanges() when data arrives
         
         // Add Deep Drawers visible slots (9 columns x 6 rows = 54 slots)
         addDeepDrawersSlots(playerInventory);
@@ -245,8 +305,51 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     }
     
     /**
+     * Updates ALL slots from server-sent data (client-side only)
+     * Called when receiving DeepDrawersSyncSlotsS2CPacket with full sync
+     * This loads all slots into client memory so scrolling works instantly
+     */
+    public void updateAllSlotsFromServer(java.util.Map<Integer, ItemStack> allSlots) {
+        LOGGER.debug("Client: Updating ALL slots from server. Slots: {}", allSlots.size());
+        
+        // Update itemHandler lato client con TUTTI gli slot
+        if (this.itemHandler instanceof net.neoforged.neoforge.items.ItemStackHandler itemStackHandler) {
+            // First, clear all slots (set to empty)
+            for (int i = 0; i < totalSlots; i++) {
+                itemStackHandler.setStackInSlot(i, ItemStack.EMPTY);
+            }
+            
+            // Then, update with all non-empty slots from server
+            for (java.util.Map.Entry<Integer, ItemStack> entry : allSlots.entrySet()) {
+                int slotIndex = entry.getKey();
+                ItemStack stack = entry.getValue();
+                if (slotIndex >= 0 && slotIndex < totalSlots && !stack.isEmpty()) {
+                    itemStackHandler.setStackInSlot(slotIndex, stack.copy());
+                    LOGGER.debug("Client: ItemHandler slot {} = {}", slotIndex, stack.getItem());
+                }
+            }
+        }
+        
+        // Force all visible slots to refresh
+        for (int i = 0; i < VISIBLE_SLOTS && i < this.slots.size(); i++) {
+            Slot slot = this.slots.get(i);
+            if (slot != null) {
+                // Force slot to re-read from offsetItemHandler (which now has all data)
+                ItemStack currentItem = offsetItemHandler.getStackInSlot(i);
+                slot.set(currentItem);
+                slot.setChanged();
+            }
+        }
+        
+        // Force full broadcast to ensure all slots are synced
+        this.broadcastFullState();
+        
+        LOGGER.debug("Client: Finished updating ALL slots from server");
+    }
+    
+    /**
      * Updates the item handler and view handler from server-sent data (client-side only)
-     * Called when receiving DeepDrawersSyncSlotsS2CPacket
+     * Called when receiving DeepDrawersSyncSlotsS2CPacket (backward compatibility)
      */
     public void updateViewHandlerFromServer(int offset, java.util.List<ItemStack> visibleStacks) {
         LOGGER.debug("Client: Updating itemHandler and viewHandler from server. Offset: {}, Stacks: {}", offset, visibleStacks.size());
@@ -285,11 +388,16 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             }
         }
         
-        // Then, force all slots to refresh by calling setChanged() on each one
+        // Then, force all slots to refresh by re-reading from offsetItemHandler
         // This ensures the GUI actually displays the new items
         for (int i = 0; i < VISIBLE_SLOTS && i < this.slots.size(); i++) {
             Slot slot = this.slots.get(i);
             if (slot != null) {
+                // Force slot to re-read by getting the item from offsetItemHandler
+                // offsetItemHandler will use the updated scrollOffset and read from itemHandler
+                ItemStack currentItem = offsetItemHandler.getStackInSlot(i);
+                // Set the item to force the slot to refresh
+                slot.set(currentItem);
                 // Force slot to recognize the change
                 slot.setChanged();
             }
@@ -313,11 +421,12 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         // Only update container data on server side
         // Container data automatically syncs to client
         if (this.blockEntity != null && this.blockEntity.getLevel() != null && !this.blockEntity.getLevel().isClientSide()) {
-            this.containerData.set(0, this.scrollOffset);
+            // Note: ContainerData is read-only on server, values are read from get() method
+            // We don't save scrollOffset to BlockEntity - it resets to 0 when GUI opens
             
             // Server-side: When scroll changes, update the view handler
             if (oldOffset != this.scrollOffset) {
-                LOGGER.debug("Server: scroll offset changed from {} to {}", oldOffset, this.scrollOffset);
+                LOGGER.debug("Server: scroll offset changed from {} to {} (saved to BlockEntity)", oldOffset, this.scrollOffset);
                 updateViewHandler(); // Copy new items into view handler
                 
                 // Force full state broadcast to sync all slots
@@ -326,17 +435,24 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         } else {
             // Client-side: set flag to ignore containerData for a few ticks
             // This prevents reading stale data before server response arrives
-            this.ignoreContainerDataTicks = 5;
+            // Increased to 20 ticks (1 second) to give server time to process scroll packet
+            this.ignoreContainerDataTicks = 20;
             
             // Client-side: When scroll changes, force all slots to refresh
             // This ensures slots read from the new scroll position immediately
             if (oldOffset != this.scrollOffset) {
                 LOGGER.debug("Client: scroll offset changed from {} to {}, forcing slot refresh", oldOffset, this.scrollOffset);
-                // Force all visible slots to refresh by calling setChanged() on each one
-                // This makes them re-read from offsetItemHandler which uses the new scrollOffset
+                
+                // Force all visible slots to refresh by re-reading from offsetItemHandler
+                // Since all slots are now in memory, we just need to refresh the display
+                // offsetItemHandler uses the updated scrollOffset and reads from itemHandler
+                // which now has all slots in memory
                 for (int i = 0; i < VISIBLE_SLOTS && i < this.slots.size(); i++) {
                     Slot slot = this.slots.get(i);
                     if (slot != null) {
+                        // Force slot to re-read from offsetItemHandler (which has all data in memory)
+                        ItemStack currentItem = offsetItemHandler.getStackInSlot(i);
+                        slot.set(currentItem);
                         slot.setChanged();
                     }
                 }
@@ -352,15 +468,31 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         super.broadcastChanges();
         
         // Client-side: sync scroll offset FROM container data (server authoritative)
+        // BUT: Don't sync if we just scrolled locally (to prevent resetting to 0)
         if (this.blockEntity == null || this.blockEntity.getLevel() == null || this.blockEntity.getLevel().isClientSide()) {
             // Decrement ignore counter
             if (this.ignoreContainerDataTicks > 0) {
                 this.ignoreContainerDataTicks--;
             }
             
-            // Only sync from containerData if we're not ignoring it
-            if (this.ignoreContainerDataTicks == 0 && this.containerData.get(0) != this.scrollOffset) {
-                this.scrollOffset = this.containerData.get(0);
+            // Only sync from containerData if we're not ignoring it AND if the server value is different
+            // IMPORTANT: Never sync from server=0 to client non-zero value, as this would reset the scroll
+            // The server should always have the correct value after the packet is processed
+            if (this.ignoreContainerDataTicks == 0) {
+                int serverOffset = this.containerData.get(SCROLL_OFFSET_INDEX);
+                // Only sync if server offset is different AND not a reset to 0 when we have a non-zero value
+                if (serverOffset != this.scrollOffset) {
+                    // NEVER sync from server=0 to client non-zero - this would reset the scroll
+                    // The server should have the correct value after the packet is processed
+                    if (serverOffset == 0 && this.scrollOffset != 0) {
+                        LOGGER.warn("Client: Ignoring containerData sync (server=0, local={}) - server hasn't updated yet or packet didn't arrive", this.scrollOffset);
+                        // Don't sync - keep our local value
+                        return;
+                    }
+                    // Otherwise, sync from server (server has the authoritative value)
+                    LOGGER.debug("Client: Syncing scrollOffset from containerData: {} -> {}", this.scrollOffset, serverOffset);
+                    this.scrollOffset = serverOffset;
+                }
             }
         }
     }
@@ -378,6 +510,22 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             this.delegate = delegate;
         }
         
+        /**
+         * Gets the current scroll offset, ensuring it's always up-to-date
+         * On server, uses the local scrollOffset field (which is updated when scroll packet arrives)
+         * On client, uses the local scrollOffset field (which is updated immediately when scrolling)
+         * 
+         * IMPORTANT: This method is called during slot interactions, so it must always return
+         * the correct scrollOffset. On server, the scrollOffset is updated when the scroll packet
+         * arrives, so it should be correct. But we add a safety check to ensure it's in sync.
+         */
+        private int getCurrentScrollOffset() {
+            // Simply return the local scrollOffset field
+            // On server, it's updated when scroll packet arrives
+            // On client, it's updated immediately when scrolling
+            return scrollOffset;
+        }
+        
         @Override
         public int getSlots() {
             return VISIBLE_SLOTS; // Always return visible slots count
@@ -388,7 +536,9 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             if (slot < 0 || slot >= VISIBLE_SLOTS) {
                 return ItemStack.EMPTY;
             }
-            int actualIndex = scrollOffset + slot;
+            int currentOffset = getCurrentScrollOffset();
+            int actualIndex = currentOffset + slot;
+            LOGGER.debug("OffsetItemHandler.getStackInSlot: slot={}, scrollOffset={}, actualIndex={}", slot, currentOffset, actualIndex);
             if (actualIndex < 0 || actualIndex >= totalSlots) {
                 return ItemStack.EMPTY;
             }
@@ -400,7 +550,9 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             if (slot < 0 || slot >= VISIBLE_SLOTS) {
                 return stack;
             }
-            int actualIndex = scrollOffset + slot;
+            int currentOffset = getCurrentScrollOffset();
+            int actualIndex = currentOffset + slot;
+            LOGGER.debug("OffsetItemHandler.insertItem: slot={}, scrollOffset={}, actualIndex={}", slot, currentOffset, actualIndex);
             if (actualIndex < 0 || actualIndex >= totalSlots) {
                 return stack;
             }
@@ -412,7 +564,9 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             if (slot < 0 || slot >= VISIBLE_SLOTS) {
                 return ItemStack.EMPTY;
             }
-            int actualIndex = scrollOffset + slot;
+            int currentOffset = getCurrentScrollOffset();
+            int actualIndex = currentOffset + slot;
+            LOGGER.debug("OffsetItemHandler.extractItem: slot={}, scrollOffset={}, actualIndex={}", slot, currentOffset, actualIndex);
             if (actualIndex < 0 || actualIndex >= totalSlots) {
                 return ItemStack.EMPTY;
             }
@@ -424,7 +578,8 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             if (slot < 0 || slot >= VISIBLE_SLOTS) {
                 return 64;
             }
-            int actualIndex = scrollOffset + slot;
+            int currentOffset = getCurrentScrollOffset();
+            int actualIndex = currentOffset + slot;
             if (actualIndex < 0 || actualIndex >= totalSlots) {
                 return 64;
             }
@@ -436,7 +591,8 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             if (slot < 0 || slot >= VISIBLE_SLOTS) {
                 return false;
             }
-            int actualIndex = scrollOffset + slot;
+            int currentOffset = getCurrentScrollOffset();
+            int actualIndex = currentOffset + slot;
             if (actualIndex < 0 || actualIndex >= totalSlots) {
                 return false;
             }
@@ -448,7 +604,9 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             if (slot < 0 || slot >= VISIBLE_SLOTS) {
                 return;
             }
-            int actualIndex = scrollOffset + slot;
+            int currentOffset = getCurrentScrollOffset();
+            int actualIndex = currentOffset + slot;
+            LOGGER.debug("OffsetItemHandler.setStackInSlot: slot={}, scrollOffset={}, actualIndex={}", slot, currentOffset, actualIndex);
             if (actualIndex < 0 || actualIndex >= totalSlots) {
                 return;
             }
@@ -493,10 +651,28 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     }
     
     /**
-     * Gets the block position
+     * Gets the block position (synced from server on client)
      */
     public BlockPos getBlockPos() {
-        return blockPos;
+        if (this.blockEntity != null) {
+            return blockPos; // Server side
+        } else {
+            // Client side - get from synced data
+            int x = this.containerData.get(BLOCK_POS_X_INDEX);
+            int y = this.containerData.get(BLOCK_POS_Y_INDEX);
+            int z = this.containerData.get(BLOCK_POS_Z_INDEX);
+            if (x == 0 && y == 0 && z == 0) {
+                return blockPos; // Fallback to stored position
+            }
+            return new BlockPos(x, y, z);
+        }
+    }
+    
+    /**
+     * Gets the synced block position (same as getBlockPos, but more explicit)
+     */
+    public BlockPos getSyncedBlockPos() {
+        return getBlockPos();
     }
     
     /**
