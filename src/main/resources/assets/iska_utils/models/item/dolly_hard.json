@@ -6,7 +6,7 @@
   "overrides": [
     {
       "predicate": {
-        "custom_model_data": 1
+        "iska_utils:filled": 1.0
       },
       "model": "iska_utils:item/dolly_hard_filled"
     }

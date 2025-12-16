@@ -40,10 +40,16 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     private Button showButton;            // Top right (aligned with title end) - renamed from applyButton
     private Button rotateButton;          // Bottom left
     private Button setInventoryButton;    // Bottom right
+    private Button closeButton;           // Close button
     
     // Custom redstone mode button
     private int redstoneModeButtonX, redstoneModeButtonY;
     private static final int REDSTONE_BUTTON_SIZE = 16;
+    
+    // Close button position - top right
+    private static final int CLOSE_BUTTON_Y = 5;
+    private static final int CLOSE_BUTTON_SIZE = 12;
+    private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5; // 5px from right edge
     
     public StructurePlacerMachineScreen(StructurePlacerMachineMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -66,6 +72,17 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         
         // Initialize buttons in X layout
         initializeButtons();
+        
+        // Close button - top left with ✕ symbol
+        closeButton = Button.builder(Component.literal("✕"), 
+                                    button -> {
+                                        playButtonSound();
+                                        this.onClose();
+                                    })
+                           .bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, 
+                                  CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
+                           .build();
+        addRenderableWidget(closeButton);
     }
     
     @Override
@@ -619,5 +636,16 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         }
         
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+    
+    /**
+     * Plays button click sound
+     */
+    private void playButtonSound() {
+        if (this.minecraft != null) {
+            this.minecraft.getSoundManager().play(
+                net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        }
     }
 } 

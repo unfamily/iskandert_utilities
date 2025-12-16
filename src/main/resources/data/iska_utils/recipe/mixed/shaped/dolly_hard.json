@@ -9,9 +9,14 @@
     "A": {
       "tag": "c:storage_blocks/rubber"
     },
-    "B": {
-      "tag": "c:ingots/plastic"
-    },
+    "B": [
+      {
+        "tag": "c:plastics"
+      },
+      {
+        "tag": "c:ingots/plastic"
+      }
+    ],
     "C": {
       "tag": "c:bars/netherite"
     },

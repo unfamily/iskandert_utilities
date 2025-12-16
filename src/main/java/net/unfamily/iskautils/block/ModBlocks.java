@@ -359,7 +359,6 @@ public class ModBlocks {
             .strength(0.0F)
             .sound(SoundType.STONE)
             .noOcclusion()
-            .noCollission()
             .isRedstoneConductor((state, level, pos) -> false)
             .pushReaction(PushReaction.DESTROY)
             .isViewBlocking((state, level, pos) -> false)));
@@ -387,7 +386,7 @@ public class ModBlocks {
     // ===== DEEP DRAWERS =====
     private static final BlockBehaviour.Properties DEEP_DRAWERS_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.METAL)
-            .strength(5.0f, 6.0f)
+            .strength(0.5f, 1.0f)
             .sound(SoundType.COPPER)
             .requiresCorrectToolForDrops();
 

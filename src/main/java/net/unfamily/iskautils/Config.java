@@ -159,7 +159,7 @@ public class Config
                     "Items without # are item IDs (e.g. apotheosis:gem, minecraft:enchanted_book)",
                     "Only items matching these tags/IDs will be accepted")
             .defineList("400_deep_drawers_allowed_tags", 
-                       java.util.Arrays.asList("#c:enchantables", "apotheosis:gem", "minecraft:enchanted_book"), 
+                       java.util.Arrays.asList("#c:enchantables", "apotheosis:gem", "minecraft:enchanted_book", "minecraft:potion"), 
                        obj -> obj instanceof String);
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DEEP_DRAWERS_BLACKLIST = BUILDER

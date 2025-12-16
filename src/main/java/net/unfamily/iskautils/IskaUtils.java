@@ -6,6 +6,8 @@ import com.mojang.logging.LogUtils;
 
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -202,6 +204,31 @@ public class IskaUtils {
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.RUBBER_SAPLING.get(), RenderType.cutout());
                 // Aggiungi RenderType cutout_mipped per le netherite_bars
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.NETHERITE_BARS.get(), RenderType.cutoutMipped());
+                
+                // Register item property functions for dolly filled state
+                ItemProperties.register(
+                    ModItems.DOLLY.get(),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "filled"),
+                    (stack, level, entity, seed) -> {
+                        net.minecraft.world.item.component.CustomData customData = stack.getOrDefault(
+                            net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                            net.minecraft.world.item.component.CustomData.EMPTY);
+                        net.minecraft.nbt.CompoundTag nbt = customData.copyTag();
+                        return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
+                    }
+                );
+                
+                ItemProperties.register(
+                    ModItems.DOLLY_HARD.get(),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "filled"),
+                    (stack, level, entity, seed) -> {
+                        net.minecraft.world.item.component.CustomData customData = stack.getOrDefault(
+                            net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                            net.minecraft.world.item.component.CustomData.EMPTY);
+                        net.minecraft.nbt.CompoundTag nbt = customData.copyTag();
+                        return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
+                    }
+                );
             });
         }
         

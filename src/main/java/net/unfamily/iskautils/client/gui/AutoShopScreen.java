@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -12,11 +13,44 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu> {
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/auto_shop.png");
     private static final int GUI_WIDTH = 200;
     private static final int GUI_HEIGHT = 160;
+    
+    // Close button
+    private Button closeButton;
+    private static final int CLOSE_BUTTON_Y = 5;
+    private static final int CLOSE_BUTTON_SIZE = 12;
+    private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5; // 5px from right edge
 
     public AutoShopScreen(AutoShopMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = GUI_WIDTH;
         this.imageHeight = GUI_HEIGHT;
+    }
+    
+    @Override
+    protected void init() {
+        super.init();
+        
+        // Close button - top right with ✕ symbol
+        closeButton = Button.builder(Component.literal("✕"), 
+                                    button -> {
+                                        playButtonSound();
+                                        this.onClose();
+                                    })
+                           .bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, 
+                                  CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
+                           .build();
+        addRenderableWidget(closeButton);
+    }
+    
+    /**
+     * Plays button click sound
+     */
+    private void playButtonSound() {
+        if (this.minecraft != null) {
+            this.minecraft.getSoundManager().play(
+                net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        }
     }
 
     @Override

@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -54,6 +55,12 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     private int dragStartY = 0;
     private int dragStartScrollOffset = 0;
     
+    // Close button
+    private Button closeButton;
+    private static final int CLOSE_BUTTON_Y = 5;
+    private static final int CLOSE_BUTTON_SIZE = 12;
+    private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5; // 5px from right edge
+    
     public DeepDrawersScreen(DeepDrawersMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = GUI_WIDTH;
@@ -68,6 +75,17 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         // This ensures the scrollbar starts at the saved position
         this.scrollOffset = menu.getScrollOffset();
         LOGGER.debug("DeepDrawersScreen.init: Initialized scrollOffset from menu: {}", this.scrollOffset);
+        
+        // Close button - top left with ✕ symbol
+        closeButton = Button.builder(Component.literal("✕"), 
+                                    button -> {
+                                        playButtonSound();
+                                        this.onClose();
+                                    })
+                           .bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, 
+                                  CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
+                           .build();
+        addRenderableWidget(closeButton);
     }
     
     @Override

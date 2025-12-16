@@ -83,6 +83,12 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     // Pulsanti vanilla
     private Button saveButton;
     private Button cancelButton;
+    private Button closeButton;
+    
+    // Close button position - top right
+    private static final int CLOSE_BUTTON_Y = 5;
+    private static final int CLOSE_BUTTON_SIZE = 12;
+    private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5; // 5px from right edge
     
     public StructureSelectionScreen(StructureSelectionMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -148,6 +154,17 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         // Centra la GUI sullo schermo
         this.leftPos = (this.width - this.imageWidth) / 2;
         this.topPos = (this.height - this.imageHeight) / 2;
+        
+        // Close button - top right with ✕ symbol
+        closeButton = Button.builder(Component.literal("✕"), 
+                                    button -> {
+                                        playButtonSound();
+                                        this.onClose();
+                                    })
+                           .bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, 
+                                  CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
+                           .build();
+        addRenderableWidget(closeButton);
         
         // Carica le strutture disponibili
         loadAvailableStructures();

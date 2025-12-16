@@ -457,11 +457,12 @@
   "tooltip.iska_utils.burning_brazier.desc1": "§7Press §f%s §7to toggle automatic flame placement",
   "tooltip.iska_utils.burning_brazier.desc2": "§7Right-click on flames to remove and recharge",
 
-  "block.iska_utils.deep_drawers": "Deep Drawers",
-  "item.iska_utils.deep_drawers": "Deep Drawers",
-  "container.iska_utils.deep_drawers": "Deep Drawers",
+  "block.iska_utils.deep_drawers": "Deep Drawer",
+  "item.iska_utils.deep_drawers": "Deep Drawer",
+  "container.iska_utils.deep_drawers": "Deep Drawer",
   "tooltip.iska_utils.deep_drawers.desc0": "A very large storage block that can only contain non-stackable items",
-  "message.iska_utils.deep_drawers.cannot_break": "§cCannot break Deep Drawers while it contains items!",
+  "tooltip.iska_utils.deep_drawers.warning": "If it contains items it cannot be broken, use a dolly or similar to move it",
+  "message.iska_utils.deep_drawers.cannot_break": "§cCannot break Deep Drawer while it contains items!",
 
   "item.iska_utils.dolly": "Dolly",
   "tooltip.iska_utils.dolly.contains": "§7Contains: §f%s",

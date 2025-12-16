@@ -83,8 +83,14 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     
     // Vanilla buttons
     private Button backButton;
+    private Button closeButton;
     private List<Button> buyButtons = new ArrayList<>();
     private List<Button> sellButtons = new ArrayList<>();
+    
+    // Close button position - top right
+    private static final int CLOSE_BUTTON_Y = 5;
+    private static final int CLOSE_BUTTON_SIZE = 12;
+    private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5; // 5px from right edge
     
     // Player team data
     private String playerTeamName = null;
@@ -135,6 +141,17 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         }).bounds(this.leftPos + BACK_BUTTON_X, this.topPos + BACK_BUTTON_Y, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT).build();
         
         this.addRenderableWidget(backButton);
+        
+        // Close button - top right with ✕ symbol
+        closeButton = Button.builder(Component.literal("✕"), 
+                                    button -> {
+                                        playButtonSound();
+                                        this.onClose();
+                                    })
+                           .bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, 
+                                  CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
+                           .build();
+        addRenderableWidget(closeButton);
         
         // Update button state and create Buy/Sell buttons
         updateBackButtonState();

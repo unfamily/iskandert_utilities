@@ -78,9 +78,15 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     private EditBox idEditBox;
     private Button saveButton;
     private Button modeButton;
+    private Button closeButton;
     
     // Placement mode
     private boolean isPlayerMode = false; // false = Normal, true = Player
+    
+    // Close button position - top right
+    private static final int CLOSE_BUTTON_Y = 5; // 5px from top edge
+    private static final int CLOSE_BUTTON_SIZE = 12; // 12x12 pixels
+    // CLOSE_BUTTON_X will be calculated in init() using imageWidth
     
     // New component positions - just below entries
     private static final int NAME_EDIT_BOX_Y = ENTRIES_START_Y + (VISIBLE_ENTRIES * ENTRY_HEIGHT) + 5; // 5px below last entry
@@ -157,6 +163,18 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                           .bounds(this.leftPos + MODE_BUTTON_X, this.topPos + MODE_BUTTON_Y, MODE_BUTTON_WIDTH, 20)
                           .build();
         addRenderableWidget(modeButton);
+        
+        // Close button - top right with ✕ symbol
+        int closeButtonX = this.imageWidth - CLOSE_BUTTON_SIZE - 5; // 5px from right edge
+        closeButton = Button.builder(Component.literal("✕"), 
+                                    button -> {
+                                        playButtonSound();
+                                        this.onClose();
+                                    })
+                           .bounds(this.leftPos + closeButtonX, this.topPos + CLOSE_BUTTON_Y, 
+                                  CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
+                           .build();
+        addRenderableWidget(closeButton);
         
         // Slots are populated automatically by the server when the area is set
     }
@@ -931,5 +949,37 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
          if (this.minecraft != null) {
              this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
          }
+     }
+     
+     /**
+      * Prevents closing the GUI with inventory key when an EditBox is focused
+      */
+     @Override
+     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+         // Check if an EditBox is focused (either name or id)
+         boolean isEditBoxFocused = (nameEditBox != null && nameEditBox.isFocused()) || 
+                                    (idEditBox != null && idEditBox.isFocused());
+         
+         if (isEditBoxFocused) {
+             // Let the focused EditBox handle the key first
+             if (nameEditBox != null && nameEditBox.isFocused()) {
+                 if (nameEditBox.keyPressed(keyCode, scanCode, modifiers)) {
+                     return true;
+                 }
+             }
+             if (idEditBox != null && idEditBox.isFocused()) {
+                 if (idEditBox.keyPressed(keyCode, scanCode, modifiers)) {
+                     return true;
+                 }
+             }
+             
+             // If inventory key is pressed while EditBox is focused, prevent closing
+             // This works even if the user has changed the inventory key binding
+             if (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+                 return true; // Prevent closing
+             }
+         }
+         
+         return super.keyPressed(keyCode, scanCode, modifiers);
      }
 } 
