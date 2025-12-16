@@ -8,6 +8,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.BlockPos;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
@@ -34,6 +35,7 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     private final BlockPos blockPos;
     private final IItemHandler itemHandler;
     private final IItemHandler viewHandler; // Handler for the visible 54 slots (updated when scroll changes)
+    private final OffsetItemHandler offsetItemHandler; // Wrapper that adds scrollOffset automatically
     
     // GUI Layout constants
     public static final int VISIBLE_ROWS = 6;  // 6 rows of storage slots visible
@@ -72,6 +74,9 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         this.viewHandler = new net.neoforged.neoforge.items.ItemStackHandler(VISIBLE_SLOTS);
         updateViewHandler(); // Populate with initial items
         
+        // Create offset wrapper for itemHandler
+        this.offsetItemHandler = new OffsetItemHandler(this.itemHandler);
+        
         // Create container data for syncing scroll offset
         this.containerData = new net.minecraft.world.inventory.SimpleContainerData(1);
         this.addDataSlots(this.containerData);
@@ -96,6 +101,9 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         // View handler for visible slots (synced by Minecraft)
         this.viewHandler = new net.neoforged.neoforge.items.ItemStackHandler(VISIBLE_SLOTS);
         
+        // Create offset wrapper for itemHandler
+        this.offsetItemHandler = new OffsetItemHandler(this.itemHandler);
+        
         // Create container data for syncing scroll offset
         this.containerData = new net.minecraft.world.inventory.SimpleContainerData(1);
         this.addDataSlots(this.containerData);
@@ -109,17 +117,17 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     
     /**
      * Adds the visible slots for the Deep Drawers storage
-     * These slots read from the viewHandler which is updated when scrolling
+     * These slots read from offsetItemHandler which automatically adds scrollOffset
      */
     private void addDeepDrawersSlots(Inventory playerInventory) {
-        // Use viewHandler for display, but write to actual itemHandler
+        // Use offsetItemHandler which automatically adds scrollOffset to all accesses
         for (int row = 0; row < VISIBLE_ROWS; row++) {
             for (int col = 0; col < COLUMNS; col++) {
                 int slotIndex = col + row * COLUMNS; // 0-53
                 int xPos = STORAGE_SLOTS_X + col * 18;
                 int yPos = STORAGE_SLOTS_Y + row * 18;
-                // Create view slot that reads from viewHandler but writes to actual handler
-                this.addSlot(new ViewSlot(slotIndex, xPos, yPos));
+                // Create slot that reads from offsetItemHandler (automatically adds scrollOffset)
+                this.addSlot(new SlotItemHandler(offsetItemHandler, slotIndex, xPos, yPos));
             }
         }
     }
@@ -221,7 +229,7 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                     // Set in view handler
                     stackHandler.setStackInSlot(i, stack.copy());
                     LOGGER.debug("ViewHandler slot {} = item from actual slot {}: {}", 
-                                i, actualIndex, stack.isEmpty() ? "EMPTY" : stack.getItem());
+                                i, actualIndex, stack.isEmpty() ? "EcMPTY" : stack.getItem());
                     
                     // Force update the slot to trigger sync
                     if (i < this.slots.size()) {
@@ -237,43 +245,60 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     }
     
     /**
-     * Updates the view handler from server-sent data (client-side only)
+     * Updates the item handler and view handler from server-sent data (client-side only)
      * Called when receiving DeepDrawersSyncSlotsS2CPacket
      */
     public void updateViewHandlerFromServer(int offset, java.util.List<ItemStack> visibleStacks) {
-        LOGGER.debug("Client: Updating viewHandler from server. Offset: {}, Stacks: {}", offset, visibleStacks.size());
+        LOGGER.debug("Client: Updating itemHandler and viewHandler from server. Offset: {}, Stacks: {}", offset, visibleStacks.size());
         this.scrollOffset = offset;
         
-        if (this.viewHandler instanceof net.neoforged.neoforge.items.ItemStackHandler stackHandler) {
-            // First, update all items in viewHandler
+        // Update itemHandler lato client con i nuovi item (solo per gli slot visibili)
+        if (this.itemHandler instanceof net.neoforged.neoforge.items.ItemStackHandler itemStackHandler) {
             for (int i = 0; i < VISIBLE_SLOTS && i < visibleStacks.size(); i++) {
+                int actualIndex = offset + i;
                 ItemStack stack = visibleStacks.get(i);
                 ItemStack stackCopy = stack.copy();
                 
-                // Get current item in viewHandler before update
-                ItemStack current = stackHandler.getStackInSlot(i);
-                
-                // Update viewHandler
-                stackHandler.setStackInSlot(i, stackCopy);
-                LOGGER.debug("Client: ViewHandler slot {} = {} (was {})", 
-                            i, stackCopy.isEmpty() ? "EMPTY" : stackCopy.getItem(),
-                            current.isEmpty() ? "EMPTY" : current.getItem());
+                // Update itemHandler at the actual index
+                itemStackHandler.setStackInSlot(actualIndex, stackCopy);
+                LOGGER.debug("Client: ItemHandler slot {} = {}", actualIndex, stackCopy.isEmpty() ? "EMPTY" : stackCopy.getItem());
             }
             
-            // Then, force all slots to refresh by calling setChanged() on each one
-            // This ensures the GUI actually displays the new items
-            for (int i = 0; i < VISIBLE_SLOTS && i < this.slots.size(); i++) {
-                Slot slot = this.slots.get(i);
-                if (slot != null) {
-                    slot.setChanged();
-                }
+            // Fill remaining visible slots with empty stacks if needed
+            for (int i = visibleStacks.size(); i < VISIBLE_SLOTS; i++) {
+                int actualIndex = offset + i;
+                itemStackHandler.setStackInSlot(actualIndex, ItemStack.EMPTY);
+            }
+        }
+        
+        // Also update viewHandler for backward compatibility
+        if (this.viewHandler instanceof net.neoforged.neoforge.items.ItemStackHandler stackHandler) {
+            for (int i = 0; i < VISIBLE_SLOTS && i < visibleStacks.size(); i++) {
+                ItemStack stack = visibleStacks.get(i);
+                ItemStack stackCopy = stack.copy();
+                stackHandler.setStackInSlot(i, stackCopy);
+            }
+            
+            // Fill remaining slots with empty stacks if needed
+            for (int i = visibleStacks.size(); i < VISIBLE_SLOTS; i++) {
+                stackHandler.setStackInSlot(i, ItemStack.EMPTY);
+            }
+        }
+        
+        // Then, force all slots to refresh by calling setChanged() on each one
+        // This ensures the GUI actually displays the new items
+        for (int i = 0; i < VISIBLE_SLOTS && i < this.slots.size(); i++) {
+            Slot slot = this.slots.get(i);
+            if (slot != null) {
+                // Force slot to recognize the change
+                slot.setChanged();
             }
         }
         
         // Force full broadcast to ensure all slots are synced
         this.broadcastFullState();
         
-        LOGGER.debug("Client: Finished updating viewHandler and forcing slot refresh");
+        LOGGER.debug("Client: Finished updating itemHandler/viewHandler and forcing slot refresh");
     }
     
     /**
@@ -302,8 +327,25 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             // Client-side: set flag to ignore containerData for a few ticks
             // This prevents reading stale data before server response arrives
             this.ignoreContainerDataTicks = 5;
+            
+            // Client-side: When scroll changes, force all slots to refresh
+            // This ensures slots read from the new scroll position immediately
+            if (oldOffset != this.scrollOffset) {
+                LOGGER.debug("Client: scroll offset changed from {} to {}, forcing slot refresh", oldOffset, this.scrollOffset);
+                // Force all visible slots to refresh by calling setChanged() on each one
+                // This makes them re-read from offsetItemHandler which uses the new scrollOffset
+                for (int i = 0; i < VISIBLE_SLOTS && i < this.slots.size(); i++) {
+                    Slot slot = this.slots.get(i);
+                    if (slot != null) {
+                        slot.setChanged();
+                    }
+                }
+                // Also broadcast the state change to ensure GUI updates
+                this.broadcastFullState();
+            }
         }
     }
+    
     
     @Override
     public void broadcastChanges() {
@@ -325,79 +367,100 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     
     
     /**
-     * View slot that displays items from viewHandler but writes to actual itemHandler
-     * This allows the GUI to show scrolled items while persisting changes to storage
+     * ItemHandler wrapper that automatically adds scrollOffset to all slot accesses
+     * Similar to LimitedContainer in Tom's Storage mod
+     * This allows slots to always access indices 0-53, while the wrapper handles the offset
      */
-    private class ViewSlot extends SlotItemHandler {
-        private final int viewIndex; // 0-53 (position in visible window)
+    private class OffsetItemHandler implements IItemHandlerModifiable {
+        private final IItemHandler delegate;
         
-        public ViewSlot(int viewIndex, int xPosition, int yPosition) {
-            super(viewHandler, viewIndex, xPosition, yPosition);
-            this.viewIndex = viewIndex;
+        public OffsetItemHandler(IItemHandler delegate) {
+            this.delegate = delegate;
         }
         
         @Override
-        public @NotNull ItemStack getItem() {
-            // Read from viewHandler for display
-            ItemStack result = viewHandler.getStackInSlot(viewIndex);
-            // Debug log for slots beyond 53
-            if (scrollOffset + viewIndex >= 54 && scrollOffset + viewIndex < 108) {
-                LOGGER.debug("ViewSlot.getItem(): viewIndex={}, scrollOffset={}, actualIndex={}, item={}", 
-                            viewIndex, scrollOffset, scrollOffset + viewIndex, 
-                            result.isEmpty() ? "EMPTY" : result.getItem());
+        public int getSlots() {
+            return VISIBLE_SLOTS; // Always return visible slots count
+        }
+        
+        @Override
+        public @NotNull ItemStack getStackInSlot(int slot) {
+            if (slot < 0 || slot >= VISIBLE_SLOTS) {
+                return ItemStack.EMPTY;
             }
-            return result;
+            int actualIndex = scrollOffset + slot;
+            if (actualIndex < 0 || actualIndex >= totalSlots) {
+                return ItemStack.EMPTY;
+            }
+            return delegate.getStackInSlot(actualIndex);
         }
         
         @Override
-        public void set(@NotNull ItemStack stack) {
-            // Write to actual itemHandler at scrolled position
-            int actualIndex = scrollOffset + viewIndex;
-            if (itemHandler != null) {
-                itemHandler.extractItem(actualIndex, Integer.MAX_VALUE, false);
+        public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+            if (slot < 0 || slot >= VISIBLE_SLOTS) {
+                return stack;
+            }
+            int actualIndex = scrollOffset + slot;
+            if (actualIndex < 0 || actualIndex >= totalSlots) {
+                return stack;
+            }
+            return delegate.insertItem(actualIndex, stack, simulate);
+        }
+        
+        @Override
+        public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot < 0 || slot >= VISIBLE_SLOTS) {
+                return ItemStack.EMPTY;
+            }
+            int actualIndex = scrollOffset + slot;
+            if (actualIndex < 0 || actualIndex >= totalSlots) {
+                return ItemStack.EMPTY;
+            }
+            return delegate.extractItem(actualIndex, amount, simulate);
+        }
+        
+        @Override
+        public int getSlotLimit(int slot) {
+            if (slot < 0 || slot >= VISIBLE_SLOTS) {
+                return 64;
+            }
+            int actualIndex = scrollOffset + slot;
+            if (actualIndex < 0 || actualIndex >= totalSlots) {
+                return 64;
+            }
+            return delegate.getSlotLimit(actualIndex);
+        }
+        
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            if (slot < 0 || slot >= VISIBLE_SLOTS) {
+                return false;
+            }
+            int actualIndex = scrollOffset + slot;
+            if (actualIndex < 0 || actualIndex >= totalSlots) {
+                return false;
+            }
+            return delegate.isItemValid(actualIndex, stack);
+        }
+        
+        @Override
+        public void setStackInSlot(int slot, @NotNull ItemStack stack) {
+            if (slot < 0 || slot >= VISIBLE_SLOTS) {
+                return;
+            }
+            int actualIndex = scrollOffset + slot;
+            if (actualIndex < 0 || actualIndex >= totalSlots) {
+                return;
+            }
+            if (delegate instanceof IItemHandlerModifiable modifiable) {
+                modifiable.setStackInSlot(actualIndex, stack);
+            } else {
+                // Fallback: extract old item and insert new one
+                delegate.extractItem(actualIndex, Integer.MAX_VALUE, false);
                 if (!stack.isEmpty()) {
-                    itemHandler.insertItem(actualIndex, stack, false);
-                }
-                // Update viewHandler to reflect the change
-                if (viewHandler instanceof net.neoforged.neoforge.items.ItemStackHandler stackHandler) {
-                    stackHandler.setStackInSlot(viewIndex, stack.copy());
-                }
-                this.setChanged();
-                LOGGER.debug("ViewSlot.set(): view={}, actual={}, item={}", viewIndex, actualIndex, 
-                            stack.isEmpty() ? "EMPTY" : stack.getItem());
-            }
-        }
-        
-        @Override
-        public @NotNull ItemStack remove(int amount) {
-            // Remove from actual itemHandler at scrolled position
-            int actualIndex = scrollOffset + viewIndex;
-            ItemStack result = ItemStack.EMPTY;
-            if (itemHandler != null) {
-                result = itemHandler.extractItem(actualIndex, amount, false);
-                if (!result.isEmpty()) {
-                    // Update viewHandler to reflect the change
-                    ItemStack remaining = itemHandler.getStackInSlot(actualIndex);
-                    if (viewHandler instanceof net.neoforged.neoforge.items.ItemStackHandler stackHandler) {
-                        stackHandler.setStackInSlot(viewIndex, remaining.copy());
-                    }
-                    this.setChanged();
-                    LOGGER.debug("ViewSlot.remove(): view={}, actual={}, removed={}", viewIndex, actualIndex, result.getCount());
+                    delegate.insertItem(actualIndex, stack, false);
                 }
             }
-            return result;
-        }
-        
-        @Override
-        public int getMaxStackSize() {
-            int actualIndex = scrollOffset + viewIndex;
-            return itemHandler != null ? itemHandler.getSlotLimit(actualIndex) : 64;
-        }
-        
-        @Override
-        public boolean mayPlace(@NotNull ItemStack stack) {
-            int actualIndex = scrollOffset + viewIndex;
-            return itemHandler != null && itemHandler.isItemValid(actualIndex, stack);
         }
     }
     
