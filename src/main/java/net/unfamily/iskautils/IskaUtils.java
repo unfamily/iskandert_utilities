@@ -258,6 +258,15 @@ public class IskaUtils {
 
     @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.GAME)
     public static class GameEventBusEvents {
+        
+        @SubscribeEvent
+        public static void onContainerClose(net.neoforged.neoforge.event.entity.player.PlayerContainerEvent.Close event) {
+            if (event.getContainer() instanceof net.unfamily.iskautils.client.gui.DeepDrawersMenu menu) {
+                if (menu.getBlockEntity() != null) {
+                    menu.getBlockEntity().onGuiClosed();
+                }
+            }
+        }
         private static int cooldownCleanupTimer = 0;
         
         @SubscribeEvent

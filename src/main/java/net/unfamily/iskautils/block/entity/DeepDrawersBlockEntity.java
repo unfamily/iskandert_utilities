@@ -14,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.client.gui.DeepDrawersMenu;
 import org.jetbrains.annotations.NotNull;
@@ -54,6 +55,9 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     // Scroll offset for GUI (persisted in NBT)
     private int scrollOffset = 0;
     
+    // Track if GUI is open to prevent input/output conflicts
+    private int guiOpenCount = 0;
+    
     // Custom item handler for hopper/pipe interaction
     private final IItemHandler itemHandler = new DeepDrawersItemHandler();
     
@@ -67,6 +71,81 @@ public class DeepDrawersBlockEntity extends BlockEntity {
      */
     public IItemHandler getItemHandler() {
         return itemHandler;
+    }
+    
+    /**
+     * Converts a physical slot to logical slot
+     * Returns -1 if physical slot is not occupied
+     */
+    public int physicalToLogicalSlot(int physicalSlot) {
+        Integer logicalSlot = physicalToLogical.get(physicalSlot);
+        return logicalSlot != null ? logicalSlot : -1;
+    }
+    
+    /**
+     * Gets item stack directly from physical slot (for GUI use)
+     * Returns empty stack if slot is empty
+     */
+    public ItemStack getStackInPhysicalSlot(int physicalSlot) {
+        if (physicalSlot < 0 || physicalSlot >= maxSlots) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack stack = storage.get(physicalSlot);
+        return stack != null ? stack.copy() : ItemStack.EMPTY;
+    }
+    
+    /**
+     * Gets the list of occupied slots in order (for GUI display)
+     * @return ordered list of physical slot indices that contain items
+     */
+    public List<Integer> getOccupiedSlots() {
+        return new ArrayList<>(occupiedSlots);
+    }
+    
+    /**
+     * Gets the physical slot at the given occupied slot index
+     * @param occupiedIndex the index in the occupied slots list (0-based)
+     * @return physical slot index, or -1 if index is out of bounds
+     */
+    public int getPhysicalSlotAtOccupiedIndex(int occupiedIndex) {
+        if (occupiedIndex < 0 || occupiedIndex >= occupiedSlots.size()) {
+            return -1;
+        }
+        return occupiedSlots.get(occupiedIndex);
+    }
+    
+    /**
+     * Inserts item directly into a physical slot (for GUI use)
+     * This bypasses the logical slot system to ensure items go to the correct physical slot
+     */
+    public ItemStack insertItemIntoPhysicalSlotDirect(int physicalSlot, ItemStack stack, boolean simulate) {
+        if (itemHandler instanceof DeepDrawersItemHandler handler) {
+            return handler.insertItemIntoPhysicalSlot(physicalSlot, stack, simulate);
+        }
+        return stack;
+    }
+    
+    /**
+     * Called when GUI is opened
+     */
+    public void onGuiOpened() {
+        guiOpenCount++;
+    }
+    
+    /**
+     * Called when GUI is closed
+     */
+    public void onGuiClosed() {
+        if (guiOpenCount > 0) {
+            guiOpenCount--;
+        }
+    }
+    
+    /**
+     * Checks if GUI is currently open
+     */
+    public boolean isGuiOpen() {
+        return guiOpenCount > 0;
     }
     
     /**
@@ -400,7 +479,8 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             Integer logicalSlot = physicalToLogical.remove(physicalSlot);
             if (logicalSlot != null) {
                 logicalToPhysical.remove(logicalSlot);
-                occupiedSlots.remove(physicalSlot);
+                // Remove by value, not by index
+                occupiedSlots.remove(Integer.valueOf(physicalSlot));
                 
                 // Rebuild logical mapping to keep it contiguous
                 rebuildLogicalMapping();
@@ -451,7 +531,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
      * Exposes only occupied slots + 1 virtual slot for insertion
      * This dramatically reduces iteration overhead for pipes/hoppers
      */
-    private class DeepDrawersItemHandler implements IItemHandler {
+    private class DeepDrawersItemHandler implements IItemHandlerModifiable {
         
         @Override
         public int getSlots() {
@@ -528,7 +608,59 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             }
             
             // Try to merge stacks
-            int maxStackSize = stack.getMaxStackSize();
+            // Use Deep Drawer slot limit instead of item's maxStackSize to allow stacking non-stackable items
+            int maxStackSize = getSlotLimit(logicalSlot);
+            int spaceLeft = maxStackSize - existing.getCount();
+            
+            if (spaceLeft <= 0) {
+                return stack; // Slot is full
+            }
+            
+            int toInsert = Math.min(spaceLeft, stack.getCount());
+            
+            if (!simulate) {
+                ItemStack newStack = existing.copy();
+                newStack.grow(toInsert);
+                storage.put(physicalSlot, newStack);
+                setChanged();
+            }
+            
+            if (toInsert >= stack.getCount()) {
+                return ItemStack.EMPTY; // All inserted
+            }
+            
+            ItemStack remainder = stack.copy();
+            remainder.shrink(toInsert);
+            return remainder;
+        }
+        
+        /**
+         * Inserts item into a specific physical slot (for GUI use)
+         * Package-private for access from menu
+         */
+        @NotNull ItemStack insertItemIntoPhysicalSlot(int physicalSlot, @NotNull ItemStack stack, boolean simulate) {
+            if (stack.isEmpty() || physicalSlot < 0 || physicalSlot >= maxSlots) {
+                return stack;
+            }
+            
+            ItemStack existing = storage.get(physicalSlot);
+            
+            // If slot is empty, we can insert
+            if (existing == null || existing.isEmpty()) {
+                if (!simulate) {
+                    addItemToStorage(physicalSlot, stack.copy());
+                    setChanged();
+                }
+                return ItemStack.EMPTY;
+            }
+            
+            // If slot has different item, can't insert
+            if (!ItemStack.isSameItemSameComponents(existing, stack)) {
+                return stack;
+            }
+            
+            // Try to merge stacks (use Deep Drawer limit, not item's maxStackSize)
+            int maxStackSize = getSlotLimit(0); // All slots have same limit
             int spaceLeft = maxStackSize - existing.getCount();
             
             if (spaceLeft <= 0) {
@@ -566,7 +698,8 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 for (int physicalSlot : slotsWithItem) {
                     ItemStack existing = storage.get(physicalSlot);
                     if (existing != null && ItemStack.isSameItemSameComponents(existing, stack)) {
-                        int maxStackSize = stack.getMaxStackSize();
+                        // Use Deep Drawer slot limit instead of item's maxStackSize
+                        int maxStackSize = getSlotLimit(0); // Use slot 0 limit (all slots have same limit)
                         int spaceLeft = maxStackSize - existing.getCount();
                         
                         if (spaceLeft > 0) {
@@ -637,7 +770,8 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 return ItemStack.EMPTY;
             }
             
-            int toExtract = Math.min(amount, existing.getCount());
+            // Always extract only 1 item at a time to prevent duplications
+            int toExtract = Math.min(1, existing.getCount());
             
             // Create the extracted stack BEFORE modifying
             ItemStack extracted = existing.copy();
@@ -661,14 +795,66 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         
         @Override
         public int getSlotLimit(int logicalSlot) {
-            // All slots have the same limit
-            return 64; // Standard stack limit
+            // Allow stacking in Deep Drawer to make non-stackable items stackable
+            // Similar to Stackcraft behavior, but only for Deep Drawer
+            return 1024; // Stack limit for Deep Drawer
         }
         
         @Override
         public boolean isItemValid(int logicalSlot, @NotNull ItemStack stack) {
             // Validation doesn't depend on slot, only on item
             return DeepDrawersBlockEntity.this.isItemValid(stack);
+        }
+        
+        @Override
+        public void setStackInSlot(int logicalSlot, @NotNull ItemStack stack) {
+            if (logicalSlot < 0) {
+                return;
+            }
+            
+            // Virtual slot cannot be set
+            if (logicalSlot >= occupiedSlots.size()) {
+                return;
+            }
+            
+            // Always limit to 1 item to prevent issues with aggregated storage
+            ItemStack stackToSet = stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
+            if (!stackToSet.isEmpty() && stackToSet.getCount() > 1) {
+                stackToSet.setCount(1);
+            }
+            
+            // Map logical slot to physical slot
+            Integer physicalSlot = logicalToPhysical.get(logicalSlot);
+            if (physicalSlot == null) {
+                return;
+            }
+            
+            // Extract old item first (always only 1 item)
+            ItemStack existing = storage.get(physicalSlot);
+            if (existing != null && !existing.isEmpty()) {
+                // Extract only 1 item
+                if (existing.getCount() > 1) {
+                    existing.shrink(1);
+                    storage.put(physicalSlot, existing);
+                } else {
+                    removeItemFromStorage(physicalSlot);
+                }
+                DeepDrawersBlockEntity.this.setChanged();
+            }
+            
+            // Insert new stack (always 1 item)
+            if (!stackToSet.isEmpty()) {
+                // If slot was removed, add it back; otherwise just update storage
+                if (!storage.containsKey(physicalSlot)) {
+                    addItemToStorage(physicalSlot, stackToSet);
+                } else {
+                    // Slot already exists, just update storage and index
+                    storage.put(physicalSlot, stackToSet);
+                    Item item = stackToSet.getItem();
+                    itemIndex.computeIfAbsent(item, k -> new HashSet<>()).add(physicalSlot);
+                }
+                DeepDrawersBlockEntity.this.setChanged();
+            }
         }
     }
 }

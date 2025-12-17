@@ -114,6 +114,7 @@ public class DeepDrawersBlock extends BaseEntityBlock {
             BlockEntity entity = level.getBlockEntity(pos);
             if (entity instanceof DeepDrawersBlockEntity deepDrawers) {
                 // Open Deep Drawers GUI
+                deepDrawers.onGuiOpened(); // Mark GUI as open
                 serverPlayer.openMenu(new net.minecraft.world.SimpleMenuProvider(
                     (containerId, playerInventory, playerEntity) -> {
                         net.unfamily.iskautils.client.gui.DeepDrawersMenu menu = 
@@ -141,6 +142,11 @@ public class DeepDrawersBlock extends BaseEntityBlock {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             
             if (blockEntity instanceof DeepDrawersBlockEntity deepDrawers) {
+                // Close any open GUIs
+                while (deepDrawers.isGuiOpen()) {
+                    deepDrawers.onGuiClosed();
+                }
+                
                 // SECURITY: Do NOT drop items - clear storage to prevent lag
                 // This should never happen due to break protection, but is a failsafe
                 if (deepDrawers.hasItems()) {
