@@ -18,8 +18,7 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.client.gui.DeepDrawersMenu;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * BlockEntity for Deep Drawers
@@ -30,8 +29,24 @@ import java.util.Map;
 public class DeepDrawersBlockEntity extends BlockEntity {
     
     // Sparse storage: only stores slots that contain items
-    // Key = slot index, Value = ItemStack
+    // Key = physical slot index, Value = ItemStack
     private final Map<Integer, ItemStack> storage = new HashMap<>();
+    
+    // Performance optimization: Index of items by type for O(1) extraction lookup
+    // Key = Item, Value = Set of physical slot indices containing this item
+    private final Map<Item, Set<Integer>> itemIndex = new HashMap<>();
+    
+    // Performance optimization: Queue of empty slots for O(1) insertion
+    private final Queue<Integer> emptySlotsQueue = new ArrayDeque<>();
+    
+    // Performance optimization: Cursor for circular search when queue is empty
+    private int insertionCursor = 0;
+    
+    // Performance optimization: Logical slot mapping
+    // Maps logical slot index (exposed to pipes) to physical slot index (internal storage)
+    private final List<Integer> occupiedSlots = new ArrayList<>(); // Ordered list of physical slots with items
+    private final Map<Integer, Integer> logicalToPhysical = new HashMap<>(); // logicalSlot -> physicalSlot
+    private final Map<Integer, Integer> physicalToLogical = new HashMap<>(); // physicalSlot -> logicalSlot
     
     // Cached slot count from config
     private int maxSlots;
@@ -94,6 +109,12 @@ public class DeepDrawersBlockEntity extends BlockEntity {
      */
     public void clearStorage() {
         storage.clear();
+        itemIndex.clear();
+        emptySlotsQueue.clear();
+        occupiedSlots.clear();
+        logicalToPhysical.clear();
+        physicalToLogical.clear();
+        insertionCursor = 0;
         setChanged();
     }
     
@@ -175,18 +196,25 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         
         // Clear and load storage
         storage.clear();
+        itemIndex.clear();
+        emptySlotsQueue.clear();
+        occupiedSlots.clear();
+        logicalToPhysical.clear();
+        physicalToLogical.clear();
+        insertionCursor = 0;
         
         // Load storage using ListTag format (like ItemStackHandler does internally)
         if (tag.contains("Items", Tag.TAG_LIST)) {
             ListTag itemsList = tag.getList("Items", Tag.TAG_COMPOUND);
             for (int i = 0; i < itemsList.size(); i++) {
                 CompoundTag itemTag = itemsList.getCompound(i);
-                int slot = itemTag.getInt("Slot");
+                int physicalSlot = itemTag.getInt("Slot");
                 
-                if (slot >= 0 && slot < maxSlots) {
+                if (physicalSlot >= 0 && physicalSlot < maxSlots) {
                     ItemStack stack = ItemStack.parseOptional(provider, itemTag.getCompound("Item"));
                     if (!stack.isEmpty()) {
-                        storage.put(slot, stack);
+                        // Rebuild all indices
+                        addItemToStorage(physicalSlot, stack);
                     }
                 }
             }
@@ -328,31 +356,138 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         }
     }
     
+    // ===== Index Management =====
+    
+    /**
+     * Adds an item to storage and updates all indices
+     */
+    private void addItemToStorage(int physicalSlot, ItemStack stack) {
+        storage.put(physicalSlot, stack);
+        
+        // Update item index
+        Item item = stack.getItem();
+        itemIndex.computeIfAbsent(item, k -> new HashSet<>()).add(physicalSlot);
+        
+        // Update logical slot mapping
+        int logicalSlot = occupiedSlots.size();
+        occupiedSlots.add(physicalSlot);
+        logicalToPhysical.put(logicalSlot, physicalSlot);
+        physicalToLogical.put(physicalSlot, logicalSlot);
+        
+        // Update insertion cursor
+        if (physicalSlot >= insertionCursor) {
+            insertionCursor = physicalSlot + 1;
+        }
+    }
+    
+    /**
+     * Removes an item from storage and updates all indices
+     */
+    private void removeItemFromStorage(int physicalSlot) {
+        ItemStack removed = storage.remove(physicalSlot);
+        if (removed != null) {
+            // Remove from item index
+            Item item = removed.getItem();
+            Set<Integer> slots = itemIndex.get(item);
+            if (slots != null) {
+                slots.remove(physicalSlot);
+                if (slots.isEmpty()) {
+                    itemIndex.remove(item);
+                }
+            }
+            
+            // Remove from logical slot mapping
+            Integer logicalSlot = physicalToLogical.remove(physicalSlot);
+            if (logicalSlot != null) {
+                logicalToPhysical.remove(logicalSlot);
+                occupiedSlots.remove(physicalSlot);
+                
+                // Rebuild logical mapping to keep it contiguous
+                rebuildLogicalMapping();
+            }
+            
+            // Add to empty slots queue
+            emptySlotsQueue.offer(physicalSlot);
+        }
+    }
+    
+    /**
+     * Rebuilds the logical to physical slot mapping after removal
+     * Ensures logical slots remain contiguous (0, 1, 2, ...)
+     */
+    private void rebuildLogicalMapping() {
+        logicalToPhysical.clear();
+        physicalToLogical.clear();
+        
+        // Sort occupied slots for consistent ordering
+        Collections.sort(occupiedSlots);
+        
+        // Rebuild mappings
+        for (int i = 0; i < occupiedSlots.size(); i++) {
+            int physicalSlot = occupiedSlots.get(i);
+            logicalToPhysical.put(i, physicalSlot);
+            physicalToLogical.put(physicalSlot, i);
+        }
+    }
+    
+    /**
+     * Finds the next empty slot starting from cursor (circular search)
+     */
+    private int findNextEmptySlot(int startFrom) {
+        // Search forward from cursor
+        for (int i = 0; i < maxSlots; i++) {
+            int slot = (startFrom + i) % maxSlots;
+            if (!storage.containsKey(slot)) {
+                return slot;
+            }
+        }
+        return -1; // Storage is full
+    }
+    
     // ===== Custom IItemHandler Implementation =====
     
     /**
-     * Custom IItemHandler that wraps the sparse storage HashMap
-     * Efficiently handles massive slot counts with item validation
+     * Optimized IItemHandler using logical slots
+     * Exposes only occupied slots + 1 virtual slot for insertion
+     * This dramatically reduces iteration overhead for pipes/hoppers
      */
     private class DeepDrawersItemHandler implements IItemHandler {
         
         @Override
         public int getSlots() {
-            return maxSlots;
+            // Return only occupied slots + 1 virtual slot for automatic insertion
+            // This prevents pipes from iterating through 49,995 empty slots
+            return occupiedSlots.size() + 1;
         }
         
         @Override
-        public @NotNull ItemStack getStackInSlot(int slot) {
-            if (slot < 0 || slot >= maxSlots) {
+        public @NotNull ItemStack getStackInSlot(int logicalSlot) {
+            if (logicalSlot < 0) {
                 return ItemStack.EMPTY;
             }
-            ItemStack stack = storage.get(slot);
+            
+            // Last slot is the virtual insertion slot (always empty)
+            if (logicalSlot == occupiedSlots.size()) {
+                return ItemStack.EMPTY;
+            }
+            
+            // Map logical slot to physical slot
+            if (logicalSlot >= occupiedSlots.size()) {
+                return ItemStack.EMPTY;
+            }
+            
+            Integer physicalSlot = logicalToPhysical.get(logicalSlot);
+            if (physicalSlot == null) {
+                return ItemStack.EMPTY;
+            }
+            
+            ItemStack stack = storage.get(physicalSlot);
             return stack == null ? ItemStack.EMPTY : stack.copy();
         }
         
         @Override
-        public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
-            if (stack.isEmpty() || slot < 0 || slot >= maxSlots) {
+        public @NotNull ItemStack insertItem(int logicalSlot, @NotNull ItemStack stack, boolean simulate) {
+            if (stack.isEmpty() || logicalSlot < 0) {
                 return stack;
             }
             
@@ -361,12 +496,27 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 return stack; // Reject invalid items
             }
             
-            ItemStack existing = storage.get(slot);
+            // Virtual slot (last slot) = automatic insertion
+            if (logicalSlot == occupiedSlots.size()) {
+                return insertItemAuto(stack, simulate);
+            }
+            
+            // Regular logical slot - map to physical slot
+            if (logicalSlot >= occupiedSlots.size()) {
+                return stack;
+            }
+            
+            Integer physicalSlot = logicalToPhysical.get(logicalSlot);
+            if (physicalSlot == null) {
+                return stack;
+            }
+            
+            ItemStack existing = storage.get(physicalSlot);
             
             // If slot is empty, we can insert
             if (existing == null || existing.isEmpty()) {
                 if (!simulate) {
-                    storage.put(slot, stack.copy());
+                    addItemToStorage(physicalSlot, stack.copy());
                     setChanged();
                 }
                 return ItemStack.EMPTY;
@@ -390,7 +540,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             if (!simulate) {
                 ItemStack newStack = existing.copy();
                 newStack.grow(toInsert);
-                storage.put(slot, newStack);
+                storage.put(physicalSlot, newStack);
                 setChanged();
             }
             
@@ -403,13 +553,86 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             return remainder;
         }
         
-        @Override
-        public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
-            if (amount <= 0 || slot < 0 || slot >= maxSlots) {
+        /**
+         * Automatic insertion that finds the best slot without iteration
+         * Uses item index and empty slots queue for O(1) performance
+         */
+        private @NotNull ItemStack insertItemAuto(@NotNull ItemStack stack, boolean simulate) {
+            Item item = stack.getItem();
+            
+            // First, try to merge into existing slot with same item
+            Set<Integer> slotsWithItem = itemIndex.get(item);
+            if (slotsWithItem != null) {
+                for (int physicalSlot : slotsWithItem) {
+                    ItemStack existing = storage.get(physicalSlot);
+                    if (existing != null && ItemStack.isSameItemSameComponents(existing, stack)) {
+                        int maxStackSize = stack.getMaxStackSize();
+                        int spaceLeft = maxStackSize - existing.getCount();
+                        
+                        if (spaceLeft > 0) {
+                            // Can merge into this slot
+                            int toInsert = Math.min(spaceLeft, stack.getCount());
+                            
+                            if (!simulate) {
+                                ItemStack newStack = existing.copy();
+                                newStack.grow(toInsert);
+                                storage.put(physicalSlot, newStack);
+                                setChanged();
+                            }
+                            
+                            if (toInsert >= stack.getCount()) {
+                                return ItemStack.EMPTY; // All inserted
+                            }
+                            
+                            // Recursively insert remainder
+                            ItemStack remainder = stack.copy();
+                            remainder.shrink(toInsert);
+                            return insertItemAuto(remainder, simulate);
+                        }
+                    }
+                }
+            }
+            
+            // No existing slot with space, find empty slot
+            Integer emptySlot = emptySlotsQueue.poll();
+            if (emptySlot == null) {
+                // Queue empty, use circular search
+                emptySlot = findNextEmptySlot(insertionCursor);
+                if (emptySlot >= 0) {
+                    insertionCursor = emptySlot + 1;
+                }
+            }
+            
+            if (emptySlot != null && emptySlot >= 0 && emptySlot < maxSlots) {
+                if (!simulate) {
+                    addItemToStorage(emptySlot, stack.copy());
+                    setChanged();
+                }
                 return ItemStack.EMPTY;
             }
             
-            ItemStack existing = storage.get(slot);
+            // No space available
+            return stack;
+        }
+        
+        @Override
+        public @NotNull ItemStack extractItem(int logicalSlot, int amount, boolean simulate) {
+            if (amount <= 0 || logicalSlot < 0) {
+                return ItemStack.EMPTY;
+            }
+            
+            // Virtual slot cannot be extracted from
+            if (logicalSlot >= occupiedSlots.size()) {
+                return ItemStack.EMPTY;
+            }
+            
+            // Map logical slot to physical slot
+            Integer physicalSlot = logicalToPhysical.get(logicalSlot);
+            if (physicalSlot == null) {
+                return ItemStack.EMPTY;
+            }
+            
+            ItemStack existing = storage.get(physicalSlot);
             if (existing == null || existing.isEmpty()) {
                 return ItemStack.EMPTY;
             }
@@ -422,11 +645,13 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             
             if (!simulate) {
                 if (toExtract >= existing.getCount()) {
-                    storage.remove(slot);
+                    // Slot is now empty
+                    removeItemFromStorage(physicalSlot);
                 } else {
+                    // Partial extraction - update stack but keep in storage
                     ItemStack newStack = existing.copy();
                     newStack.shrink(toExtract);
-                    storage.put(slot, newStack);
+                    storage.put(physicalSlot, newStack);
                 }
                 setChanged();
             }
@@ -435,12 +660,14 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         }
         
         @Override
-        public int getSlotLimit(int slot) {
+        public int getSlotLimit(int logicalSlot) {
+            // All slots have the same limit
             return 64; // Standard stack limit
         }
         
         @Override
-        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+        public boolean isItemValid(int logicalSlot, @NotNull ItemStack stack) {
+            // Validation doesn't depend on slot, only on item
             return DeepDrawersBlockEntity.this.isItemValid(stack);
         }
     }
