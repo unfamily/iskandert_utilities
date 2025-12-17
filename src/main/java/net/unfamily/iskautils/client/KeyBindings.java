@@ -36,6 +36,7 @@ public class KeyBindings {
     private static final String KEY_PORTABLE_DISLOCATOR = "key.iska_utils.portable_dislocator";
     private static final String KEY_STRUCTURE_UNDO = "key.iska_utils.structure_undo";
     private static final String KEY_BURNING_BRAZIER_TOGGLE = "key.iska_utils.burning_brazier_toggle";
+    private static final String KEY_GHOST_BRAZIER_TOGGLE = "key.iska_utils.ghost_brazier_toggle";
 
     // Vector Charm keys
     public static final KeyMapping VECTOR_VERTICAL_KEY = new KeyMapping(
@@ -105,6 +106,15 @@ public class KeyBindings {
             KEY_CATEGORY_ISKA_UTILS
     );
 
+    // Ghost Brazier toggle key
+    public static final KeyMapping GHOST_BRAZIER_TOGGLE_KEY = new KeyMapping(
+            KEY_GHOST_BRAZIER_TOGGLE,
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_G,  // G key for ghost
+            KEY_CATEGORY_ISKA_UTILS
+    );
+
     /**
      * Registers key bindings
      */
@@ -118,6 +128,7 @@ public class KeyBindings {
         event.register(PORTABLE_DISLOCATOR_KEY);
         event.register(STRUCTURE_UNDO_KEY);
         event.register(BURNING_BRAZIER_TOGGLE_KEY);
+        event.register(GHOST_BRAZIER_TOGGLE_KEY);
         LOGGER.info("Registered all key mappings");
     }
 
@@ -211,6 +222,9 @@ public class KeyBindings {
                 // Send toggle request to server
                 ModMessages.sendBurningBrazierTogglePacket();
             }
+
+            // Ghost Brazier keybind is handled in the item's inventoryTick method
+            // The item checks if the keybind was pressed when it ticks
         }
     }
     
@@ -236,5 +250,13 @@ public class KeyBindings {
      */
     public static boolean consumeBurningBrazierToggleKeyClick() {
         return BURNING_BRAZIER_TOGGLE_KEY.consumeClick();
+    }
+
+    /**
+     * Checks if the ghost brazier toggle key has been pressed and consumes the event
+     * @return true if the key was pressed, false otherwise
+     */
+    public static boolean consumeGhostBrazierToggleKeyClick() {
+        return GHOST_BRAZIER_TOGGLE_KEY.consumeClick();
     }
 } 

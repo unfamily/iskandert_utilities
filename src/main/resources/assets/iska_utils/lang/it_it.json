@@ -139,6 +139,7 @@
   "key.iska_utils.portable_dislocator": "Attiva Dislocatore Portatile",
   "key.iska_utils.structure_undo": "Disassembla l'Ultima Struttura",
   "key.iska_utils.burning_brazier_toggle": "Attiva/Disattiva Auto-Piazzamento Braciere Infuocato",
+  "key.iska_utils.ghost_brazier_toggle": "Attiva/Disattiva Modalità Spettatore Braciere Fantasma",
   
   "message.iska_utils.structure_undo.no_history": "§eNessuna struttura da disassemblare",
   "message.iska_utils.structure_undo.structure_not_found": "§cDefinizione struttura non trovata: %s",
@@ -160,6 +161,8 @@
   "message.iska_utils.vector_hover_mode.off": "Modalità Amuleto Vettoriale: default",
   "message.iska_utils.burning_brazier_auto_placement.enabled": "Auto-piazzamento Braciere Infuocato: §aattivato",
   "message.iska_utils.burning_brazier_auto_placement.disabled": "Auto-piazzamento Braciere Infuocato: §cdisattivato",
+  "message.iska_utils.ghost_brazier.became_ethereal": "§bSei divenuto etereo",
+  "message.iska_utils.ghost_brazier.became_physical": "§aSei ritornato fisico",
 
   "item.iska_utils.portable_dislocator.tooltip.main": "Premi %s per teletrasportarti vicino alle coordinate della bussola (da 200 a 300 blocchi di distanza)",
   "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Ti teletrasporta vicino alle coordinate della bussola (da 200 a 300 blocchi di distanza)",
@@ -452,6 +455,16 @@
   "tooltip.iska_utils.burning_brazier.desc0": "§fEmette una fiamma talmente tanto forte che illuminerà il tuo cammino permanentemente",
   "tooltip.iska_utils.burning_brazier.desc1": "§7Premi §f%s §7per attivare/disattivare il piazzamento automatico delle fiamme",
   "tooltip.iska_utils.burning_brazier.desc2": "§7Tasto destro sulle fiamme per rimuoverle e ricaricare",
+  
+  "item.iska_utils.ghost_brazier": "Braciere Fantasma",
+  "tooltip.iska_utils.ghost_brazier.desc0": "§fUn braciere che permette di dissolvere temporaneamente il tuo corpo e divenire un fantasma.",
+  "tooltip.iska_utils.ghost_brazier.desc1": "§7Premi §e%s §7per passare tra forma fisica e forma eterea.",
+
+  "item.iska_utils.greedy_shield": "Scudo Avido",
+  "message.iska_utils.greedy_shield.blocked": "§aLo Scudo Avido ha bloccato completamente il danno!",
+  "message.iska_utils.greedy_shield.reduced": "§eLo Scudo Avido ha ridotto il danno!",
+  "tooltip.iska_utils.greedy_shield.desc0": "§fUno scudo che ha una possibilità di bloccare completamente i danni subiti.",
+  "tooltip.iska_utils.greedy_shield.desc1": "§7Se il blocco fallisce, ha una possibilità di ridurre significativamente il danno.",
 
   "block.iska_utils.deep_drawers": "Cassettiera Profonda",
   "item.iska_utils.deep_drawers": "Cassettiera Profonda",

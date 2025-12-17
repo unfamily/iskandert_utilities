@@ -19,6 +19,8 @@ import net.unfamily.iskautils.item.custom.SwissWrenchItem;
 import net.unfamily.iskautils.item.custom.AngelBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
 import net.unfamily.iskautils.item.custom.BurningBrazierItem;
+import net.unfamily.iskautils.item.custom.GhostBrazierItem;
+import net.unfamily.iskautils.item.custom.GreedyShieldItem;
 import net.unfamily.iskautils.item.custom.BlueprintItem;
 import net.unfamily.iskautils.item.custom.AutoShopItem;
 
@@ -352,6 +354,18 @@ public class ModItems {
     // Burning Flame Block Item (not indexed in creative tab)
     public static final DeferredItem<Item> BURNING_FLAME = ITEMS.register("burning_flame",
             () -> new BlockItem(ModBlocks.BURNING_FLAME.get(), ITEM_PROPERTIES));
+
+    // ===== GHOST BRAZIER ITEM =====
+
+    // Ghost Brazier (allows toggling between Survival and Spectator mode)
+    public static final DeferredItem<Item> GHOST_BRAZIER = ITEMS.register("ghost_brazier",
+            () -> new GhostBrazierItem(new Item.Properties().stacksTo(1)));
+
+    // ===== GREEDY SHIELD ITEM =====
+
+    // Greedy Shield (chance to block or reduce incoming damage)
+    public static final DeferredItem<Item> GREEDY_SHIELD = ITEMS.register("greedy_shield",
+            () -> new GreedyShieldItem(new Item.Properties().stacksTo(1)));
 
     // ===== DEEP DRAWERS =====
     public static final DeferredItem<Item> DEEP_DRAWERS = ITEMS.register("deep_drawers",

@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DCD",
+    "CBC",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:ingots/gold"
+    },
+    "B": {
+      "item": "minecraft:sea_lantern"
+    },
+    "C": {
+      "item": "minecraft:warped_wart_block"
+    },
+    "D": {
+      "tag": "minecraft:soul_fire_base_blocks"
+    }
+  },
+  "result": {
+    "id": "iska_utils:ghost_brazier",
+    "count": 1
+  }
+} 

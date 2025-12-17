@@ -475,6 +475,21 @@ public class Config
                     "Also activates automatically if world has stage 'iska_utils_internal-flame_curse'")
             .define("001_burning_flame_super_hot", false);
 
+    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_BLOCK_CHANCE = BUILDER
+            .comment("Chance for Greedy Shield to completely block damage (0.0 to 1.0)",
+                    "Default: 0.3 (30%)")
+            .defineInRange("002_greedy_shield_block_chance", 0.3D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_CHANCE = BUILDER
+            .comment("Chance for Greedy Shield to reduce damage by 80% if block fails (0.0 to 1.0)",
+                    "Default: 0.3 (30%)")
+            .defineInRange("003_greedy_shield_reduce_chance", 0.3D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_AMOUNT = BUILDER
+            .comment("Damage reduction amount when Greedy Shield reduces damage (0.0 to 1.0)",
+                    "Default: 0.8 (80% reduction, so 20% of original damage)")
+            .defineInRange("004_greedy_shield_reduce_amount", 0.8D, 0.0D, 1.0D);
+
     static {
         BUILDER.pop(); // End of evil_things category
     }
@@ -532,6 +547,9 @@ public class Config
     public static boolean acceptClientStructure;
     public static boolean allowClientStructurePlayerLike;
     public static boolean burningBrazierSuperHot;
+    public static double greedyShieldBlockChance;
+    public static double greedyShieldReduceChance;
+    public static double greedyShieldReduceAmount;
     public static boolean burningFlameSuperHot;
     public static java.util.List<String> deepDrawersAllowedTags;
     public static java.util.List<String> deepDrawersBlacklist;
@@ -597,6 +615,9 @@ public class Config
 
         // Evil Things configuration
         burningBrazierSuperHot = BURNING_BRAZIER_SUPER_HOT.get();
+        greedyShieldBlockChance = GREEDY_SHIELD_BLOCK_CHANCE.get();
+        greedyShieldReduceChance = GREEDY_SHIELD_REDUCE_CHANCE.get();
+        greedyShieldReduceAmount = GREEDY_SHIELD_REDUCE_AMOUNT.get();
         burningFlameSuperHot = BURNING_FLAME_SUPER_HOT.get();
         
         // Deep Drawers configuration

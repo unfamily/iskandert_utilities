@@ -160,6 +160,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());
                                 pOutput.accept(ModItems.MINING_EQUITIZER.get());
                                 pOutput.accept(ModItems.BURNING_BRAZIER.get());
+                                pOutput.accept(ModItems.GHOST_BRAZIER.get());
 
 
                             }).build());

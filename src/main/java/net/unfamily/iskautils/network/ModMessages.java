@@ -1147,4 +1147,47 @@ public class ModMessages {
         }
     }
 
+    /**
+     * Sends a Ghost Brazier toggle packet to the server
+     * This toggles the game mode between Survival and Spectator
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendGhostBrazierTogglePacket() {
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player == null) {
+                        return;
+                    }
+
+                    net.minecraft.world.level.GameType currentGameMode = player.gameMode.getGameModeForPlayer();
+                    
+                    if (currentGameMode == net.minecraft.world.level.GameType.SPECTATOR) {
+                        // Switch back to previous game mode (or Survival if not set)
+                        net.minecraft.world.level.GameType previousMode = net.unfamily.iskautils.data.GhostBrazierData.getPreviousGameMode(player);
+                        player.setGameMode(previousMode);
+                        net.unfamily.iskautils.data.GhostBrazierData.clearPreviousGameMode(player);
+                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_physical"), true);
+                    } else {
+                        // Switch to Spectator mode, save current mode
+                        net.unfamily.iskautils.data.GhostBrazierData.setPreviousGameMode(player, currentGameMode);
+                        player.setGameMode(net.minecraft.world.level.GameType.SPECTATOR);
+                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_ethereal"), true);
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to toggle Ghost Brazier game mode: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send Ghost Brazier toggle packet: {}", e.getMessage());
+        }
+    }
+
 } 
