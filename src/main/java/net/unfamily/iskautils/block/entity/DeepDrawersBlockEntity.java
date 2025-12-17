@@ -195,8 +195,15 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     
     @Override
     public CompoundTag getUpdateTag(@NotNull HolderLookup.Provider provider) {
-        // Use saveWithoutMetadata to properly format the tag
-        return saveWithoutMetadata(provider);
+        // Only send minimal metadata, NOT all items
+        // Sending all items would exceed the 2MB NBT limit for network packets
+        // Items are synced separately when the GUI is opened
+        CompoundTag tag = new CompoundTag();
+        tag.putInt("MaxSlots", this.maxSlots);
+        tag.putInt("ScrollOffset", this.scrollOffset);
+        // Note: We intentionally do NOT include the Items list here
+        // to avoid exceeding the 2MB NBT packet limit
+        return tag;
     }
     
     @Override
@@ -211,8 +218,22 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                             @NotNull HolderLookup.Provider lookupProvider) {
         super.onDataPacket(net, pkt, lookupProvider);
         // Handle data packet from server on client
+        // Only load metadata, not items (items are synced via GUI packets)
         if (pkt.getTag() != null) {
-            loadAdditional(pkt.getTag(), lookupProvider);
+            CompoundTag tag = pkt.getTag();
+            // Only update metadata, not storage
+            if (tag.contains("MaxSlots", Tag.TAG_INT)) {
+                this.maxSlots = tag.getInt("MaxSlots");
+                if (this.maxSlots <= 0) {
+                    this.maxSlots = Config.deepDrawersSlotCount;
+                }
+            }
+            if (tag.contains("ScrollOffset", Tag.TAG_INT)) {
+                this.scrollOffset = tag.getInt("ScrollOffset");
+                if (this.scrollOffset < 0) {
+                    this.scrollOffset = 0;
+                }
+            }
         }
     }
     
@@ -228,7 +249,8 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     @Override
     public void setChanged() {
         super.setChanged();
-        // Sync changes to client immediately (like Shop does)
+        // Sync changes to client immediately, but only metadata (not items)
+        // Items are synced separately when GUI is opened to avoid exceeding 2MB NBT limit
         if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
