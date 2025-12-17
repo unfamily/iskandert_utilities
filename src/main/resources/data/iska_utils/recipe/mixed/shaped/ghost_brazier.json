@@ -10,10 +10,10 @@
       "tag": "c:ingots/gold"
     },
     "B": {
-      "item": "minecraft:sea_lantern"
+      "tag": "c:nether_stars"
     },
     "C": {
-      "item": "minecraft:warped_wart_block"
+      "item": "minecraft:sculk"
     },
     "D": {
       "tag": "minecraft:soul_fire_base_blocks"
