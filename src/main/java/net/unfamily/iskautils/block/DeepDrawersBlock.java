@@ -77,6 +77,22 @@ public class DeepDrawersBlock extends BaseEntityBlock {
         return new DeepDrawersBlockEntity(pos, state);
     }
     
+    @Nullable
+    @Override
+    public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(Level level, BlockState state, net.minecraft.world.level.block.entity.BlockEntityType<T> blockEntityType) {
+        return createTickerHelper(
+                blockEntityType,
+                net.unfamily.iskautils.block.entity.ModBlockEntities.DEEP_DRAWERS_BE.get(),
+                DeepDrawersBlockEntity::tick
+        );
+    }
+    
+    @Nullable
+    protected static <E extends BlockEntity, A extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<A> createTickerHelper(
+            net.minecraft.world.level.block.entity.BlockEntityType<A> typeCheck, net.minecraft.world.level.block.entity.BlockEntityType<E> typeExpected, net.minecraft.world.level.block.entity.BlockEntityTicker<? super E> ticker) {
+        return typeExpected == typeCheck ? (net.minecraft.world.level.block.entity.BlockEntityTicker<A>) ticker : null;
+    }
+    
     /**
      * Called when a player attempts to break the block
      * Returns the time it takes to break, or -1 if it cannot be broken
