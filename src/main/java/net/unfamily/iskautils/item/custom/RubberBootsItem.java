@@ -49,6 +49,14 @@ public class RubberBootsItem extends ArmorItem {
     }
     
     /**
+     * Returns the enchantment value for this item (same as leather/iron boots)
+     */
+    @Override
+    public int getEnchantmentValue() {
+        return 2;
+    }
+    
+    /**
      * Handles the fall damage when the player wears the rubber boots
      * @param stack The stack of the item
      * @param entity The entity that wears the boots
