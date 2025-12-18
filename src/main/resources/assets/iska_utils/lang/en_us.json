@@ -476,6 +476,7 @@
   "tooltip.iska_utils.deep_drawers.desc0": "A very large storage block that can only contain non-stackable items",
   "tooltip.iska_utils.deep_drawers.desc1": "If it contains items it cannot be broken, use a dolly or similar to move it",
   "tooltip.iska_utils.deep_drawers.desc2": "It is recommended to use an external system to view its contents rather than the native one",
+  "tooltip.iska_utils.deep_drawers.desc3": "From the integrated GUI it is not possible to insert and extract with shift+click, use hoppers, pipes or similar",
   "message.iska_utils.deep_drawers.cannot_break": "§cCannot break Deep Drawer while it contains items!",
 
   "item.iska_utils.dolly": "Dolly",
