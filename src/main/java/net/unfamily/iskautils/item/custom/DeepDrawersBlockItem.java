@@ -28,8 +28,12 @@ public class DeepDrawersBlockItem extends BlockItem {
                 .withStyle(ChatFormatting.GRAY));
         
         // Add warning in red about not being able to pick up if it contains items
-        tooltip.add(Component.translatable("tooltip.iska_utils.deep_drawers.warning")
+        tooltip.add(Component.translatable("tooltip.iska_utils.deep_drawers.desc1")
                 .withStyle(ChatFormatting.RED));
+        
+        // Add recommendation in green about using external systems
+        tooltip.add(Component.translatable("tooltip.iska_utils.deep_drawers.desc2")
+                .withStyle(ChatFormatting.GREEN));
     }
 }
 

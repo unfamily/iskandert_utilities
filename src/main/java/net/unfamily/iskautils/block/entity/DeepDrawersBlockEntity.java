@@ -17,6 +17,7 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.client.gui.DeepDrawersMenu;
+import net.unfamily.iskautils.util.DeepDrawerStackSizeContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -205,7 +206,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 }
                 
                 // Get max stack size for this item type (use Deep Drawer limit)
-                int maxStackSize = 1024; // Deep Drawer limit
+                int maxStackSize = 4096; // Deep Drawer limit
                 
                 // Try to merge stacks
                 for (int i = 0; i < slots.size(); i++) {
@@ -741,62 +742,66 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 return stack; // Reject invalid items
             }
             
-            // Virtual slot (last slot) = automatic insertion
-            if (logicalSlot == occupiedSlots.size()) {
-                return insertItemAuto(stack, simulate);
-            }
-            
-            // Regular logical slot - map to physical slot
-            if (logicalSlot >= occupiedSlots.size()) {
-                return stack;
-            }
-            
-            Integer physicalSlot = logicalToPhysical.get(logicalSlot);
-            if (physicalSlot == null) {
-                return stack;
-            }
-            
-            ItemStack existing = storage.get(physicalSlot);
-            
-            // If slot is empty, we can insert
-            if (existing == null || existing.isEmpty()) {
+            // Use Deep Drawer context to enable stack size modification via mixin
+            // This allows non-stackable items to become stackable inside the Deep Drawer
+            return DeepDrawerStackSizeContext.withDeepDrawerContext(() -> {
+                // Virtual slot (last slot) = automatic insertion
+                if (logicalSlot == occupiedSlots.size()) {
+                    return insertItemAuto(stack, simulate);
+                }
+                
+                // Regular logical slot - map to physical slot
+                if (logicalSlot >= occupiedSlots.size()) {
+                    return stack;
+                }
+                
+                Integer physicalSlot = logicalToPhysical.get(logicalSlot);
+                if (physicalSlot == null) {
+                    return stack;
+                }
+                
+                ItemStack existing = storage.get(physicalSlot);
+                
+                // If slot is empty, we can insert
+                if (existing == null || existing.isEmpty()) {
+                    if (!simulate) {
+                        addItemToStorage(physicalSlot, stack.copy());
+                        setChanged();
+                    }
+                    return ItemStack.EMPTY;
+                }
+                
+                // If slot has different item, can't insert
+                if (!ItemStack.isSameItemSameComponents(existing, stack)) {
+                    return stack;
+                }
+                
+                // Try to merge stacks
+                // Use Deep Drawer slot limit instead of item's maxStackSize to allow stacking non-stackable items
+                int maxStackSize = getSlotLimit(logicalSlot);
+                int spaceLeft = maxStackSize - existing.getCount();
+                
+                if (spaceLeft <= 0) {
+                    return stack; // Slot is full
+                }
+                
+                int toInsert = Math.min(spaceLeft, stack.getCount());
+                
                 if (!simulate) {
-                    addItemToStorage(physicalSlot, stack.copy());
+                    ItemStack newStack = existing.copy();
+                    newStack.grow(toInsert);
+                    storage.put(physicalSlot, newStack);
                     setChanged();
                 }
-                return ItemStack.EMPTY;
-            }
-            
-            // If slot has different item, can't insert
-            if (!ItemStack.isSameItemSameComponents(existing, stack)) {
-                return stack;
-            }
-            
-            // Try to merge stacks
-            // Use Deep Drawer slot limit instead of item's maxStackSize to allow stacking non-stackable items
-            int maxStackSize = getSlotLimit(logicalSlot);
-            int spaceLeft = maxStackSize - existing.getCount();
-            
-            if (spaceLeft <= 0) {
-                return stack; // Slot is full
-            }
-            
-            int toInsert = Math.min(spaceLeft, stack.getCount());
-            
-            if (!simulate) {
-                ItemStack newStack = existing.copy();
-                newStack.grow(toInsert);
-                storage.put(physicalSlot, newStack);
-                setChanged();
-            }
-            
-            if (toInsert >= stack.getCount()) {
-                return ItemStack.EMPTY; // All inserted
-            }
-            
-            ItemStack remainder = stack.copy();
-            remainder.shrink(toInsert);
-            return remainder;
+                
+                if (toInsert >= stack.getCount()) {
+                    return ItemStack.EMPTY; // All inserted
+                }
+                
+                ItemStack remainder = stack.copy();
+                remainder.shrink(toInsert);
+                return remainder;
+            });
         }
         
         /**
@@ -808,46 +813,49 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 return stack;
             }
             
-            ItemStack existing = storage.get(physicalSlot);
-            
-            // If slot is empty, we can insert
-            if (existing == null || existing.isEmpty()) {
+            // Use Deep Drawer context to enable stack size modification via mixin
+            return DeepDrawerStackSizeContext.withDeepDrawerContext(() -> {
+                ItemStack existing = storage.get(physicalSlot);
+                
+                // If slot is empty, we can insert
+                if (existing == null || existing.isEmpty()) {
+                    if (!simulate) {
+                        addItemToStorage(physicalSlot, stack.copy());
+                        setChanged();
+                    }
+                    return ItemStack.EMPTY;
+                }
+                
+                // If slot has different item, can't insert
+                if (!ItemStack.isSameItemSameComponents(existing, stack)) {
+                    return stack;
+                }
+                
+                // Try to merge stacks (use Deep Drawer limit, not item's maxStackSize)
+                int maxStackSize = getSlotLimit(0); // All slots have same limit
+                int spaceLeft = maxStackSize - existing.getCount();
+                
+                if (spaceLeft <= 0) {
+                    return stack; // Slot is full
+                }
+                
+                int toInsert = Math.min(spaceLeft, stack.getCount());
+                
                 if (!simulate) {
-                    addItemToStorage(physicalSlot, stack.copy());
+                    ItemStack newStack = existing.copy();
+                    newStack.grow(toInsert);
+                    storage.put(physicalSlot, newStack);
                     setChanged();
                 }
-                return ItemStack.EMPTY;
-            }
-            
-            // If slot has different item, can't insert
-            if (!ItemStack.isSameItemSameComponents(existing, stack)) {
-                return stack;
-            }
-            
-            // Try to merge stacks (use Deep Drawer limit, not item's maxStackSize)
-            int maxStackSize = getSlotLimit(0); // All slots have same limit
-            int spaceLeft = maxStackSize - existing.getCount();
-            
-            if (spaceLeft <= 0) {
-                return stack; // Slot is full
-            }
-            
-            int toInsert = Math.min(spaceLeft, stack.getCount());
-            
-            if (!simulate) {
-                ItemStack newStack = existing.copy();
-                newStack.grow(toInsert);
-                storage.put(physicalSlot, newStack);
-                setChanged();
-            }
-            
-            if (toInsert >= stack.getCount()) {
-                return ItemStack.EMPTY; // All inserted
-            }
-            
-            ItemStack remainder = stack.copy();
-            remainder.shrink(toInsert);
-            return remainder;
+                
+                if (toInsert >= stack.getCount()) {
+                    return ItemStack.EMPTY; // All inserted
+                }
+                
+                ItemStack remainder = stack.copy();
+                remainder.shrink(toInsert);
+                return remainder;
+            });
         }
         
         /**
@@ -967,7 +975,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         public int getSlotLimit(int logicalSlot) {
             // Allow stacking in Deep Drawer to make non-stackable items stackable
             // Similar to Stackcraft behavior, but only for Deep Drawer
-            return 1024; // Stack limit for Deep Drawer
+            return 4096; // Stack limit for Deep Drawer
         }
         
         @Override

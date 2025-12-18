@@ -20,6 +20,10 @@ repositories {
     maven {
         url = "https://www.cursemaven.com"
     }
+    maven {
+        name = "Maven Central"
+        url = "https://repo1.maven.org/maven2"
+    }
 }
 
 base {
@@ -114,6 +118,10 @@ configurations {
 }
 
 dependencies {
+    // MixinExtras for advanced mixin features
+    // NeoForge 20.2+ includes MixinExtras by default, but we can override with a specific version if needed
+    // Using the version that should be compatible with NeoForge 21.1.215
+    implementation("io.github.llamalad7:mixinextras-neoforge:0.5.0")
 
     // Cursio optional dependency
     if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "curios") {

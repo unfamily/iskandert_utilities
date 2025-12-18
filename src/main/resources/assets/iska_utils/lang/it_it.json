@@ -470,7 +470,8 @@
   "item.iska_utils.deep_drawers": "Cassettiera Profonda",
   "container.iska_utils.deep_drawers": "Cassettiera Profonda",
   "tooltip.iska_utils.deep_drawers.desc0": "Una cassettiera molto capiente ma accetta solo oggetti normalmente non impilabili",
-  "tooltip.iska_utils.deep_drawers.warning": "Se contiene oggetti non può essere rotto, usa un dolly o un oggetto similare per spostarlo",
+  "tooltip.iska_utils.deep_drawers.desc1": "Se contiene oggetti non può essere rotto, usa un dolly o un oggetto similare per spostarlo",
+  "tooltip.iska_utils.deep_drawers.desc2": "È consigliato usare un sistema esterno per vederne il contenuto rispetto al nativo",
   "message.iska_utils.deep_drawers.cannot_break": "§cNon puoi rompere la Cassettiera Profonda che contiene oggetti!",
 
   "item.iska_utils.dolly": "Dolly",
