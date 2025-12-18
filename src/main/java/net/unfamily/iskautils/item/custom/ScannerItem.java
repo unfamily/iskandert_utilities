@@ -39,6 +39,7 @@ import net.minecraft.world.item.UseAnim;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
 
 /**
  * Item for scanning specific blocks in an area
@@ -1122,7 +1123,17 @@ public class ScannerItem extends Item {
         float percentage = Math.min(1.0f, (float) ticksUsed / requiredDuration);
         int filledBlocks = Math.round(percentage * LOADING_BAR_LENGTH);
         
+        // Check if it's April 1st for the fish emoji easter egg
+        LocalDate today = LocalDate.now();
+        boolean isAprilFools = today.getMonthValue() == 4 && today.getDayOfMonth() == 1;
+        String barChar = isAprilFools ? "🐟" : "█";
+        
         MutableComponent message = Component.literal("");
+        
+        // Add April Fools message if it's April 1st
+        if (isAprilFools) {
+            message.append(Component.translatable("item.iska_utils.scanner.fish_powered").withStyle(ChatFormatting.AQUA));
+        }
         
         // Add percentage
         String percentText = String.format(" %.0f%% ", percentage * 100);
@@ -1132,13 +1143,13 @@ public class ScannerItem extends Item {
         
         // Add filled blocks (green if fully loaded, otherwise red)
         for (int i = 0; i < filledBlocks; i++) {
-            message.append(Component.literal("█").withStyle(percentage >= 1.0f ? 
+            message.append(Component.literal(barChar).withStyle(percentage >= 1.0f ? 
                     ChatFormatting.GREEN : ChatFormatting.RED));
         }
         
         // Add empty blocks (gray)
         for (int i = filledBlocks; i < LOADING_BAR_LENGTH; i++) {
-            message.append(Component.literal("█").withStyle(ChatFormatting.DARK_GRAY));
+            message.append(Component.literal(barChar).withStyle(ChatFormatting.DARK_GRAY));
         }
         
         message.append(Component.literal(percentText).withStyle(percentage >= 1.0f ? 

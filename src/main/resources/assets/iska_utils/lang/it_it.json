@@ -245,6 +245,7 @@
   "item.iska_utils.scanner.found_ores_limit": "Trovati %d blocchi minerali nell'area (limite di %d raggiunto)",
   "item.iska_utils.scanner.found_all_mobs": "Trovati %d mob nell'area",
   "item.iska_utils.scanner.transferring_from_chip": "Trasferimento dati dal chip allo scanner in corso",
+  "item.iska_utils.scanner.fish_powered": "🐟 La scansione è potenziata dai pesci... 🐟",
   
   "item.iska_utils.scanner_chip.target_set": "Blocco target salvato nel chip: %s",
   "item.iska_utils.scanner_chip.mob_target_set": "Target impostato per scansionare %s",

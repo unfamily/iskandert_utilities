@@ -236,6 +236,7 @@
   "item.iska_utils.scanner.found_ores_limit": "Found %d ore blocks (limit of %d reached)",
   "item.iska_utils.scanner.found_all_mobs": "Found %d mobs in the area",
   "item.iska_utils.scanner.transferring_from_chip": "Transferring target from chip to scanner",
+  "item.iska_utils.scanner.fish_powered": "🐟 Scanning is powered by fish... 🐟",
 
   
   "item.iska_utils.scanner_chip.target_set": "Target block saved to chip: %s",
