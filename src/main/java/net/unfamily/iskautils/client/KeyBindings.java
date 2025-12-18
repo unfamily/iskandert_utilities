@@ -84,7 +84,7 @@ public class KeyBindings {
             KEY_PORTABLE_DISLOCATOR,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_P,  // P key for dislocator
+            GLFW.GLFW_KEY_K,  // K key for dislocator
             KEY_CATEGORY_ISKA_UTILS
     );
 
