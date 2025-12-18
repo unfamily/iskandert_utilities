@@ -225,8 +225,14 @@ public class StructureLoader {
                 "                    ]\n" +
                 "                },\n" +
                 "                \"@\": {\n" +
-                "                    \"display\": \"minecraft.piston\",\n" +
+                "                    \"display\": \"minecraft.sticky_piston\",\n" +
                 "                    \"alternatives\": [\n" +
+                "                        {\n" +
+                "                            \"block\": \"minecraft:sticky_piston\",\n" +
+                "                            \"properties\": {\n" +
+                "                                \"facing\": \"up\"\n" +
+                "                            }\n" +
+                "                        },\n" +
                 "                        {\n" +
                 "                            \"block\": \"minecraft:piston\",\n" +
                 "                            \"properties\": {\n" +

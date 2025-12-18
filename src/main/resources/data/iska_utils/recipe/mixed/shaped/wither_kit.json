@@ -1,0 +1,35 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "iska_utils:iska_utils_wither_grinder"
+    }
+  ],
+  "pattern": [
+    "ABA",
+    "CCC",
+    "DCE"
+  ],
+  "key": {
+   "A": {
+    "item": "minecraft:wither_skeleton_skull"
+   },
+   "B": {
+    "item": "iska_utils:wither_proof_block"
+   },  
+   "C": {
+    "tag": "minecraft:soul_fire_base_blocks"
+   },
+   "D": {
+    "item": "minecraft:sticky_piston"
+   },
+   "E": {
+    "item": "minecraft:lever"
+   }
+  },
+  "result": {
+    "id": "iska_utils:iska_utils_wither_grinder",
+    "count": 1
+  }
+} 
