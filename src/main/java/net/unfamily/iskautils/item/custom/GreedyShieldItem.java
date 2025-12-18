@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.Entity;
@@ -32,9 +33,12 @@ public class GreedyShieldItem extends Item {
         int remainingPercent = 100 - reduceAmountPercent;
         
         tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc0"));
-        tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc1", blockChancePercent));
-        tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc2", reduceChancePercent));
-        tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc3", reduceAmountPercent, remainingPercent));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc1", blockChancePercent)
+                .withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc2", reduceChancePercent)
+                .withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc3", reduceAmountPercent, remainingPercent)
+                .withStyle(ChatFormatting.GRAY));
         
         if (Config.greedyShieldInfo) {
             tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.info"));
