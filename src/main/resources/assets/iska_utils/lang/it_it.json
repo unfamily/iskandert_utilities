@@ -464,9 +464,9 @@
   "message.iska_utils.greedy_shield.blocked": "§aLo Scudo Avido ha bloccato completamente il danno!",
   "message.iska_utils.greedy_shield.reduced": "§eLo Scudo Avido ha ridotto il danno!",
   "tooltip.iska_utils.greedy_shield.desc0": "§5Questo antico scudo ti preggerà di proteggerti ma non è garantito il risultato",
-  "tooltip.iska_utils.greedy_shield.desc1": "§7Ha una probabilità del 30% di bloccare completamente i danni subiti",
-  "tooltip.iska_utils.greedy_shield.desc2": "§7Se il blocco fallisce, ha una probabilità del 30% di ridurre il danno",
-  "tooltip.iska_utils.greedy_shield.desc3": "§7Quando il danno viene ridotto, lo riduce dell'80% (rimane il 20% del danno originale)",
+  "tooltip.iska_utils.greedy_shield.desc1": "§7Ha una probabilità del %d%% di bloccare completamente i danni subiti",
+  "tooltip.iska_utils.greedy_shield.desc2": "§7Se il blocco fallisce, ha una probabilità del %d%% di ridurre il danno",
+  "tooltip.iska_utils.greedy_shield.desc3": "§7Quando il danno viene ridotto, lo riduce del %d%% (rimane il %d%% del danno originale non viene bloccato)",
   "tooltip.iska_utils.greedy_shield.info": "§6Ottenuto dal regalo",
   "tooltip.iska_utils.gift.availability": "§7Ottenibile dal 20 al 30 dicembre",
 

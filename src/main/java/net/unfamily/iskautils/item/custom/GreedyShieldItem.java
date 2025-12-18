@@ -25,13 +25,19 @@ public class GreedyShieldItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.greedy_shield.desc0").getString()));
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.greedy_shield.desc1").getString()));
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.greedy_shield.desc2").getString()));
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.greedy_shield.desc3").getString()));
+        // Get values from config and convert to percentages
+        int blockChancePercent = (int) (Config.greedyShieldBlockChance * 100);
+        int reduceChancePercent = (int) (Config.greedyShieldReduceChance * 100);
+        int reduceAmountPercent = (int) (Config.greedyShieldReduceAmount * 100);
+        int remainingPercent = 100 - reduceAmountPercent;
+        
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc0"));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc1", blockChancePercent));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc2", reduceChancePercent));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc3", reduceAmountPercent, remainingPercent));
         
         if (Config.greedyShieldInfo) {
-            tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.greedy_shield.info").getString()));
+            tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.info"));
         }
     }
 
