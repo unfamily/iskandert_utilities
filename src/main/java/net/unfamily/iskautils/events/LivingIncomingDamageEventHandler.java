@@ -41,10 +41,13 @@ public class LivingIncomingDamageEventHandler {
         }
 
         // Process Greedy Shield first (has highest priority)
-        processGreedyShield(event, player);
+        // Returns true if damage was completely blocked
+        boolean damageCompletelyBlocked = processGreedyShield(event, player);
         
-        // Process Necrotic Crystal Heart (only if damage wasn't already blocked)
-        if (event.getAmount() > 0.0f) {
+        // Process Necrotic Crystal Heart only if:
+        // 1. Greedy Shield didn't completely block the damage
+        // 2. There's still damage remaining
+        if (!damageCompletelyBlocked && event.getAmount() > 0.0f) {
             processNecroticCrystalHeart(event, player);
         }
     }
@@ -137,21 +140,26 @@ public class LivingIncomingDamageEventHandler {
     /**
      * Processes Greedy Shield logic.
      * Has a chance to completely block damage, or if that fails, reduce it.
+     * 
+     * @param event The incoming damage event
+     * @param player The player taking damage
+     * @return true if damage was completely blocked, false otherwise
      */
-    private static void processGreedyShield(LivingIncomingDamageEvent event, Player player) {
+    private static boolean processGreedyShield(LivingIncomingDamageEvent event, Player player) {
         // Check if player has the Greedy Shield equipped
         if (!StageRegistry.playerHasStage(player, "iska_utils_internal-greedy_shield_equip")) {
-            return;
+            return false;
         }
 
         float originalDamage = event.getAmount();
         if (originalDamage <= 0.0f) {
-            return; // No damage to process
+            return false; // No damage to process
         }
 
         RandomSource random = player.getRandom();
         
         // First check: chance to completely block damage
+        // Parametro: Config.greedyShieldBlockChance (default: 0.3 = 30%)
         if (random.nextDouble() < Config.greedyShieldBlockChance) {
             // Completely block the damage
             event.setAmount(0.0f);
@@ -161,10 +169,12 @@ public class LivingIncomingDamageEventHandler {
                     true // actionbar
                 );
             }
-            return;
+            return true; // Damage completely blocked
         }
 
         // Second check: if block failed, chance to reduce damage
+        // Parametro: Config.greedyShieldReduceChance (default: 0.3 = 30%)
+        // Parametro: Config.greedyShieldReduceAmount (default: 0.8 = 80% reduction, so 20% of original damage remains)
         if (random.nextDouble() < Config.greedyShieldReduceChance) {
             // Reduce damage by the configured amount
             float reducedDamage = originalDamage * (1.0f - (float)Config.greedyShieldReduceAmount);
@@ -176,6 +186,8 @@ public class LivingIncomingDamageEventHandler {
                 );
             }
         }
+        
+        return false; // Damage was not completely blocked (may have been reduced)
     }
     
     /**

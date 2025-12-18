@@ -386,13 +386,25 @@ public class ModBlocks {
     // ===== DEEP DRAWERS =====
     private static final BlockBehaviour.Properties DEEP_DRAWERS_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.METAL)
-            .strength(0.5f, 1.0f)
+            .strength(3.5f, 6.0f)
             .sound(SoundType.COPPER)
             .requiresCorrectToolForDrops();
 
     // Deep Drawers Block (massive storage for non-stackable items)
     public static final DeferredBlock<DeepDrawersBlock> DEEP_DRAWERS = BLOCKS.register("deep_drawers",
             () -> new DeepDrawersBlock(DEEP_DRAWERS_PROPERTIES));
+
+    // ===== GIFT BLOCK =====
+    private static final BlockBehaviour.Properties GIFT_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.PLANT)
+            .noCollission()
+            .instabreak()
+            .sound(SoundType.GRASS)
+            .pushReaction(PushReaction.DESTROY);
+
+    // Gift Block (hidden cross model block with item texture)
+    public static final DeferredBlock<Block> GIFT = BLOCKS.register("gift",
+            () -> new Block(GIFT_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

@@ -371,6 +371,11 @@ public class ModItems {
     public static final DeferredItem<Item> DEEP_DRAWERS = ITEMS.register("deep_drawers",
             () -> new net.unfamily.iskautils.item.custom.DeepDrawersBlockItem(ModBlocks.DEEP_DRAWERS.get(), ITEM_PROPERTIES));
 
+    // ===== GIFT BLOCK =====
+    // Hidden block (not in creative tab)
+    public static final DeferredItem<Item> GIFT = ITEMS.register("gift",
+            () -> new BlockItem(ModBlocks.GIFT.get(), ITEM_PROPERTIES));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
         

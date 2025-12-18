@@ -5,7 +5,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.TooltipFlag;
 import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskautils.Config;
+import java.util.List;
 
 /**
  * Greedy Shield Item - When taking damage, has a chance to completely block it,
@@ -15,6 +19,20 @@ public class GreedyShieldItem extends Item {
 
     public GreedyShieldItem(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+        
+        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.greedy_shield.desc0").getString()));
+        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.greedy_shield.desc1").getString()));
+        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.greedy_shield.desc2").getString()));
+        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.greedy_shield.desc3").getString()));
+        
+        if (Config.greedyShieldInfo) {
+            tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.greedy_shield.info").getString()));
+        }
     }
 
     @Override

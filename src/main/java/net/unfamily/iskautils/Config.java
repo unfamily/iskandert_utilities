@@ -458,7 +458,32 @@ public class Config
             .comment("If false not desplay where obtain the artifacts or mod dependecy required for obtain it (only for lootable artifacts)")
             .define("100_artifacts_info", true);
 
+    // Category for Artifacts Settings (under dev)
     static {
+        BUILDER.comment("Artifacts Settings").push("artifacts_settings");
+    }
+
+    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_BLOCK_CHANCE = BUILDER
+            .comment("Chance for Greedy Shield to completely block damage (0.0 to 1.0)",
+                    "Default: 0.3 (30%)")
+            .defineInRange("000_greedy_shield_block_chance", 0.3D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_CHANCE = BUILDER
+            .comment("Chance for Greedy Shield to reduce damage by 80% if block fails (0.0 to 1.0)",
+                    "Default: 0.3 (30%)")
+            .defineInRange("001_greedy_shield_reduce_chance", 0.3D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_AMOUNT = BUILDER
+            .comment("Damage reduction amount when Greedy Shield reduces damage (0.0 to 1.0)",
+                    "Default: 0.8 (80% reduction, so 20% of original damage)")
+            .defineInRange("002_greedy_shield_reduce_amount", 0.8D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.BooleanValue GREEDY_SHIELD_INFO = BUILDER
+            .comment("If false, hide where to obtain the Greedy Shield (only for lootable artifacts)")
+            .define("003_greedy_shield_info", true);
+
+    static {
+        BUILDER.pop(); // End of artifacts_settings category
         BUILDER.pop(); // End of dev category
 
         // Category for Evil Things (fun but fiery!)
@@ -474,21 +499,6 @@ public class Config
             .comment("If true, makes Burning Flame blocks extra hot - mobs & players touching them will catch fire!",
                     "Also activates automatically if world has stage 'iska_utils_internal-flame_curse'")
             .define("001_burning_flame_super_hot", false);
-
-    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_BLOCK_CHANCE = BUILDER
-            .comment("Chance for Greedy Shield to completely block damage (0.0 to 1.0)",
-                    "Default: 0.3 (30%)")
-            .defineInRange("002_greedy_shield_block_chance", 0.3D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_CHANCE = BUILDER
-            .comment("Chance for Greedy Shield to reduce damage by 80% if block fails (0.0 to 1.0)",
-                    "Default: 0.3 (30%)")
-            .defineInRange("003_greedy_shield_reduce_chance", 0.3D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_AMOUNT = BUILDER
-            .comment("Damage reduction amount when Greedy Shield reduces damage (0.0 to 1.0)",
-                    "Default: 0.8 (80% reduction, so 20% of original damage)")
-            .defineInRange("004_greedy_shield_reduce_amount", 0.8D, 0.0D, 1.0D);
 
     static {
         BUILDER.pop(); // End of evil_things category
@@ -550,6 +560,7 @@ public class Config
     public static double greedyShieldBlockChance;
     public static double greedyShieldReduceChance;
     public static double greedyShieldReduceAmount;
+    public static boolean greedyShieldInfo;
     public static boolean burningFlameSuperHot;
     public static java.util.List<String> deepDrawersAllowedTags;
     public static java.util.List<String> deepDrawersBlacklist;
@@ -618,6 +629,7 @@ public class Config
         greedyShieldBlockChance = GREEDY_SHIELD_BLOCK_CHANCE.get();
         greedyShieldReduceChance = GREEDY_SHIELD_REDUCE_CHANCE.get();
         greedyShieldReduceAmount = GREEDY_SHIELD_REDUCE_AMOUNT.get();
+        greedyShieldInfo = GREEDY_SHIELD_INFO.get();
         burningFlameSuperHot = BURNING_FLAME_SUPER_HOT.get();
         
         // Deep Drawers configuration
