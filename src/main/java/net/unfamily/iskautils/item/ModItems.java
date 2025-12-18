@@ -334,6 +334,9 @@ public class ModItems {
     public static final DeferredItem<Item> AUTO_SHOP = ITEMS.register("auto_shop",
             () -> new AutoShopItem(ModBlocks.AUTO_SHOP.get(), ITEM_PROPERTIES));
 
+    public static final DeferredItem<Item> SMART_TIMER = ITEMS.register("smart_timer",
+            () -> new BlockItem(ModBlocks.SMART_TIMER.get(), ITEM_PROPERTIES));
+
     public static final DeferredItem<Item> STRUCTURE_PLACER = ITEMS.register("structure_placer",
             () -> new StructurePlacerItem(new Item.Properties().stacksTo(1)));
             

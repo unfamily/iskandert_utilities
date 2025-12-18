@@ -74,6 +74,9 @@
   "block.iska_utils.player_ultra_vect": "Piastra Vettoriale Ultra per Giocatori",
   
   "block.iska_utils.hellfire_igniter": "Innesco Infernale",
+  "block.iska_utils.smart_timer": "Timer Intelligente",
+  "gui.iska_utils.smart_timer.cooldown": "Redstone off for:",
+  "gui.iska_utils.smart_timer.signal_duration": "Redstone on for:",
   "block.iska_utils.raft": "Ponte a Zattera",
   "block.iska_utils.raft_no_drop": "Ponte a Zattera",
   "block.iska_utils.rubber_sap_extractor": "Estrattore di Linfa Automatico",

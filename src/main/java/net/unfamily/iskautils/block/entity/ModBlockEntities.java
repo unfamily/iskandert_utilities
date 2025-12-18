@@ -92,6 +92,12 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("deep_drawer_extractor",
                     () -> BlockEntityType.Builder.of(DeepDrawerExtractorBlockEntity::new, ModBlocks.DEEP_DRAWER_EXTRACTOR.get())
                             .build(null));
+    
+    // Smart Timer Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SmartTimerBlockEntity>> SMART_TIMER_BE =
+            BLOCK_ENTITIES.register("smart_timer",
+                    () -> BlockEntityType.Builder.of(SmartTimerBlockEntity::new, ModBlocks.SMART_TIMER.get())
+                            .build(null));
 
     /**
      * Registra tutte le entità blocco

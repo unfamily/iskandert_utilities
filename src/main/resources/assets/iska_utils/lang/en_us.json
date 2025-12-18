@@ -74,6 +74,9 @@
   "block.iska_utils.player_ultra_vect": "Player Ultra Vector Plate",
   
   "block.iska_utils.hellfire_igniter": "Hellfire Igniter",
+  "block.iska_utils.smart_timer": "Smart Timer",
+  "gui.iska_utils.smart_timer.cooldown": "Redstone off for:",
+  "gui.iska_utils.smart_timer.signal_duration": "Redstone on for:",
   "block.iska_utils.raft": "Raft Bridge",
   "block.iska_utils.raft_no_drop": "Raft Bridge",
   "block.iska_utils.rubber_sap_extractor": "Rubber Sap Extractor",

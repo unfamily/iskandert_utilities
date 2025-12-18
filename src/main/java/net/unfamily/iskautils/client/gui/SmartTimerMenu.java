@@ -1,0 +1,123 @@
+package net.unfamily.iskautils.client.gui;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.SimpleContainerData;
+import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.block.entity.SmartTimerBlockEntity;
+
+public class SmartTimerMenu extends AbstractContainerMenu {
+    private final SmartTimerBlockEntity blockEntity;
+    private final ContainerLevelAccess levelAccess;
+    private final BlockPos blockPos;
+    private final ContainerData containerData;
+    
+    // ContainerData indices for syncing
+    private static final int COOLDOWN_TICKS_INDEX = 0;
+    private static final int SIGNAL_DURATION_TICKS_INDEX = 1;
+    private static final int BLOCK_POS_X_INDEX = 2;
+    private static final int BLOCK_POS_Y_INDEX = 3;
+    private static final int BLOCK_POS_Z_INDEX = 4;
+    private static final int DATA_COUNT = 5;
+
+    // Server-side constructor
+    public SmartTimerMenu(int containerId, Inventory playerInventory, SmartTimerBlockEntity blockEntity) {
+        super(ModMenuTypes.SMART_TIMER_MENU.get(), containerId);
+        this.blockEntity = blockEntity;
+        this.blockPos = blockEntity.getBlockPos();
+        this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
+        
+        // Create container data that syncs with the block entity
+        this.containerData = new ContainerData() {
+            @Override
+            public int get(int index) {
+                return switch(index) {
+                    case COOLDOWN_TICKS_INDEX -> blockEntity.getCooldownTicks(); // Get directly in ticks
+                    case SIGNAL_DURATION_TICKS_INDEX -> blockEntity.getSignalDurationTicks(); // Get directly in ticks
+                    case BLOCK_POS_X_INDEX -> blockPos.getX();
+                    case BLOCK_POS_Y_INDEX -> blockPos.getY();
+                    case BLOCK_POS_Z_INDEX -> blockPos.getZ();
+                    default -> 0;
+                };
+            }
+            
+            @Override
+            public void set(int index, int value) {
+                // Values are read-only from client side, handled by server
+            }
+            
+            @Override
+            public int getCount() {
+                return DATA_COUNT;
+            }
+        };
+        
+        this.addDataSlots(this.containerData);
+    }
+
+    // Client-side constructor (NeoForge factory)
+    public SmartTimerMenu(int containerId, Inventory playerInventory) {
+        super(ModMenuTypes.SMART_TIMER_MENU.get(), containerId);
+        // Client-side: we don't have direct access to the BlockEntity
+        this.blockEntity = null;
+        this.blockPos = BlockPos.ZERO;
+        this.levelAccess = ContainerLevelAccess.NULL;
+        
+        // Create dummy container data for client
+        this.containerData = new SimpleContainerData(DATA_COUNT);
+        this.addDataSlots(this.containerData);
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return stillValid(levelAccess, player, ModBlocks.SMART_TIMER.get());
+    }
+
+    @Override
+    public net.minecraft.world.item.ItemStack quickMoveStack(Player player, int index) {
+        // No slots, so quickMoveStack doesn't need to be implemented
+        return net.minecraft.world.item.ItemStack.EMPTY;
+    }
+
+    public SmartTimerBlockEntity getBlockEntity() {
+        return blockEntity;
+    }
+    
+    public BlockPos getBlockPos() {
+        return blockPos;
+    }
+    
+    public BlockPos getSyncedBlockPos() {
+        // Get position from synced data if available, otherwise use stored position
+        if (this.blockEntity != null) {
+            return this.blockPos; // Server side
+        } else {
+            // Client side - get from synced data
+            int x = this.containerData.get(BLOCK_POS_X_INDEX);
+            int y = this.containerData.get(BLOCK_POS_Y_INDEX);
+            int z = this.containerData.get(BLOCK_POS_Z_INDEX);
+            if (x == 0 && y == 0 && z == 0) {
+                return this.blockPos; // Fallback to stored position
+            }
+            return new BlockPos(x, y, z);
+        }
+    }
+    
+    public int getCooldownTicks() {
+        return containerData.get(COOLDOWN_TICKS_INDEX);
+    }
+    
+    public int getSignalDurationTicks() {
+        return containerData.get(SIGNAL_DURATION_TICKS_INDEX);
+    }
+    
+    @Override
+    public void broadcastChanges() {
+        super.broadcastChanges();
+        // ContainerData is automatically synced by Minecraft
+    }
+}

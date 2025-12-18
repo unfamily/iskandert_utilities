@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "iska_utils:block/smart_timer"
+    },
+    "powered=true": {
+      "model": "iska_utils:block/smart_timer_on"
+    }
+  }
+}

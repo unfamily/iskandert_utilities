@@ -20,6 +20,7 @@ import net.unfamily.iskautils.block.AutoShopBlock;
 import net.unfamily.iskautils.block.BurningFlameBlock;
 import net.unfamily.iskautils.block.ChaoticTntBlock;
 import net.unfamily.iskautils.block.HardIceBlock;
+import net.unfamily.iskautils.block.SmartTimerBlock;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -164,6 +165,10 @@ public class ModBlocks {
     // Rubber Sap Extractor (automatically extracts sap from rubber logs)
     public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",
             () -> new RubberSapExtractorBlock(RUBBER_SAP_EXTRACTOR_PROPERTIES));
+    
+    // Smart Timer (emits redstone signal periodically)
+    public static final DeferredBlock<SmartTimerBlock> SMART_TIMER = BLOCKS.register("smart_timer",
+            () -> new SmartTimerBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
 
     // ===== SMOOTH BLACKSTONE =====
     private static final BlockBehaviour.Properties SMOOTH_BLACKSTONE_PROPERTIES = BlockBehaviour.Properties.of()

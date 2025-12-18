@@ -64,6 +64,9 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SHOP.get());
                                 pOutput.accept(ModItems.AUTO_SHOP.get());
 
+                                //Redstone
+                                pOutput.accept(ModItems.SMART_TIMER.get());
+
                                 // Rubber Wood Variants
                                 pOutput.accept(ModItems.RUBBER_STAIRS.get());
                                 pOutput.accept(ModItems.RUBBER_SLAB.get());

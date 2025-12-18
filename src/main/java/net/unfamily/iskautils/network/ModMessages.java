@@ -1190,4 +1190,32 @@ public class ModMessages {
         }
     }
 
+    /**
+     * Invia il packet per aggiornare i parametri del timer
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendSmartTimerUpdatePacket(BlockPos pos, boolean isCooldown, int deltaTicks) {
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Create and handle the packet
+                        new net.unfamily.iskautils.network.packet.SmartTimerUpdateC2SPacket(pos, isCooldown, deltaTicks).handle(player);
+                    }
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            });
+        } catch (Exception e) {
+            // Ignore errors
+        }
+    }
+
 } 
