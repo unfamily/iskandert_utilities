@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:block/cross",
   "textures": {
-    "cross": "iska_utils:item/gift"
+    "cross": "iska_utils:block/gift"
   },
   "render_type": "cutout_mipped"
 }

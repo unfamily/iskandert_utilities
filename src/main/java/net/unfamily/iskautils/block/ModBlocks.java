@@ -19,6 +19,7 @@ import net.unfamily.iskautils.block.ShopBlock;
 import net.unfamily.iskautils.block.AutoShopBlock;
 import net.unfamily.iskautils.block.BurningFlameBlock;
 import net.unfamily.iskautils.block.ChaoticTntBlock;
+import net.unfamily.iskautils.block.HardIceBlock;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -396,15 +397,27 @@ public class ModBlocks {
 
     // ===== GIFT BLOCK =====
     private static final BlockBehaviour.Properties GIFT_PROPERTIES = BlockBehaviour.Properties.of()
-            .mapColor(MapColor.PLANT)
             .noCollission()
             .instabreak()
-            .sound(SoundType.GRASS)
-            .pushReaction(PushReaction.DESTROY);
+            .sound(SoundType.WOOL)
+            .pushReaction(PushReaction.DESTROY)
+            .noOcclusion()
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false);
 
     // Gift Block (hidden cross model block with item texture)
     public static final DeferredBlock<Block> GIFT = BLOCKS.register("gift",
             () -> new Block(GIFT_PROPERTIES));
+
+    // ===== HARD ICE BLOCK =====
+    private static final BlockBehaviour.Properties HARD_ICE_PROPERTIES = BlockBehaviour.Properties.of()
+            .strength(-1.0f, 3600000.0f) // Indistruttibile (hardness < 0)
+            .sound(SoundType.GLASS)
+            .friction(0.98f);
+
+    // Hard Ice Block (indestructible, placed by gift after breaking)
+    public static final DeferredBlock<HardIceBlock> HARD_ICE = BLOCKS.register("hard_ice",
+            () -> new HardIceBlock(HARD_ICE_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

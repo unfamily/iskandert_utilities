@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.unfamily.iskautils.block.entity.DeepDrawersBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
+
 /**
  * Deep Drawers Block - A massive storage block that can only contain non-stackable items
  * 
@@ -94,6 +95,29 @@ public class DeepDrawersBlock extends BaseEntityBlock {
     }
     
     /**
+     * Called when a player starts attacking/breaking the block
+     * This is called only once when the player starts breaking, not continuously
+     */
+    @Override
+    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
+        // Check if the block entity has items
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof DeepDrawersBlockEntity deepDrawers) {
+            if (deepDrawers.hasItems()) {
+                // Block cannot be broken if it contains items
+                // Display warning message to player (only on server side)
+                if (!level.isClientSide()) {
+                    player.displayClientMessage(
+                        Component.translatable("message.iska_utils.deep_drawers.cannot_break"),
+                        true
+                    );
+                }
+            }
+        }
+        super.attack(state, level, pos, player);
+    }
+    
+    /**
      * Called when a player attempts to break the block
      * Returns the time it takes to break, or -1 if it cannot be broken
      */
@@ -103,14 +127,6 @@ public class DeepDrawersBlock extends BaseEntityBlock {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof DeepDrawersBlockEntity deepDrawers) {
             if (deepDrawers.hasItems()) {
-                // Block cannot be broken if it contains items
-                // Display warning message to player (only on server side if level is Level)
-                if (player != null && level instanceof Level worldLevel && !worldLevel.isClientSide()) {
-                    player.displayClientMessage(
-                        Component.translatable("message.iska_utils.deep_drawers.cannot_break"),
-                        true
-                    );
-                }
                 return -1.0F; // Cannot be broken
             }
         }

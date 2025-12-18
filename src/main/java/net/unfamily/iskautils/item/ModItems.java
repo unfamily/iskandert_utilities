@@ -23,6 +23,7 @@ import net.unfamily.iskautils.item.custom.GhostBrazierItem;
 import net.unfamily.iskautils.item.custom.GreedyShieldItem;
 import net.unfamily.iskautils.item.custom.BlueprintItem;
 import net.unfamily.iskautils.item.custom.AutoShopItem;
+import net.unfamily.iskautils.item.custom.GiftItem;
 
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
@@ -374,7 +375,12 @@ public class ModItems {
     // ===== GIFT BLOCK =====
     // Hidden block (not in creative tab)
     public static final DeferredItem<Item> GIFT = ITEMS.register("gift",
-            () -> new BlockItem(ModBlocks.GIFT.get(), ITEM_PROPERTIES));
+            () -> new GiftItem(ModBlocks.GIFT.get(), ITEM_PROPERTIES));
+
+    // ===== HARD ICE BLOCK =====
+    // Hidden block (not in creative tab) - indestructible, placed by gift
+    public static final DeferredItem<Item> HARD_ICE = ITEMS.register("hard_ice",
+            () -> new BlockItem(ModBlocks.HARD_ICE.get(), ITEM_PROPERTIES));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

@@ -468,6 +468,14 @@
   "tooltip.iska_utils.greedy_shield.desc2": "§7Se il blocco fallisce, ha una probabilità del 30% di ridurre il danno",
   "tooltip.iska_utils.greedy_shield.desc3": "§7Quando il danno viene ridotto, lo riduce dell'80% (rimane il 20% del danno originale)",
   "tooltip.iska_utils.greedy_shield.info": "§6Ottenuto dal regalo",
+  "tooltip.iska_utils.gift.availability": "§7Ottenibile dal 20 al 30 dicembre",
+
+  "block.iska_utils.gift": "Regalo",
+  "item.iska_utils.gift": "Regalo",
+  "block.iska_utils.hard_ice": "Ghiaccio Duro",
+  "item.iska_utils.hard_ice": "Ghiaccio Duro",
+  "message.iska_utils.gift.break_message": "§6Un buon regalo da Iskandert e un cattivo regalo da Unfamily...",
+  "message.iska_utils.hard_ice.cannot_break": "§eNon preoccuparti, dal 1° di gennaio sparirà da solo...",
 
   "block.iska_utils.deep_drawers": "Cassettiera Profonda",
   "item.iska_utils.deep_drawers": "Cassettiera Profonda",

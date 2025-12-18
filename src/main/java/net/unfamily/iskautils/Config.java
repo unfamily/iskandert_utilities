@@ -500,6 +500,11 @@ public class Config
                     "Also activates automatically if world has stage 'iska_utils_internal-flame_curse'")
             .define("001_burning_flame_super_hot", false);
 
+    private static final ModConfigSpec.BooleanValue GIFT_PLACE_HARD_ICE = BUILDER
+            .comment("If true, breaking a Gift block will place a Hard Ice block after 3 seconds",
+                    "Hard Ice is indestructible and cannot be broken")
+            .define("100_gift_place_hard_ice", true);
+
     static {
         BUILDER.pop(); // End of evil_things category
     }
@@ -562,6 +567,7 @@ public class Config
     public static double greedyShieldReduceAmount;
     public static boolean greedyShieldInfo;
     public static boolean burningFlameSuperHot;
+    public static boolean giftPlaceHardIce;
     public static java.util.List<String> deepDrawersAllowedTags;
     public static java.util.List<String> deepDrawersBlacklist;
     public static int deepDrawersSlotCount;
@@ -631,6 +637,7 @@ public class Config
         greedyShieldReduceAmount = GREEDY_SHIELD_REDUCE_AMOUNT.get();
         greedyShieldInfo = GREEDY_SHIELD_INFO.get();
         burningFlameSuperHot = BURNING_FLAME_SUPER_HOT.get();
+        giftPlaceHardIce = GIFT_PLACE_HARD_ICE.get();
         
         // Deep Drawers configuration
         deepDrawersAllowedTags = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOWED_TAGS.get());
