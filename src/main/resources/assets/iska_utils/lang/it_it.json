@@ -470,6 +470,7 @@
   "tooltip.iska_utils.greedy_shield.desc3": "Quando il danno viene ridotto, lo riduce del %d%% (rimane il %d%% del danno originale non viene bloccato)",
   "tooltip.iska_utils.greedy_shield.info": "§6Ottenuto dal regalo",
   "tooltip.iska_utils.gift.availability": "§7Ottenibile dal 20 al 30 dicembre",
+  "tooltip.iska_utils.gift.place": "§7Piazzalo a terra e rompilo!",
 
   "block.iska_utils.gift": "Regalo",
   "item.iska_utils.gift": "Regalo",
@@ -486,6 +487,9 @@
   "tooltip.iska_utils.deep_drawers.desc2": "È consigliato usare un sistema esterno per vederne il contenuto rispetto al nativo",
   "tooltip.iska_utils.deep_drawers.desc3": "Dalla GUI integrata non è possibile inserire ed estrarre con shift+click, usare hopper, tubi o similari",
   "message.iska_utils.deep_drawers.cannot_break": "§cNon puoi rompere la Cassettiera Profonda che contiene oggetti!",
+  
+  "block.iska_utils.deep_drawer_extractor": "Estrattore di Cassettiera Profonda",
+  "item.iska_utils.deep_drawer_extractor": "Estrattore di Cassettiera Profonda",
 
   "item.iska_utils.dolly": "Dolly",
   "tooltip.iska_utils.dolly.contains": "§7Contiene: §f%s",

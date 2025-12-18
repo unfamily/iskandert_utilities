@@ -22,5 +22,6 @@ public class GiftItem extends BlockItem {
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         tooltipComponents.add(Component.translatable("tooltip.iska_utils.gift.availability"));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.gift.place"));
     }
 }

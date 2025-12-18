@@ -474,6 +474,7 @@
   "tooltip.iska_utils.greedy_shield.desc3": "§7When damage is reduced, it reduces it by %d%% (%d%% of original damage remains unblocked)",
   "tooltip.iska_utils.greedy_shield.info": "§6Obtained from the gift",
   "tooltip.iska_utils.gift.availability": "§7Available from December 20 to 30",
+  "tooltip.iska_utils.gift.place": "§7Place on ground and break it!",
 
   "block.iska_utils.gift": "Gift",
   "item.iska_utils.gift": "Gift",
@@ -490,6 +491,9 @@
   "tooltip.iska_utils.deep_drawers.desc2": "It is recommended to use an external system to view its contents rather than the native one",
   "tooltip.iska_utils.deep_drawers.desc3": "From the integrated GUI it is not possible to insert and extract with shift+click, use hoppers, pipes or similar",
   "message.iska_utils.deep_drawers.cannot_break": "§cCannot break Deep Drawer while it contains items!",
+  
+  "block.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
+  "item.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
 
   "item.iska_utils.dolly": "Dolly",
   "tooltip.iska_utils.dolly.contains": "§7Contains: §f%s",
