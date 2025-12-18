@@ -685,6 +685,193 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         return -1; // Storage is full
     }
     
+    // ===== Deep Drawer Extractor (Optimized Extraction API) =====
+    
+    /**
+     * Estrae un item specifico dal Deep Drawer usando ricerca ottimizzata O(1)
+     * Evita TPS lag utilizzando itemIndex invece di iterare tutti gli slot
+     * 
+     * @param item L'item da estrarre (non null)
+     * @param amount Quantità da estrarre (deve essere > 0)
+     * @param simulate Se true, simula l'estrazione senza modificare lo storage
+     * @return ItemStack estratto, o EMPTY se non trovato o parametri invalidi
+     */
+    public ItemStack extractItemByType(Item item, int amount, boolean simulate) {
+        if (item == null || amount <= 0) {
+            return ItemStack.EMPTY;
+        }
+        
+        // Block extraction when compacting
+        if (isCompacting) {
+            return ItemStack.EMPTY;
+        }
+        
+        // O(1) lookup: trova tutti gli slot con questo item usando itemIndex
+        Set<Integer> slotsWithItem = itemIndex.get(item);
+        if (slotsWithItem == null || slotsWithItem.isEmpty()) {
+            return ItemStack.EMPTY; // Item non presente
+        }
+        
+        // Itera solo sugli slot che contengono l'item (solitamente pochi)
+        // Questo evita di iterare su migliaia di slot logici
+        for (int physicalSlot : slotsWithItem) {
+            ItemStack existing = storage.get(physicalSlot);
+            if (existing != null && !existing.isEmpty() && existing.getItem() == item) {
+                // Estrai la quantità richiesta (max 1 per volta per sicurezza)
+                int toExtract = Math.min(1, Math.min(amount, existing.getCount()));
+                
+                ItemStack extracted = existing.copy();
+                extracted.setCount(toExtract);
+                
+                if (!simulate) {
+                    if (toExtract >= existing.getCount()) {
+                        // Slot è ora vuoto
+                        removeItemFromStorage(physicalSlot);
+                    } else {
+                        // Estrazione parziale - aggiorna stack ma mantieni in storage
+                        ItemStack newStack = existing.copy();
+                        newStack.shrink(toExtract);
+                        storage.put(physicalSlot, newStack);
+                    }
+                    setChanged();
+                }
+                
+                return extracted;
+            }
+        }
+        
+        return ItemStack.EMPTY;
+    }
+    
+    /**
+     * Estrae un ItemStack specifico (con matching NBT completo) dal Deep Drawer
+     * Usa ricerca ottimizzata O(1) per evitare TPS lag
+     * 
+     * @param requestedStack ItemStack da cercare (include NBT, non null e non empty)
+     * @param amount Quantità da estrarre (deve essere > 0)
+     * @param simulate Se true, simula l'estrazione senza modificare lo storage
+     * @return ItemStack estratto, o EMPTY se non trovato o parametri invalidi
+     */
+    public ItemStack extractItemByStack(ItemStack requestedStack, int amount, boolean simulate) {
+        if (requestedStack == null || requestedStack.isEmpty() || amount <= 0) {
+            return ItemStack.EMPTY;
+        }
+        
+        // Block extraction when compacting
+        if (isCompacting) {
+            return ItemStack.EMPTY;
+        }
+        
+        Item item = requestedStack.getItem();
+        
+        // O(1) lookup: trova tutti gli slot con questo item usando itemIndex
+        Set<Integer> slotsWithItem = itemIndex.get(item);
+        if (slotsWithItem == null || slotsWithItem.isEmpty()) {
+            return ItemStack.EMPTY; // Item non presente
+        }
+        
+        // Cerca slot con item matching (stesso item + stesso NBT)
+        for (int physicalSlot : slotsWithItem) {
+            ItemStack existing = storage.get(physicalSlot);
+            if (existing != null && 
+                !existing.isEmpty() && 
+                ItemStack.isSameItemSameComponents(existing, requestedStack)) {
+                
+                // Estrai la quantità richiesta (max 1 per volta per sicurezza)
+                int toExtract = Math.min(1, Math.min(amount, existing.getCount()));
+                
+                ItemStack extracted = existing.copy();
+                extracted.setCount(toExtract);
+                
+                if (!simulate) {
+                    if (toExtract >= existing.getCount()) {
+                        // Slot è ora vuoto
+                        removeItemFromStorage(physicalSlot);
+                    } else {
+                        // Estrazione parziale - aggiorna stack ma mantieni in storage
+                        ItemStack newStack = existing.copy();
+                        newStack.shrink(toExtract);
+                        storage.put(physicalSlot, newStack);
+                    }
+                    setChanged();
+                }
+                
+                return extracted;
+            }
+        }
+        
+        return ItemStack.EMPTY;
+    }
+    
+    /**
+     * Estrae più item dello stesso tipo in un'unica operazione (batch extraction)
+     * Utile per estrarre grandi quantità senza iterare più volte
+     * 
+     * @param item L'item da estrarre (non null)
+     * @param amount Quantità totale desiderata (deve essere > 0)
+     * @param simulate Se true, simula l'estrazione senza modificare lo storage
+     * @return ItemStack con la quantità effettivamente estratta (può essere < amount)
+     */
+    public ItemStack extractItemBatch(Item item, int amount, boolean simulate) {
+        if (item == null || amount <= 0) {
+            return ItemStack.EMPTY;
+        }
+        
+        // Block extraction when compacting
+        if (isCompacting) {
+            return ItemStack.EMPTY;
+        }
+        
+        // O(1) lookup: trova tutti gli slot con questo item usando itemIndex
+        Set<Integer> slotsWithItem = itemIndex.get(item);
+        if (slotsWithItem == null || slotsWithItem.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        
+        int remaining = amount;
+        ItemStack result = ItemStack.EMPTY;
+        
+        // Itera sugli slot che contengono l'item fino a soddisfare la quantità richiesta
+        for (int physicalSlot : slotsWithItem) {
+            if (remaining <= 0) {
+                break;
+            }
+            
+            ItemStack existing = storage.get(physicalSlot);
+            if (existing != null && !existing.isEmpty() && existing.getItem() == item) {
+                // Estrai max 1 per volta per sicurezza (come estrazione normale)
+                int toExtract = Math.min(1, Math.min(remaining, existing.getCount()));
+                
+                if (result.isEmpty()) {
+                    result = existing.copy();
+                    result.setCount(toExtract);
+                } else {
+                    result.grow(toExtract);
+                }
+                
+                if (!simulate) {
+                    if (toExtract >= existing.getCount()) {
+                        // Slot è ora vuoto
+                        removeItemFromStorage(physicalSlot);
+                    } else {
+                        // Estrazione parziale - aggiorna stack ma mantieni in storage
+                        ItemStack newStack = existing.copy();
+                        newStack.shrink(toExtract);
+                        storage.put(physicalSlot, newStack);
+                    }
+                }
+                
+                remaining -= toExtract;
+            }
+        }
+        
+        if (!simulate && !result.isEmpty()) {
+            setChanged();
+        }
+        
+        return result;
+    }
+    
     // ===== Custom IItemHandler Implementation =====
     
     /**

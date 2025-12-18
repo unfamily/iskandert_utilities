@@ -3,6 +3,7 @@ package net.unfamily.iskautils.item;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.food.FoodProperties;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -371,6 +372,9 @@ public class ModItems {
     // ===== DEEP DRAWERS =====
     public static final DeferredItem<Item> DEEP_DRAWERS = ITEMS.register("deep_drawers",
             () -> new net.unfamily.iskautils.item.custom.DeepDrawersBlockItem(ModBlocks.DEEP_DRAWERS.get(), ITEM_PROPERTIES));
+    
+    public static final DeferredItem<Item> DEEP_DRAWER_EXTRACTOR = ITEMS.register("deep_drawer_extractor",
+            () -> new BlockItem(ModBlocks.DEEP_DRAWER_EXTRACTOR.get(), ITEM_PROPERTIES));
 
     // ===== GIFT BLOCK =====
     // Hidden block (not in creative tab)
@@ -381,6 +385,11 @@ public class ModItems {
     // Hidden block (not in creative tab) - indestructible, placed by gift
     public static final DeferredItem<Item> HARD_ICE = ITEMS.register("hard_ice",
             () -> new BlockItem(ModBlocks.HARD_ICE.get(), ITEM_PROPERTIES));
+
+    // ===== FOOD ITEMS =====
+    // Lapis Ice Cream - Food item with 8 nutrition and 1.0f saturation modifier
+    public static final DeferredItem<Item> LAPIS_ICE_CREAM = ITEMS.register("lapis_ice_cream",
+            () -> new Item(new Item.Properties().food(ModFoodProperties.LAPIS_ICE_CREAM)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

@@ -394,6 +394,10 @@ public class ModBlocks {
     // Deep Drawers Block (massive storage for non-stackable items)
     public static final DeferredBlock<DeepDrawersBlock> DEEP_DRAWERS = BLOCKS.register("deep_drawers",
             () -> new DeepDrawersBlock(DEEP_DRAWERS_PROPERTIES));
+    
+    // Deep Drawer Extractor Block (estrae item dal Deep Drawer adiacente)
+    public static final DeferredBlock<DeepDrawerExtractorBlock> DEEP_DRAWER_EXTRACTOR = BLOCKS.register("deep_drawer_extractor",
+            () -> new DeepDrawerExtractorBlock(DEEP_DRAWERS_PROPERTIES));
 
     // ===== GIFT BLOCK =====
     private static final BlockBehaviour.Properties GIFT_PROPERTIES = BlockBehaviour.Properties.of()

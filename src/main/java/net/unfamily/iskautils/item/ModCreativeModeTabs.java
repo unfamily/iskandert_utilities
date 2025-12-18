@@ -58,6 +58,7 @@ public class ModCreativeModeTabs {
 
                                 // Deep Drawers
                                 pOutput.accept(ModItems.DEEP_DRAWERS.get());
+                                pOutput.accept(ModItems.DEEP_DRAWER_EXTRACTOR.get());
 
                                 // Shops
                                 pOutput.accept(ModItems.SHOP.get());
@@ -155,6 +156,9 @@ public class ModCreativeModeTabs {
                                 for (DeferredHolder<Item, net.unfamily.iskautils.item.custom.StructureMonouseItem> itemHolder : monouseItems.values()) {
                                     pOutput.accept(itemHolder.get());
                                 }
+
+                                // Food Items
+                                pOutput.accept(ModItems.LAPIS_ICE_CREAM.get());
 
                                 // Artifacts
                                 pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());

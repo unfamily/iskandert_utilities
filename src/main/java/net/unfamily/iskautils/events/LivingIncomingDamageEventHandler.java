@@ -50,6 +50,9 @@ public class LivingIncomingDamageEventHandler {
         if (!damageCompletelyBlocked && event.getAmount() > 0.0f) {
             processNecroticCrystalHeart(event, player);
         }
+        
+        // Clear stages after processing
+        clearStages(player);
     }
 
     /**
@@ -242,5 +245,10 @@ public class LivingIncomingDamageEventHandler {
         } catch (Exception e) {
             // Silently fail
         }
+    }
+
+    private static void clearStages(Player player) {
+        StageRegistry.removePlayerStage(player, "iska_utils_internal-greedy_shield_equip");
+        StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
     }
 }
