@@ -1217,5 +1217,153 @@ public class ModMessages {
             // Ignore errors
         }
     }
+    
+    /**
+     * Invia il packet per ciclare il tipo I/O di una faccia del timer
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendSmartTimerIoConfigCyclePacket(BlockPos machinePos, net.minecraft.core.Direction direction) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
+                            // Cicla il tipo I/O per la direzione specificata
+                            timer.cycleIoConfig(direction);
+                            
+                            // Play click sound
+                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            
+                            // Mark the block entity as changed
+                            timer.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Smart Timer I/O config cycle packet: {}", e.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Smart Timer I/O config cycle packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Invia il packet per resettare tutte le facce I/O del timer
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendSmartTimerIoConfigResetPacket(BlockPos machinePos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
+                            // Resetta tutte le facce a BLANK
+                            timer.resetAllIoConfig();
+                            
+                            // Play click sound
+                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            
+                            // Mark the block entity as changed
+                            timer.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Smart Timer I/O config reset packet: {}", e.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Smart Timer I/O config reset packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Invia il packet per cambiare il redstone mode del timer
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendSmartTimerRedstoneModePacket(BlockPos machinePos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
+                            
+                            // Cycle to next redstone mode
+                            net.unfamily.iskautils.block.entity.SmartTimerBlockEntity.RedstoneMode currentMode = 
+                                net.unfamily.iskautils.block.entity.SmartTimerBlockEntity.RedstoneMode.fromValue(timer.getRedstoneMode());
+                            net.unfamily.iskautils.block.entity.SmartTimerBlockEntity.RedstoneMode nextMode = currentMode.next();
+                            timer.setRedstoneMode(nextMode.getValue());
+                            
+                            // Play click sound
+                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            
+                            // Mark the block entity as changed
+                            timer.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Smart Timer redstone mode packet: {}", e.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Smart Timer redstone mode packet: {}", e.getMessage(), e);
+        }
+    }
 
 } 

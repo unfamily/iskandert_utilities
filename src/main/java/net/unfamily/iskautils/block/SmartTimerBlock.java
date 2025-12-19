@@ -16,8 +16,10 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
@@ -32,12 +34,14 @@ import javax.annotation.Nullable;
  */
 public class SmartTimerBlock extends Block implements EntityBlock {
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
+    public static final DirectionProperty FACING = BlockStateProperties.FACING; // Supports all 6 directions
     public static final MapCodec<SmartTimerBlock> CODEC = simpleCodec(SmartTimerBlock::new);
     
     public SmartTimerBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
-                .setValue(POWERED, false));
+                .setValue(POWERED, false)
+                .setValue(FACING, Direction.NORTH));
     }
     
     @Override
@@ -47,7 +51,26 @@ public class SmartTimerBlock extends Block implements EntityBlock {
     
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(POWERED);
+        builder.add(POWERED, FACING);
+    }
+    
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        // Get the face that was clicked
+        Direction clickedFace = context.getClickedFace();
+        Direction facing;
+        
+        // If clicking on top or bottom face, use that direction directly (block faces up/down like player)
+        if (clickedFace == Direction.UP || clickedFace == Direction.DOWN) {
+            facing = clickedFace;
+        } else {
+            // For horizontal faces, use player's horizontal facing direction (block faces same direction as player)
+            facing = context.getHorizontalDirection();
+        }
+        
+        return this.defaultBlockState()
+                .setValue(FACING, facing)
+                .setValue(POWERED, false);
     }
     
     @Override
@@ -62,11 +85,46 @@ public class SmartTimerBlock extends Block implements EntityBlock {
     
     @Override
     public int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
+        // Non emettere segnale dal front (faccia FACING)
+        Direction facing = state.getValue(FACING);
+        if (direction == facing) {
+            return 0; // Front face non emette segnale
+        }
+        
+        // Controlla se questa faccia è configurata come OUTPUT
+        if (level.getBlockEntity(pos) instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity blockEntity) {
+            byte ioConfig = blockEntity.getIoConfig(direction);
+            if (ioConfig != 2) { // 2 = OUTPUT
+                return 0; // Solo OUTPUT emette segnale
+            }
+        } else {
+            // Se non c'è BlockEntity, usa comportamento legacy (emetti da tutte le facce tranne front)
+            // Questo può accadere durante il caricamento iniziale
+            return state.getValue(POWERED) ? 15 : 0;
+        }
+        
         return state.getValue(POWERED) ? 15 : 0;
     }
     
     @Override
     public int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
+        // Non emettere segnale dal front (faccia FACING)
+        Direction facing = state.getValue(FACING);
+        if (direction == facing) {
+            return 0; // Front face non emette segnale
+        }
+        
+        // Controlla se questa faccia è configurata come OUTPUT
+        if (level.getBlockEntity(pos) instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity blockEntity) {
+            byte ioConfig = blockEntity.getIoConfig(direction);
+            if (ioConfig != 2) { // 2 = OUTPUT
+                return 0; // Solo OUTPUT emette segnale
+            }
+        } else {
+            // Se non c'è BlockEntity, usa comportamento legacy (emetti da tutte le facce tranne front)
+            return state.getValue(POWERED) ? 15 : 0;
+        }
+        
         return state.getValue(POWERED) ? 15 : 0;
     }
     

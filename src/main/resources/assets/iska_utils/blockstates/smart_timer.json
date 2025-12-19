@@ -1,10 +1,16 @@
 {
   "variants": {
-    "powered=false": {
-      "model": "iska_utils:block/smart_timer"
-    },
-    "powered=true": {
-      "model": "iska_utils:block/smart_timer_on"
-    }
+    "powered=false,facing=down": { "model": "iska_utils:block/smart_timer", "x": 90 },
+    "powered=false,facing=up": { "model": "iska_utils:block/smart_timer", "x": 270 },
+    "powered=false,facing=north": { "model": "iska_utils:block/smart_timer" },
+    "powered=false,facing=south": { "model": "iska_utils:block/smart_timer", "y": 180 },
+    "powered=false,facing=west": { "model": "iska_utils:block/smart_timer", "y": 90 },
+    "powered=false,facing=east": { "model": "iska_utils:block/smart_timer", "y": 270 },
+    "powered=true,facing=down": { "model": "iska_utils:block/smart_timer_on", "x": 90 },
+    "powered=true,facing=up": { "model": "iska_utils:block/smart_timer_on", "x": 270 },
+    "powered=true,facing=north": { "model": "iska_utils:block/smart_timer_on" },
+    "powered=true,facing=south": { "model": "iska_utils:block/smart_timer_on", "y": 180 },
+    "powered=true,facing=west": { "model": "iska_utils:block/smart_timer_on", "y": 90 },
+    "powered=true,facing=east": { "model": "iska_utils:block/smart_timer_on", "y": 270 }
   }
 }

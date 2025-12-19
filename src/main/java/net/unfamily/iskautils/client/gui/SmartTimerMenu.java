@@ -22,7 +22,14 @@ public class SmartTimerMenu extends AbstractContainerMenu {
     private static final int BLOCK_POS_X_INDEX = 2;
     private static final int BLOCK_POS_Y_INDEX = 3;
     private static final int BLOCK_POS_Z_INDEX = 4;
-    private static final int DATA_COUNT = 5;
+    private static final int REDSTONE_MODE_INDEX = 5;
+    private static final int IO_CONFIG_DOWN_INDEX = 6;
+    private static final int IO_CONFIG_UP_INDEX = 7;
+    private static final int IO_CONFIG_NORTH_INDEX = 8;
+    private static final int IO_CONFIG_SOUTH_INDEX = 9;
+    private static final int IO_CONFIG_WEST_INDEX = 10;
+    private static final int IO_CONFIG_EAST_INDEX = 11;
+    private static final int DATA_COUNT = 12;
 
     // Server-side constructor
     public SmartTimerMenu(int containerId, Inventory playerInventory, SmartTimerBlockEntity blockEntity) {
@@ -41,6 +48,13 @@ public class SmartTimerMenu extends AbstractContainerMenu {
                     case BLOCK_POS_X_INDEX -> blockPos.getX();
                     case BLOCK_POS_Y_INDEX -> blockPos.getY();
                     case BLOCK_POS_Z_INDEX -> blockPos.getZ();
+                    case REDSTONE_MODE_INDEX -> blockEntity.getRedstoneMode();
+                    case IO_CONFIG_DOWN_INDEX -> blockEntity.getIoConfig(net.minecraft.core.Direction.DOWN);
+                    case IO_CONFIG_UP_INDEX -> blockEntity.getIoConfig(net.minecraft.core.Direction.UP);
+                    case IO_CONFIG_NORTH_INDEX -> blockEntity.getIoConfig(net.minecraft.core.Direction.NORTH);
+                    case IO_CONFIG_SOUTH_INDEX -> blockEntity.getIoConfig(net.minecraft.core.Direction.SOUTH);
+                    case IO_CONFIG_WEST_INDEX -> blockEntity.getIoConfig(net.minecraft.core.Direction.WEST);
+                    case IO_CONFIG_EAST_INDEX -> blockEntity.getIoConfig(net.minecraft.core.Direction.EAST);
                     default -> 0;
                 };
             }
@@ -113,6 +127,24 @@ public class SmartTimerMenu extends AbstractContainerMenu {
     
     public int getSignalDurationTicks() {
         return containerData.get(SIGNAL_DURATION_TICKS_INDEX);
+    }
+    
+    public int getRedstoneMode() {
+        return containerData.get(REDSTONE_MODE_INDEX);
+    }
+    
+    /**
+     * Ottiene il tipo I/O per una direzione specifica (0=BLANK, 1=INPUT, 2=OUTPUT)
+     */
+    public byte getIoConfig(net.minecraft.core.Direction direction) {
+        return switch(direction) {
+            case DOWN -> (byte) containerData.get(IO_CONFIG_DOWN_INDEX);
+            case UP -> (byte) containerData.get(IO_CONFIG_UP_INDEX);
+            case NORTH -> (byte) containerData.get(IO_CONFIG_NORTH_INDEX);
+            case SOUTH -> (byte) containerData.get(IO_CONFIG_SOUTH_INDEX);
+            case WEST -> (byte) containerData.get(IO_CONFIG_WEST_INDEX);
+            case EAST -> (byte) containerData.get(IO_CONFIG_EAST_INDEX);
+        };
     }
     
     @Override
