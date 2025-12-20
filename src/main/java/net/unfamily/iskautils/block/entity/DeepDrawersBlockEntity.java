@@ -1125,52 +1125,8 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         
         @Override
         public @NotNull ItemStack extractItem(int logicalSlot, int amount, boolean simulate) {
-            if (amount <= 0 || logicalSlot < 0) {
-                return ItemStack.EMPTY;
-            }
-            
-            // Block input/output when compacting
-            if (DeepDrawersBlockEntity.this.isCompacting) {
-                return ItemStack.EMPTY; // Reject when compacting
-            }
-            
-            // Virtual slot cannot be extracted from
-            if (logicalSlot >= occupiedSlots.size()) {
-                return ItemStack.EMPTY;
-            }
-            
-            // Map logical slot to physical slot
-            Integer physicalSlot = logicalToPhysical.get(logicalSlot);
-            if (physicalSlot == null) {
-                return ItemStack.EMPTY;
-            }
-            
-            ItemStack existing = storage.get(physicalSlot);
-            if (existing == null || existing.isEmpty()) {
-                return ItemStack.EMPTY;
-            }
-            
-            // Always extract only 1 item at a time to prevent duplications
-            int toExtract = Math.min(1, existing.getCount());
-            
-            // Create the extracted stack BEFORE modifying
-            ItemStack extracted = existing.copy();
-            extracted.setCount(toExtract);
-            
-            if (!simulate) {
-                if (toExtract >= existing.getCount()) {
-                    // Slot is now empty
-                    removeItemFromStorage(physicalSlot);
-                } else {
-                    // Partial extraction - update stack but keep in storage
-                    ItemStack newStack = existing.copy();
-                    newStack.shrink(toExtract);
-                    storage.put(physicalSlot, newStack);
-                }
-                setChanged();
-            }
-            
-            return extracted;
+            // Block extraction from drawer (only insertion allowed)
+            return ItemStack.EMPTY;
         }
         
         @Override

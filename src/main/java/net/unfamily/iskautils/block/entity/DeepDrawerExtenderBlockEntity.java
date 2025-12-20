@@ -131,12 +131,8 @@ public class DeepDrawerExtenderBlockEntity extends BlockEntity {
         @NotNull
         @Override
         public net.minecraft.world.item.ItemStack extractItem(int slot, int amount, boolean simulate) {
-            DeepDrawersBlockEntity drawer = findAdjacentDrawer();
-            if (drawer == null) {
-                return net.minecraft.world.item.ItemStack.EMPTY;
-            }
-            // Delegate extraction to the drawer's item handler (extender is a mirror)
-            return drawer.getItemHandler().extractItem(slot, amount, simulate);
+            // Block extraction from extender (only insertion allowed)
+            return net.minecraft.world.item.ItemStack.EMPTY;
         }
         
         @Override

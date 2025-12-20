@@ -1,23 +1,23 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "CAC",
-    "ABA",
-    "CAC"
+    "ACA",
+    "CBC",
+    "ACA"
   ],
   "key": {
     "A": {
-      "tag": "c:storage_blocks/copper"
+      "tag": "c:ingots/gold"
     },
     "B": {
       "item": "iska_utils:deep_drawer_extractor"
     },
     "C": {
-      "item": "minecraft:ender_eye"
+      "tag": "c:gems/lapis"
     }
   },
   "result": {
     "id": "iska_utils:deep_drawer_interface",
     "count": 1
   }
-} 
+}

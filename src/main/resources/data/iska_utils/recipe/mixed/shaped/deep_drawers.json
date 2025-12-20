@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     "BAB",
-    "CDC",
+    "ACA",
     "BAB"
   ],
   "key": {
@@ -13,9 +13,6 @@
       "tag": "c:storage_blocks/copper"
     },
     "C": {
-      "item": "minecraft:blaze_rod"
-    },
-    "D": {
       "tag": "minecraft:planks"
     }
   },
