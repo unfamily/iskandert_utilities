@@ -59,12 +59,8 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     // Track if GUI is open to prevent input/output conflicts
     private int guiOpenCount = 0;
     
-    // Track if compacting is in progress (blocks input/output)
-    private boolean isCompacting = false;
-    
-    // Timer for periodic compaction (every 10 ticks)
-    private int compactTimer = 0;
-    private static final int COMPACT_INTERVAL = 10; // 10 ticks
+    // Compaction removed: caused issues with interface slot mapping
+    // Items would disappear when extracting/inserting through interface due to logical slot remapping
     
     // Custom item handler for hopper/pipe interaction
     private final IItemHandler itemHandler = new DeepDrawersItemHandler();
@@ -156,12 +152,6 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         return guiOpenCount > 0;
     }
     
-    /**
-     * Checks if compacting is in progress (blocks input/output)
-     */
-    public boolean isCompacting() {
-        return isCompacting;
-    }
     
     /**
      * Static tick method called by the block
@@ -171,137 +161,10 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             return; // Server-side only
         }
         
-        // Increment compact timer
-        blockEntity.compactTimer++;
-        
-        // Every 3 seconds, perform compaction
-        if (blockEntity.compactTimer >= COMPACT_INTERVAL) {
-            blockEntity.compactTimer = 0;
-            blockEntity.performCompaction();
-        }
+        // Compaction removed: caused issues with interface slot mapping
+        // Items disappearing when extracting/inserting through interface
     }
     
-    /**
-     * Performs compaction: merges stackable items and removes gaps
-     */
-    private void performCompaction() {
-        if (isCompacting || storage.isEmpty()) {
-            return; // Already compacting or nothing to compact
-        }
-        
-        isCompacting = true;
-        try {
-            // Step 1: Merge stackable items of the same type
-            Map<Item, List<Integer>> itemsByType = new HashMap<>();
-            for (Map.Entry<Integer, ItemStack> entry : storage.entrySet()) {
-                Item item = entry.getValue().getItem();
-                itemsByType.computeIfAbsent(item, k -> new ArrayList<>()).add(entry.getKey());
-            }
-            
-            // Merge items of the same type that can stack
-            for (Map.Entry<Item, List<Integer>> typeEntry : itemsByType.entrySet()) {
-                List<Integer> slots = typeEntry.getValue();
-                if (slots.size() <= 1) {
-                    continue; // Only one slot, nothing to merge
-                }
-                
-                // Get max stack size for this item type (use Deep Drawer limit)
-                int maxStackSize = 4096; // Deep Drawer limit
-                
-                // Try to merge stacks
-                for (int i = 0; i < slots.size(); i++) {
-                    int sourceSlot = slots.get(i);
-                    ItemStack sourceStack = storage.get(sourceSlot);
-                    if (sourceStack == null || sourceStack.isEmpty()) {
-                        continue;
-                    }
-                    
-                    int sourceCount = sourceStack.getCount();
-                    if (sourceCount >= maxStackSize) {
-                        continue; // Already full
-                    }
-                    
-                    // Try to merge with other slots of the same type
-                    for (int j = i + 1; j < slots.size(); j++) {
-                        int targetSlot = slots.get(j);
-                        ItemStack targetStack = storage.get(targetSlot);
-                        if (targetStack == null || targetStack.isEmpty()) {
-                            continue;
-                        }
-                        
-                        // Check if stacks can merge (same item, same NBT)
-                        if (ItemStack.isSameItemSameComponents(sourceStack, targetStack)) {
-                            int targetCount = targetStack.getCount();
-                            int spaceLeft = maxStackSize - sourceCount;
-                            
-                            if (spaceLeft > 0 && targetCount > 0) {
-                                int toTransfer = Math.min(spaceLeft, targetCount);
-                                sourceStack.grow(toTransfer);
-                                storage.put(sourceSlot, sourceStack);
-                                
-                                if (toTransfer >= targetCount) {
-                                    // Target slot is now empty, remove it
-                                    removeItemFromStorage(targetSlot);
-                                    slots.remove(j);
-                                    j--; // Adjust index after removal
-                                } else {
-                                    targetStack.shrink(toTransfer);
-                                    storage.put(targetSlot, targetStack);
-                                }
-                                
-                                sourceCount = sourceStack.getCount();
-                                if (sourceCount >= maxStackSize) {
-                                    break; // Source is full, move to next
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Step 2: Compact slots (remove gaps by moving items to lower slots)
-            // Sort occupied slots
-            Collections.sort(occupiedSlots);
-            
-            // Find first empty slot
-            int nextEmptySlot = 0;
-            for (int i = 0; i < occupiedSlots.size(); i++) {
-                int currentSlot = occupiedSlots.get(i);
-                
-                // If there's a gap, move item to fill it
-                if (currentSlot > nextEmptySlot) {
-                    ItemStack stack = storage.remove(currentSlot);
-                    if (stack != null) {
-                        // Move to the empty slot
-                        storage.put(nextEmptySlot, stack);
-                        
-                        // Update item index
-                        Item item = stack.getItem();
-                        Set<Integer> itemSlots = itemIndex.get(item);
-                        if (itemSlots != null) {
-                            itemSlots.remove(currentSlot);
-                            itemSlots.add(nextEmptySlot);
-                        }
-                        
-                        // Update occupied slots list
-                        occupiedSlots.set(i, nextEmptySlot);
-                        
-                        // Update empty slots queue
-                        emptySlotsQueue.offer(currentSlot);
-                    }
-                }
-                
-                nextEmptySlot = Math.max(nextEmptySlot, currentSlot) + 1;
-            }
-            
-            // Rebuild logical mapping after compaction
-            rebuildLogicalMapping();
-            
-            setChanged();
-        } finally {
-            isCompacting = false;
-        }
-    }
     
     /**
      * Checks if the storage contains any items
@@ -412,8 +275,6 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         // Save scroll offset
         tag.putInt("ScrollOffset", this.scrollOffset);
         
-        // Save compact timer
-        tag.putInt("CompactTimer", this.compactTimer);
         
         // Save storage using ListTag format (like ItemStackHandler does internally)
         ListTag itemsList = new ListTag();
@@ -446,8 +307,6 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             this.scrollOffset = 0;
         }
         
-        // Load compact timer
-        this.compactTimer = tag.getInt("CompactTimer");
         
         // Clear and load storage
         storage.clear();
@@ -716,10 +575,6 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             return ItemStack.EMPTY;
         }
         
-        // Block extraction when compacting
-        if (isCompacting) {
-            return ItemStack.EMPTY;
-        }
         
         // O(1) lookup: trova tutti gli slot con questo item usando itemIndex
         Set<Integer> slotsWithItem = itemIndex.get(item);
@@ -772,10 +627,6 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             return ItemStack.EMPTY;
         }
         
-        // Block extraction when compacting
-        if (isCompacting) {
-            return ItemStack.EMPTY;
-        }
         
         Item item = requestedStack.getItem();
         
@@ -832,10 +683,6 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             return ItemStack.EMPTY;
         }
         
-        // Block extraction when compacting
-        if (isCompacting) {
-            return ItemStack.EMPTY;
-        }
         
         // O(1) lookup: trova tutti gli slot con questo item usando itemIndex
         Set<Integer> slotsWithItem = itemIndex.get(item);
@@ -934,10 +781,6 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 return stack;
             }
             
-            // Block input/output when compacting
-            if (DeepDrawersBlockEntity.this.isCompacting) {
-                return stack; // Reject when compacting
-            }
             
             // Validate item
             if (!DeepDrawersBlockEntity.this.isItemValid(stack)) {
