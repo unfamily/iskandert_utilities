@@ -42,7 +42,6 @@
     "iska_utils:iska_utils_damage",
     "iska_utils:iska_utils_improved_damage",
     "iska_utils:iska_utils_fire",
-    "iska_utils:iska_utils_freeze",
-    "iska_utils:iska_utils_cobweb"
+    "iska_utils:iska_utils_freeze"
   ]
 } 
