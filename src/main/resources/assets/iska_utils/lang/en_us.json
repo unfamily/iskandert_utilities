@@ -526,5 +526,15 @@
   "message.iska_utils.dolly_hard.too_hard": "§cThis block is too hard to pick up (requires better tools)!",
   "message.iska_utils.dolly_hard.not_allowed": "§cThis block is not allowed by the Hard Dolly configuration!",
   "message.iska_utils.dolly_hard.picked_up": "§aPicked up: §f%s",
-  "message.iska_utils.dolly_hard.placed": "§aPlaced: §f%s"
+  "message.iska_utils.dolly_hard.placed": "§aPlaced: §f%s",
+
+  "command.iska_utils.debug.only_player": "This command can only be used by a player",
+  "command.iska_utils.debug.no_item": "§cNo item in hand!",
+  "command.iska_utils.debug.serialization_error": "Serialization error: %s",
+  "command.iska_utils.debug.header": "§6=== DUMP ITEM ===",
+  "command.iska_utils.debug.item_id": "§eItem ID: §f%s",
+  "command.iska_utils.debug.compoundtag_label": "§eComplete CompoundTag:",
+  "command.iska_utils.debug.chunk": "§7[Part %s/%s] §f%s",
+  "command.iska_utils.debug.compoundtag_content": "§f%s",
+  "command.iska_utils.debug.unknown_action": "Unknown action: %s"
 }

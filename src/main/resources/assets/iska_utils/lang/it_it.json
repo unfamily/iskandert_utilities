@@ -522,5 +522,15 @@
   "message.iska_utils.dolly_hard.too_hard": "§cQuesto blocco è troppo duro per essere raccolto (richiede strumenti migliori)!",
   "message.iska_utils.dolly_hard.not_allowed": "§cQuesto blocco non è permesso dalla configurazione del Dolly Rinforzato!",
   "message.iska_utils.dolly_hard.picked_up": "§aRaccolto: §f%s",
-  "message.iska_utils.dolly_hard.placed": "§aPiazzato: §f%s"
+  "message.iska_utils.dolly_hard.placed": "§aPiazzato: §f%s",
+
+  "command.iska_utils.debug.only_player": "Questo comando può essere usato solo da un giocatore",
+  "command.iska_utils.debug.no_item": "§cNessun item in mano!",
+  "command.iska_utils.debug.serialization_error": "Errore nella serializzazione: %s",
+  "command.iska_utils.debug.header": "§6=== DUMP ITEM ===",
+  "command.iska_utils.debug.item_id": "§eItem ID: §f%s",
+  "command.iska_utils.debug.compoundtag_label": "§eCompoundTag Completo:",
+  "command.iska_utils.debug.chunk": "§7[Parte %s/%s] §f%s",
+  "command.iska_utils.debug.compoundtag_content": "§f%s",
+  "command.iska_utils.debug.unknown_action": "Azione sconosciuta: %s"
 }
