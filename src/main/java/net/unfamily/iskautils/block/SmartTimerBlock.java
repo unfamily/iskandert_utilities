@@ -78,48 +78,11 @@ public class SmartTimerBlock extends DirectionalBlock implements EntityBlock {
     
     @Override
     public int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-        // Non emettere segnale dal front (opposto del FACING)
-        // FRONT = facing.getOpposite(), BACK = facing
-        Direction facing = state.getValue(FACING);
-        if (direction == facing.getOpposite()) {
-            return 0; // Front face non emette segnale
-        }
-        
-        // Controlla se questa faccia è configurata come OUTPUT
-        if (level.getBlockEntity(pos) instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity blockEntity) {
-            byte ioConfig = blockEntity.getIoConfig(direction);
-            if (ioConfig != 2) { // 2 = OUTPUT
-                return 0; // Solo OUTPUT emette segnale
-            }
-        } else {
-            // Se non c'è BlockEntity, usa comportamento legacy (emetti da tutte le facce tranne front)
-            // Questo può accadere durante il caricamento iniziale
-            return state.getValue(POWERED) ? 15 : 0;
-        }
-        
         return state.getValue(POWERED) ? 15 : 0;
     }
     
     @Override
     public int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-        // Non emettere segnale dal front (opposto del FACING)
-        // FRONT = facing.getOpposite(), BACK = facing
-        Direction facing = state.getValue(FACING);
-        if (direction == facing.getOpposite()) {
-            return 0; // Front face non emette segnale
-        }
-        
-        // Controlla se questa faccia è configurata come OUTPUT
-        if (level.getBlockEntity(pos) instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity blockEntity) {
-            byte ioConfig = blockEntity.getIoConfig(direction);
-            if (ioConfig != 2) { // 2 = OUTPUT
-                return 0; // Solo OUTPUT emette segnale
-            }
-        } else {
-            // Se non c'è BlockEntity, usa comportamento legacy (emetti da tutte le facce tranne front)
-            return state.getValue(POWERED) ? 15 : 0;
-        }
-        
         return state.getValue(POWERED) ? 15 : 0;
     }
     

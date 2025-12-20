@@ -1400,8 +1400,6 @@ public class ModMessages {
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
-                            // Cicla il tipo I/O per la direzione specificata
-                            timer.cycleIoConfig(direction);
                             
                             // Play click sound
                             level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
@@ -1448,8 +1446,6 @@ public class ModMessages {
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
-                            // Resetta tutte le facce a BLANK
-                            timer.resetAllIoConfig();
                             
                             // Play click sound
                             level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 

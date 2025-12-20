@@ -32,12 +32,6 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     private int redstoneModeButtonX, redstoneModeButtonY;
     private static final int REDSTONE_BUTTON_SIZE = 16;
     
-    // Configuration button (also serves as Back button in config mode)
-    private int configButtonX, configButtonY;
-    private static final int CONFIG_BUTTON_SIZE = 16;
-    
-    // Screen mode: false = main screen, true = configuration screen
-    private boolean isConfigurationMode = false;
     
     // Text positions (spacing halved)
     private static final int COOLDOWN_LABEL_Y = 50;
@@ -73,11 +67,7 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         // Title is at Y=8, cooldown label is at Y=50, so center around Y=29
         this.redstoneModeButtonY = 29;
         // Position on right side but with good margin from close button (close button X=263, button size 16, margin ~30px)
-        this.redstoneModeButtonX = GUI_WIDTH - REDSTONE_BUTTON_SIZE - 30;
-        
-        // Configuration button positioned to the left of redstone button with spacing
-        this.configButtonY = 29;
-        this.configButtonX = (GUI_WIDTH - REDSTONE_BUTTON_SIZE - 30) - CONFIG_BUTTON_SIZE - 5; // 5px spacing between buttons
+        this.redstoneModeButtonX = GUI_WIDTH - REDSTONE_BUTTON_SIZE - 8;
     }
     
     @Override
@@ -102,11 +92,8 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         // Buttons for cooldown (created always but visibility controlled)
         createButtonsForValue(TEXT_START_X, COOLDOWN_BUTTONS_Y, true);
         
-        // Buttons for signal duration (created always but visibility controlled)
+        // Buttons for signal duration
         createButtonsForValue(TEXT_START_X, SIGNAL_DURATION_BUTTONS_Y, false);
-        
-        // Update visibility based on current mode
-        updateWidgetVisibility();
     }
     
     private void createButtonsForValue(int startX, int startY, boolean isCooldown) {
@@ -233,82 +220,34 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         int y = (this.height - this.imageHeight) / 2;
         guiGraphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
-        // Always render redstone mode button and configuration/back button
+        // Always render redstone mode button
         renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
-        renderConfigurationButton(guiGraphics, mouseX, mouseY);
-        
-        // Render I/O configuration buttons if in configuration mode
-        if (isConfigurationMode) {
-            renderIoConfigurationButtons(guiGraphics, mouseX, mouseY);
-        }
     }
     
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        if (isConfigurationMode) {
-            // Configuration screen title
-            Component title = Component.translatable("gui.iska_utils.smart_timer.config.title");
-            int titleWidth = this.font.width(title);
-            guiGraphics.drawString(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
-        } else {
-            // Main screen
-            Component title = Component.translatable("block.iska_utils.smart_timer");
-            int titleWidth = this.font.width(title);
-            guiGraphics.drawString(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
-            
-            // Label and value for cooldown (Redstone off for)
-            Component cooldownLabel = Component.translatable("gui.iska_utils.smart_timer.cooldown");
-            String cooldownTime = formatTimePart(currentCooldownTicks);
-            String cooldownLabelText = cooldownLabel.getString() + " " + cooldownTime;
-            guiGraphics.drawString(this.font, cooldownLabelText, TEXT_START_X, COOLDOWN_LABEL_Y, 0x404040, false);
-            
-            String cooldownTicks = formatTicksPart(currentCooldownTicks);
-            guiGraphics.drawString(this.font, cooldownTicks, TEXT_START_X, COOLDOWN_TICKS_Y, 0x404040, false);
-            
-            // Label and value for signal duration (Redstone on for)
-            Component signalDurationLabel = Component.translatable("gui.iska_utils.smart_timer.signal_duration");
-            String signalDurationTime = formatTimePart(currentSignalDurationTicks);
-            String signalDurationLabelText = signalDurationLabel.getString() + " " + signalDurationTime;
-            guiGraphics.drawString(this.font, signalDurationLabelText, TEXT_START_X, SIGNAL_DURATION_LABEL_Y, 0x404040, false);
-            
-            String signalDurationTicks = formatTicksPart(currentSignalDurationTicks);
-            guiGraphics.drawString(this.font, signalDurationTicks, TEXT_START_X, SIGNAL_DURATION_TICKS_Y, 0x404040, false);
-        }
-    }
-    
-    @Override
-    protected void renderTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        super.renderTooltip(guiGraphics, mouseX, mouseY);
+        // Main screen
+        Component title = Component.translatable("block.iska_utils.smart_timer");
+        int titleWidth = this.font.width(title);
+        guiGraphics.drawString(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
         
-        // Render tooltips for I/O buttons if in configuration mode
-        if (isConfigurationMode) {
-            renderIoTooltips(guiGraphics, mouseX, mouseY);
-        }
-    }
-
-    private void renderConfigurationButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Calculate absolute position
-        int buttonX = this.leftPos + this.configButtonX;
-        int buttonY = this.topPos + this.configButtonY;
+        // Label and value for cooldown (Redstone off for)
+        Component cooldownLabel = Component.translatable("gui.iska_utils.smart_timer.cooldown");
+        String cooldownTime = formatTimePart(currentCooldownTicks);
+        String cooldownLabelText = cooldownLabel.getString() + " " + cooldownTime;
+        guiGraphics.drawString(this.font, cooldownLabelText, TEXT_START_X, COOLDOWN_LABEL_Y, 0x404040, false);
         
-        // Check if mouse is over the button
-        boolean isHovered = mouseX >= buttonX && mouseX <= buttonX + CONFIG_BUTTON_SIZE &&
-                           mouseY >= buttonY && mouseY <= buttonY + CONFIG_BUTTON_SIZE;
+        String cooldownTicks = formatTicksPart(currentCooldownTicks);
+        guiGraphics.drawString(this.font, cooldownTicks, TEXT_START_X, COOLDOWN_TICKS_Y, 0x404040, false);
         
-        // Draw button background (normal or highlighted)
-        int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(MEDIUM_BUTTONS, buttonX, buttonY, 
-                        0, textureY, CONFIG_BUTTON_SIZE, CONFIG_BUTTON_SIZE, 
-                        96, 96);
+        // Label and value for signal duration (Redstone on for)
+        Component signalDurationLabel = Component.translatable("gui.iska_utils.smart_timer.signal_duration");
+        String signalDurationTime = formatTimePart(currentSignalDurationTicks);
+        String signalDurationLabelText = signalDurationLabel.getString() + " " + signalDurationTime;
+        guiGraphics.drawString(this.font, signalDurationLabelText, TEXT_START_X, SIGNAL_DURATION_LABEL_Y, 0x404040, false);
         
-        // Draw icon: Swiss Wrench for both Configuration and Back modes
-        int iconX = buttonX + 2;
-        int iconY = buttonY + 2;
-        int iconSize = 12;
-        
-        // Always use Swiss Wrench icon
-        net.minecraft.world.item.ItemStack swissWrench = new net.minecraft.world.item.ItemStack(ModItems.SWISS_WRENCH.get());
-        renderScaledItem(guiGraphics, swissWrench, iconX, iconY, iconSize);
+        String signalDurationTicks = formatTicksPart(currentSignalDurationTicks);
+        guiGraphics.drawString(this.font, signalDurationTicks, TEXT_START_X, SIGNAL_DURATION_TICKS_Y, 0x404040, false);
     }
     
     private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
@@ -400,8 +339,6 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         
         // Always render tooltips for redstone and config/back buttons
         renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
-        renderConfigurationTooltip(guiGraphics, mouseX, mouseY);
-        
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
     
@@ -447,22 +384,6 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
                 return true;
             }
             
-            // Check if click is on configuration/back button (always visible)
-            buttonX = this.leftPos + this.configButtonX;
-            buttonY = this.topPos + this.configButtonY;
-            if (mouseX >= buttonX && mouseX <= buttonX + CONFIG_BUTTON_SIZE &&
-                mouseY >= buttonY && mouseY <= buttonY + CONFIG_BUTTON_SIZE) {
-                
-                onConfigurationButtonPressed();
-                return true;
-            }
-            
-            // In configuration mode, handle I/O button clicks
-            if (isConfigurationMode) {
-                if (handleIoButtonClick(mouseX, mouseY, isShiftDown)) {
-                    return true;
-                }
-            }
         }
         
         return super.mouseClicked(mouseX, mouseY, button);
@@ -470,15 +391,6 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (isConfigurationMode) {
-            // In configuration mode, ESC or inventory key returns to main screen
-            if (keyCode == 256 || // ESC key
-                (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode))) {
-                playButtonSound();
-                switchToMainScreen();
-                return true;
-            }
-        }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
     
@@ -492,434 +404,5 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         }
     }
     
-    private void onConfigurationButtonPressed() {
-        playButtonSound();
-        if (isConfigurationMode) {
-            // If in config mode, button acts as Back - return to main screen
-            switchToMainScreen();
-        } else {
-            // If in main mode, button acts as Configuration - go to config screen
-            switchToConfigurationScreen();
-        }
-    }
     
-    private void switchToConfigurationScreen() {
-        isConfigurationMode = true;
-        updateWidgetVisibility();
-    }
-    
-    private void switchToMainScreen() {
-        isConfigurationMode = false;
-        updateWidgetVisibility();
-    }
-    
-    private void updateWidgetVisibility() {
-        // Hide/show widgets based on current mode
-        for (var widget : this.renderables) {
-            // Close button is always visible
-            if (widget == closeButton) {
-                continue;
-            }
-            // All timer buttons are only visible in main mode
-            if (widget instanceof Button) {
-                ((Button) widget).visible = !isConfigurationMode;
-            }
-        }
-    }
-    
-    private void renderConfigurationTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Calculate absolute position
-        int buttonX = this.leftPos + this.configButtonX;
-        int buttonY = this.topPos + this.configButtonY;
-        
-        // Check if mouse is over the button
-        boolean isHovered = mouseX >= buttonX && mouseX <= buttonX + CONFIG_BUTTON_SIZE &&
-                           mouseY >= buttonY && mouseY <= buttonY + CONFIG_BUTTON_SIZE;
-        
-        if (isHovered) {
-            Component tooltip = isConfigurationMode ? 
-                Component.translatable("gui.iska_utils.smart_timer.config.back") :
-                Component.translatable("gui.iska_utils.smart_timer.config.button");
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
-        }
-    }
-    
-    /**
-     * Renders the I/O configuration buttons in a 2D layout
-     * Layout (relative to block's facing direction):
-     *     [UP]
-     * [LEFT] [FRONT] [RIGHT]
-     *     [DOWN]
-     *               [BACK]
-     */
-    private void renderIoConfigurationButtons(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        if (this.minecraft == null || this.minecraft.level == null) {
-            return;
-        }
-        
-        // Get block state to determine facing direction
-        net.minecraft.core.BlockPos blockPos = menu.getSyncedBlockPos();
-        if (blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            return;
-        }
-        
-        net.minecraft.world.level.block.state.BlockState blockState = this.minecraft.level.getBlockState(blockPos);
-        if (!(blockState.getBlock() instanceof net.unfamily.iskautils.block.SmartTimerBlock)) {
-            return;
-        }
-        
-        net.minecraft.core.Direction facing = blockState.getValue(net.unfamily.iskautils.block.SmartTimerBlock.FACING);
-        net.minecraft.core.Direction back = facing.getOpposite();
-        
-        // Determine left and right directions relative to the block's facing
-        // Assuming facing is the direction the block "looks" at
-        net.minecraft.core.Direction left, right;
-        if (facing.getAxis() == net.minecraft.core.Direction.Axis.Y) {
-            // If facing up or down, use north as reference for left/right
-            left = net.minecraft.core.Direction.WEST;
-            right = net.minecraft.core.Direction.EAST;
-        } else {
-            // Rotate 90 degrees counterclockwise from facing to get left
-            left = switch (facing) {
-                case NORTH -> net.minecraft.core.Direction.WEST;
-                case SOUTH -> net.minecraft.core.Direction.EAST;
-                case EAST -> net.minecraft.core.Direction.NORTH;
-                case WEST -> net.minecraft.core.Direction.SOUTH;
-                default -> net.minecraft.core.Direction.WEST;
-            };
-            right = left.getOpposite();
-        }
-        
-        // Center position for the layout
-        int centerX = GUI_WIDTH / 2;
-        int centerY = GUI_HEIGHT / 2;
-        int buttonSize = 20; // Size of each button
-        int spacing = 5; // Spacing between buttons
-        
-        // Calculate positions relative to GUI (then add leftPos/topPos when rendering)
-        int frontX = centerX - buttonSize / 2;
-        int frontY = centerY - buttonSize / 2;
-        
-        // UP (above front)
-        int upX = frontX;
-        int upY = frontY - buttonSize - spacing;
-        
-        // DOWN (below front)
-        int downX = frontX;
-        int downY = frontY + buttonSize + spacing;
-        
-        // LEFT (left of front, relative to block)
-        int leftX = frontX - buttonSize - spacing;
-        int leftY = frontY;
-        
-        // RIGHT (right of front, relative to block)
-        int rightX = frontX + buttonSize + spacing;
-        int rightY = frontY;
-        
-        // BACK (bottom-right corner, aligned with RIGHT on X axis, same Y as DOWN)
-        int backX = rightX; // Same X as RIGHT button (aligned vertically)
-        int backY = downY; // Same Y as DOWN button (aligned horizontally)
-        
-        // Create mapping: world direction -> GUI position
-        java.util.Map<net.minecraft.core.Direction, int[]> directionPositions = new java.util.HashMap<>();
-        directionPositions.put(net.minecraft.core.Direction.UP, new int[]{upX, upY});
-        directionPositions.put(net.minecraft.core.Direction.DOWN, new int[]{downX, downY});
-        directionPositions.put(left, new int[]{leftX, leftY});
-        directionPositions.put(right, new int[]{rightX, rightY});
-        directionPositions.put(back, new int[]{backX, backY});
-        
-        // Render front (non-clickable, displayed)
-        renderIoButton(guiGraphics, mouseX, mouseY, facing, frontX, frontY, buttonSize, true);
-        
-        // Render other faces (clickable, excluding front)
-        for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-            if (dir == facing) continue; // Skip front, already rendered
-            
-            int[] pos = directionPositions.get(dir);
-            if (pos != null) {
-                renderIoButton(guiGraphics, mouseX, mouseY, dir, pos[0], pos[1], buttonSize, false);
-            }
-        }
-    }
-    
-    /**
-     * Renders a single I/O configuration button
-     */
-    private void renderIoButton(GuiGraphics guiGraphics, int mouseX, int mouseY, 
-                                net.minecraft.core.Direction direction, int x, int y, int size, boolean isFront) {
-        int absoluteX = this.leftPos + x;
-        int absoluteY = this.topPos + y;
-        
-        // Check if mouse is over the button
-        boolean isHovered = !isFront && mouseX >= absoluteX && mouseX <= absoluteX + size &&
-                           mouseY >= absoluteY && mouseY <= absoluteY + size;
-        
-        // Get I/O config for this direction - accedi direttamente al BlockEntity dal livello
-        byte ioConfig = 0; // Default BLANK
-        if (this.minecraft != null && this.minecraft.level != null) {
-            net.minecraft.core.BlockPos blockPos = menu.getSyncedBlockPos();
-            if (!blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
-                net.minecraft.world.level.block.entity.BlockEntity be = this.minecraft.level.getBlockEntity(blockPos);
-                if (be instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timerEntity) {
-                    ioConfig = timerEntity.getIoConfig(direction);
-                }
-            }
-        }
-        
-        // Determine colors based on I/O type
-        int backgroundColor;
-        int borderColor;
-        if (isFront) {
-            backgroundColor = 0xFF808080; // Gray for front (non-configurable)
-            borderColor = 0xFF606060;
-        } else {
-            switch (ioConfig) {
-                case 1 -> { // INPUT
-                    backgroundColor = isHovered ? 0xFF4488FF : 0xFF3366CC;
-                    borderColor = 0xFF2255AA;
-                }
-                case 2 -> { // OUTPUT
-                    backgroundColor = isHovered ? 0xFFFF8844 : 0xFFCC6633;
-                    borderColor = 0xFFAA5522;
-                }
-                default -> { // BLANK (0)
-                    backgroundColor = isHovered ? 0xFFAAAAAA : 0xFF888888;
-                    borderColor = 0xFF666666;
-                }
-            }
-        }
-        
-        // Draw button background
-        guiGraphics.fill(absoluteX, absoluteY, absoluteX + size, absoluteY + size, backgroundColor);
-        // Draw border
-        guiGraphics.fill(absoluteX, absoluteY, absoluteX + size, absoluteY + 1, borderColor); // Top
-        guiGraphics.fill(absoluteX, absoluteY + size - 1, absoluteX + size, absoluteY + size, borderColor); // Bottom
-        guiGraphics.fill(absoluteX, absoluteY, absoluteX + 1, absoluteY + size, borderColor); // Left
-        guiGraphics.fill(absoluteX + size - 1, absoluteY, absoluteX + size, absoluteY + size, borderColor); // Right
-        
-        // Draw direction label
-        String label = getDirectionLabel(direction);
-        int labelWidth = this.font.width(label);
-        int labelX = absoluteX + (size - labelWidth) / 2;
-        int labelY = absoluteY + (size - this.font.lineHeight) / 2;
-        int textColor = isFront ? 0xFF404040 : 0xFFFFFFFF;
-        guiGraphics.drawString(this.font, label, labelX, labelY, textColor, false);
-    }
-    
-    /**
-     * Gets a short label for a direction
-     */
-    private String getDirectionLabel(net.minecraft.core.Direction direction) {
-        return switch (direction) {
-            case UP -> "↑";
-            case DOWN -> "↓";
-            case NORTH -> "N";
-            case SOUTH -> "S";
-            case WEST -> "W";
-            case EAST -> "E";
-        };
-    }
-    
-    /**
-     * Handles clicks on I/O configuration buttons
-     */
-    private boolean handleIoButtonClick(double mouseX, double mouseY, boolean isShiftDown) {
-        if (this.minecraft == null || this.minecraft.level == null) {
-            return false;
-        }
-        
-        net.minecraft.core.BlockPos blockPos = menu.getSyncedBlockPos();
-        if (blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            return false;
-        }
-        
-        net.minecraft.world.level.block.state.BlockState blockState = this.minecraft.level.getBlockState(blockPos);
-        if (!(blockState.getBlock() instanceof net.unfamily.iskautils.block.SmartTimerBlock)) {
-            return false;
-        }
-        
-        net.minecraft.core.Direction facing = blockState.getValue(net.unfamily.iskautils.block.SmartTimerBlock.FACING);
-        net.minecraft.core.Direction back = facing.getOpposite();
-        
-        // Determine left and right directions relative to the block's facing (same logic as rendering)
-        net.minecraft.core.Direction left, right;
-        if (facing.getAxis() == net.minecraft.core.Direction.Axis.Y) {
-            left = net.minecraft.core.Direction.WEST;
-            right = net.minecraft.core.Direction.EAST;
-        } else {
-            left = switch (facing) {
-                case NORTH -> net.minecraft.core.Direction.WEST;
-                case SOUTH -> net.minecraft.core.Direction.EAST;
-                case EAST -> net.minecraft.core.Direction.NORTH;
-                case WEST -> net.minecraft.core.Direction.SOUTH;
-                default -> net.minecraft.core.Direction.WEST;
-            };
-            right = left.getOpposite();
-        }
-        
-        // Center position for the layout (same as rendering)
-        int centerX = GUI_WIDTH / 2;
-        int centerY = GUI_HEIGHT / 2;
-        int buttonSize = 20;
-        int spacing = 5;
-        
-        int frontX = centerX - buttonSize / 2;
-        int frontY = centerY - buttonSize / 2;
-        
-        // Check if clicking on front (shift+click = reset all)
-        int absoluteFrontX = this.leftPos + frontX;
-        int absoluteFrontY = this.topPos + frontY;
-        if (mouseX >= absoluteFrontX && mouseX <= absoluteFrontX + buttonSize &&
-            mouseY >= absoluteFrontY && mouseY <= absoluteFrontY + buttonSize) {
-            if (isShiftDown) {
-                // Shift+click on front = reset all faces
-                ModMessages.sendSmartTimerIoConfigResetPacket(blockPos);
-                playButtonSound();
-                return true;
-            }
-            // Normal click on front does nothing (front is not configurable)
-            return false;
-        }
-        
-        // Calculate positions (same logic as rendering)
-        int upX = frontX;
-        int upY = frontY - buttonSize - spacing;
-        int downX = frontX;
-        int downY = frontY + buttonSize + spacing;
-        int leftX = frontX - buttonSize - spacing;
-        int leftY = frontY;
-        int rightX = frontX + buttonSize + spacing;
-        int rightY = frontY;
-        int backX = rightX; // Same X as RIGHT (aligned)
-        int backY = downY; // Same Y as DOWN (aligned)
-        
-        // Create mapping: world direction -> GUI position (same as rendering)
-        java.util.Map<net.minecraft.core.Direction, int[]> directionPositions = new java.util.HashMap<>();
-        directionPositions.put(net.minecraft.core.Direction.UP, new int[]{upX, upY});
-        directionPositions.put(net.minecraft.core.Direction.DOWN, new int[]{downX, downY});
-        directionPositions.put(left, new int[]{leftX, leftY});
-        directionPositions.put(right, new int[]{rightX, rightY});
-        directionPositions.put(back, new int[]{backX, backY});
-        
-        // Check clicks on other faces
-        for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-            if (dir == facing) continue;
-            
-            int[] pos = directionPositions.get(dir);
-            if (pos != null) {
-                int absoluteX = this.leftPos + pos[0];
-                int absoluteY = this.topPos + pos[1];
-                if (mouseX >= absoluteX && mouseX <= absoluteX + buttonSize &&
-                    mouseY >= absoluteY && mouseY <= absoluteY + buttonSize) {
-                    // Cycle I/O config for this direction (usa direttamente la direzione del mondo)
-                    ModMessages.sendSmartTimerIoConfigCyclePacket(blockPos, dir);
-                    playButtonSound();
-                    return true;
-                }
-            }
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Renders tooltips for I/O configuration buttons
-     */
-    private void renderIoTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        if (this.minecraft == null || this.minecraft.level == null) {
-            return;
-        }
-        
-        net.minecraft.core.BlockPos blockPos = menu.getSyncedBlockPos();
-        if (blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            return;
-        }
-        
-        net.minecraft.world.level.block.state.BlockState blockState = this.minecraft.level.getBlockState(blockPos);
-        if (!(blockState.getBlock() instanceof net.unfamily.iskautils.block.SmartTimerBlock)) {
-            return;
-        }
-        
-        net.minecraft.core.Direction facing = blockState.getValue(net.unfamily.iskautils.block.SmartTimerBlock.FACING);
-        net.minecraft.core.Direction back = facing.getOpposite();
-        
-        // Determine left and right directions relative to the block's facing (same logic as rendering)
-        net.minecraft.core.Direction left, right;
-        if (facing.getAxis() == net.minecraft.core.Direction.Axis.Y) {
-            left = net.minecraft.core.Direction.WEST;
-            right = net.minecraft.core.Direction.EAST;
-        } else {
-            left = switch (facing) {
-                case NORTH -> net.minecraft.core.Direction.WEST;
-                case SOUTH -> net.minecraft.core.Direction.EAST;
-                case EAST -> net.minecraft.core.Direction.NORTH;
-                case WEST -> net.minecraft.core.Direction.SOUTH;
-                default -> net.minecraft.core.Direction.WEST;
-            };
-            right = left.getOpposite();
-        }
-        
-        // Same layout calculations as renderIoConfigurationButtons
-        int centerX = GUI_WIDTH / 2;
-        int centerY = GUI_HEIGHT / 2;
-        int buttonSize = 20;
-        int spacing = 5;
-        int frontX = centerX - buttonSize / 2;
-        int frontY = centerY - buttonSize / 2;
-        int upX = frontX;
-        int upY = frontY - buttonSize - spacing;
-        int downX = frontX;
-        int downY = frontY + buttonSize + spacing;
-        int leftX = frontX - buttonSize - spacing;
-        int leftY = frontY;
-        int rightX = frontX + buttonSize + spacing;
-        int rightY = frontY;
-        int backX = rightX; // Same X as RIGHT (aligned)
-        int backY = downY; // Same Y as DOWN (aligned)
-        
-        // Create mapping: world direction -> GUI position (same as rendering)
-        java.util.Map<net.minecraft.core.Direction, int[]> directionPositions = new java.util.HashMap<>();
-        directionPositions.put(net.minecraft.core.Direction.UP, new int[]{upX, upY});
-        directionPositions.put(net.minecraft.core.Direction.DOWN, new int[]{downX, downY});
-        directionPositions.put(left, new int[]{leftX, leftY});
-        directionPositions.put(right, new int[]{rightX, rightY});
-        directionPositions.put(back, new int[]{backX, backY});
-        
-        // Check front (shift+click tooltip)
-        int absoluteFrontX = this.leftPos + frontX;
-        int absoluteFrontY = this.topPos + frontY;
-        if (mouseX >= absoluteFrontX && mouseX <= absoluteFrontX + buttonSize &&
-            mouseY >= absoluteFrontY && mouseY <= absoluteFrontY + buttonSize) {
-            Component tooltip = Component.translatable("gui.iska_utils.smart_timer.config.reset_all");
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
-            return;
-        }
-        
-        // Check other faces
-        for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-            if (dir == facing) continue;
-            
-            int[] pos = directionPositions.get(dir);
-            if (pos != null) {
-                int absoluteX = this.leftPos + pos[0];
-                int absoluteY = this.topPos + pos[1];
-                if (mouseX >= absoluteX && mouseX <= absoluteX + buttonSize &&
-                    mouseY >= absoluteY && mouseY <= absoluteY + buttonSize) {
-                    // Get I/O config direttamente dal BlockEntity (usa blockPos già dichiarato sopra)
-                    byte ioConfig = 0; // Default BLANK
-                    net.minecraft.world.level.block.entity.BlockEntity be = this.minecraft.level.getBlockEntity(blockPos);
-                    if (be instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timerEntity) {
-                        ioConfig = timerEntity.getIoConfig(dir);
-                    }
-                    Component tooltip = switch (ioConfig) {
-                        case 1 -> Component.translatable("gui.iska_utils.smart_timer.config.io.input");
-                        case 2 -> Component.translatable("gui.iska_utils.smart_timer.config.io.output");
-                        default -> Component.translatable("gui.iska_utils.smart_timer.config.io.blank");
-                    };
-                    guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
-                    return;
-                }
-            }
-        }
-    }
 }

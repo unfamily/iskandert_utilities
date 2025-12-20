@@ -23,13 +23,7 @@ public class SmartTimerMenu extends AbstractContainerMenu {
     private static final int BLOCK_POS_Y_INDEX = 3;
     private static final int BLOCK_POS_Z_INDEX = 4;
     private static final int REDSTONE_MODE_INDEX = 5;
-    // 5 facce relative (BACK, LEFT, RIGHT, UP, DOWN) invece di 6 direzioni assolute
-    private static final int IO_CONFIG_BACK_INDEX = 6;
-    private static final int IO_CONFIG_LEFT_INDEX = 7;
-    private static final int IO_CONFIG_RIGHT_INDEX = 8;
-    private static final int IO_CONFIG_UP_INDEX = 9;
-    private static final int IO_CONFIG_DOWN_INDEX = 10;
-    private static final int DATA_COUNT = 11;
+    private static final int DATA_COUNT = 6;
 
     // Server-side constructor
     public SmartTimerMenu(int containerId, Inventory playerInventory, SmartTimerBlockEntity blockEntity) {
@@ -49,11 +43,6 @@ public class SmartTimerMenu extends AbstractContainerMenu {
                     case BLOCK_POS_Y_INDEX -> blockPos.getY();
                     case BLOCK_POS_Z_INDEX -> blockPos.getZ();
                     case REDSTONE_MODE_INDEX -> blockEntity.getRedstoneMode();
-                    case IO_CONFIG_BACK_INDEX -> blockEntity.getIoConfig(SmartTimerBlockEntity.RelativeFace.BACK);
-                    case IO_CONFIG_LEFT_INDEX -> blockEntity.getIoConfig(SmartTimerBlockEntity.RelativeFace.LEFT);
-                    case IO_CONFIG_RIGHT_INDEX -> blockEntity.getIoConfig(SmartTimerBlockEntity.RelativeFace.RIGHT);
-                    case IO_CONFIG_UP_INDEX -> blockEntity.getIoConfig(SmartTimerBlockEntity.RelativeFace.UP);
-                    case IO_CONFIG_DOWN_INDEX -> blockEntity.getIoConfig(SmartTimerBlockEntity.RelativeFace.DOWN);
                     default -> 0;
                 };
             }
@@ -130,22 +119,6 @@ public class SmartTimerMenu extends AbstractContainerMenu {
     
     public int getRedstoneMode() {
         return containerData.get(REDSTONE_MODE_INDEX);
-    }
-    
-    /**
-     * Ottiene il tipo I/O per una direzione assoluta del mondo (conversione automatica)
-     * Converte la direzione assoluta in faccia relativa usando il facing del blocco
-     */
-    public byte getIoConfig(net.minecraft.core.Direction worldDirection) {
-        // Se abbiamo accesso al BlockEntity, usiamo il metodo di conversione
-        if (blockEntity != null) {
-            return blockEntity.getIoConfig(worldDirection);
-        }
-        
-        // Client-side: dobbiamo convertire usando il facing del blocco dal livello
-        // Per semplicità, leggiamo direttamente dal BlockEntity se disponibile
-        // Altrimenti, per ora restituiamo BLANK (la GUI dovrebbe accedere al livello)
-        return 0; // BLANK - la GUI accederà direttamente al BlockEntity
     }
     
     @Override
