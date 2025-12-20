@@ -300,7 +300,7 @@ public class PotionPlateBlock extends VectorBlock {
     
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        // Per tutti i tipi di piastre, compresa quella cobweb, non creiamo collisione fisica
+        // Per tutti i tipi di piastre non creiamo collisione fisica
         // in modo che le entità possano attraversare il blocco e attivare entityInside
         return Shapes.empty();
     }

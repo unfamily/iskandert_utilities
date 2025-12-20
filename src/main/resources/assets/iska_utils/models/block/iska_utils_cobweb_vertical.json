@@ -1,7 +1,0 @@
-{
-  "parent": "iska_utils:block/plate_base_vertical",
-  "textures": {
-    "top": "iska_utils:block/potion_plates/iska_utils/plate_trap_cobweb",
-    "bottom": "iska_utils:block/plate_base"
-  }
-} 
