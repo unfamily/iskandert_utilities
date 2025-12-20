@@ -381,6 +381,9 @@ public class ModItems {
     
     public static final DeferredItem<Item> DEEP_DRAWER_INTERFACE = ITEMS.register("deep_drawer_interface",
             () -> new BlockItem(ModBlocks.DEEP_DRAWER_INTERFACE.get(), ITEM_PROPERTIES));
+    
+    public static final DeferredItem<Item> DEEP_DRAWER_EXTENDER = ITEMS.register("deep_drawer_extender",
+            () -> new BlockItem(ModBlocks.DEEP_DRAWER_EXTENDER.get(), ITEM_PROPERTIES));
 
     // ===== GIFT BLOCK =====
     // Hidden block (not in creative tab)

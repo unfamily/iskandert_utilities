@@ -59,6 +59,8 @@ public class ModCreativeModeTabs {
                                 // Deep Drawers
                                 pOutput.accept(ModItems.DEEP_DRAWERS.get());
                                 pOutput.accept(ModItems.DEEP_DRAWER_EXTRACTOR.get());
+                                pOutput.accept(ModItems.DEEP_DRAWER_INTERFACE.get());
+                                pOutput.accept(ModItems.DEEP_DRAWER_EXTENDER.get());
 
                                 // Shops
                                 pOutput.accept(ModItems.SHOP.get());

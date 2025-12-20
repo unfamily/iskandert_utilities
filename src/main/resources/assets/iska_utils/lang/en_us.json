@@ -508,6 +508,7 @@
   "message.iska_utils.deep_drawers.cannot_break": "§cCannot break Deep Drawer while it contains items!",
 
   "block.iska_utils.deep_drawer_interface": "Deep Drawer Interface",
+  "block.iska_utils.deep_drawer_extender": "Deep Drawer Extender",
   "block.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
   "item.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
 
@@ -561,8 +562,6 @@
   "command.iska_utils.debug.copied": "Copied data!",
   
   "message.iska_utils.deep_drawers.full": "Deep Drawer is full",
-  "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slots used",
-  
-  "gui.iska_utils.deep_drawers.status_full": "Full",
-  "gui.iska_utils.deep_drawers.status": "%d/%d slots used"
+  "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slots filled",
+  "message.iska_utils.deep_drawer_extractor.buffer_status": "Extractor Buffer: %d/%d slots filled"
 }

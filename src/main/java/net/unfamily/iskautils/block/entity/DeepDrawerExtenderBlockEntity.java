@@ -10,11 +10,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * BlockEntity for Deep Drawer Interface
- * Exposes the content of adjacent Deep Drawer to other mods via IItemHandler capability
- * This allows storage mods to read the entire content of the Deep Drawer
+ * BlockEntity for Deep Drawer Extender
+ * Extends the drawer's presence, allowing direct interactions (item insertion via hoppers, etc.)
+ * Acts as a mirror of the adjacent drawer for IItemHandler capability
  */
-public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
+public class DeepDrawerExtenderBlockEntity extends BlockEntity {
     
     // Cache of found Deep Drawer (for performance)
     private BlockPos cachedDrawerPos = null;
@@ -22,10 +22,10 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
     private static final int CACHE_VALIDITY_TICKS = 100; // Cache valid for 5 seconds
     
     // ItemHandler that wraps the adjacent drawer's content
-    private final IItemHandler itemHandler = new InterfaceItemHandler();
+    private final IItemHandler itemHandler = new ExtenderItemHandler();
     
-    public DeepDrawerInterfaceBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.DEEP_DRAWER_INTERFACE.get(), pos, state);
+    public DeepDrawerExtenderBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.DEEP_DRAWER_EXTENDER.get(), pos, state);
     }
     
     /**
@@ -81,7 +81,7 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
     /**
      * Server-side tick for cache invalidation
      */
-    public static void serverTick(Level level, BlockPos pos, BlockState state, DeepDrawerInterfaceBlockEntity blockEntity) {
+    public static void serverTick(Level level, BlockPos pos, BlockState state, DeepDrawerExtenderBlockEntity blockEntity) {
         if (level.isClientSide()) {
             return;
         }
@@ -92,9 +92,9 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
     
     /**
      * IItemHandler implementation that wraps the adjacent drawer's content
-     * This allows storage mods to read the entire Deep Drawer inventory
+     * This allows hoppers and other blocks to interact with the drawer through the extender
      */
-    private class InterfaceItemHandler implements IItemHandler {
+    private class ExtenderItemHandler implements IItemHandler {
         
         @Override
         public int getSlots() {
@@ -124,7 +124,7 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
             if (drawer == null) {
                 return stack;
             }
-            // Delegate insertion to the drawer's item handler (interface is a mirror)
+            // Delegate insertion to the drawer's item handler (extender is a mirror)
             return drawer.getItemHandler().insertItem(slot, stack, simulate);
         }
         
@@ -135,7 +135,7 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
             if (drawer == null) {
                 return net.minecraft.world.item.ItemStack.EMPTY;
             }
-            // Delegate extraction to the drawer's item handler (interface is a mirror)
+            // Delegate extraction to the drawer's item handler (extender is a mirror)
             return drawer.getItemHandler().extractItem(slot, amount, simulate);
         }
         
@@ -154,7 +154,7 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
             if (drawer == null) {
                 return false;
             }
-            // Delegate validation to the drawer's item handler (interface is a mirror)
+            // Delegate validation to the drawer's item handler (extender is a mirror)
             return drawer.getItemHandler().isItemValid(slot, stack);
         }
     }

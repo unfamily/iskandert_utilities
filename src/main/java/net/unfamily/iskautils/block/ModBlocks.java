@@ -407,6 +407,10 @@ public class ModBlocks {
     // Deep Drawer Interface Block (base block entity, functionality to be implemented)
     public static final DeferredBlock<DeepDrawerInterfaceBlock> DEEP_DRAWER_INTERFACE = BLOCKS.register("deep_drawer_interface",
             () -> new DeepDrawerInterfaceBlock(DEEP_DRAWERS_PROPERTIES));
+    
+    // Deep Drawer Extender Block (extends drawer presence for direct interactions)
+    public static final DeferredBlock<DeepDrawerExtenderBlock> DEEP_DRAWER_EXTENDER = BLOCKS.register("deep_drawer_extender",
+            () -> new DeepDrawerExtenderBlock(DEEP_DRAWERS_PROPERTIES));
 
     // ===== GIFT BLOCK =====
     private static final BlockBehaviour.Properties GIFT_PROPERTIES = BlockBehaviour.Properties.of()

@@ -682,6 +682,26 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     }
     
     /**
+     * Method to get block entity from level (for client-side actions)
+     * Uses synced position
+     */
+    public DeepDrawersBlockEntity getBlockEntityFromLevel(net.minecraft.world.level.Level level) {
+        if (this.blockEntity != null) {
+            return this.blockEntity; // Server side
+        } else {
+            // Client side - use synced position
+            BlockPos syncedPos = getSyncedBlockPos();
+            if (!syncedPos.equals(BlockPos.ZERO)) {
+                net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(syncedPos);
+                if (be instanceof DeepDrawersBlockEntity drawerEntity) {
+                    return drawerEntity;
+                }
+            }
+            return null;
+        }
+    }
+    
+    /**
      * Client-side ItemStackHandler that reads from the client item cache
      * This is used instead of a real handler since the client doesn't have access to the BlockEntity
      */

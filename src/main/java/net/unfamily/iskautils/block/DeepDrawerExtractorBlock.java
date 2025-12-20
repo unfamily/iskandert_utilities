@@ -66,7 +66,16 @@ public class DeepDrawerExtractorBlock extends BaseEntityBlock {
             return InteractionResult.PASS;
         }
         
-        // Shift+click: show buffer status in GUI (handled by screen)
+        // Shift+click: show buffer status (actionbar message)
+        if (player instanceof ServerPlayer serverPlayer && player.isShiftKeyDown()) {
+            int occupiedSlots = extractor.getOccupiedSlots();
+            int totalSlots = extractor.getTotalSlots();
+            serverPlayer.displayClientMessage(
+                net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawer_extractor.buffer_status", occupiedSlots, totalSlots),
+                true); // true = actionbar
+            return InteractionResult.CONSUME;
+        }
+        
         // Normal click: open GUI
         if (player instanceof ServerPlayer serverPlayer) {
             serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {

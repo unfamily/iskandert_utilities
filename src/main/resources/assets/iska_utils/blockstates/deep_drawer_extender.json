@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "iska_utils:block/deep_drawer_extender"
+    }
+  }
+}

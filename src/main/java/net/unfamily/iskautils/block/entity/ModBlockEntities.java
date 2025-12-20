@@ -99,6 +99,11 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(DeepDrawerInterfaceBlockEntity::new, ModBlocks.DEEP_DRAWER_INTERFACE.get())
                             .build(null));
     
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DeepDrawerExtenderBlockEntity>> DEEP_DRAWER_EXTENDER =
+            BLOCK_ENTITIES.register("deep_drawer_extender",
+                    () -> BlockEntityType.Builder.of(DeepDrawerExtenderBlockEntity::new, ModBlocks.DEEP_DRAWER_EXTENDER.get())
+                            .build(null));
+    
     // Smart Timer Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SmartTimerBlockEntity>> SMART_TIMER_BE =
             BLOCK_ENTITIES.register("smart_timer",
@@ -247,6 +252,19 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof DeepDrawerInterfaceBlockEntity interfaceEntity) {
                             return interfaceEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register item handler capability for Deep Drawer Extender
+            // This extends the drawer's presence for direct interactions (hoppers, etc.)
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    DEEP_DRAWER_EXTENDER.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof DeepDrawerExtenderBlockEntity extenderEntity) {
+                            return extenderEntity.getItemHandler();
                         }
                         return null;
                     }

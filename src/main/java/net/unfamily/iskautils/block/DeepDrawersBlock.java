@@ -145,8 +145,12 @@ public class DeepDrawersBlock extends BaseEntityBlock {
         if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
             BlockEntity entity = level.getBlockEntity(pos);
             if (entity instanceof DeepDrawersBlockEntity deepDrawers) {
-                // Shift+click: show if drawer is full (actionbar message)
-                if (player.isShiftKeyDown()) {
+                // Show status message (actionbar) if:
+                // - Shift+click (always), OR
+                // - Normal click when GUI is disabled
+                boolean showStatus = player.isShiftKeyDown() || !net.unfamily.iskautils.Config.deepDrawersGuiEnabled;
+                
+                if (showStatus) {
                     boolean isFull = deepDrawers.isFull();
                     if (isFull) {
                         serverPlayer.displayClientMessage(

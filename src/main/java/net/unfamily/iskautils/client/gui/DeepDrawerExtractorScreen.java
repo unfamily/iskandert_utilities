@@ -489,19 +489,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             int titleWidth = this.font.width(titleComponent);
             int titleX = (this.imageWidth - titleWidth) / 2;
             guiGraphics.drawString(this.font, titleComponent, titleX, TITLE_Y, 0x404040, false);
-            
-            // Buffer status text (between title and textboxes, aligned to left like textboxes)
-            if (this.minecraft != null && this.minecraft.level != null) {
-                DeepDrawerExtractorBlockEntity blockEntity = menu.getBlockEntityFromLevel(this.minecraft.level);
-                if (blockEntity != null) {
-                    int occupiedSlots = blockEntity.getOccupiedSlots();
-                    int totalSlots = blockEntity.getTotalSlots();
-                    Component bufferStatus = Component.translatable("gui.iska_utils.deep_drawer_extractor.buffer_status", occupiedSlots, totalSlots);
-                    int bufferStatusY = TITLE_Y + 20; // Below title, before textboxes
-                    int bufferStatusX = EDIT_BOX_X; // Aligned to left like textboxes (same X as EditBoxes)
-                    guiGraphics.drawString(this.font, bufferStatus, bufferStatusX, bufferStatusY, 0x404040, false);
-                }
-            }
         }
     }
     

@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.block.DeepDrawerExtractorBlock;
+import net.unfamily.iskautils.util.DeepDrawerConnectorHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -232,6 +233,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     /**
      * Finds an adjacent Deep Drawer (in all 6 directions)
      */
+    /**
+     * Finds a connected Deep Drawer through connector network (extender, interface, extractor)
+     * All connectors can connect to each other to find the drawer
+     */
     @Nullable
     private DeepDrawersBlockEntity findAdjacentDrawer() {
         if (level == null) {
@@ -249,20 +254,15 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             }
         }
         
-        // Search in all 6 directions
-        for (Direction direction : Direction.values()) {
-            BlockPos checkPos = worldPosition.relative(direction);
-            BlockEntity be = level.getBlockEntity(checkPos);
-            
-            if (be instanceof DeepDrawersBlockEntity drawer) {
-                // Cache the found position
-                cachedDrawerPos = checkPos;
-                cacheValidTicks = 0;
-                return drawer;
-            }
+        // Search through connector network
+        DeepDrawersBlockEntity drawer = DeepDrawerConnectorHelper.findConnectedDrawer(level, worldPosition);
+        if (drawer != null && drawer.getBlockPos() != null) {
+            // Cache the found position
+            cachedDrawerPos = drawer.getBlockPos();
+            cacheValidTicks = 0;
         }
         
-        return null;
+        return drawer;
     }
     
     /**
