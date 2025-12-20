@@ -506,7 +506,8 @@
   "tooltip.iska_utils.deep_drawers.desc2": "It is recommended to use an external system to view its contents rather than the native one",
   "tooltip.iska_utils.deep_drawers.desc3": "From the integrated GUI it is not possible to insert and extract with shift+click, use hoppers, pipes or similar",
   "message.iska_utils.deep_drawers.cannot_break": "§cCannot break Deep Drawer while it contains items!",
-  
+
+  "block.iska_utils.deep_drawer_interface": "Deep Drawer Interface",
   "block.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
   "item.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
 
@@ -543,6 +544,7 @@
   "gui.iska_utils.deep_drawer_extractor.mode.deny": "Deny List",
   "gui.iska_utils.deep_drawer_extractor.how_to_use": "How to Use",
   "gui.iska_utils.deep_drawer_extractor.back": "Back",
+  "gui.iska_utils.deep_drawer_extractor.buffer_status": "Buffer: %d/%d",
   
   "gui.iska_utils.general_filter_text.id": "- Extracts items by ID (e.g., -minecraft:diamond)",
   "gui.iska_utils.general_filter_text.tag": "# Extracts items by tag (e.g., #c:ingots)",
@@ -556,5 +558,11 @@
   "command.iska_utils.debug.items_label": "Item:",
   "command.iska_utils.debug.items_content": "%s",
    "command.iska_utils.debug.click_to_copy": "Click to copy",
-  "command.iska_utils.debug.copied": "Copied data!"
+  "command.iska_utils.debug.copied": "Copied data!",
+  
+  "message.iska_utils.deep_drawers.full": "Deep Drawer is full",
+  "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slots used",
+  
+  "gui.iska_utils.deep_drawers.status_full": "Full",
+  "gui.iska_utils.deep_drawers.status": "%d/%d slots used"
 }

@@ -162,6 +162,25 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         int titleX = (this.imageWidth - titleWidth) / 2;
         guiGraphics.drawString(this.font, titleComponent, titleX, 7, 0x404040, false);
         
+        // Render drawer status (below title)
+        if (this.minecraft != null && this.minecraft.level != null) {
+            net.unfamily.iskautils.block.entity.DeepDrawersBlockEntity blockEntity = menu.getBlockEntity();
+            if (blockEntity != null) {
+                boolean isFull = blockEntity.isFull();
+                Component statusText;
+                if (isFull) {
+                    statusText = Component.translatable("gui.iska_utils.deep_drawers.status_full");
+                } else {
+                    int occupiedSlots = blockEntity.getOccupiedSlotsCount();
+                    int totalSlots = blockEntity.getMaxSlots();
+                    statusText = Component.translatable("gui.iska_utils.deep_drawers.status", occupiedSlots, totalSlots);
+                }
+                int statusWidth = this.font.width(statusText);
+                int statusX = (this.imageWidth - statusWidth) / 2;
+                guiGraphics.drawString(this.font, statusText, statusX, 18, 0x404040, false);
+            }
+        }
+        
         // Don't render "Inventory" label (already hidden via inventoryLabelY)
     }
     

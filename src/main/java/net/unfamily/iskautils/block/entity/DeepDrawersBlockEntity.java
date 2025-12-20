@@ -330,11 +330,26 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     }
     
     /**
+     * Gets the number of occupied slots count (for status display)
+     * Note: There's also getOccupiedSlots() that returns List<Integer> for slot indices
+     */
+    public int getOccupiedSlotsCount() {
+        return storage.size();
+    }
+    
+    /**
      * Gets the maximum number of slots
      * @return max slots from config
      */
     public int getMaxSlots() {
         return maxSlots;
+    }
+    
+    /**
+     * Checks if the drawer is full (all slots occupied)
+     */
+    public boolean isFull() {
+        return storage.size() >= maxSlots;
     }
     
     /**

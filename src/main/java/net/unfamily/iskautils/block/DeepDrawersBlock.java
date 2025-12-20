@@ -145,6 +145,28 @@ public class DeepDrawersBlock extends BaseEntityBlock {
         if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
             BlockEntity entity = level.getBlockEntity(pos);
             if (entity instanceof DeepDrawersBlockEntity deepDrawers) {
+                // Shift+click: show if drawer is full (actionbar message)
+                if (player.isShiftKeyDown()) {
+                    boolean isFull = deepDrawers.isFull();
+                    if (isFull) {
+                        serverPlayer.displayClientMessage(
+                            net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.full"),
+                            true); // true = actionbar
+                    } else {
+                        int occupiedSlots = deepDrawers.getOccupiedSlotsCount();
+                        int totalSlots = deepDrawers.getMaxSlots();
+                        serverPlayer.displayClientMessage(
+                            net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.status", occupiedSlots, totalSlots),
+                            true); // true = actionbar
+                    }
+                    return net.minecraft.world.InteractionResult.CONSUME;
+                }
+                
+                // Normal click: open GUI (if enabled)
+                if (!net.unfamily.iskautils.Config.deepDrawersGuiEnabled) {
+                    return net.minecraft.world.InteractionResult.SUCCESS;
+                }
+                
                 // Open Deep Drawers GUI
                 deepDrawers.onGuiOpened(); // Mark GUI as open
                 serverPlayer.openMenu(new net.minecraft.world.SimpleMenuProvider(

@@ -66,7 +66,8 @@ public class DeepDrawerExtractorBlock extends BaseEntityBlock {
             return InteractionResult.PASS;
         }
         
-        // Open GUI
+        // Shift+click: show buffer status in GUI (handled by screen)
+        // Normal click: open GUI
         if (player instanceof ServerPlayer serverPlayer) {
             serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
                 @Override

@@ -39,9 +39,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     // ItemHandler for capability (exposes the 5 slots)
     private final IItemHandler itemHandler = new ExtractorItemHandler();
     
-    // Timer for extraction (every 1 tick = 0.05 seconds, maximum speed)
+    // Timer for extraction (interval from config, default 1 tick = 0.05 seconds, maximum speed)
     private int extractionTimer = 0;
-    private static final int EXTRACTION_INTERVAL = 1;
     
     // Cache of found Deep Drawer (for performance)
     private BlockPos cachedDrawerPos = null;
@@ -166,8 +165,9 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             return;
         }
         
-        // Extract every EXTRACTION_INTERVAL ticks, but only if redstone conditions are met
-        if (blockEntity.extractionTimer >= EXTRACTION_INTERVAL && shouldExtract) {
+        // Extract every N ticks (from config), but only if redstone conditions are met
+        int extractionInterval = net.unfamily.iskautils.Config.deepDrawerExtractorInterval;
+        if (blockEntity.extractionTimer >= extractionInterval && shouldExtract) {
             blockEntity.extractionTimer = 0;
             blockEntity.tryExtractFromDrawer();
         }
@@ -313,6 +313,26 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     }
     
     /**
+     * Gets the number of occupied slots in the buffer
+     */
+    public int getOccupiedSlots() {
+        int count = 0;
+        for (ItemStack stack : items) {
+            if (!stack.isEmpty()) {
+                count++;
+            }
+        }
+        return count;
+    }
+    
+    /**
+     * Gets the total number of slots in the buffer
+     */
+    public int getTotalSlots() {
+        return INVENTORY_SIZE;
+    }
+    
+    /**
      * Checks if there are any valid (non-empty) filter entries
      */
     private boolean hasValidFilters() {
@@ -399,17 +419,17 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         }
         
         // NBT filter: ?"apotheosis:rarity":"apotheosis:mythic"
+        // Uses the same method as the original hardcoded example
         if (filter.startsWith("?")) {
             String nbtFilter = filter.substring(1);
             try {
                 if (level != null) {
                     var tag = stack.save(level.registryAccess());
                     if (tag instanceof CompoundTag compoundTag) {
-                        // Serialize CompoundTag to string and search for the filter string
+                        // Serialize CompoundTag to string and search for exact string (like original example)
                         String nbtString = compoundTag.toString();
-                        // Remove quotes from filter for matching (NBT string format may vary)
-                        String searchString = nbtFilter.replace("\"", "");
-                        return nbtString.contains(searchString);
+                        // Search for exact string with quotes (same as original: "apotheosis:rarity":"apotheosis:mythic")
+                        return nbtString.contains(nbtFilter);
                     }
                 }
             } catch (Exception e) {

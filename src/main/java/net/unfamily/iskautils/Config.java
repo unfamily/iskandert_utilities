@@ -176,6 +176,19 @@ public class Config
                     "Default: 49995 (9 x 5555, close to 50000)",
                     "Higher values may impact performance")
             .defineInRange("402_deep_drawers_slot_count", 49995, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_GUI_ENABLED = BUILDER
+            .comment("Enable the Deep Drawers GUI (not perfect, use at your own risk)",
+                    "Default: false (disabled)",
+                    "WARNING: The GUI is not perfect and its use is discouraged")
+            .define("403_deep_drawers_gui_enabled", false);
+
+    // Deep Drawer Extractor Configuration (starts at 410)
+    private static final ModConfigSpec.IntValue DEEP_DRAWER_EXTRACTOR_INTERVAL = BUILDER
+            .comment("Extraction interval in ticks for the Deep Drawer Extractor (lower is faster)",
+                    "Default: 1 (extracts every tick, maximum speed)",
+                    "1 tick = 0.05 seconds")
+            .defineInRange("410_deep_drawer_extractor_interval", 1, 1, Integer.MAX_VALUE);
     
     // Dolly Configuration (in general_utilities category)
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DOLLY_WHITELIST = BUILDER
@@ -571,6 +584,8 @@ public class Config
     public static java.util.List<String> deepDrawersAllowedTags;
     public static java.util.List<String> deepDrawersBlacklist;
     public static int deepDrawersSlotCount;
+    public static boolean deepDrawersGuiEnabled;
+    public static int deepDrawerExtractorInterval;
     
     public static java.util.List<String> dollyWhitelist;
     public static java.util.List<String> dollyBlacklist;
@@ -643,6 +658,8 @@ public class Config
         deepDrawersAllowedTags = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOWED_TAGS.get());
         deepDrawersBlacklist = new java.util.ArrayList<>(DEEP_DRAWERS_BLACKLIST.get());
         deepDrawersSlotCount = DEEP_DRAWERS_SLOT_COUNT.get();
+        deepDrawersGuiEnabled = DEEP_DRAWERS_GUI_ENABLED.get();
+        deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         
         // Dolly configuration
         dollyWhitelist = new java.util.ArrayList<>(DOLLY_WHITELIST.get());

@@ -502,7 +502,8 @@
   "tooltip.iska_utils.deep_drawers.desc2": "È consigliato usare un sistema esterno per vederne il contenuto rispetto al nativo",
   "tooltip.iska_utils.deep_drawers.desc3": "Dalla GUI integrata non è possibile inserire ed estrarre con shift+click, usare hopper, tubi o similari",
   "message.iska_utils.deep_drawers.cannot_break": "§cNon puoi rompere la Cassettiera Profonda che contiene oggetti!",
-  
+ 
+  "block.iska_utils.deep_drawer_interface": "Interfaccia di Cassettiera Profonda",
   "block.iska_utils.deep_drawer_extractor": "Estrattore di Cassettiera Profonda",
   "item.iska_utils.deep_drawer_extractor": "Estrattore di Cassettiera Profonda",
 
@@ -538,6 +539,7 @@
   "gui.iska_utils.deep_drawer_extractor.mode.deny": "Lista Nega",
   "gui.iska_utils.deep_drawer_extractor.how_to_use": "Come Usare",
   "gui.iska_utils.deep_drawer_extractor.back": "Indietro",
+  "gui.iska_utils.deep_drawer_extractor.buffer_status": "Buffer: %d/%d",
 
   "gui.iska_utils.general_filter_text.id": "- Estrae gli item per ID (esempio: -minecraft:diamond)",
   "gui.iska_utils.general_filter_text.tag": "# Estrae gli item per tag (esempio: #c:ingots)",
@@ -551,5 +553,11 @@
   "command.iska_utils.debug.items_label": "Oggetti:",
   "command.iska_utils.debug.items_content": "%s",
   "command.iska_utils.debug.click_to_copy": "Clicca per copiare",
-  "command.iska_utils.debug.copied": "Dato copiato!"
+  "command.iska_utils.debug.copied": "Dato copiato!",
+  
+  "message.iska_utils.deep_drawers.full": "Deep Drawer pieno",
+  "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slot utilizzati",
+  
+  "gui.iska_utils.deep_drawers.status_full": "Pieno",
+  "gui.iska_utils.deep_drawers.status": "%d/%d slot utilizzati"
 }
