@@ -508,9 +508,12 @@
   "message.iska_utils.deep_drawers.cannot_break": "§cCannot break Deep Drawer while it contains items!",
 
   "block.iska_utils.deep_drawer_interface": "Deep Drawer Interface",
+  "item.iska_utils.deep_drawer_interface": "Deep Drawer Interface",
   "block.iska_utils.deep_drawer_extender": "Deep Drawer Extender",
+  "item.iska_utils.deep_drawer_extender": "Deep Drawer Extender",
   "block.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
   "item.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
+  "item.iska_utils.guide": "Iska Utils Guide",
 
   "item.iska_utils.dolly": "Dolly",
   "tooltip.iska_utils.dolly.contains": "§7Contains: §f%s",
@@ -543,7 +546,7 @@
 
   "gui.iska_utils.deep_drawer_extractor.mode.allow": "Allow List",
   "gui.iska_utils.deep_drawer_extractor.mode.deny": "Deny List",
-  "gui.iska_utils.deep_drawer_extractor.how_to_use": "How to Use",
+  "gui.iska_utils.deep_drawer_extractor.how_to_use": "Valid Keys",
   "gui.iska_utils.deep_drawer_extractor.back": "Back",
   "gui.iska_utils.deep_drawer_extractor.buffer_status": "Buffer: %d/%d",
   

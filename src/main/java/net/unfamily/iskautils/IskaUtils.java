@@ -24,6 +24,8 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.fml.ModList;
+import guideme.Guide;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.ClientEvents;
@@ -52,6 +54,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.resources.ResourceLocation;
 import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.shop.ShopLoader;
 
@@ -139,6 +142,16 @@ public class IskaUtils {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             ClientEvents.shutdown();
         }));
+        
+        // Initialize GuideME guide if available
+        if (ModList.get().isLoaded("guideme")) {
+            try {
+                Guide.builder(ResourceLocation.fromNamespaceAndPath(MOD_ID, "guide")).build();
+                LOGGER.info("GuideME guide registered");
+            } catch (Exception e) {
+                LOGGER.warn("Failed to register GuideME guide: {}", e.getMessage());
+            }
+        }
 
     }
 

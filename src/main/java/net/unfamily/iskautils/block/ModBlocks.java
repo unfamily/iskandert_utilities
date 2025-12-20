@@ -167,8 +167,15 @@ public class ModBlocks {
             () -> new RubberSapExtractorBlock(RUBBER_SAP_EXTRACTOR_PROPERTIES));
     
     // Smart Timer (emits redstone signal periodically)
+    private static final BlockBehaviour.Properties SMART_TIMER_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.STONE)
+            .strength(0.3f, 1.0f)
+            .sound(SoundType.STONE)
+            .requiresCorrectToolForDrops()
+            .isRedstoneConductor((state, level, pos) -> false);
+    
     public static final DeferredBlock<SmartTimerBlock> SMART_TIMER = BLOCKS.register("smart_timer",
-            () -> new SmartTimerBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
+            () -> new SmartTimerBlock(SMART_TIMER_PROPERTIES));
 
     // ===== SMOOTH BLACKSTONE =====
     private static final BlockBehaviour.Properties SMOOTH_BLACKSTONE_PROPERTIES = BlockBehaviour.Properties.of()
@@ -394,7 +401,8 @@ public class ModBlocks {
             .mapColor(MapColor.METAL)
             .strength(3.5f, 6.0f)
             .sound(SoundType.COPPER)
-            .requiresCorrectToolForDrops();
+            .requiresCorrectToolForDrops()
+            .isRedstoneConductor((state, level, pos) -> false);
 
     // Deep Drawers Block (massive storage for non-stackable items)
     public static final DeferredBlock<DeepDrawersBlock> DEEP_DRAWERS = BLOCKS.register("deep_drawers",

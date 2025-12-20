@@ -130,6 +130,12 @@ dependencies {
     } else {
         compileOnly "curse.maven:curios-309927:6529130"
     }
+    
+    if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "guideme") {
+        implementation "curse.maven:guide-me-1173950:7127444"
+    } else {
+        compileOnly "curse.maven:guide-me-1173950:7127444"
+    }
 
     // Optional dependencies for JEI/REI/EMI
     

@@ -538,7 +538,7 @@
 
   "gui.iska_utils.deep_drawer_extractor.mode.allow": "Lista Consenti",
   "gui.iska_utils.deep_drawer_extractor.mode.deny": "Lista Nega",
-  "gui.iska_utils.deep_drawer_extractor.how_to_use": "Come Usare",
+  "gui.iska_utils.deep_drawer_extractor.how_to_use": "Chiavi Valide",
   "gui.iska_utils.deep_drawer_extractor.back": "Indietro",
   "gui.iska_utils.deep_drawer_extractor.buffer_status": "Buffer: %d/%d",
 

@@ -9,6 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -32,45 +33,37 @@ import javax.annotation.Nullable;
  * Un blocco che ogni X secondi emette un segnale redstone di durata Y secondi
  * Default: 5s di cooldown, 3s di durata del segnale
  */
-public class SmartTimerBlock extends Block implements EntityBlock {
+public class SmartTimerBlock extends DirectionalBlock implements EntityBlock {
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-    public static final DirectionProperty FACING = BlockStateProperties.FACING; // Supports all 6 directions
+    public static final DirectionProperty FACING = DirectionalBlock.FACING;
     public static final MapCodec<SmartTimerBlock> CODEC = simpleCodec(SmartTimerBlock::new);
     
     public SmartTimerBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
-                .setValue(POWERED, false)
-                .setValue(FACING, Direction.NORTH));
+                .setValue(FACING, Direction.NORTH)
+                .setValue(POWERED, false));
     }
     
     @Override
-    protected MapCodec<? extends Block> codec() {
+    protected MapCodec<? extends DirectionalBlock> codec() {
         return CODEC;
     }
     
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(POWERED, FACING);
+        builder.add(FACING, POWERED);
     }
     
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // Get the face that was clicked
-        Direction clickedFace = context.getClickedFace();
-        Direction facing;
-        
-        // If clicking on top or bottom face, use that direction directly (block faces up/down like player)
-        if (clickedFace == Direction.UP || clickedFace == Direction.DOWN) {
-            facing = clickedFace;
-        } else {
-            // For horizontal faces, use player's horizontal facing direction (block faces same direction as player)
-            facing = context.getHorizontalDirection();
-        }
+        // Il blocco deve guardare verso il player come un dispenser
+        // getNearestLookingDirection() restituisce la direzione in cui guarda il player
+        Direction facing = context.getNearestLookingDirection().getOpposite();
         
         return this.defaultBlockState()
                 .setValue(FACING, facing)
-                .setValue(POWERED, false);
+                .setValue(POWERED, Boolean.FALSE);
     }
     
     @Override
@@ -85,9 +78,10 @@ public class SmartTimerBlock extends Block implements EntityBlock {
     
     @Override
     public int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-        // Non emettere segnale dal front (faccia FACING)
+        // Non emettere segnale dal front (opposto del FACING)
+        // FRONT = facing.getOpposite(), BACK = facing
         Direction facing = state.getValue(FACING);
-        if (direction == facing) {
+        if (direction == facing.getOpposite()) {
             return 0; // Front face non emette segnale
         }
         
@@ -108,9 +102,10 @@ public class SmartTimerBlock extends Block implements EntityBlock {
     
     @Override
     public int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-        // Non emettere segnale dal front (faccia FACING)
+        // Non emettere segnale dal front (opposto del FACING)
+        // FRONT = facing.getOpposite(), BACK = facing
         Direction facing = state.getValue(FACING);
-        if (direction == facing) {
+        if (direction == facing.getOpposite()) {
             return 0; // Front face non emette segnale
         }
         

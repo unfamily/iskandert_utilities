@@ -13,31 +13,50 @@ import net.unfamily.iskautils.client.model.SmartTimerModelData;
 
 /**
  * Smart Timer Block Entity
- * Gestisce un timer che ogni X secondi emette un segnale redstone di durata Y secondi
- * Default: 5s di cooldown, 3s di durata del segnale
+ * Timer that emits a redstone signal every X seconds for Y seconds duration.
+ * Default: 5s cooldown, 3s signal duration.
  */
 public class SmartTimerBlockEntity extends BlockEntity {
-    // Valori di default (in tick: 1 secondo = 20 tick)
-    private static final int DEFAULT_COOLDOWN_TICKS = 5 * 20; // 5 secondi
-    private static final int DEFAULT_SIGNAL_DURATION_TICKS = 3 * 20; // 3 secondi
+    private static final int DEFAULT_COOLDOWN_TICKS = 5 * 20;
+    private static final int DEFAULT_SIGNAL_DURATION_TICKS = 3 * 20;
     
-    // Timer attuali (in tick)
     private int cooldownTicks = DEFAULT_COOLDOWN_TICKS;
     private int signalDurationTicks = DEFAULT_SIGNAL_DURATION_TICKS;
-    
-    // Stato del timer
-    private int currentTick = 0; // Contatore tick corrente
-    private boolean isSignalActive = false; // Se il segnale è attualmente attivo
-    
-    // Redstone mode (preparato per uso futuro)
+    private int currentTick = 0;
+    private boolean isSignalActive = false;
     private int redstoneMode = 0;
     
-    // I/O Configuration: byte array per le 6 facce (indice = Direction.ordinal())
-    // 0 = BLANK, 1 = INPUT, 2 = OUTPUT
-    private byte[] ioConfig = new byte[6]; // Inizializzato a tutti 0 (BLANK) di default
+    /**
+     * Relative faces of the block that can be configured for I/O.
+     * BACK = facing, LEFT/RIGHT = 90° rotation, UP/DOWN = always UP/DOWN.
+     * FRONT (opposite of facing) is not configurable.
+     */
+    public enum RelativeFace {
+        BACK(0),
+        LEFT(1),
+        RIGHT(2),
+        UP(3),
+        DOWN(4);
+        
+        private final int index;
+        
+        RelativeFace(int index) {
+            this.index = index;
+        }
+        
+        public int getIndex() {
+            return index;
+        }
+        
+        public static RelativeFace fromIndex(int index) {
+            for (RelativeFace face : values()) {
+                if (face.index == index) return face;
+            }
+            return BACK;
+        }
+    }
     
-    // Tracking per PULSE mode (stato precedente degli input)
-    private boolean[] previousInputStates = new boolean[6];
+    private byte[] ioConfig = new byte[5];
     
     /**
      * Enum for I/O types
@@ -77,10 +96,9 @@ public class SmartTimerBlockEntity extends BlockEntity {
      * Enum for redstone modes
      */
     public enum RedstoneMode {
-        NONE(0),    // Gunpowder icon
-        LOW(1),     // Redstone dust icon  
-        HIGH(2),    // Redstone gui icon
-        PULSE(3);   // Repeater icon
+        NONE(0),
+        LOW(1),
+        HIGH(2);
         
         private final int value;
         
@@ -103,30 +121,23 @@ public class SmartTimerBlockEntity extends BlockEntity {
             return switch (this) {
                 case NONE -> LOW;
                 case LOW -> HIGH;
-                case HIGH -> PULSE;
-                case PULSE -> NONE;
+                case HIGH -> NONE;
             };
         }
     }
     
     public SmartTimerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SMART_TIMER_BE.get(), pos, state);
-        // Inizializza tutte le facce a BLANK (già fatto dal default del byte array)
     }
     
-    /**
-     * Metodo tick chiamato ogni frame
-     */
     public static void tick(Level level, BlockPos pos, BlockState state, SmartTimerBlockEntity blockEntity) {
         if (level.isClientSide) {
-            return; // Solo lato server
+            return;
         }
         
-        // Controlla se il timer deve essere bloccato dagli input redstone
         boolean shouldBlock = blockEntity.shouldBlockTimer(level, pos, state);
         
         if (shouldBlock) {
-            // Blocca il timer: azzera contatore, spegni segnale se attivo
             if (blockEntity.isSignalActive) {
                 blockEntity.isSignalActive = false;
                 BlockState newState = state.setValue(SmartTimerBlock.POWERED, false);
@@ -134,152 +145,99 @@ public class SmartTimerBlockEntity extends BlockEntity {
                 level.updateNeighborsAt(pos, state.getBlock());
             }
             blockEntity.currentTick = 0;
-            // NON incrementare currentTick quando bloccato (timer si ferma)
             return;
         }
         
-        // Timer non bloccato, procedi normalmente
         blockEntity.currentTick++;
         
         if (blockEntity.isSignalActive) {
-            // Il segnale è attivo, controlla se deve spegnersi
             if (blockEntity.currentTick >= blockEntity.signalDurationTicks) {
-                // Il segnale è durato abbastanza, spegnilo
                 blockEntity.isSignalActive = false;
                 blockEntity.currentTick = 0;
-                
-                // Aggiorna lo stato del blocco
                 level.setBlock(pos, state.setValue(SmartTimerBlock.POWERED, false), 3);
                 level.updateNeighborsAt(pos, state.getBlock());
             }
         } else {
-            // Il segnale non è attivo, controlla se deve attivarsi
             if (blockEntity.currentTick >= blockEntity.cooldownTicks) {
-                // Il cooldown è scaduto, attiva il segnale
                 blockEntity.isSignalActive = true;
                 blockEntity.currentTick = 0;
-                
-                // Aggiorna lo stato del blocco
                 level.setBlock(pos, state.setValue(SmartTimerBlock.POWERED, true), 3);
                 level.updateNeighborsAt(pos, state.getBlock());
             }
         }
     }
     
-    /**
-     * Controlla se il timer deve essere bloccato in base agli input redstone configurati
-     */
     private boolean shouldBlockTimer(Level level, BlockPos pos, BlockState state) {
         Direction facing = state.getValue(SmartTimerBlock.FACING);
         RedstoneMode mode = RedstoneMode.fromValue(redstoneMode);
         
-        // NONE mode: non bloccare mai
         if (mode == RedstoneMode.NONE) {
             return false;
         }
         
-        // Raccogli tutti gli input e i loro stati
-        boolean[] currentInputStates = new boolean[6];
+        boolean[] currentInputStates = new boolean[5];
         boolean hasAnyInput = false;
         
-        for (Direction dir : Direction.values()) {
-            // Salta il front (non configurabile)
-            if (dir == facing) {
-                continue;
-            }
-            
-            int dirIndex = dir.ordinal();
-            IoType ioType = IoType.fromValue(ioConfig[dirIndex]);
+        for (RelativeFace face : RelativeFace.values()) {
+            Direction worldDir = toWorldDirection(face, facing);
+            int faceIndex = face.getIndex();
+            IoType ioType = IoType.fromValue(ioConfig[faceIndex]);
             
             if (ioType == IoType.INPUT) {
                 hasAnyInput = true;
-                // Controlla se c'è segnale redstone da questa direzione
-                BlockPos neighborPos = pos.relative(dir);
-                int signal = level.getSignal(neighborPos, dir.getOpposite());
-                currentInputStates[dirIndex] = signal > 0;
+                BlockPos neighborPos = pos.relative(worldDir);
+                int signal = level.getSignal(neighborPos, worldDir.getOpposite());
+                currentInputStates[faceIndex] = signal > 0;
             }
         }
         
-        // Se non ci sono input configurati, non bloccare
         if (!hasAnyInput) {
             return false;
         }
         
-        // Valuta in base al redstone mode
         boolean shouldBlock = false;
         
         switch (mode) {
             case LOW -> {
-                // LOW: blocca se almeno un INPUT ha segnale > 0
-                for (Direction dir : Direction.values()) {
-                    if (dir == facing) continue;
-                    int dirIndex = dir.ordinal();
-                    if (IoType.fromValue(ioConfig[dirIndex]) == IoType.INPUT && currentInputStates[dirIndex]) {
+                for (int i = 0; i < 5; i++) {
+                    if (IoType.fromValue(ioConfig[i]) == IoType.INPUT && currentInputStates[i]) {
                         shouldBlock = true;
                         break;
                     }
                 }
             }
             case HIGH -> {
-                // HIGH: blocca se almeno un INPUT NON ha segnale (tutti gli INPUT devono avere segnale per non bloccare)
-                for (Direction dir : Direction.values()) {
-                    if (dir == facing) continue;
-                    int dirIndex = dir.ordinal();
-                    if (IoType.fromValue(ioConfig[dirIndex]) == IoType.INPUT && !currentInputStates[dirIndex]) {
+                for (int i = 0; i < 5; i++) {
+                    if (IoType.fromValue(ioConfig[i]) == IoType.INPUT && !currentInputStates[i]) {
                         shouldBlock = true;
                         break;
-                    }
-                }
-            }
-            case PULSE -> {
-                // PULSE: blocca su transizione LOW->HIGH (almeno un INPUT passa da false a true)
-                for (Direction dir : Direction.values()) {
-                    if (dir == facing) continue;
-                    int dirIndex = dir.ordinal();
-                    if (IoType.fromValue(ioConfig[dirIndex]) == IoType.INPUT) {
-                        if (currentInputStates[dirIndex] && !previousInputStates[dirIndex]) {
-                            shouldBlock = true;
-                            break;
-                        }
                     }
                 }
             }
             default -> shouldBlock = false;
         }
         
-        // Aggiorna previousInputStates per PULSE mode
-        System.arraycopy(currentInputStates, 0, previousInputStates, 0, 6);
-        
         return shouldBlock;
     }
     
-    /**
-     * Imposta il cooldown in secondi
-     */
     public void setCooldownSeconds(int seconds) {
         this.cooldownTicks = seconds * 20;
-        this.currentTick = 0; // Reset del timer
+        this.currentTick = 0;
         this.setChanged();
         if (this.level != null && !this.level.isClientSide) {
             this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
         }
     }
     
-    /**
-     * Imposta il cooldown direttamente in tick
-     */
     public void setCooldownTicks(int ticks) {
-        this.cooldownTicks = Math.max(5, ticks); // Minimum 5 ticks
-        this.currentTick = 0; // Reset del timer
+        this.cooldownTicks = Math.max(5, ticks);
+        this.currentTick = 0;
         this.setChanged();
         if (this.level != null && !this.level.isClientSide) {
             this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
         }
     }
     
-    /**
-     * Imposta la durata del segnale in secondi
-     */
     public void setSignalDurationSeconds(int seconds) {
         this.signalDurationTicks = seconds * 20;
         this.setChanged();
@@ -288,107 +246,152 @@ public class SmartTimerBlockEntity extends BlockEntity {
         }
     }
     
-    /**
-     * Imposta la durata del segnale direttamente in tick
-     */
     public void setSignalDurationTicks(int ticks) {
-        this.signalDurationTicks = Math.max(5, ticks); // Minimum 5 ticks
+        this.signalDurationTicks = Math.max(5, ticks);
         this.setChanged();
         if (this.level != null && !this.level.isClientSide) {
             this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
         }
     }
     
-    /**
-     * Ottiene il cooldown in secondi
-     */
     public int getCooldownSeconds() {
         return cooldownTicks / 20;
     }
     
-    /**
-     * Ottiene il cooldown direttamente in tick
-     */
     public int getCooldownTicks() {
         return cooldownTicks;
     }
     
-    /**
-     * Ottiene la durata del segnale in secondi
-     */
     public int getSignalDurationSeconds() {
         return signalDurationTicks / 20;
     }
     
-    /**
-     * Ottiene la durata del segnale direttamente in tick
-     */
     public int getSignalDurationTicks() {
         return signalDurationTicks;
     }
     
-    /**
-     * Ottiene il redstone mode
-     */
     public int getRedstoneMode() {
         return redstoneMode;
     }
     
-    /**
-     * Imposta il redstone mode
-     */
     public void setRedstoneMode(int redstoneMode) {
-        this.redstoneMode = redstoneMode % 4; // Ensure mode is always 0-3
+        this.redstoneMode = redstoneMode % 3;
         setChanged();
     }
     
     /**
-     * Ottiene il tipo I/O per una direzione specifica
+     * Converts a world direction to a relative face.
+     * BACK = facing, LEFT/RIGHT = 90° rotation, UP/DOWN = always UP/DOWN.
      */
-    public byte getIoConfig(Direction direction) {
-        return ioConfig[direction.ordinal()];
+    public static RelativeFace toRelativeFace(Direction worldDirection, Direction facing) {
+        if (worldDirection == facing) {
+            return RelativeFace.BACK;
+        }
+        
+        Direction left = calculateLeftDirection(facing);
+        if (worldDirection == left) {
+            return RelativeFace.LEFT;
+        }
+        
+        if (worldDirection == left.getOpposite()) {
+            return RelativeFace.RIGHT;
+        }
+        
+        if (worldDirection == Direction.UP) {
+            return RelativeFace.UP;
+        }
+        if (worldDirection == Direction.DOWN) {
+            return RelativeFace.DOWN;
+        }
+        
+        return RelativeFace.BACK;
+    }
+    
+    private static Direction calculateLeftDirection(Direction facing) {
+        if (facing.getAxis() == Direction.Axis.Y) {
+            return Direction.WEST;
+        }
+        
+        return switch (facing) {
+            case NORTH -> Direction.WEST;
+            case SOUTH -> Direction.EAST;
+            case EAST -> Direction.NORTH;
+            case WEST -> Direction.SOUTH;
+            default -> Direction.WEST;
+        };
     }
     
     /**
-     * Imposta il tipo I/O per una direzione specifica
+     * Converts a relative face to a world direction.
      */
-    public void setIoConfig(Direction direction, byte ioType) {
-        ioConfig[direction.ordinal()] = ioType;
+    public static Direction toWorldDirection(RelativeFace relativeFace, Direction facing) {
+        return switch (relativeFace) {
+            case BACK -> facing;
+            case LEFT -> calculateLeftDirection(facing);
+            case RIGHT -> calculateLeftDirection(facing).getOpposite();
+            case UP -> Direction.UP;
+            case DOWN -> Direction.DOWN;
+        };
+    }
+    
+    public byte getIoConfig(RelativeFace relativeFace) {
+        return ioConfig[relativeFace.getIndex()];
+    }
+    
+    public byte getIoConfig(Direction worldDirection) {
+        Direction facing = this.getBlockState().getValue(SmartTimerBlock.FACING);
+        RelativeFace relativeFace = toRelativeFace(worldDirection, facing);
+        return ioConfig[relativeFace.getIndex()];
+    }
+    
+    public void setIoConfig(RelativeFace relativeFace, byte ioType) {
+        ioConfig[relativeFace.getIndex()] = ioType;
         setChanged();
         if (this.level != null) {
             if (!this.level.isClientSide) {
                 this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
             } else {
-                // Client-side: richiedi aggiornamento del ModelData
                 requestModelDataUpdate();
             }
         }
     }
     
-    /**
-     * Cicla il tipo I/O per una direzione (BLANK -> INPUT -> OUTPUT -> BLANK)
-     */
-    public void cycleIoConfig(Direction direction) {
-        int dirIndex = direction.ordinal();
-        IoType currentType = IoType.fromValue(ioConfig[dirIndex]);
+    public void setIoConfig(Direction worldDirection, byte ioType) {
+        Direction facing = this.getBlockState().getValue(SmartTimerBlock.FACING);
+        RelativeFace relativeFace = toRelativeFace(worldDirection, facing);
+        ioConfig[relativeFace.getIndex()] = ioType;
+        setChanged();
+        if (this.level != null) {
+            if (!this.level.isClientSide) {
+                this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
+            } else {
+                requestModelDataUpdate();
+            }
+        }
+    }
+    
+    public void cycleIoConfig(RelativeFace relativeFace) {
+        IoType currentType = IoType.fromValue(ioConfig[relativeFace.getIndex()]);
         IoType nextType = currentType.next();
-        ioConfig[dirIndex] = nextType.getValue();
+        ioConfig[relativeFace.getIndex()] = nextType.getValue();
         setChanged();
         if (this.level != null) {
             if (!this.level.isClientSide) {
                 this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
             } else {
-                // Client-side: richiedi aggiornamento del ModelData
                 requestModelDataUpdate();
             }
         }
     }
     
-    /**
-     * Resetta tutte le facce a BLANK
-     */
+    public void cycleIoConfig(Direction worldDirection) {
+        Direction facing = this.getBlockState().getValue(SmartTimerBlock.FACING);
+        RelativeFace relativeFace = toRelativeFace(worldDirection, facing);
+        cycleIoConfig(relativeFace);
+    }
+    
     public void resetAllIoConfig() {
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 5; i++) {
             ioConfig[i] = IoType.BLANK.getValue();
         }
         setChanged();
@@ -396,33 +399,25 @@ public class SmartTimerBlockEntity extends BlockEntity {
             if (!this.level.isClientSide) {
                 this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
             } else {
-                // Client-side: richiedi aggiornamento del ModelData
                 requestModelDataUpdate();
             }
         }
     }
     
-    /**
-     * Ottiene l'array completo della configurazione I/O (per sincronizzazione)
-     */
     public byte[] getIoConfigArray() {
-        return ioConfig.clone(); // Ritorna una copia per sicurezza
+        return ioConfig.clone();
     }
     
-    /**
-     * Imposta l'array completo della configurazione I/O (per sincronizzazione)
-     */
     public void setIoConfigArray(byte[] config) {
-        if (config != null && config.length == 6) {
-            System.arraycopy(config, 0, ioConfig, 0, 6);
+        if (config != null && config.length == 5) {
+            System.arraycopy(config, 0, ioConfig, 0, 5);
             setChanged();
             if (this.level != null) {
                 if (!this.level.isClientSide) {
                     this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
-                } else {
-                    // Client-side: richiedi aggiornamento del ModelData
-                    requestModelDataUpdate();
-                }
+            } else {
+                requestModelDataUpdate();
+            }
             }
         }
     }
@@ -458,15 +453,24 @@ public class SmartTimerBlockEntity extends BlockEntity {
         }
         if (tag.contains("IoConfig")) {
             byte[] loadedConfig = tag.getByteArray("IoConfig");
-            if (loadedConfig.length == 6) {
-                System.arraycopy(loadedConfig, 0, ioConfig, 0, 6);
+            if (loadedConfig.length == 5) {
+                System.arraycopy(loadedConfig, 0, ioConfig, 0, 5);
+            } else if (loadedConfig.length == 6) {
+                // Legacy format: convert 6 absolute directions to 5 relative faces
+                Direction facing = this.getBlockState().getValue(SmartTimerBlock.FACING);
+                byte[] newConfig = new byte[5];
+                for (RelativeFace face : RelativeFace.values()) {
+                    Direction worldDir = toWorldDirection(face, facing);
+                    int worldIndex = worldDir.ordinal();
+                    newConfig[face.getIndex()] = loadedConfig[worldIndex];
+                }
+                System.arraycopy(newConfig, 0, ioConfig, 0, 5);
             }
         }
     }
     
     @Override
     public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
-        // Include le configurazioni I/O nel packet di sincronizzazione
         return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
     }
     
@@ -475,7 +479,7 @@ public class SmartTimerBlockEntity extends BlockEntity {
         CompoundTag tag = super.getUpdateTag(registries);
         tag.putInt("CooldownTicks", cooldownTicks);
         tag.putInt("SignalDurationTicks", signalDurationTicks);
-        tag.putByteArray("IoConfig", ioConfig); // Sincronizza anche le configurazioni I/O
+        tag.putByteArray("IoConfig", ioConfig);
         return tag;
     }
     
@@ -494,48 +498,55 @@ public class SmartTimerBlockEntity extends BlockEntity {
             }
             if (tag.contains("IoConfig")) {
                 byte[] loadedConfig = tag.getByteArray("IoConfig");
-                if (loadedConfig.length == 6) {
-                    System.arraycopy(loadedConfig, 0, ioConfig, 0, 6);
-                    // Richiedi aggiornamento del ModelData quando i dati I/O cambiano
+                if (loadedConfig.length == 5) {
+                    System.arraycopy(loadedConfig, 0, ioConfig, 0, 5);
+                    requestModelDataUpdate();
+                } else if (loadedConfig.length == 6) {
+                    // Legacy format: convert 6 absolute directions to 5 relative faces
+                    Direction facing = this.getBlockState().getValue(SmartTimerBlock.FACING);
+                    byte[] newConfig = new byte[5];
+                    for (RelativeFace face : RelativeFace.values()) {
+                        Direction worldDir = toWorldDirection(face, facing);
+                        int worldIndex = worldDir.ordinal();
+                        newConfig[face.getIndex()] = loadedConfig[worldIndex];
+                    }
+                    System.arraycopy(newConfig, 0, ioConfig, 0, 5);
                     requestModelDataUpdate();
                 }
             }
         }
     }
     
-    /**
-     * Fornisce i dati I/O al modello per il rendering dinamico delle texture
-     */
     @Override
     public ModelData getModelData() {
         ModelData.Builder builder = ModelData.builder();
         
-        // Copia la configurazione I/O
-        byte[] ioConfigCopy = new byte[6];
-        System.arraycopy(ioConfig, 0, ioConfigCopy, 0, 6);
-        builder.with(SmartTimerModelData.IO_CONFIG_PROPERTY, ioConfigCopy);
-        
-        // Determina lo stato degli input (se hanno segnale redstone)
+        BlockState state = this.getBlockState();
+        Direction facing = state.getValue(SmartTimerBlock.FACING);
+        byte[] ioConfigWorld = new byte[6];
         boolean[] inputStates = new boolean[6];
+        
         if (this.level != null && this.getBlockPos() != null) {
-            BlockState state = this.getBlockState();
-            Direction facing = state.getValue(SmartTimerBlock.FACING);
-            
-            for (Direction dir : Direction.values()) {
-                if (dir == facing) {
-                    continue; // Salta il front
-                }
+            for (RelativeFace face : RelativeFace.values()) {
+                Direction worldDir = toWorldDirection(face, facing);
+                int worldIndex = worldDir.ordinal();
+                int faceIndex = face.getIndex();
                 
-                if (ioConfig[dir.ordinal()] == 1) { // INPUT
-                    // Controlla se c'è segnale redstone da questa direzione
+                ioConfigWorld[worldIndex] = ioConfig[faceIndex];
+                
+                if (ioConfig[faceIndex] == 1) {
                     int signal = this.level.getSignal(
-                        this.getBlockPos().relative(dir),
-                        dir.getOpposite()
+                        this.getBlockPos().relative(worldDir),
+                        worldDir.getOpposite()
                     );
-                    inputStates[dir.ordinal()] = signal > 0;
+                    inputStates[worldIndex] = signal > 0;
                 }
             }
         }
+        
+        ioConfigWorld[facing.getOpposite().ordinal()] = IoType.BLANK.getValue();
+        
+        builder.with(SmartTimerModelData.IO_CONFIG_PROPERTY, ioConfigWorld);
         builder.with(SmartTimerModelData.INPUT_STATES_PROPERTY, inputStates);
         
         return builder.build();

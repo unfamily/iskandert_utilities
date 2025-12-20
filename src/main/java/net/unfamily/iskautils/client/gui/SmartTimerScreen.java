@@ -349,11 +349,6 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
                 // HIGH mode: Redstone GUI texture rendered as item-like (12x12)
                 renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
             }
-            case 3 -> {
-                // PULSE mode: Repeater icon
-                net.minecraft.world.item.ItemStack repeater = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REPEATER);
-                renderScaledItem(guiGraphics, repeater, iconX, iconY, iconSize);
-            }
         }
     }
     
@@ -428,7 +423,6 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
                 case 0 -> Component.translatable("gui.iska_utils.smart_timer.redstone_mode.none");
                 case 1 -> Component.translatable("gui.iska_utils.smart_timer.redstone_mode.low");
                 case 2 -> Component.translatable("gui.iska_utils.smart_timer.redstone_mode.high");
-                case 3 -> Component.translatable("gui.iska_utils.smart_timer.redstone_mode.pulse");
                 default -> Component.literal("Unknown mode");
             };
             
@@ -552,11 +546,11 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     
     /**
      * Renders the I/O configuration buttons in a 2D layout
-     * Layout:
+     * Layout (relative to block's facing direction):
      *     [UP]
-     * [WEST] [FRONT] [EAST]
+     * [LEFT] [FRONT] [RIGHT]
      *     [DOWN]
-     *              [BACK]
+     *               [BACK]
      */
     private void renderIoConfigurationButtons(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (this.minecraft == null || this.minecraft.level == null) {
@@ -577,6 +571,25 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         net.minecraft.core.Direction facing = blockState.getValue(net.unfamily.iskautils.block.SmartTimerBlock.FACING);
         net.minecraft.core.Direction back = facing.getOpposite();
         
+        // Determine left and right directions relative to the block's facing
+        // Assuming facing is the direction the block "looks" at
+        net.minecraft.core.Direction left, right;
+        if (facing.getAxis() == net.minecraft.core.Direction.Axis.Y) {
+            // If facing up or down, use north as reference for left/right
+            left = net.minecraft.core.Direction.WEST;
+            right = net.minecraft.core.Direction.EAST;
+        } else {
+            // Rotate 90 degrees counterclockwise from facing to get left
+            left = switch (facing) {
+                case NORTH -> net.minecraft.core.Direction.WEST;
+                case SOUTH -> net.minecraft.core.Direction.EAST;
+                case EAST -> net.minecraft.core.Direction.NORTH;
+                case WEST -> net.minecraft.core.Direction.SOUTH;
+                default -> net.minecraft.core.Direction.WEST;
+            };
+            right = left.getOpposite();
+        }
+        
         // Center position for the layout
         int centerX = GUI_WIDTH / 2;
         int centerY = GUI_HEIGHT / 2;
@@ -595,17 +608,25 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         int downX = frontX;
         int downY = frontY + buttonSize + spacing;
         
-        // WEST (left of front)
-        int westX = frontX - buttonSize - spacing;
-        int westY = frontY;
+        // LEFT (left of front, relative to block)
+        int leftX = frontX - buttonSize - spacing;
+        int leftY = frontY;
         
-        // EAST (right of front)
-        int eastX = frontX + buttonSize + spacing;
-        int eastY = frontY;
+        // RIGHT (right of front, relative to block)
+        int rightX = frontX + buttonSize + spacing;
+        int rightY = frontY;
         
-        // BACK (top-right corner)
-        int backX = GUI_WIDTH - buttonSize - 30; // Margin from right edge
-        int backY = 30; // Top area
+        // BACK (bottom-right corner, aligned with RIGHT on X axis, same Y as DOWN)
+        int backX = rightX; // Same X as RIGHT button (aligned vertically)
+        int backY = downY; // Same Y as DOWN button (aligned horizontally)
+        
+        // Create mapping: world direction -> GUI position
+        java.util.Map<net.minecraft.core.Direction, int[]> directionPositions = new java.util.HashMap<>();
+        directionPositions.put(net.minecraft.core.Direction.UP, new int[]{upX, upY});
+        directionPositions.put(net.minecraft.core.Direction.DOWN, new int[]{downX, downY});
+        directionPositions.put(left, new int[]{leftX, leftY});
+        directionPositions.put(right, new int[]{rightX, rightY});
+        directionPositions.put(back, new int[]{backX, backY});
         
         // Render front (non-clickable, displayed)
         renderIoButton(guiGraphics, mouseX, mouseY, facing, frontX, frontY, buttonSize, true);
@@ -614,27 +635,10 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
             if (dir == facing) continue; // Skip front, already rendered
             
-            int x, y;
-            if (dir == net.minecraft.core.Direction.UP) {
-                x = upX;
-                y = upY;
-            } else if (dir == net.minecraft.core.Direction.DOWN) {
-                x = downX;
-                y = downY;
-            } else if (dir == net.minecraft.core.Direction.WEST) {
-                x = westX;
-                y = westY;
-            } else if (dir == net.minecraft.core.Direction.EAST) {
-                x = eastX;
-                y = eastY;
-            } else if (dir == back) {
-                x = backX;
-                y = backY;
-            } else {
-                continue;
+            int[] pos = directionPositions.get(dir);
+            if (pos != null) {
+                renderIoButton(guiGraphics, mouseX, mouseY, dir, pos[0], pos[1], buttonSize, false);
             }
-            
-            renderIoButton(guiGraphics, mouseX, mouseY, dir, x, y, buttonSize, false);
         }
     }
     
@@ -650,8 +654,17 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         boolean isHovered = !isFront && mouseX >= absoluteX && mouseX <= absoluteX + size &&
                            mouseY >= absoluteY && mouseY <= absoluteY + size;
         
-        // Get I/O config for this direction
-        byte ioConfig = menu.getIoConfig(direction);
+        // Get I/O config for this direction - accedi direttamente al BlockEntity dal livello
+        byte ioConfig = 0; // Default BLANK
+        if (this.minecraft != null && this.minecraft.level != null) {
+            net.minecraft.core.BlockPos blockPos = menu.getSyncedBlockPos();
+            if (!blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
+                net.minecraft.world.level.block.entity.BlockEntity be = this.minecraft.level.getBlockEntity(blockPos);
+                if (be instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timerEntity) {
+                    ioConfig = timerEntity.getIoConfig(direction);
+                }
+            }
+        }
         
         // Determine colors based on I/O type
         int backgroundColor;
@@ -726,8 +739,25 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         }
         
         net.minecraft.core.Direction facing = blockState.getValue(net.unfamily.iskautils.block.SmartTimerBlock.FACING);
+        net.minecraft.core.Direction back = facing.getOpposite();
         
-        // Center position for the layout
+        // Determine left and right directions relative to the block's facing (same logic as rendering)
+        net.minecraft.core.Direction left, right;
+        if (facing.getAxis() == net.minecraft.core.Direction.Axis.Y) {
+            left = net.minecraft.core.Direction.WEST;
+            right = net.minecraft.core.Direction.EAST;
+        } else {
+            left = switch (facing) {
+                case NORTH -> net.minecraft.core.Direction.WEST;
+                case SOUTH -> net.minecraft.core.Direction.EAST;
+                case EAST -> net.minecraft.core.Direction.NORTH;
+                case WEST -> net.minecraft.core.Direction.SOUTH;
+                default -> net.minecraft.core.Direction.WEST;
+            };
+            right = left.getOpposite();
+        }
+        
+        // Center position for the layout (same as rendering)
         int centerX = GUI_WIDTH / 2;
         int centerY = GUI_HEIGHT / 2;
         int buttonSize = 20;
@@ -751,50 +781,41 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
             return false;
         }
         
-        // Check other faces
+        // Calculate positions (same logic as rendering)
         int upX = frontX;
         int upY = frontY - buttonSize - spacing;
         int downX = frontX;
         int downY = frontY + buttonSize + spacing;
-        int westX = frontX - buttonSize - spacing;
-        int westY = frontY;
-        int eastX = frontX + buttonSize + spacing;
-        int eastY = frontY;
-        int backX = GUI_WIDTH - buttonSize - 30;
-        int backY = 30;
-        net.minecraft.core.Direction back = facing.getOpposite();
+        int leftX = frontX - buttonSize - spacing;
+        int leftY = frontY;
+        int rightX = frontX + buttonSize + spacing;
+        int rightY = frontY;
+        int backX = rightX; // Same X as RIGHT (aligned)
+        int backY = downY; // Same Y as DOWN (aligned)
         
+        // Create mapping: world direction -> GUI position (same as rendering)
+        java.util.Map<net.minecraft.core.Direction, int[]> directionPositions = new java.util.HashMap<>();
+        directionPositions.put(net.minecraft.core.Direction.UP, new int[]{upX, upY});
+        directionPositions.put(net.minecraft.core.Direction.DOWN, new int[]{downX, downY});
+        directionPositions.put(left, new int[]{leftX, leftY});
+        directionPositions.put(right, new int[]{rightX, rightY});
+        directionPositions.put(back, new int[]{backX, backY});
+        
+        // Check clicks on other faces
         for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
             if (dir == facing) continue;
             
-            int x, y;
-            if (dir == net.minecraft.core.Direction.UP) {
-                x = upX;
-                y = upY;
-            } else if (dir == net.minecraft.core.Direction.DOWN) {
-                x = downX;
-                y = downY;
-            } else if (dir == net.minecraft.core.Direction.WEST) {
-                x = westX;
-                y = westY;
-            } else if (dir == net.minecraft.core.Direction.EAST) {
-                x = eastX;
-                y = eastY;
-            } else if (dir == back) {
-                x = backX;
-                y = backY;
-            } else {
-                continue;
-            }
-            
-            int absoluteX = this.leftPos + x;
-            int absoluteY = this.topPos + y;
-            if (mouseX >= absoluteX && mouseX <= absoluteX + buttonSize &&
-                mouseY >= absoluteY && mouseY <= absoluteY + buttonSize) {
-                // Cycle I/O config for this direction
-                ModMessages.sendSmartTimerIoConfigCyclePacket(blockPos, dir);
-                playButtonSound();
-                return true;
+            int[] pos = directionPositions.get(dir);
+            if (pos != null) {
+                int absoluteX = this.leftPos + pos[0];
+                int absoluteY = this.topPos + pos[1];
+                if (mouseX >= absoluteX && mouseX <= absoluteX + buttonSize &&
+                    mouseY >= absoluteY && mouseY <= absoluteY + buttonSize) {
+                    // Cycle I/O config for this direction (usa direttamente la direzione del mondo)
+                    ModMessages.sendSmartTimerIoConfigCyclePacket(blockPos, dir);
+                    playButtonSound();
+                    return true;
+                }
             }
         }
         
@@ -820,6 +841,23 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         }
         
         net.minecraft.core.Direction facing = blockState.getValue(net.unfamily.iskautils.block.SmartTimerBlock.FACING);
+        net.minecraft.core.Direction back = facing.getOpposite();
+        
+        // Determine left and right directions relative to the block's facing (same logic as rendering)
+        net.minecraft.core.Direction left, right;
+        if (facing.getAxis() == net.minecraft.core.Direction.Axis.Y) {
+            left = net.minecraft.core.Direction.WEST;
+            right = net.minecraft.core.Direction.EAST;
+        } else {
+            left = switch (facing) {
+                case NORTH -> net.minecraft.core.Direction.WEST;
+                case SOUTH -> net.minecraft.core.Direction.EAST;
+                case EAST -> net.minecraft.core.Direction.NORTH;
+                case WEST -> net.minecraft.core.Direction.SOUTH;
+                default -> net.minecraft.core.Direction.WEST;
+            };
+            right = left.getOpposite();
+        }
         
         // Same layout calculations as renderIoConfigurationButtons
         int centerX = GUI_WIDTH / 2;
@@ -832,13 +870,20 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         int upY = frontY - buttonSize - spacing;
         int downX = frontX;
         int downY = frontY + buttonSize + spacing;
-        int westX = frontX - buttonSize - spacing;
-        int westY = frontY;
-        int eastX = frontX + buttonSize + spacing;
-        int eastY = frontY;
-        int backX = GUI_WIDTH - buttonSize - 30;
-        int backY = 30;
-        net.minecraft.core.Direction back = facing.getOpposite();
+        int leftX = frontX - buttonSize - spacing;
+        int leftY = frontY;
+        int rightX = frontX + buttonSize + spacing;
+        int rightY = frontY;
+        int backX = rightX; // Same X as RIGHT (aligned)
+        int backY = downY; // Same Y as DOWN (aligned)
+        
+        // Create mapping: world direction -> GUI position (same as rendering)
+        java.util.Map<net.minecraft.core.Direction, int[]> directionPositions = new java.util.HashMap<>();
+        directionPositions.put(net.minecraft.core.Direction.UP, new int[]{upX, upY});
+        directionPositions.put(net.minecraft.core.Direction.DOWN, new int[]{downX, downY});
+        directionPositions.put(left, new int[]{leftX, leftY});
+        directionPositions.put(right, new int[]{rightX, rightY});
+        directionPositions.put(back, new int[]{backX, backY});
         
         // Check front (shift+click tooltip)
         int absoluteFrontX = this.leftPos + frontX;
@@ -854,38 +899,26 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
             if (dir == facing) continue;
             
-            int x, y;
-            if (dir == net.minecraft.core.Direction.UP) {
-                x = upX;
-                y = upY;
-            } else if (dir == net.minecraft.core.Direction.DOWN) {
-                x = downX;
-                y = downY;
-            } else if (dir == net.minecraft.core.Direction.WEST) {
-                x = westX;
-                y = westY;
-            } else if (dir == net.minecraft.core.Direction.EAST) {
-                x = eastX;
-                y = eastY;
-            } else if (dir == back) {
-                x = backX;
-                y = backY;
-            } else {
-                continue;
-            }
-            
-            int absoluteX = this.leftPos + x;
-            int absoluteY = this.topPos + y;
-            if (mouseX >= absoluteX && mouseX <= absoluteX + buttonSize &&
-                mouseY >= absoluteY && mouseY <= absoluteY + buttonSize) {
-                byte ioConfig = menu.getIoConfig(dir);
-                Component tooltip = switch (ioConfig) {
-                    case 1 -> Component.translatable("gui.iska_utils.smart_timer.config.io.input");
-                    case 2 -> Component.translatable("gui.iska_utils.smart_timer.config.io.output");
-                    default -> Component.translatable("gui.iska_utils.smart_timer.config.io.blank");
-                };
-                guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
-                return;
+            int[] pos = directionPositions.get(dir);
+            if (pos != null) {
+                int absoluteX = this.leftPos + pos[0];
+                int absoluteY = this.topPos + pos[1];
+                if (mouseX >= absoluteX && mouseX <= absoluteX + buttonSize &&
+                    mouseY >= absoluteY && mouseY <= absoluteY + buttonSize) {
+                    // Get I/O config direttamente dal BlockEntity (usa blockPos già dichiarato sopra)
+                    byte ioConfig = 0; // Default BLANK
+                    net.minecraft.world.level.block.entity.BlockEntity be = this.minecraft.level.getBlockEntity(blockPos);
+                    if (be instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timerEntity) {
+                        ioConfig = timerEntity.getIoConfig(dir);
+                    }
+                    Component tooltip = switch (ioConfig) {
+                        case 1 -> Component.translatable("gui.iska_utils.smart_timer.config.io.input");
+                        case 2 -> Component.translatable("gui.iska_utils.smart_timer.config.io.output");
+                        default -> Component.translatable("gui.iska_utils.smart_timer.config.io.blank");
+                    };
+                    guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+                    return;
+                }
             }
         }
     }
