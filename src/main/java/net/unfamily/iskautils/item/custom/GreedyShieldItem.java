@@ -27,10 +27,10 @@ public class GreedyShieldItem extends Item {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
         // Get values from config and convert to percentages
-        int blockChancePercent = (int) (Config.greedyShieldBlockChance * 100);
-        int reduceChancePercent = (int) (Config.greedyShieldReduceChance * 100);
-        int reduceAmountPercent = (int) ((1.0 - Config.greedyShieldReduceAmount) * 100); // Percentage blocked
-        int remainingPercent = (int) (Config.greedyShieldReduceAmount * 100); // Percentage remaining
+        int blockChancePercent = (int) Math.round(Config.greedyShieldBlockChance * 100);
+        int reduceChancePercent = (int) Math.round(Config.greedyShieldReduceChance * 100);
+        int reduceAmountPercent = (int) Math.round((1.0 - Config.greedyShieldReduceAmount) * 100); // Percentage blocked
+        int remainingPercent = (int) Math.round(Config.greedyShieldReduceAmount * 100); // Percentage remaining
         
         tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc0"));
         tooltipComponents.add(Component.translatable("tooltip.iska_utils.greedy_shield.desc1", blockChancePercent)
