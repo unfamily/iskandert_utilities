@@ -45,4 +45,7 @@ public class ModMenuTypes {
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<SmartTimerMenu>> SMART_TIMER_MENU =
         MENUS.register("smart_timer_menu", () -> new MenuType<>(SmartTimerMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<DeepDrawerExtractorMenu>> DEEP_DRAWER_EXTRACTOR_MENU =
+        MENUS.register("deep_drawer_extractor_menu", () -> new MenuType<>(DeepDrawerExtractorMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+    
 } 

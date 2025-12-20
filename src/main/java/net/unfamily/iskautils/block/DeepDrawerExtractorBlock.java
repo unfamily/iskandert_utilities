@@ -61,23 +61,25 @@ public class DeepDrawerExtractorBlock extends BaseEntityBlock {
             return InteractionResult.SUCCESS;
         }
         
-            // Mostra informazioni sullo stato dell'estrattore
-            if (level.getBlockEntity(pos) instanceof DeepDrawerExtractorBlockEntity extractor) {
-                // Per ora solo feedback testuale, in futuro si può aggiungere GUI
-                if (player instanceof ServerPlayer) {
-                    // Mostra contenuto inventario
-                    int filledSlots = 0;
-                    for (int i = 0; i < 5; i++) {
-                        if (!extractor.getItem(i).isEmpty()) {
-                            filledSlots++;
-                        }
-                    }
-                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                        "§6Deep Drawer Extractor§r\n" +
-                        "Slot occupati: " + filledSlots + "/5"
-                    ));
+        BlockEntity entity = level.getBlockEntity(pos);
+        if (!(entity instanceof DeepDrawerExtractorBlockEntity extractor)) {
+            return InteractionResult.PASS;
+        }
+        
+        // Open GUI
+        if (player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
+                @Override
+                public net.minecraft.network.chat.Component getDisplayName() {
+                    return net.minecraft.network.chat.Component.translatable("block.iska_utils.deep_drawer_extractor");
                 }
-            }
+                
+                @Override
+                public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int id, net.minecraft.world.entity.player.Inventory inv, Player player) {
+                    return new net.unfamily.iskautils.client.gui.DeepDrawerExtractorMenu(id, inv, extractor);
+                }
+            }, pos);
+        }
         
         return InteractionResult.CONSUME;
     }

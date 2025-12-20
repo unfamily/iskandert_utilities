@@ -499,6 +499,59 @@ public class ModMessages {
     }
     
     /**
+     * Sends a Deep Drawer Extractor Redstone Mode packet to the server
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendDeepDrawerExtractorRedstoneModePacket(BlockPos machinePos) {
+        // Use simplified approach like other machine buttons
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
+                            
+                            // Cycle to next redstone mode
+                            net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode currentMode = 
+                                net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode.fromValue(extractor.getRedstoneMode());
+                            net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode nextMode = currentMode.next();
+                            extractor.setRedstoneMode(nextMode.getValue());
+                            
+                            // Play click sound
+                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            
+                            // Mark the block entity as changed
+                            extractor.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Deep Drawer Extractor redstone mode packet: {}", e.getMessage());
+                }
+            });
+            
+
+        } catch (Exception e) {
+            LOGGER.error("Could not send Deep Drawer Extractor redstone mode packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
      * Sends a Structure Placer Machine Set Inventory packet to the server
      * Mode: 0 = normal, 1 = shift+click, 2 = ctrl/alt+click
      */
@@ -1208,6 +1261,34 @@ public class ModMessages {
                     if (player != null) {
                         // Create and handle the packet
                         new net.unfamily.iskautils.network.packet.SmartTimerUpdateC2SPacket(pos, isCooldown, deltaTicks).handle(player);
+                    }
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            });
+        } catch (Exception e) {
+            // Ignore errors
+        }
+    }
+    
+    /**
+     * Sends filter update packet to server
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendDeepDrawerExtractorFilterUpdatePacket(BlockPos pos, String[] filterFields, boolean isWhitelistMode) {
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Create and handle the packet
+                        new net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket(pos, filterFields, isWhitelistMode).handle(player);
                     }
                 } catch (Exception e) {
                     // Ignore errors

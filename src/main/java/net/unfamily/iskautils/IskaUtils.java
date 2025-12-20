@@ -238,33 +238,6 @@ public class IskaUtils {
             event.register(DynamicPotionPlateModelLoader.ID, DynamicPotionPlateModelLoader.INSTANCE);
         }
         
-        @SubscribeEvent
-        public static void onModelBake(net.neoforged.neoforge.client.event.ModelEvent.ModifyBakingResult event) {
-            var blockStateModels = event.getBakingResult().blockStateModels();
-            var smartTimerBlock = net.unfamily.iskautils.block.ModBlocks.SMART_TIMER.get();
-            
-            // Wrappa tutti i modelli del blocco Smart Timer per supportare texture dinamiche I/O
-            for (var entry : blockStateModels.entrySet()) {
-                var blockState = entry.getKey();
-                
-                // Controlla se questo è un BlockState del Smart Timer
-                if (blockState.getBlock() == smartTimerBlock) {
-                    var originalModel = entry.getValue();
-                    
-                    // Wrappa il modello con SmartTimerBakedModel
-                    var wrappedModel = new net.unfamily.iskautils.client.model.SmartTimerBakedModel(
-                        originalModel,
-                        (textureLoc) -> {
-                            var atlas = net.minecraft.client.Minecraft.getInstance()
-                                .getModelManager()
-                                .getAtlas(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS);
-                            return atlas.getSprite(textureLoc);
-                        }
-                    );
-                    entry.setValue(wrappedModel);
-                }
-            }
-        }
         
         @SubscribeEvent
         public static void registerMenuScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
@@ -284,6 +257,8 @@ public class IskaUtils {
                           net.unfamily.iskautils.client.gui.DeepDrawersScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SMART_TIMER_MENU.get(),
                           net.unfamily.iskautils.client.gui.SmartTimerScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.DEEP_DRAWER_EXTRACTOR_MENU.get(),
+                          net.unfamily.iskautils.client.gui.DeepDrawerExtractorScreen::new);
         }
     }
 

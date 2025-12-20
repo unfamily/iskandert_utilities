@@ -532,5 +532,24 @@
   "command.iska_utils.debug.compoundtag_label": "§eCompoundTag Completo:",
   "command.iska_utils.debug.chunk": "§7[Parte %s/%s] §f%s",
   "command.iska_utils.debug.compoundtag_content": "§f%s",
-  "command.iska_utils.debug.unknown_action": "Azione sconosciuta: %s"
+  "command.iska_utils.debug.unknown_action": "Azione sconosciuta: %s",
+
+  "gui.iska_utils.deep_drawer_extractor.mode.allow": "Lista Consenti",
+  "gui.iska_utils.deep_drawer_extractor.mode.deny": "Lista Nega",
+  "gui.iska_utils.deep_drawer_extractor.how_to_use": "Come Usare",
+  "gui.iska_utils.deep_drawer_extractor.back": "Indietro",
+
+  "gui.iska_utils.general_filter_text.id": "- Estrae gli item per ID (esempio: -minecraft:diamond)",
+  "gui.iska_utils.general_filter_text.tag": "# Estrae gli item per tag (esempio: #c:ingots)",
+  "gui.iska_utils.general_filter_text.modid": "@ Estrae gli item per mod ID (esempio: @iska_utils)",
+  "gui.iska_utils.general_filter_text.nbt": "? Estrae gli item per NBT",
+  "gui.iska_utils.general_filter_text.nbt.example": "  (esempio: ?\"apotheosis:rarity\":\"apotheosis:mythic\")",
+  "gui.iska_utils.general_filter_text.macro": "& Filtri predefiniti (esempio: &enchanted, &damaged)",
+  "gui.iska_utils.general_filter_text.usage": "Usa /iska_utils_debug hand con un item in mano",
+  "gui.iska_utils.general_filter_text.usage.what": "per vedere quello che ti serve",
+  
+  "command.iska_utils.debug.items_label": "Oggetti:",
+  "command.iska_utils.debug.items_content": "%s",
+  "command.iska_utils.debug.click_to_copy": "Clicca per copiare",
+  "command.iska_utils.debug.copied": "Dato copiato!"
 }

@@ -532,9 +532,29 @@
   "command.iska_utils.debug.no_item": "§cNo item in hand!",
   "command.iska_utils.debug.serialization_error": "Serialization error: %s",
   "command.iska_utils.debug.header": "§6=== DUMP ITEM ===",
-  "command.iska_utils.debug.item_id": "§eItem ID: §f%s",
-  "command.iska_utils.debug.compoundtag_label": "§eComplete CompoundTag:",
-  "command.iska_utils.debug.chunk": "§7[Part %s/%s] §f%s",
-  "command.iska_utils.debug.compoundtag_content": "§f%s",
-  "command.iska_utils.debug.unknown_action": "Unknown action: %s"
+  "command.iska_utils.debug.item_id": "Item ID: %s",
+  "command.iska_utils.debug.compoundtag_label": "Complete CompoundTag:",
+  "command.iska_utils.debug.chunk": "[Part %s/%s] %s",
+  "command.iska_utils.debug.compoundtag_content": "%s",
+  "command.iska_utils.debug.unknown_action": "Unknown action: %s",
+ 
+
+  "gui.iska_utils.deep_drawer_extractor.mode.allow": "Allow List",
+  "gui.iska_utils.deep_drawer_extractor.mode.deny": "Deny List",
+  "gui.iska_utils.deep_drawer_extractor.how_to_use": "How to Use",
+  "gui.iska_utils.deep_drawer_extractor.back": "Back",
+  
+  "gui.iska_utils.general_filter_text.id": "- Extracts items by ID (e.g., -minecraft:diamond)",
+  "gui.iska_utils.general_filter_text.tag": "# Extracts items by tag (e.g., #c:ingots)",
+  "gui.iska_utils.general_filter_text.modid": "@ Extracts items by mod ID (e.g., @iska_utils)",
+  "gui.iska_utils.general_filter_text.nbt": "? Extracts items by NBT",
+  "gui.iska_utils.general_filter_text.nbt.example": "  (e.g., ?\"apotheosis:rarity\":\"apotheosis:mythic\")",
+  "gui.iska_utils.general_filter_text.macro": "& Predefined filters (e.g., &enchanted, &damaged)",
+  "gui.iska_utils.general_filter_text.usage": "Use /iska_utils_debug hand with an item in hand",
+  "gui.iska_utils.general_filter_text.usage.what": "to see what you need",
+  
+  "command.iska_utils.debug.items_label": "Item:",
+  "command.iska_utils.debug.items_content": "%s",
+   "command.iska_utils.debug.click_to_copy": "Click to copy",
+  "command.iska_utils.debug.copied": "Copied data!"
 }

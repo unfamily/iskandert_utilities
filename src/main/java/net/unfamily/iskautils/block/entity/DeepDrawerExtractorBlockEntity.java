@@ -44,6 +44,51 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     private int cacheValidTicks = 0;
     private static final int CACHE_VALIDITY_TICKS = 100; // Cache valid for 5 seconds
     
+    // Filter configuration
+    private static final int FILTER_FIELD_COUNT = 11;
+    private final String[] filterFields = new String[FILTER_FIELD_COUNT];
+    private boolean isWhitelistMode = false; // false = blacklist, true = whitelist
+    
+    // Redstone mode configuration
+    private int redstoneMode = 0; // 0=NONE, 1=LOW, 2=HIGH, 3=PULSE
+    private boolean previousRedstoneState = false; // For PULSE mode
+    
+    /**
+     * Enum for redstone modes
+     */
+    public enum RedstoneMode {
+        NONE(0),    // Gunpowder icon
+        LOW(1),     // Redstone dust icon  
+        HIGH(2),    // Redstone gui icon
+        PULSE(3);   // Repeater icon
+        
+        private final int value;
+        
+        RedstoneMode(int value) {
+            this.value = value;
+        }
+        
+        public int getValue() {
+            return value;
+        }
+        
+        public static RedstoneMode fromValue(int value) {
+            for (RedstoneMode mode : values()) {
+                if (mode.value == value) return mode;
+            }
+            return NONE;
+        }
+        
+        public RedstoneMode next() {
+            return switch (this) {
+                case NONE -> LOW;
+                case LOW -> HIGH;
+                case HIGH -> PULSE;
+                case PULSE -> NONE;
+            };
+        }
+    }
+    
     public DeepDrawerExtractorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DEEP_DRAWER_EXTRACTOR.get(), pos, state);
     }
@@ -63,19 +108,48 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             return;
         }
         
-        blockEntity.extractionTimer++;
-        
-        // Extract every EXTRACTION_INTERVAL ticks
-        if (blockEntity.extractionTimer >= EXTRACTION_INTERVAL) {
-            blockEntity.extractionTimer = 0;
-            blockEntity.tryExtractFromDrawer();
-        }
-        
         // Invalidate cache after a while
         blockEntity.cacheValidTicks++;
         if (blockEntity.cacheValidTicks >= CACHE_VALIDITY_TICKS) {
             blockEntity.cachedDrawerPos = null;
             blockEntity.cacheValidTicks = 0;
+        }
+        
+        // Check redstone conditions before extraction
+        int redstonePower = level.getBestNeighborSignal(pos);
+        boolean hasRedstoneSignal = redstonePower > 0;
+        boolean shouldExtract = false;
+        
+        RedstoneMode mode = RedstoneMode.fromValue(blockEntity.redstoneMode);
+        switch (mode) {
+            case NONE -> {
+                // Mode 0: Always active, ignore redstone
+                shouldExtract = true;
+            }
+            case LOW -> {
+                // Mode 1: Only when redstone is OFF (low signal)
+                shouldExtract = !hasRedstoneSignal;
+            }
+            case HIGH -> {
+                // Mode 2: Only when redstone is ON (high signal)
+                shouldExtract = hasRedstoneSignal;
+            }
+            case PULSE -> {
+                // Mode 3: Only on redstone pulse (low to high transition)
+                if (hasRedstoneSignal && !blockEntity.previousRedstoneState) {
+                    // Detected rising edge (pulse)
+                    shouldExtract = true;
+                }
+                blockEntity.previousRedstoneState = hasRedstoneSignal;
+            }
+        }
+        
+        blockEntity.extractionTimer++;
+        
+        // Extract every EXTRACTION_INTERVAL ticks, but only if redstone conditions are met
+        if (blockEntity.extractionTimer >= EXTRACTION_INTERVAL && shouldExtract) {
+            blockEntity.extractionTimer = 0;
+            blockEntity.tryExtractFromDrawer();
         }
     }
     
@@ -251,12 +325,115 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     protected void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.saveAdditional(tag, provider);
         ContainerHelper.saveAllItems(tag, items, provider);
+        
+        // Save filter fields
+        CompoundTag filterTag = new CompoundTag();
+        for (int i = 0; i < FILTER_FIELD_COUNT; i++) {
+            String value = filterFields[i];
+            if (value != null && !value.isEmpty()) {
+                filterTag.putString("field_" + i, value);
+            }
+        }
+        filterTag.putBoolean("whitelist_mode", isWhitelistMode);
+        tag.put("filter_config", filterTag);
+        
+        // Save redstone mode
+        tag.putInt("redstoneMode", redstoneMode);
+        tag.putBoolean("previousRedstoneState", previousRedstoneState);
     }
     
     @Override
     protected void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
         ContainerHelper.loadAllItems(tag, items, provider);
+        
+        // Load filter fields
+        if (tag.contains("filter_config", CompoundTag.TAG_COMPOUND)) {
+            CompoundTag filterTag = tag.getCompound("filter_config");
+            for (int i = 0; i < FILTER_FIELD_COUNT; i++) {
+                String key = "field_" + i;
+                if (filterTag.contains(key, CompoundTag.TAG_STRING)) {
+                    filterFields[i] = filterTag.getString(key);
+                } else {
+                    filterFields[i] = null;
+                }
+            }
+            isWhitelistMode = filterTag.getBoolean("whitelist_mode");
+        }
+        
+        // Load redstone mode
+        if (tag.contains("redstoneMode")) {
+            redstoneMode = tag.getInt("redstoneMode");
+        }
+        if (tag.contains("previousRedstoneState")) {
+            previousRedstoneState = tag.getBoolean("previousRedstoneState");
+        }
+    }
+    
+    // ===== Filter Configuration Getters/Setters =====
+    
+    public String[] getFilterFields() {
+        return filterFields.clone();
+    }
+    
+    public void setFilterFields(String[] fields) {
+        if (fields != null && fields.length >= FILTER_FIELD_COUNT) {
+            System.arraycopy(fields, 0, filterFields, 0, FILTER_FIELD_COUNT);
+            setChanged();
+        } else if (fields != null && fields.length < FILTER_FIELD_COUNT) {
+            // Copy available fields and set rest to null
+            System.arraycopy(fields, 0, filterFields, 0, fields.length);
+            for (int i = fields.length; i < FILTER_FIELD_COUNT; i++) {
+                filterFields[i] = null;
+            }
+            setChanged();
+        }
+    }
+    
+    public boolean isWhitelistMode() {
+        return isWhitelistMode;
+    }
+    
+    public void setWhitelistMode(boolean whitelistMode) {
+        if (this.isWhitelistMode != whitelistMode) {
+            this.isWhitelistMode = whitelistMode;
+            setChanged();
+        }
+    }
+    
+    // ===== Redstone Mode Getters/Setters =====
+    
+    public int getRedstoneMode() {
+        return redstoneMode;
+    }
+    
+    public void setRedstoneMode(int redstoneMode) {
+        this.redstoneMode = redstoneMode % 4; // Ensure mode is always 0-3
+        setChanged();
+    }
+    
+    // ===== Network Synchronization =====
+    
+    @Override
+    public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
+    }
+    
+    @Override
+    public CompoundTag getUpdateTag(@NotNull HolderLookup.Provider provider) {
+        CompoundTag tag = super.getUpdateTag(provider);
+        saveAdditional(tag, provider);
+        return tag;
+    }
+    
+    @Override
+    public void onDataPacket(net.minecraft.network.Connection net, 
+                            net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, 
+                            @NotNull HolderLookup.Provider lookupProvider) {
+        super.onDataPacket(net, pkt, lookupProvider);
+        if (pkt.getTag() != null) {
+            loadAdditional(pkt.getTag(), lookupProvider);
+        }
     }
     
     // ===== WorldlyContainer Implementation =====
