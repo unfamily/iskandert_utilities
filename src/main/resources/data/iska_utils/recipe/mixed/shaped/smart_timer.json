@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BAB",
+    "ACA",
+    "BAB"
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:smooth_stone"
+    },
+    "B": {
+      "item": "minecraft:repeater"
+    },
+    "C": {
+      "item": "minecraft:clock"
+    }
+  },
+  "result": {
+    "id": "iska_utils:smart_timer",
+    "count": 1
+  }
+} 
