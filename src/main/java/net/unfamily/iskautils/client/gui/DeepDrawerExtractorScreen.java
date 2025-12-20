@@ -59,13 +59,15 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private Button howToUseButton;
     private static final int HOW_TO_USE_BUTTON_Y = BUTTON_Y; // Same Y as first EditBox
     
-    // Redstone mode button (where allow/deny was)
+    // Redstone mode button
     private int redstoneModeButtonX, redstoneModeButtonY;
     private static final int REDSTONE_BUTTON_SIZE = 16;
     
-    // Allow/Deny button (whitelist/blacklist toggle) - 16x16, aligned to end of how to use button
+    // Allow/Deny button (whitelist/blacklist toggle) - wider button, same height as redstone
     private Button modeButton;
-    private static final int MODE_BUTTON_SIZE = 16;
+    private static final int MODE_BUTTON_HEIGHT = 16;
+    private static final int MODE_BUTTON_WIDTH = 60; // Wider button
+    private static final int BUTTON_SPACING = 4; // Space between redstone and mode button
     
     // EditBoxes for filter fields (11 total, one per row)
     private final EditBox[] filterEditBoxes = new EditBox[11];
@@ -83,8 +85,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     protected void init() {
         super.init();
         
-        // Load data from BlockEntity (server-side only)
-        // On client, we'll load from the update packet or use defaults
+        // Load data from BlockEntity (works on both client and server)
         DeepDrawerExtractorBlockEntity blockEntity = menu.getBlockEntity();
         String[] filterFields = new String[11];
         
@@ -92,6 +93,13 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             // Server-side: load directly
             filterFields = blockEntity.getFilterFields();
             isWhitelistMode = blockEntity.isWhitelistMode();
+        } else if (this.minecraft != null && this.minecraft.level != null) {
+            // Client-side: load from BlockEntity via level lookup
+            blockEntity = menu.getBlockEntityFromLevel(this.minecraft.level);
+            if (blockEntity != null) {
+                filterFields = blockEntity.getFilterFields();
+                isWhitelistMode = blockEntity.isWhitelistMode();
+            }
         }
         
         // Create 11 EditBoxes (one per row, single column)
@@ -127,21 +135,24 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                               .build();
         addRenderableWidget(howToUseButton);
         
-        // Redstone mode button (where allow/deny was, below how to use)
+        // Redstone mode button (below how to use)
         this.redstoneModeButtonX = this.leftPos + BUTTON_X;
         this.redstoneModeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + 4; // 4px below how to use
         
-        // Allow/Deny button (16x16, aligned to end of how to use button, same Y as redstone)
-        int modeButtonX = this.leftPos + BUTTON_X + BUTTON_WIDTH - MODE_BUTTON_SIZE; // Aligned to end of how to use
+        // Allow/Deny button (wider, to the left of redstone button, same Y and height)
+        int modeButtonX = this.leftPos + BUTTON_X; // Start from same X as how to use
         int modeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + 4; // Same Y as redstone button
         Component buttonText = isWhitelistMode 
-                ? Component.literal("✓") // Checkmark for whitelist
-                : Component.literal("✕"); // X for blacklist
+                ? Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.allow")
+                : Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.deny");
         
         modeButton = Button.builder(buttonText, button -> onModeButtonClicked())
-                .bounds(modeButtonX, modeButtonY, MODE_BUTTON_SIZE, MODE_BUTTON_SIZE)
+                .bounds(modeButtonX, modeButtonY, MODE_BUTTON_WIDTH, MODE_BUTTON_HEIGHT)
                 .build();
         addRenderableWidget(modeButton);
+        
+        // Update redstone button X position to be after mode button with spacing
+        this.redstoneModeButtonX = modeButtonX + MODE_BUTTON_WIDTH + BUTTON_SPACING;
         
         // Back button (for how to use screen)
         backButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.back"), 
@@ -233,46 +244,101 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     }
     
     private void onModeButtonClicked() {
-        // Toggle mode
-        isWhitelistMode = !isWhitelistMode;
+        // Get the machine position from the menu (synced from server, like rotation)
+        BlockPos machinePos = menu.getSyncedBlockPos();
         
-        // Update button text (X for blacklist, ✓ for whitelist)
-        Component buttonText = isWhitelistMode
-                ? Component.literal("✓")
-                : Component.literal("✕");
-        modeButton.setMessage(buttonText);
+        // If synced position is ZERO, try fallback methods (like StructurePlacerMachineScreen.onShowPressed)
+        if (machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
+            // Try to get position from block entity as fallback
+            if (this.minecraft != null && this.minecraft.level != null) {
+                DeepDrawerExtractorBlockEntity blockEntity = menu.getBlockEntityFromLevel(this.minecraft.level);
+                if (blockEntity != null) {
+                    machinePos = blockEntity.getBlockPos();
+                }
+            }
+        }
         
-        // Save to server
-        saveFilterData();
+        if (!machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
+            // Send mode toggle packet to toggle whitelist/blacklist mode (like rotation)
+            ModMessages.sendDeepDrawerExtractorModeTogglePacket(machinePos);
+            
+            // Update local state for immediate UI feedback
+            isWhitelistMode = !isWhitelistMode;
+            Component buttonText = isWhitelistMode
+                    ? Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.allow")
+                    : Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.deny");
+            modeButton.setMessage(buttonText);
+        }
     }
     
     private void onRedstoneModePressed() {
-        BlockPos blockPos = menu.getBlockPos();
-        if (blockPos.equals(net.minecraft.core.BlockPos.ZERO)) return;
+        // Try multiple methods to get the machine position (like StructurePlacerMachineScreen.onRedstoneModePressed)
+        BlockPos blockPos = menu.getSyncedBlockPos();
         
-        // Send redstone mode packet to cycle the mode
-        ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos);
-        playButtonSound();
+        // If getSyncedBlockPos returns ZERO, try getBlockPos
+        if (blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
+            blockPos = menu.getBlockPos();
+        }
+        
+        // If still ZERO, try to find the machine by searching nearby
+        if (blockPos.equals(net.minecraft.core.BlockPos.ZERO) && this.minecraft != null && this.minecraft.level != null && this.minecraft.player != null) {
+            BlockPos playerPos = this.minecraft.player.blockPosition();
+            
+            // Search in a 16x16x16 area around player for the machine
+            for (int x = -8; x <= 8; x++) {
+                for (int y = -8; y <= 8; y++) {
+                    for (int z = -8; z <= 8; z++) {
+                        BlockPos searchPos = playerPos.offset(x, y, z);
+                        if (this.minecraft.level.getBlockEntity(searchPos) instanceof DeepDrawerExtractorBlockEntity) {
+                            blockPos = searchPos;
+                            break;
+                        }
+                    }
+                    if (!blockPos.equals(net.minecraft.core.BlockPos.ZERO)) break;
+                }
+                if (!blockPos.equals(net.minecraft.core.BlockPos.ZERO)) break;
+            }
+        }
+        
+        if (!blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
+            // Send redstone mode packet to cycle the mode
+            ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos);
+            playButtonSound();
+        }
     }
     
     /**
      * Saves filter data to server
+     * Uses the same pattern as onModeButtonClicked() - get position with fallback
      */
     private void saveFilterData() {
-        BlockPos blockPos = menu.getBlockPos();
-        if (blockPos.equals(net.minecraft.core.BlockPos.ZERO)) return;
+        // Get the machine position from the menu (synced from server, like rotation)
+        BlockPos machinePos = menu.getSyncedBlockPos();
         
-        // Collect filter field values
-        String[] filterFields = new String[11];
-        for (int i = 0; i < 11; i++) {
-            filterFields[i] = filterEditBoxes[i].getValue().trim();
-            if (filterFields[i].isEmpty()) {
-                filterFields[i] = null;
+        // If synced position is ZERO, try fallback methods (like StructurePlacerMachineScreen.onShowPressed)
+        if (machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
+            // Try to get position from block entity as fallback
+            if (this.minecraft != null && this.minecraft.level != null) {
+                DeepDrawerExtractorBlockEntity blockEntity = menu.getBlockEntityFromLevel(this.minecraft.level);
+                if (blockEntity != null) {
+                    machinePos = blockEntity.getBlockPos();
+                }
             }
         }
         
-        // Send to server via packet (use local mode state)
-        ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(blockPos, filterFields, isWhitelistMode);
+        if (!machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
+            // Collect filter field values
+            String[] filterFields = new String[11];
+            for (int i = 0; i < 11; i++) {
+                filterFields[i] = filterEditBoxes[i].getValue().trim();
+                if (filterFields[i].isEmpty()) {
+                    filterFields[i] = null;
+                }
+            }
+            
+            // Send to server via packet (use local mode state) - EXACTLY like rotation
+            ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(machinePos, filterFields, isWhitelistMode);
+        }
     }
     
     @Override
@@ -281,8 +347,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         int y = (this.height - this.imageHeight) / 2;
         guiGraphics.blit(BACKGROUND, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
-        // Render redstone mode button
-        renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
+        // Render redstone mode button (only in main mode, not in how to use)
+        if (!isHowToUseMode) {
+            renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
+        }
     }
     
     private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
@@ -296,12 +364,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                         0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
                         96, 96); // Correct texture size: 96x96
         
-        // Get current redstone mode from BlockEntity
-        DeepDrawerExtractorBlockEntity blockEntity = menu.getBlockEntity();
-        int redstoneMode = 0;
-        if (blockEntity != null) {
-            redstoneMode = blockEntity.getRedstoneMode();
-        }
+        // Get current redstone mode from ContainerData (synced automatically)
+        int redstoneMode = menu.getRedstoneMode();
         
         // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
         int iconX = this.redstoneModeButtonX + 2; // Center: (16-12)/2 = 2
@@ -429,7 +493,62 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     @Override
     public void containerTick() {
         super.containerTick();
-        // EditBoxes update themselves automatically
+        // No periodic sync - data is sent to server immediately when user modifies (like rotation)
+        // Server is the source of truth, client maintains local state until saved
+    }
+    
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Check if an EditBox is focused
+        boolean isEditBoxFocused = false;
+        for (EditBox editBox : filterEditBoxes) {
+            if (editBox != null && editBox.isFocused()) {
+                isEditBoxFocused = true;
+                break;
+            }
+        }
+        
+        if (isEditBoxFocused) {
+            // Let the focused EditBox handle the key first
+            for (EditBox editBox : filterEditBoxes) {
+                if (editBox != null && editBox.isFocused()) {
+                    if (editBox.keyPressed(keyCode, scanCode, modifiers)) {
+                        return true;
+                    }
+                }
+            }
+            
+            // If inventory key is pressed while EditBox is focused, prevent closing
+            // This works even if the user has changed the inventory key binding
+            if (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+                return true; // Prevent closing
+            }
+        }
+        
+        // Handle ESC key based on current mode
+        if (isHowToUseMode) {
+            // In how to use mode, ESC or inventory key returns to main screen
+            if (keyCode == 256 || // ESC key
+                (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode))) {
+                if (!isEditBoxFocused) {
+                    playButtonSound();
+                    switchToMainScreen();
+                    return true;
+                }
+            }
+        } else {
+            // In main mode, ESC or inventory key closes GUI (unless EditBox is focused)
+            if (keyCode == 256 || // ESC key
+                (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode))) {
+                if (!isEditBoxFocused) {
+                    playButtonSound();
+                    this.onClose();
+                    return true;
+                }
+            }
+        }
+        
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
     
     @Override

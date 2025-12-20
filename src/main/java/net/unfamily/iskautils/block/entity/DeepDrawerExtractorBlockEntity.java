@@ -18,6 +18,8 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.block.DeepDrawerExtractorBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -27,6 +29,8 @@ import java.util.*;
  * Has 5 output slots
  */
 public class DeepDrawerExtractorBlockEntity extends BlockEntity implements WorldlyContainer {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeepDrawerExtractorBlockEntity.class);
     
     // Inventory with 5 slots
     private static final int INVENTORY_SIZE = 5;
@@ -359,6 +363,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 }
             }
             isWhitelistMode = filterTag.getBoolean("whitelist_mode");
+            isWhitelistMode = filterTag.getBoolean("whitelist_mode");
         }
         
         // Load redstone mode
@@ -380,6 +385,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         if (fields != null && fields.length >= FILTER_FIELD_COUNT) {
             System.arraycopy(fields, 0, filterFields, 0, FILTER_FIELD_COUNT);
             setChanged();
+            // Force sync to client (like SmartTimerBlockEntity)
+            if (level != null && !level.isClientSide()) {
+                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            }
         } else if (fields != null && fields.length < FILTER_FIELD_COUNT) {
             // Copy available fields and set rest to null
             System.arraycopy(fields, 0, filterFields, 0, fields.length);
@@ -387,6 +396,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 filterFields[i] = null;
             }
             setChanged();
+            // Force sync to client (like SmartTimerBlockEntity)
+            if (level != null && !level.isClientSide()) {
+                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            }
         }
     }
     
@@ -398,6 +411,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         if (this.isWhitelistMode != whitelistMode) {
             this.isWhitelistMode = whitelistMode;
             setChanged();
+            // Force sync to client (like SmartTimerBlockEntity)
+            if (level != null && !level.isClientSide()) {
+                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            }
         }
     }
     
@@ -408,8 +425,17 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     }
     
     public void setRedstoneMode(int redstoneMode) {
+        int oldMode = this.redstoneMode;
         this.redstoneMode = redstoneMode % 4; // Ensure mode is always 0-3
         setChanged();
+        // Force sync to client
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            // Log for debugging
+            if (oldMode != this.redstoneMode) {
+                LOGGER.debug("DeepDrawerExtractor: Redstone mode changed from {} to {}", oldMode, this.redstoneMode);
+            }
+        }
     }
     
     // ===== Network Synchronization =====

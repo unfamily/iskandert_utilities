@@ -528,16 +528,23 @@ public class ModMessages {
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
                             
                             // Cycle to next redstone mode
+                            int oldMode = extractor.getRedstoneMode();
                             net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode currentMode = 
-                                net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode.fromValue(extractor.getRedstoneMode());
+                                net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode.fromValue(oldMode);
                             net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode nextMode = currentMode.next();
+                            
+                            LOGGER.debug("DeepDrawerExtractor: Cycling redstone mode from {} ({}) to {} ({})", 
+                                oldMode, currentMode, nextMode.getValue(), nextMode);
+                            
                             extractor.setRedstoneMode(nextMode.getValue());
                             
                             // Play click sound
                             level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
                             
-                            // Mark the block entity as changed
+                            // setRedstoneMode already calls setChanged(), but we ensure it's marked as changed
                             extractor.setChanged();
+                        } else {
+                            LOGGER.warn("DeepDrawerExtractor: BlockEntity at {} is not a DeepDrawerExtractorBlockEntity", machinePos);
                         }
                     }
                 } catch (Exception e) {
@@ -1276,26 +1283,95 @@ public class ModMessages {
      */
     @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorFilterUpdatePacket(BlockPos pos, String[] filterFields, boolean isWhitelistMode) {
-        // Simplified implementation for single player compatibility
+        // Simplified implementation - directly handle on the server side (like rotation in Structure Placer)
         try {
-            // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
-            if (server == null) return;
-
-            // Create and handle the packet on server thread
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
             server.execute(() -> {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        // Create and handle the packet
-                        new net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket(pos, filterFields, isWhitelistMode).handle(player);
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
+                            // Update filter fields directly (like rotation in Structure Placer)
+                            if (filterFields != null && filterFields.length == 11) {
+                                extractor.setFilterFields(filterFields);
+                            }
+                            
+                            // Update mode
+                            extractor.setWhitelistMode(isWhitelistMode);
+                            
+                            // Mark BlockEntity as changed
+                            extractor.setChanged();
+                        }
                     }
                 } catch (Exception e) {
-                    // Ignore errors
+                    LOGGER.error("Error handling Deep Drawer Extractor filter update packet: {}", e.getMessage());
                 }
             });
+            
+
         } catch (Exception e) {
-            // Ignore errors
+            LOGGER.error("Could not send Deep Drawer Extractor filter update packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Sends a Deep Drawer Extractor Mode Toggle packet to the server
+     * Toggles between whitelist and blacklist mode (like rotation in Structure Placer)
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendDeepDrawerExtractorModeTogglePacket(BlockPos machinePos) {
+        // Use simplified approach like rotation in Structure Placer
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Directly call the toggle logic
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = player.serverLevel().getBlockEntity(machinePos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
+                            // Toggle whitelist/blacklist mode
+                            boolean currentMode = extractor.isWhitelistMode();
+                            extractor.setWhitelistMode(!currentMode);
+                            
+                            // Mark BlockEntity as changed
+                            extractor.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Deep Drawer Extractor mode toggle packet: {}", e.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Deep Drawer Extractor mode toggle packet: {}", e.getMessage(), e);
         }
     }
     

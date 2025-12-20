@@ -20,6 +20,8 @@
     "iska_utils:structure_placer_machine",
     "iska_utils:auto_shop",
     "iska_utils:shop",
-    "iska_utils:deep_drawers"
+    "iska_utils:deep_drawers",
+    "iska_utils:deep_drawer_extractor",
+    "iska_utils:smart_timer"
   ]
 } 
