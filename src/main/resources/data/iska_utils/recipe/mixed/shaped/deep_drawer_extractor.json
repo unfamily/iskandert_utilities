@@ -7,13 +7,13 @@
   ],
   "key": {
     "A": {
-      "tag": "c:storage_blocks/copper"
+      "item": "minecraft:hopper"
     },
     "B": {
-      "item": "minecraft:iron_trapdoor"
+      "tag": "c:storage_blocks/copper"
     },
     "C": {
-      "item": "minecraft:hopper"
+      "item": "minecraft:iron_trapdoor"
     }
   },
   "result": {
