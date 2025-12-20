@@ -40,7 +40,7 @@ public class ModBlocks {
     // Properties for the Hellfire Igniter
     private static final BlockBehaviour.Properties HELLFIRE_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.STONE)
-            .strength(0.3f, 1.0f)
+            .strength(1.5f, 6.0f)
             .sound(SoundType.STONE)
             .requiresCorrectToolForDrops()
             .lightLevel((state) -> state.getValue(HellfireIgniterBlock.POWERED) ? 7 : 0);
@@ -169,7 +169,7 @@ public class ModBlocks {
     // Smart Timer (emits redstone signal periodically)
     private static final BlockBehaviour.Properties SMART_TIMER_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.STONE)
-            .strength(0.3f, 1.0f)
+            .strength(1.5f, 6.0f)
             .sound(SoundType.STONE)
             .requiresCorrectToolForDrops()
             .isRedstoneConductor((state, level, pos) -> false);
@@ -351,7 +351,7 @@ public class ModBlocks {
     // Weather Alterer Block
     public static final DeferredBlock<WeatherAltererBlock> WEATHER_ALTERER = BLOCKS.register("weather_alterer",
         () -> new WeatherAltererBlock(BlockBehaviour.Properties.of()
-            .strength(0.5F)
+            .strength(1.5F)
             .sound(SoundType.COPPER)
             .lightLevel((state) -> 3)
             .noOcclusion()));
@@ -359,7 +359,7 @@ public class ModBlocks {
     // Time Alterer Block
     public static final DeferredBlock<TimeAltererBlock> TIME_ALTERER = BLOCKS.register("time_alterer",
         () -> new TimeAltererBlock(BlockBehaviour.Properties.of()
-            .strength(0.5F)
+            .strength(1.5F)
             .sound(SoundType.TRIAL_SPAWNER)
             .lightLevel((state) -> 3)
             .noOcclusion()));
