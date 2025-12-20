@@ -481,10 +481,10 @@
   "tooltip.iska_utils.greedy_shield.desc0": "§5Questo antico scudo ti preggerà di proteggerti ma non è garantito il risultato",
   "tooltip.iska_utils.greedy_shield.desc1": "Ha una probabilità del %d%% di bloccare completamente i danni subiti",
   "tooltip.iska_utils.greedy_shield.desc2": "e il blocco fallisce, ha una probabilità del %d%% di ridurre il danno",
-  "tooltip.iska_utils.greedy_shield.desc3": "Quando il danno viene ridotto, lo riduce del %d%% (rimane il %d%% del danno originale non viene bloccato)",
+  "tooltip.iska_utils.greedy_shield.desc3": "Quando il danno viene ridotto, blocca il %d%% del danno (rimane l'%d%% del danno originale)",
   "tooltip.iska_utils.greedy_shield.info": "§6Ottenuto dal regalo",
   "tooltip.iska_utils.gift.availability": "§7Ottenibile dal 20 al 30 dicembre",
-  "tooltip.iska_utils.gift.place": "§7Piazzalo a terra e rompilo!",
+  "tooltip.iska_utils.gift.place": "Piazzalo a terra e rompilo!",
 
   "block.iska_utils.gift": "Regalo",
   "item.iska_utils.gift": "Regalo",

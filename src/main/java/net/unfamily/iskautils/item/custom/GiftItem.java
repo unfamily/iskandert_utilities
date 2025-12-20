@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -21,7 +22,9 @@ public class GiftItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+        // Add aqua tooltip as first (reusing existing translation)
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.gift.place")
+                .withStyle(ChatFormatting.AQUA));
         tooltipComponents.add(Component.translatable("tooltip.iska_utils.gift.availability"));
-        tooltipComponents.add(Component.translatable("tooltip.iska_utils.gift.place"));
     }
 }

@@ -1,6 +1,12 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube",
   "textures": {
-    "all": "iska_utils:block/deep_drawer_extractor"
+    "particle": "iska_utils:block/deep_drawer_extractor",
+    "north": "iska_utils:block/deep_drawer_extractor",
+    "south": "iska_utils:block/deep_drawer_extractor",
+    "east": "iska_utils:block/deep_drawer_extractor",
+    "west": "iska_utils:block/deep_drawer_extractor",
+    "up": "iska_utils:block/deep_drawer_side",
+    "down": "iska_utils:block/deep_drawer_side"
   }
 }

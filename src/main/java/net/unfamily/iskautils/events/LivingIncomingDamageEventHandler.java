@@ -177,10 +177,10 @@ public class LivingIncomingDamageEventHandler {
 
         // Second check: if block failed, chance to reduce damage
         // Parametro: Config.greedyShieldReduceChance (default: 0.3 = 30%)
-        // Parametro: Config.greedyShieldReduceAmount (default: 0.8 = 80% reduction, so 20% of original damage remains)
+        // Parametro: Config.greedyShieldReduceAmount (default: 0.8 = blocks 20% of damage, so 80% of original damage remains)
         if (random.nextDouble() < Config.greedyShieldReduceChance) {
-            // Reduce damage by the configured amount
-            float reducedDamage = originalDamage * (1.0f - (float)Config.greedyShieldReduceAmount);
+            // Reduce damage by the configured amount (multiply by reduceAmount to get remaining damage)
+            float reducedDamage = originalDamage * (float)Config.greedyShieldReduceAmount;
             event.setAmount(reducedDamage);
             if (player.level().isClientSide) {
                 player.displayClientMessage(

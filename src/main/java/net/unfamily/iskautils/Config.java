@@ -474,8 +474,8 @@ public class Config
             .defineInRange("001_greedy_shield_reduce_chance", 0.3D, 0.0D, 1.0D);
 
     private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_AMOUNT = BUILDER
-            .comment("Damage reduction amount when Greedy Shield reduces damage (0.0 to 1.0)",
-                    "Default: 0.8 (80% reduction, so 20% of original damage)")
+            .comment("Damage remaining amount when Greedy Shield reduces damage (0.0 to 1.0)",
+                    "Default: 0.8 (blocks 20% of damage, so 80% of original damage remains)")
             .defineInRange("002_greedy_shield_reduce_amount", 0.8D, 0.0D, 1.0D);
 
     private static final ModConfigSpec.BooleanValue GREEDY_SHIELD_INFO = BUILDER

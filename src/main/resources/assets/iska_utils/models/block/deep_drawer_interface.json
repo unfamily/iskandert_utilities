@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "iska_utils:block/deep_drawer_interface",
+    "north": "iska_utils:block/deep_drawer_interface",
+    "south": "iska_utils:block/deep_drawer_interface",
+    "east": "iska_utils:block/deep_drawer_interface",
+    "west": "iska_utils:block/deep_drawer_interface",
+    "up": "iska_utils:block/deep_drawer_side",
+    "down": "iska_utils:block/deep_drawer_side"
+  }
+}
