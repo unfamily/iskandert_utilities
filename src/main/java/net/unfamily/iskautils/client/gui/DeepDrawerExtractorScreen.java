@@ -72,7 +72,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     // EditBoxes for filter fields (11 total, one per row)
     private final EditBox[] filterEditBoxes = new EditBox[11];
     
-    // Track current mode locally
+    // Track current mode locally (for immediate UI feedback on button click)
     private boolean isWhitelistMode = false;
     
     public DeepDrawerExtractorScreen(DeepDrawerExtractorMenu menu, Inventory playerInventory, Component title) {
@@ -85,23 +85,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     protected void init() {
         super.init();
         
-        // Load data from BlockEntity (works on both client and server)
-        DeepDrawerExtractorBlockEntity blockEntity = menu.getBlockEntity();
-        String[] filterFields = new String[11];
+        // Load initial mode from ContainerData (like rotation in StructurePlacerMachineScreen)
+        isWhitelistMode = menu.getWhitelistMode();
         
-        if (blockEntity != null) {
-            // Server-side: load directly
-            filterFields = blockEntity.getFilterFields();
-            isWhitelistMode = blockEntity.isWhitelistMode();
-        } else if (this.minecraft != null && this.minecraft.level != null) {
-            // Client-side: load from BlockEntity via level lookup
-            blockEntity = menu.getBlockEntityFromLevel(this.minecraft.level);
-            if (blockEntity != null) {
-                filterFields = blockEntity.getFilterFields();
-                isWhitelistMode = blockEntity.isWhitelistMode();
-            }
-        }
-        
+        // Initialize EditBoxes with empty values - data will be loaded in containerTick()
         // Create 11 EditBoxes (one per row, single column)
         for (int i = 0; i < 11; i++) {
             int y = FIRST_ROW_Y + i * (EDIT_BOX_HEIGHT + EDIT_BOX_SPACING);
@@ -113,7 +100,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                     EDIT_BOX_HEIGHT, 
                     Component.empty());
             editBox.setMaxLength(100);
-            editBox.setValue(filterFields[i] != null ? filterFields[i] : "");
+            editBox.setValue(""); // Will be updated in containerTick()
             // Save data when EditBox value changes
             editBox.setResponder(value -> saveFilterData());
             filterEditBoxes[i] = editBox;
@@ -142,7 +129,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Allow/Deny button (wider, to the left of redstone button, same Y and height)
         int modeButtonX = this.leftPos + BUTTON_X; // Start from same X as how to use
         int modeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + 4; // Same Y as redstone button
-        Component buttonText = isWhitelistMode 
+        // Initialize with current mode from ContainerData (will be updated in containerTick)
+        Component buttonText = isWhitelistMode
                 ? Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.allow")
                 : Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.deny");
         
@@ -260,14 +248,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         if (!machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
             // Send mode toggle packet to toggle whitelist/blacklist mode (like rotation)
+            // Do NOT call saveFilterData() here - it would overwrite the mode change with old local state
             ModMessages.sendDeepDrawerExtractorModeTogglePacket(machinePos);
-            
-            // Update local state for immediate UI feedback
-            isWhitelistMode = !isWhitelistMode;
-            Component buttonText = isWhitelistMode
-                    ? Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.allow")
-                    : Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.deny");
-            modeButton.setMessage(buttonText);
         }
     }
     
@@ -305,11 +287,15 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos);
             playButtonSound();
         }
+        
+        // Save filter data to ensure all changes are persisted
+        saveFilterData();
     }
     
     /**
      * Saves filter data to server
      * Uses the same pattern as onModeButtonClicked() - get position with fallback
+     * Always reads whitelist mode from synced ContainerData (not local state)
      */
     private void saveFilterData() {
         // Get the machine position from the menu (synced from server, like rotation)
@@ -336,8 +322,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 }
             }
             
-            // Send to server via packet (use local mode state) - EXACTLY like rotation
-            ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(machinePos, filterFields, isWhitelistMode);
+            // Always read whitelist mode from synced ContainerData (not local isWhitelistMode)
+            // This ensures we use the server-authoritative value, not stale local state
+            boolean currentWhitelistMode = menu.getWhitelistMode();
+            
+            // Send to server via packet
+            ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(machinePos, filterFields, currentWhitelistMode);
         }
     }
     
@@ -493,8 +483,35 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     @Override
     public void containerTick() {
         super.containerTick();
-        // No periodic sync - data is sent to server immediately when user modifies (like rotation)
-        // Server is the source of truth, client maintains local state until saved
+        
+        // Update cached filters from server (like redstone mode and structure)
+        menu.updateCachedFilters();
+        
+        // Get cached data for filter fields
+        String[] filterFields = menu.getCachedFilterFields();
+        
+        // Update EditBoxes with cached data (only if different to avoid triggering responder)
+        for (int i = 0; i < 11 && i < filterEditBoxes.length && i < filterFields.length; i++) {
+            if (filterEditBoxes[i] != null) {
+                String value = filterFields[i] != null ? filterFields[i] : "";
+                // Only update if different and EditBox is not focused to avoid overwriting user input
+                if (!filterEditBoxes[i].getValue().equals(value) && !filterEditBoxes[i].isFocused()) {
+                    filterEditBoxes[i].setValue(value);
+                }
+            }
+        }
+        
+        // Update mode button from synced ContainerData (like rotation in StructurePlacerMachineScreen)
+        // Always read from ContainerData and update button - ContainerData is automatically synced
+        if (modeButton != null) {
+            boolean syncedWhitelistMode = menu.getWhitelistMode();
+            Component buttonText = syncedWhitelistMode
+                    ? Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.allow")
+                    : Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.deny");
+            modeButton.setMessage(buttonText);
+            // Update local state to match
+            isWhitelistMode = syncedWhitelistMode;
+        }
     }
     
     @Override

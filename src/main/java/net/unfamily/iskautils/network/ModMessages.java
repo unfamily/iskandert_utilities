@@ -1360,9 +1360,7 @@ public class ModMessages {
                             // Toggle whitelist/blacklist mode
                             boolean currentMode = extractor.isWhitelistMode();
                             extractor.setWhitelistMode(!currentMode);
-                            
-                            // Mark BlockEntity as changed
-                            extractor.setChanged();
+                            // setWhitelistMode() already calls setChanged() which forces sync
                         }
                     }
                 } catch (Exception e) {

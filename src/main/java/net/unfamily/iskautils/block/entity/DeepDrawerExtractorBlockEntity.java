@@ -51,7 +51,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     // Filter configuration
     private static final int FILTER_FIELD_COUNT = 11;
     private final String[] filterFields = new String[FILTER_FIELD_COUNT];
-    private boolean isWhitelistMode = false; // false = blacklist, true = whitelist
+    private boolean isWhitelistMode = true; // false = blacklist, true = whitelist (default: true to prevent random extraction)
     
     // Redstone mode configuration
     private int redstoneMode = 0; // 0=NONE, 1=LOW, 2=HIGH, 3=PULSE
@@ -95,6 +95,15 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     
     public DeepDrawerExtractorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DEEP_DRAWER_EXTRACTOR.get(), pos, state);
+    }
+    
+    @Override
+    public void setChanged() {
+        super.setChanged();
+        // Force sync to client (like StructurePlacerMachineBlockEntity)
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
     }
     
     /**
@@ -150,6 +159,13 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         
         blockEntity.extractionTimer++;
         
+        // Check if we should skip extraction (whitelist mode with no valid filters = no extraction)
+        boolean hasValidFilters = blockEntity.hasValidFilters();
+        if (blockEntity.isWhitelistMode && !hasValidFilters) {
+            // Whitelist mode with empty filters = don't extract anything, skip tick
+            return;
+        }
+        
         // Extract every EXTRACTION_INTERVAL ticks, but only if redstone conditions are met
         if (blockEntity.extractionTimer >= EXTRACTION_INTERVAL && shouldExtract) {
             blockEntity.extractionTimer = 0;
@@ -183,9 +199,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         }
         
         // Extract the first available item using the optimized API
-        // Iterate over items to find one we can insert
-        // BLACKLIST FILTER: skip items with NBT apotheosis:rarity = apotheosis:mythic
-        // NOTE: epic items are extracted normally, only mythic items are excluded
+        // Iterate over items to find one that matches the filter criteria
         
         for (Map.Entry<Integer, ItemStack> entry : allItems.entrySet()) {
             ItemStack drawerStack = entry.getValue();
@@ -193,37 +207,12 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 continue;
             }
             
-            Item item = drawerStack.getItem();
-            
-            // BLACKLIST: Check if item has NBT apotheosis:rarity = apotheosis:mythic
-            // Use save() to get the complete CompoundTag and search the string directly
-            // NOTE: epic items are extracted, only mythic items are blacklisted
-            boolean isMythic = false;
-            try {
-                if (level != null) {
-                    var tag = drawerStack.save(level.registryAccess());
-                    if (tag instanceof CompoundTag compoundTag) {
-                        // Serialize CompoundTag to string and search for exact string
-                        String nbtString = compoundTag.toString();
-                        
-                        // Search for "apotheosis:rarity":"apotheosis:mythic" in serialized string
-                        // Format in CompoundTag is: "apotheosis:rarity":"apotheosis:mythic"
-                        if (nbtString.contains("\"apotheosis:rarity\":\"apotheosis:mythic\"")) {
-                            isMythic = true;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                // Error reading NBT, consider not present
-                // Item doesn't have required NBT or there's an error reading it
+            // Check if item matches filter criteria
+            if (!matchesFilter(drawerStack)) {
+                continue; // Item doesn't match filter, skip it
             }
             
-            // BLACKLIST: exclude mythic items
-            if (isMythic) {
-                continue; // Skip blacklisted item (has apotheosis:rarity = apotheosis:mythic)
-            }
-            
-            // Item is not blacklisted, extract it
+            // Item matches filter, extract it
             // Use extractItemByStack to extract the specific item we verified (with correct NBT)
             ItemStack extracted = drawer.extractItemByStack(drawerStack, 1, false);
             
@@ -323,6 +312,126 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         return true;
     }
     
+    /**
+     * Checks if there are any valid (non-empty) filter entries
+     */
+    private boolean hasValidFilters() {
+        for (String filter : filterFields) {
+            if (filter != null && !filter.trim().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Checks if an ItemStack matches the filter criteria
+     * Returns true if the item should be extracted based on whitelist/blacklist mode
+     */
+    private boolean matchesFilter(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        
+        // If no valid filters, whitelist mode = extract nothing, blacklist mode = extract everything
+        if (!hasValidFilters()) {
+            return !isWhitelistMode; // Blacklist with no filters = extract all
+        }
+        
+        // Check if item matches any filter
+        boolean matchesAnyFilter = false;
+        for (String filter : filterFields) {
+            if (filter != null && !filter.trim().isEmpty()) {
+                if (matchesFilterEntry(stack, filter.trim())) {
+                    matchesAnyFilter = true;
+                    break;
+                }
+            }
+        }
+        
+        // Whitelist: extract only if matches a filter
+        // Blacklist: extract only if doesn't match any filter
+        return isWhitelistMode ? matchesAnyFilter : !matchesAnyFilter;
+    }
+    
+    /**
+     * Checks if an ItemStack matches a single filter entry
+     * Supports:
+     * - ID filter: -minecraft:diamond
+     * - Tag filter: #c:ingots
+     * - Mod ID filter: @iska_utils
+     * - NBT filter: ?"apotheosis:rarity":"apotheosis:mythic"
+     * - Macro filter: &enchanted, &damaged
+     */
+    private boolean matchesFilterEntry(ItemStack stack, String filter) {
+        if (filter == null || filter.isEmpty()) {
+            return false;
+        }
+        
+        Item item = stack.getItem();
+        net.minecraft.resources.ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
+        String itemIdStr = itemId.toString();
+        
+        // ID filter: -minecraft:diamond
+        if (filter.startsWith("-")) {
+            String idFilter = filter.substring(1);
+            return itemIdStr.equals(idFilter);
+        }
+        
+        // Tag filter: #c:ingots
+        if (filter.startsWith("#")) {
+            String tagFilter = filter.substring(1);
+            try {
+                net.minecraft.resources.ResourceLocation tagId = net.minecraft.resources.ResourceLocation.parse(tagFilter);
+                net.minecraft.tags.TagKey<Item> itemTag = net.minecraft.tags.ItemTags.create(tagId);
+                return item.builtInRegistryHolder().is(itemTag);
+            } catch (Exception e) {
+                // Invalid tag format, ignore
+                return false;
+            }
+        }
+        
+        // Mod ID filter: @iska_utils
+        if (filter.startsWith("@")) {
+            String modIdFilter = filter.substring(1);
+            String itemModId = itemId.getNamespace();
+            return itemModId.equals(modIdFilter);
+        }
+        
+        // NBT filter: ?"apotheosis:rarity":"apotheosis:mythic"
+        if (filter.startsWith("?")) {
+            String nbtFilter = filter.substring(1);
+            try {
+                if (level != null) {
+                    var tag = stack.save(level.registryAccess());
+                    if (tag instanceof CompoundTag compoundTag) {
+                        // Serialize CompoundTag to string and search for the filter string
+                        String nbtString = compoundTag.toString();
+                        // Remove quotes from filter for matching (NBT string format may vary)
+                        String searchString = nbtFilter.replace("\"", "");
+                        return nbtString.contains(searchString);
+                    }
+                }
+            } catch (Exception e) {
+                // Error reading NBT, consider not matching
+                return false;
+            }
+        }
+        
+        // Macro filter: &enchanted, &damaged
+        if (filter.startsWith("&")) {
+            String macroFilter = filter.substring(1).toLowerCase();
+            return switch (macroFilter) {
+                case "enchanted" -> stack.isEnchanted();
+                case "damaged" -> stack.isDamaged();
+                default -> false;
+            };
+        }
+        
+        // Default: treat as direct ID match (without prefix)
+        return itemIdStr.equals(filter);
+    }
+    
     // ===== NBT Save/Load =====
     
     @Override
@@ -363,7 +472,6 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 }
             }
             isWhitelistMode = filterTag.getBoolean("whitelist_mode");
-            isWhitelistMode = filterTag.getBoolean("whitelist_mode");
         }
         
         // Load redstone mode
@@ -383,15 +491,39 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     
     public void setFilterFields(String[] fields) {
         if (fields != null && fields.length >= FILTER_FIELD_COUNT) {
-            System.arraycopy(fields, 0, filterFields, 0, FILTER_FIELD_COUNT);
+            // Process each field: trim spaces and remove single quotes (KubeJS friendly)
+            for (int i = 0; i < FILTER_FIELD_COUNT; i++) {
+                String field = fields[i];
+                if (field != null) {
+                    field = field.trim();
+                    // Remove single quotes (') for KubeJS compatibility
+                    field = field.replace("'", "");
+                    // Set to null if empty after processing
+                    filterFields[i] = field.isEmpty() ? null : field;
+                } else {
+                    filterFields[i] = null;
+                }
+            }
             setChanged();
             // Force sync to client (like SmartTimerBlockEntity)
             if (level != null && !level.isClientSide()) {
                 level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
             }
         } else if (fields != null && fields.length < FILTER_FIELD_COUNT) {
-            // Copy available fields and set rest to null
-            System.arraycopy(fields, 0, filterFields, 0, fields.length);
+            // Process available fields: trim spaces and remove single quotes (KubeJS friendly)
+            for (int i = 0; i < fields.length; i++) {
+                String field = fields[i];
+                if (field != null) {
+                    field = field.trim();
+                    // Remove single quotes (') for KubeJS compatibility
+                    field = field.replace("'", "");
+                    // Set to null if empty after processing
+                    filterFields[i] = field.isEmpty() ? null : field;
+                } else {
+                    filterFields[i] = null;
+                }
+            }
+            // Set rest to null
             for (int i = fields.length; i < FILTER_FIELD_COUNT; i++) {
                 filterFields[i] = null;
             }
@@ -410,11 +542,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     public void setWhitelistMode(boolean whitelistMode) {
         if (this.isWhitelistMode != whitelistMode) {
             this.isWhitelistMode = whitelistMode;
-            setChanged();
-            // Force sync to client (like SmartTimerBlockEntity)
-            if (level != null && !level.isClientSide()) {
-                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-            }
+            setChanged(); // setChanged() override already calls sendBlockUpdated()
         }
     }
     

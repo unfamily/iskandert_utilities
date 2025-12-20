@@ -86,7 +86,7 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("deep_drawers",
                     () -> BlockEntityType.Builder.of(DeepDrawersBlockEntity::new, ModBlocks.DEEP_DRAWERS.get())
                             .build(null));
-    
+
     // Deep Drawer Extractor Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DeepDrawerExtractorBlockEntity>> DEEP_DRAWER_EXTRACTOR =
             BLOCK_ENTITIES.register("deep_drawer_extractor",
@@ -234,6 +234,19 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof DeepDrawerExtractorBlockEntity extractorEntity) {
                             return extractorEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register item handler capability for Deep Drawer Interface
+            // This exposes the adjacent drawer's content to storage mods
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    DEEP_DRAWER_INTERFACE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof DeepDrawerInterfaceBlockEntity interfaceEntity) {
+                            return interfaceEntity.getItemHandler();
                         }
                         return null;
                     }
