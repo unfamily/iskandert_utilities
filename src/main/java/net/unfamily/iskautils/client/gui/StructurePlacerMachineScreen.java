@@ -395,6 +395,11 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                 net.minecraft.world.item.ItemStack repeater = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REPEATER);
                 renderScaledItem(guiGraphics, repeater, iconX, iconY, iconSize);
             }
+            case 4 -> {
+                // DISABLED mode: Barrier icon
+                net.minecraft.world.item.ItemStack barrier = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BARRIER);
+                renderScaledItem(guiGraphics, barrier, iconX, iconY, iconSize);
+            }
         }
     }
     
@@ -533,6 +538,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                 case 1 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.low");
                 case 2 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.high");
                 case 3 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.pulse");
+                case 4 -> Component.translatable("gui.iska_utils.structure_placer_machine.redstone_mode.disabled");
                 default -> Component.literal("Unknown mode");
             };
             

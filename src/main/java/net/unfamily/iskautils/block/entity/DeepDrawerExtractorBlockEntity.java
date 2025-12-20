@@ -56,6 +56,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     // Redstone mode configuration
     private int redstoneMode = 0; // 0=NONE, 1=LOW, 2=HIGH, 3=PULSE
     private boolean previousRedstoneState = false; // For PULSE mode
+    private int pulseIgnoreTimer = 0; // Timer to ignore redstone after pulse extraction
+    private static final int PULSE_IGNORE_INTERVAL = 10; // Ignore pulses for 0.5 seconds after extraction
     
     /**
      * Enum for redstone modes
@@ -64,7 +66,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         NONE(0),    // Gunpowder icon
         LOW(1),     // Redstone dust icon  
         HIGH(2),    // Redstone gui icon
-        PULSE(3);   // Repeater icon
+        PULSE(3),   // Repeater icon
+        DISABLED(4); // Barrier icon
         
         private final int value;
         
@@ -88,7 +91,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 case NONE -> LOW;
                 case LOW -> HIGH;
                 case HIGH -> PULSE;
-                case PULSE -> NONE;
+                case PULSE -> DISABLED;
+                case DISABLED -> NONE;
             };
         }
     }
@@ -147,17 +151,31 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 // Mode 2: Only when redstone is ON (high signal)
                 shouldExtract = hasRedstoneSignal;
             }
+            case DISABLED -> {
+                // Mode 4: Always disabled
+                shouldExtract = false;
+            }
             case PULSE -> {
                 // Mode 3: Only on redstone pulse (low to high transition)
-                if (hasRedstoneSignal && !blockEntity.previousRedstoneState) {
-                    // Detected rising edge (pulse)
-                    shouldExtract = true;
+                // Decrement ignore timer if active
+                if (blockEntity.pulseIgnoreTimer > 0) {
+                    blockEntity.pulseIgnoreTimer--;
                 }
+                
+                // Check for low-to-high transition only if not ignoring pulses
+                if (blockEntity.pulseIgnoreTimer == 0) {
+                    if (hasRedstoneSignal && !blockEntity.previousRedstoneState) {
+                        // Detected rising edge (pulse) - extract immediately
+                        shouldExtract = true;
+                        // Start ignore timer
+                        blockEntity.pulseIgnoreTimer = PULSE_IGNORE_INTERVAL;
+                    }
+                }
+                
+                // Update previous state
                 blockEntity.previousRedstoneState = hasRedstoneSignal;
             }
         }
-        
-        blockEntity.extractionTimer++;
         
         // Check if we should skip extraction (whitelist mode with no valid filters = no extraction)
         boolean hasValidFilters = blockEntity.hasValidFilters();
@@ -166,11 +184,22 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             return;
         }
         
-        // Extract every N ticks (from config), but only if redstone conditions are met
-        int extractionInterval = net.unfamily.iskautils.Config.deepDrawerExtractorInterval;
-        if (blockEntity.extractionTimer >= extractionInterval && shouldExtract) {
+        // Handle extraction based on mode
+        if (mode == RedstoneMode.PULSE) {
+            // PULSE mode: extract immediately when pulse is detected (already set shouldExtract above)
+            if (shouldExtract) {
+                blockEntity.tryExtractFromDrawer();
+            }
+            // Reset extraction timer in pulse mode (we don't use it)
             blockEntity.extractionTimer = 0;
-            blockEntity.tryExtractFromDrawer();
+        } else {
+            // Other modes: use extraction interval timer
+            blockEntity.extractionTimer++;
+            int extractionInterval = net.unfamily.iskautils.Config.deepDrawerExtractorInterval;
+            if (blockEntity.extractionTimer >= extractionInterval && shouldExtract) {
+                blockEntity.extractionTimer = 0;
+                blockEntity.tryExtractFromDrawer();
+            }
         }
     }
     
@@ -473,6 +502,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         // Save redstone mode
         tag.putInt("redstoneMode", redstoneMode);
         tag.putBoolean("previousRedstoneState", previousRedstoneState);
+        tag.putInt("pulseIgnoreTimer", pulseIgnoreTimer);
     }
     
     @Override
@@ -500,6 +530,9 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         }
         if (tag.contains("previousRedstoneState")) {
             previousRedstoneState = tag.getBoolean("previousRedstoneState");
+        }
+        if (tag.contains("pulseIgnoreTimer")) {
+            pulseIgnoreTimer = tag.getInt("pulseIgnoreTimer");
         }
     }
     
@@ -574,7 +607,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     
     public void setRedstoneMode(int redstoneMode) {
         int oldMode = this.redstoneMode;
-        this.redstoneMode = redstoneMode % 4; // Ensure mode is always 0-3
+        this.redstoneMode = redstoneMode % 5; // Ensure mode is always 0-4
         setChanged();
         // Force sync to client
         if (level != null && !level.isClientSide()) {
@@ -582,6 +615,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             // Log for debugging
             if (oldMode != this.redstoneMode) {
                 LOGGER.debug("DeepDrawerExtractor: Redstone mode changed from {} to {}", oldMode, this.redstoneMode);
+                // Reset pulse timer when switching modes
+                if (RedstoneMode.fromValue(this.redstoneMode) != RedstoneMode.PULSE) {
+                    pulseIgnoreTimer = 0;
+                }
             }
         }
     }

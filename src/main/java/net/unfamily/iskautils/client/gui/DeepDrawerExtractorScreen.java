@@ -394,6 +394,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 net.minecraft.world.item.ItemStack repeater = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REPEATER);
                 renderScaledItem(guiGraphics, repeater, iconX, iconY, iconSize);
             }
+            case 4 -> {
+                // DISABLED mode: Barrier icon
+                net.minecraft.world.item.ItemStack barrier = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BARRIER);
+                renderScaledItem(guiGraphics, barrier, iconX, iconY, iconSize);
+            }
         }
     }
     

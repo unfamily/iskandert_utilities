@@ -399,6 +399,7 @@
   "gui.iska_utils.structure_placer_machine.redstone_mode.low": "Modalità Redstone: Bassa",
   "gui.iska_utils.structure_placer_machine.redstone_mode.high": "Modalità Redstone: Alta",
   "gui.iska_utils.structure_placer_machine.redstone_mode.pulse": "Modalità Redstone: Impulso",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.disabled": "Modalità Redstone: Disabilitata",
 
   "item.iska_utils.blueprint.vertex1_saved": "Vertice 1 salvato: %s",
   "item.iska_utils.blueprint.vertex2_saved": "Vertice 2 salvato: %s", 

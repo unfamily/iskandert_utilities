@@ -9,7 +9,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -17,10 +16,8 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
@@ -33,37 +30,24 @@ import javax.annotation.Nullable;
  * Un blocco che ogni X secondi emette un segnale redstone di durata Y secondi
  * Default: 5s di cooldown, 3s di durata del segnale
  */
-public class SmartTimerBlock extends DirectionalBlock implements EntityBlock {
+public class SmartTimerBlock extends Block implements EntityBlock {
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-    public static final DirectionProperty FACING = DirectionalBlock.FACING;
     public static final MapCodec<SmartTimerBlock> CODEC = simpleCodec(SmartTimerBlock::new);
     
     public SmartTimerBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
-                .setValue(FACING, Direction.NORTH)
                 .setValue(POWERED, false));
     }
     
     @Override
-    protected MapCodec<? extends DirectionalBlock> codec() {
+    protected MapCodec<? extends Block> codec() {
         return CODEC;
     }
     
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, POWERED);
-    }
-    
-    @Override
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // Il blocco deve guardare verso il player come un dispenser
-        // getNearestLookingDirection() restituisce la direzione in cui guarda il player
-        Direction facing = context.getNearestLookingDirection().getOpposite();
-        
-        return this.defaultBlockState()
-                .setValue(FACING, facing)
-                .setValue(POWERED, Boolean.FALSE);
+        builder.add(POWERED);
     }
     
     @Override

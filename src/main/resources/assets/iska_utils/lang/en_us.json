@@ -382,6 +382,7 @@
   "gui.iska_utils.structure_placer_machine.redstone_mode.low": "Redstone Mode: Low",
   "gui.iska_utils.structure_placer_machine.redstone_mode.high": "Redstone Mode: High",
   "gui.iska_utils.structure_placer_machine.redstone_mode.pulse": "Redstone Mode: Pulse",
+  "gui.iska_utils.structure_placer_machine.redstone_mode.disabled": "Redstone Mode: Disabled",
   
   "block.iska_utils.scan_block_red": "Scan Block (Red)",
   "block.iska_utils.scan_block_green": "Scan Block (Green)",

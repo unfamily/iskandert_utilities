@@ -79,9 +79,9 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer  // Max extract = max capacity (allow full extraction)
     );
     
-    // Auto-placement counter for NONE mode (places every 60 ticks)
+    // Auto-placement counter for NONE mode (places every 10 ticks)
     private int autoPulseTimer = 0;
-    private static final int AUTO_PULSE_INTERVAL = 60; // 3 seconds (60 ticks)
+    private static final int AUTO_PULSE_INTERVAL = 10; // 0.5 seconds (10 ticks)
     
     // Redstone state tracking for PULSE mode
     private boolean previousRedstoneState = false;
@@ -107,7 +107,8 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         NONE(0),    // Gunpowder icon
         LOW(1),     // Redstone dust icon  
         HIGH(2),    // Redstone gui icon
-        PULSE(3);   // Repeater icon
+        PULSE(3),   // Repeater icon
+        DISABLED(4); // Barrier icon
         
         private final int value;
         
@@ -131,7 +132,8 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 case NONE -> LOW;
                 case LOW -> HIGH;
                 case HIGH -> PULSE;
-                case PULSE -> NONE;
+                case PULSE -> DISABLED;
+                case DISABLED -> NONE;
             };
         }
     }
@@ -320,7 +322,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     }
 
     public void setRedstoneMode(int redstoneMode) {
-        this.redstoneMode = redstoneMode % 4; // Ensure mode is always 0-3
+        this.redstoneMode = redstoneMode % 5; // Ensure mode is always 0-4
         setChanged();
     }
     
@@ -419,6 +421,10 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         boolean shouldPlace = false;
         
         switch (mode) {
+            case DISABLED -> {
+                // Mode 4: Always disabled
+                shouldPlace = false;
+            }
             case NONE -> {
                 // Mode 0: Always active, ignore redstone
                 blockEntity.autoPulseTimer++;
@@ -465,7 +471,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                     if (hasRedstoneSignal && !blockEntity.previousRedstoneState) {
                         // Detected rising edge (pulse)
                         shouldPlace = true;
-                        // Start ignore timer for 60 ticks
+                        // Start ignore timer for 10 ticks
                         blockEntity.pulseIgnoreTimer = AUTO_PULSE_INTERVAL;
                     }
                 }

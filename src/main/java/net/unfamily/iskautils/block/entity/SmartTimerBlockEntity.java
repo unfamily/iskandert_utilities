@@ -1,7 +1,6 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
@@ -22,41 +21,6 @@ public class SmartTimerBlockEntity extends BlockEntity {
     private int signalDurationTicks = DEFAULT_SIGNAL_DURATION_TICKS;
     private int currentTick = 0;
     private boolean isSignalActive = false;
-    private int redstoneMode = 0;
-    
-    /**
-     * Enum for redstone modes
-     */
-    public enum RedstoneMode {
-        NONE(0),
-        LOW(1),
-        HIGH(2);
-        
-        private final int value;
-        
-        RedstoneMode(int value) {
-            this.value = value;
-        }
-        
-        public int getValue() {
-            return value;
-        }
-        
-        public static RedstoneMode fromValue(int value) {
-            for (RedstoneMode mode : values()) {
-                if (mode.value == value) return mode;
-            }
-            return NONE;
-        }
-        
-        public RedstoneMode next() {
-            return switch (this) {
-                case NONE -> LOW;
-                case LOW -> HIGH;
-                case HIGH -> NONE;
-            };
-        }
-    }
     
     public SmartTimerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SMART_TIMER_BE.get(), pos, state);
@@ -66,22 +30,9 @@ public class SmartTimerBlockEntity extends BlockEntity {
         if (level.isClientSide) {
             return;
         }
-        
-        boolean shouldBlock = blockEntity.shouldBlockTimer(level, pos, state);
-        
-        if (shouldBlock) {
-            if (blockEntity.isSignalActive) {
-                blockEntity.isSignalActive = false;
-                BlockState newState = state.setValue(SmartTimerBlock.POWERED, false);
-                level.setBlock(pos, newState, 3);
-                level.updateNeighborsAt(pos, state.getBlock());
-            }
-            blockEntity.currentTick = 0;
-            return;
-        }
-        
+
         blockEntity.currentTick++;
-        
+
         if (blockEntity.isSignalActive) {
             if (blockEntity.currentTick >= blockEntity.signalDurationTicks) {
                 blockEntity.isSignalActive = false;
@@ -97,26 +48,6 @@ public class SmartTimerBlockEntity extends BlockEntity {
                 level.updateNeighborsAt(pos, state.getBlock());
             }
         }
-    }
-    
-    private boolean shouldBlockTimer(Level level, BlockPos pos, BlockState state) {
-        RedstoneMode mode = RedstoneMode.fromValue(redstoneMode);
-        
-        if (mode == RedstoneMode.NONE) {
-            return false;
-        }
-        
-        // Read redstone signal only from the back (facing direction)
-        Direction facing = state.getValue(SmartTimerBlock.FACING);
-        BlockPos neighborPos = pos.relative(facing);
-        int redstonePower = level.getSignal(neighborPos, facing.getOpposite());
-        boolean hasRedstoneSignal = redstonePower > 0;
-        
-        return switch (mode) {
-            case LOW -> hasRedstoneSignal;
-            case HIGH -> !hasRedstoneSignal;
-            default -> false;
-        };
     }
     
     public void setCooldownSeconds(int seconds) {
@@ -169,15 +100,6 @@ public class SmartTimerBlockEntity extends BlockEntity {
         return signalDurationTicks;
     }
     
-    public int getRedstoneMode() {
-        return redstoneMode;
-    }
-    
-    public void setRedstoneMode(int redstoneMode) {
-        this.redstoneMode = redstoneMode % 3;
-        setChanged();
-    }
-    
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
@@ -185,7 +107,6 @@ public class SmartTimerBlockEntity extends BlockEntity {
         tag.putInt("SignalDurationTicks", signalDurationTicks);
         tag.putInt("CurrentTick", currentTick);
         tag.putBoolean("IsSignalActive", isSignalActive);
-        tag.putInt("RedstoneMode", redstoneMode);
     }
     
     @Override
@@ -202,9 +123,6 @@ public class SmartTimerBlockEntity extends BlockEntity {
         }
         if (tag.contains("IsSignalActive")) {
             isSignalActive = tag.getBoolean("IsSignalActive");
-        }
-        if (tag.contains("RedstoneMode")) {
-            redstoneMode = tag.getInt("RedstoneMode");
         }
     }
     

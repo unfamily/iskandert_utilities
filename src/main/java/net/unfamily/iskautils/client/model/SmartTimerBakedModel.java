@@ -59,8 +59,7 @@ public class SmartTimerBakedModel extends BakedModelWrapper<BakedModel> {
         if (ioConfig == null) {
             return quads;
         }
-        
-        Direction facing = state.getValue(SmartTimerBlock.FACING);
+
         
         // Se side è null, iteriamo su tutte le facce (non dovrebbe succedere per blocchi standard)
         // Se side è specifico, processiamo solo quella faccia
@@ -69,10 +68,7 @@ public class SmartTimerBakedModel extends BakedModelWrapper<BakedModel> {
             return quads;
         }
         
-        // Se questa faccia è il front, non modificarla
-        if (side == facing) {
-            return quads;
-        }
+
         
         byte faceIoConfig = ioConfig[side.ordinal()];
         

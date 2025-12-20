@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:block/cube",
   "textures": {
-    "north": "iska_utils:block/redstone_machines/timer/timer_out_on",
-    "south": "iska_utils:block/redstone_machines/timer/timer_input_off",
-    "east": "iska_utils:block/redstone_machines/timer/timer_out_on",
-    "west": "iska_utils:block/redstone_machines/timer/timer_out_on",
-    "up": "iska_utils:block/redstone_machines/timer/timer_out_on",
-    "down": "iska_utils:block/redstone_machines/timer/timer_out_on",
-    "particle": "iska_utils:block/redstone_machines/timer/timer_out_on"
+    "north": "iska_utils:block/timer_out_on",
+    "south": "iska_utils:block/timer_out_on",
+    "east": "iska_utils:block/timer_out_on",
+    "west": "iska_utils:block/timer_out_on",
+    "up": "iska_utils:block/timer_out_on",
+    "down": "iska_utils:block/timer_out_on",
+    "particle": "iska_utils:block/timer_out_on"
   }
 }

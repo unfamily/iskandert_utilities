@@ -1492,12 +1492,7 @@ public class ModMessages {
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
-                            
-                            // Cycle to next redstone mode
-                            net.unfamily.iskautils.block.entity.SmartTimerBlockEntity.RedstoneMode currentMode = 
-                                net.unfamily.iskautils.block.entity.SmartTimerBlockEntity.RedstoneMode.fromValue(timer.getRedstoneMode());
-                            net.unfamily.iskautils.block.entity.SmartTimerBlockEntity.RedstoneMode nextMode = currentMode.next();
-                            timer.setRedstoneMode(nextMode.getValue());
+
                             
                             // Play click sound
                             level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
