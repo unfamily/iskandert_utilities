@@ -737,20 +737,34 @@ public class ShopTeamCommand {
         }
         
         source.sendSuccess(() -> Component.literal("=== Team: " + teamName + " ==="), false);
-        source.sendSuccess(() -> Component.literal("Leader: " + getPlayerName(leader, source.getServer())), false);
         
+        // Show leader
+        String leaderName = getPlayerName(leader, source.getServer());
+        source.sendSuccess(() -> Component.literal("§6Leader: §f" + leaderName), false);
+        
+        // Show assistants
         if (!assistants.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("Assistants (" + assistants.size() + "):"), false);
+            source.sendSuccess(() -> Component.literal("§eAssistants (" + assistants.size() + "):"), false);
             for (UUID assistantId : assistants) {
                 String assistantName = getPlayerName(assistantId, source.getServer());
-                source.sendSuccess(() -> Component.literal("  - " + assistantName), false);
+                source.sendSuccess(() -> Component.literal("  §e- §f" + assistantName), false);
             }
         }
         
-        source.sendSuccess(() -> Component.literal("Members (" + members.size() + "):"), false);
+        // Show regular members (excluding leader and assistants)
+        List<UUID> regularMembers = new java.util.ArrayList<>();
         for (UUID memberId : members) {
-            String memberName = getPlayerName(memberId, source.getServer());
-            source.sendSuccess(() -> Component.literal("  - " + memberName), false);
+            if (!memberId.equals(leader) && !assistants.contains(memberId)) {
+                regularMembers.add(memberId);
+            }
+        }
+        
+        if (!regularMembers.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("§7Members (" + regularMembers.size() + "):"), false);
+            for (UUID memberId : regularMembers) {
+                String memberName = getPlayerName(memberId, source.getServer());
+                source.sendSuccess(() -> Component.literal("  §7- §f" + memberName), false);
+            }
         }
         
         // Show all currency balances with localized names and symbols
@@ -1429,7 +1443,7 @@ public class ShopTeamCommand {
         source.sendSuccess(() -> Component.literal(""), false);
         
         source.sendSuccess(() -> Component.literal("§e/iska_utils_team info [teamName]"), false);
-        source.sendSuccess(() -> Component.literal("  §7Show information about your team or a specific team"), false);
+        source.sendSuccess(() -> Component.literal("  §7Show information about your team or a specific team (members with roles and currency balances)"), false);
         source.sendSuccess(() -> Component.literal(""), false);
         
         source.sendSuccess(() -> Component.literal("§e/iska_utils_team list"), false);
