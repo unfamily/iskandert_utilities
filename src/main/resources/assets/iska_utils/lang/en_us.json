@@ -497,6 +497,7 @@
   "item.iska_utils.lapis_ice_cream": "Lapis Ice Cream",
   "message.iska_utils.gift.break_message": "§6A good gift from Iskandert and a bad gift from Unfamily...",
   "message.iska_utils.hard_ice.cannot_break": "§eDon't worry, it will disappear on January 1st...",
+  "message.iska_utils.hard_ice.use_dolly": "§7If you need to move it, use a dolly!",
 
   "block.iska_utils.deep_drawers": "Deep Drawer",
   "item.iska_utils.deep_drawers": "Deep Drawer",
@@ -532,6 +533,15 @@
   "message.iska_utils.dolly_hard.not_allowed": "§cThis block is not allowed by the Hard Dolly configuration!",
   "message.iska_utils.dolly_hard.picked_up": "§aPicked up: §f%s",
   "message.iska_utils.dolly_hard.placed": "§aPlaced: §f%s",
+  
+  "item.iska_utils.dolly_creative": "Creative Dolly",
+  "tooltip.iska_utils.dolly_creative.contains": "§7Contains: §f%s",
+  "tooltip.iska_utils.dolly_creative.empty": "§7Empty - Shift+Click to pick up a block",
+  "message.iska_utils.dolly_creative.indestructible": "§cThis block cannot be picked up (indestructible)!",
+  "message.iska_utils.dolly_creative.cannot_place": "§cCannot place block here!",
+  "message.iska_utils.dolly_creative.no_block": "§cNo block stored in dolly!",
+  "message.iska_utils.dolly_creative.picked_up": "§aPicked up: §f%s",
+  "message.iska_utils.dolly_creative.placed": "§aPlaced: §f%s",
 
   "command.iska_utils.debug.only_player": "This command can only be used by a player",
   "command.iska_utils.debug.no_item": "§cNo item in hand!",

@@ -10,10 +10,10 @@
       "item": "minecraft:hopper"
     },
     "B": {
-      "tag": "c:storage_blocks/copper"
+      "item": "minecraft:iron_trapdoor"
     },
     "C": {
-      "item": "minecraft:iron_trapdoor"
+      "tag": "c:storage_blocks/copper"
     }
   },
   "result": {

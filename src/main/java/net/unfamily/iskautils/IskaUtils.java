@@ -243,6 +243,18 @@ public class IskaUtils {
                         return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
                     }
                 );
+                
+                ItemProperties.register(
+                    ModItems.DOLLY_CREATIVE.get(),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "filled"),
+                    (stack, level, entity, seed) -> {
+                        net.minecraft.world.item.component.CustomData customData = stack.getOrDefault(
+                            net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                            net.minecraft.world.item.component.CustomData.EMPTY);
+                        net.minecraft.nbt.CompoundTag nbt = customData.copyTag();
+                        return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
+                    }
+                );
             });
         }
         

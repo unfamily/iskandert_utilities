@@ -493,6 +493,7 @@
   "item.iska_utils.lapis_ice_cream": "Gelato al Lapislazzuli",
   "message.iska_utils.gift.break_message": "§6Un buon regalo da Iskandert e un cattivo regalo da Unfamily...",
   "message.iska_utils.hard_ice.cannot_break": "§eNon preoccuparti, dal 1° di gennaio sparirà da solo...",
+  "message.iska_utils.hard_ice.use_dolly": "§7Se ne hai necessità, spostalo con un dolly!",
 
   "block.iska_utils.deep_drawers": "Cassettiera Profonda",
   "item.iska_utils.deep_drawers": "Cassettiera Profonda",
@@ -525,6 +526,15 @@
   "message.iska_utils.dolly_hard.not_allowed": "§cQuesto blocco non è permesso dalla configurazione del Dolly Rinforzato!",
   "message.iska_utils.dolly_hard.picked_up": "§aRaccolto: §f%s",
   "message.iska_utils.dolly_hard.placed": "§aPiazzato: §f%s",
+  
+  "item.iska_utils.dolly_creative": "Dolly Creativo",
+  "tooltip.iska_utils.dolly_creative.contains": "§7Contiene: §f%s",
+  "tooltip.iska_utils.dolly_creative.empty": "§7Vuoto - Shift+Click per raccogliere un blocco",
+  "message.iska_utils.dolly_creative.indestructible": "§cQuesto blocco non può essere raccolto (indistruttibile)!",
+  "message.iska_utils.dolly_creative.cannot_place": "§cNon è possibile piazzare il blocco qui!",
+  "message.iska_utils.dolly_creative.no_block": "§cNessun blocco memorizzato nel dolly!",
+  "message.iska_utils.dolly_creative.picked_up": "§aRaccolto: §f%s",
+  "message.iska_utils.dolly_creative.placed": "§aPiazzato: §f%s",
 
   "command.iska_utils.debug.only_player": "Questo comando può essere usato solo da un giocatore",
   "command.iska_utils.debug.no_item": "§cNessun item in mano!",

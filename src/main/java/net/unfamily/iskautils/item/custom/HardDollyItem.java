@@ -92,20 +92,34 @@ public class HardDollyItem extends Item {
         }
         
         // Check if block is indestructible (bedrock, end portal, etc.)
-        if (state.getDestroySpeed(level, pos) < 0) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"), true);
-            return InteractionResult.FAIL;
+        float destroySpeed = state.getDestroySpeed(level, pos);
+        boolean isUnbreakableAllowed = false;
+        if (destroySpeed < 0) {
+            // Check if we can move unbreakable blocks
+            if (!Config.hardDollyCanMoveAllUnbreakable) {
+                player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"), true);
+                return InteractionResult.FAIL;
+            }
+            
+            // Check unbreakable whitelist/blacklist
+            if (!isUnbreakableBlockAllowed(block)) {
+                player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"), true);
+                return InteractionResult.FAIL;
+            }
+            
+            // Mark as allowed unbreakable block - skip normal whitelist/blacklist and mining level check
+            isUnbreakableAllowed = true;
         }
         
-        // Check mining level (max iron)
-        if (!canHarvest(state)) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.too_hard"), true);
-            return InteractionResult.FAIL;
-        }
-        
-        // Check whitelist/blacklist
-        if (!isBlockAllowed(state)) {
+        // Check whitelist/blacklist (skip for allowed unbreakable blocks)
+        if (!isUnbreakableAllowed && !isBlockAllowed(state)) {
             player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.not_allowed"), true);
+            return InteractionResult.FAIL;
+        }
+        
+        // Check mining level (max iron) - skip for allowed unbreakable blocks
+        if (!isUnbreakableAllowed && !canHarvest(state)) {
+            player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.too_hard"), true);
             return InteractionResult.FAIL;
         }
         
@@ -308,6 +322,53 @@ public class HardDollyItem extends Item {
         }
         
         return false; // Block doesn't match any whitelisted tag/ID
+    }
+    
+    /**
+     * Checks if an unbreakable block is allowed by unbreakable whitelist/blacklist config
+     * Logic:
+     * - Blacklist always wins
+     * - If whitelist is empty, no unbreakable blocks allowed (except blacklisted ones are always rejected)
+     * - If whitelist has entries, only those blocks allowed
+     */
+    private boolean isUnbreakableBlockAllowed(Block block) {
+        // Check blacklist first (has priority)
+        for (String blacklisted : Config.hardDollyUnbreakableBlacklist) {
+            if (matchesBlockId(block, blacklisted)) {
+                return false; // Block is blacklisted
+            }
+        }
+        
+        // If whitelist is empty, reject all unbreakable blocks
+        if (Config.hardDollyUnbreakableWhitelist.isEmpty()) {
+            return false;
+        }
+        
+        // Check if block matches any whitelisted ID
+        for (String allowed : Config.hardDollyUnbreakableWhitelist) {
+            if (matchesBlockId(block, allowed)) {
+                return true;
+            }
+        }
+        
+        return false; // Block doesn't match any whitelisted ID
+    }
+    
+    /**
+     * Checks if a Block matches a block ID (no tags for unbreakable blocks)
+     * @param block the Block to check
+     * @param blockId the block ID
+     * @return true if it matches
+     */
+    private boolean matchesBlockId(Block block, String blockId) {
+        try {
+            ResourceLocation blockIdLocation = ResourceLocation.parse(blockId);
+            ResourceLocation actualId = BuiltInRegistries.BLOCK.getKey(block);
+            return blockIdLocation.equals(actualId);
+        } catch (Exception e) {
+            // Invalid block ID format
+            return false;
+        }
     }
     
     /**

@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -27,6 +28,10 @@ public class HardIceBlock extends Block {
     // Cooldown per i messaggi (3 secondi = 60 ticks)
     private static final Map<UUID, Long> MESSAGE_COOLDOWNS = new HashMap<>();
     private static final long MESSAGE_COOLDOWN_TICKS = 60;
+    
+    // Delayed messages to show (player UUID -> tick when to show the message)
+    private static final Map<UUID, Long> DELAYED_MESSAGES = new HashMap<>();
+    private static final long DELAY_TICKS = 40; // 2 seconds = 40 ticks
     
     @Override
     protected MapCodec<? extends Block> codec() {
@@ -53,6 +58,7 @@ public class HardIceBlock extends Block {
     /**
      * Called periodically to check if the block should disappear
      * Checks if current date is between December 20-30
+     * Also processes delayed messages
      */
     @Override
     public void tick(BlockState state, ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
@@ -68,6 +74,23 @@ public class HardIceBlock extends Block {
             // Schedule next check after 1 second (20 ticks)
             level.scheduleTick(pos, this, 20);
         }
+        
+        // Process delayed messages
+        long currentTick = level.getGameTime();
+        DELAYED_MESSAGES.entrySet().removeIf(entry -> {
+            if (currentTick >= entry.getValue()) {
+                UUID playerUuid = entry.getKey();
+                Player player = level.getPlayerByUUID(playerUuid);
+                if (player != null && player.isAlive()) {
+                    player.displayClientMessage(
+                        Component.translatable("message.iska_utils.hard_ice.use_dolly"),
+                        true // actionbar
+                    );
+                }
+                return true; // Remove this entry
+            }
+            return false; // Keep this entry
+        });
     }
     
     /**
@@ -84,10 +107,20 @@ public class HardIceBlock extends Block {
             Long lastMessageTime = MESSAGE_COOLDOWNS.get(playerUuid);
             
             if (lastMessageTime == null || (currentTime - lastMessageTime) >= MESSAGE_COOLDOWN_TICKS) {
+                // Show first message immediately
                 player.displayClientMessage(
                     Component.translatable("message.iska_utils.hard_ice.cannot_break"),
                     true // actionbar
                 );
+                
+                // Schedule second message after DELAY_TICKS (2 seconds)
+                if (worldLevel instanceof ServerLevel serverLevel) {
+                    // Schedule a tick to ensure the tick method is called
+                    serverLevel.scheduleTick(pos, this, 1);
+                    // Store the delayed message
+                    DELAYED_MESSAGES.put(playerUuid, currentTime + DELAY_TICKS);
+                }
+                
                 MESSAGE_COOLDOWNS.put(playerUuid, currentTime);
             }
         }

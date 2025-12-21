@@ -10,7 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -29,27 +28,26 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 /**
- * Dolly Item - Tool for picking up and moving blocks with their contents
+ * Creative Dolly Item - Indestructible tool for picking up and moving ANY blocks
  * 
  * Features:
- * - 512 durability
- * - Can pick up blocks up to Iron mining level
+ * - Infinite durability (indestructible)
+ * - Can pick up ANY block, including indestructible ones (bedrock, end portal, etc.)
+ * - No whitelist/blacklist restrictions
+ * - No mining level restrictions
  * - Stores block state and BlockEntity data
- * - Texture changes when filled (dolly_filled)
- * - Configurable whitelist/blacklist
- * - Blacklist always takes priority
+ * - Texture changes when filled (dolly_creative_filled)
+ * - Creative mode only
  */
-public class DollyItem extends Item {
-    
-    private static final int MAX_DURABILITY = 512;
+public class CreativeDollyItem extends Item {
     
     // NBT keys
     private static final String NBT_BLOCK_STATE = "BlockState";
     private static final String NBT_BLOCK_ENTITY = "BlockEntity";
     private static final String NBT_HAS_BLOCK = "HasBlock";
     
-    public DollyItem(Properties properties) {
-        super(properties.durability(MAX_DURABILITY));
+    public CreativeDollyItem(Properties properties) {
+        super(properties);
     }
     
     @Override
@@ -81,6 +79,7 @@ public class DollyItem extends Item {
     
     /**
      * Picks up a block from the world and stores it in the dolly
+     * Creative Dolly uses config for unbreakable blocks, but can move everything else
      */
     private InteractionResult pickupBlock(Level level, ServerPlayer player, ItemStack stack, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
@@ -93,35 +92,21 @@ public class DollyItem extends Item {
         
         // Check if block is indestructible (bedrock, end portal, etc.)
         float destroySpeed = state.getDestroySpeed(level, pos);
-        boolean isUnbreakableAllowed = false;
         if (destroySpeed < 0) {
             // Check if we can move unbreakable blocks
-            if (!Config.dollyCanMoveAllUnbreakable) {
-                player.displayClientMessage(Component.translatable("message.iska_utils.dolly.indestructible"), true);
+            if (!Config.creativeDollyCanMoveAllUnbreakable) {
+                player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"), true);
                 return InteractionResult.FAIL;
             }
             
             // Check unbreakable whitelist/blacklist
             if (!isUnbreakableBlockAllowed(block)) {
-                player.displayClientMessage(Component.translatable("message.iska_utils.dolly.indestructible"), true);
+                player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"), true);
                 return InteractionResult.FAIL;
             }
-            
-            // Mark as allowed unbreakable block - skip normal whitelist/blacklist and mining level check
-            isUnbreakableAllowed = true;
         }
         
-        // Check whitelist/blacklist (skip for allowed unbreakable blocks)
-        if (!isUnbreakableAllowed && !isBlockAllowed(state)) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.dolly.not_allowed"), true);
-            return InteractionResult.FAIL;
-        }
-        
-        // Check mining level (max iron) - skip for allowed unbreakable blocks
-        if (!isUnbreakableAllowed && !canHarvest(state)) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.dolly.too_hard"), true);
-            return InteractionResult.FAIL;
-        }
+        // Creative Dolly: Can pick up any block (including indestructible ones if allowed by config)
         
         // Get BlockEntity data if present
         CompoundTag blockEntityTag = null;
@@ -162,7 +147,7 @@ public class DollyItem extends Item {
         level.playSound(null, pos, SoundEvents.SCAFFOLDING_BREAK, SoundSource.BLOCKS, 1.0F, 1.0F);
         
         // Send feedback
-        player.displayClientMessage(Component.translatable("message.iska_utils.dolly.picked_up", 
+        player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.picked_up", 
                 Component.translatable(block.getDescriptionId())), true);
         
         return InteractionResult.SUCCESS;
@@ -172,26 +157,24 @@ public class DollyItem extends Item {
      * Places the stored block in the world
      */
     private InteractionResult placeBlock(Level level, ServerPlayer player, ItemStack stack, BlockPos pos) {
-        // Check if position is replaceable
-        BlockState currentState = level.getBlockState(pos);
-        if (!currentState.canBeReplaced()) {
+        // Check if target position is valid
+        if (!level.getBlockState(pos).canBeReplaced()) {
+            player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.cannot_place"), true);
             return InteractionResult.FAIL;
         }
         
         // Get stored block data
         CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         CompoundTag nbt = customData.copyTag();
+        
         if (!nbt.contains(NBT_BLOCK_STATE)) {
+            player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.no_block"), true);
             return InteractionResult.FAIL;
         }
         
-        // Read complete BlockState with all properties from NBT
+        // Read saved BlockState
         CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE);
         BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), blockStateTag);
-        
-        if (savedState.isAir()) {
-            return InteractionResult.FAIL;
-        }
         
         // Place block with all its properties (facing, powered, waterlogged, etc.)
         // Flag 2 = send update to clients but don't cause block update (no neighbor updates)
@@ -239,113 +222,40 @@ public class DollyItem extends Item {
         // Update the item stack with cleared data
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt));
         
-        // Consume durability
-        stack.setDamageValue(stack.getDamageValue() + 1);
+        // Creative Dolly: NO durability consumption
         
         // Play sound (scaffold place sound)
         level.playSound(null, pos, SoundEvents.SCAFFOLDING_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
         
         // Send feedback
-        player.displayClientMessage(Component.translatable("message.iska_utils.dolly.placed", 
+        player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.placed", 
                 Component.translatable(savedState.getBlock().getDescriptionId())), true);
         
         return InteractionResult.SUCCESS;
     }
     
     /**
-     * Checks if a block can be harvested based on configured mining level tags
-     */
-    private boolean canHarvest(BlockState state) {
-        Block block = state.getBlock();
-        
-        // If no mining level tags are configured, only reject indestructible blocks
-        if (Config.dollyAllowedMiningLevelTags.isEmpty()) {
-            float hardness = state.getDestroySpeed(null, BlockPos.ZERO);
-            return hardness >= 0; // Only reject indestructible blocks (hardness < 0)
-        }
-        
-        // Check if block matches any allowed mining level tag
-        for (String tagStr : Config.dollyAllowedMiningLevelTags) {
-            if (tagStr.startsWith("#")) {
-                String tagName = tagStr.substring(1); // Remove #
-                try {
-                    ResourceLocation tagLocation = ResourceLocation.parse(tagName);
-                    TagKey<Block> blockTag = TagKey.create(BuiltInRegistries.BLOCK.key(), tagLocation);
-                    if (block.builtInRegistryHolder().is(blockTag)) {
-                        return true; // Block matches an allowed mining level
-                    }
-                } catch (Exception e) {
-                    // Invalid tag format, skip
-                }
-            }
-        }
-        
-        // If block doesn't match any mining level tag, check if it requires no tool (like dirt, sand, etc.)
-        // These blocks should be allowed even without matching a tag
-        // We check if the block has hardness >= 0 and is mineable without tools
-        float hardness = state.getDestroySpeed(null, BlockPos.ZERO);
-        if (hardness >= 0 && hardness < 0.6f) {
-            // Very soft blocks that don't require tools (dirt, sand, gravel, grass, etc.)
-            return true;
-        }
-        
-        return false; // Block requires tools beyond allowed mining levels
-    }
-    
-    /**
-     * Checks if a block is allowed by whitelist/blacklist config
+     * Checks if an unbreakable block is allowed by whitelist/blacklist config
      * Logic:
      * - Blacklist always wins
-     * - If whitelist is empty, all blocks allowed (except blacklisted)
-     * - If whitelist has entries, only those blocks allowed
-     */
-    private boolean isBlockAllowed(BlockState state) {
-        Block block = state.getBlock();
-        
-        // Check blacklist first (has priority)
-        for (String blacklisted : Config.dollyBlacklist) {
-            if (matchesTagOrId(block, blacklisted)) {
-                return false; // Block is blacklisted
-            }
-        }
-        
-        // If whitelist is empty, accept all (except blacklisted)
-        if (Config.dollyWhitelist.isEmpty()) {
-            return true;
-        }
-        
-        // Check if block matches any whitelisted tag/ID
-        for (String allowed : Config.dollyWhitelist) {
-            if (matchesTagOrId(block, allowed)) {
-                return true;
-            }
-        }
-        
-        return false; // Block doesn't match any whitelisted tag/ID
-    }
-    
-    /**
-     * Checks if an unbreakable block is allowed by unbreakable whitelist/blacklist config
-     * Logic:
-     * - Blacklist always wins
-     * - If whitelist is empty, no unbreakable blocks allowed (except blacklisted ones are always rejected)
+     * - If whitelist is empty, all unbreakable blocks allowed (except blacklisted ones are always rejected)
      * - If whitelist has entries, only those blocks allowed
      */
     private boolean isUnbreakableBlockAllowed(Block block) {
         // Check blacklist first (has priority)
-        for (String blacklisted : Config.dollyUnbreakableBlacklist) {
+        for (String blacklisted : Config.creativeDollyUnbreakableBlacklist) {
             if (matchesBlockId(block, blacklisted)) {
                 return false; // Block is blacklisted
             }
         }
         
-        // If whitelist is empty, reject all unbreakable blocks
-        if (Config.dollyUnbreakableWhitelist.isEmpty()) {
-            return false;
+        // If whitelist is empty, allow all unbreakable blocks (Creative Dolly default behavior)
+        if (Config.creativeDollyUnbreakableWhitelist.isEmpty()) {
+            return true;
         }
         
         // Check if block matches any whitelisted ID
-        for (String allowed : Config.dollyUnbreakableWhitelist) {
+        for (String allowed : Config.creativeDollyUnbreakableWhitelist) {
             if (matchesBlockId(block, allowed)) {
                 return true;
             }
@@ -372,37 +282,6 @@ public class DollyItem extends Item {
     }
     
     /**
-     * Checks if a Block matches a tag or block ID
-     * @param block the Block to check
-     * @param tagOrId the tag (starting with #) or block ID
-     * @return true if it matches
-     */
-    private boolean matchesTagOrId(Block block, String tagOrId) {
-        if (tagOrId.startsWith("#")) {
-            // It's a tag
-            String tagName = tagOrId.substring(1); // Remove #
-            try {
-                ResourceLocation tagLocation = ResourceLocation.parse(tagName);
-                TagKey<Block> blockTag = TagKey.create(BuiltInRegistries.BLOCK.key(), tagLocation);
-                return block.builtInRegistryHolder().is(blockTag);
-            } catch (Exception e) {
-                // Invalid tag format
-                return false;
-            }
-        } else {
-            // It's a block ID
-            try {
-                ResourceLocation blockId = ResourceLocation.parse(tagOrId);
-                ResourceLocation actualId = BuiltInRegistries.BLOCK.getKey(block);
-                return blockId.equals(actualId);
-            } catch (Exception e) {
-                // Invalid block ID format
-                return false;
-            }
-        }
-    }
-    
-    /**
      * Checks if the dolly currently has a block stored
      */
     private boolean hasStoredBlock(ItemStack stack) {
@@ -423,12 +302,11 @@ public class DollyItem extends Item {
                 CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE);
                 BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), blockStateTag);
                 Block block = savedState.getBlock();
-                tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly.contains", 
+                tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly_creative.contains", 
                         Component.translatable(block.getDescriptionId())));
             }
         } else {
-            tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly.empty"));
+            tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly_creative.empty"));
         }
     }
 }
-

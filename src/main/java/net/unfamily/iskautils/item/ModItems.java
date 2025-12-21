@@ -152,6 +152,11 @@ public class ModItems {
     // Has 4096 durability, works on blocks up to iron mining level, separate config from regular dolly
     public static final DeferredItem<Item> DOLLY_HARD = ITEMS.register("dolly_hard",
             () -> new net.unfamily.iskautils.item.custom.HardDollyItem(new Item.Properties().stacksTo(1)));
+    
+    // Creative Dolly - Indestructible tool for picking up and moving ANY blocks
+    // Infinite durability, no restrictions, can move even indestructible blocks
+    public static final DeferredItem<Item> DOLLY_CREATIVE = ITEMS.register("dolly_creative",
+            () -> new net.unfamily.iskautils.item.custom.CreativeDollyItem(new Item.Properties().stacksTo(1).fireResistant()));
             
     // ===== RUBBER TREE ITEMS =====
     

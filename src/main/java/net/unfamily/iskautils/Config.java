@@ -190,14 +190,19 @@ public class Config
                     "1 tick = 0.05 seconds")
             .defineInRange("410_deep_drawer_extractor_interval", 1, 1, Integer.MAX_VALUE);
     
-    // Dolly Configuration (in general_utilities category)
+    // Category for Dolly Configuration (under general_utilities)
+    static {
+        BUILDER.comment("Dolly Configuration").push("dolly");
+    }
+    
+    // Dolly Configuration
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DOLLY_WHITELIST = BUILDER
             .comment("List of block tags/IDs that can be picked up by the Dolly",
                     "Tags starting with # are block tags (e.g. #minecraft:mineable/pickaxe)",
                     "Blocks without # are block IDs (e.g. minecraft:chest, minecraft:furnace)",
                     "Empty list means all blocks are allowed (subject to blacklist and hardness/tool requirements)",
                     "If whitelist is not empty, only blocks matching these tags/IDs will be allowed")
-            .defineList("500_dolly_whitelist", 
+            .defineList("000_dolly_whitelist", 
                        java.util.Collections.emptyList(), 
                        obj -> obj instanceof String);
 
@@ -206,8 +211,8 @@ public class Config
                     "This blacklist ALWAYS takes priority over the whitelist",
                     "Tags starting with # are block tags, blocks without # are block IDs",
                     "Examples: minecraft:bedrock, minecraft:end_portal_frame, #c:ores")
-            .defineList("501_dolly_blacklist",
-                    java.util.Collections.emptyList(),
+            .defineList("001_dolly_blacklist",
+                    java.util.Arrays.asList("minecraft:spawner", "minecraft:trial_spawner"),
                     obj -> obj instanceof String);
     
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DOLLY_ALLOWED_MINING_LEVEL_TAGS = BUILDER
@@ -217,7 +222,7 @@ public class Config
                     "Tags must start with #",
                     "Empty list means no mining level check (only hardness < 0 blocks are rejected)",
                     "Examples: #minecraft:mineable/pickaxe, #minecraft:needs_stone_tool, #minecraft:needs_iron_tool")
-            .defineList("502_dolly_allowed_mining_level_tags",
+            .defineList("002_dolly_allowed_mining_level_tags",
                     java.util.Arrays.asList(
                             "#minecraft:mineable/axe",
                             "#minecraft:mineable/pickaxe",
@@ -228,7 +233,32 @@ public class Config
                     ),
                     obj -> obj instanceof String);
     
-    // Hard Dolly Configuration (in general_utilities category)
+    private static final ModConfigSpec.BooleanValue DOLLY_CAN_MOVE_ALL_UNBREAKABLE = BUILDER
+            .comment("If true, allows the Dolly to move all unbreakable blocks (hardness < 0)",
+                    "When enabled, unbreakable blocks are checked against unbreakable whitelist/blacklist",
+                    "Default: false")
+            .define("003_dolly_can_move_all_unbreakable", false);
+    
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DOLLY_UNBREAKABLE_WHITELIST = BUILDER
+            .comment("List of unbreakable block IDs that can be picked up by the Dolly",
+                    "Only used when can_move_all_unbreakable is true",
+                    "Blocks without # are block IDs (e.g. iska_utils:hard_ice)",
+                    "Empty list means no unbreakable blocks allowed (except blacklisted ones are always rejected)",
+                    "If whitelist has entries, only those unbreakable blocks allowed")
+            .defineList("004_dolly_unbreakable_whitelist",
+                    java.util.Arrays.asList("iska_utils:hard_ice"),
+                    obj -> obj instanceof String);
+    
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DOLLY_UNBREAKABLE_BLACKLIST = BUILDER
+            .comment("List of unbreakable block IDs that are explicitly forbidden from being picked up by the Dolly",
+                    "Only used when can_move_all_unbreakable is true",
+                    "This blacklist ALWAYS takes priority over the unbreakable whitelist",
+                    "Blocks without # are block IDs (e.g. minecraft:bedrock, minecraft:end_portal_frame)")
+            .defineList("005_dolly_unbreakable_blacklist",
+                    java.util.Collections.emptyList(),
+                    obj -> obj instanceof String);
+    
+    // Hard Dolly Configuration
     // Hard Dolly has no limits - can pick up any block except indestructible ones (hardness < 0)
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> HARD_DOLLY_WHITELIST = BUILDER
             .comment("List of block tags/IDs that can be picked up by the Hard Dolly",
@@ -236,7 +266,7 @@ public class Config
                     "Blocks without # are block IDs (e.g. minecraft:chest, minecraft:furnace)",
                     "Empty list (default) means ALL blocks are allowed (except indestructible ones with hardness < 0)",
                     "If whitelist is not empty, only blocks matching these tags/IDs will be allowed")
-            .defineList("510_hard_dolly_whitelist", 
+            .defineList("010_hard_dolly_whitelist", 
                        java.util.Collections.emptyList(), 
                        obj -> obj instanceof String);
 
@@ -246,7 +276,7 @@ public class Config
                     "Tags starting with # are block tags, blocks without # are block IDs",
                     "Empty list (default) means no blocks are blacklisted",
                     "Examples: minecraft:bedrock, minecraft:end_portal_frame, #c:ores")
-            .defineList("511_hard_dolly_blacklist",
+            .defineList("011_hard_dolly_blacklist",
                     java.util.Collections.emptyList(),
                     obj -> obj instanceof String);
     
@@ -256,11 +286,95 @@ public class Config
                     "Tags must start with #",
                     "If not empty, only blocks matching these mining level tags can be picked up",
                     "Examples: #minecraft:mineable/pickaxe, #minecraft:needs_stone_tool, #minecraft:needs_iron_tool")
-            .defineList("512_hard_dolly_allowed_mining_level_tags",
+            .defineList("012_hard_dolly_allowed_mining_level_tags",
                     java.util.Collections.emptyList(),
                     obj -> obj instanceof String);
-            
+    
+    private static final ModConfigSpec.BooleanValue HARD_DOLLY_CAN_MOVE_ALL_UNBREAKABLE = BUILDER
+            .comment("If true, allows the Hard Dolly to move all unbreakable blocks (hardness < 0)",
+                    "When enabled, unbreakable blocks are checked against unbreakable whitelist/blacklist",
+                    "Default: false")
+            .define("013_hard_dolly_can_move_all_unbreakable", false);
+    
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> HARD_DOLLY_UNBREAKABLE_WHITELIST = BUILDER
+            .comment("List of unbreakable block IDs that can be picked up by the Hard Dolly",
+                    "Only used when can_move_all_unbreakable is true",
+                    "Blocks without # are block IDs (e.g. iska_utils:hard_ice)",
+                    "Empty list means no unbreakable blocks allowed (except blacklisted ones are always rejected)",
+                    "If whitelist has entries, only those unbreakable blocks allowed")
+            .defineList("014_hard_dolly_unbreakable_whitelist",
+                    java.util.Arrays.asList("iska_utils:hard_ice"),
+                    obj -> obj instanceof String);
+    
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> HARD_DOLLY_UNBREAKABLE_BLACKLIST = BUILDER
+            .comment("List of unbreakable block IDs that are explicitly forbidden from being picked up by the Hard Dolly",
+                    "Only used when can_move_all_unbreakable is true",
+                    "This blacklist ALWAYS takes priority over the unbreakable whitelist",
+                    "Blocks without # are block IDs (e.g. minecraft:bedrock, minecraft:end_portal_frame)")
+            .defineList("015_hard_dolly_unbreakable_blacklist",
+                    java.util.Collections.emptyList(),
+                    obj -> obj instanceof String);
+    
+    // Creative Dolly Configuration
+    // Creative Dolly has infinite durability and can move ANY block including indestructible ones
+    private static final ModConfigSpec.BooleanValue CREATIVE_DOLLY_CAN_MOVE_ALL_UNBREAKABLE = BUILDER
+            .comment("If true, allows the Creative Dolly to move all unbreakable blocks (hardness < 0)",
+                    "When enabled, unbreakable blocks are checked against unbreakable whitelist/blacklist",
+                    "Default: true (Creative Dolly can move everything by default)")
+            .define("020_creative_dolly_can_move_all_unbreakable", true);
+    
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> CREATIVE_DOLLY_UNBREAKABLE_WHITELIST = BUILDER
+            .comment("List of unbreakable block IDs that can be picked up by the Creative Dolly",
+                    "Only used when can_move_all_unbreakable is true",
+                    "Blocks without # are block IDs (e.g. iska_utils:hard_ice)",
+                    "Empty list (default) means all unbreakable blocks allowed (except blacklisted ones are always rejected)",
+                    "If whitelist has entries, only those unbreakable blocks allowed")
+            .defineList("021_creative_dolly_unbreakable_whitelist",
+                    java.util.Collections.emptyList(),
+                    obj -> obj instanceof String);
+    
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> CREATIVE_DOLLY_UNBREAKABLE_BLACKLIST = BUILDER
+            .comment("List of unbreakable block IDs that are explicitly forbidden from being picked up by the Creative Dolly",
+                    "Only used when can_move_all_unbreakable is true",
+                    "This blacklist ALWAYS takes priority over the unbreakable whitelist",
+                    "Blocks without # are block IDs (e.g. minecraft:bedrock, minecraft:end_portal_frame)",
+                    "Empty list (default) means no unbreakable blocks are blacklisted")
+            .defineList("022_creative_dolly_unbreakable_blacklist",
+                    java.util.Collections.emptyList(),
+                    obj -> obj instanceof String);
+    
     static {
+        BUILDER.pop(); // End of dolly category
+        
+        // Category for Artifacts Settings (under general_utilities)
+        BUILDER.comment("Artifacts Settings").push("artifacts_settings");
+    }
+    
+    private static final ModConfigSpec.BooleanValue ARTIFACTS_INFO= BUILDER
+            .comment("If false not desplay where obtain the artifacts or mod dependecy required for obtain it (only for lootable artifacts)")
+            .define("100_artifacts_info", true);
+
+    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_BLOCK_CHANCE = BUILDER
+            .comment("Chance for Greedy Shield to completely block damage (0.0 to 1.0)",
+                    "Default: 0.3 (30%)")
+            .defineInRange("000_greedy_shield_block_chance", 0.3D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_CHANCE = BUILDER
+            .comment("Chance for Greedy Shield to reduce damage by 80% if block fails (0.0 to 1.0)",
+                    "Default: 0.3 (30%)")
+            .defineInRange("001_greedy_shield_reduce_chance", 0.3D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_AMOUNT = BUILDER
+            .comment("Damage remaining amount when Greedy Shield reduces damage (0.0 to 1.0)",
+                    "Default: 0.8 (blocks 20% of damage, so 80% of original damage remains)")
+            .defineInRange("002_greedy_shield_reduce_amount", 0.8D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.BooleanValue GREEDY_SHIELD_INFO = BUILDER
+            .comment("If false, hide where to obtain the Greedy Shield (only for lootable artifacts)")
+            .define("003_greedy_shield_info", true);
+
+    static {
+        BUILDER.pop(); // End of artifacts_settings category
         BUILDER.pop(); // End of general_utilities category
         
         // === Rubber Tree Configuration ===
@@ -467,36 +581,7 @@ public class Config
                     "Default: true")
             .define("003_allow_client_structure_player_like", true);
 
-    private static final ModConfigSpec.BooleanValue ARTIFACTS_INFO= BUILDER
-            .comment("If false not desplay where obtain the artifacts or mod dependecy required for obtain it (only for lootable artifacts)")
-            .define("100_artifacts_info", true);
-
-    // Category for Artifacts Settings (under dev)
     static {
-        BUILDER.comment("Artifacts Settings").push("artifacts_settings");
-    }
-
-    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_BLOCK_CHANCE = BUILDER
-            .comment("Chance for Greedy Shield to completely block damage (0.0 to 1.0)",
-                    "Default: 0.3 (30%)")
-            .defineInRange("000_greedy_shield_block_chance", 0.3D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_CHANCE = BUILDER
-            .comment("Chance for Greedy Shield to reduce damage by 80% if block fails (0.0 to 1.0)",
-                    "Default: 0.3 (30%)")
-            .defineInRange("001_greedy_shield_reduce_chance", 0.3D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_REDUCE_AMOUNT = BUILDER
-            .comment("Damage remaining amount when Greedy Shield reduces damage (0.0 to 1.0)",
-                    "Default: 0.8 (blocks 20% of damage, so 80% of original damage remains)")
-            .defineInRange("002_greedy_shield_reduce_amount", 0.8D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.BooleanValue GREEDY_SHIELD_INFO = BUILDER
-            .comment("If false, hide where to obtain the Greedy Shield (only for lootable artifacts)")
-            .define("003_greedy_shield_info", true);
-
-    static {
-        BUILDER.pop(); // End of artifacts_settings category
         BUILDER.pop(); // End of dev category
 
         // Category for Evil Things (fun but fiery!)
@@ -590,9 +675,19 @@ public class Config
     public static java.util.List<String> dollyWhitelist;
     public static java.util.List<String> dollyBlacklist;
     public static java.util.List<String> dollyAllowedMiningLevelTags;
+    public static boolean dollyCanMoveAllUnbreakable;
+    public static java.util.List<String> dollyUnbreakableWhitelist;
+    public static java.util.List<String> dollyUnbreakableBlacklist;
     public static java.util.List<String> hardDollyWhitelist;
     public static java.util.List<String> hardDollyBlacklist;
     public static java.util.List<String> hardDollyAllowedMiningLevelTags;
+    public static boolean hardDollyCanMoveAllUnbreakable;
+    public static java.util.List<String> hardDollyUnbreakableWhitelist;
+    public static java.util.List<String> hardDollyUnbreakableBlacklist;
+    
+    public static boolean creativeDollyCanMoveAllUnbreakable;
+    public static java.util.List<String> creativeDollyUnbreakableWhitelist;
+    public static java.util.List<String> creativeDollyUnbreakableBlacklist;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -665,11 +760,22 @@ public class Config
         dollyWhitelist = new java.util.ArrayList<>(DOLLY_WHITELIST.get());
         dollyBlacklist = new java.util.ArrayList<>(DOLLY_BLACKLIST.get());
         dollyAllowedMiningLevelTags = new java.util.ArrayList<>(DOLLY_ALLOWED_MINING_LEVEL_TAGS.get());
+        dollyCanMoveAllUnbreakable = DOLLY_CAN_MOVE_ALL_UNBREAKABLE.get();
+        dollyUnbreakableWhitelist = new java.util.ArrayList<>(DOLLY_UNBREAKABLE_WHITELIST.get());
+        dollyUnbreakableBlacklist = new java.util.ArrayList<>(DOLLY_UNBREAKABLE_BLACKLIST.get());
         
         // Hard Dolly configuration
         hardDollyWhitelist = new java.util.ArrayList<>(HARD_DOLLY_WHITELIST.get());
         hardDollyBlacklist = new java.util.ArrayList<>(HARD_DOLLY_BLACKLIST.get());
         hardDollyAllowedMiningLevelTags = new java.util.ArrayList<>(HARD_DOLLY_ALLOWED_MINING_LEVEL_TAGS.get());
+        hardDollyCanMoveAllUnbreakable = HARD_DOLLY_CAN_MOVE_ALL_UNBREAKABLE.get();
+        hardDollyUnbreakableWhitelist = new java.util.ArrayList<>(HARD_DOLLY_UNBREAKABLE_WHITELIST.get());
+        hardDollyUnbreakableBlacklist = new java.util.ArrayList<>(HARD_DOLLY_UNBREAKABLE_BLACKLIST.get());
+        
+        // Creative Dolly configuration
+        creativeDollyCanMoveAllUnbreakable = CREATIVE_DOLLY_CAN_MOVE_ALL_UNBREAKABLE.get();
+        creativeDollyUnbreakableWhitelist = new java.util.ArrayList<>(CREATIVE_DOLLY_UNBREAKABLE_WHITELIST.get());
+        creativeDollyUnbreakableBlacklist = new java.util.ArrayList<>(CREATIVE_DOLLY_UNBREAKABLE_BLACKLIST.get());
 
         // If the energy required is 0, the energy stored is 0 automatically
         if (electricTreetapEnergyConsume <= 0) {

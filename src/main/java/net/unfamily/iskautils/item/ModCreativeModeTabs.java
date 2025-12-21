@@ -29,6 +29,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SWISS_WRENCH.get());
                                 pOutput.accept(ModItems.DOLLY.get());
                                 pOutput.accept(ModItems.DOLLY_HARD.get());
+                                pOutput.accept(ModItems.DOLLY_CREATIVE.get());
                                 pOutput.accept(ModItems.VECTOR_CHARM.get());
                                 pOutput.accept(ModItems.PORTABLE_DISLOCATOR.get());
                                 pOutput.accept(ModItems.BASE_MODULE.get());
