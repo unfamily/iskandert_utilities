@@ -49,7 +49,7 @@ public class ShopTeamCommand {
                     .then(Commands.argument("teamName", StringArgumentType.word())
                         .requires(source -> source.hasPermission(2)) // Admin only for other teams
                         .executes(ShopTeamCommand::renameTeam))))
-            .then(Commands.literal("transfer")
+            .then(Commands.literal("leader")
                 .then(Commands.argument("newLeader", EntityArgument.player())
                     .executes(ShopTeamCommand::transferOwnTeamLeadership)
                     .then(Commands.argument("teamName", StringArgumentType.word())
@@ -108,6 +108,11 @@ public class ShopTeamCommand {
                     .executes(ShopTeamCommand::teamInfo)))
             .then(Commands.literal("list")
                 .executes(ShopTeamCommand::listTeams))
+            .then(Commands.literal("members")
+                .executes(ShopTeamCommand::listOwnTeamMembers)
+                .then(Commands.argument("teamName", StringArgumentType.word())
+                    .suggests(ShopTeamCommand::suggestTeams)
+                    .executes(ShopTeamCommand::listTeamMembers)))
             .then(Commands.literal("balance")
                 .executes(ShopTeamCommand::ownTeamBalance)
                 .then(Commands.argument("teamName", StringArgumentType.word())
@@ -153,8 +158,27 @@ public class ShopTeamCommand {
                         .then(Commands.literal("player")
                             .then(Commands.argument("player", EntityArgument.player())
                                 .executes(ShopTeamCommand::setCurrencyForPlayerTeam))))))
+            .then(Commands.literal("moveCurrency")
+                .then(Commands.argument("currencyId", StringArgumentType.word())
+                    .suggests(ShopTeamCommand::suggestCurrencies)
+                    .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
+                        .then(Commands.argument("toTeam", StringArgumentType.word())
+                            .suggests(ShopTeamCommand::suggestTeams)
+                            .executes(ShopTeamCommand::moveCurrencyFromOwnTeam)
+                            .then(Commands.argument("fromTeam", StringArgumentType.word())
+                                .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                                .suggests(ShopTeamCommand::suggestTeams)
+                                .executes(ShopTeamCommand::moveCurrencyBetweenTeams))))))
             .then(Commands.literal("invitations")
-                .executes(ShopTeamCommand::listInvitations)));
+                .executes(ShopTeamCommand::listInvitations))
+            .then(Commands.literal("help")
+                .executes(context -> showHelp(context, true, false)) // Default to user commands
+                .then(Commands.literal("all")
+                    .executes(ShopTeamCommand::showHelp))
+                .then(Commands.literal("user")
+                    .executes(context -> showHelp(context, true, false)))
+                .then(Commands.literal("admin")
+                    .executes(context -> showHelp(context, false, true)))));
     }
     
     private static int createTeam(CommandContext<CommandSourceStack> context) {
@@ -1174,6 +1198,91 @@ public class ShopTeamCommand {
         return playerId.toString();
     }
     
+    /**
+     * Lists members of own team with their roles
+     */
+    private static int listOwnTeamMembers(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        
+        if (source.getPlayer() == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        
+        if (teamName == null) {
+            source.sendFailure(Component.literal("You are not in a team"));
+            return 0;
+        }
+        
+        return showTeamMembers(source, teamManager, teamName);
+    }
+    
+    /**
+     * Lists members of a specific team with their roles
+     */
+    private static int listTeamMembers(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String teamName = StringArgumentType.getString(context, "teamName");
+        
+        if (source.getPlayer() == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        return showTeamMembers(source, teamManager, teamName);
+    }
+    
+    /**
+     * Shows team members with their roles (leader/assistant/member)
+     */
+    private static int showTeamMembers(CommandSourceStack source, ShopTeamManager teamManager, String teamName) {
+        UUID leader = teamManager.getTeamLeader(teamName);
+        List<UUID> assistants = teamManager.getTeamAssistants(teamName);
+        List<UUID> members = teamManager.getTeamMembers(teamName);
+        
+        if (leader == null) {
+            source.sendFailure(Component.literal("Team '" + teamName + "' does not exist"));
+            return 0;
+        }
+        
+        source.sendSuccess(() -> Component.literal("=== Team: " + teamName + " Members ==="), false);
+        
+        // Show leader
+        String leaderName = getPlayerName(leader, source.getServer());
+        source.sendSuccess(() -> Component.literal("§6Leader: §f" + leaderName), false);
+        
+        // Show assistants
+        if (!assistants.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("§eAssistants (" + assistants.size() + "):"), false);
+            for (UUID assistantId : assistants) {
+                String assistantName = getPlayerName(assistantId, source.getServer());
+                source.sendSuccess(() -> Component.literal("  §e- §f" + assistantName), false);
+            }
+        }
+        
+        // Show regular members (excluding leader and assistants)
+        List<UUID> regularMembers = new java.util.ArrayList<>();
+        for (UUID memberId : members) {
+            if (!memberId.equals(leader) && !assistants.contains(memberId)) {
+                regularMembers.add(memberId);
+            }
+        }
+        
+        if (!regularMembers.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("§7Members (" + regularMembers.size() + "):"), false);
+            for (UUID memberId : regularMembers) {
+                String memberName = getPlayerName(memberId, source.getServer());
+                source.sendSuccess(() -> Component.literal("  §7- §f" + memberName), false);
+            }
+        }
+        
+        return 1;
+    }
+    
     private static int cancelInviteFromOwnTeam(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayer();
@@ -1244,5 +1353,275 @@ public class ShopTeamCommand {
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
         List<String> teamNames = teamManager.getAllTeamNames();
         return SharedSuggestionProvider.suggest(teamNames, builder);
+    }
+    
+    /**
+     * Shows help for all team commands, divided between user and admin commands
+     */
+    private static int showHelp(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        boolean isAdmin = source.hasPermission(2);
+        return showHelp(context, true, isAdmin);
+    }
+    
+    /**
+     * Shows help for team commands, with options to show user and/or admin commands
+     */
+    private static int showHelp(CommandContext<CommandSourceStack> context, boolean showUser, boolean showAdmin) {
+        CommandSourceStack source = context.getSource();
+        boolean isAdmin = source.hasPermission(2);
+        
+        // Check if user is trying to see admin commands without permission
+        if (showAdmin && !isAdmin) {
+            source.sendFailure(Component.literal("You don't have permission to view admin commands."));
+            return 0;
+        }
+        
+        // User Commands
+        if (showUser) {
+            source.sendSuccess(() -> Component.literal("§a=== User Commands ==="), false);
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team create <teamName>"), false);
+        source.sendSuccess(() -> Component.literal("  §7Create a new team"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team delete"), false);
+        source.sendSuccess(() -> Component.literal("  §7Delete your own team (leader only)"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team rename <newName>"), false);
+        source.sendSuccess(() -> Component.literal("  §7Rename your own team (leader only)"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team leader <newLeader>"), false);
+        source.sendSuccess(() -> Component.literal("  §7Transfer leadership of your team to another player"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team assistant add <player>"), false);
+        source.sendSuccess(() -> Component.literal("  §7Add an assistant to your team (leader only)"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team assistant remove <player>"), false);
+        source.sendSuccess(() -> Component.literal("  §7Remove an assistant from your team (leader only)"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team assistant list [teamName]"), false);
+        source.sendSuccess(() -> Component.literal("  §7List assistants of your team or a specific team"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team invite <player>"), false);
+        source.sendSuccess(() -> Component.literal("  §7Invite a player to your team (leader/assistant only)"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team cancelInvite <player>"), false);
+        source.sendSuccess(() -> Component.literal("  §7Cancel an invitation to your team (leader/assistant only)"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team accept <teamName>"), false);
+        source.sendSuccess(() -> Component.literal("  §7Accept a team invitation"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team leave"), false);
+        source.sendSuccess(() -> Component.literal("  §7Leave your current team"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team remove <player>"), false);
+        source.sendSuccess(() -> Component.literal("  §7Remove a player from your team (leader only)"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team info [teamName]"), false);
+        source.sendSuccess(() -> Component.literal("  §7Show information about your team or a specific team"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team list"), false);
+        source.sendSuccess(() -> Component.literal("  §7List all teams"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team members [teamName]"), false);
+        source.sendSuccess(() -> Component.literal("  §7List members of your team or a specific team with their roles"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team balance [teamName] [currencyId]"), false);
+        source.sendSuccess(() -> Component.literal("  §7Show your team's balance or a specific team's balance"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team invitations"), false);
+        source.sendSuccess(() -> Component.literal("  §7List your pending team invitations"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        
+        source.sendSuccess(() -> Component.literal("§e/iska_utils_team moveCurrency <currencyId> <amount> <toTeam>"), false);
+        source.sendSuccess(() -> Component.literal("  §7Move currency from your team to another team (leader/assistant only)"), false);
+        source.sendSuccess(() -> Component.literal(""), false);
+        }
+        
+        // Admin Commands (only if user is admin and showAdmin is true)
+        if (showAdmin && isAdmin) {
+            if (showUser) {
+                source.sendSuccess(() -> Component.literal(""), false);
+            }
+            source.sendSuccess(() -> Component.literal("§a=== Admin Commands ==="), false);
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team delete <teamName>"), false);
+            source.sendSuccess(() -> Component.literal("  §7Delete any team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team rename <newName> <teamName>"), false);
+            source.sendSuccess(() -> Component.literal("  §7Rename any team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team leader <newLeader> <teamName>"), false);
+            source.sendSuccess(() -> Component.literal("  §7Transfer leadership of any team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team assistant add <player> <teamName>"), false);
+            source.sendSuccess(() -> Component.literal("  §7Add an assistant to any team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team assistant remove <player> <teamName>"), false);
+            source.sendSuccess(() -> Component.literal("  §7Remove an assistant from any team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team invite <player> <teamName>"), false);
+            source.sendSuccess(() -> Component.literal("  §7Invite a player to any team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team cancelInvite <player> <teamName>"), false);
+            source.sendSuccess(() -> Component.literal("  §7Cancel an invitation to any team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team add <player> [teamName]"), false);
+            source.sendSuccess(() -> Component.literal("  §7Add a player to your team or a specific team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team remove <player> <teamName>"), false);
+            source.sendSuccess(() -> Component.literal("  §7Remove a player from any team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team addCurrency <currencyId> <amount> [team <teamName> | player <player>]"), false);
+            source.sendSuccess(() -> Component.literal("  §7Add currency to your team, a specific team, or a player's team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team removeCurrency <currencyId> <amount> [team <teamName> | player <player>]"), false);
+            source.sendSuccess(() -> Component.literal("  §7Remove currency from your team, a specific team, or a player's team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team setCurrency <currencyId> <amount> [team <teamName> | player <player>]"), false);
+            source.sendSuccess(() -> Component.literal("  §7Set currency balance for your team, a specific team, or a player's team"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+            
+            source.sendSuccess(() -> Component.literal("§c/iska_utils_team moveCurrency <currencyId> <amount> <toTeam> [fromTeam]"), false);
+            source.sendSuccess(() -> Component.literal("  §7Move currency from one team to another (admin can specify fromTeam)"), false);
+            source.sendSuccess(() -> Component.literal(""), false);
+        }
+        
+        return 1;
+    }
+    
+    /**
+     * Moves currency from own team to another team (user command - requires leader/assistant)
+     */
+    private static int moveCurrencyFromOwnTeam(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayer();
+        
+        if (player == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        
+        String currencyId = StringArgumentType.getString(context, "currencyId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        String toTeam = StringArgumentType.getString(context, "toTeam");
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        String fromTeam = teamManager.getPlayerTeam(player);
+        
+        if (fromTeam == null) {
+            source.sendFailure(Component.literal("You are not in a team"));
+            return 0;
+        }
+        
+        // Check if player is leader or assistant
+        UUID leader = teamManager.getTeamLeader(fromTeam);
+        List<UUID> assistants = teamManager.getTeamAssistants(fromTeam);
+        UUID playerUuid = player.getUUID();
+        
+        if (!playerUuid.equals(leader) && !assistants.contains(playerUuid)) {
+            source.sendFailure(Component.literal("You must be the leader or an assistant to move currency from your team"));
+            return 0;
+        }
+        
+        // Use the common move logic
+        return moveCurrencyLogic(source, teamManager, fromTeam, toTeam, currencyId, amount);
+    }
+    
+    /**
+     * Moves currency from one team to another (admin command)
+     */
+    private static int moveCurrencyBetweenTeams(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        
+        if (source.getPlayer() == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        
+        String currencyId = StringArgumentType.getString(context, "currencyId");
+        double amount = DoubleArgumentType.getDouble(context, "amount");
+        String toTeam = StringArgumentType.getString(context, "toTeam");
+        String fromTeam = StringArgumentType.getString(context, "fromTeam");
+        
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        
+        // Use the common move logic
+        return moveCurrencyLogic(source, teamManager, fromTeam, toTeam, currencyId, amount);
+    }
+    
+    /**
+     * Common logic for moving currency between teams
+     */
+    private static int moveCurrencyLogic(CommandSourceStack source, ShopTeamManager teamManager, String fromTeam, String toTeam, String currencyId, double amount) {
+        // Check if both teams exist
+        if (teamManager.getTeamLeader(fromTeam) == null) {
+            source.sendFailure(Component.literal("Source team '" + fromTeam + "' does not exist"));
+            return 0;
+        }
+        
+        if (teamManager.getTeamLeader(toTeam) == null) {
+            source.sendFailure(Component.literal("Destination team '" + toTeam + "' does not exist"));
+            return 0;
+        }
+        
+        // Check if source team has enough currency
+        double currentBalance = teamManager.getTeamCurrencyBalance(fromTeam, currencyId);
+        if (currentBalance < amount) {
+            source.sendFailure(Component.literal("Source team '" + fromTeam + "' does not have enough currency. Current balance: " + currentBalance));
+            return 0;
+        }
+        
+        // Remove currency from source team
+        if (!teamManager.removeTeamCurrency(fromTeam, currencyId, amount)) {
+            source.sendFailure(Component.literal("Failed to remove currency from source team"));
+            return 0;
+        }
+        
+        // Add currency to destination team
+        if (!teamManager.addTeamCurrency(toTeam, currencyId, amount)) {
+            // If adding fails, try to restore the currency to source team
+            teamManager.addTeamCurrency(fromTeam, currencyId, amount);
+            source.sendFailure(Component.literal("Failed to add currency to destination team. Transaction rolled back."));
+            return 0;
+        }
+        
+        // Success - show formatted message
+        ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
+        String currencyDisplay;
+        if (currency != null) {
+            String localizedName = Component.translatable(currency.name).getString();
+            currencyDisplay = localizedName + " " + currency.charSymbol;
+        } else {
+            currencyDisplay = currencyId;
+        }
+        
+        source.sendSuccess(() -> Component.literal("Moved " + amount + " " + currencyDisplay + " from team '" + fromTeam + "' to team '" + toTeam + "'!"), false);
+        return 1;
     }
 } 
