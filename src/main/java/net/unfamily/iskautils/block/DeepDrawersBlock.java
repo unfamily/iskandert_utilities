@@ -37,7 +37,8 @@ import org.jetbrains.annotations.Nullable;
  * - deep_drawers_blacklist: List of forbidden item tags/IDs (default: minecraft:book)
  * 
  * Security Features:
- * - Block cannot be broken if it contains items
+ * - Block cannot be broken if it contains items (prevented via PlayerInteractEvent.LeftClickBlock handler)
+ * - Additional protection via getDestroyProgress() returning -1 when items are present
  * - If somehow broken with items, contents are destroyed (not dropped) to prevent lag
  */
 public class DeepDrawersBlock extends BaseEntityBlock {
@@ -96,22 +97,21 @@ public class DeepDrawersBlock extends BaseEntityBlock {
     
     /**
      * Called when a player starts attacking/breaking the block
-     * This is called only once when the player starts breaking, not continuously
+     * NOTE: The primary protection is via DeepDrawerBreakEventHandler which uses
+     * PlayerInteractEvent.LeftClickBlock to prevent breaking before it starts.
+     * This method is kept as a secondary safety layer.
      */
     @Override
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        // Check if the block entity has items
+        // Secondary check: if somehow the event handler didn't catch it
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof DeepDrawersBlockEntity deepDrawers) {
-            if (deepDrawers.hasItems()) {
-                // Block cannot be broken if it contains items
-                // Display warning message to player (only on server side)
-                if (!level.isClientSide()) {
-                    player.displayClientMessage(
-                        Component.translatable("message.iska_utils.deep_drawers.cannot_break"),
-                        true
-                    );
-                }
+            if (deepDrawers.hasItems() && !level.isClientSide()) {
+                // Display warning message to player
+                player.displayClientMessage(
+                    Component.translatable("message.iska_utils.deep_drawers.cannot_break"),
+                    true
+                );
             }
         }
         super.attack(state, level, pos, player);
@@ -120,6 +120,10 @@ public class DeepDrawersBlock extends BaseEntityBlock {
     /**
      * Called when a player attempts to break the block
      * Returns the time it takes to break, or -1 if it cannot be broken
+     * 
+     * NOTE: This is a secondary protection layer. The primary protection is via
+     * DeepDrawerBreakEventHandler which cancels PlayerInteractEvent.LeftClickBlock when items are present.
+     * This method provides additional safety in case the event handler doesn't catch it.
      */
     @Override
     public float getDestroyProgress(BlockState state, Player player, net.minecraft.world.level.BlockGetter level, BlockPos pos) {

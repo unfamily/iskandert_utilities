@@ -210,6 +210,25 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // Check if clicking on an example in how to use mode
+        if (button == 0 && isHowToUseMode) { // Left click in how to use mode
+            for (ExampleData exampleData : exampleDataList) {
+                int screenX = this.leftPos + exampleData.x;
+                int screenY = this.topPos + exampleData.y;
+                
+                if (mouseX >= screenX && mouseX <= screenX + exampleData.width &&
+                    mouseY >= screenY && mouseY <= screenY + HELP_TEXT_LINE_HEIGHT) {
+                    
+                    // Copy to clipboard
+                    if (this.minecraft != null && this.minecraft.keyboardHandler != null) {
+                        this.minecraft.keyboardHandler.setClipboard(exampleData.example);
+                        playButtonSound();
+                    }
+                    return true;
+                }
+            }
+        }
+        
         if (button == 0 && !isHowToUseMode) { // Left click, only in main mode
             // Check if click is on redstone mode button
             if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
@@ -454,33 +473,76 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int BACK_BUTTON_X = 8; // Left side, same as EditBoxes
     private static final int BACK_BUTTON_Y = GUI_HEIGHT - 25; // Near bottom
     
+    // Example text positions and data for copy functionality
+    private static class ExampleData {
+        final String example;
+        final int x;
+        final int y;
+        final int width;
+        
+        ExampleData(String example, int x, int y, int width) {
+            this.example = example;
+            this.x = x;
+            this.y = y;
+            this.width = width;
+        }
+    }
+    
+    private final java.util.List<ExampleData> exampleDataList = new java.util.ArrayList<>();
+    
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (isHowToUseMode) {
+            // Clear example data list for this render
+            exampleDataList.clear();
+            
             // How to use screen title
             Component titleComponent = Component.translatable("gui.iska_utils.deep_drawer_extractor.how_to_use");
             int titleWidth = this.font.width(titleComponent);
             int titleX = (this.imageWidth - titleWidth) / 2;
             guiGraphics.drawString(this.font, titleComponent, titleX, TITLE_Y, 0x404040, false);
             
-            // Render help text with default font size
+            // Render help text with default font size and extract examples
             int helpY = HELP_TEXT_START_Y;
-            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.id"), HELP_TEXT_X, helpY, 0x404040, false);
+            
+            // ID example: -minecraft:diamond
+            renderHelpLineWithExample(guiGraphics, "gui.iska_utils.general_filter_text.id", 
+                                     "gui.iska_utils.general_filter_text.id.example",
+                                     "gui.iska_utils.general_filter_text.id.after",
+                                     HELP_TEXT_X, helpY, mouseX, mouseY);
             helpY += HELP_TEXT_LINE_HEIGHT;
             
-            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.tag"), HELP_TEXT_X, helpY, 0x404040, false);
+            // Tag example: #c:ingots
+            renderHelpLineWithExample(guiGraphics, "gui.iska_utils.general_filter_text.tag", 
+                                     "gui.iska_utils.general_filter_text.tag.example",
+                                     "gui.iska_utils.general_filter_text.tag.after",
+                                     HELP_TEXT_X, helpY, mouseX, mouseY);
             helpY += HELP_TEXT_LINE_HEIGHT;
             
-            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.modid"), HELP_TEXT_X, helpY, 0x404040, false);
+            // Mod ID example: @iska_utils
+            renderHelpLineWithExample(guiGraphics, "gui.iska_utils.general_filter_text.modid", 
+                                     "gui.iska_utils.general_filter_text.modid.example",
+                                     "gui.iska_utils.general_filter_text.modid.after",
+                                     HELP_TEXT_X, helpY, mouseX, mouseY);
             helpY += HELP_TEXT_LINE_HEIGHT;
             
             // NBT: description on first line, example on second line
             guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.nbt"), HELP_TEXT_X, helpY, 0x404040, false);
             helpY += HELP_TEXT_LINE_HEIGHT;
-            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.nbt.example"), HELP_TEXT_X, helpY, 0x404040, false);
+            // NBT example: ?"apotheosis:rarity":"apotheosis:mythic"
+            renderHelpLineWithExample(guiGraphics, "gui.iska_utils.general_filter_text.nbt.example", 
+                                     "gui.iska_utils.general_filter_text.nbt.example.text",
+                                     "gui.iska_utils.general_filter_text.nbt.after",
+                                     HELP_TEXT_X, helpY, mouseX, mouseY);
             helpY += HELP_TEXT_LINE_HEIGHT;
             
-            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.macro"), HELP_TEXT_X, helpY, 0x404040, false);
+            // Macro examples: &enchanted, &damaged (both clickable)
+            renderHelpLineWithTwoExamples(guiGraphics, "gui.iska_utils.general_filter_text.macro", 
+                                         "gui.iska_utils.general_filter_text.macro.example1",
+                                         "gui.iska_utils.general_filter_text.macro.middle",
+                                         "gui.iska_utils.general_filter_text.macro.example2",
+                                         "gui.iska_utils.general_filter_text.macro.after",
+                                         HELP_TEXT_X, helpY, mouseX, mouseY);
             helpY += HELP_TEXT_LINE_HEIGHT;
             
             // Usage: add extra spacing before the command
@@ -488,12 +550,157 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.usage"), HELP_TEXT_X, helpY, 0x404040, false);
             helpY += HELP_TEXT_LINE_HEIGHT;
             guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.usage.what"), HELP_TEXT_X, helpY, 0x404040, false);
+            
         } else {
             // Main screen title
             Component titleComponent = this.title;
             int titleWidth = this.font.width(titleComponent);
             int titleX = (this.imageWidth - titleWidth) / 2;
             guiGraphics.drawString(this.font, titleComponent, titleX, TITLE_Y, 0x404040, false);
+        }
+    }
+    
+    @Override
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        // Render the background
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        
+        // Render tooltip if hovering over an example (only in how to use mode)
+        if (isHowToUseMode) {
+            renderExampleTooltip(guiGraphics, mouseX, mouseY);
+        }
+    }
+    
+    /**
+     * Renders a help line with an example that can be clicked to copy
+     */
+    private void renderHelpLineWithExample(GuiGraphics guiGraphics, String beforeKey, String exampleKey, String afterKey,
+                                          int x, int y, int mouseX, int mouseY) {
+        // Get translated parts
+        Component beforeComponent = Component.translatable(beforeKey);
+        Component exampleComponent = Component.translatable(exampleKey);
+        Component afterComponent = Component.translatable(afterKey);
+        
+        String beforeText = beforeComponent.getString();
+        String exampleText = exampleComponent.getString();
+        String afterText = afterComponent.getString();
+        
+        // Render before text
+        int beforeWidth = this.font.width(beforeText);
+        guiGraphics.drawString(this.font, beforeComponent, x, y, 0x404040, false);
+        
+        // Render example text (clickable, with blue color)
+        int exampleX = x + beforeWidth;
+        int exampleWidth = this.font.width(exampleText);
+        
+        // Check if hovering over example
+        boolean isHovered = mouseX >= this.leftPos + exampleX && mouseX <= this.leftPos + exampleX + exampleWidth &&
+                           mouseY >= this.topPos + y && mouseY <= this.topPos + y + HELP_TEXT_LINE_HEIGHT;
+        
+        // Use blue color for clickable example, darker blue when hovered
+        int exampleColor = isHovered ? 0x0066FF : 0x0066CC;
+        
+        // Render example text in blue
+        guiGraphics.drawString(this.font, exampleText, exampleX, y, exampleColor, false);
+        
+        // Underline when hovered
+        if (isHovered) {
+            // Draw underline
+            int underlineY = y + this.font.lineHeight;
+            guiGraphics.fill(exampleX, underlineY, exampleX + exampleWidth, underlineY + 1, exampleColor);
+        }
+        
+        // Render after text (parentheses, commas, etc.)
+        if (!afterText.isEmpty()) {
+            int afterX = exampleX + exampleWidth;
+            guiGraphics.drawString(this.font, afterComponent, afterX, y, 0x404040, false);
+        }
+        
+        // Store example data for click handling
+        exampleDataList.add(new ExampleData(exampleText, exampleX, y, exampleWidth));
+    }
+    
+    /**
+     * Renders a help line with two examples that can be clicked to copy
+     */
+    private void renderHelpLineWithTwoExamples(GuiGraphics guiGraphics, String beforeKey, 
+                                              String example1Key, String middleKey, String example2Key, String afterKey,
+                                              int x, int y, int mouseX, int mouseY) {
+        // Get translated parts
+        Component beforeComponent = Component.translatable(beforeKey);
+        Component example1Component = Component.translatable(example1Key);
+        Component middleComponent = Component.translatable(middleKey);
+        Component example2Component = Component.translatable(example2Key);
+        Component afterComponent = Component.translatable(afterKey);
+        
+        String beforeText = beforeComponent.getString();
+        String example1Text = example1Component.getString();
+        String middleText = middleComponent.getString();
+        String example2Text = example2Component.getString();
+        String afterText = afterComponent.getString();
+        
+        // Render before text
+        int beforeWidth = this.font.width(beforeText);
+        guiGraphics.drawString(this.font, beforeComponent, x, y, 0x404040, false);
+        
+        // Render first example
+        int example1X = x + beforeWidth;
+        int example1Width = this.font.width(example1Text);
+        boolean isHovered1 = mouseX >= this.leftPos + example1X && mouseX <= this.leftPos + example1X + example1Width &&
+                            mouseY >= this.topPos + y && mouseY <= this.topPos + y + HELP_TEXT_LINE_HEIGHT;
+        int example1Color = isHovered1 ? 0x0066FF : 0x0066CC;
+        guiGraphics.drawString(this.font, example1Text, example1X, y, example1Color, false);
+        if (isHovered1) {
+            int underlineY = y + this.font.lineHeight;
+            guiGraphics.fill(example1X, underlineY, example1X + example1Width, underlineY + 1, example1Color);
+        }
+        exampleDataList.add(new ExampleData(example1Text, example1X, y, example1Width));
+        
+        // Render middle text (comma and space)
+        int middleX = example1X + example1Width;
+        guiGraphics.drawString(this.font, middleComponent, middleX, y, 0x404040, false);
+        
+        // Render second example
+        int middleWidth = this.font.width(middleText);
+        int example2X = middleX + middleWidth;
+        int example2Width = this.font.width(example2Text);
+        boolean isHovered2 = mouseX >= this.leftPos + example2X && mouseX <= this.leftPos + example2X + example2Width &&
+                            mouseY >= this.topPos + y && mouseY <= this.topPos + y + HELP_TEXT_LINE_HEIGHT;
+        int example2Color = isHovered2 ? 0x0066FF : 0x0066CC;
+        guiGraphics.drawString(this.font, example2Text, example2X, y, example2Color, false);
+        if (isHovered2) {
+            int underlineY = y + this.font.lineHeight;
+            guiGraphics.fill(example2X, underlineY, example2X + example2Width, underlineY + 1, example2Color);
+        }
+        exampleDataList.add(new ExampleData(example2Text, example2X, y, example2Width));
+        
+        // Render after text
+        if (!afterText.isEmpty()) {
+            int afterX = example2X + example2Width;
+            guiGraphics.drawString(this.font, afterComponent, afterX, y, 0x404040, false);
+        }
+    }
+    
+    /**
+     * Renders tooltip when hovering over an example
+     */
+    private void renderExampleTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        for (ExampleData exampleData : exampleDataList) {
+            int screenX = this.leftPos + exampleData.x;
+            int screenY = this.topPos + exampleData.y;
+            
+            if (mouseX >= screenX && mouseX <= screenX + exampleData.width &&
+                mouseY >= screenY && mouseY <= screenY + HELP_TEXT_LINE_HEIGHT) {
+                
+                java.util.List<Component> tooltip = new java.util.ArrayList<>();
+                tooltip.add(Component.translatable("gui.iska_utils.general_filter_text.click_to_copy"));
+                tooltip.add(Component.translatable("gui.iska_utils.general_filter_text.paste_hint"));
+                
+                // renderComponentTooltip automatically positions the tooltip near the cursor
+                // It handles screen bounds checking internally
+                guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+                return;
+            }
         }
     }
     
