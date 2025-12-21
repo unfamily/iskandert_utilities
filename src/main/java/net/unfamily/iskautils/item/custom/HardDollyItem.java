@@ -96,7 +96,12 @@ public class HardDollyItem extends Item {
         boolean isUnbreakableAllowed = false;
         if (destroySpeed < 0) {
             // Check if we can move unbreakable blocks
-            if (!Config.hardDollyCanMoveAllUnbreakable) {
+            // If canMoveAllUnbreakable is false, we still check whitelist if it's not empty
+            // This allows specific unbreakable blocks (like hard_ice) to be moved even when
+            // canMoveAllUnbreakable is false
+            boolean canCheckWhitelist = Config.hardDollyCanMoveAllUnbreakable || !Config.hardDollyUnbreakableWhitelist.isEmpty();
+            
+            if (!canCheckWhitelist) {
                 player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"), true);
                 return InteractionResult.FAIL;
             }
@@ -328,8 +333,9 @@ public class HardDollyItem extends Item {
      * Checks if an unbreakable block is allowed by unbreakable whitelist/blacklist config
      * Logic:
      * - Blacklist always wins
-     * - If whitelist is empty, no unbreakable blocks allowed (except blacklisted ones are always rejected)
-     * - If whitelist has entries, only those blocks allowed
+     * - If canMoveAllUnbreakable is true and whitelist is empty: allow all (except blacklisted)
+     * - If canMoveAllUnbreakable is false and whitelist is empty: reject all
+     * - If whitelist has entries: only those blocks allowed (regardless of canMoveAllUnbreakable)
      */
     private boolean isUnbreakableBlockAllowed(Block block) {
         // Check blacklist first (has priority)
@@ -339,8 +345,13 @@ public class HardDollyItem extends Item {
             }
         }
         
-        // If whitelist is empty, reject all unbreakable blocks
+        // If whitelist is empty
         if (Config.hardDollyUnbreakableWhitelist.isEmpty()) {
+            // If canMoveAllUnbreakable is true, allow all (blacklist already checked)
+            if (Config.hardDollyCanMoveAllUnbreakable) {
+                return true;
+            }
+            // Otherwise reject all
             return false;
         }
         

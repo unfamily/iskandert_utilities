@@ -94,7 +94,12 @@ public class CreativeDollyItem extends Item {
         float destroySpeed = state.getDestroySpeed(level, pos);
         if (destroySpeed < 0) {
             // Check if we can move unbreakable blocks
-            if (!Config.creativeDollyCanMoveAllUnbreakable) {
+            // If canMoveAllUnbreakable is false, we still check whitelist if it's not empty
+            // This allows specific unbreakable blocks (like hard_ice) to be moved even when
+            // canMoveAllUnbreakable is false
+            boolean canCheckWhitelist = Config.creativeDollyCanMoveAllUnbreakable || !Config.creativeDollyUnbreakableWhitelist.isEmpty();
+            
+            if (!canCheckWhitelist) {
                 player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"), true);
                 return InteractionResult.FAIL;
             }
@@ -249,9 +254,15 @@ public class CreativeDollyItem extends Item {
             }
         }
         
-        // If whitelist is empty, allow all unbreakable blocks (Creative Dolly default behavior)
+        // If whitelist is empty
         if (Config.creativeDollyUnbreakableWhitelist.isEmpty()) {
-            return true;
+            // If canMoveAllUnbreakable is true, allow all (blacklist already checked)
+            // This is the default behavior for Creative Dolly
+            if (Config.creativeDollyCanMoveAllUnbreakable) {
+                return true;
+            }
+            // Otherwise reject all
+            return false;
         }
         
         // Check if block matches any whitelisted ID
