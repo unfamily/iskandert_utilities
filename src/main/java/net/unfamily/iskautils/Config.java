@@ -190,6 +190,12 @@ public class Config
                     "1 tick = 0.05 seconds")
             .defineInRange("410_deep_drawer_extractor_interval", 1, 1, Integer.MAX_VALUE);
     
+    private static final ModConfigSpec.IntValue DEEP_DRAWER_EXTRACTOR_MAX_FILTERS = BUILDER
+            .comment("Maximum number of filter fields in the Deep Drawer Extractor GUI",
+                    "Default: 50",
+                    "All EditBoxes are always created, even if empty")
+            .defineInRange("411_deep_drawer_extractor_max_filters", 50, 1, Integer.MAX_VALUE);
+    
     // Category for Dolly Configuration (under general_utilities)
     static {
         BUILDER.comment("Dolly Configuration").push("dolly");
@@ -671,6 +677,7 @@ public class Config
     public static int deepDrawersSlotCount;
     public static boolean deepDrawersGuiEnabled;
     public static int deepDrawerExtractorInterval;
+    public static int deepDrawerExtractorMaxFilters;
     
     public static java.util.List<String> dollyWhitelist;
     public static java.util.List<String> dollyBlacklist;
@@ -755,6 +762,7 @@ public class Config
         deepDrawersSlotCount = DEEP_DRAWERS_SLOT_COUNT.get();
         deepDrawersGuiEnabled = DEEP_DRAWERS_GUI_ENABLED.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
+        deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         
         // Dolly configuration
         dollyWhitelist = new java.util.ArrayList<>(DOLLY_WHITELIST.get());

@@ -559,6 +559,9 @@
   "gui.iska_utils.deep_drawer_extractor.how_to_use": "Valid Keys",
   "gui.iska_utils.deep_drawer_extractor.back": "Back",
   "gui.iska_utils.deep_drawer_extractor.buffer_status": "Buffer: %d/%d",
+  "gui.iska_utils.deep_drawer_extractor.buffer_label": "Deep Drawer Buffer",
+  "gui.iska_utils.deep_drawer_extractor.filters": "Filters",
+  "gui.iska_utils.deep_drawer_extractor.click_to_add_filter": "Click to add filter",
   
   "gui.iska_utils.general_filter_text.id": "- Extracts items by ID (e.g., ",
   "gui.iska_utils.general_filter_text.id.example": "-minecraft:diamond",

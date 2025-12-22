@@ -48,9 +48,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     private int cacheValidTicks = 0;
     private static final int CACHE_VALIDITY_TICKS = 100; // Cache valid for 5 seconds
     
-    // Filter configuration
-    private static final int FILTER_FIELD_COUNT = 11;
-    private final String[] filterFields = new String[FILTER_FIELD_COUNT];
+    // Filter configuration (fixed array from config, default 50)
+    private final String[] filterFields;
     private boolean isWhitelistMode = true; // false = blacklist, true = whitelist (default: true to prevent random extraction)
     
     // Redstone mode configuration
@@ -99,6 +98,20 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     
     public DeepDrawerExtractorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DEEP_DRAWER_EXTRACTOR.get(), pos, state);
+        // Initialize filter array with size from config (default 50)
+        int maxSlots = net.unfamily.iskautils.Config.deepDrawerExtractorMaxFilters;
+        filterFields = new String[maxSlots];
+        // Initialize all filter slots to empty strings
+        for (int i = 0; i < maxSlots; i++) {
+            filterFields[i] = "";
+        }
+    }
+    
+    /**
+     * Gets the maximum number of filter slots (from config)
+     */
+    private int getMaxFilterSlots() {
+        return filterFields.length;
     }
     
     @Override
@@ -365,7 +378,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      * Checks if there are any valid (non-empty) filter entries
      */
     private boolean hasValidFilters() {
-        for (String filter : filterFields) {
+        for (int i = 0; i < getMaxFilterSlots(); i++) {
+            String filter = filterFields[i];
             if (filter != null && !filter.trim().isEmpty()) {
                 return true;
             }
@@ -389,7 +403,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         
         // Check if item matches any filter
         boolean matchesAnyFilter = false;
-        for (String filter : filterFields) {
+        for (int i = 0; i < getMaxFilterSlots(); i++) {
+            String filter = filterFields[i];
             if (filter != null && !filter.trim().isEmpty()) {
                 if (matchesFilterEntry(stack, filter.trim())) {
                     matchesAnyFilter = true;
@@ -488,15 +503,24 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         super.saveAdditional(tag, provider);
         ContainerHelper.saveAllItems(tag, items, provider);
         
-        // Save filter fields
+        // Save filter fields as index-value pairs (version 4)
         CompoundTag filterTag = new CompoundTag();
-        for (int i = 0; i < FILTER_FIELD_COUNT; i++) {
-            String value = filterFields[i];
-            if (value != null && !value.isEmpty()) {
-                filterTag.putString("field_" + i, value);
+        net.minecraft.nbt.ListTag filterList = new net.minecraft.nbt.ListTag();
+        int maxSlots = getMaxFilterSlots();
+        for (int i = 0; i < maxSlots; i++) {
+            String filter = filterFields[i];
+            // Only save non-empty filters to reduce NBT size
+            if (filter != null && !filter.trim().isEmpty()) {
+                CompoundTag filterEntry = new CompoundTag();
+                filterEntry.putInt("index", i);
+                filterEntry.putString("value", filter);
+                filterList.add(filterEntry);
             }
         }
+        filterTag.put("filters", filterList);
         filterTag.putBoolean("whitelist_mode", isWhitelistMode);
+        filterTag.putInt("filter_version", 4); // Version 4 = index-value pairs
+        filterTag.putInt("filter_slot_count", maxSlots); // Save slot count for migration
         tag.put("filter_config", filterTag);
         
         // Save redstone mode
@@ -510,18 +534,78 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         super.loadAdditional(tag, provider);
         ContainerHelper.loadAllItems(tag, items, provider);
         
-        // Load filter fields
+        // filterFields is already initialized in constructor with size from config
+        int maxSlots = getMaxFilterSlots();
+        
+        // Load filter fields (with automatic conversion from old format)
         if (tag.contains("filter_config", CompoundTag.TAG_COMPOUND)) {
             CompoundTag filterTag = tag.getCompound("filter_config");
-            for (int i = 0; i < FILTER_FIELD_COUNT; i++) {
-                String key = "field_" + i;
-                if (filterTag.contains(key, CompoundTag.TAG_STRING)) {
-                    filterFields[i] = filterTag.getString(key);
-                } else {
-                    filterFields[i] = null;
+            
+            // Check version: version 3 = fixed array (size from config), version 2 = dynamic list, version 1 or no version = old array format
+            int version = filterTag.contains("filter_version") ? filterTag.getInt("filter_version") : 1;
+            
+            if (version >= 3) {
+                // New format: fixed array (size from config)
+                if (filterTag.contains("filters", CompoundTag.TAG_LIST)) {
+                    net.minecraft.nbt.ListTag filterList = filterTag.getList("filters", CompoundTag.TAG_STRING);
+                    int savedSlotCount = filterTag.contains("filter_slot_count") ? filterTag.getInt("filter_slot_count") : maxSlots;
+                    // Load up to the minimum of saved count and current config
+                    int loadCount = Math.min(maxSlots, Math.min(savedSlotCount, filterList.size()));
+                    for (int i = 0; i < loadCount; i++) {
+                        String filter = filterList.getString(i);
+                        filterFields[i] = filter != null ? filter : "";
+                    }
+                    // Initialize remaining slots to empty if config increased
+                    for (int i = loadCount; i < maxSlots; i++) {
+                        filterFields[i] = "";
+                    }
+                }
+            } else if (version >= 2) {
+                // Old format: dynamic list - convert to fixed array
+                if (filterTag.contains("filters", CompoundTag.TAG_LIST)) {
+                    net.minecraft.nbt.ListTag filterList = filterTag.getList("filters", CompoundTag.TAG_STRING);
+                    int loadCount = Math.min(maxSlots, filterList.size());
+                    for (int i = 0; i < loadCount; i++) {
+                        String filter = filterList.getString(i);
+                        if (filter != null && !filter.isEmpty()) {
+                            filterFields[i] = filter;
+                        } else {
+                            filterFields[i] = "";
+                        }
+                    }
+                    // Initialize remaining slots to empty
+                    for (int i = loadCount; i < maxSlots; i++) {
+                        filterFields[i] = "";
+                    }
+                }
+            } else {
+                // Old format: convert from array (field_0, field_1, ..., field_10)
+                int loadCount = Math.min(11, maxSlots);
+                for (int i = 0; i < loadCount; i++) {
+                    String key = "field_" + i;
+                    if (filterTag.contains(key, CompoundTag.TAG_STRING)) {
+                        String value = filterTag.getString(key);
+                        if (value != null && !value.isEmpty()) {
+                            filterFields[i] = value;
+                        } else {
+                            filterFields[i] = "";
+                        }
+                    } else {
+                        filterFields[i] = "";
+                    }
+                }
+                // Initialize remaining slots to empty
+                for (int i = loadCount; i < maxSlots; i++) {
+                    filterFields[i] = "";
                 }
             }
+            
             isWhitelistMode = filterTag.getBoolean("whitelist_mode");
+        } else {
+            // No filter_config tag: initialize all to empty
+            for (int i = 0; i < maxSlots; i++) {
+                filterFields[i] = "";
+            }
         }
         
         // Load redstone mode
@@ -538,54 +622,75 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     
     // ===== Filter Configuration Getters/Setters =====
     
-    public String[] getFilterFields() {
-        return filterFields.clone();
+    public java.util.List<String> getFilterFields() {
+        java.util.List<String> list = new java.util.ArrayList<>();
+        int maxSlots = getMaxFilterSlots();
+        for (int i = 0; i < maxSlots; i++) {
+            list.add(filterFields[i] != null ? filterFields[i] : "");
+        }
+        return list; // Return copy as list for compatibility
     }
     
-    public void setFilterFields(String[] fields) {
-        if (fields != null && fields.length >= FILTER_FIELD_COUNT) {
-            // Process each field: trim spaces and remove single quotes (KubeJS friendly)
-            for (int i = 0; i < FILTER_FIELD_COUNT; i++) {
-                String field = fields[i];
+    public void setFilterFields(java.util.List<String> fields) {
+        int maxSlots = getMaxFilterSlots();
+        // Initialize all to empty
+        for (int i = 0; i < maxSlots; i++) {
+            filterFields[i] = "";
+        }
+        // Fill from provided list
+        if (fields != null) {
+            for (int i = 0; i < Math.min(maxSlots, fields.size()); i++) {
+                String field = fields.get(i);
                 if (field != null) {
                     field = field.trim();
                     // Remove single quotes (') for KubeJS compatibility
                     field = field.replace("'", "");
-                    // Set to null if empty after processing
-                    filterFields[i] = field.isEmpty() ? null : field;
-                } else {
-                    filterFields[i] = null;
+                    filterFields[i] = field;
                 }
             }
+        }
+        setChanged();
+        // Force sync to client (like SmartTimerBlockEntity)
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
+    }
+    
+    /**
+     * Gets a filter field at the specified index
+     */
+    public String getFilterField(int index) {
+        int maxSlots = getMaxFilterSlots();
+        if (index >= 0 && index < maxSlots) {
+            return filterFields[index] != null ? filterFields[index] : "";
+        }
+        return "";
+    }
+    
+    /**
+     * Sets a filter field at the specified index
+     */
+    public void setFilterField(int index, String filter) {
+        int maxSlots = getMaxFilterSlots();
+        if (index >= 0 && index < maxSlots) {
+            if (filter != null) {
+                filter = filter.trim();
+                // Remove single quotes (') for KubeJS compatibility
+                filter = filter.replace("'", "");
+            }
+            filterFields[index] = filter != null ? filter : "";
             setChanged();
-            // Force sync to client (like SmartTimerBlockEntity)
-            if (level != null && !level.isClientSide()) {
-                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-            }
-        } else if (fields != null && fields.length < FILTER_FIELD_COUNT) {
-            // Process available fields: trim spaces and remove single quotes (KubeJS friendly)
-            for (int i = 0; i < fields.length; i++) {
-                String field = fields[i];
-                if (field != null) {
-                    field = field.trim();
-                    // Remove single quotes (') for KubeJS compatibility
-                    field = field.replace("'", "");
-                    // Set to null if empty after processing
-                    filterFields[i] = field.isEmpty() ? null : field;
-                } else {
-                    filterFields[i] = null;
-                }
-            }
-            // Set rest to null
-            for (int i = fields.length; i < FILTER_FIELD_COUNT; i++) {
-                filterFields[i] = null;
-            }
-            setChanged();
-            // Force sync to client (like SmartTimerBlockEntity)
             if (level != null && !level.isClientSide()) {
                 level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
             }
         }
+    }
+    
+    /**
+     * Gets the maximum number of filter slots (from config)
+     */
+    public int getFilterFieldCount() {
+        return getMaxFilterSlots();
     }
     
     public boolean isWhitelistMode() {

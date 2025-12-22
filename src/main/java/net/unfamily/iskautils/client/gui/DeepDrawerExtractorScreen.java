@@ -14,17 +14,21 @@ import net.unfamily.iskautils.network.ModMessages;
 
 /**
  * Screen for Deep Drawer Extractor GUI
- * Shows 11 filter text fields, allow/deny button, and help text
+ * Shows scrollable EditBoxes for infinite filter fields, allow/deny button, and help text
  */
 public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawerExtractorMenu> {
     
     private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer_extractor.png");
+    private static final ResourceLocation BACKGROUND_EMPTY = ResourceLocation.fromNamespaceAndPath(
+            IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer_extractor_empty.png");
     
     // Medium buttons texture (16x32 - normal and highlighted)
     private static final ResourceLocation MEDIUM_BUTTONS = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
     // Redstone GUI icon
     private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
+    // Scrollbar texture (identica a DeepDrawersScreen)
+    private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
     
     // GUI dimensions (based on image: 330x250)
     private static final int GUI_WIDTH = 330;
@@ -42,18 +46,32 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     // Screen mode: false = main screen, true = how to use screen
     private boolean isHowToUseMode = false;
     
-    // EditBox dimensions and positions (single column)
-    private static final int EDIT_BOX_HEIGHT = 15;
-    private static final int EDIT_BOX_SPACING = 2;
-    private static final int EDIT_BOX_WIDTH = 184; // Full width minus margins (200 - 8*2 = 184)
+    // EditBox dimensions and positions (scrollable, infinite)
+    // ENTRY_WIDE is 140x24, EditBox uses full width now (no remove button)
+    private static final int ENTRY_WIDE_WIDTH = 140; // Width of entry_wide.png texture
+    private static final int EDIT_BOX_WIDTH = ENTRY_WIDE_WIDTH; // Full width (140px)
+    private static final int EDIT_BOX_HEIGHT = 15; // Original height (not matching ENTRY_WIDE)
     private static final int EDIT_BOX_X = 8;
-    private static final int FIRST_ROW_Y = 55; // Below button with spacing
+    private static final int FILTERS_LABEL_Y = 30; // Y position for "Filters" label
+    private static final int FIRST_ROW_Y = FILTERS_LABEL_Y + 12; // Start EditBoxes after "Filters" label (12px for label height + spacing)
+    private static final int BUFFER_SLOTS_Y = 134; // Y position of buffer slots (where EditBoxes should stop)
+    private static final int MAX_FILTER_SLOTS = net.unfamily.iskautils.Config.deepDrawerExtractorMaxFilters; // Total filter slots in BlockEntity (from config, default 50)
+    private static final int VISIBLE_EDIT_BOXES = 12; // Number of EditBoxes visible at once (scrollable)
     
-    // Button dimensions and position (on the right side, after EditBoxes)
+    // Scrollbar constants (identical to DeepDrawersScreen)
+    private static final int SCROLLBAR_WIDTH = 8;      // Width of each scrollbar element
+    private static final int SCROLLBAR_HEIGHT = 34;    // Height of scrollbar background in texture
+    private static final int HANDLE_SIZE = 8;          // Size of UP/DOWN buttons and handle
+    private static final int SCROLLBAR_X = EDIT_BOX_X + ENTRY_WIDE_WIDTH + 4; // After EditBox + remove button + spacing (8 + 140 + 4 = 152)
+    private static final int BUTTON_UP_Y = FIRST_ROW_Y; // Aligned with first EditBox (after "Filters" label)
+    private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE; // Scrollbar starts after UP button
+    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT; // DOWN button after scrollbar
+    
+    // Button dimensions and position (moved right, same spacing from right edge as entries from left edge)
     private static final int BUTTON_WIDTH = 80;
     private static final int BUTTON_HEIGHT = 20;
-    private static final int BUTTON_X = EDIT_BOX_X + EDIT_BOX_WIDTH + 8; // Right side, after EditBoxes + spacing
-    private static final int BUTTON_Y = FIRST_ROW_Y; // Start at same Y as first EditBox
+    private static final int BUTTON_X = GUI_WIDTH - BUTTON_WIDTH - 8; // 8px from right edge (same as entries from left)
+    private static final int BUTTON_Y = FIRST_ROW_Y; // Aligned with first EditBox (after "Filters" label)
     
     // How to use button
     private Button howToUseButton;
@@ -69,16 +87,29 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int MODE_BUTTON_WIDTH = 60; // Wider button
     private static final int BUTTON_SPACING = 4; // Space between redstone and mode button
     
-    // EditBoxes for filter fields (11 total, one per row)
-    private final EditBox[] filterEditBoxes = new EditBox[11];
-    
     // Track current mode locally (for immediate UI feedback on button click)
     private boolean isWhitelistMode = false;
+    
+    // Cached filter fields for rendering (synced from server) - dynamic list
+    private java.util.List<String> cachedFilterFields = new java.util.ArrayList<>();
+    
+    // Scroll state for filter EditBoxes (identical to DeepDrawersScreen)
+    private int filterScrollOffset = 0;
+    private boolean isDraggingHandle = false;
+    private int dragStartY = 0;
+    private int dragStartScrollOffset = 0;
+    
+    // Dynamic EditBoxes for filter fields (only visible ones are created)
+    private final java.util.List<EditBox> filterEditBoxes = new java.util.ArrayList<>();
+    
+    // Buttons for removing filters
     
     public DeepDrawerExtractorScreen(DeepDrawerExtractorMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = GUI_WIDTH;
         this.imageHeight = GUI_HEIGHT;
+        // Hide inventory label in how to use mode (will be set dynamically)
+        this.inventoryLabelY = 10000; // Hidden by default, will be adjusted in updateWidgetVisibility
     }
     
     @Override
@@ -88,24 +119,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Load initial mode from ContainerData (like rotation in StructurePlacerMachineScreen)
         isWhitelistMode = menu.getWhitelistMode();
         
-        // Initialize EditBoxes with empty values - data will be loaded in containerTick()
-        // Create 11 EditBoxes (one per row, single column)
-        for (int i = 0; i < 11; i++) {
-            int y = FIRST_ROW_Y + i * (EDIT_BOX_HEIGHT + EDIT_BOX_SPACING);
-            
-            EditBox editBox = new EditBox(this.font, 
-                    this.leftPos + EDIT_BOX_X, 
-                    this.topPos + y,
-                    EDIT_BOX_WIDTH, 
-                    EDIT_BOX_HEIGHT, 
-                    Component.empty());
-            editBox.setMaxLength(100);
-            editBox.setValue(""); // Will be updated in containerTick()
-            // Save data when EditBox value changes
-            editBox.setResponder(value -> saveFilterData());
-            filterEditBoxes[i] = editBox;
-            addRenderableWidget(editBox);
-        }
+        // Initialize cached filter fields (will be updated in containerTick)
+        cachedFilterFields.clear();
+        
+        // Create EditBoxes for visible filters (will be updated in containerTick)
+        updateFilterEditBoxes();
         
         // Close button
         closeButton = Button.builder(Component.literal("✕"), 
@@ -115,7 +133,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                            .build();
         addRenderableWidget(closeButton);
         
-        // How to use button (on the right side)
+        // How to use button (moved left, same spacing from edge as entries)
         howToUseButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.how_to_use"), 
                                        button -> onHowToUseButtonClicked())
                               .bounds(this.leftPos + BUTTON_X, this.topPos + HOW_TO_USE_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -154,12 +172,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     }
     
     private void onCloseButtonClicked() {
-        playButtonSound();
         if (isHowToUseMode) {
             // In how to use mode, close button acts as back
+            playButtonSound();
             switchToMainScreen();
         } else {
-            // In main mode, close button closes GUI
+            // In main mode, close button closes GUI (no sound)
             this.onClose();
         }
     }
@@ -188,6 +206,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Update visibility of widgets based on current mode
         boolean showMain = !isHowToUseMode;
         
+        // Hide inventory label in how to use mode
+        this.inventoryLabelY = isHowToUseMode ? 10000 : 165 - this.font.lineHeight - 2;
+        
         // Update buttons
         if (howToUseButton != null) {
             howToUseButton.visible = showMain;
@@ -200,10 +221,15 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         // Redstone button is always visible in main mode (rendered in renderBg)
         
-        // Update EditBoxes
-        for (EditBox editBox : filterEditBoxes) {
-            if (editBox != null) {
-                editBox.visible = showMain;
+        // Update EditBoxes visibility (handled in updateFilterEditBoxes)
+        if (showMain) {
+            updateFilterEditBoxes();
+        } else {
+            // Hide all EditBoxes in how to use mode
+            for (EditBox editBox : filterEditBoxes) {
+                if (editBox != null) {
+                    editBox.visible = false;
+                }
             }
         }
     }
@@ -230,6 +256,21 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         if (button == 0 && !isHowToUseMode) { // Left click, only in main mode
+            // Handle scrollbar clicks first (they have priority)
+            if (handleScrollButtonClick(mouseX, mouseY)) {
+                return true;
+            }
+            
+            // Handle handle drag start
+            if (handleHandleClick(mouseX, mouseY)) {
+                return true;
+            }
+            
+            // Handle scrollbar area clicks
+            if (handleScrollbarClick(mouseX, mouseY)) {
+                return true;
+            }
+            
             // Check if click is on redstone mode button
             if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                 mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
@@ -239,10 +280,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
         }
         
-        // Right click (button == 1) on EditBox clears its content (like StructureSaverMachineScreen)
+        // Right click (button == 1) on EditBox clears its content and focuses it
+        // Iterate in reverse order to check last EditBox first (in case of overlap)
         if (button == 1 && !isHowToUseMode) {
-            for (EditBox editBox : filterEditBoxes) {
+            for (int i = filterEditBoxes.size() - 1; i >= 0; i--) {
+                EditBox editBox = filterEditBoxes.get(i);
                 if (editBox != null && editBox.isMouseOver(mouseX, mouseY)) {
+                    // Unfocus all other EditBoxes first
+                    for (EditBox other : filterEditBoxes) {
+                        if (other != null && other != editBox) {
+                            other.setFocused(false);
+                        }
+                    }
+                    // Clear and focus the clicked EditBox
                     editBox.setValue("");
                     editBox.setFocused(true);
                     saveFilterData(); // Save after clearing
@@ -251,6 +301,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
         }
         
+        // Let super handle other clicks (buttons, etc.)
         return super.mouseClicked(mouseX, mouseY, button);
     }
     
@@ -344,12 +395,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         if (!machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            // Collect filter field values
-            String[] filterFields = new String[11];
-            for (int i = 0; i < 11; i++) {
-                filterFields[i] = filterEditBoxes[i].getValue().trim();
-                if (filterFields[i].isEmpty()) {
-                    filterFields[i] = null;
+            // Collect filter field values from cached filters (remove empty ones)
+            java.util.List<String> filterFields = new java.util.ArrayList<>();
+            for (String filter : cachedFilterFields) {
+                if (filter != null && !filter.trim().isEmpty()) {
+                    filterFields.add(filter.trim());
                 }
             }
             
@@ -366,11 +416,147 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
-        guiGraphics.blit(BACKGROUND, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
+        // Use different background for "how to use" mode
+        ResourceLocation backgroundTexture = isHowToUseMode ? BACKGROUND_EMPTY : BACKGROUND;
+        guiGraphics.blit(backgroundTexture, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
+        
+        // Render "Filters" label (only in main mode, not in how to use)
+        if (!isHowToUseMode) {
+            Component filtersLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.filters");
+            int labelWidth = this.font.width(filtersLabel);
+            // Center the label with the EditBoxes
+            int labelX = this.leftPos + EDIT_BOX_X + (EDIT_BOX_WIDTH - labelWidth) / 2;
+            guiGraphics.drawString(this.font, filtersLabel, labelX, this.topPos + FILTERS_LABEL_Y, 0x404040, false);
+        }
         
         // Render redstone mode button (only in main mode, not in how to use)
         if (!isHowToUseMode) {
             renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
+            // Render scrollbar (only in main mode, not in how to use)
+            renderScrollbar(guiGraphics, mouseX, mouseY);
+        }
+    }
+    
+    /**
+     * Renders the scrollbar with UP/DOWN buttons and draggable handle
+     * Identical to DeepDrawersScreen implementation
+     */
+    private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // Only show scrollbar if there are more slots than can fit
+        if (MAX_FILTER_SLOTS <= VISIBLE_EDIT_BOXES) return;
+        
+        int guiX = this.leftPos;
+        int guiY = this.topPos;
+        
+        // Draw scrollbar background (8 pixels wide, height as defined)
+        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        
+        // UP button (8x8 pixels) - above scrollbar
+        boolean upButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+                                  mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE);
+        int upButtonV = upButtonHovered ? HANDLE_SIZE : 0;
+        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_UP_Y, SCROLLBAR_WIDTH * 2, upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        
+        // DOWN button (8x8 pixels) - below scrollbar
+        boolean downButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+                                    mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE);
+        int downButtonV = downButtonHovered ? HANDLE_SIZE : 0;
+        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        
+        // Handle (8x8 pixels) - position based on scroll offset
+        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+        if (maxScrollOffset > 0) {
+            double scrollRatio = (double) filterScrollOffset / maxScrollOffset;
+            int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+            
+            boolean handleHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
+                                    mouseY >= handleY && mouseY < handleY + HANDLE_SIZE);
+            int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
+            guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        }
+    }
+    
+    /**
+     * Updates filter EditBoxes based on scroll offset and cached filters
+     * Creates/removes EditBoxes as needed to show only visible ones
+     */
+    private void updateFilterEditBoxes() {
+        // Save which EditBox was focused before removing them
+        int focusedIndex = -1;
+        for (int i = 0; i < filterEditBoxes.size(); i++) {
+            EditBox editBox = filterEditBoxes.get(i);
+            if (editBox != null && editBox.isFocused()) {
+                // Calculate the actual filter index (scrollOffset + visible index)
+                focusedIndex = filterScrollOffset + i;
+                break;
+            }
+        }
+        
+        // Remove all existing EditBoxes
+        for (EditBox editBox : filterEditBoxes) {
+            if (editBox != null) {
+                removeWidget(editBox);
+            }
+        }
+        filterEditBoxes.clear();
+        
+        if (isHowToUseMode) {
+            return; // Don't create EditBoxes in how to use mode
+        }
+        
+        // Calculate scroll limits
+        int maxScroll = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+        filterScrollOffset = Math.min(filterScrollOffset, maxScroll);
+        
+        // Create VISIBLE_EDIT_BOXES EditBoxes (12 visible, scrollable through all 50)
+        for (int i = 0; i < VISIBLE_EDIT_BOXES; i++) {
+            int filterIndex = filterScrollOffset + i;
+            if (filterIndex >= MAX_FILTER_SLOTS) {
+                break; // Don't create more than MAX_FILTER_SLOTS
+            }
+            
+            int y = FIRST_ROW_Y + i * (EDIT_BOX_HEIGHT + 2); // 2px spacing between EditBoxes
+            
+            // Create EditBox
+            EditBox editBox = new EditBox(this.font,
+                    this.leftPos + EDIT_BOX_X,
+                    this.topPos + y,
+                    EDIT_BOX_WIDTH,
+                    EDIT_BOX_HEIGHT,
+                    Component.empty());
+            editBox.setMaxLength(100);
+            
+            // Set value from cached filters (ensure we have all 50 slots)
+            while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
+                cachedFilterFields.add("");
+            }
+            editBox.setValue(cachedFilterFields.get(filterIndex) != null ? cachedFilterFields.get(filterIndex) : "");
+            
+            // All EditBoxes are editable
+            editBox.setEditable(true);
+            
+            // Restore focus if this was the focused EditBox
+            if (filterIndex == focusedIndex) {
+                editBox.setFocused(true);
+            }
+            
+            // Save data when EditBox value changes
+            final int finalIndex = filterIndex;
+            editBox.setResponder(value -> {
+                // Ensure cachedFilterFields has all 50 slots
+                while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
+                    cachedFilterFields.add("");
+                }
+                
+                String trimmedValue = value.trim();
+                cachedFilterFields.set(finalIndex, trimmedValue);
+                
+                saveFilterData();
+            });
+            
+            // Add EditBox
+            filterEditBoxes.add(editBox);
+            addRenderableWidget(editBox);
         }
     }
     
@@ -499,8 +685,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             // How to use screen title
             Component titleComponent = Component.translatable("gui.iska_utils.deep_drawer_extractor.how_to_use");
             int titleWidth = this.font.width(titleComponent);
-            int titleX = (this.imageWidth - titleWidth) / 2;
-            guiGraphics.drawString(this.font, titleComponent, titleX, TITLE_Y, 0x404040, false);
+            int titleX = this.leftPos + (this.imageWidth - titleWidth) / 2;
+            guiGraphics.drawString(this.font, titleComponent, titleX, this.topPos + TITLE_Y, 0x404040, false);
             
             // Render help text with default font size and extract examples
             int helpY = HELP_TEXT_START_Y;
@@ -527,7 +713,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             helpY += HELP_TEXT_LINE_HEIGHT;
             
             // NBT: description on first line, example on second line
-            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.nbt"), HELP_TEXT_X, helpY, 0x404040, false);
+            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.nbt"), 
+                                  this.leftPos + HELP_TEXT_X, this.topPos + helpY, 0x404040, false);
             helpY += HELP_TEXT_LINE_HEIGHT;
             // NBT example: ?"apotheosis:rarity":"apotheosis:mythic"
             renderHelpLineWithExample(guiGraphics, "gui.iska_utils.general_filter_text.nbt.example", 
@@ -547,9 +734,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             
             // Usage: add extra spacing before the command
             helpY += HELP_TEXT_LINE_HEIGHT; // Extra spacing
-            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.usage"), HELP_TEXT_X, helpY, 0x404040, false);
+            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.usage"), 
+                                  this.leftPos + HELP_TEXT_X, this.topPos + helpY, 0x404040, false);
             helpY += HELP_TEXT_LINE_HEIGHT;
-            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.usage.what"), HELP_TEXT_X, helpY, 0x404040, false);
+            guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.general_filter_text.usage.what"), 
+                                  this.leftPos + HELP_TEXT_X, this.topPos + helpY, 0x404040, false);
             
         } else {
             // Main screen title
@@ -557,17 +746,35 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             int titleWidth = this.font.width(titleComponent);
             int titleX = (this.imageWidth - titleWidth) / 2;
             guiGraphics.drawString(this.font, titleComponent, titleX, TITLE_Y, 0x404040, false);
+            
+            // Render "Deep Drawer Buffer" text centered above the 5 buffer slots
+            // Buffer slots are at X=195, Y=134, 5 slots in a row (5 * 18 = 90 pixels wide)
+            Component bufferLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.buffer_label");
+            int bufferLabelWidth = this.font.width(bufferLabel);
+            int bufferLabelX = 195 + (5 * 18) / 2 - bufferLabelWidth / 2; // Center of 5 slots minus half text width
+            int bufferLabelY = 134 - this.font.lineHeight - 2; // Above slots with 2px spacing
+            guiGraphics.drawString(this.font, bufferLabel, bufferLabelX, bufferLabelY, 0x404040, false);
         }
     }
     
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Render the background
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        
-        // Render tooltip if hovering over an example (only in how to use mode)
         if (isHowToUseMode) {
+            // In how to use mode, render only background and labels (no slots)
+            this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
+            this.renderBg(guiGraphics, partialTick, mouseX, mouseY);
+            this.renderLabels(guiGraphics, mouseX, mouseY);
+            // Render widgets (buttons, etc.)
+            for (net.minecraft.client.gui.components.Renderable renderable : this.renderables) {
+                renderable.render(guiGraphics, mouseX, mouseY, partialTick);
+            }
+            // Render tooltip for examples
             renderExampleTooltip(guiGraphics, mouseX, mouseY);
+        } else {
+            // In main mode, render everything normally (including slots)
+            super.render(guiGraphics, mouseX, mouseY, partialTick);
+            // Render default item tooltips for slots
+            this.renderTooltip(guiGraphics, mouseX, mouseY);
         }
     }
     
@@ -585,39 +792,43 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         String exampleText = exampleComponent.getString();
         String afterText = afterComponent.getString();
         
+        // Convert relative coordinates to absolute screen coordinates
+        int absX = this.leftPos + x;
+        int absY = this.topPos + y;
+        
         // Render before text
         int beforeWidth = this.font.width(beforeText);
-        guiGraphics.drawString(this.font, beforeComponent, x, y, 0x404040, false);
+        guiGraphics.drawString(this.font, beforeComponent, absX, absY, 0x404040, false);
         
         // Render example text (clickable, with blue color)
-        int exampleX = x + beforeWidth;
+        int exampleX = absX + beforeWidth;
         int exampleWidth = this.font.width(exampleText);
         
         // Check if hovering over example
-        boolean isHovered = mouseX >= this.leftPos + exampleX && mouseX <= this.leftPos + exampleX + exampleWidth &&
-                           mouseY >= this.topPos + y && mouseY <= this.topPos + y + HELP_TEXT_LINE_HEIGHT;
+        boolean isHovered = mouseX >= exampleX && mouseX <= exampleX + exampleWidth &&
+                           mouseY >= absY && mouseY <= absY + HELP_TEXT_LINE_HEIGHT;
         
         // Use blue color for clickable example, darker blue when hovered
         int exampleColor = isHovered ? 0x0066FF : 0x0066CC;
         
         // Render example text in blue
-        guiGraphics.drawString(this.font, exampleText, exampleX, y, exampleColor, false);
+        guiGraphics.drawString(this.font, exampleText, exampleX, absY, exampleColor, false);
         
         // Underline when hovered
         if (isHovered) {
             // Draw underline
-            int underlineY = y + this.font.lineHeight;
+            int underlineY = absY + this.font.lineHeight;
             guiGraphics.fill(exampleX, underlineY, exampleX + exampleWidth, underlineY + 1, exampleColor);
         }
         
         // Render after text (parentheses, commas, etc.)
         if (!afterText.isEmpty()) {
             int afterX = exampleX + exampleWidth;
-            guiGraphics.drawString(this.font, afterComponent, afterX, y, 0x404040, false);
+            guiGraphics.drawString(this.font, afterComponent, afterX, absY, 0x404040, false);
         }
         
-        // Store example data for click handling
-        exampleDataList.add(new ExampleData(exampleText, exampleX, y, exampleWidth));
+        // Store example data for click handling (store relative coordinates for later use)
+        exampleDataList.add(new ExampleData(exampleText, x + beforeWidth, y, exampleWidth));
     }
     
     /**
@@ -639,45 +850,49 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         String example2Text = example2Component.getString();
         String afterText = afterComponent.getString();
         
+        // Convert relative coordinates to absolute screen coordinates
+        int absX = this.leftPos + x;
+        int absY = this.topPos + y;
+        
         // Render before text
         int beforeWidth = this.font.width(beforeText);
-        guiGraphics.drawString(this.font, beforeComponent, x, y, 0x404040, false);
+        guiGraphics.drawString(this.font, beforeComponent, absX, absY, 0x404040, false);
         
         // Render first example
-        int example1X = x + beforeWidth;
+        int example1X = absX + beforeWidth;
         int example1Width = this.font.width(example1Text);
-        boolean isHovered1 = mouseX >= this.leftPos + example1X && mouseX <= this.leftPos + example1X + example1Width &&
-                            mouseY >= this.topPos + y && mouseY <= this.topPos + y + HELP_TEXT_LINE_HEIGHT;
+        boolean isHovered1 = mouseX >= example1X && mouseX <= example1X + example1Width &&
+                            mouseY >= absY && mouseY <= absY + HELP_TEXT_LINE_HEIGHT;
         int example1Color = isHovered1 ? 0x0066FF : 0x0066CC;
-        guiGraphics.drawString(this.font, example1Text, example1X, y, example1Color, false);
+        guiGraphics.drawString(this.font, example1Text, example1X, absY, example1Color, false);
         if (isHovered1) {
-            int underlineY = y + this.font.lineHeight;
+            int underlineY = absY + this.font.lineHeight;
             guiGraphics.fill(example1X, underlineY, example1X + example1Width, underlineY + 1, example1Color);
         }
-        exampleDataList.add(new ExampleData(example1Text, example1X, y, example1Width));
+        exampleDataList.add(new ExampleData(example1Text, x + beforeWidth, y, example1Width));
         
         // Render middle text (comma and space)
         int middleX = example1X + example1Width;
-        guiGraphics.drawString(this.font, middleComponent, middleX, y, 0x404040, false);
+        guiGraphics.drawString(this.font, middleComponent, middleX, absY, 0x404040, false);
         
         // Render second example
         int middleWidth = this.font.width(middleText);
         int example2X = middleX + middleWidth;
         int example2Width = this.font.width(example2Text);
-        boolean isHovered2 = mouseX >= this.leftPos + example2X && mouseX <= this.leftPos + example2X + example2Width &&
-                            mouseY >= this.topPos + y && mouseY <= this.topPos + y + HELP_TEXT_LINE_HEIGHT;
+        boolean isHovered2 = mouseX >= example2X && mouseX <= example2X + example2Width &&
+                            mouseY >= absY && mouseY <= absY + HELP_TEXT_LINE_HEIGHT;
         int example2Color = isHovered2 ? 0x0066FF : 0x0066CC;
-        guiGraphics.drawString(this.font, example2Text, example2X, y, example2Color, false);
+        guiGraphics.drawString(this.font, example2Text, example2X, absY, example2Color, false);
         if (isHovered2) {
-            int underlineY = y + this.font.lineHeight;
+            int underlineY = absY + this.font.lineHeight;
             guiGraphics.fill(example2X, underlineY, example2X + example2Width, underlineY + 1, example2Color);
         }
-        exampleDataList.add(new ExampleData(example2Text, example2X, y, example2Width));
+        exampleDataList.add(new ExampleData(example2Text, x + beforeWidth + example1Width + middleWidth, y, example2Width));
         
         // Render after text
         if (!afterText.isEmpty()) {
             int afterX = example2X + example2Width;
-            guiGraphics.drawString(this.font, afterComponent, afterX, y, 0x404040, false);
+            guiGraphics.drawString(this.font, afterComponent, afterX, absY, 0x404040, false);
         }
     }
     
@@ -712,17 +927,28 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         menu.updateCachedFilters();
         
         // Get cached data for filter fields
-        String[] filterFields = menu.getCachedFilterFields();
+        java.util.List<String> filterFields = menu.getCachedFilterFields();
         
-        // Update EditBoxes with cached data (only if different to avoid triggering responder)
-        for (int i = 0; i < 11 && i < filterEditBoxes.length && i < filterFields.length; i++) {
-            if (filterEditBoxes[i] != null) {
-                String value = filterFields[i] != null ? filterFields[i] : "";
-                // Only update if different and EditBox is not focused to avoid overwriting user input
-                if (!filterEditBoxes[i].getValue().equals(value) && !filterEditBoxes[i].isFocused()) {
-                    filterEditBoxes[i].setValue(value);
-                }
+        // Update cached filter fields - ensure we always have exactly MAX_FILTER_SLOTS entries
+        cachedFilterFields = new java.util.ArrayList<>(filterFields);
+        while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
+            cachedFilterFields.add("");
+        }
+        // Trim to MAX_FILTER_SLOTS if somehow we got more
+        while (cachedFilterFields.size() > MAX_FILTER_SLOTS) {
+            cachedFilterFields.remove(cachedFilterFields.size() - 1);
+        }
+        
+        // Update EditBoxes to reflect changes (only if not focused to avoid overwriting user input)
+        boolean anyFocused = false;
+        for (EditBox editBox : filterEditBoxes) {
+            if (editBox != null && editBox.isFocused()) {
+                anyFocused = true;
+                break;
             }
+        }
+        if (!anyFocused) {
+            updateFilterEditBoxes();
         }
         
         // Update mode button from synced ContainerData (like rotation in StructurePlacerMachineScreen)
@@ -749,6 +975,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
         }
         
+        // Handle ESC key
+        if (keyCode == 256) { // ESC key
+            if (isEditBoxFocused) {
+                // If EditBox is focused, just unfocus it
+                for (EditBox editBox : filterEditBoxes) {
+                    if (editBox != null) {
+                        editBox.setFocused(false);
+                    }
+                }
+                return true;
+            }
+        }
+        
         if (isEditBoxFocused) {
             // Let the focused EditBox handle the key first
             for (EditBox editBox : filterEditBoxes) {
@@ -760,7 +999,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
             
             // If inventory key is pressed while EditBox is focused, prevent closing
-            // This works even if the user has changed the inventory key binding
             if (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
                 return true; // Prevent closing
             }
@@ -782,7 +1020,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             if (keyCode == 256 || // ESC key
                 (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode))) {
                 if (!isEditBoxFocused) {
-                    playButtonSound();
+                    // Close GUI without sound
                     this.onClose();
                     return true;
                 }
@@ -790,6 +1028,181 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+    
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        if (!isHowToUseMode) {
+            if (deltaY > 0) {
+                return scrollUpSilent();
+            } else if (deltaY < 0) {
+                return scrollDownSilent();
+            }
+        }
+        return super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);
+    }
+    
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0 && isDraggingHandle) {
+            isDraggingHandle = false;
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+    
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button == 0 && isDraggingHandle && MAX_FILTER_SLOTS > VISIBLE_EDIT_BOXES) {
+            int deltaY = (int) mouseY - dragStartY;
+            int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+            
+            if (maxScrollOffset > 0) {
+                float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+                
+                int newScrollOffset = dragStartScrollOffset + (int)(scrollRatio * maxScrollOffset);
+                newScrollOffset = Math.max(0, Math.min(maxScrollOffset, newScrollOffset));
+                
+                setFilterScrollOffset(newScrollOffset);
+            }
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+    
+    /**
+     * Handles clicks on UP/DOWN buttons
+     */
+    private boolean handleScrollButtonClick(double mouseX, double mouseY) {
+        if (MAX_FILTER_SLOTS <= VISIBLE_EDIT_BOXES) return false;
+        
+        int guiX = this.leftPos;
+        int guiY = this.topPos;
+        
+        // UP button
+        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+            mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE) {
+            scrollUp();
+            return true;
+        }
+        
+        // DOWN button
+        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+            mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE) {
+            scrollDown();
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Handles clicks on the draggable handle
+     */
+    private boolean handleHandleClick(double mouseX, double mouseY) {
+        if (MAX_FILTER_SLOTS <= VISIBLE_EDIT_BOXES) return false;
+        
+        int guiX = this.leftPos;
+        int guiY = this.topPos;
+        
+        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+        if (maxScrollOffset > 0) {
+            double scrollRatio = (double) filterScrollOffset / maxScrollOffset;
+            int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+            
+            if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
+                mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+                
+                isDraggingHandle = true;
+                dragStartY = (int) mouseY;
+                dragStartScrollOffset = filterScrollOffset;
+                playButtonSound();
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Handles clicks on the scrollbar area (jump to position)
+     */
+    private boolean handleScrollbarClick(double mouseX, double mouseY) {
+        if (MAX_FILTER_SLOTS <= VISIBLE_EDIT_BOXES) return false;
+        
+        int guiX = this.leftPos;
+        int guiY = this.topPos;
+        
+        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+            mouseY >= guiY + SCROLLBAR_Y && mouseY < guiY + SCROLLBAR_Y + SCROLLBAR_HEIGHT) {
+            
+            // Calculate new scroll position based on click
+            float clickRatio = (float)(mouseY - (guiY + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT;
+            clickRatio = Math.max(0, Math.min(1, clickRatio));
+            
+            int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+            int newScrollOffset = (int)(clickRatio * maxScrollOffset);
+            newScrollOffset = Math.max(0, Math.min(maxScrollOffset, newScrollOffset));
+            
+            if (newScrollOffset != filterScrollOffset) {
+                setFilterScrollOffset(newScrollOffset);
+                playButtonSound();
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Scrolls up by one entry
+     */
+    private void scrollUp() {
+        if (scrollUpSilent()) {
+            playButtonSound();
+        }
+    }
+    
+    /**
+     * Scrolls down by one entry
+     */
+    private void scrollDown() {
+        if (scrollDownSilent()) {
+            playButtonSound();
+        }
+    }
+    
+    /**
+     * Scrolls up silently (without sound)
+     */
+    private boolean scrollUpSilent() {
+        if (MAX_FILTER_SLOTS > VISIBLE_EDIT_BOXES && filterScrollOffset > 0) {
+            int newOffset = Math.max(0, filterScrollOffset - 1);
+            setFilterScrollOffset(newOffset);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Scrolls down silently (without sound)
+     */
+    private boolean scrollDownSilent() {
+        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+        
+        if (MAX_FILTER_SLOTS > VISIBLE_EDIT_BOXES && filterScrollOffset < maxScrollOffset) {
+            int newOffset = Math.min(maxScrollOffset, filterScrollOffset + 1);
+            setFilterScrollOffset(newOffset);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Sets the filter scroll offset and updates EditBoxes
+     */
+    private void setFilterScrollOffset(int offset) {
+        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+        this.filterScrollOffset = Math.max(0, Math.min(maxScrollOffset, offset));
+        updateFilterEditBoxes();
     }
     
     @Override

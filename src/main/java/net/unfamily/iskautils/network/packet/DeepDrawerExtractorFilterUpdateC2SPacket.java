@@ -6,16 +6,17 @@ import net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity;
 
 /**
  * Packet to update filter configuration from client to server
+ * Note: Currently not used - ModMessages handles this directly, but kept for potential future use
  */
 public class DeepDrawerExtractorFilterUpdateC2SPacket {
     
     private final BlockPos pos;
-    private final String[] filterFields;
+    private final java.util.List<String> filterFields;
     private final boolean isWhitelistMode;
     
-    public DeepDrawerExtractorFilterUpdateC2SPacket(BlockPos pos, String[] filterFields, boolean isWhitelistMode) {
+    public DeepDrawerExtractorFilterUpdateC2SPacket(BlockPos pos, java.util.List<String> filterFields, boolean isWhitelistMode) {
         this.pos = pos;
-        this.filterFields = filterFields;
+        this.filterFields = filterFields != null ? new java.util.ArrayList<>(filterFields) : new java.util.ArrayList<>();
         this.isWhitelistMode = isWhitelistMode;
     }
     
@@ -30,7 +31,7 @@ public class DeepDrawerExtractorFilterUpdateC2SPacket {
         if (!(blockEntity instanceof DeepDrawerExtractorBlockEntity extractor)) return;
         
         // Update filter fields
-        if (filterFields != null && filterFields.length == 11) {
+        if (filterFields != null) {
             extractor.setFilterFields(filterFields);
         }
         

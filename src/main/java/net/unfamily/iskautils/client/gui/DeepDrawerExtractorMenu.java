@@ -7,6 +7,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.world.inventory.Slot;
+import net.neoforged.neoforge.items.SlotItemHandler;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity;
 
@@ -28,8 +30,8 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
     private static final int WHITELIST_MODE_INDEX = 5; // 0 = blacklist, 1 = whitelist
     private static final int DATA_SIZE = 6;
     
-    // Cached filter data (client-side)
-    private String[] cachedFilterFields = new String[11];
+    // Cached filter data (client-side) - now using dynamic list
+    private java.util.List<String> cachedFilterFields = new java.util.ArrayList<>();
     private boolean cachedWhitelistMode = false;
     private int lastSyncedFilterHash = 0;
     
@@ -41,7 +43,7 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
         
         // Initialize cached data on server side
-        this.cachedFilterFields = blockEntity.getFilterFields();
+        this.cachedFilterFields = new java.util.ArrayList<>(blockEntity.getFilterFields());
         this.cachedWhitelistMode = blockEntity.isWhitelistMode();
         this.lastSyncedFilterHash = calculateFilterHash(this.cachedFilterFields);
         
@@ -74,6 +76,13 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
         
         // Add data slots for synchronization
         addDataSlots(this.containerData);
+        
+        // Add buffer slots (5 slots in a row)
+        addBufferSlots();
+        
+        // Add player inventory and hotbar
+        addPlayerInventory(playerInventory);
+        addPlayerHotbar(playerInventory);
     }
 
     // Client-side constructor (NeoForge factory)
@@ -84,11 +93,18 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
         this.blockPos = BlockPos.ZERO;
         this.levelAccess = ContainerLevelAccess.NULL;
         this.containerData = new SimpleContainerData(DATA_SIZE);
-        this.cachedFilterFields = new String[11];
+        this.cachedFilterFields = new java.util.ArrayList<>();
         // Initialize cache from ContainerData if available (will be updated in updateCachedFilters)
         this.cachedWhitelistMode = false; // Will be updated when ContainerData syncs
         this.lastSyncedFilterHash = 0;
         addDataSlots(this.containerData);
+        
+        // Add buffer slots (5 slots in a row) - client-side fallback
+        addBufferSlots();
+        
+        // Add player inventory and hotbar
+        addPlayerInventory(playerInventory);
+        addPlayerHotbar(playerInventory);
     }
 
     @Override
@@ -96,10 +112,85 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
         return stillValid(levelAccess, player, ModBlocks.DEEP_DRAWER_EXTRACTOR.get());
     }
 
+    /**
+     * Adds buffer slots (5 slots in a row)
+     */
+    private void addBufferSlots() {
+        net.neoforged.neoforge.items.IItemHandler itemHandler;
+        
+        if (blockEntity != null) {
+            itemHandler = blockEntity.getItemHandler();
+        } else {
+            // Client-side fallback
+            itemHandler = new net.neoforged.neoforge.items.ItemStackHandler(5);
+        }
+        
+        // 5 slots in a row at position 195, 134 (2px right from previous)
+        for (int i = 0; i < 5; i++) {
+            int xPos = 195 + i * 18; // 18 pixels per slot
+            int yPos = 134;
+            addSlot(new SlotItemHandler(itemHandler, i, xPos, yPos));
+        }
+    }
+    
+    /**
+     * Adds player inventory slots (3 rows x 9 slots)
+     */
+    private void addPlayerInventory(Inventory playerInventory) {
+        // Player inventory at position 159, 165 (2px right from previous)
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                int slotIndex = col + row * 9 + 9; // +9 to skip hotbar
+                int xPos = 159 + col * 18;
+                int yPos = 165 + row * 18;
+                addSlot(new Slot(playerInventory, slotIndex, xPos, yPos));
+            }
+        }
+    }
+    
+    /**
+     * Adds player hotbar slots (1 row x 9 slots)
+     */
+    private void addPlayerHotbar(Inventory playerInventory) {
+        // Hotbar below inventory
+        for (int col = 0; col < 9; col++) {
+            int xPos = 159 + col * 18;
+            int yPos = 165 + 3 * 18 + 4; // Below inventory with spacing
+            addSlot(new Slot(playerInventory, col, xPos, yPos));
+        }
+    }
+    
     @Override
     public net.minecraft.world.item.ItemStack quickMoveStack(Player player, int index) {
-        // No slots, so quickMoveStack doesn't need to be implemented
-        return net.minecraft.world.item.ItemStack.EMPTY;
+        // Basic quick move implementation
+        net.minecraft.world.item.ItemStack itemstack = net.minecraft.world.item.ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        
+        if (slot != null && slot.hasItem()) {
+            net.minecraft.world.item.ItemStack stack = slot.getItem();
+            itemstack = stack.copy();
+            
+            // Buffer slots are 0-4, player inventory starts at 5
+            if (index < 5) {
+                // Moving from buffer to player inventory
+                if (!this.moveItemStackTo(stack, 5, this.slots.size(), true)) {
+                    return net.minecraft.world.item.ItemStack.EMPTY;
+                }
+            } else {
+                // Moving from player inventory to buffer
+                if (!this.moveItemStackTo(stack, 0, 5, false)) {
+                    return net.minecraft.world.item.ItemStack.EMPTY;
+                }
+            }
+            
+            if (stack.isEmpty()) {
+                slot.setByPlayer(net.minecraft.world.item.ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+        }
+        
+        return itemstack;
     }
     
     public DeepDrawerExtractorBlockEntity getBlockEntity() {
@@ -153,9 +244,9 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
     }
     
     /**
-     * Calculates a hash of the filter fields array
+     * Calculates a hash of the filter fields list
      */
-    private static int calculateFilterHash(String[] filterFields) {
+    private static int calculateFilterHash(java.util.List<String> filterFields) {
         if (filterFields == null) {
             return 0;
         }
@@ -187,7 +278,7 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
     public void updateCachedFilters() {
         if (this.blockEntity != null) {
             // Server side - directly get the filters
-            this.cachedFilterFields = this.blockEntity.getFilterFields();
+            this.cachedFilterFields = new java.util.ArrayList<>(this.blockEntity.getFilterFields());
             this.cachedWhitelistMode = this.blockEntity.isWhitelistMode();
             this.lastSyncedFilterHash = calculateFilterHash(this.cachedFilterFields);
         } else {
@@ -201,7 +292,7 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
                 if (net.minecraft.client.Minecraft.getInstance().level != null) {
                     DeepDrawerExtractorBlockEntity be = getBlockEntityFromLevel(net.minecraft.client.Minecraft.getInstance().level);
                     if (be != null) {
-                        this.cachedFilterFields = be.getFilterFields();
+                        this.cachedFilterFields = new java.util.ArrayList<>(be.getFilterFields());
                         this.cachedWhitelistMode = be.isWhitelistMode();
                     } else {
                         // If we can't find the block entity, try ContainerData if position is synced
@@ -221,8 +312,8 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
     /**
      * Gets the cached filter fields (works on both client and server)
      */
-    public String[] getCachedFilterFields() {
-        return cachedFilterFields;
+    public java.util.List<String> getCachedFilterFields() {
+        return new java.util.ArrayList<>(cachedFilterFields); // Return copy
     }
     
     /**
@@ -238,12 +329,12 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
         
         // Server side: update cached filters and sync to client
         if (this.blockEntity != null) {
-            String[] currentFilters = this.blockEntity.getFilterFields();
+            java.util.List<String> currentFilters = this.blockEntity.getFilterFields();
             int currentHash = calculateFilterHash(currentFilters);
             
             // If filters changed, update cache
             if (currentHash != this.lastSyncedFilterHash) {
-                this.cachedFilterFields = currentFilters;
+                this.cachedFilterFields = new java.util.ArrayList<>(currentFilters);
                 this.cachedWhitelistMode = this.blockEntity.isWhitelistMode();
                 this.lastSyncedFilterHash = currentHash;
             }
