@@ -541,11 +541,33 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         if (tag.contains("filter_config", CompoundTag.TAG_COMPOUND)) {
             CompoundTag filterTag = tag.getCompound("filter_config");
             
-            // Check version: version 3 = fixed array (size from config), version 2 = dynamic list, version 1 or no version = old array format
+            // Check version: version 4 = index-value pairs, version 3 = fixed array, version 2 = dynamic list, version 1 or no version = old array format
             int version = filterTag.contains("filter_version") ? filterTag.getInt("filter_version") : 1;
             
-            if (version >= 3) {
-                // New format: fixed array (size from config)
+            // Initialize all slots to empty first
+            for (int i = 0; i < maxSlots; i++) {
+                filterFields[i] = "";
+            }
+            
+            if (version >= 4) {
+                // New format: index-value pairs
+                if (filterTag.contains("filters", CompoundTag.TAG_LIST)) {
+                    net.minecraft.nbt.ListTag filterList = filterTag.getList("filters", CompoundTag.TAG_COMPOUND);
+                    for (int i = 0; i < filterList.size(); i++) {
+                        CompoundTag filterEntry = filterList.getCompound(i);
+                        if (filterEntry.contains("index", CompoundTag.TAG_INT) && filterEntry.contains("value", CompoundTag.TAG_STRING)) {
+                            int index = filterEntry.getInt("index");
+                            String value = filterEntry.getString("value");
+                            // Ignore indices outside valid range (0 to maxSlots-1)
+                            if (index >= 0 && index < maxSlots) {
+                                filterFields[index] = value != null ? value : "";
+                            }
+                            // If index is out of range, simply ignore it (as requested)
+                        }
+                    }
+                }
+            } else if (version >= 3) {
+                // Old format: fixed array (size from config)
                 if (filterTag.contains("filters", CompoundTag.TAG_LIST)) {
                     net.minecraft.nbt.ListTag filterList = filterTag.getList("filters", CompoundTag.TAG_STRING);
                     int savedSlotCount = filterTag.contains("filter_slot_count") ? filterTag.getInt("filter_slot_count") : maxSlots;
@@ -555,10 +577,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                         String filter = filterList.getString(i);
                         filterFields[i] = filter != null ? filter : "";
                     }
-                    // Initialize remaining slots to empty if config increased
-                    for (int i = loadCount; i < maxSlots; i++) {
-                        filterFields[i] = "";
-                    }
+                    // Remaining slots already initialized to empty above
                 }
             } else if (version >= 2) {
                 // Old format: dynamic list - convert to fixed array
@@ -637,7 +656,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         for (int i = 0; i < maxSlots; i++) {
             filterFields[i] = "";
         }
-        // Fill from provided list
+        // Fill from provided list (backward compatibility - assumes sequential indices)
         if (fields != null) {
             for (int i = 0; i < Math.min(maxSlots, fields.size()); i++) {
                 String field = fields.get(i);
@@ -651,6 +670,42 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         }
         setChanged();
         // Force sync to client (like SmartTimerBlockEntity)
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
+    }
+    
+    /**
+     * Sets filter fields from a map of index-value pairs.
+     * Indices outside the valid range (0 to maxSlots-1) are ignored.
+     */
+    public void setFilterFieldsFromMap(java.util.Map<Integer, String> filterMap) {
+        int maxSlots = getMaxFilterSlots();
+        // Initialize all to empty first
+        for (int i = 0; i < maxSlots; i++) {
+            filterFields[i] = "";
+        }
+        // Fill from provided map, ignoring out-of-range indices
+        if (filterMap != null) {
+            for (java.util.Map.Entry<Integer, String> entry : filterMap.entrySet()) {
+                int index = entry.getKey();
+                String value = entry.getValue();
+                // Ignore indices outside valid range
+                if (index >= 0 && index < maxSlots) {
+                    if (value != null) {
+                        value = value.trim();
+                        // Remove single quotes (') for KubeJS compatibility
+                        value = value.replace("'", "");
+                        filterFields[index] = value;
+                    } else {
+                        filterFields[index] = "";
+                    }
+                }
+                // If index is out of range, simply ignore it (as requested)
+            }
+        }
+        setChanged();
+        // Force sync to client
         if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }

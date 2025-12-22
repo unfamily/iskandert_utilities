@@ -395,11 +395,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         if (!machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            // Collect filter field values from cached filters (remove empty ones)
-            java.util.List<String> filterFields = new java.util.ArrayList<>();
-            for (String filter : cachedFilterFields) {
+            // Collect filter field values as index-value pairs (only non-empty filters)
+            java.util.Map<Integer, String> filterMap = new java.util.HashMap<>();
+            for (int i = 0; i < cachedFilterFields.size(); i++) {
+                String filter = cachedFilterFields.get(i);
                 if (filter != null && !filter.trim().isEmpty()) {
-                    filterFields.add(filter.trim());
+                    filterMap.put(i, filter.trim());
                 }
             }
             
@@ -408,7 +409,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             boolean currentWhitelistMode = menu.getWhitelistMode();
             
             // Send to server via packet
-            ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(machinePos, filterFields, currentWhitelistMode);
+            ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(machinePos, filterMap, currentWhitelistMode);
         }
     }
     

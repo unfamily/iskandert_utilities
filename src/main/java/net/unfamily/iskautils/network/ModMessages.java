@@ -1282,7 +1282,7 @@ public class ModMessages {
      * Sends filter update packet to server
      */
     @OnlyIn(Dist.CLIENT)
-    public static void sendDeepDrawerExtractorFilterUpdatePacket(BlockPos pos, java.util.List<String> filterFields, boolean isWhitelistMode) {
+    public static void sendDeepDrawerExtractorFilterUpdatePacket(BlockPos pos, java.util.Map<Integer, String> filterMap, boolean isWhitelistMode) {
         // Simplified implementation - directly handle on the server side (like rotation in Structure Placer)
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -1306,9 +1306,9 @@ public class ModMessages {
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
-                            // Update filter fields directly (like rotation in Structure Placer)
-                            if (filterFields != null) {
-                                extractor.setFilterFields(filterFields);
+                            // Update filter fields from map (indices outside valid range are ignored)
+                            if (filterMap != null) {
+                                extractor.setFilterFieldsFromMap(filterMap);
                             }
                             
                             // Update mode
