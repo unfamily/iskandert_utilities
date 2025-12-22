@@ -455,11 +455,12 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             }
         }
         
-        // Mod ID filter: @iska_utils
+        // Mod ID filter: @iska_utils (supports abbreviations, e.g., @meka matches mekanism, mekanismtools, etc.)
         if (filter.startsWith("@")) {
             String modIdFilter = filter.substring(1);
             String itemModId = itemId.getNamespace();
-            return itemModId.equals(modIdFilter);
+            // Check if mod ID starts with the filter (supports abbreviations)
+            return itemModId.startsWith(modIdFilter);
         }
         
         // NBT filter: ?"apotheosis:rarity":"apotheosis:mythic"
