@@ -7,13 +7,13 @@
   ],
   "key": {
     "A": {
-      "tag": "c:ingots/gold"
+      "tag": "c:gems/lapis"
     },
     "B": {
-      "item": "iska_utils:deep_drawer_extractor"
+      "tag": "c:ingots/gold"
     },
     "C": {
-      "tag": "c:gems/lapis"
+      "item": "iska_utils:deep_drawer_extractor"
     }
   },
   "result": {

@@ -11,10 +11,10 @@
       "tag": "c:ingots/iron"
     },
     "B": {
-      "tag": "c:gems/diamond"
+      "tag": "c:glass_blocks/colorless"
     },
     "C": {
-      "tag": "c:chests/ender"
+      "tag": "c:gems/lapis"
     }
   },
   "result": {

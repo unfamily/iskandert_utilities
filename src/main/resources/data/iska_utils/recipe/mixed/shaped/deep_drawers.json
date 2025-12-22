@@ -10,10 +10,10 @@
       "tag": "c:ingots/gold"
     },
     "B": {
-      "tag": "c:storage_blocks/copper"
+      "item": "iska_utils:deep_drawer_extender"
     },
     "C": {
-      "tag": "minecraft:planks"
+      "tag": "c:ingots/iron"
     }
   },
   "result": {

@@ -7,13 +7,13 @@
   ],
   "key": {
     "A": {
-      "item": "minecraft:hopper"
+      "tag": "c:ingots/iron"
     },
     "B": {
-      "item": "minecraft:iron_trapdoor"
+      "item": "minecraft:hopper"
     },
     "C": {
-      "tag": "c:storage_blocks/copper"
+      "item": "iska_utils:deep_drawer_extender"
     }
   },
   "result": {
