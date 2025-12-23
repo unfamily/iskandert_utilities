@@ -25,6 +25,7 @@ import net.unfamily.iskautils.item.custom.GreedyShieldItem;
 import net.unfamily.iskautils.item.custom.BlueprintItem;
 import net.unfamily.iskautils.item.custom.AutoShopItem;
 import net.unfamily.iskautils.item.custom.GiftItem;
+import net.unfamily.iskautils.item.custom.TemporalOverclockerChipsetItem;
 
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
@@ -321,6 +322,14 @@ public class ModItems {
 
     public static final DeferredItem<Item> TIME_ALTERER = ITEMS.register("time_alterer",
             () -> new BlockItem(ModBlocks.TIME_ALTERER.get(), ITEM_PROPERTIES));
+    
+    // Temporal Overclocker
+    public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER = ITEMS.register("temporal_overclocker",
+            () -> new BlockItem(ModBlocks.TEMPORAL_OVERCLOCKER.get(), ITEM_PROPERTIES));
+    
+    // Temporal Overclocker Chipset
+    public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER_CHIPSET = ITEMS.register("temporal_overclocker_chipset",
+            () -> new TemporalOverclockerChipsetItem(ITEM_PROPERTIES));
 
     // ===== ANGEL BLOCK =====
     public static final DeferredItem<Item> ANGEL_BLOCK = ITEMS.register("angel_block",

@@ -11,6 +11,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity;
 
 import java.util.function.Supplier;
 
@@ -50,6 +51,12 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("time_alterer_block_entity", () ->
                     BlockEntityType.Builder.of(TimeAltererBlockEntity::new, 
                             ModBlocks.TIME_ALTERER.get()).build(null));
+    
+    // Registra il Temporal Overclocker Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TemporalOverclockerBlockEntity>> TEMPORAL_OVERCLOCKER_BE =
+            BLOCK_ENTITIES.register("temporal_overclocker_block_entity", () ->
+                    BlockEntityType.Builder.of(TemporalOverclockerBlockEntity::new, 
+                            ModBlocks.TEMPORAL_OVERCLOCKER.get()).build(null));
 
     // Angel Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AngelBlockEntity>> ANGEL_BLOCK_ENTITY =
@@ -164,6 +171,18 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof TimeAltererBlockEntity timeAltererEntity) {
                             return timeAltererEntity.getEnergyStorage();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register energy capability for TemporalOverclocker
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    TEMPORAL_OVERCLOCKER_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof TemporalOverclockerBlockEntity overclockerEntity) {
+                            return overclockerEntity.getEnergyStorage();
                         }
                         return null;
                     }

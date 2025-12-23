@@ -1,0 +1,11 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "iska_utils:block/temporal_overclocker"
+    },
+    "powered=true": {
+      "model": "iska_utils:block/temporal_overclocker"
+    }
+  }
+}
+

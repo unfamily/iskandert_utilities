@@ -127,6 +127,25 @@ public class Config
             .comment("Energy consumed per tick by the Time Alterer in RF/FE")
             .comment("Recommended value: 5000, but set to 0 to disable energy consumption")
             .defineInRange("203_timeAltererEnergyConsume", 0, 0, Integer.MAX_VALUE);
+    
+    // Temporal Overclocker configuration
+    private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_ENERGY_BUFFER = BUILDER
+            .comment("Energy capacity of the Temporal Overclocker in RF/FE")
+            .comment("Recommended value: 100000, but set to 0 to disable energy consumption")
+            .defineInRange("204_temporalOverclockerEnergyBuffer", 100000, 0, Integer.MAX_VALUE);
+    
+    private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_ENERGY_CONSUME = BUILDER
+            .comment("Energy consumed per linked block per tick by the Temporal Overclocker in RF/FE")
+            .comment("Recommended value: 100, but set to 0 to disable energy consumption")
+            .defineInRange("205_temporalOverclockerEnergyConsume", 100, 0, Integer.MAX_VALUE);
+    
+    private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_MAX_LINKS = BUILDER
+            .comment("Maximum number of blocks that can be linked to a Temporal Overclocker")
+            .defineInRange("206_temporalOverclockerMaxLinks", 16, 1, 64);
+    
+    private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR = BUILDER
+            .comment("How many extra ticks to apply to linked blocks (2 = double speed, 3 = triple speed, etc.)")
+            .defineInRange("207_temporalOverclockerAccelerationFactor", 2, 1, 10);
             
     // Portable Dislocator resource priority configuration
     private static final ModConfigSpec.BooleanValue PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY = BUILDER
@@ -652,6 +671,10 @@ public class Config
     public static int weatherAltererEnergyConsume;
     public static int timeAltererEnergyBuffer;
     public static int timeAltererEnergyConsume;
+    public static int temporalOverclockerEnergyBuffer;
+    public static int temporalOverclockerEnergyConsume;
+    public static int temporalOverclockerMaxLinks;
+    public static int temporalOverclockerAccelerationFactor;
     public static boolean artifactsInfo;
     public static int scannerMarkerTTL;
     public static java.util.List<String> scannerOreEntries;
@@ -878,6 +901,27 @@ public class Config
         // If the energy buffer is less than the energy consume, set the energy consume to the energy buffer
         if(timeAltererEnergyBuffer < timeAltererEnergyConsume) {
             timeAltererEnergyConsume = timeAltererEnergyBuffer;
+        }
+        
+        // Temporal Overclocker logic
+        temporalOverclockerEnergyBuffer = TEMPORAL_OVERCLOCKER_ENERGY_BUFFER.get();
+        temporalOverclockerEnergyConsume = TEMPORAL_OVERCLOCKER_ENERGY_CONSUME.get();
+        temporalOverclockerMaxLinks = TEMPORAL_OVERCLOCKER_MAX_LINKS.get();
+        temporalOverclockerAccelerationFactor = TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR.get();
+
+        // If the energy required is 0, the energy stored is 0 automatically
+        if (temporalOverclockerEnergyConsume <= 0) {
+            temporalOverclockerEnergyBuffer = 0;
+        }
+        
+        // If the energy stored is 0, the energy consumption is disabled
+        if (temporalOverclockerEnergyBuffer <= 0) {
+            temporalOverclockerEnergyConsume = 0;
+        }
+
+        // If the energy buffer is less than the energy consume, set the energy consume to the energy buffer
+        if(temporalOverclockerEnergyBuffer < temporalOverclockerEnergyConsume) {
+            temporalOverclockerEnergyConsume = temporalOverclockerEnergyBuffer;
         }
         
         // Structure Placer Machine logic

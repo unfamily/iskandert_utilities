@@ -1,0 +1,13 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "iska_utils:block/temporal_overclocker_front",
+    "north": "iska_utils:block/temporal_overclocker_front",
+    "south": "iska_utils:block/temporal_overclocker_side",
+    "east": "iska_utils:block/temporal_overclocker_side",
+    "west": "iska_utils:block/temporal_overclocker_side",
+    "up": "iska_utils:block/temporal_overclocker_side",
+    "down": "iska_utils:block/temporal_overclocker_side"
+  }
+}
+

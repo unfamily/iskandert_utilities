@@ -21,6 +21,7 @@ import net.unfamily.iskautils.block.BurningFlameBlock;
 import net.unfamily.iskautils.block.ChaoticTntBlock;
 import net.unfamily.iskautils.block.HardIceBlock;
 import net.unfamily.iskautils.block.SmartTimerBlock;
+import net.unfamily.iskautils.block.TemporalOverclockerBlock;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -363,6 +364,14 @@ public class ModBlocks {
             .sound(SoundType.TRIAL_SPAWNER)
             .lightLevel((state) -> 3)
             .noOcclusion()));
+
+    // Temporal Overclocker Block
+    public static final DeferredBlock<TemporalOverclockerBlock> TEMPORAL_OVERCLOCKER = BLOCKS.register("temporal_overclocker",
+        () -> new TemporalOverclockerBlock(BlockBehaviour.Properties.of()
+            .strength(3.0f, 6.0f)
+            .sound(SoundType.METAL)
+            .requiresCorrectToolForDrops()
+            .lightLevel((state) -> state.getValue(TemporalOverclockerBlock.POWERED) ? 7 : 0)));
 
     // ===== ANGEL BLOCK =====
     // Un blocco che può essere piazzato in aria e si rompe facilmente
