@@ -9,14 +9,9 @@
     "A": {
       "tag": "minecraft:planks"
     },
-    "B": [
-      {
-        "tag": "c:plastics"
-      },
-      {
-        "tag": "c:ingots/plastic"
-      }
-    ],
+    "B": {
+      "tag": "c:ingots/copper"
+    },
     "C": {
       "tag": "c:bars/iron"
     },
