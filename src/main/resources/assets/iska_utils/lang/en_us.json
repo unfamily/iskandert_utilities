@@ -488,7 +488,7 @@
   "tooltip.iska_utils.greedy_shield.desc3": "§7When damage is reduced, it blocks %d%% of the damage (%d%% of original damage remains)",
   "tooltip.iska_utils.greedy_shield.info": "§6Obtained from the gift",
   "tooltip.iska_utils.gift.availability": "§7Available from December 20 to 30",
-  "tooltip.iska_utils.gift.place": "Place on ground and break it!",
+  "tooltip.iska_utils.gift.place": "Place on ground and right-click it!",
 
   "block.iska_utils.gift": "Gift",
   "item.iska_utils.gift": "Gift",
@@ -496,6 +496,7 @@
   "item.iska_utils.hard_ice": "Hard Ice",
   "item.iska_utils.lapis_ice_cream": "Lapis Ice Cream",
   "message.iska_utils.gift.break_message": "§6A good gift from Iskandert and a bad gift from Unfamily...",
+  "message.iska_utils.gift.confirmation": "§eSure you want to open it here? There's a good gift and a bad gift... Click again to confirm.",
   "message.iska_utils.hard_ice.cannot_break": "§eDon't worry, it will disappear on January 1st...",
   "message.iska_utils.hard_ice.use_dolly": "§7If you need to move it, use a dolly!",
 

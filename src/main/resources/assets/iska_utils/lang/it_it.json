@@ -484,7 +484,7 @@
   "tooltip.iska_utils.greedy_shield.desc3": "Quando il danno viene ridotto, blocca il %d%% del danno (rimane l'%d%% del danno originale)",
   "tooltip.iska_utils.greedy_shield.info": "§6Ottenuto dal regalo",
   "tooltip.iska_utils.gift.availability": "§7Ottenibile dal 20 al 30 dicembre",
-  "tooltip.iska_utils.gift.place": "Piazzalo a terra e rompilo!",
+  "tooltip.iska_utils.gift.place": "Piazzalo a terra e clicca con il tasto destro!",
 
   "block.iska_utils.gift": "Regalo",
   "item.iska_utils.gift": "Regalo",
@@ -492,6 +492,7 @@
   "item.iska_utils.hard_ice": "Ghiaccio Duro",
   "item.iska_utils.lapis_ice_cream": "Gelato al Lapislazzuli",
   "message.iska_utils.gift.break_message": "§6Un buon regalo da Iskandert e un cattivo regalo da Unfamily...",
+  "message.iska_utils.gift.confirmation": "§eSicuro di aprirlo qui? C'è un bel regalo e un brutto regalo... Clicca di nuovo per confermare.",
   "message.iska_utils.hard_ice.cannot_break": "§eNon preoccuparti, dal 1° di gennaio sparirà da solo...",
   "message.iska_utils.hard_ice.use_dolly": "§7Se ne hai necessità, spostalo con un dolly!",
 

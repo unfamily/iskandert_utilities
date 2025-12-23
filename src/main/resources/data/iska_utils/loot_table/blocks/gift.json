@@ -7,7 +7,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "iska_utils:greedy_shield"
+          "name": "iska_utils:gift"
         }
       ],
       "conditions": [
