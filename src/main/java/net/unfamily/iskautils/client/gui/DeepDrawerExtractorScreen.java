@@ -1,13 +1,17 @@
 package net.unfamily.iskautils.client.gui;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity;
 import net.unfamily.iskautils.network.ModMessages;
@@ -29,6 +33,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
     // Scrollbar texture (identica a DeepDrawersScreen)
     private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
+    // Wide entry texture for filter entries
+    private static final ResourceLocation ENTRY_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
+    // Single slot texture for item display
+    private static final ResourceLocation SINGLE_SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
     
     // GUI dimensions (based on image: 330x250)
     private static final int GUI_WIDTH = 330;
@@ -46,24 +54,24 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     // Screen mode: false = main screen, true = how to use screen
     private boolean isHowToUseMode = false;
     
-    // EditBox dimensions and positions (scrollable, infinite)
-    // ENTRY_WIDE is 140x24, EditBox uses full width now (no remove button)
-    private static final int ENTRY_WIDE_WIDTH = 140; // Width of entry_wide.png texture
-    private static final int EDIT_BOX_WIDTH = ENTRY_WIDE_WIDTH; // Full width (140px)
-    private static final int EDIT_BOX_HEIGHT = 15; // Original height (not matching ENTRY_WIDE)
-    private static final int EDIT_BOX_X = 8;
+    // Entry dimensions and positions (scrollable)
+    // ENTRY_WIDE is 140x24
+    private static final int ENTRY_WIDTH = 140; // Width of entry_wide.png texture
+    private static final int ENTRY_HEIGHT = 24; // Height of entry_wide.png texture
+    private static final int ENTRY_X = 8;
     private static final int FILTERS_LABEL_Y = 30; // Y position for "Filters" label
-    private static final int FIRST_ROW_Y = FILTERS_LABEL_Y + 12; // Start EditBoxes after "Filters" label (12px for label height + spacing)
-    private static final int BUFFER_SLOTS_Y = 134; // Y position of buffer slots (where EditBoxes should stop)
+    private static final int FIRST_ROW_Y = FILTERS_LABEL_Y + 12; // Start entries after "Filters" label (12px for label height + spacing)
+    private static final int ENTRY_SPACING = 0; // No spacing between entries (they touch each other)
+    private static final int BUFFER_SLOTS_Y = 134; // Y position of buffer slots (where entries should stop)
     private static final int MAX_FILTER_SLOTS = net.unfamily.iskautils.Config.deepDrawerExtractorMaxFilters; // Total filter slots in BlockEntity (from config, default 50)
-    private static final int VISIBLE_EDIT_BOXES = 12; // Number of EditBoxes visible at once (scrollable)
+    private static final int VISIBLE_ENTRIES = 7; // Number of entries visible at once (scrollable) - reduced because wide entries are taller
     
     // Scrollbar constants (identical to DeepDrawersScreen)
     private static final int SCROLLBAR_WIDTH = 8;      // Width of each scrollbar element
     private static final int SCROLLBAR_HEIGHT = 34;    // Height of scrollbar background in texture
     private static final int HANDLE_SIZE = 8;          // Size of UP/DOWN buttons and handle
-    private static final int SCROLLBAR_X = EDIT_BOX_X + ENTRY_WIDE_WIDTH + 4; // After EditBox + remove button + spacing (8 + 140 + 4 = 152)
-    private static final int BUTTON_UP_Y = FIRST_ROW_Y; // Aligned with first EditBox (after "Filters" label)
+    private static final int SCROLLBAR_X = ENTRY_X + ENTRY_WIDTH + 4; // After entry + spacing (8 + 140 + 4 = 152)
+    private static final int BUTTON_UP_Y = FIRST_ROW_Y; // Aligned with first entry (after "Filters" label)
     private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE; // Scrollbar starts after UP button
     private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT; // DOWN button after scrollbar
     
@@ -99,10 +107,23 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private int dragStartY = 0;
     private int dragStartScrollOffset = 0;
     
-    // Dynamic EditBoxes for filter fields (only visible ones are created)
-    private final java.util.List<EditBox> filterEditBoxes = new java.util.ArrayList<>();
+    // EditBox for editing filter (shown when clicking on an entry)
+    private EditBox editingEditBox = null;
+    private int editingFilterIndex = -1;
     
-    // Buttons for removing filters
+    // Edit mode: tracks which filter index is in edit mode (shows different view)
+    private int editModeFilterIndex = -1; // -1 means no entry is in edit mode
+    
+    // Edit buttons for each visible entry (recreated on scroll)
+    private final java.util.List<Button> editButtons = new java.util.ArrayList<>();
+    
+    // Edit mode UI elements
+    private ItemStack ghostSlotItem = ItemStack.EMPTY; // Ghost slot item (copy, doesn't consume)
+    private EditBox editModeTextBox = null; // Textbox that appears in edit mode
+    private Button leftArrowButton = null; // Left arrow button
+    private Button rightArrowButton = null; // Right arrow button
+    private java.util.List<String> filterVariants = new java.util.ArrayList<>(); // All possible filter variants for current item
+    private int currentFilterVariantIndex = 0; // Current index in filterVariants list
     
     public DeepDrawerExtractorScreen(DeepDrawerExtractorMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -122,8 +143,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Initialize cached filter fields (will be updated in containerTick)
         cachedFilterFields.clear();
         
-        // Create EditBoxes for visible filters (will be updated in containerTick)
-        updateFilterEditBoxes();
+        // Create edit buttons for visible entries
+        updateEditButtons();
         
         // Close button
         closeButton = Button.builder(Component.literal("✕"), 
@@ -172,6 +193,13 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     }
     
     private void onCloseButtonClicked() {
+        // If in edit mode, exit edit mode instead of closing
+        if (editModeFilterIndex >= 0) {
+            playButtonSound();
+            exitEditMode();
+            return;
+        }
+        
         if (isHowToUseMode) {
             // In how to use mode, close button acts as back
             playButtonSound();
@@ -221,14 +249,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         // Redstone button is always visible in main mode (rendered in renderBg)
         
-        // Update EditBoxes visibility (handled in updateFilterEditBoxes)
+        // Hide editing EditBox in how to use mode
+        if (!showMain && editingEditBox != null) {
+            editingEditBox.visible = false;
+        }
+        
+        // Update edit buttons visibility
         if (showMain) {
-            updateFilterEditBoxes();
+            updateEditButtons();
         } else {
-            // Hide all EditBoxes in how to use mode
-            for (EditBox editBox : filterEditBoxes) {
-                if (editBox != null) {
-                    editBox.visible = false;
+            // Hide all edit buttons in how to use mode
+            for (Button button : editButtons) {
+                if (button != null) {
+                    button.visible = false;
                 }
             }
         }
@@ -256,6 +289,23 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         if (button == 0 && !isHowToUseMode) { // Left click, only in main mode
+            // Handle ghost slot click (if in edit mode) - prioritize this
+            if (editModeFilterIndex >= 0) {
+                // Position: align horizontally with second column of player inventory (x = 159 + 18 = 177)
+                int inventoryStartX = 159; // First column of inventory
+                int slotColumn = 1; // Second column (0-indexed: 0=first, 1=second)
+                int slotSize = 18;
+                int slotX = this.leftPos + inventoryStartX + slotColumn * 18 - 1; // Second column, -1px left
+                int slotY = this.topPos + 100 - 1; // Positioned higher, not aligned vertically with inventory, -1px up
+                
+                if (mouseX >= slotX && mouseX < slotX + slotSize &&
+                    mouseY >= slotY && mouseY < slotY + slotSize) {
+                    // Click is on ghost slot
+                    handleGhostSlotClick();
+                    return true;
+                }
+            }
+            
             // Handle scrollbar clicks first (they have priority)
             if (handleScrollButtonClick(mouseX, mouseY)) {
                 return true;
@@ -280,22 +330,95 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
         }
         
-        // Right click (button == 1) on EditBox clears its content and focuses it
-        // Iterate in reverse order to check last EditBox first (in case of overlap)
-        if (button == 1 && !isHowToUseMode) {
-            for (int i = filterEditBoxes.size() - 1; i >= 0; i--) {
-                EditBox editBox = filterEditBoxes.get(i);
-                if (editBox != null && editBox.isMouseOver(mouseX, mouseY)) {
-                    // Unfocus all other EditBoxes first
-                    for (EditBox other : filterEditBoxes) {
-                        if (other != null && other != editBox) {
-                            other.setFocused(false);
-                        }
+        // Handle clicks on filter entries (left click to edit, right click to clear)
+        // But prioritize edit button clicks - if click is on edit button area, let the button handle it
+        if (!isHowToUseMode && button == 0) {
+            // Check if click is on a filter entry
+            for (int i = 0; i < VISIBLE_ENTRIES; i++) {
+                int filterIndex = filterScrollOffset + i;
+                if (filterIndex >= MAX_FILTER_SLOTS) {
+                    break;
+                }
+                
+                int entryX = this.leftPos + ENTRY_X;
+                int entryY = this.topPos + FIRST_ROW_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
+                
+                // Check if click is within entry bounds
+                if (mouseX >= entryX && mouseX < entryX + ENTRY_WIDTH &&
+                    mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT) {
+                    
+                    // Check if click is on edit button area (prioritize button)
+                    int editButtonSize = 12;
+                    int editButtonMargin = 5;
+                    int editButtonX = entryX + ENTRY_WIDTH - editButtonMargin - editButtonSize;
+                    int editButtonY = entryY + (ENTRY_HEIGHT - editButtonSize) / 2;
+                    
+                    if (mouseX >= editButtonX && mouseX < editButtonX + editButtonSize &&
+                        mouseY >= editButtonY && mouseY < editButtonY + editButtonSize) {
+                        // Click is on edit button - handle it directly
+                        playButtonSound();
+                        onEditButtonClicked(filterIndex);
+                        return true; // Consume the click
                     }
-                    // Clear and focus the clicked EditBox
-                    editBox.setValue("");
-                    editBox.setFocused(true);
-                    saveFilterData(); // Save after clearing
+                    
+                    // Click is on entry but not on edit button - start editing
+                    startEditingFilter(filterIndex);
+                    return true;
+                }
+            }
+        }
+        
+        // Handle right click on entries (clear filter)
+        if (!isHowToUseMode && button == 1) {
+            // First check if right click is on edit mode textbox
+            if (editModeTextBox != null && editModeFilterIndex >= 0) {
+                int textBoxX = editModeTextBox.getX();
+                int textBoxY = editModeTextBox.getY();
+                int textBoxWidth = editModeTextBox.getWidth();
+                int textBoxHeight = editModeTextBox.getHeight();
+                
+                if (mouseX >= textBoxX && mouseX < textBoxX + textBoxWidth &&
+                    mouseY >= textBoxY && mouseY < textBoxY + textBoxHeight) {
+                    // Right click on edit mode textbox: clear it
+                    editModeTextBox.setValue("");
+                    editModeTextBox.setCursorPosition(0);
+                    editModeTextBox.setHighlightPos(0);
+                    // Save empty filter
+                    if (editModeFilterIndex >= 0) {
+                        while (cachedFilterFields.size() <= editModeFilterIndex) {
+                            cachedFilterFields.add("");
+                        }
+                        cachedFilterFields.set(editModeFilterIndex, "");
+                        saveFilterData();
+                    }
+                    // Clear ghost slot and variants
+                    ghostSlotItem = ItemStack.EMPTY;
+                    filterVariants.clear();
+                    currentFilterVariantIndex = 0;
+                    return true;
+                }
+            }
+            
+            // Then check entries
+            for (int i = 0; i < VISIBLE_ENTRIES; i++) {
+                int filterIndex = filterScrollOffset + i;
+                if (filterIndex >= MAX_FILTER_SLOTS) {
+                    break;
+                }
+                
+                int entryX = this.leftPos + ENTRY_X;
+                int entryY = this.topPos + FIRST_ROW_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
+                
+                // Check if click is within entry bounds
+                if (mouseX >= entryX && mouseX < entryX + ENTRY_WIDTH &&
+                    mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT) {
+                    
+                    // Right click: clear filter
+                    while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
+                        cachedFilterFields.add("");
+                    }
+                    cachedFilterFields.set(filterIndex, "");
+                    saveFilterData();
                     return true;
                 }
             }
@@ -425,9 +548,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (!isHowToUseMode) {
             Component filtersLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.filters");
             int labelWidth = this.font.width(filtersLabel);
-            // Center the label with the EditBoxes
-            int labelX = this.leftPos + EDIT_BOX_X + (EDIT_BOX_WIDTH - labelWidth) / 2;
+            // Center the label with the entries
+            int labelX = this.leftPos + ENTRY_X + (ENTRY_WIDTH - labelWidth) / 2;
             guiGraphics.drawString(this.font, filtersLabel, labelX, this.topPos + FILTERS_LABEL_Y, 0x404040, false);
+            
+            // Render filter entries (wide entries with single slot)
+            renderFilterEntries(guiGraphics, mouseX, mouseY);
         }
         
         // Render redstone mode button (only in main mode, not in how to use)
@@ -435,7 +561,266 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
             // Render scrollbar (only in main mode, not in how to use)
             renderScrollbar(guiGraphics, mouseX, mouseY);
+            
+            // Render edit mode UI (ghost slot and textbox) if in edit mode
+            if (editModeFilterIndex >= 0) {
+                renderEditModeUI(guiGraphics, mouseX, mouseY);
+            }
         }
+    }
+    
+    /**
+     * Renders filter entries as wide entries with single slot
+     */
+    private void renderFilterEntries(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // Ensure cachedFilterFields has all slots
+        while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
+            cachedFilterFields.add("");
+        }
+        
+        // Render visible entries
+        for (int i = 0; i < VISIBLE_ENTRIES; i++) {
+            int filterIndex = filterScrollOffset + i;
+            if (filterIndex >= MAX_FILTER_SLOTS) {
+                break;
+            }
+            
+            int entryX = this.leftPos + ENTRY_X;
+            int entryY = this.topPos + FIRST_ROW_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
+            
+            // Draw entry background
+            guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
+            
+            // Get filter value
+            String filter = cachedFilterFields.get(filterIndex);
+            if (filter == null) {
+                filter = "";
+            }
+            
+            // Render entry content (slot + text)
+            renderFilterEntry(guiGraphics, entryX, entryY, filter, filterIndex, mouseX, mouseY);
+        }
+    }
+    
+    /**
+     * Renders a single filter entry with slot and text
+     */
+    private void renderFilterEntry(GuiGraphics guiGraphics, int entryX, int entryY, String filter, int filterIndex, int mouseX, int mouseY) {
+        // Check if this entry is in edit mode
+        boolean isEditMode = (editModeFilterIndex == filterIndex);
+        
+        // For now, render the same view regardless of edit mode
+        // In future phases, this will render a different view when isEditMode is true
+        
+        // Slot position (3px from left edge, 3px from top)
+        int slotX = entryX + 3;
+        int slotY = entryY + 3;
+        
+        // Draw single slot
+        guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
+        
+        // Get item to display based on filter type
+        ItemStack displayItem = getDisplayItemForFilter(filter);
+        if (!displayItem.isEmpty()) {
+            guiGraphics.renderItem(displayItem, slotX + 1, slotY + 1);
+            guiGraphics.renderItemDecorations(this.font, displayItem, slotX + 1, slotY + 1);
+        }
+        
+        // Text position (after slot + 6px margin)
+        int textX = slotX + 18 + 6;
+        int textY = entryY + (ENTRY_HEIGHT - this.font.lineHeight) / 2;
+        
+        // Edit button position (right side, but not on the edge)
+        int editButtonSize = 12; // Small button
+        int editButtonMargin = 5; // Margin from right edge (not on border)
+        int editButtonX = entryX + ENTRY_WIDTH - editButtonMargin - editButtonSize;
+        
+        // Calculate available width for text (up to edit button)
+        int maxTextWidth = editButtonX - textX - 5; // 5px margin before edit button
+        
+        // Render filter text (truncate if too long)
+        String displayText = filter.isEmpty() ? "" : filter;
+        int textWidth = this.font.width(displayText);
+        if (textWidth > maxTextWidth && !displayText.isEmpty()) {
+            // Truncate with ellipsis
+            displayText = this.font.plainSubstrByWidth(displayText, maxTextWidth - this.font.width("...")) + "...";
+        }
+        
+        guiGraphics.drawString(this.font, displayText, textX, textY, 0x404040, false);
+        
+        // Edit button is rendered as a widget (created in updateEditButtons)
+    }
+    
+    /**
+     * Renders the edit mode UI (ghost slot and textbox)
+     */
+    private void renderEditModeUI(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // Position: align horizontally with second column of player inventory (x = 159 + 18 = 177)
+        // Player inventory starts at x=159 (from DeepDrawerExtractorMenu)
+        int inventoryStartX = 159; // First column of inventory
+        int slotColumn = 1; // Second column (0-indexed: 0=first, 1=second)
+        int slotSize = 18;
+        int slotX = this.leftPos + inventoryStartX + slotColumn * 18 - 1; // Second column, -1px left
+        int slotY = this.topPos + 100 - 1; // Positioned higher, not aligned vertically with inventory, -1px up
+        
+        // Draw slot background
+        guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, slotSize, slotSize, slotSize, slotSize);
+        
+        // Render ghost slot item if present
+        if (!ghostSlotItem.isEmpty()) {
+            guiGraphics.renderItem(ghostSlotItem, slotX + 1, slotY + 1);
+            guiGraphics.renderItemDecorations(this.font, ghostSlotItem, slotX + 1, slotY + 1);
+        }
+        
+        // Buttons and textbox are rendered as widgets (created in createEditModeUI)
+    }
+    
+    /**
+     * Gets the display item for a filter based on its type
+     * Returns appropriate item for ID, tag, mod, NBT, or macro filters
+     */
+    private ItemStack getDisplayItemForFilter(String filter) {
+        if (filter == null || filter.trim().isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        
+        filter = filter.trim();
+        
+        // ID filter: -minecraft:diamond
+        if (filter.startsWith("-")) {
+            String idFilter = filter.substring(1);
+            try {
+                net.minecraft.resources.ResourceLocation itemId = net.minecraft.resources.ResourceLocation.parse(idFilter);
+                var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(itemId);
+                return new ItemStack(item);
+            } catch (Exception e) {
+                return ItemStack.EMPTY;
+            }
+        }
+        
+        // Tag filter: #c:ingots
+        if (filter.startsWith("#")) {
+            String tagFilter = filter.substring(1);
+            return getItemForTag(tagFilter);
+        }
+        
+        // Mod ID filter: @iska_utils
+        if (filter.startsWith("@")) {
+            String modIdFilter = filter.substring(1);
+            return getItemForMod(modIdFilter);
+        }
+        
+        // NBT filter: ?"apotheosis:rarity":"apotheosis:mythic"
+        if (filter.startsWith("?")) {
+            // For NBT filters, show knowledge book (green recipe book)
+            return new ItemStack(net.minecraft.world.item.Items.KNOWLEDGE_BOOK);
+        }
+        
+        // Macro filter: &enchanted, &damaged
+        if (filter.startsWith("&")) {
+            String macroFilter = filter.substring(1).toLowerCase();
+            return switch (macroFilter) {
+                case "enchanted" -> {
+                    // Parse item from raw SNBT string
+                    String snbtString = "{components:{\"minecraft:enchantments\":{levels:{\"minecraft:aqua_affinity\":1}},\"minecraft:repair_cost\":1},count:1,id:\"minecraft:iron_pickaxe\"}";
+                    ItemStack stack = parseItemStackFromSNBT(snbtString);
+                    if (stack.isEmpty()) {
+                        // Fallback to diamond pickaxe with efficiency if parsing fails
+                        stack = new ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE);
+                    }
+                    yield stack;
+                }
+                case "damaged" -> {
+                    // Return a damaged item
+                    ItemStack stack = new ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD);
+                    stack.setDamageValue(stack.getMaxDamage() / 2);
+                    yield stack;
+                }
+                default -> ItemStack.EMPTY;
+            };
+        }
+        
+        // Default: treat as direct ID match (without prefix)
+        try {
+            net.minecraft.resources.ResourceLocation itemId = net.minecraft.resources.ResourceLocation.parse(filter);
+            var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(itemId);
+            return new ItemStack(item);
+        } catch (Exception e) {
+            return ItemStack.EMPTY;
+        }
+    }
+    
+    /**
+     * Parses an ItemStack from a raw SNBT (String NBT) string
+     * @param snbtString The SNBT string representing the item
+     * @return ItemStack parsed from the SNBT, or ItemStack.EMPTY if parsing fails
+     */
+    private ItemStack parseItemStackFromSNBT(String snbtString) {
+        try {
+            // Parse SNBT string to CompoundTag
+            CompoundTag nbtTag = TagParser.parseTag(snbtString);
+            
+            // Get registry access from Minecraft level (required for ItemStack.parse)
+            if (Minecraft.getInstance().level == null) {
+                return ItemStack.EMPTY; // Cannot parse without level/registry access
+            }
+            
+            net.minecraft.core.HolderLookup.Provider registryAccess = Minecraft.getInstance().level.registryAccess();
+            
+            // Parse ItemStack from CompoundTag
+            return ItemStack.parse(registryAccess, nbtTag).orElse(ItemStack.EMPTY);
+        } catch (Exception e) {
+            // If parsing fails, return empty stack
+            return ItemStack.EMPTY;
+        }
+    }
+    
+    /**
+     * Gets an item that has the specified tag (for cyclic display)
+     */
+    private ItemStack getItemForTag(String tagId) {
+        try {
+            net.minecraft.resources.ResourceLocation tagLocation = net.minecraft.resources.ResourceLocation.parse(tagId);
+            net.minecraft.tags.TagKey<net.minecraft.world.item.Item> itemTag = 
+                net.minecraft.tags.ItemTags.create(tagLocation);
+            
+            // Get tag contents
+            var tagContents = net.minecraft.core.registries.BuiltInRegistries.ITEM.getTag(itemTag);
+            if (tagContents.isPresent()) {
+                var items = tagContents.get();
+                if (items.size() > 0) {
+                    // Use cyclic index based on tick time for rotation
+                    int index = (int)((System.currentTimeMillis() / 2000) % items.size()); // Change every 2 seconds
+                    var itemHolder = items.get(index);
+                    return new ItemStack(itemHolder.value());
+                }
+            }
+        } catch (Exception e) {
+            // Invalid tag, ignore
+        }
+        return ItemStack.EMPTY;
+    }
+    
+    /**
+     * Gets an item from the specified mod (for cyclic display)
+     */
+    private ItemStack getItemForMod(String modId) {
+        // Find all items from this mod
+        java.util.List<net.minecraft.world.item.Item> modItems = new java.util.ArrayList<>();
+        for (var item : net.minecraft.core.registries.BuiltInRegistries.ITEM) {
+            net.minecraft.resources.ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
+            if (itemId != null && itemId.getNamespace().startsWith(modId)) {
+                modItems.add(item);
+            }
+        }
+        
+        if (!modItems.isEmpty()) {
+            // Use cyclic index based on tick time for rotation
+            int index = (int)((System.currentTimeMillis() / 2000) % modItems.size()); // Change every 2 seconds
+            return new ItemStack(modItems.get(index));
+        }
+        
+        return ItemStack.EMPTY;
     }
     
     /**
@@ -444,7 +829,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      */
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         // Only show scrollbar if there are more slots than can fit
-        if (MAX_FILTER_SLOTS <= VISIBLE_EDIT_BOXES) return;
+        if (MAX_FILTER_SLOTS <= VISIBLE_ENTRIES) return;
         
         int guiX = this.leftPos;
         int guiY = this.topPos;
@@ -465,7 +850,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // Handle (8x8 pixels) - position based on scroll offset
-        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
         if (maxScrollOffset > 0) {
             double scrollRatio = (double) filterScrollOffset / maxScrollOffset;
             int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
@@ -478,86 +863,413 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     }
     
     /**
-     * Updates filter EditBoxes based on scroll offset and cached filters
-     * Creates/removes EditBoxes as needed to show only visible ones
+     * Updates edit buttons for visible entries
      */
-    private void updateFilterEditBoxes() {
-        // Save which EditBox was focused before removing them
-        int focusedIndex = -1;
-        for (int i = 0; i < filterEditBoxes.size(); i++) {
-            EditBox editBox = filterEditBoxes.get(i);
-            if (editBox != null && editBox.isFocused()) {
-                // Calculate the actual filter index (scrollOffset + visible index)
-                focusedIndex = filterScrollOffset + i;
-                break;
+    private void updateEditButtons() {
+        // Remove all existing edit buttons
+        for (Button button : editButtons) {
+            if (button != null) {
+                removeWidget(button);
             }
         }
-        
-        // Remove all existing EditBoxes
-        for (EditBox editBox : filterEditBoxes) {
-            if (editBox != null) {
-                removeWidget(editBox);
-            }
-        }
-        filterEditBoxes.clear();
+        editButtons.clear();
         
         if (isHowToUseMode) {
-            return; // Don't create EditBoxes in how to use mode
+            return; // Don't create buttons in how to use mode
         }
         
-        // Calculate scroll limits
-        int maxScroll = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
-        filterScrollOffset = Math.min(filterScrollOffset, maxScroll);
+        // Create edit buttons for visible entries
+        int editButtonSize = 12;
+        int editButtonMargin = 5; // Margin from right edge
         
-        // Create VISIBLE_EDIT_BOXES EditBoxes (12 visible, scrollable through all 50)
-        for (int i = 0; i < VISIBLE_EDIT_BOXES; i++) {
+        for (int i = 0; i < VISIBLE_ENTRIES; i++) {
             int filterIndex = filterScrollOffset + i;
             if (filterIndex >= MAX_FILTER_SLOTS) {
-                break; // Don't create more than MAX_FILTER_SLOTS
+                break;
             }
             
-            int y = FIRST_ROW_Y + i * (EDIT_BOX_HEIGHT + 2); // 2px spacing between EditBoxes
+            int entryX = this.leftPos + ENTRY_X;
+            int entryY = this.topPos + FIRST_ROW_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
+            int editButtonX = entryX + ENTRY_WIDTH - editButtonMargin - editButtonSize;
+            int editButtonY = entryY + (ENTRY_HEIGHT - editButtonSize) / 2;
             
-            // Create EditBox
-            EditBox editBox = new EditBox(this.font,
-                    this.leftPos + EDIT_BOX_X,
-                    this.topPos + y,
-                    EDIT_BOX_WIDTH,
-                    EDIT_BOX_HEIGHT,
-                    Component.empty());
-            editBox.setMaxLength(100);
+            final int finalFilterIndex = filterIndex;
+            Button editButton = Button.builder(Component.literal("✎"), 
+                button -> {
+                    playButtonSound();
+                    onEditButtonClicked(finalFilterIndex);
+                })
+                .bounds(editButtonX, editButtonY, editButtonSize, editButtonSize)
+                .build();
             
-            // Set value from cached filters (ensure we have all 50 slots)
+            editButtons.add(editButton);
+            addRenderableWidget(editButton);
+        }
+    }
+    
+    /**
+     * Handles edit button click - switches to edit mode for the filter
+     */
+    private void onEditButtonClicked(int filterIndex) {
+        // Toggle edit mode for this filter
+        if (editModeFilterIndex == filterIndex) {
+            // Already in edit mode, exit edit mode
+            exitEditMode();
+        } else {
+            // Enter edit mode for this filter
+            enterEditMode(filterIndex);
+        }
+    }
+    
+    /**
+     * Enters edit mode for the specified filter
+     */
+    private void enterEditMode(int filterIndex) {
+        editModeFilterIndex = filterIndex;
+        createEditModeUI();
+    }
+    
+    /**
+     * Exits edit mode
+     */
+    private void exitEditMode() {
+        editModeFilterIndex = -1;
+        removeEditModeUI();
+    }
+    
+    /**
+     * Creates the edit mode UI (textbox and ghost slot)
+     */
+    private void createEditModeUI() {
+        // Remove existing edit mode UI if any
+        removeEditModeUI();
+        
+        // Position: align horizontally with second column of player inventory (x = 159 + 18 = 177)
+        // Player inventory starts at x=159 (from DeepDrawerExtractorMenu)
+        int inventoryStartX = 159; // First column of inventory
+        int slotColumn = 1; // Second column (0-indexed: 0=first, 1=second)
+        int slotSize = 18;
+        int slotX = this.leftPos + inventoryStartX + slotColumn * 18 - 1; // Second column, -1px left
+        int slotY = this.topPos + 100 - 1; // Positioned higher, not aligned vertically with inventory, -1px up
+        
+        // Button size and spacing (small buttons)
+        int buttonSize = 12; // Small buttons
+        int buttonSpacing = 2; // Space between button and slot
+        
+        // Left arrow button (to the left of slot)
+        int leftButtonX = slotX - buttonSize - buttonSpacing;
+        int leftButtonY = slotY + (slotSize - buttonSize) / 2; // Center vertically with slot
+        
+        leftArrowButton = Button.builder(Component.literal("←"), 
+            button -> {
+                playButtonSound();
+                cycleFilterVariant(-1); // Previous variant
+            })
+            .bounds(leftButtonX, leftButtonY, buttonSize, buttonSize)
+            .build();
+        addRenderableWidget(leftArrowButton);
+        
+        // Right arrow button (to the right of slot)
+        int rightButtonX = slotX + slotSize + buttonSpacing;
+        int rightButtonY = slotY + (slotSize - buttonSize) / 2; // Center vertically with slot
+        
+        rightArrowButton = Button.builder(Component.literal("→"), 
+            button -> {
+                playButtonSound();
+                cycleFilterVariant(1); // Next variant
+            })
+            .bounds(rightButtonX, rightButtonY, buttonSize, buttonSize)
+            .build();
+        addRenderableWidget(rightArrowButton);
+        
+        // Textbox position (to the right of right arrow button)
+        int textBoxSpacing = 2; // Space between button and textbox
+        int textBoxX = rightButtonX + buttonSize + textBoxSpacing;
+        int textBoxY = slotY + (slotSize - 15) / 2; // Center vertically with slot (15 is textbox height)
+        int textBoxHeight = 15;
+        
+        // Calculate max width for textbox
+        // Don't exceed the end of inventory slots (9 columns * 18px = 162px from inventory start)
+        int inventoryEndX = this.leftPos + inventoryStartX + (9 * 18); // End of inventory slots
+        int rightEdge = this.leftPos + GUI_WIDTH;
+        int margin = 5; // Margin from right edge
+        // Maximum width is the minimum between: end of inventory slots, right edge margin, and default 120px
+        int maxTextWidthFromInventory = inventoryEndX - textBoxX;
+        int maxTextWidthFromEdge = rightEdge - textBoxX - margin;
+        int textBoxWidth = Math.min(120, Math.min(maxTextWidthFromInventory, maxTextWidthFromEdge));
+        
+        // Create textbox
+        editModeTextBox = new EditBox(this.font, textBoxX, textBoxY, textBoxWidth, textBoxHeight,
+            Component.literal("Edit Filter"));
+        
+        // Set initial value from cached filter fields
+        if (editModeFilterIndex >= 0 && editModeFilterIndex < cachedFilterFields.size()) {
+            String currentFilter = cachedFilterFields.get(editModeFilterIndex);
+            editModeTextBox.setValue(currentFilter != null ? currentFilter : "");
+        } else {
+            editModeTextBox.setValue("");
+        }
+        
+        editModeTextBox.setVisible(true);
+        editModeTextBox.setEditable(true);
+        editModeTextBox.setMaxLength(100);
+        
+        // Set responder to save on change
+        editModeTextBox.setResponder(value -> {
+            // Save filter value when text changes
+            while (cachedFilterFields.size() <= editModeFilterIndex) {
+                cachedFilterFields.add("");
+            }
+            cachedFilterFields.set(editModeFilterIndex, value);
+            saveFilterData();
+        });
+        
+        addRenderableWidget(editModeTextBox);
+        
+        // Initialize ghost slot as empty
+        ghostSlotItem = ItemStack.EMPTY;
+    }
+    
+    /**
+     * Removes the edit mode UI
+     */
+    private void removeEditModeUI() {
+        if (editModeTextBox != null) {
+            removeWidget(editModeTextBox);
+            editModeTextBox = null;
+        }
+        if (leftArrowButton != null) {
+            removeWidget(leftArrowButton);
+            leftArrowButton = null;
+        }
+        if (rightArrowButton != null) {
+            removeWidget(rightArrowButton);
+            rightArrowButton = null;
+        }
+        ghostSlotItem = ItemStack.EMPTY;
+        filterVariants.clear();
+        currentFilterVariantIndex = 0;
+    }
+    
+    /**
+     * Handles click on ghost slot (phantom slot that copies items without consuming)
+     */
+    private void handleGhostSlotClick() {
+        if (this.minecraft == null || this.minecraft.player == null) {
+            return;
+        }
+        
+        // Get the item the player is holding (cursor item)
+        ItemStack cursorItem = this.menu.getCarried();
+        
+        if (cursorItem.isEmpty()) {
+            // Cursor is empty: clear the ghost slot and textbox
+            ghostSlotItem = ItemStack.EMPTY;
+            filterVariants.clear();
+            currentFilterVariantIndex = 0;
+            if (editModeTextBox != null) {
+                editModeTextBox.setValue("");
+                // Save empty filter
+                if (editModeFilterIndex >= 0) {
+                    while (cachedFilterFields.size() <= editModeFilterIndex) {
+                        cachedFilterFields.add("");
+                    }
+                    cachedFilterFields.set(editModeFilterIndex, "");
+                    saveFilterData();
+                }
+            }
+            playButtonSound();
+        } else {
+            // Cursor has item: copy it to ghost slot (don't consume the original)
+            ghostSlotItem = cursorItem.copy();
+            
+            // Generate all possible filter variants
+            filterVariants = generateAllFilterVariants(cursorItem);
+            currentFilterVariantIndex = 0; // Start with first variant
+            
+            // Update textbox with first variant
+            if (editModeTextBox != null && !filterVariants.isEmpty()) {
+                String filterString = filterVariants.get(0);
+                editModeTextBox.setValue(filterString);
+                // Position cursor at the beginning and show from start
+                editModeTextBox.setCursorPosition(0);
+                editModeTextBox.setHighlightPos(0);
+                // Save filter immediately
+                if (editModeFilterIndex >= 0) {
+                    while (cachedFilterFields.size() <= editModeFilterIndex) {
+                        cachedFilterFields.add("");
+                    }
+                    cachedFilterFields.set(editModeFilterIndex, filterString);
+                    saveFilterData();
+                }
+            }
+            
+            playButtonSound();
+        }
+    }
+    
+    /**
+     * Cycles to the next/previous filter variant
+     * @param direction 1 for next, -1 for previous
+     */
+    private void cycleFilterVariant(int direction) {
+        if (filterVariants.isEmpty()) {
+            return;
+        }
+        
+        // Calculate new index (with wrapping)
+        currentFilterVariantIndex += direction;
+        if (currentFilterVariantIndex < 0) {
+            currentFilterVariantIndex = filterVariants.size() - 1;
+        } else if (currentFilterVariantIndex >= filterVariants.size()) {
+            currentFilterVariantIndex = 0;
+        }
+        
+        // Update textbox with new variant
+        String filterString = filterVariants.get(currentFilterVariantIndex);
+        if (editModeTextBox != null) {
+            editModeTextBox.setValue(filterString);
+            // Position cursor at the beginning and show from start
+            editModeTextBox.setCursorPosition(0);
+            editModeTextBox.setHighlightPos(0);
+            // Save filter immediately
+            if (editModeFilterIndex >= 0) {
+                while (cachedFilterFields.size() <= editModeFilterIndex) {
+                    cachedFilterFields.add("");
+                }
+                cachedFilterFields.set(editModeFilterIndex, filterString);
+                saveFilterData();
+            }
+        }
+    }
+    
+    /**
+     * Generates all possible filter variants from an ItemStack
+     * Order: ID item, &enchanted (if present), &damaged (if present), mod ID, all tags
+     */
+    private java.util.List<String> generateAllFilterVariants(ItemStack stack) {
+        java.util.List<String> variants = new java.util.ArrayList<>();
+        
+        if (stack.isEmpty()) {
+            return variants;
+        }
+        
+        net.minecraft.resources.ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (itemId == null) {
+            return variants;
+        }
+        
+        // 1. Always start with item ID
+        variants.add("-" + itemId.toString());
+        
+        // 2. Add mod ID (if not minecraft)
+        String namespace = itemId.getNamespace();
+        if (!namespace.equals("minecraft")) {
+            variants.add("@" + namespace);
+        }
+        
+        // 3. If enchanted, add &enchanted after mod ID
+        if (stack.isEnchanted()) {
+            variants.add("&enchanted");
+        }
+        
+        // 4. If damaged, add &damaged after mod ID (and after enchanted if present)
+        if (stack.isDamaged()) {
+            variants.add("&damaged");
+        }
+        
+        // 5. Add all tags (sorted)
+        var item = stack.getItem();
+        var itemHolder = net.minecraft.core.registries.BuiltInRegistries.ITEM.wrapAsHolder(item);
+        var itemTags = net.minecraft.core.registries.BuiltInRegistries.ITEM.getTagNames()
+                .filter(tagKey -> {
+                    var tag = net.minecraft.core.registries.BuiltInRegistries.ITEM.getTag(tagKey);
+                    return tag.isPresent() && tag.get().contains(itemHolder);
+                })
+                .map(net.minecraft.tags.TagKey::location)
+                .map(net.minecraft.resources.ResourceLocation::toString)
+                .sorted()
+                .toList();
+        
+        // Add all tags with # prefix
+        for (String tagId : itemTags) {
+            variants.add("#" + tagId);
+        }
+        
+        return variants;
+    }
+    
+    /**
+     * Starts editing a filter entry at the given index
+     */
+    private void startEditingFilter(int filterIndex) {
+        // Remove existing editing EditBox if any
+        if (editingEditBox != null) {
+            removeWidget(editingEditBox);
+            editingEditBox = null;
+        }
+        
+        // Ensure cachedFilterFields has all slots
+        while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
+            cachedFilterFields.add("");
+        }
+        
+        // Calculate entry position
+        int visibleIndex = filterIndex - filterScrollOffset;
+        if (visibleIndex < 0 || visibleIndex >= VISIBLE_ENTRIES) {
+            return; // Not visible
+        }
+        
+        int entryX = this.leftPos + ENTRY_X;
+        int entryY = this.topPos + FIRST_ROW_Y + visibleIndex * (ENTRY_HEIGHT + ENTRY_SPACING);
+        
+        // Create EditBox positioned over the entry text area
+        int textX = entryX + 3 + 18 + 6; // After slot
+        int textY = entryY + (ENTRY_HEIGHT - 15) / 2; // Centered vertically (EditBox height is 15)
+        
+        // Calculate width leaving space for edit button (12px button + 5px margin + 5px spacing)
+        int editButtonSize = 12;
+        int editButtonMargin = 5;
+        int editButtonX = entryX + ENTRY_WIDTH - editButtonMargin - editButtonSize;
+        int textWidth = editButtonX - textX - 5; // 5px margin before edit button
+        
+        editingEditBox = new EditBox(this.font,
+                textX,
+                textY,
+                textWidth,
+                15,
+                Component.empty());
+        editingEditBox.setMaxLength(100);
+        editingEditBox.setValue(cachedFilterFields.get(filterIndex) != null ? cachedFilterFields.get(filterIndex) : "");
+        editingEditBox.setEditable(true);
+        editingEditBox.setFocused(true);
+        
+        editingFilterIndex = filterIndex;
+        
+        // Save data when EditBox value changes
+        editingEditBox.setResponder(value -> {
+            // Ensure cachedFilterFields has all 50 slots
             while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
                 cachedFilterFields.add("");
             }
-            editBox.setValue(cachedFilterFields.get(filterIndex) != null ? cachedFilterFields.get(filterIndex) : "");
             
-            // All EditBoxes are editable
-            editBox.setEditable(true);
+            String trimmedValue = value.trim();
+            cachedFilterFields.set(filterIndex, trimmedValue);
             
-            // Restore focus if this was the focused EditBox
-            if (filterIndex == focusedIndex) {
-                editBox.setFocused(true);
-            }
-            
-            // Save data when EditBox value changes
-            final int finalIndex = filterIndex;
-            editBox.setResponder(value -> {
-                // Ensure cachedFilterFields has all 50 slots
-                while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
-                    cachedFilterFields.add("");
-                }
-                
-                String trimmedValue = value.trim();
-                cachedFilterFields.set(finalIndex, trimmedValue);
-                
-                saveFilterData();
-            });
-            
-            // Add EditBox
-            filterEditBoxes.add(editBox);
-            addRenderableWidget(editBox);
+            saveFilterData();
+        });
+        
+        addRenderableWidget(editingEditBox);
+    }
+    
+    /**
+     * Stops editing the current filter
+     */
+    private void stopEditingFilter() {
+        if (editingEditBox != null) {
+            removeWidget(editingEditBox);
+            editingEditBox = null;
+            editingFilterIndex = -1;
         }
     }
     
@@ -940,17 +1652,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             cachedFilterFields.remove(cachedFilterFields.size() - 1);
         }
         
-        // Update EditBoxes to reflect changes (only if not focused to avoid overwriting user input)
-        boolean anyFocused = false;
-        for (EditBox editBox : filterEditBoxes) {
-            if (editBox != null && editBox.isFocused()) {
-                anyFocused = true;
-                break;
-            }
-        }
-        if (!anyFocused) {
-            updateFilterEditBoxes();
-        }
+        // No need to update entries - they are rendered directly from cachedFilterFields
         
         // Update mode button from synced ContainerData (like rotation in StructurePlacerMachineScreen)
         // Always read from ContainerData and update button - ContainerData is automatically synced
@@ -967,60 +1669,97 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // Check if an EditBox is focused
-        boolean isEditBoxFocused = false;
-        for (EditBox editBox : filterEditBoxes) {
-            if (editBox != null && editBox.isFocused()) {
-                isEditBoxFocused = true;
-                break;
-            }
-        }
+        // Check if editing EditBox is focused
+        boolean isEditBoxFocused = editingEditBox != null && editingEditBox.isFocused();
+        
+        // Check if edit mode textbox is focused
+        boolean isEditModeTextBoxFocused = editModeTextBox != null && editModeTextBox.isFocused();
+        
+        // Check if in edit mode (not editing text, but in edit mode for a filter)
+        boolean isInEditMode = editModeFilterIndex >= 0;
         
         // Handle ESC key
         if (keyCode == 256) { // ESC key
             if (isEditBoxFocused) {
-                // If EditBox is focused, just unfocus it
-                for (EditBox editBox : filterEditBoxes) {
-                    if (editBox != null) {
-                        editBox.setFocused(false);
-                    }
-                }
+                // If EditBox is focused, stop editing
+                stopEditingFilter();
+                return true;
+            }
+            // If edit mode textbox is focused, exit edit mode
+            if (isEditModeTextBoxFocused) {
+                playButtonSound();
+                exitEditMode();
+                return true;
+            }
+            // If in edit mode (but not editing text), exit edit mode
+            if (isInEditMode) {
+                playButtonSound();
+                exitEditMode();
                 return true;
             }
         }
         
-        if (isEditBoxFocused) {
+        if (isEditBoxFocused && editingEditBox != null) {
             // Let the focused EditBox handle the key first
-            for (EditBox editBox : filterEditBoxes) {
-                if (editBox != null && editBox.isFocused()) {
-                    if (editBox.keyPressed(keyCode, scanCode, modifiers)) {
-                        return true;
-                    }
-                }
+            if (editingEditBox.keyPressed(keyCode, scanCode, modifiers)) {
+                return true;
+            }
+            
+            // If Enter is pressed, stop editing
+            if (keyCode == 257) { // Enter key
+                stopEditingFilter();
+                return true;
             }
             
             // If inventory key is pressed while EditBox is focused, prevent closing
+            // This works even if the user has changed the inventory key binding
             if (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
                 return true; // Prevent closing
             }
         }
         
-        // Handle ESC key based on current mode
+        // Handle edit mode textbox key presses
+        if (isEditModeTextBoxFocused && editModeTextBox != null) {
+            // Let the focused edit mode textbox handle the key first
+            if (editModeTextBox.keyPressed(keyCode, scanCode, modifiers)) {
+                return true;
+            }
+            
+            // If inventory key is pressed while edit mode textbox is focused, block it (prevent closing)
+            // This works even if the user has changed the inventory key binding
+            if (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+                return true; // Block the key, don't exit edit mode
+            }
+        }
+        
+        // Handle ESC and inventory key based on current mode
         if (isHowToUseMode) {
             // In how to use mode, ESC or inventory key returns to main screen
             if (keyCode == 256 || // ESC key
                 (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode))) {
-                if (!isEditBoxFocused) {
+                if (!isEditBoxFocused && !isEditModeTextBoxFocused) {
+                    // If in edit mode, exit edit mode first
+                    if (isInEditMode) {
+                        playButtonSound();
+                        exitEditMode();
+                        return true;
+                    }
                     playButtonSound();
                     switchToMainScreen();
                     return true;
                 }
             }
         } else {
-            // In main mode, ESC or inventory key closes GUI (unless EditBox is focused)
+            // In main mode, ESC or inventory key closes GUI (unless EditBox is focused or in edit mode)
             if (keyCode == 256 || // ESC key
                 (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode))) {
-                if (!isEditBoxFocused) {
+                if (!isEditBoxFocused && !isEditModeTextBoxFocused) {
+                    // If in edit mode, exit edit mode instead of closing
+                    if (isInEditMode) {
+                        playButtonSound();
+                        exitEditMode();
+                        return true;
+                    }
                     // Close GUI without sound
                     this.onClose();
                     return true;
@@ -1029,6 +1768,25 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+    
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        // Check if editing EditBox is focused
+        if (editingEditBox != null && editingEditBox.isFocused()) {
+            if (editingEditBox.charTyped(codePoint, modifiers)) {
+                return true;
+            }
+        }
+        
+        // Check if edit mode textbox is focused
+        if (editModeTextBox != null && editModeTextBox.isFocused()) {
+            if (editModeTextBox.charTyped(codePoint, modifiers)) {
+                return true;
+            }
+        }
+        
+        return super.charTyped(codePoint, modifiers);
     }
     
     @Override
@@ -1054,9 +1812,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (button == 0 && isDraggingHandle && MAX_FILTER_SLOTS > VISIBLE_EDIT_BOXES) {
+        if (button == 0 && isDraggingHandle && MAX_FILTER_SLOTS > VISIBLE_ENTRIES) {
             int deltaY = (int) mouseY - dragStartY;
-            int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+            int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
             
             if (maxScrollOffset > 0) {
                 float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
@@ -1075,7 +1833,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Handles clicks on UP/DOWN buttons
      */
     private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        if (MAX_FILTER_SLOTS <= VISIBLE_EDIT_BOXES) return false;
+        if (MAX_FILTER_SLOTS <= VISIBLE_ENTRIES) return false;
         
         int guiX = this.leftPos;
         int guiY = this.topPos;
@@ -1101,12 +1859,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Handles clicks on the draggable handle
      */
     private boolean handleHandleClick(double mouseX, double mouseY) {
-        if (MAX_FILTER_SLOTS <= VISIBLE_EDIT_BOXES) return false;
+        if (MAX_FILTER_SLOTS <= VISIBLE_ENTRIES) return false;
         
         int guiX = this.leftPos;
         int guiY = this.topPos;
         
-        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
         if (maxScrollOffset > 0) {
             double scrollRatio = (double) filterScrollOffset / maxScrollOffset;
             int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
@@ -1128,7 +1886,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Handles clicks on the scrollbar area (jump to position)
      */
     private boolean handleScrollbarClick(double mouseX, double mouseY) {
-        if (MAX_FILTER_SLOTS <= VISIBLE_EDIT_BOXES) return false;
+        if (MAX_FILTER_SLOTS <= VISIBLE_ENTRIES) return false;
         
         int guiX = this.leftPos;
         int guiY = this.topPos;
@@ -1140,7 +1898,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             float clickRatio = (float)(mouseY - (guiY + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT;
             clickRatio = Math.max(0, Math.min(1, clickRatio));
             
-            int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+            int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
             int newScrollOffset = (int)(clickRatio * maxScrollOffset);
             newScrollOffset = Math.max(0, Math.min(maxScrollOffset, newScrollOffset));
             
@@ -1175,7 +1933,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Scrolls up silently (without sound)
      */
     private boolean scrollUpSilent() {
-        if (MAX_FILTER_SLOTS > VISIBLE_EDIT_BOXES && filterScrollOffset > 0) {
+        if (MAX_FILTER_SLOTS > VISIBLE_ENTRIES && filterScrollOffset > 0) {
             int newOffset = Math.max(0, filterScrollOffset - 1);
             setFilterScrollOffset(newOffset);
             return true;
@@ -1187,9 +1945,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Scrolls down silently (without sound)
      */
     private boolean scrollDownSilent() {
-        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
         
-        if (MAX_FILTER_SLOTS > VISIBLE_EDIT_BOXES && filterScrollOffset < maxScrollOffset) {
+        if (MAX_FILTER_SLOTS > VISIBLE_ENTRIES && filterScrollOffset < maxScrollOffset) {
             int newOffset = Math.min(maxScrollOffset, filterScrollOffset + 1);
             setFilterScrollOffset(newOffset);
             return true;
@@ -1201,9 +1959,17 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Sets the filter scroll offset and updates EditBoxes
      */
     private void setFilterScrollOffset(int offset) {
-        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_EDIT_BOXES);
+        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
         this.filterScrollOffset = Math.max(0, Math.min(maxScrollOffset, offset));
-        updateFilterEditBoxes();
+        // Stop editing if the edited entry is no longer visible
+        if (editingFilterIndex >= 0) {
+            int visibleIndex = editingFilterIndex - filterScrollOffset;
+            if (visibleIndex < 0 || visibleIndex >= VISIBLE_ENTRIES) {
+                stopEditingFilter();
+            }
+        }
+        // Update edit buttons when scroll changes
+        updateEditButtons();
     }
     
     @Override

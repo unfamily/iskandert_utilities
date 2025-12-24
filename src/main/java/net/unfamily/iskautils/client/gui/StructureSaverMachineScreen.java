@@ -815,6 +815,41 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
      
      @Override
      public boolean mouseClicked(double mouseX, double mouseY, int button) {
+         // Handle right click on textboxes (clear content)
+         if (button == 1) { // Right click
+             if (nameEditBox != null) {
+                 int textBoxX = nameEditBox.getX();
+                 int textBoxY = nameEditBox.getY();
+                 int textBoxWidth = nameEditBox.getWidth();
+                 int textBoxHeight = nameEditBox.getHeight();
+                 
+                 if (mouseX >= textBoxX && mouseX < textBoxX + textBoxWidth &&
+                     mouseY >= textBoxY && mouseY < textBoxY + textBoxHeight) {
+                     // Right click on name textbox: clear it
+                     nameEditBox.setValue("");
+                     nameEditBox.setCursorPosition(0);
+                     nameEditBox.setHighlightPos(0);
+                     return true;
+                 }
+             }
+             
+             if (idEditBox != null) {
+                 int textBoxX = idEditBox.getX();
+                 int textBoxY = idEditBox.getY();
+                 int textBoxWidth = idEditBox.getWidth();
+                 int textBoxHeight = idEditBox.getHeight();
+                 
+                 if (mouseX >= textBoxX && mouseX < textBoxX + textBoxWidth &&
+                     mouseY >= textBoxY && mouseY < textBoxY + textBoxHeight) {
+                     // Right click on ID textbox: clear it
+                     idEditBox.setValue("");
+                     idEditBox.setCursorPosition(0);
+                     idEditBox.setHighlightPos(0);
+                     return true;
+                 }
+             }
+         }
+         
          if (button == 0) { // Left click
              // Handle various clicks in priority order (like StructureSelectionScreen)
              if (handleScrollButtonClick(mouseX, mouseY) ||
