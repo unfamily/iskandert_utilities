@@ -1466,6 +1466,190 @@ public class ModMessages {
     }
     
     /**
+     * Invia il packet per cambiare l'accelerazione del Temporal Overclocker
+     * @param machinePos Posizione del blocco
+     * @param action Tipo di azione: 0=increase, 1=decrease, 2=increaseBy5, 3=decreaseBy5, 4=max, 5=min, 6=default
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendTemporalOverclockerAccelerationChangePacket(BlockPos machinePos, int action) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
+                            switch (action) {
+                                case 0 -> overclocker.increaseAccelerationFactor();
+                                case 1 -> overclocker.decreaseAccelerationFactor();
+                                case 2 -> overclocker.increaseAccelerationFactorBy5();
+                                case 3 -> overclocker.decreaseAccelerationFactorBy5();
+                                case 4 -> overclocker.setAccelerationFactorToMax();
+                                case 5 -> overclocker.setAccelerationFactorToMin();
+                                case 6 -> overclocker.setAccelerationFactorToDefault();
+                            }
+                            
+                            // Play click sound
+                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            
+                            overclocker.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Temporal Overclocker acceleration change packet: {}", e.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Temporal Overclocker acceleration change packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Invia il packet per cambiare il redstone mode del Temporal Overclocker
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendTemporalOverclockerRedstoneModePacket(BlockPos machinePos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
+                            // Cycle to next redstone mode
+                            int currentMode = overclocker.getRedstoneMode();
+                            int nextMode = (currentMode + 1) % 5;
+                            overclocker.setRedstoneMode(nextMode);
+                            
+                            // Play click sound
+                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            
+                            overclocker.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Temporal Overclocker redstone mode packet: {}", e.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Temporal Overclocker redstone mode packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Invia il packet per evidenziare un blocco collegato nel mondo (crea un marker di 5 secondi)
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendTemporalOverclockerHighlightBlockPacket(BlockPos blockPos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Create marker at block position (5 seconds = 100 ticks)
+                        int color = (0x80 << 24) | 0x00FF00; // Semi-transparent green
+                        int durationTicks = 100; // 5 seconds
+                        sendAddBillboardPacket(player, blockPos, color, durationTicks);
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Temporal Overclocker highlight block packet: {}", e.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Temporal Overclocker highlight block packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Invia il packet per rimuovere un blocco collegato dal Temporal Overclocker
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendTemporalOverclockerRemoveLinkPacket(BlockPos overclockerPos, BlockPos linkedPos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(overclockerPos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
+                            overclocker.removeLinkedBlock(linkedPos);
+                            overclocker.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Temporal Overclocker remove link packet: {}", e.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Temporal Overclocker remove link packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
      * Invia il packet per cambiare il redstone mode del timer
      */
     @OnlyIn(Dist.CLIENT)

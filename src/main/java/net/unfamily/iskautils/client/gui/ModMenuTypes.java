@@ -48,4 +48,7 @@ public class ModMenuTypes {
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<DeepDrawerExtractorMenu>> DEEP_DRAWER_EXTRACTOR_MENU =
         MENUS.register("deep_drawer_extractor_menu", () -> new MenuType<>(DeepDrawerExtractorMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<TemporalOverclockerMenu>> TEMPORAL_OVERCLOCKER_MENU =
+        MENUS.register("temporal_overclocker_menu", () -> new MenuType<>(TemporalOverclockerMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+    
 } 

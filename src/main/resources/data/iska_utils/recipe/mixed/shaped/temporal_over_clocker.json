@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ABA",
+    "BCB",
+    "ABA"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:ingots/netherite"
+    },
+    "B": {
+      "tag": "c:gems/emerald"
+    },
+    "C": {
+      "tag": "c:nether_stars"
+    }
+  },
+  "result": {
+    "id": "iska_utils:temporal_overclocker",
+    "count": 1
+  }
+} 

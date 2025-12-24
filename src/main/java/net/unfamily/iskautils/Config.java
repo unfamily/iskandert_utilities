@@ -111,41 +111,60 @@ public class Config
     private static final ModConfigSpec.IntValue WEATHER_ALTERER_ENERGY_BUFFER = BUILDER
             .comment("Energy capacity of the Weather Alterer in RF/FE")
             .comment("Recommended value: 100000, but set to 0 to disable energy consumption")
-            .defineInRange("200_weatherAltererEnergyBuffer", 0, 0, Integer.MAX_VALUE);
+            .defineInRange("210_weatherAltererEnergyBuffer", 0, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue WEATHER_ALTERER_ENERGY_CONSUME = BUILDER
             .comment("Energy consumed per tick by the Weather Alterer in RF/FE")
             .comment("Recommended value: 5000, but set to 0 to disable energy consumption")
-            .defineInRange("201_weatherAltererEnergyConsume", 0, 0, Integer.MAX_VALUE);
+            .defineInRange("211_weatherAltererEnergyConsume", 0, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue TIME_ALTERER_ENERGY_BUFFER = BUILDER
             .comment("Energy capacity of the Time Alterer in RF/FE")
             .comment("Recommended value: 100000, but set to 0 to disable energy consumption")
-            .defineInRange("202_timeAltererEnergyBuffer", 0, 0, Integer.MAX_VALUE);
+            .defineInRange("220_timeAltererEnergyBuffer", 0, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue TIME_ALTERER_ENERGY_CONSUME = BUILDER
             .comment("Energy consumed per tick by the Time Alterer in RF/FE")
             .comment("Recommended value: 5000, but set to 0 to disable energy consumption")
-            .defineInRange("203_timeAltererEnergyConsume", 0, 0, Integer.MAX_VALUE);
-    
+            .defineInRange("221_timeAltererEnergyConsume", 0, 0, Integer.MAX_VALUE);
+            
     // Temporal Overclocker configuration
     private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_ENERGY_BUFFER = BUILDER
             .comment("Energy capacity of the Temporal Overclocker in RF/FE")
-            .comment("Recommended value: 100000, but set to 0 to disable energy consumption")
-            .defineInRange("204_temporalOverclockerEnergyBuffer", 100000, 0, Integer.MAX_VALUE);
+            .comment("Recommended value: 5000000, but set to 0 to disable energy consumption")
+            .defineInRange("230_temporalOverclockerEnergyBuffer", 5000000, 0, Integer.MAX_VALUE);
     
-    private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_ENERGY_CONSUME = BUILDER
-            .comment("Energy consumed per linked block per tick by the Temporal Overclocker in RF/FE")
-            .comment("Recommended value: 100, but set to 0 to disable energy consumption")
-            .defineInRange("205_temporalOverclockerEnergyConsume", 100, 0, Integer.MAX_VALUE);
+    private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_ENERGY_PER_ACCELERATION = BUILDER
+            .comment("Energy consumed per acceleration degree per linked block per tick by the Temporal Overclocker in RF/FE")
+            .comment("Formula: consumption = energyPerAcceleration * accelerationFactor * linkedBlocks")
+            .comment("Example: with energyPerAcceleration=250, accelerationFactor=2, 1 block = 500 RF/tick")
+            .comment("Example: with energyPerAcceleration=250, accelerationFactor=20, 1 block = 5000 RF/tick")
+            .comment("Example: with energyPerAcceleration=250, accelerationFactor=40, 1 block = 10000 RF/tick")
+            .defineInRange("231_temporalOverclockerEnergyPerAcceleration", 250, 0, Integer.MAX_VALUE);
     
     private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_MAX_LINKS = BUILDER
             .comment("Maximum number of blocks that can be linked to a Temporal Overclocker")
-            .defineInRange("206_temporalOverclockerMaxLinks", 16, 1, 64);
+            .defineInRange("232_temporalOverclockerMaxLinks", 3, 1, Integer.MAX_VALUE);
+    
+    private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR_MIN = BUILDER
+            .comment("Minimum acceleration factor for Temporal Overclocker")
+            .comment("Default: 2, range: 2 to Integer.MAX_VALUE")
+            .defineInRange("233_temporalOverclockerAccelerationFactorMin", 2, 2, Integer.MAX_VALUE);
+    
+    private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR_MAX = BUILDER
+            .comment("Maximum acceleration factor for Temporal Overclocker")
+            .comment("Default: 40, range: 2 to Integer.MAX_VALUE")
+            .defineInRange("234_temporalOverclockerAccelerationFactorMax", 40, 2, Integer.MAX_VALUE);
     
     private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR = BUILDER
-            .comment("How many extra ticks to apply to linked blocks (2 = double speed, 3 = triple speed, etc.)")
-            .defineInRange("207_temporalOverclockerAccelerationFactor", 2, 1, 10);
+            .comment("Default acceleration factor for Temporal Overclocker")
+            .comment("Default: 20, range: 2 to Integer.MAX_VALUE")
+            .defineInRange("235_temporalOverclockerAccelerationFactor", 20, 2, Integer.MAX_VALUE);
+    
+    private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_LINK_RANGE = BUILDER
+            .comment("Maximum distance in blocks for linking blocks to the Temporal Overclocker")
+            .comment("Blocks beyond this range cannot be linked")
+            .defineInRange("236_temporalOverclockerLinkRange", 16, 1, 256);
             
     // Portable Dislocator resource priority configuration
     private static final ModConfigSpec.BooleanValue PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY = BUILDER
@@ -672,9 +691,12 @@ public class Config
     public static int timeAltererEnergyBuffer;
     public static int timeAltererEnergyConsume;
     public static int temporalOverclockerEnergyBuffer;
-    public static int temporalOverclockerEnergyConsume;
+    public static int temporalOverclockerEnergyPerAcceleration;
     public static int temporalOverclockerMaxLinks;
+    public static int temporalOverclockerAccelerationFactorMin;
+    public static int temporalOverclockerAccelerationFactorMax;
     public static int temporalOverclockerAccelerationFactor;
+    public static int temporalOverclockerLinkRange;
     public static boolean artifactsInfo;
     public static int scannerMarkerTTL;
     public static java.util.List<String> scannerOreEntries;
@@ -905,23 +927,21 @@ public class Config
         
         // Temporal Overclocker logic
         temporalOverclockerEnergyBuffer = TEMPORAL_OVERCLOCKER_ENERGY_BUFFER.get();
-        temporalOverclockerEnergyConsume = TEMPORAL_OVERCLOCKER_ENERGY_CONSUME.get();
+        temporalOverclockerEnergyPerAcceleration = TEMPORAL_OVERCLOCKER_ENERGY_PER_ACCELERATION.get();
         temporalOverclockerMaxLinks = TEMPORAL_OVERCLOCKER_MAX_LINKS.get();
+        temporalOverclockerAccelerationFactorMin = TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR_MIN.get();
+        temporalOverclockerAccelerationFactorMax = TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR_MAX.get();
         temporalOverclockerAccelerationFactor = TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR.get();
+        temporalOverclockerLinkRange = TEMPORAL_OVERCLOCKER_LINK_RANGE.get();
 
-        // If the energy required is 0, the energy stored is 0 automatically
-        if (temporalOverclockerEnergyConsume <= 0) {
+        // If the energy per acceleration is 0, the energy stored is 0 automatically
+        if (temporalOverclockerEnergyPerAcceleration <= 0) {
             temporalOverclockerEnergyBuffer = 0;
         }
         
         // If the energy stored is 0, the energy consumption is disabled
         if (temporalOverclockerEnergyBuffer <= 0) {
-            temporalOverclockerEnergyConsume = 0;
-        }
-
-        // If the energy buffer is less than the energy consume, set the energy consume to the energy buffer
-        if(temporalOverclockerEnergyBuffer < temporalOverclockerEnergyConsume) {
-            temporalOverclockerEnergyConsume = temporalOverclockerEnergyBuffer;
+            temporalOverclockerEnergyPerAcceleration = 0;
         }
         
         // Structure Placer Machine logic

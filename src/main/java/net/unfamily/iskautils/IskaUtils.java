@@ -283,7 +283,9 @@ public class IskaUtils {
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SMART_TIMER_MENU.get(),
                           net.unfamily.iskautils.client.gui.SmartTimerScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.DEEP_DRAWER_EXTRACTOR_MENU.get(),
-                          net.unfamily.iskautils.client.gui.DeepDrawerExtractorScreen::new);
+                net.unfamily.iskautils.client.gui.DeepDrawerExtractorScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.TEMPORAL_OVERCLOCKER_MENU.get(),
+                net.unfamily.iskautils.client.gui.TemporalOverclockerScreen::new);
         }
     }
 

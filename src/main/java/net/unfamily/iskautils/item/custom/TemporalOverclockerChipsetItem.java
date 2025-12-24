@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -8,6 +9,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
@@ -15,13 +17,26 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 /**
- * Item per collegare blocchi al Temporal Overclocker
+ * Item to link blocks to the Temporal Overclocker
  */
 public class TemporalOverclockerChipsetItem extends Item {
     
     public TemporalOverclockerChipsetItem(Properties properties) {
         super(properties);
+    }
+    
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
+        
+        // Add description from lang file
+        tooltip.add(Component.translatable("tooltip.iska_utils.temporal_overclocker_chip.desc0")
+                .withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.iska_utils.temporal_overclocker_chip.desc1")
+                .withStyle(ChatFormatting.GRAY));
     }
     
     @Override
@@ -38,26 +53,26 @@ public class TemporalOverclockerChipsetItem extends Item {
         
         BlockEntity be = level.getBlockEntity(pos);
         
-        // Se clicchiamo su un Temporal Overclocker, entriamo in modalità linking
+        // If we click on a Temporal Overclocker, enter linking mode
         if (be instanceof TemporalOverclockerBlockEntity overclocker) {
-            // Salva la posizione del overclocker nello stack
+            // Save the overclocker position in the stack
             CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
             CompoundTag tag = customData.copyTag();
             if (tag.contains("LinkingOverclocker")) {
-                // Stiamo già linkando, cancella
+                // We're already linking, cancel
                 tag.remove("LinkingOverclocker");
                 stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-                player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chipset.linking_cancelled"));
+                player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.linking_cancelled"));
             } else {
-                // Inizia il linking
+                // Start linking
                 tag.putLong("LinkingOverclocker", pos.asLong());
                 stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-                player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chipset.linking_started"));
+                player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.linking_started"));
             }
             return InteractionResult.CONSUME;
         }
         
-        // Se stiamo linkando, prova a collegare questo blocco
+        // If we're linking, try to link this block
         CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         CompoundTag tag = customData.copyTag();
         if (tag.contains("LinkingOverclocker")) {
@@ -66,43 +81,52 @@ public class TemporalOverclockerChipsetItem extends Item {
             
             BlockEntity overclockerBE = level.getBlockEntity(overclockerPos);
             if (overclockerBE instanceof TemporalOverclockerBlockEntity overclocker) {
-                // Verifica che non stiamo cercando di linkare il blocco a se stesso
+                // Verify we're not trying to link the block to itself
                 if (pos.equals(overclockerPos)) {
-                    player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chipset.cannot_link_self"));
+                    player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.cannot_link_self"));
                     return InteractionResult.FAIL;
                 }
                 
-                // Verifica che il blocco target abbia un BlockEntity
+                // Verify the target block has a BlockEntity
                 BlockEntity targetBE = level.getBlockEntity(pos);
                 if (targetBE == null) {
-                    player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chipset.no_block_entity"));
+                    player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.no_block_entity"));
                     return InteractionResult.FAIL;
                 }
                 
-                // Prova ad aggiungere il link
-                if (overclocker.addLinkedBlock(pos)) {
-                    player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chipset.link_success"));
-                    // Rimuovi la modalità linking
-                    tag.remove("LinkingOverclocker");
-                    stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+                // If already linked, remove it
+                if (overclocker.isLinked(pos)) {
+                    if (overclocker.removeLinkedBlock(pos)) {
+                        player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_removed"));
+                        // Keep the binding to the overclocker so the player can link more blocks
+                    }
                 } else {
-                    if (overclocker.isLinked(pos)) {
-                        // Se è già collegato, rimuovilo
-                        if (overclocker.removeLinkedBlock(pos)) {
-                            player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chipset.link_removed"));
-                            tag.remove("LinkingOverclocker");
-                            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+                    // Check if it can be linked
+                    String error = overclocker.canLinkBlock(pos);
+                    if (error == null) {
+                        // Try to add the link
+                        if (overclocker.addLinkedBlock(pos)) {
+                            player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_success"));
+                            // Keep the binding to the overclocker so the player can link more blocks
+                        } else {
+                            player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
                         }
                     } else {
-                        player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chipset.link_failed"));
+                        // Show specific error message
+                        switch (error) {
+                            case "max_links" -> player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
+                            case "too_far" -> player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_too_far", net.unfamily.iskautils.Config.temporalOverclockerLinkRange));
+                            case "already_linked" -> player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
+                            default -> player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
+                        }
                     }
                 }
                 return InteractionResult.CONSUME;
             } else {
-                // Il blocco overclocker non esiste più, cancella il linking
+                // The overclocker block no longer exists, cancel linking
                 tag.remove("LinkingOverclocker");
                 stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-                player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chipset.overclocker_removed"));
+                player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.overclocker_removed"));
             }
         }
         

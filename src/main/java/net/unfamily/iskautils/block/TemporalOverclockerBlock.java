@@ -16,24 +16,28 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.capabilities.Capabilities;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity;
 import net.unfamily.iskautils.item.ModItems;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Blocco Temporal Overclocker
- * Accelera i tick dei blocchi collegati tramite chipset
+ * Temporal Overclocker Block
+ * Accelerates ticks of linked blocks via chipset
  */
 public class TemporalOverclockerBlock extends Block implements EntityBlock {
     public static final BooleanProperty POWERED = net.minecraft.world.level.block.state.properties.BlockStateProperties.POWERED;
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final MapCodec<TemporalOverclockerBlock> CODEC = simpleCodec(TemporalOverclockerBlock::new);
     
     public TemporalOverclockerBlock(Properties properties) {
         super(properties);
-        this.registerDefaultState(this.stateDefinition.any().setValue(POWERED, false));
+        this.registerDefaultState(this.stateDefinition.any()
+                .setValue(POWERED, false)
+                .setValue(FACING, net.minecraft.core.Direction.NORTH));
     }
     
     @Override
@@ -43,7 +47,14 @@ public class TemporalOverclockerBlock extends Block implements EntityBlock {
     
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(POWERED);
+        builder.add(POWERED, FACING);
+    }
+    
+    @Override
+    public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) {
+        return this.defaultBlockState()
+                .setValue(FACING, context.getHorizontalDirection().getOpposite())
+                .setValue(POWERED, false);
     }
     
     @Override
@@ -83,18 +94,24 @@ public class TemporalOverclockerBlock extends Block implements EntityBlock {
         if (be instanceof TemporalOverclockerBlockEntity overclocker) {
             ItemStack heldItem = player.getItemInHand(InteractionHand.MAIN_HAND);
             
-            // Se il giocatore tiene il chipset, mostra informazioni
+            // If player holds the chipset, linking is handled by the item
             if (heldItem.is(ModItems.TEMPORAL_OVERCLOCKER_CHIPSET.get())) {
-                // Il linking viene gestito dall'item
                 return InteractionResult.PASS;
             }
             
-            // Altrimenti mostra informazioni sui blocchi collegati
-            var linkedBlocks = overclocker.getLinkedBlocks();
-            if (linkedBlocks.isEmpty()) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("block.iska_utils.temporal_overclocker.no_links"));
-            } else {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("block.iska_utils.temporal_overclocker.links_count", linkedBlocks.size()));
+            // Otherwise open the GUI
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
+                    @Override
+                    public net.minecraft.network.chat.Component getDisplayName() {
+                        return net.minecraft.network.chat.Component.translatable("block.iska_utils.temporal_overclocker");
+                    }
+                    
+                    @Override
+                    public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int id, net.minecraft.world.entity.player.Inventory inv, Player player) {
+                        return new net.unfamily.iskautils.client.gui.TemporalOverclockerMenu(id, inv, overclocker);
+                    }
+                }, pos);
             }
             
             return InteractionResult.CONSUME;

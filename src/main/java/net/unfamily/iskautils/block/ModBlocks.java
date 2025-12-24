@@ -369,7 +369,7 @@ public class ModBlocks {
     public static final DeferredBlock<TemporalOverclockerBlock> TEMPORAL_OVERCLOCKER = BLOCKS.register("temporal_overclocker",
         () -> new TemporalOverclockerBlock(BlockBehaviour.Properties.of()
             .strength(3.0f, 6.0f)
-            .sound(SoundType.METAL)
+            .sound(SoundType.NETHERITE_BLOCK)
             .requiresCorrectToolForDrops()
             .lightLevel((state) -> state.getValue(TemporalOverclockerBlock.POWERED) ? 7 : 0)));
 
