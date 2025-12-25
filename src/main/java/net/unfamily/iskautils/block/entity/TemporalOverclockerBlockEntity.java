@@ -162,11 +162,9 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
                     return true; // Remove if block is air (broken)
                 }
                 
-                // Check if block still has a BlockEntity
-                BlockEntity be = level.getBlockEntity(linkedPos);
-                if (be == null) {
-                    return true; // Remove if no BlockEntity
-                }
+                // Keep blocks even if they don't have a BlockEntity (we can accelerate block ticks).
+                // Only remove if it's air. This allows temporal accelerators to remain bound to plain blocks
+                // that temporarily lose their BlockEntity (e.g., when converted to a normal block).
                 
                 return false; // Keep this block
             });
@@ -195,35 +193,44 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
                 
                 // Accelerate valid blocks (invalid ones were already removed above)
                 for (BlockPos linkedPos : blockEntity.linkedBlocks) {
-                    BlockEntity linkedBE = level.getBlockEntity(linkedPos);
-                    if (linkedBE == null) {
-                        continue; // Skip if no BlockEntity (shouldn't happen after cleanup, but safety check)
-                    }
-                    
-                    // Accelerate the BlockEntity by calling its ticker multiple times
+                    // Read state first
                     BlockState linkedState = level.getBlockState(linkedPos);
-                    BlockEntityType<?> beType = linkedBE.getType();
+                    BlockEntity linkedBE = level.getBlockEntity(linkedPos);
                     
-                    // Get the ticker from the block using the correct method
-                    Block block = linkedState.getBlock();
-                    if (block instanceof net.minecraft.world.level.block.EntityBlock entityBlock) {
-                        BlockEntityTicker<?> ticker = entityBlock.getTicker(level, linkedState, beType);
-                        if (ticker != null) {
-                            // Call the ticker multiple times to accelerate
-                            @SuppressWarnings("unchecked")
-                            BlockEntityTicker<BlockEntity> safeTicker = (BlockEntityTicker<BlockEntity>) ticker;
-                            for (int i = 0; i < accelerationFactor - 1; i++) {
-                                try {
-                                    safeTicker.tick(level, linkedPos, linkedState, linkedBE);
-                                } catch (Exception e) {
-                                    // If there's an error, stop acceleration for this block
-                                    break;
+                    // If there's a BlockEntity, try to accelerate its ticker
+                    if (linkedBE != null) {
+                        BlockEntityType<?> beType = linkedBE.getType();
+                        Block block = linkedState.getBlock();
+                        if (block instanceof net.minecraft.world.level.block.EntityBlock entityBlock) {
+                            BlockEntityTicker<?> ticker = entityBlock.getTicker(level, linkedState, beType);
+                            if (ticker != null) {
+                                // Call the ticker multiple times to accelerate
+                                @SuppressWarnings("unchecked")
+                                BlockEntityTicker<BlockEntity> safeTicker = (BlockEntityTicker<BlockEntity>) ticker;
+                                for (int i = 0; i < accelerationFactor - 1; i++) {
+                                    try {
+                                        safeTicker.tick(level, linkedPos, linkedState, linkedBE);
+                                    } catch (Exception e) {
+                                        // If there's an error, stop acceleration for this block
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
                     
-                    // Also accelerate block ticks (for blocks without BlockEntity but with tick)
+                    // Trigger random ticks directly (covers crops and other random-ticking blocks).
+                    // Calling randomTick on a block that doesn't implement it is a no-op.
+                    if (serverLevel != null) {
+                        for (int i = 0; i < accelerationFactor - 1; i++) {
+                            try {
+                                linkedState.randomTick(serverLevel, linkedPos, serverLevel.getRandom());
+                            } catch (Exception ignored) {
+                                // ignore individual random tick failures
+                            }
+                        }
+                    }
+                    // Always attempt to accelerate block ticks as well (covers plain blocks without BE).
                     for (int i = 0; i < accelerationFactor - 1; i++) {
                         level.scheduleTick(linkedPos, linkedState.getBlock(), 0);
                     }

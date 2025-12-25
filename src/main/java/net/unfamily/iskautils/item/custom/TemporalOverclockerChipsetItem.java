@@ -87,10 +87,10 @@ public class TemporalOverclockerChipsetItem extends Item {
                     return InteractionResult.FAIL;
                 }
                 
-                // Verify the target block has a BlockEntity
-                BlockEntity targetBE = level.getBlockEntity(pos);
-                if (targetBE == null) {
-                    player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.no_block_entity"));
+                // Verify the target block is not air. It's acceptable if it doesn't have a BlockEntity.
+                net.minecraft.world.level.block.state.BlockState targetState = level.getBlockState(pos);
+                if (targetState.isAir()) {
+                    player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
                     return InteractionResult.FAIL;
                 }
                 

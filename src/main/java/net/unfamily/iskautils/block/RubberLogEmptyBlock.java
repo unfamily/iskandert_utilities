@@ -16,6 +16,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
@@ -115,25 +117,32 @@ public class RubberLogEmptyBlock extends HorizontalDirectionalBlock implements E
     
     @Override
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (level.getBlockEntity(pos) instanceof RubberLogEmptyBlockEntity blockEntity) {
-            // Check if refill time has expired
-            if (blockEntity.shouldRefill()) {
-                // Convert to a filled block using the BlockEntity method
-                blockEntity.fillWithSap(level, pos, state);
-            } else {
-                // Schedule next tick
-                level.scheduleTick(pos, this, 20); // Check every second
-            }
-        }
+        // Deprecated: block scheduled ticks are no longer used for the refill timer.
+        // Logic moved to the BlockEntity ticker to allow tick accelerators affecting BE ticks to work.
     }
     
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
         super.onPlace(state, level, pos, oldState, isMoving);
-        // Schedule first tick
-        if (!level.isClientSide()) {
-            level.scheduleTick(pos, this, 20); // Check after 1 second
-        }
+        // No scheduled block tick needed; BlockEntity ticker handles the refill logic.
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        if (level.isClientSide()) return null;
+        // Use the BlockEntity ticker so accelerators that affect block entity ticks will influence the refill timer.
+        return (lvl, pos, st, be) -> {
+            if (be instanceof RubberLogEmptyBlockEntity blockEntity && lvl instanceof ServerLevel server) {
+                // Decrement once every 20 game ticks (approx. once per second) to preserve previous timing behavior,
+                // while still allowing tick accelerators that increase BE tick rate to affect speed.
+                if (server.getGameTime() % 20L == 0L) {
+                    if (blockEntity.shouldRefill()) {
+                        blockEntity.fillWithSap(server, pos, st);
+                    }
+                }
+            }
+        };
     }
     
     @Nullable
