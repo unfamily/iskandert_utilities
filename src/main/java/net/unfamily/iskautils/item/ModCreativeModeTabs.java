@@ -97,6 +97,7 @@ public class ModCreativeModeTabs {
                                 // Not including rubber_log_empty/filled (hidden)
                                 
                                 // 4. Machines
+                                pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
                                 pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
                                 pOutput.accept(ModItems.SMART_TIMER.get());
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());
