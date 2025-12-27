@@ -134,12 +134,9 @@ public class RubberLogEmptyBlock extends HorizontalDirectionalBlock implements E
         // Use the BlockEntity ticker so accelerators that affect block entity ticks will influence the refill timer.
         return (lvl, pos, st, be) -> {
             if (be instanceof RubberLogEmptyBlockEntity blockEntity && lvl instanceof ServerLevel server) {
-                // Decrement once every 20 game ticks (approx. once per second) to preserve previous timing behavior,
-                // while still allowing tick accelerators that increase BE tick rate to affect speed.
-                if (server.getGameTime() % 20L == 0L) {
-                    if (blockEntity.shouldRefill()) {
-                        blockEntity.fillWithSap(server, pos, st);
-                    }
+                // Decrement every game tick so timers are measured in ticks (not in 20-tick steps).
+                if (blockEntity.shouldRefill()) {
+                    blockEntity.fillWithSap(server, pos, st);
                 }
             }
         };

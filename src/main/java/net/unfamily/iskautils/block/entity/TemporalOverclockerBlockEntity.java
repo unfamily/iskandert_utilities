@@ -148,12 +148,18 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         if (blockEntity.tickCounter >= ACCELERATION_INTERVAL) {
             blockEntity.tickCounter = 0;
             
-            // Check and remove broken or invalid linked blocks
+            // Check and remove broken, invalid, or too distant linked blocks
             int sizeBefore = blockEntity.linkedBlocks.size();
             blockEntity.linkedBlocks.removeIf(linkedPos -> {
                 // Check if chunk is loaded
                 if (!level.isLoaded(linkedPos)) {
                     return false; // Keep if chunk is not loaded (might be unloaded temporarily)
+                }
+                
+                // Check distance (if overclocker was moved, blocks might be too far)
+                double distance = Math.sqrt(blockEntity.worldPosition.distSqr(linkedPos));
+                if (distance > Config.temporalOverclockerLinkRange) {
+                    return true; // Remove if too far
                 }
                 
                 // Check if block still exists and is not air
@@ -163,7 +169,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
                 }
                 
                 // Keep blocks even if they don't have a BlockEntity (we can accelerate block ticks).
-                // Only remove if it's air. This allows temporal accelerators to remain bound to plain blocks
+                // Only remove if it's air or too far. This allows temporal accelerators to remain bound to plain blocks
                 // that temporarily lose their BlockEntity (e.g., when converted to a normal block).
                 
                 return false; // Keep this block
@@ -199,21 +205,21 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
                     
                     // If there's a BlockEntity, try to accelerate its ticker
                     if (linkedBE != null) {
-                        BlockEntityType<?> beType = linkedBE.getType();
-                        Block block = linkedState.getBlock();
-                        if (block instanceof net.minecraft.world.level.block.EntityBlock entityBlock) {
-                            BlockEntityTicker<?> ticker = entityBlock.getTicker(level, linkedState, beType);
-                            if (ticker != null) {
-                                // Call the ticker multiple times to accelerate
-                                @SuppressWarnings("unchecked")
-                                BlockEntityTicker<BlockEntity> safeTicker = (BlockEntityTicker<BlockEntity>) ticker;
-                                for (int i = 0; i < accelerationFactor - 1; i++) {
-                                    try {
-                                        safeTicker.tick(level, linkedPos, linkedState, linkedBE);
-                                    } catch (Exception e) {
-                                        // If there's an error, stop acceleration for this block
-                                        break;
-                                    }
+                    BlockEntityType<?> beType = linkedBE.getType();
+                    Block block = linkedState.getBlock();
+                    if (block instanceof net.minecraft.world.level.block.EntityBlock entityBlock) {
+                        BlockEntityTicker<?> ticker = entityBlock.getTicker(level, linkedState, beType);
+                        if (ticker != null) {
+                            // Call the ticker multiple times to accelerate
+                            @SuppressWarnings("unchecked")
+                            BlockEntityTicker<BlockEntity> safeTicker = (BlockEntityTicker<BlockEntity>) ticker;
+                            for (int i = 0; i < accelerationFactor - 1; i++) {
+                                try {
+                                    safeTicker.tick(level, linkedPos, linkedState, linkedBE);
+                                } catch (Exception e) {
+                                    // If there's an error, stop acceleration for this block
+                                    break;
+                                }
                                 }
                             }
                         }

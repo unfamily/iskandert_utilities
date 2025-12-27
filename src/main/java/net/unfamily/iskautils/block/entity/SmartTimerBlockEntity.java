@@ -21,6 +21,8 @@ public class SmartTimerBlockEntity extends BlockEntity {
     private int signalDurationTicks = DEFAULT_SIGNAL_DURATION_TICKS;
     private int currentTick = 0;
     private boolean isSignalActive = false;
+    // When true the timer is blocked (keeps off) while redstone signal is present
+    private boolean blockedByRedstone = false;
     
     public SmartTimerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SMART_TIMER_BE.get(), pos, state);
@@ -31,21 +33,56 @@ public class SmartTimerBlockEntity extends BlockEntity {
             return;
         }
 
-        blockEntity.currentTick++;
+        // Check current redstone input (any neighbor)
+        int redstonePower = level.getBestNeighborSignal(pos);
+        boolean hasRedstoneSignal = redstonePower > 0;
 
         if (blockEntity.isSignalActive) {
+            // Currently outputting signal: count duration as usual
+            blockEntity.currentTick++;
             if (blockEntity.currentTick >= blockEntity.signalDurationTicks) {
                 blockEntity.isSignalActive = false;
                 blockEntity.currentTick = 0;
-                level.setBlock(pos, state.setValue(SmartTimerBlock.POWERED, false), 3);
-                level.updateNeighborsAt(pos, state.getBlock());
+                // Ensure block is set to unpowered
+                if (state.getValue(SmartTimerBlock.POWERED)) {
+                    level.setBlock(pos, state.setValue(SmartTimerBlock.POWERED, false), 3);
+                    level.updateNeighborsAt(pos, state.getBlock());
+                }
             }
         } else {
-            if (blockEntity.currentTick >= blockEntity.cooldownTicks) {
-                blockEntity.isSignalActive = true;
-                blockEntity.currentTick = 0;
-                level.setBlock(pos, state.setValue(SmartTimerBlock.POWERED, true), 3);
-                level.updateNeighborsAt(pos, state.getBlock());
+            // Off phase: if we receive any redstone signal, block the timer,
+            // reset the cooldown and keep it off until the redstone signal stops.
+            if (hasRedstoneSignal) {
+                if (!blockEntity.blockedByRedstone) {
+                    blockEntity.blockedByRedstone = true;
+                    blockEntity.currentTick = 0; // reset timer while blocked
+                    blockEntity.setChanged();
+                    // Ensure block state is unpowered while blocked
+                    if (state.getValue(SmartTimerBlock.POWERED)) {
+                        level.setBlock(pos, state.setValue(SmartTimerBlock.POWERED, false), 3);
+                        level.updateNeighborsAt(pos, state.getBlock());
+                    }
+                }
+                // While blocked, do not advance the cooldown
+                return;
+            } else {
+                // No redstone input: if we were blocked, clear the block and reset timer
+                if (blockEntity.blockedByRedstone) {
+                    blockEntity.blockedByRedstone = false;
+                    blockEntity.currentTick = 0;
+                    blockEntity.setChanged();
+                }
+
+                // Normal cooldown progression
+                blockEntity.currentTick++;
+                if (blockEntity.currentTick >= blockEntity.cooldownTicks) {
+                    blockEntity.isSignalActive = true;
+                    blockEntity.currentTick = 0;
+                    if (!state.getValue(SmartTimerBlock.POWERED)) {
+                        level.setBlock(pos, state.setValue(SmartTimerBlock.POWERED, true), 3);
+                        level.updateNeighborsAt(pos, state.getBlock());
+                    }
+                }
             }
         }
     }
@@ -107,6 +144,7 @@ public class SmartTimerBlockEntity extends BlockEntity {
         tag.putInt("SignalDurationTicks", signalDurationTicks);
         tag.putInt("CurrentTick", currentTick);
         tag.putBoolean("IsSignalActive", isSignalActive);
+        tag.putBoolean("BlockedByRedstone", blockedByRedstone);
     }
     
     @Override
@@ -123,6 +161,9 @@ public class SmartTimerBlockEntity extends BlockEntity {
         }
         if (tag.contains("IsSignalActive")) {
             isSignalActive = tag.getBoolean("IsSignalActive");
+        }
+        if (tag.contains("BlockedByRedstone")) {
+            blockedByRedstone = tag.getBoolean("BlockedByRedstone");
         }
     }
     
