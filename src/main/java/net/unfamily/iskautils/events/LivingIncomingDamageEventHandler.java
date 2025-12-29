@@ -131,7 +131,7 @@ public class LivingIncomingDamageEventHandler {
             maxHealthAttr.setBaseValue(newMaxHealth);
             
             // Remove stage after use
-            StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
+            StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip", true);
             
             // Adjust current health to new maximum if necessary
             if (player.getHealth() > player.getMaxHealth()) {
@@ -248,7 +248,7 @@ public class LivingIncomingDamageEventHandler {
     }
 
     private static void clearStages(Player player) {
-        StageRegistry.removePlayerStage(player, "iska_utils_internal-greedy_shield_equip");
-        StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
+        StageRegistry.removePlayerStage(player, "iska_utils_internal-greedy_shield_equip", true);
+        StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip", true);
     }
 }

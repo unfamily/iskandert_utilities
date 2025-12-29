@@ -144,7 +144,7 @@ public class Config
     
     private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_MAX_LINKS = BUILDER
             .comment("Maximum number of blocks that can be linked to a Temporal Overclocker")
-            .defineInRange("232_temporalOverclockerMaxLinks", 5, 1, Integer.MAX_VALUE);
+            .defineInRange("232_temporalOverclockerMaxLinks", 3, 1, Integer.MAX_VALUE);
     
     private static final ModConfigSpec.IntValue TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR_MIN = BUILDER
             .comment("Minimum acceleration factor for Temporal Overclocker")

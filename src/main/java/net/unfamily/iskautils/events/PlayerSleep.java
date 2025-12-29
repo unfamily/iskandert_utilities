@@ -54,7 +54,7 @@ public class PlayerSleep {
 						player.getName().getString());
 				}
 
-				StageRegistry.removePlayerStage(player, "iska_utils_internal-necrotic_crystal_heart");
+				StageRegistry.removePlayerStage(player, "iska_utils_internal-necrotic_crystal_heart", true);
 			}
 		}
 	}

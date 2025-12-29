@@ -159,6 +159,13 @@ public class StageRegistry {
      * Sets a player stage
      */
     public boolean setPlayerStage(ServerPlayer player, String stage, boolean value) {
+        return setPlayerStage(player, stage, value, false);
+    }
+
+    /**
+     * Sets a player stage with option to hide the log entry
+     */
+    public boolean setPlayerStage(ServerPlayer player, String stage, boolean value, boolean hideLog) {
         PlayerStageData data = getPlayerStageData(player);
         if (data == null) {
             return false;
@@ -170,7 +177,9 @@ public class StageRegistry {
             data.removeStage(stage);
         }
         
-        LOGGER.info("Set player stage '{}' to {} for player {}", stage, value, player.getName().getString());
+        if (!hideLog) {
+            LOGGER.info("Set player stage '{}' to {} for player {}", stage, value, player.getName().getString());
+        }
         return true;
     }
     
@@ -178,6 +187,13 @@ public class StageRegistry {
      * Sets a world stage
      */
     public boolean setWorldStage(String stage, boolean value) {
+        return setWorldStage(stage, value, false);
+    }
+
+    /**
+     * Sets a world stage with option to hide the log entry
+     */
+    public boolean setWorldStage(String stage, boolean value, boolean hideLog) {
         WorldStageData data = getWorldStageData(server.getLevel(Level.OVERWORLD));
         if (data == null) {
             LOGGER.error("Failed to access world stage data");
@@ -191,7 +207,9 @@ public class StageRegistry {
         }
         
         data.setDirty();
-        LOGGER.info("Set world stage '{}' to {}", stage, value);
+        if (!hideLog) {
+            LOGGER.info("Set world stage '{}' to {}", stage, value);
+        }
         return true;
     }
     
@@ -199,6 +217,13 @@ public class StageRegistry {
      * Sets a team stage
      */
     public boolean setTeamStage(String teamName, String stage, boolean value) {
+        return setTeamStage(teamName, stage, value, false);
+    }
+
+    /**
+     * Sets a team stage with option to hide the log entry
+     */
+    public boolean setTeamStage(String teamName, String stage, boolean value, boolean hideLog) {
         TeamStageData data = getTeamStageData(server.getLevel(Level.OVERWORLD));
         if (data == null) {
             LOGGER.error("Failed to access team stage data");
@@ -212,7 +237,9 @@ public class StageRegistry {
         }
         
         data.setDirty();
-        LOGGER.info("Set team stage '{}' to {} for team '{}'", stage, value, teamName);
+        if (!hideLog) {
+            LOGGER.info("Set team stage '{}' to {} for team '{}'", stage, value, teamName);
+        }
         return true;
     }
     
@@ -390,7 +417,23 @@ public class StageRegistry {
             return false;
         }
         
-        return getInstance(server).setPlayerStage(serverPlayer, stage, true);
+        return getInstance(server).setPlayerStage(serverPlayer, stage, true, false);
+    }
+
+    /**
+     * Adds a stage to a player (static method for scripts) with option to hide the log entry
+     */
+    public static boolean addPlayerStage(Entity player, String stage, boolean hideLog) {
+        if (!(player instanceof ServerPlayer serverPlayer) || player.level().isClientSide()) {
+            return false;
+        }
+        
+        MinecraftServer server = ((ServerPlayer) player).getServer();
+        if (server == null) {
+            return false;
+        }
+        
+        return getInstance(server).setPlayerStage(serverPlayer, stage, true, hideLog);
     }
     
     /**
@@ -409,7 +452,23 @@ public class StageRegistry {
             return false;
         }
         
-        return getInstance(server).setPlayerStage(serverPlayer, stage, false);
+        return getInstance(server).setPlayerStage(serverPlayer, stage, false, false);
+    }
+
+    /**
+     * Removes a stage from a player (static method for scripts) with option to hide the log entry
+     */
+    public static boolean removePlayerStage(Entity player, String stage, boolean hideLog) {
+        if (!(player instanceof ServerPlayer serverPlayer) || player.level().isClientSide()) {
+            return false;
+        }
+        
+        MinecraftServer server = ((ServerPlayer) player).getServer();
+        if (server == null) {
+            return false;
+        }
+        
+        return getInstance(server).setPlayerStage(serverPlayer, stage, false, hideLog);
     }
     
     /**
@@ -571,9 +630,8 @@ public class StageRegistry {
                 ListTag stagesList = getStagesList();
                 stagesList.add(StringTag.valueOf(stage));
                 saveStagesList(stagesList);
-                LOGGER.debug("[PlayerStageData] Stage {} aggiunto al giocatore {}", stage, player.getName().getString());
             } else {
-                LOGGER.debug("[PlayerStageData] Stage {} già presente per il giocatore {}", stage, player.getName().getString());
+                
             }
         }
         
@@ -595,7 +653,7 @@ public class StageRegistry {
             }
             
             saveStagesList(newList);
-            LOGGER.debug("[PlayerStageData] Stage {} rimosso dal giocatore {}: {}", stage, player.getName().getString(), removed);
+            
         }
         
         /**
@@ -605,7 +663,6 @@ public class StageRegistry {
             CompoundTag persistentData = player.getPersistentData();
             CompoundTag iskaData = persistentData.getCompound("iskautils");
             ListTag stagesList = iskaData.getList("stages", 8); // 8 = string tag type
-            LOGGER.debug("[PlayerStageData] Letti {} stages per il giocatore {}", stagesList.size(), player.getName().getString());
             return stagesList;
         }
         
@@ -617,7 +674,6 @@ public class StageRegistry {
             CompoundTag iskaData = persistentData.getCompound("iskautils");
             iskaData.put("stages", stagesList);
             persistentData.put("iskautils", iskaData);
-            LOGGER.debug("[PlayerStageData] Salvati {} stages per il giocatore {}", stagesList.size(), player.getName().getString());
         }
         
         /**
@@ -638,8 +694,6 @@ public class StageRegistry {
             floatValues.putFloat(key, value);
             iskaData.put("floatValues", floatValues);
             persistentData.put("iskautils", iskaData);
-            
-            LOGGER.debug("[PlayerStageData] Impostato valore float {} a {} per il giocatore {}", key, value, player.getName().getString());
         }
         
         /**
@@ -678,8 +732,6 @@ public class StageRegistry {
             floatValues.remove(key);
             iskaData.put("floatValues", floatValues);
             persistentData.put("iskautils", iskaData);
-            
-            LOGGER.debug("[PlayerStageData] Rimosso valore float {} per il giocatore {}", key, player.getName().getString());
         }
     }
     
@@ -810,9 +862,9 @@ public class StageRegistry {
             if (!stages.contains(stage)) {
                 stages.add(stage);
                 setDirty();
-                LOGGER.debug("[TeamStageData] Stage {} aggiunto al team {}", stage, teamName);
+                
             } else {
-                LOGGER.debug("[TeamStageData] Stage {} già presente per il team {}", stage, teamName);
+                
             }
         }
         
@@ -823,7 +875,7 @@ public class StageRegistry {
             List<String> stages = teamStages.get(teamName);
             if (stages != null && stages.remove(stage)) {
                 setDirty();
-                LOGGER.debug("[TeamStageData] Stage {} rimosso dal team {}", stage, teamName);
+                
             }
         }
         
@@ -859,7 +911,7 @@ public class StageRegistry {
         public void removeTeam(String teamName) {
             if (teamStages.remove(teamName) != null) {
                 setDirty();
-                LOGGER.debug("[TeamStageData] Rimossi tutti gli stage per il team {}", teamName);
+                
             }
         }
     }

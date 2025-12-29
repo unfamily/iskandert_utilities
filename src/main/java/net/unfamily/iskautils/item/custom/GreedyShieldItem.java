@@ -61,14 +61,14 @@ public class GreedyShieldItem extends Item {
             
             // If the item is not in the vanilla inventory (i.e., it's in Curios), add the stage
             if (!isInVanillaInventory) {
-                StageRegistry.addPlayerStage(player, "iska_utils_internal-greedy_shield_equip");
+                StageRegistry.addPlayerStage(player, "iska_utils_internal-greedy_shield_equip", true);
             }
         }
     }
 
     @Override
     public boolean onDroppedByPlayer(ItemStack itemstack, Player entity) {
-        StageRegistry.removePlayerStage(entity, "iska_utils_internal-greedy_shield_equip");
+        StageRegistry.removePlayerStage(entity, "iska_utils_internal-greedy_shield_equip", true);
         return true;
     }
 

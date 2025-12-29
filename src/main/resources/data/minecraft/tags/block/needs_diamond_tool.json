@@ -2,5 +2,6 @@
   "replace": false,
   "values": [
     "iska_utils:netherite_bars"
+    , "iska_utils:temporal_overclocker"
   ]
 } 
