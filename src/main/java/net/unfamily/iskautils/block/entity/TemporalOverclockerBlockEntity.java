@@ -42,6 +42,9 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     // Acceleration factor (modifiable from GUI, default from config)
     private int accelerationFactor = Config.temporalOverclockerAccelerationFactor;
     
+    // Persistent mode (if true, blocks are not removed when broken, only when out of range)
+    private boolean persistentMode = false;
+    
     public TemporalOverclockerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TEMPORAL_OVERCLOCKER_BE.get(), pos, state);
         int maxEnergy = Config.temporalOverclockerEnergyPerAcceleration <= 0 ? 0 : Config.temporalOverclockerEnergyBuffer;
@@ -157,15 +160,17 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
                 }
                 
                 // Check distance (if overclocker was moved, blocks might be too far)
+                // ALWAYS remove if out of range, regardless of persistent mode
                 double distance = Math.sqrt(blockEntity.worldPosition.distSqr(linkedPos));
                 if (distance > Config.temporalOverclockerLinkRange) {
                     return true; // Remove if too far
                 }
                 
                 // Check if block still exists and is not air
+                // If persistent mode is ON, don't remove air blocks (only remove if out of range)
                 BlockState linkedState = level.getBlockState(linkedPos);
-                if (linkedState.isAir()) {
-                    return true; // Remove if block is air (broken)
+                if (linkedState.isAir() && !blockEntity.persistentMode) {
+                    return true; // Remove if block is air (broken) and persistent mode is OFF
                 }
                 
                 // Keep blocks even if they don't have a BlockEntity (we can accelerate block ticks).
@@ -188,19 +193,34 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
             if (!blockEntity.linkedBlocks.isEmpty() && level instanceof ServerLevel serverLevel) {
                 int accelerationFactor = blockEntity.accelerationFactor;
                 
-                // Calculate energy consumption: energyPerAcceleration * accelerationFactor * numBlocks
+                // Count only non-air blocks for energy calculation
+                int validBlockCount = 0;
+                for (BlockPos linkedPos : blockEntity.linkedBlocks) {
+                    BlockState blockState = level.getBlockState(linkedPos);
+                    if (!blockState.isAir()) {
+                        validBlockCount++;
+                    }
+                }
+                
+                // Calculate energy consumption: energyPerAcceleration * accelerationFactor * numValidBlocks
                 int energyPerBlock = Config.temporalOverclockerEnergyPerAcceleration * accelerationFactor;
-                int totalEnergyNeeded = energyPerBlock * blockEntity.linkedBlocks.size();
+                int totalEnergyNeeded = energyPerBlock * validBlockCount;
                 
                 // Check if we have enough energy
                 if (totalEnergyNeeded > 0 && blockEntity.energyStorage.getEnergyStored() < totalEnergyNeeded) {
                     return; // Not enough energy for all blocks
                 }
                 
-                // Accelerate valid blocks (invalid ones were already removed above)
+                // Accelerate valid blocks (skip air blocks)
                 for (BlockPos linkedPos : blockEntity.linkedBlocks) {
                     // Read state first
                     BlockState linkedState = level.getBlockState(linkedPos);
+                    
+                    // Skip air blocks (they exist in persistent mode but shouldn't be accelerated)
+                    if (linkedState.isAir()) {
+                        continue;
+                    }
+                    
                     BlockEntity linkedBE = level.getBlockEntity(linkedPos);
                     
                     // If there's a BlockEntity, try to accelerate its ticker
@@ -340,6 +360,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         tag.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
         tag.putInt("redstoneMode", redstoneMode);
         tag.putInt("accelerationFactor", accelerationFactor);
+        tag.putBoolean("persistentMode", persistentMode);
         
         // Save linked blocks
         ListTag linkedBlocksTag = new ListTag();
@@ -382,6 +403,11 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
             this.accelerationFactor = Config.temporalOverclockerAccelerationFactor;
         }
         
+        // Load persistent mode
+        if (tag.contains("persistentMode")) {
+            this.persistentMode = tag.getBoolean("persistentMode");
+        }
+        
         // Load linked blocks
         linkedBlocks.clear();
         if (tag.contains(LINKED_BLOCKS_TAG)) {
@@ -412,6 +438,32 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     public void setRedstoneMode(int redstoneMode) {
         this.redstoneMode = redstoneMode % 5; // Ensure mode is always 0-4
         setChanged();
+    }
+    
+    /**
+     * Gets the persistent mode
+     */
+    public boolean isPersistentMode() {
+        return persistentMode;
+    }
+    
+    /**
+     * Sets the persistent mode
+     */
+    public void setPersistentMode(boolean persistentMode) {
+        this.persistentMode = persistentMode;
+        setChanged();
+        // Force sync to client
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
+    }
+    
+    /**
+     * Toggles the persistent mode
+     */
+    public void togglePersistentMode() {
+        setPersistentMode(!persistentMode);
     }
     
     /**

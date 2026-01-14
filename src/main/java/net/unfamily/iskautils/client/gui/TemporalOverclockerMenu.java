@@ -31,7 +31,8 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
     private static final int BLOCK_POS_Y_INDEX = 6;
     private static final int BLOCK_POS_Z_INDEX = 7;
     private static final int LINKED_BLOCKS_HASH_INDEX = 8;
-    private static final int DATA_COUNT = 9;
+    private static final int PERSISTENT_MODE_INDEX = 9;
+    private static final int DATA_COUNT = 10;
     
     // Constructor for server-side (with block entity)
     public TemporalOverclockerMenu(int containerId, Inventory playerInventory, TemporalOverclockerBlockEntity blockEntity) {
@@ -55,6 +56,7 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
                     case BLOCK_POS_Y_INDEX -> blockPos.getY();
                     case BLOCK_POS_Z_INDEX -> blockPos.getZ();
                     case LINKED_BLOCKS_HASH_INDEX -> calculateLinkedBlocksHash(blockEntity.getLinkedBlocks());
+                    case PERSISTENT_MODE_INDEX -> blockEntity.isPersistentMode() ? 1 : 0;
                     default -> 0;
                 };
             }
@@ -125,6 +127,10 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
     
     public int getAccelerationFactor() {
         return this.containerData.get(ACCELERATION_FACTOR_INDEX);
+    }
+    
+    public boolean isPersistentMode() {
+        return this.containerData.get(PERSISTENT_MODE_INDEX) != 0;
     }
     
     public BlockPos getSyncedBlockPos() {

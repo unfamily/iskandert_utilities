@@ -57,6 +57,10 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     private int redstoneModeButtonX, redstoneModeButtonY;
     private static final int REDSTONE_BUTTON_SIZE = 16;
     
+    // Custom persistent mode button
+    private int persistentModeButtonX, persistentModeButtonY;
+    private static final int PERSISTENT_BUTTON_SIZE = 16;
+    
     // Acceleration factor button (vanilla button)
     private Button accelerationButton;
     
@@ -70,6 +74,10 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     private boolean isDraggingHandle = false;
     private int dragStartY = 0;
     private int dragStartScrollOffset = 0;
+    
+    // Cache per evitare il lampeggiamento dei tooltip
+    private int lastScrollOffset = -1;
+    private int lastLinkedBlocksSize = -1;
     
     public TemporalOverclockerScreen(TemporalOverclockerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -102,9 +110,18 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         // Available space on right: GUI_WIDTH - 170 = 200 - 170 = 30px
         int entriesEndX = ENTRIES_START_X + ENTRY_WIDTH; // 170px
         int rightSpace = GUI_WIDTH - entriesEndX; // 30px
+        
+        // Center the two buttons vertically with 2px spacing between them
+        int totalButtonsHeight = REDSTONE_BUTTON_SIZE + 2 + PERSISTENT_BUTTON_SIZE; // 16 + 2 + 16 = 34px
+        int buttonsStartY = this.topPos + (GUI_HEIGHT - totalButtonsHeight) / 2;
+        
+        // Redstone mode button (top)
         this.redstoneModeButtonX = this.leftPos + entriesEndX + (rightSpace - REDSTONE_BUTTON_SIZE) / 2;
-        // Position redstone button centered vertically
-        this.redstoneModeButtonY = this.topPos + (GUI_HEIGHT / 2) - (REDSTONE_BUTTON_SIZE / 2);
+        this.redstoneModeButtonY = buttonsStartY;
+        
+        // Persistent mode button (bottom, 2px below redstone)
+        this.persistentModeButtonX = this.leftPos + entriesEndX + (rightSpace - PERSISTENT_BUTTON_SIZE) / 2;
+        this.persistentModeButtonY = buttonsStartY + REDSTONE_BUTTON_SIZE + 2;
         
         // Acceleration button position (below entries, centered)
         int entriesEndY = ENTRIES_START_Y + (VISIBLE_ENTRIES * ENTRY_HEIGHT);
@@ -160,8 +177,12 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
             this.accelerationButton.setMessage(Component.literal(text));
         }
         
-        // Update entry buttons
-        updateEntryButtons();
+        // Update entry buttons SOLO se necessario (evita lampeggiamento tooltip)
+        if (scrollOffset != lastScrollOffset || linkedBlocks.size() != lastLinkedBlocksSize) {
+            updateEntryButtons();
+            lastScrollOffset = scrollOffset;
+            lastLinkedBlocksSize = linkedBlocks.size();
+        }
     }
     
     /**
@@ -199,6 +220,8 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                     playButtonSound();
                 })
                 .bounds(highlightButtonX, buttonY, buttonSize, buttonSize)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    Component.translatable("gui.iska_utils.temporal_overclocker.show")))
                 .build();
             highlightButtons.add(highlightButton);
             this.addRenderableWidget(highlightButton);
@@ -212,6 +235,8 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                     playButtonSound();
                 })
                 .bounds(removeButtonX, buttonY, buttonSize, buttonSize)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    Component.translatable("gui.iska_utils.temporal_overclocker.disconnect")))
                 .build();
             removeButtons.add(removeButton);
             this.addRenderableWidget(removeButton);
@@ -225,6 +250,9 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         
         // Draw the energy bar
         renderEnergyBar(guiGraphics);
+        
+        // Draw the custom persistent mode button
+        renderPersistentModeButton(guiGraphics, mouseX, mouseY);
         
         // Draw the custom redstone mode button
         renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
@@ -341,6 +369,36 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     /**
      * Renderizza il pulsante redstone mode
      */
+    private void renderPersistentModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // Check if mouse is over the button
+        boolean isHovered = mouseX >= this.persistentModeButtonX && mouseX <= this.persistentModeButtonX + PERSISTENT_BUTTON_SIZE &&
+                           mouseY >= this.persistentModeButtonY && mouseY <= this.persistentModeButtonY + PERSISTENT_BUTTON_SIZE;
+        
+        // Draw button background (normal or highlighted)
+        int textureY = isHovered ? 16 : 0; // Highlighted version is below the normal one
+        guiGraphics.blit(MEDIUM_BUTTONS, this.persistentModeButtonX, this.persistentModeButtonY, 
+                        0, textureY, PERSISTENT_BUTTON_SIZE, PERSISTENT_BUTTON_SIZE, 
+                        96, 96); // Correct texture size: 96x96
+        
+        // Get current persistent mode from menu
+        boolean isPersistent = this.menu.isPersistentMode();
+        
+        // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
+        int iconX = this.persistentModeButtonX + 2; // Center: (16-12)/2 = 2
+        int iconY = this.persistentModeButtonY + 2; // Center: (16-12)/2 = 2
+        int iconSize = 12;
+        
+        if (isPersistent) {
+            // ON: Lodestone icon (fixed/permanent point)
+            net.minecraft.world.item.ItemStack lodestone = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LODESTONE);
+            renderScaledItem(guiGraphics, lodestone, iconX, iconY, iconSize);
+        } else {
+            // OFF: Brush icon (auto-remove)
+            net.minecraft.world.item.ItemStack brush = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BRUSH);
+            renderScaledItem(guiGraphics, brush, iconX, iconY, iconSize);
+        }
+    }
+    
     private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the button
         boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
@@ -514,7 +572,14 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                 return true;
             }
             
-            // Entry buttons (highlight and remove) are handled by vanilla Button widgets
+            // Entry buttons remove sono gestiti da vanilla Button widgets
+            
+            // Handle persistent mode button click
+            if (mouseX >= this.persistentModeButtonX && mouseX <= this.persistentModeButtonX + PERSISTENT_BUTTON_SIZE &&
+                mouseY >= this.persistentModeButtonY && mouseY <= this.persistentModeButtonY + PERSISTENT_BUTTON_SIZE) {
+                onPersistentModePressed();
+                return true;
+            }
             
             // Handle redstone mode button click
             if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
@@ -573,6 +638,14 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         BlockPos machinePos = this.menu.getSyncedBlockPos();
         if (!machinePos.equals(BlockPos.ZERO)) {
             net.unfamily.iskautils.network.ModMessages.sendTemporalOverclockerAccelerationChangePacket(machinePos, 6);
+        }
+    }
+    
+    private void onPersistentModePressed() {
+        BlockPos machinePos = this.menu.getSyncedBlockPos();
+        if (!machinePos.equals(BlockPos.ZERO)) {
+            net.unfamily.iskautils.network.ModMessages.sendTemporalOverclockerTogglePersistentPacket(machinePos);
+            playButtonSound();
         }
     }
     
@@ -747,6 +820,25 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         }
     }
     
+    private void renderPersistentModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        boolean isHovered = mouseX >= this.persistentModeButtonX && mouseX <= this.persistentModeButtonX + PERSISTENT_BUTTON_SIZE &&
+                           mouseY >= this.persistentModeButtonY && mouseY <= this.persistentModeButtonY + PERSISTENT_BUTTON_SIZE;
+        
+        if (isHovered) {
+            boolean isPersistent = this.menu.isPersistentMode();
+            
+            java.util.List<Component> tooltipLines = new java.util.ArrayList<>();
+            if (isPersistent) {
+                tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.persistent.on"));
+            } else {
+                tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.persistent.off"));
+            }
+            tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.persistent.description"));
+            
+            guiGraphics.renderComponentTooltip(this.font, tooltipLines, mouseX, mouseY);
+        }
+    }
+    
     private void renderRedstoneModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                            mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
@@ -784,6 +876,9 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         
         // Render energy bar tooltip
         renderEnergyTooltip(guiGraphics, mouseX, mouseY);
+        
+        // Render persistent mode button tooltip
+        renderPersistentModeTooltip(guiGraphics, mouseX, mouseY);
         
         // Render redstone mode button tooltip
         renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);

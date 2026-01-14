@@ -90,11 +90,28 @@ public class PortableDislocatorItem extends Item {
         Player player;
         int targetX;
         int targetZ;
+        int attemptNumber;
+        boolean usingAngelBlock;
+        boolean isRetry;
         
+        // Costruttore per nuova richiesta (primo tentativo)
         TeleportRequest(Player player, int targetX, int targetZ) {
             this.player = player;
             this.targetX = targetX;
             this.targetZ = targetZ;
+            this.attemptNumber = 1;
+            this.usingAngelBlock = false;
+            this.isRetry = false;
+        }
+        
+        // Costruttore per retry
+        TeleportRequest(Player player, int targetX, int targetZ, int attemptNumber, boolean usingAngelBlock) {
+            this.player = player;
+            this.targetX = targetX;
+            this.targetZ = targetZ;
+            this.attemptNumber = attemptNumber;
+            this.usingAngelBlock = usingAngelBlock;
+            this.isRetry = true;
         }
     }
     
@@ -204,20 +221,71 @@ public class PortableDislocatorItem extends Item {
     }
     
     /**
-     * Checks for teleport requests from client side
+     * Checks for teleport requests from client side and retry requests
      */
     public static void checkForTeleportRequest(Player player, ItemStack stack, Level level) {
         UUID playerId = player.getUUID();
         TeleportRequest request = pendingRequests.get(playerId);
         
         if (request != null && level instanceof ServerLevel) {
-
-            
             // Clear the request
             pendingRequests.remove(playerId);
             
-            // Start the server-side teleportation using the provided stack
-            startServerTeleportation(player, stack, request.targetX, request.targetZ);
+            if (request.isRetry) {
+                // Questo è un retry, gestiamolo diversamente
+                processRetryRequest(player, request);
+            } else {
+                // Primo tentativo normale
+                startServerTeleportation(player, stack, request.targetX, request.targetZ);
+            }
+        }
+    }
+    
+    /**
+     * Processa una richiesta di retry
+     */
+    private static void processRetryRequest(Player player, TeleportRequest request) {
+        UUID playerId = player.getUUID();
+        
+        // Genera nuove coordinate randomizzate
+        java.util.Random random = new java.util.Random();
+        int minRange = 100;
+        int maxRange = 150;
+        
+        int offsetX = random.nextBoolean() ? 
+            (random.nextInt(maxRange - minRange + 1) + minRange) :
+            -(random.nextInt(maxRange - minRange + 1) + minRange);
+            
+        int offsetZ = random.nextBoolean() ?
+            (random.nextInt(maxRange - minRange + 1) + minRange) :
+            -(random.nextInt(maxRange - minRange + 1) + minRange);
+        
+        int newX = request.targetX + offsetX;
+        int newZ = request.targetZ + offsetZ;
+        
+        // Crea nuovo TeleportationData per questo retry
+        TeleportationData newData = new TeleportationData(player, newX, newZ);
+        newData.originalX = request.targetX;
+        newData.originalZ = request.targetZ;
+        newData.attemptCount = request.attemptNumber;
+        newData.usingAngelBlock = request.usingAngelBlock;
+        
+        // Sostituisce il tentativo precedente
+        activeTeleportations.put(playerId, newData);
+        
+        // Notifica il player
+        if (request.usingAngelBlock) {
+            player.displayClientMessage(
+                Component.translatable("item.iska_utils.portable_dislocator.message.angel_retry", 
+                                     request.attemptNumber - NORMAL_ATTEMPTS)
+                    .withStyle(ChatFormatting.YELLOW), 
+                true);
+        } else {
+            player.displayClientMessage(
+                Component.translatable("item.iska_utils.portable_dislocator.message.retry", 
+                                     request.attemptNumber)
+                    .withStyle(ChatFormatting.YELLOW), 
+                true);
         }
     }
     
@@ -432,17 +500,26 @@ public class PortableDislocatorItem extends Item {
         
         // Timeout after max wait time
         if (data.ticksWaiting > MAX_WAIT_TICKS) {
-
-                
             // Try another attempt if we haven't exceeded max attempts
             if (data.attemptCount < MAX_ATTEMPTS) {
-                // if we have already made 5 normal attempts, try with the Angel Block
-                if (data.attemptCount >= NORMAL_ATTEMPTS && !data.usingAngelBlock) {
-                    attemptAngelBlockTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1);
-                } else {
-                    // normal attempt or continue with Angel Block if already activated
-                    attemptNewTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1, data.usingAngelBlock);
-                }
+                // Determina se usare Angel Block
+                boolean useAngelBlock = data.attemptCount >= NORMAL_ATTEMPTS;
+                
+                // Crea una retry request invece di processare direttamente
+                TeleportRequest retryRequest = new TeleportRequest(
+                    player, 
+                    data.originalX, 
+                    data.originalZ, 
+                    data.attemptCount + 1, 
+                    useAngelBlock
+                );
+                
+                // Mette la retry request in pendingRequests
+                // Verrà processata da checkForTeleportRequest nel prossimo tick
+                pendingRequests.put(playerId, retryRequest);
+                
+                // Rimuove il tentativo corrente (sarà ricreato dalla retry request)
+                activeTeleportations.remove(playerId);
             } else {
                 // All attempts failed, give up
                 resetTeleportationState(playerId);
@@ -508,7 +585,16 @@ public class PortableDislocatorItem extends Item {
                                 
                                 // Try another attempt if we haven't exceeded max attempts
                                 if (data.attemptCount < MAX_ATTEMPTS) {
-                                    attemptNewTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1, true);
+                                    // Crea retry request per il prossimo tentativo
+                                    TeleportRequest retryRequest = new TeleportRequest(
+                                        player, 
+                                        data.originalX, 
+                                        data.originalZ, 
+                                        data.attemptCount + 1, 
+                                        true  // continua con Angel Block
+                                    );
+                                    pendingRequests.put(playerId, retryRequest);
+                                    activeTeleportations.remove(playerId);
                                 } else {
                                     // All attempts failed, give up
                                     resetTeleportationState(playerId);
@@ -549,11 +635,19 @@ public class PortableDislocatorItem extends Item {
                                 
                                 // Try another attempt if we haven't exceeded max attempts
                                 if (data.attemptCount < MAX_ATTEMPTS) {
-                                    if (data.attemptCount >= NORMAL_ATTEMPTS) {
-                                        attemptAngelBlockTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1);
-                                    } else {
-                                        attemptNewTeleportation(player, data.originalX, data.originalZ, data.attemptCount + 1, false);
-                                    }
+                                    // Determina se passare ad Angel Block
+                                    boolean useAngelBlock = data.attemptCount >= NORMAL_ATTEMPTS;
+                                    
+                                    // Crea retry request per il prossimo tentativo
+                                    TeleportRequest retryRequest = new TeleportRequest(
+                                        player, 
+                                        data.originalX, 
+                                        data.originalZ, 
+                                        data.attemptCount + 1, 
+                                        useAngelBlock
+                                    );
+                                    pendingRequests.put(playerId, retryRequest);
+                                    activeTeleportations.remove(playerId);
                                 } else {
                                     // All attempts failed, give up
                                     resetTeleportationState(playerId);

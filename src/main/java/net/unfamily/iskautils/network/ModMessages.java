@@ -19,6 +19,7 @@ import net.unfamily.iskautils.client.ClientEvents;
 import net.unfamily.iskautils.client.MarkRenderer;
 import net.unfamily.iskautils.network.packet.VectorCharmC2SPacket;
 import net.unfamily.iskautils.network.packet.PortableDislocatorC2SPacket;
+import net.unfamily.iskautils.network.packet.TemporalOverclockerHighlightBlockC2SPacket;
 import net.unfamily.iskautils.structure.StructureDefinition;
 import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.util.ModUtils;
@@ -71,7 +72,21 @@ public class ModMessages {
             (packet, context) -> net.unfamily.iskautils.network.packet.StructureSyncS2CPacket.handle(packet, context)
         );
         
-        LOGGER.info("Registered {} networking packets", 1);
+        // Register Temporal Overclocker Highlight Block C2S Packet (Client to Server)
+        registrar.playToServer(
+            TemporalOverclockerHighlightBlockC2SPacket.TYPE,
+            TemporalOverclockerHighlightBlockC2SPacket.STREAM_CODEC,
+            TemporalOverclockerHighlightBlockC2SPacket::handle
+        );
+        
+        // Register Temporal Overclocker Toggle Persistent C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.TemporalOverclockerTogglePersistentC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.TemporalOverclockerTogglePersistentC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.TemporalOverclockerTogglePersistentC2SPacket::handle
+        );
+        
+        LOGGER.info("Registered {} networking packets", 3);
     }
     
     /**
@@ -1571,6 +1586,44 @@ public class ModMessages {
     }
     
     /**
+     * Invia il packet per fare toggle della modalità persistente del Temporal Overclocker
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendTemporalOverclockerTogglePersistentPacket(BlockPos overclockerPos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Toggle persistent mode
+                        if (player.level().getBlockEntity(overclockerPos) instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity blockEntity) {
+                            blockEntity.togglePersistentMode();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Temporal Overclocker toggle persistent packet: {}", e.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            LOGGER.error("Could not send Temporal Overclocker toggle persistent packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
      * Invia il packet per evidenziare un blocco collegato nel mondo (crea un marker di 5 secondi)
      */
     @OnlyIn(Dist.CLIENT)
@@ -1596,10 +1649,10 @@ public class ModMessages {
                         // Create marker at block position (5 seconds = 100 ticks)
                         int color = (0x80 << 24) | 0x00FF00; // Semi-transparent green
                         int durationTicks = 100; // 5 seconds
-                        sendAddBillboardPacket(player, blockPos, color, durationTicks);
+                        ModMessages.sendAddBillboardPacket(player, blockPos, color, durationTicks);
                     }
                 } catch (Exception e) {
-                    LOGGER.error("Error handling Temporal Overclocker highlight block packet: {}", e.getMessage());
+                    LOGGER.error("Error handling Temporal Overclocker highlight packet: {}", e.getMessage());
                 }
             });
             
