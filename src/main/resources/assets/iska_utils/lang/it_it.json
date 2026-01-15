@@ -344,9 +344,9 @@
   "block.iska_utils.time_alterer.mode.unknown": "Errore: il alteratore del tempo non è stato impostato correttamente",
 
   "tooltip.iska_utils.necrotic_crystal_heart.desc0": "§5Un cuore oscuro che non ti lascerà perire facilmente",
-  "tooltip.iska_utils.necrotic_crystal_heart.desc1": "Le tue ferite diventeranno sempre più profonde",
-  "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Solo un sano riposo ti guarirà",
-  "tooltip.iska_utils.necrotic_crystal_heart.desc3": "Oppure verrai consumato dal dolore",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc1": "§5Le tue ferite diventeranno sempre più profonde",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc2": "§5Solo un sano riposo ti guarirà",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc3": "§5Oppure verrai consumato dal dolore",
   "tooltip.iska_utils.necrotic_crystal_heart.artifacts_required": "§4Richiede l'Artifacts Mod per ottenerlo",
   "tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded": "§6Il Mimic dell'Artifacts lo rilascia",
 

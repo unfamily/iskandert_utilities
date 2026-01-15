@@ -320,9 +320,9 @@
   "block.iska_utils.time_alterer.mode.unknown": "Error: the time alterer has not been set correctly",
 
   "tooltip.iska_utils.necrotic_crystal_heart.desc0": "§5A dark heart that won't let you perish easily",
-  "tooltip.iska_utils.necrotic_crystal_heart.desc1": "Your wounds will become deeper and deeper",
-  "tooltip.iska_utils.necrotic_crystal_heart.desc2": "Only a good sleep will heal you",
-  "tooltip.iska_utils.necrotic_crystal_heart.desc3": "Or you will be consumed by pain",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc1": "§5Your wounds will become deeper and deeper",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc2": "§5Only a good sleep will heal you",
+  "tooltip.iska_utils.necrotic_crystal_heart.desc3": "§5Or you will be consumed by pain",
   "tooltip.iska_utils.necrotic_crystal_heart.artifacts_required": "§4Artifacts mod is required to obtain it",
   "tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded": "§6Artifacts' Mimic drops it",
 
