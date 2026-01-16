@@ -387,6 +387,25 @@ public class Config
                     java.util.Collections.emptyList(),
                     obj -> obj instanceof String);
     
+    // Dolly Info Lines Configuration
+    private static final ModConfigSpec.IntValue DOLLY_INFO_LINES = BUILDER
+            .comment("Number of info tooltip lines to display for the Dolly",
+                    "Each line uses tooltip.iska_utils.dolly.info0, info1, info2, etc.",
+                    "Default: 1 (shows only info0)")
+            .defineInRange("100_dolly_info_lines", 1, 0, Integer.MAX_VALUE);
+    
+    private static final ModConfigSpec.IntValue HARD_DOLLY_INFO_LINES = BUILDER
+            .comment("Number of info tooltip lines to display for the Hard Dolly",
+                    "Each line uses tooltip.iska_utils.dolly_hard.info0, info1, info2, etc.",
+                    "Default: 1 (shows only info0)")
+            .defineInRange("101_hard_dolly_info_lines", 1, 0, Integer.MAX_VALUE);
+    
+    private static final ModConfigSpec.IntValue CREATIVE_DOLLY_INFO_LINES = BUILDER
+            .comment("Number of info tooltip lines to display for the Creative Dolly",
+                    "Each line uses tooltip.iska_utils.dolly_creative.info0, info1, info2, etc.",
+                    "Default: 1 (shows only info0)")
+            .defineInRange("102_creative_dolly_info_lines", 1, 0, Integer.MAX_VALUE);
+    
     static {
         BUILDER.pop(); // End of dolly category
         
@@ -740,6 +759,9 @@ public class Config
     public static boolean creativeDollyCanMoveAllUnbreakable;
     public static java.util.List<String> creativeDollyUnbreakableWhitelist;
     public static java.util.List<String> creativeDollyUnbreakableBlacklist;
+    public static int dollyInfoLines;
+    public static int hardDollyInfoLines;
+    public static int creativeDollyInfoLines;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -829,6 +851,11 @@ public class Config
         creativeDollyCanMoveAllUnbreakable = CREATIVE_DOLLY_CAN_MOVE_ALL_UNBREAKABLE.get();
         creativeDollyUnbreakableWhitelist = new java.util.ArrayList<>(CREATIVE_DOLLY_UNBREAKABLE_WHITELIST.get());
         creativeDollyUnbreakableBlacklist = new java.util.ArrayList<>(CREATIVE_DOLLY_UNBREAKABLE_BLACKLIST.get());
+        
+        // Dolly info lines configuration
+        dollyInfoLines = DOLLY_INFO_LINES.get();
+        hardDollyInfoLines = HARD_DOLLY_INFO_LINES.get();
+        creativeDollyInfoLines = CREATIVE_DOLLY_INFO_LINES.get();
 
         // If the energy required is 0, the energy stored is 0 automatically
         if (electricTreetapEnergyConsume <= 0) {

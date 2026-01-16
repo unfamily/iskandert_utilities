@@ -440,6 +440,16 @@ public class DollyItem extends Item {
         } else {
             tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly.empty"));
         }
+        
+        // Add info lines based on config
+        for (int i = 0; i < Config.dollyInfoLines; i++) {
+            String key = "tooltip.iska_utils.dolly.info" + i;
+            Component infoLine = Component.translatable(key);
+            // Only add if translation exists (not equal to the key itself)
+            if (!infoLine.getString().equals(key)) {
+                tooltipComponents.add(infoLine);
+            }
+        }
     }
 }
 
