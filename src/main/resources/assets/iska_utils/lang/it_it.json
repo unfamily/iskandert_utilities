@@ -269,6 +269,7 @@
   "item.iska_utils.scanner.tooltip.energy": "Energia: ",
   "item.iska_utils.scanner.tooltip.range": "Range",
   "item.iska_utils.scanner.tooltip.range_units": "blocchi",
+  "item.iska_utils.scanner.tooltip.range_keybind": "Premi %s per cambiare il range",
   "item.iska_utils.scanner.tooltip.target_block": "Scansione Per",
   "item.iska_utils.scanner.tooltip.target_mob": "Scansione Per",
   "item.iska_utils.scanner.tooltip.target_ores_prefix": "Scansione Per: ",

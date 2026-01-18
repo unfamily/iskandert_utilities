@@ -33,6 +33,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.client.KeyBindings;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import net.minecraft.world.item.UseAnim;
@@ -1130,6 +1131,12 @@ public class ScannerItem extends Item {
             .append(Component.literal(" ").withStyle(ChatFormatting.GRAY))
             .append(Component.translatable("item.iska_utils.scanner.tooltip.range_units").withStyle(ChatFormatting.WHITE));
         tooltipComponents.add(rangeText);
+        
+        // Keybind information for range cycling
+        String keybindName = KeyBindings.SCANNER_RANGE_KEY.getTranslatedKeyMessage().getString();
+        Component keybindText = Component.translatable("item.iska_utils.scanner.tooltip.range_keybind", keybindName)
+            .withStyle(style -> style.withColor(ChatFormatting.GRAY));
+        tooltipComponents.add(keybindText);
         
         // Target information
         Block targetBlock = getTargetBlock(stack);

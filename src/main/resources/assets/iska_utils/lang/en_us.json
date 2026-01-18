@@ -260,6 +260,7 @@
   "item.iska_utils.scanner.tooltip.energy": "Energy: ",
   "item.iska_utils.scanner.tooltip.range": "Range",
   "item.iska_utils.scanner.tooltip.range_units": "blocks",
+  "item.iska_utils.scanner.tooltip.range_keybind": "Press %s to change range",
   "item.iska_utils.scanner.tooltip.target_block": "Scanning For",
   "item.iska_utils.scanner.tooltip.target_mob": "Scanning For",
   "item.iska_utils.scanner.tooltip.target_ores_prefix": "Scanning For: ",
