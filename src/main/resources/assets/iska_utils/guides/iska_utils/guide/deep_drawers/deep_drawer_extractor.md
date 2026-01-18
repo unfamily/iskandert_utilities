@@ -22,7 +22,7 @@ The Deep Drawer Extractor is a specialized module designed to extract items from
 - **Advanced Filter System**: Supports multiple filter types including item IDs, tags, mod IDs, NBT data, and predefined macros. The complete list of valid filter keys is available in the GUI by clicking the "Valid Keys" button 
 - **Deny List/Allow List Mode**: Configure the extractor to extract only specific items (deny) or exclude certain items (allow)
 - **Dual Filter System**: 
-  - **Normal Filter List**: The primary filter that determines which items are extracted based on Allow/Deny mode
+  - **Normal Filter List**: The default filter that determines which items are extracted based on Allow/Deny mode
   - **Bypass List / Exclusion List**: An inverted filter that is applied before the normal filter:
     - When Extractor is in **Allow mode**: The inverted filter acts as **Exclusion List** (deny mode). If an item matches the exclusion list, it is blocked and will not be extracted, even if it matches the normal filter
     - When Extractor is in **Deny mode**: The inverted filter acts as **Bypass List** (allow mode). If an item matches the bypass list, it is extracted immediately without checking the normal filter
