@@ -1,5 +1,3 @@
-**Support not guaranteed after January 13, 2026**
-
 Adds some useful things to improve tech modpack player gameplay.
 
 The mod adds:
