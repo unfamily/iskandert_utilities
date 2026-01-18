@@ -27,13 +27,16 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
     private static final int BLOCK_POS_Y_INDEX = 2;
     private static final int BLOCK_POS_Z_INDEX = 3;
     private static final int FILTER_HASH_INDEX = 4; // Hash of filter fields
-    private static final int WHITELIST_MODE_INDEX = 5; // 0 = blacklist, 1 = whitelist
-    private static final int DATA_SIZE = 6;
+    private static final int INVERTED_FILTER_HASH_INDEX = 5; // Hash of inverted filter fields
+    private static final int WHITELIST_MODE_INDEX = 6; // 0 = blacklist, 1 = whitelist
+    private static final int DATA_SIZE = 7;
     
     // Cached filter data (client-side) - now using dynamic list
     private java.util.List<String> cachedFilterFields = new java.util.ArrayList<>();
+    private java.util.List<String> cachedInvertedFilterFields = new java.util.ArrayList<>();
     private boolean cachedWhitelistMode = false;
     private int lastSyncedFilterHash = 0;
+    private int lastSyncedInvertedFilterHash = 0;
     
     // Server-side constructor
     public DeepDrawerExtractorMenu(int containerId, Inventory playerInventory, DeepDrawerExtractorBlockEntity blockEntity) {
@@ -44,8 +47,10 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
         
         // Initialize cached data on server side
         this.cachedFilterFields = new java.util.ArrayList<>(blockEntity.getFilterFields());
+        this.cachedInvertedFilterFields = new java.util.ArrayList<>(blockEntity.getInvertedFilterFields());
         this.cachedWhitelistMode = blockEntity.isWhitelistMode();
         this.lastSyncedFilterHash = calculateFilterHash(this.cachedFilterFields);
+        this.lastSyncedInvertedFilterHash = calculateFilterHash(this.cachedInvertedFilterFields);
         
         // Create ContainerData that syncs redstone mode, block position, filter hash, and whitelist mode
         this.containerData = new ContainerData() {
@@ -57,6 +62,7 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
                     case BLOCK_POS_Y_INDEX -> blockPos.getY();
                     case BLOCK_POS_Z_INDEX -> blockPos.getZ();
                     case FILTER_HASH_INDEX -> calculateFilterHash(blockEntity.getFilterFields());
+                    case INVERTED_FILTER_HASH_INDEX -> calculateFilterHash(blockEntity.getInvertedFilterFields());
                     case WHITELIST_MODE_INDEX -> blockEntity.isWhitelistMode() ? 1 : 0;
                     default -> 0;
                 };
@@ -94,9 +100,11 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
         this.levelAccess = ContainerLevelAccess.NULL;
         this.containerData = new SimpleContainerData(DATA_SIZE);
         this.cachedFilterFields = new java.util.ArrayList<>();
+        this.cachedInvertedFilterFields = new java.util.ArrayList<>();
         // Initialize cache from ContainerData if available (will be updated in updateCachedFilters)
         this.cachedWhitelistMode = false; // Will be updated when ContainerData syncs
         this.lastSyncedFilterHash = 0;
+        this.lastSyncedInvertedFilterHash = 0;
         addDataSlots(this.containerData);
         
         // Add buffer slots (5 slots in a row) - client-side fallback
@@ -273,26 +281,45 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
     }
     
     /**
+     * Gets the inverted filter hash from synced data
+     */
+    public int getInvertedFilterHash() {
+        return this.containerData.get(INVERTED_FILTER_HASH_INDEX);
+    }
+    
+    /**
      * Updates cached filter data when hash changes (client-side)
      */
     public void updateCachedFilters() {
         if (this.blockEntity != null) {
             // Server side - directly get the filters
             this.cachedFilterFields = new java.util.ArrayList<>(this.blockEntity.getFilterFields());
+            this.cachedInvertedFilterFields = new java.util.ArrayList<>(this.blockEntity.getInvertedFilterFields());
             this.cachedWhitelistMode = this.blockEntity.isWhitelistMode();
             this.lastSyncedFilterHash = calculateFilterHash(this.cachedFilterFields);
+            this.lastSyncedInvertedFilterHash = calculateFilterHash(this.cachedInvertedFilterFields);
         } else {
             // Client side - check if hash changed and try to get filters from block entity using synced position
             int currentHash = getFilterHash();
-            if (currentHash != this.lastSyncedFilterHash || this.lastSyncedFilterHash == 0) {
-                // Hash changed OR first time (lastSyncedFilterHash == 0 means not initialized yet)
-                this.lastSyncedFilterHash = currentHash;
+            int currentInvertedHash = getInvertedFilterHash();
+            boolean hashChanged = (currentHash != this.lastSyncedFilterHash || this.lastSyncedFilterHash == 0);
+            boolean invertedHashChanged = (currentInvertedHash != this.lastSyncedInvertedFilterHash || this.lastSyncedInvertedFilterHash == 0);
+            
+            if (hashChanged || invertedHashChanged) {
+                // Hash changed OR first time
+                if (hashChanged) {
+                    this.lastSyncedFilterHash = currentHash;
+                }
+                if (invertedHashChanged) {
+                    this.lastSyncedInvertedFilterHash = currentInvertedHash;
+                }
                 
                 // Try to find the block entity using synced position only (search disabled)
                 if (net.minecraft.client.Minecraft.getInstance().level != null) {
                     DeepDrawerExtractorBlockEntity be = getBlockEntityFromLevel(net.minecraft.client.Minecraft.getInstance().level);
                     if (be != null) {
                         this.cachedFilterFields = new java.util.ArrayList<>(be.getFilterFields());
+                        this.cachedInvertedFilterFields = new java.util.ArrayList<>(be.getInvertedFilterFields());
                         this.cachedWhitelistMode = be.isWhitelistMode();
                     } else {
                         // If we can't find the block entity, try ContainerData if position is synced
@@ -317,6 +344,13 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
     }
     
     /**
+     * Gets the cached inverted filter fields (works on both client and server)
+     */
+    public java.util.List<String> getCachedInvertedFilterFields() {
+        return new java.util.ArrayList<>(cachedInvertedFilterFields); // Return copy
+    }
+    
+    /**
      * Gets the cached whitelist mode (works on both client and server)
      */
     public boolean getCachedWhitelistMode() {
@@ -330,14 +364,20 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
         // Server side: update cached filters and sync to client
         if (this.blockEntity != null) {
             java.util.List<String> currentFilters = this.blockEntity.getFilterFields();
+            java.util.List<String> currentInvertedFilters = this.blockEntity.getInvertedFilterFields();
             int currentHash = calculateFilterHash(currentFilters);
+            int currentInvertedHash = calculateFilterHash(currentInvertedFilters);
             
             // If filters changed, update cache
             if (currentHash != this.lastSyncedFilterHash) {
                 this.cachedFilterFields = new java.util.ArrayList<>(currentFilters);
-                this.cachedWhitelistMode = this.blockEntity.isWhitelistMode();
                 this.lastSyncedFilterHash = currentHash;
             }
+            if (currentInvertedHash != this.lastSyncedInvertedFilterHash) {
+                this.cachedInvertedFilterFields = new java.util.ArrayList<>(currentInvertedFilters);
+                this.lastSyncedInvertedFilterHash = currentInvertedHash;
+            }
+            this.cachedWhitelistMode = this.blockEntity.isWhitelistMode();
         }
     }
 }

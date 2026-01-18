@@ -1345,6 +1345,54 @@ public class ModMessages {
     }
     
     /**
+     * Sends inverted filter update packet to server
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendDeepDrawerExtractorInvertedFilterUpdatePacket(BlockPos pos, java.util.Map<Integer, String> invertedFilterMap) {
+        // Simplified implementation - directly handle on the server side (like rotation in Structure Placer)
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) {
+                LOGGER.error("Minecraft instance is null!");
+                return;
+            }
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) {
+                LOGGER.error("Singleplayer server is null!");
+                return;
+            }
+            
+            // Execute on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
+                            // Update inverted filter fields from map (indices outside valid range are ignored)
+                            if (invertedFilterMap != null) {
+                                extractor.setInvertedFilterFieldsFromMap(invertedFilterMap);
+                            }
+                            
+                            // Mark BlockEntity as changed
+                            extractor.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Deep Drawer Extractor inverted filter update packet: {}", e.getMessage());
+                }
+            });
+            
+
+        } catch (Exception e) {
+            LOGGER.error("Could not send Deep Drawer Extractor inverted filter update packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
      * Sends a Deep Drawer Extractor Mode Toggle packet to the server
      * Toggles between whitelist and blacklist mode (like rotation in Structure Placer)
      */

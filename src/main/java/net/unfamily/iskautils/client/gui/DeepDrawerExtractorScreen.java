@@ -77,9 +77,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     // Button dimensions and position (moved right, same spacing from right edge as entries from left edge)
     private static final int BUTTON_WIDTH = 80;
-    private static final int BUTTON_HEIGHT = 20;
+    private static final int BUTTON_HEIGHT = 16; // Reduced from 20 to match other buttons
     private static final int BUTTON_X = GUI_WIDTH - BUTTON_WIDTH - 8; // 8px from right edge (same as entries from left)
     private static final int BUTTON_Y = FIRST_ROW_Y; // Aligned with first EditBox (after "Filters" label)
+    private static final int VERTICAL_BUTTON_SPACING = 2; // Reduced spacing between buttons (was 4)
     
     // How to use button
     private Button howToUseButton;
@@ -95,11 +96,21 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int MODE_BUTTON_WIDTH = 60; // Wider button
     private static final int BUTTON_SPACING = 4; // Space between redstone and mode button
     
+    // Bypass/Exclusion List button (dynamic based on mode)
+    private Button invertedFilterButton;
+    private static final int INVERTED_FILTER_BUTTON_HEIGHT = 16;
+    private static final int INVERTED_FILTER_BUTTON_WIDTH = 80; // Wider button for longer text
+    
     // Track current mode locally (for immediate UI feedback on button click)
     private boolean isWhitelistMode = false;
     
+    // Track if we're in inverted filter mode (editing inverted filters instead of normal filters)
+    private boolean isInvertedMode = false;
+    
     // Cached filter fields for rendering (synced from server) - dynamic list
     private java.util.List<String> cachedFilterFields = new java.util.ArrayList<>();
+    // Cached inverted filter fields for rendering (synced from server) - dynamic list
+    private java.util.List<String> cachedInvertedFilterFields = new java.util.ArrayList<>();
     
     // Scroll state for filter EditBoxes (identical to DeepDrawersScreen)
     private int filterScrollOffset = 0;
@@ -116,12 +127,16 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     // Edit buttons for each visible entry (recreated on scroll)
     private final java.util.List<Button> editButtons = new java.util.ArrayList<>();
+    // Delete buttons (X) for each visible entry (recreated on scroll)
+    private final java.util.List<Button> deleteButtons = new java.util.ArrayList<>();
     
     // Edit mode UI elements
     private ItemStack ghostSlotItem = ItemStack.EMPTY; // Ghost slot item (copy, doesn't consume)
     private EditBox editModeTextBox = null; // Textbox that appears in edit mode
     private Button leftArrowButton = null; // Left arrow button
     private Button rightArrowButton = null; // Right arrow button
+    private Button editModeCloseButton = null; // X button to close edit mode
+    private Button editModeClearButton = null; // C button to clear textbox
     private java.util.List<String> filterVariants = new java.util.ArrayList<>(); // All possible filter variants for current item
     private int currentFilterVariantIndex = 0; // Current index in filterVariants list
     
@@ -142,6 +157,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Initialize cached filter fields (will be updated in containerTick)
         cachedFilterFields.clear();
+        cachedInvertedFilterFields.clear();
         
         // Create edit buttons for visible entries
         updateEditButtons();
@@ -163,11 +179,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Redstone mode button (below how to use)
         this.redstoneModeButtonX = this.leftPos + BUTTON_X;
-        this.redstoneModeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + 4; // 4px below how to use
+        this.redstoneModeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + VERTICAL_BUTTON_SPACING; // Reduced spacing
         
         // Allow/Deny button (wider, to the left of redstone button, same Y and height)
         int modeButtonX = this.leftPos + BUTTON_X; // Start from same X as how to use
-        int modeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + 4; // Same Y as redstone button
+        int modeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + VERTICAL_BUTTON_SPACING; // Same Y as redstone button
         // Initialize with current mode from ContainerData (will be updated in containerTick)
         Component buttonText = isWhitelistMode
                 ? Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.allow")
@@ -180,6 +196,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Update redstone button X position to be after mode button with spacing
         this.redstoneModeButtonX = modeButtonX + MODE_BUTTON_WIDTH + BUTTON_SPACING;
+        
+        // Bypass/Exclusion List button (below Allow/Deny button)
+        int invertedFilterButtonX = this.leftPos + BUTTON_X; // Same X as mode button
+        int invertedFilterButtonY = modeButtonY + MODE_BUTTON_HEIGHT + VERTICAL_BUTTON_SPACING; // Reduced spacing
+        // Initialize with current mode from ContainerData (will be updated in containerTick)
+        Component invertedFilterButtonText = isWhitelistMode
+                ? Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.exclusion")
+                : Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.bypass");
+        
+        invertedFilterButton = Button.builder(invertedFilterButtonText, button -> onInvertedFilterButtonClicked())
+                .bounds(invertedFilterButtonX, invertedFilterButtonY, INVERTED_FILTER_BUTTON_WIDTH, INVERTED_FILTER_BUTTON_HEIGHT)
+                .build();
+        addRenderableWidget(invertedFilterButton);
         
         // Back button (for how to use screen)
         backButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.back"), 
@@ -244,6 +273,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (modeButton != null) {
             modeButton.visible = showMain;
         }
+        if (invertedFilterButton != null) {
+            invertedFilterButton.visible = showMain;
+        }
         if (backButton != null) {
             backButton.visible = isHowToUseMode;
         }
@@ -254,12 +286,17 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             editingEditBox.visible = false;
         }
         
-        // Update edit buttons visibility
+        // Update edit and delete buttons visibility
         if (showMain) {
             updateEditButtons();
         } else {
-            // Hide all edit buttons in how to use mode
+            // Hide all edit and delete buttons in how to use mode
             for (Button button : editButtons) {
+                if (button != null) {
+                    button.visible = false;
+                }
+            }
+            for (Button button : deleteButtons) {
                 if (button != null) {
                     button.visible = false;
                 }
@@ -347,14 +384,26 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 if (mouseX >= entryX && mouseX < entryX + ENTRY_WIDTH &&
                     mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT) {
                     
-                    // Check if click is on edit button area (prioritize button)
-                    int editButtonSize = 12;
-                    int editButtonMargin = 5;
-                    int editButtonX = entryX + ENTRY_WIDTH - editButtonMargin - editButtonSize;
-                    int editButtonY = entryY + (ENTRY_HEIGHT - editButtonSize) / 2;
+                    // Check if click is on delete (X) or edit button area (prioritize buttons)
+                    int buttonSize = 12;
+                    int buttonMargin = 5;
+                    int buttonSpacing = 2;
+                    int editButtonX = entryX + ENTRY_WIDTH - buttonMargin - buttonSize;
+                    int deleteButtonX = editButtonX - buttonSize - buttonSpacing;
+                    int buttonY = entryY + (ENTRY_HEIGHT - buttonSize) / 2;
                     
-                    if (mouseX >= editButtonX && mouseX < editButtonX + editButtonSize &&
-                        mouseY >= editButtonY && mouseY < editButtonY + editButtonSize) {
+                    // Check delete button first
+                    if (mouseX >= deleteButtonX && mouseX < deleteButtonX + buttonSize &&
+                        mouseY >= buttonY && mouseY < buttonY + buttonSize) {
+                        // Click is on delete button - handle it directly
+                        playButtonSound();
+                        onDeleteButtonClicked(filterIndex);
+                        return true; // Consume the click
+                    }
+                    
+                    // Check edit button
+                    if (mouseX >= editButtonX && mouseX < editButtonX + buttonSize &&
+                        mouseY >= buttonY && mouseY < buttonY + buttonSize) {
                         // Click is on edit button - handle it directly
                         playButtonSound();
                         onEditButtonClicked(filterIndex);
@@ -433,6 +482,57 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             this.minecraft.getSoundManager().play(
                 net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        }
+    }
+    
+    private void onInvertedFilterButtonClicked() {
+        // Save current filters before switching mode
+        saveFilterData();
+        
+        // Toggle inverted mode: switch between editing normal filters and inverted filters
+        playButtonSound();
+        isInvertedMode = !isInvertedMode;
+        
+        // Update button text and label based on mode
+        updateInvertedModeUI();
+    }
+    
+    /**
+     * Updates UI elements when inverted mode changes
+     */
+    private void updateInvertedModeUI() {
+        // Update button text
+        if (invertedFilterButton != null) {
+            Component buttonText = isInvertedMode
+                    ? Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.normal") // "Normal List"
+                    : (isWhitelistMode
+                            ? Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.exclusion")
+                            : Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.bypass"));
+            invertedFilterButton.setMessage(buttonText);
+        }
+        
+        // Update cached filters to show the correct list
+        updateCachedFiltersForMode();
+    }
+    
+    /**
+     * Updates cached filters based on current mode (normal or inverted)
+     */
+    private void updateCachedFiltersForMode() {
+        if (isInvertedMode) {
+            // Show inverted filters
+            cachedFilterFields = new java.util.ArrayList<>(menu.getCachedInvertedFilterFields());
+        } else {
+            // Show normal filters
+            cachedFilterFields = new java.util.ArrayList<>(menu.getCachedFilterFields());
+        }
+        
+        // Ensure we always have exactly MAX_FILTER_SLOTS entries
+        while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
+            cachedFilterFields.add("");
+        }
+        while (cachedFilterFields.size() > MAX_FILTER_SLOTS) {
+            cachedFilterFields.remove(cachedFilterFields.size() - 1);
         }
     }
     
@@ -531,8 +631,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             // This ensures we use the server-authoritative value, not stale local state
             boolean currentWhitelistMode = menu.getWhitelistMode();
             
-            // Send to server via packet
-            ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(machinePos, filterMap, currentWhitelistMode);
+            // Send to server via packet - use inverted filter packet if in inverted mode
+            if (isInvertedMode) {
+                ModMessages.sendDeepDrawerExtractorInvertedFilterUpdatePacket(machinePos, filterMap);
+            } else {
+                ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(machinePos, filterMap, currentWhitelistMode);
+            }
         }
     }
     
@@ -544,9 +648,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         ResourceLocation backgroundTexture = isHowToUseMode ? BACKGROUND_EMPTY : BACKGROUND;
         guiGraphics.blit(backgroundTexture, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
-        // Render "Filters" label (only in main mode, not in how to use)
+        // Render filter list label (only in main mode, not in how to use)
+        // Label changes based on mode: "Normal Filter List" or "Bypass/Exclusion Filter List"
         if (!isHowToUseMode) {
-            Component filtersLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.filters");
+            Component filtersLabel;
+            if (isInvertedMode) {
+                // In inverted mode, show "Bypass Filter List" or "Exclusion Filter List" based on extractor mode
+                filtersLabel = isWhitelistMode
+                        ? Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.exclusion")
+                        : Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.bypass");
+            } else {
+                // In normal mode, show "Normal Filter List"
+                filtersLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.filters");
+            }
             int labelWidth = this.font.width(filtersLabel);
             // Center the label with the entries
             int labelX = this.leftPos + ENTRY_X + (ENTRY_WIDTH - labelWidth) / 2;
@@ -630,13 +744,15 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         int textX = slotX + 18 + 6;
         int textY = entryY + (ENTRY_HEIGHT - this.font.lineHeight) / 2;
         
-        // Edit button position (right side, but not on the edge)
-        int editButtonSize = 12; // Small button
-        int editButtonMargin = 5; // Margin from right edge (not on border)
-        int editButtonX = entryX + ENTRY_WIDTH - editButtonMargin - editButtonSize;
+        // Button positions (right side, but not on the edge)
+        int buttonSize = 12; // Small button size
+        int buttonMargin = 5; // Margin from right edge (not on border)
+        int buttonSpacing = 2; // Space between delete (X) and edit buttons
+        int editButtonX = entryX + ENTRY_WIDTH - buttonMargin - buttonSize;
+        int deleteButtonX = editButtonX - buttonSize - buttonSpacing; // X button before edit button
         
-        // Calculate available width for text (up to edit button)
-        int maxTextWidth = editButtonX - textX - 5; // 5px margin before edit button
+        // Calculate available width for text (up to delete button)
+        int maxTextWidth = deleteButtonX - textX - 5; // 5px margin before delete button
         
         // Render filter text (truncate if too long)
         String displayText = filter.isEmpty() ? "" : filter;
@@ -863,7 +979,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     }
     
     /**
-     * Updates edit buttons for visible entries
+     * Updates edit and delete buttons for visible entries
      */
     private void updateEditButtons() {
         // Remove all existing edit buttons
@@ -874,13 +990,22 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         editButtons.clear();
         
+        // Remove all existing delete buttons
+        for (Button button : deleteButtons) {
+            if (button != null) {
+                removeWidget(button);
+            }
+        }
+        deleteButtons.clear();
+        
         if (isHowToUseMode) {
             return; // Don't create buttons in how to use mode
         }
         
-        // Create edit buttons for visible entries
-        int editButtonSize = 12;
-        int editButtonMargin = 5; // Margin from right edge
+        // Create edit and delete buttons for visible entries
+        int buttonSize = 12;
+        int buttonMargin = 5; // Margin from right edge
+        int buttonSpacing = 2; // Space between delete (X) and edit buttons
         
         for (int i = 0; i < VISIBLE_ENTRIES; i++) {
             int filterIndex = filterScrollOffset + i;
@@ -890,16 +1015,33 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             
             int entryX = this.leftPos + ENTRY_X;
             int entryY = this.topPos + FIRST_ROW_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
-            int editButtonX = entryX + ENTRY_WIDTH - editButtonMargin - editButtonSize;
-            int editButtonY = entryY + (ENTRY_HEIGHT - editButtonSize) / 2;
+            int editButtonX = entryX + ENTRY_WIDTH - buttonMargin - buttonSize;
+            int deleteButtonX = editButtonX - buttonSize - buttonSpacing; // X button before edit button
+            int buttonY = entryY + (ENTRY_HEIGHT - buttonSize) / 2;
             
             final int finalFilterIndex = filterIndex;
+            
+            // Create delete button (C) with "Clear" tooltip
+            Button deleteButton = Button.builder(Component.literal("C"), 
+                button -> {
+                    playButtonSound();
+                    onDeleteButtonClicked(finalFilterIndex);
+                })
+                .bounds(deleteButtonX, buttonY, buttonSize, buttonSize)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    Component.translatable("gui.iska_utils.deep_drawer_extractor.clear")))
+                .build();
+            
+            deleteButtons.add(deleteButton);
+            addRenderableWidget(deleteButton);
+            
+            // Create edit button
             Button editButton = Button.builder(Component.literal("✎"), 
                 button -> {
                     playButtonSound();
                     onEditButtonClicked(finalFilterIndex);
                 })
-                .bounds(editButtonX, editButtonY, editButtonSize, editButtonSize)
+                .bounds(editButtonX, buttonY, buttonSize, buttonSize)
                 .build();
             
             editButtons.add(editButton);
@@ -908,9 +1050,30 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     }
     
     /**
+     * Handles delete button click - clears the filter entry
+     */
+    private void onDeleteButtonClicked(int filterIndex) {
+        // Ensure cachedFilterFields has all slots
+        while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
+            cachedFilterFields.add("");
+        }
+        
+        // Clear the filter entry
+        cachedFilterFields.set(filterIndex, "");
+        
+        // Save to server
+        saveFilterData();
+    }
+    
+    /**
      * Handles edit button click - switches to edit mode for the filter
      */
     private void onEditButtonClicked(int filterIndex) {
+        // If this entry is in quick edit mode, close it first
+        if (editingFilterIndex == filterIndex && editingEditBox != null) {
+            stopEditingFilter();
+        }
+        
         // Toggle edit mode for this filter
         if (editModeFilterIndex == filterIndex) {
             // Already in edit mode, exit edit mode
@@ -988,15 +1151,33 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         int textBoxY = slotY + (slotSize - 15) / 2; // Center vertically with slot (15 is textbox height)
         int textBoxHeight = 15;
         
-        // Calculate max width for textbox
-        // Don't exceed the end of inventory slots (9 columns * 18px = 162px from inventory start)
+        // Buttons after textbox: C (clear) and X (close)
+        // Align X button with "Valid Keys" button (howToUseButton)
+        // Valid Keys button is at BUTTON_X = GUI_WIDTH - BUTTON_WIDTH - 8
+        // We want the X button to align with the right edge of Valid Keys button
+        int validKeysButtonRightEdge = this.leftPos + BUTTON_X + BUTTON_WIDTH; // Right edge of Valid Keys button
+        int buttonAfterTextBoxSpacing = 2; // Space between textbox and buttons
+        int closeButtonX = validKeysButtonRightEdge - buttonSize; // X button aligned with Valid Keys right edge
+        int clearButtonX = closeButtonX - buttonSize - buttonSpacing; // C button before X button
+        int buttonAfterTextBoxY = slotY + (slotSize - buttonSize) / 2; // Center vertically with slot
+        
+        // Calculate textbox width to fill space between textbox start and clear button
+        int textBoxWidth = clearButtonX - textBoxX - buttonAfterTextBoxSpacing;
+        
+        // Ensure minimum width and don't exceed boundaries
         int inventoryEndX = this.leftPos + inventoryStartX + (9 * 18); // End of inventory slots
         int rightEdge = this.leftPos + GUI_WIDTH;
         int margin = 5; // Margin from right edge
-        // Maximum width is the minimum between: end of inventory slots, right edge margin, and default 120px
         int maxTextWidthFromInventory = inventoryEndX - textBoxX;
         int maxTextWidthFromEdge = rightEdge - textBoxX - margin;
-        int textBoxWidth = Math.min(120, Math.min(maxTextWidthFromInventory, maxTextWidthFromEdge));
+        // Ensure textbox doesn't exceed boundaries
+        textBoxWidth = Math.max(50, Math.min(textBoxWidth, Math.min(maxTextWidthFromInventory, maxTextWidthFromEdge)));
+        
+        // Recalculate button positions if textbox width was constrained
+        if (textBoxWidth < (clearButtonX - textBoxX - buttonAfterTextBoxSpacing)) {
+            clearButtonX = textBoxX + textBoxWidth + buttonAfterTextBoxSpacing;
+            closeButtonX = clearButtonX + buttonSize + buttonSpacing;
+        }
         
         // Create textbox
         editModeTextBox = new EditBox(this.font, textBoxX, textBoxY, textBoxWidth, textBoxHeight,
@@ -1026,6 +1207,40 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         addRenderableWidget(editModeTextBox);
         
+        // Create clear button (C) - clears the textbox
+        editModeClearButton = Button.builder(Component.literal("C"), 
+            button -> {
+                playButtonSound();
+                if (editModeTextBox != null) {
+                    editModeTextBox.setValue("");
+                    editModeTextBox.setCursorPosition(0);
+                    editModeTextBox.setHighlightPos(0);
+                    // Save empty filter
+                    if (editModeFilterIndex >= 0) {
+                        while (cachedFilterFields.size() <= editModeFilterIndex) {
+                            cachedFilterFields.add("");
+                        }
+                        cachedFilterFields.set(editModeFilterIndex, "");
+                        saveFilterData();
+                    }
+                }
+            })
+            .bounds(clearButtonX, buttonAfterTextBoxY, buttonSize, buttonSize)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                Component.translatable("gui.iska_utils.deep_drawer_extractor.clear")))
+            .build();
+        addRenderableWidget(editModeClearButton);
+        
+        // Create close button (X) - exits edit mode
+        editModeCloseButton = Button.builder(Component.literal("✕"), 
+            button -> {
+                playButtonSound();
+                exitEditMode();
+            })
+            .bounds(closeButtonX, buttonAfterTextBoxY, buttonSize, buttonSize)
+            .build();
+        addRenderableWidget(editModeCloseButton);
+        
         // Initialize ghost slot as empty
         ghostSlotItem = ItemStack.EMPTY;
     }
@@ -1045,6 +1260,14 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (rightArrowButton != null) {
             removeWidget(rightArrowButton);
             rightArrowButton = null;
+        }
+        if (editModeCloseButton != null) {
+            removeWidget(editModeCloseButton);
+            editModeCloseButton = null;
+        }
+        if (editModeClearButton != null) {
+            removeWidget(editModeClearButton);
+            editModeClearButton = null;
         }
         ghostSlotItem = ItemStack.EMPTY;
         filterVariants.clear();
@@ -1203,6 +1426,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Starts editing a filter entry at the given index
      */
     private void startEditingFilter(int filterIndex) {
+        // Don't allow quick edit if this entry is already in edit mode
+        if (editModeFilterIndex == filterIndex) {
+            return; // Entry is already in edit mode, don't open quick edit
+        }
+        
         // Remove existing editing EditBox if any
         if (editingEditBox != null) {
             removeWidget(editingEditBox);
@@ -1227,11 +1455,14 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         int textX = entryX + 3 + 18 + 6; // After slot
         int textY = entryY + (ENTRY_HEIGHT - 15) / 2; // Centered vertically (EditBox height is 15)
         
-        // Calculate width leaving space for edit button (12px button + 5px margin + 5px spacing)
-        int editButtonSize = 12;
-        int editButtonMargin = 5;
-        int editButtonX = entryX + ENTRY_WIDTH - editButtonMargin - editButtonSize;
-        int textWidth = editButtonX - textX - 5; // 5px margin before edit button
+        // Calculate width leaving space for delete (X) and edit buttons
+        // Layout: [text] ... [X button] [edit button] [margin]
+        int buttonSize = 12;
+        int buttonMargin = 5;
+        int buttonSpacing = 2;
+        int editButtonX = entryX + ENTRY_WIDTH - buttonMargin - buttonSize;
+        int deleteButtonX = editButtonX - buttonSize - buttonSpacing;
+        int textWidth = deleteButtonX - textX - 5; // 5px margin before delete button
         
         editingEditBox = new EditBox(this.font,
                 textX,
@@ -1639,15 +1870,26 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Update cached filters from server (like redstone mode and structure)
         menu.updateCachedFilters();
         
-        // Get cached data for filter fields
+        // Get cached data for filter fields (both normal and inverted)
         java.util.List<String> filterFields = menu.getCachedFilterFields();
+        java.util.List<String> invertedFilterFields = menu.getCachedInvertedFilterFields();
         
-        // Update cached filter fields - ensure we always have exactly MAX_FILTER_SLOTS entries
-        cachedFilterFields = new java.util.ArrayList<>(filterFields);
+        // Update cached inverted filter fields - ensure we always have exactly MAX_FILTER_SLOTS entries
+        cachedInvertedFilterFields = new java.util.ArrayList<>(invertedFilterFields);
+        while (cachedInvertedFilterFields.size() < MAX_FILTER_SLOTS) {
+            cachedInvertedFilterFields.add("");
+        }
+        while (cachedInvertedFilterFields.size() > MAX_FILTER_SLOTS) {
+            cachedInvertedFilterFields.remove(cachedInvertedFilterFields.size() - 1);
+        }
+        
+        // Update cached filter fields based on current mode
+        updateCachedFiltersForMode();
+        
+        // Ensure we always have exactly MAX_FILTER_SLOTS entries
         while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
             cachedFilterFields.add("");
         }
-        // Trim to MAX_FILTER_SLOTS if somehow we got more
         while (cachedFilterFields.size() > MAX_FILTER_SLOTS) {
             cachedFilterFields.remove(cachedFilterFields.size() - 1);
         }
@@ -1662,6 +1904,25 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                     ? Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.allow")
                     : Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.deny");
             modeButton.setMessage(buttonText);
+            // Update local state to match
+            isWhitelistMode = syncedWhitelistMode;
+        }
+        
+        // Update inverted filter button (Bypass/Exclusion List) from synced ContainerData
+        // Button text changes based on inverted mode: "Normal List" when in inverted mode, otherwise "Bypass/Exclusion List"
+        if (invertedFilterButton != null) {
+            boolean syncedWhitelistMode = menu.getWhitelistMode();
+            Component invertedFilterButtonText;
+            if (isInvertedMode) {
+                // In inverted mode, show "Normal List" to exit
+                invertedFilterButtonText = Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.normal");
+            } else {
+                // Not in inverted mode, show "Bypass List" or "Exclusion List" based on extractor mode
+                invertedFilterButtonText = syncedWhitelistMode
+                        ? Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.exclusion")
+                        : Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.bypass");
+            }
+            invertedFilterButton.setMessage(invertedFilterButtonText);
             // Update local state to match
             isWhitelistMode = syncedWhitelistMode;
         }

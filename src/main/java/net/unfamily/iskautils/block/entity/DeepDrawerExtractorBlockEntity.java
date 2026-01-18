@@ -50,6 +50,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     
     // Filter configuration (fixed array from config, default 50)
     private final String[] filterFields;
+    // Inverted filter configuration (same size as filterFields)
+    private final String[] invertedFilterFields;
     private boolean isWhitelistMode = true; // false = blacklist, true = whitelist (default: true to prevent random extraction)
     
     // Redstone mode configuration
@@ -101,9 +103,11 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         // Initialize filter array with size from config (default 50)
         int maxSlots = net.unfamily.iskautils.Config.deepDrawerExtractorMaxFilters;
         filterFields = new String[maxSlots];
+        invertedFilterFields = new String[maxSlots];
         // Initialize all filter slots to empty strings
         for (int i = 0; i < maxSlots; i++) {
             filterFields[i] = "";
+            invertedFilterFields[i] = "";
         }
     }
     
@@ -250,12 +254,47 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 continue;
             }
             
-            // Check if item matches filter criteria
-            if (!matchesFilter(drawerStack)) {
-                continue; // Item doesn't match filter, skip it
+            // FIRST: Check inverted filter (applied before normal filter)
+            // The inverted filter has opposite logic:
+            // - If extractor is in allow (whitelist): inverted filter is in deny (blacklist)
+            //   If inverted filter matches, item is NOT extracted and does NOT pass to normal filter
+            // - If extractor is in deny (blacklist): inverted filter is in allow (whitelist)
+            //   If inverted filter matches, item is extracted IMMEDIATELY, otherwise passes to normal filter
+            boolean invertedFilterResult = matchesInvertedFilter(drawerStack);
+            
+            if (isWhitelistMode) {
+                // Extractor in allow mode: inverted filter is in deny mode
+                // If inverted filter matches, block extraction and skip to next item
+                if (invertedFilterResult) {
+                    continue; // Item matches inverted filter (deny), skip it
+                }
+                // Item doesn't match inverted filter, continue to normal filter
+            } else {
+                // Extractor in deny mode: inverted filter is in allow mode
+                // If inverted filter matches, extract immediately
+                if (invertedFilterResult) {
+                    // Extract immediately without checking normal filter
+                    ItemStack extracted = drawer.extractItemByStack(drawerStack, 1, false);
+                    if (!extracted.isEmpty()) {
+                        if (insertItem(extracted)) {
+                            setChanged();
+                            return; // Extraction successful, exit
+                        } else {
+                            // No space, put item back in drawer
+                            drawer.insertItemIntoPhysicalSlotDirect(entry.getKey(), extracted, false);
+                        }
+                    }
+                    continue; // Move to next item
+                }
+                // Item doesn't match inverted filter, continue to normal filter
             }
             
-            // Item matches filter, extract it
+            // SECOND: Check normal filter (only if inverted filter didn't block/extract)
+            if (!matchesFilter(drawerStack)) {
+                continue; // Item doesn't match normal filter, skip it
+            }
+            
+            // Item matches normal filter, extract it
             // Use extractItemByStack to extract the specific item we verified (with correct NBT)
             ItemStack extracted = drawer.extractItemByStack(drawerStack, 1, false);
             
@@ -388,6 +427,52 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     }
     
     /**
+     * Checks if there are any valid (non-empty) inverted filter entries
+     */
+    private boolean hasValidInvertedFilters() {
+        for (int i = 0; i < getMaxFilterSlots(); i++) {
+            String filter = invertedFilterFields[i];
+            if (filter != null && !filter.trim().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Checks if an ItemStack matches the inverted filter criteria
+     * The inverted filter has opposite logic to the normal filter:
+     * - If extractor is in allow (whitelist): inverted filter acts as deny (blacklist)
+     * - If extractor is in deny (blacklist): inverted filter acts as allow (whitelist)
+     */
+    private boolean matchesInvertedFilter(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        
+        // If no valid inverted filters, return false (no match)
+        if (!hasValidInvertedFilters()) {
+            return false;
+        }
+        
+        // Check if item matches any inverted filter
+        boolean matchesAnyFilter = false;
+        for (int i = 0; i < getMaxFilterSlots(); i++) {
+            String filter = invertedFilterFields[i];
+            if (filter != null && !filter.trim().isEmpty()) {
+                if (matchesFilterEntry(stack, filter.trim())) {
+                    matchesAnyFilter = true;
+                    break;
+                }
+            }
+        }
+        
+        // The inverted filter always returns true if it matches (regardless of extractor mode)
+        // The logic of what to do with the match is handled in tryExtractFromDrawer()
+        return matchesAnyFilter;
+    }
+    
+    /**
      * Checks if an ItemStack matches the filter criteria
      * Returns true if the item should be extracted based on whitelist/blacklist mode
      */
@@ -504,9 +589,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         super.saveAdditional(tag, provider);
         ContainerHelper.saveAllItems(tag, items, provider);
         
-        // Save filter fields as index-value pairs (version 4)
+        // Save filter fields as index-value pairs (version 5 - added inverted filters)
         CompoundTag filterTag = new CompoundTag();
         net.minecraft.nbt.ListTag filterList = new net.minecraft.nbt.ListTag();
+        net.minecraft.nbt.ListTag invertedFilterList = new net.minecraft.nbt.ListTag();
         int maxSlots = getMaxFilterSlots();
         for (int i = 0; i < maxSlots; i++) {
             String filter = filterFields[i];
@@ -517,10 +603,19 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 filterEntry.putString("value", filter);
                 filterList.add(filterEntry);
             }
+            // Save inverted filters
+            String invertedFilter = invertedFilterFields[i];
+            if (invertedFilter != null && !invertedFilter.trim().isEmpty()) {
+                CompoundTag invertedFilterEntry = new CompoundTag();
+                invertedFilterEntry.putInt("index", i);
+                invertedFilterEntry.putString("value", invertedFilter);
+                invertedFilterList.add(invertedFilterEntry);
+            }
         }
         filterTag.put("filters", filterList);
+        filterTag.put("inverted_filters", invertedFilterList);
         filterTag.putBoolean("whitelist_mode", isWhitelistMode);
-        filterTag.putInt("filter_version", 4); // Version 4 = index-value pairs
+        filterTag.putInt("filter_version", 5); // Version 5 = index-value pairs + inverted filters
         filterTag.putInt("filter_slot_count", maxSlots); // Save slot count for migration
         tag.put("filter_config", filterTag);
         
@@ -548,6 +643,22 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             // Initialize all slots to empty first
             for (int i = 0; i < maxSlots; i++) {
                 filterFields[i] = "";
+                invertedFilterFields[i] = "";
+            }
+            
+            // Load inverted filters (version 5+)
+            if (version >= 5 && filterTag.contains("inverted_filters", CompoundTag.TAG_LIST)) {
+                net.minecraft.nbt.ListTag invertedFilterList = filterTag.getList("inverted_filters", CompoundTag.TAG_COMPOUND);
+                for (int i = 0; i < invertedFilterList.size(); i++) {
+                    CompoundTag invertedFilterEntry = invertedFilterList.getCompound(i);
+                    if (invertedFilterEntry.contains("index", CompoundTag.TAG_INT) && invertedFilterEntry.contains("value", CompoundTag.TAG_STRING)) {
+                        int index = invertedFilterEntry.getInt("index");
+                        String value = invertedFilterEntry.getString("value");
+                        if (index >= 0 && index < maxSlots) {
+                            invertedFilterFields[index] = value != null ? value : "";
+                        }
+                    }
+                }
             }
             
             if (version >= 4) {
@@ -596,6 +707,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                     // Initialize remaining slots to empty
                     for (int i = loadCount; i < maxSlots; i++) {
                         filterFields[i] = "";
+                        invertedFilterFields[i] = "";
                     }
                 }
             } else {
@@ -617,6 +729,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 // Initialize remaining slots to empty
                 for (int i = loadCount; i < maxSlots; i++) {
                     filterFields[i] = "";
+                    invertedFilterFields[i] = "";
                 }
             }
             
@@ -625,6 +738,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             // No filter_config tag: initialize all to empty
             for (int i = 0; i < maxSlots; i++) {
                 filterFields[i] = "";
+                invertedFilterFields[i] = "";
             }
         }
         
@@ -671,6 +785,76 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         }
         setChanged();
         // Force sync to client (like SmartTimerBlockEntity)
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
+    }
+    
+    /**
+     * Gets the inverted filter fields as a list
+     */
+    public java.util.List<String> getInvertedFilterFields() {
+        java.util.List<String> list = new java.util.ArrayList<>();
+        int maxSlots = getMaxFilterSlots();
+        for (int i = 0; i < maxSlots; i++) {
+            list.add(invertedFilterFields[i] != null ? invertedFilterFields[i] : "");
+        }
+        return list; // Return copy as list for compatibility
+    }
+    
+    /**
+     * Sets inverted filter fields from a list
+     */
+    public void setInvertedFilterFields(java.util.List<String> fields) {
+        int maxSlots = getMaxFilterSlots();
+        // Initialize all to empty
+        for (int i = 0; i < maxSlots; i++) {
+            invertedFilterFields[i] = "";
+        }
+        // Fill from provided list (backward compatibility - assumes sequential indices)
+        if (fields != null) {
+            for (int i = 0; i < Math.min(maxSlots, fields.size()); i++) {
+                String field = fields.get(i);
+                if (field != null) {
+                    field = field.trim();
+                    // Remove single quotes (') for KubeJS compatibility
+                    field = field.replace("'", "");
+                    invertedFilterFields[i] = field;
+                }
+            }
+        }
+        setChanged();
+        // Force sync to client
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
+    }
+    
+    /**
+     * Sets inverted filter fields from a map of index-value pairs.
+     * Indices outside the valid range (0 to maxSlots-1) are ignored.
+     */
+    public void setInvertedFilterFieldsFromMap(java.util.Map<Integer, String> filterMap) {
+        int maxSlots = getMaxFilterSlots();
+        // Initialize all to empty first
+        for (int i = 0; i < maxSlots; i++) {
+            invertedFilterFields[i] = "";
+        }
+        // Fill from provided map, ignoring out-of-range indices
+        if (filterMap != null) {
+            for (java.util.Map.Entry<Integer, String> entry : filterMap.entrySet()) {
+                int index = entry.getKey();
+                String value = entry.getValue();
+                if (index >= 0 && index < maxSlots && value != null) {
+                    value = value.trim();
+                    // Remove single quotes (') for KubeJS compatibility
+                    value = value.replace("'", "");
+                    invertedFilterFields[index] = value;
+                }
+            }
+        }
+        setChanged();
+        // Force sync to client
         if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
