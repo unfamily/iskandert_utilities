@@ -649,5 +649,5 @@
   "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slot riempiti",
   "message.iska_utils.deep_drawer_extractor.buffer_status": "Buffer Estrattore: %d/%d slot riempiti",
   
-  "iska_utils.config.deprecated_scanner_scan_range": "Deprecated Scanner Scan Range"
+  "iska_utils.config.deprecated_scanner_scan_range": "000 [Obsoleto] Scanner Scan Range"
 }
