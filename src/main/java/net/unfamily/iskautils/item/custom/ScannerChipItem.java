@@ -7,6 +7,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -39,6 +40,7 @@ public class ScannerChipItem extends Item {
     private static final String TARGET_MOB_TAG = "TargetMob";
     private static final String TARGET_GEN_TAG = "TargetGeneric";
     private static final String INITIALIZED_TAG = "Initialized";
+    private static final String MINING_LEVEL_TAG = "MiningLevel";
     
     public ScannerChipItem() {
         super(new Item.Properties()
@@ -181,6 +183,43 @@ public class ScannerChipItem extends Item {
             // For specialized chips, automatically set the target
             if (isSpecializedChip) {
                 if (itemPath.contains("scanner_chip_ores")) {
+                    // If chip is in main hand, cycle mining level
+                    if (hand == InteractionHand.MAIN_HAND) {
+                        int currentLevel = getMiningLevel(itemStack);
+                        // Cycle: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 100 -> 0
+                        int newLevel;
+                        if (currentLevel == 0) {
+                            newLevel = 1;
+                        } else if (currentLevel == 1) {
+                            newLevel = 2;
+                        } else if (currentLevel == 2) {
+                            newLevel = 3;
+                        } else if (currentLevel == 3) {
+                            newLevel = 4;
+                        } else if (currentLevel == 4) {
+                            newLevel = 5;
+                        } else if (currentLevel == 5) {
+                            newLevel = 100;
+                        } else { // currentLevel == 100
+                            newLevel = 0;
+                        }
+                        setMiningLevel(itemStack, newLevel);
+                        
+                        // Display message to player
+                        String levelText = switch (newLevel) {
+                            case 0 -> "item.iska_utils.scanner_chip.mining_level.none";
+                            case 1 -> "item.iska_utils.scanner_chip.mining_level.wood";
+                            case 2 -> "item.iska_utils.scanner_chip.mining_level.stone";
+                            case 3 -> "item.iska_utils.scanner_chip.mining_level.iron";
+                            case 4 -> "item.iska_utils.scanner_chip.mining_level.diamond";
+                            case 5 -> "item.iska_utils.scanner_chip.mining_level.netherite";
+                            case 100 -> "item.iska_utils.scanner_chip.mining_level.modded";
+                            default -> "item.iska_utils.scanner_chip.mining_level.none";
+                        };
+                        player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.mining_level.set", 
+                                Component.translatable(levelText)), true);
+                        return InteractionResultHolder.success(itemStack);
+                    }
                     // Set the chip to scan for all ores if not already set
                     if (getGenericTarget(itemStack) == null) {
                         setGenericTarget(itemStack, "ores");
@@ -321,6 +360,35 @@ public class ScannerChipItem extends Item {
     }
     
     /**
+     * Set the mining level in the chip (0, 1-5, 100)
+     * 0 = no filter (default)
+     * 1-5 = vanilla mining levels (wood, stone, iron, diamond, netherite)
+     * 100 = modded mining level (greater than netherite)
+     */
+    public void setMiningLevel(ItemStack itemStack, int miningLevel) {
+        if ((miningLevel < 0 || miningLevel > 5) && miningLevel != 100) {
+            return; // Invalid level
+        }
+        
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        tag.putInt(MINING_LEVEL_TAG, miningLevel);
+        itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+    
+    /**
+     * Get the mining level from the chip
+     * @return mining level (0-6), defaults to 0 if not set
+     */
+    public int getMiningLevel(ItemStack itemStack) {
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains(MINING_LEVEL_TAG)) {
+            return 0; // Default: no filter
+        }
+        
+        return tag.getInt(MINING_LEVEL_TAG);
+    }
+    
+    /**
      * Transfer the target block from the chip to the scanner
      */
     private void transferBlockTargetToScanner(ItemStack chipStack, ItemStack scannerStack, ScannerItem scanner, Player player) {
@@ -406,8 +474,15 @@ public class ScannerChipItem extends Item {
         scannerTag.remove(TARGET_BLOCK_TAG);
         scannerTag.remove(TARGET_MOB_TAG);
         
+        // If it's ores, append mining level (ores -> ores0, ores1, etc.)
+        String targetToSet = genericTarget;
+        if ("ores".equals(genericTarget)) {
+            int miningLevel = getMiningLevel(chipStack);
+            targetToSet = "ores" + miningLevel;
+        }
+        
         // Set the new generic target
-        scannerTag.putString(TARGET_GEN_TAG, chipTag.getString(TARGET_GEN_TAG));
+        scannerTag.putString(TARGET_GEN_TAG, targetToSet);
         
         // Ensure the scanner has a unique ID
         if (!scannerTag.contains("ScannerId")) {
@@ -490,9 +565,34 @@ public class ScannerChipItem extends Item {
         } else if (genericTarget != null) {
             if ("ores".equals(genericTarget)) {
                 Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_prefix")
-                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_value")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+                
+                // Get mining level
+                int miningLevel = getMiningLevel(stack);
+                
+                if (miningLevel == 0) {
+                    MutableComponent mutableTargetText = targetText.copy();
+                    targetText = mutableTargetText.append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_value")
                         .withStyle(ChatFormatting.WHITE));
+                } else {
+                    String levelText = switch (miningLevel) {
+                        case 1 -> "item.iska_utils.scanner_chip.tooltip.mining_level.wood";
+                        case 2 -> "item.iska_utils.scanner_chip.tooltip.mining_level.stone";
+                        case 3 -> "item.iska_utils.scanner_chip.tooltip.mining_level.iron";
+                        case 4 -> "item.iska_utils.scanner_chip.tooltip.mining_level.diamond";
+                        case 5 -> "item.iska_utils.scanner_chip.tooltip.mining_level.netherite";
+                        case 100 -> "item.iska_utils.scanner_chip.tooltip.mining_level.modded";
+                        default -> "item.iska_utils.scanner_chip.tooltip.target_ores_value";
+                    };
+                    MutableComponent mutableTargetText = targetText.copy();
+                    mutableTargetText = mutableTargetText.append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_value")
+                        .withStyle(ChatFormatting.WHITE))
+                        .append(Component.literal(" (").withStyle(ChatFormatting.GRAY))
+                        .append(Component.translatable(levelText).withStyle(ChatFormatting.YELLOW))
+                        .append(Component.literal(")").withStyle(ChatFormatting.GRAY));
+                    targetText = mutableTargetText;
+                }
+                
                 tooltipComponents.add(targetText);
             } else if ("mobs".equals(genericTarget)) {
                 Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_all_mobs_prefix")
@@ -505,9 +605,34 @@ public class ScannerChipItem extends Item {
             // For specialized chips, show default target even if not set yet
             if (isOresChip) {
                 Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_prefix")
-                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_value")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+                
+                // Get mining level
+                int miningLevel = getMiningLevel(stack);
+                
+                if (miningLevel == 0) {
+                    MutableComponent mutableTargetText = targetText.copy();
+                    targetText = mutableTargetText.append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_value")
                         .withStyle(ChatFormatting.WHITE));
+                } else {
+                    String levelText = switch (miningLevel) {
+                        case 1 -> "item.iska_utils.scanner_chip.tooltip.mining_level.wood";
+                        case 2 -> "item.iska_utils.scanner_chip.tooltip.mining_level.stone";
+                        case 3 -> "item.iska_utils.scanner_chip.tooltip.mining_level.iron";
+                        case 4 -> "item.iska_utils.scanner_chip.tooltip.mining_level.diamond";
+                        case 5 -> "item.iska_utils.scanner_chip.tooltip.mining_level.netherite";
+                        case 100 -> "item.iska_utils.scanner_chip.tooltip.mining_level.modded";
+                        default -> "item.iska_utils.scanner_chip.tooltip.target_ores_value";
+                    };
+                    MutableComponent mutableTargetText = targetText.copy();
+                    mutableTargetText = mutableTargetText.append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_value")
+                        .withStyle(ChatFormatting.WHITE))
+                        .append(Component.literal(" (").withStyle(ChatFormatting.GRAY))
+                        .append(Component.translatable(levelText).withStyle(ChatFormatting.YELLOW))
+                        .append(Component.literal(")").withStyle(ChatFormatting.GRAY));
+                    targetText = mutableTargetText;
+                }
+                
                 tooltipComponents.add(targetText);
             } else if (isMobsChip) {
                 Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_all_mobs_prefix")

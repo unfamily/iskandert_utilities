@@ -497,6 +497,10 @@ public class Config
             .comment("Maximum scan range in blocks")
             .defineInRange("000_scannerScanRange", 64, 1, Integer.MAX_VALUE);
 
+    private static final ModConfigSpec.IntValue SCANNER_ORE_SCAN_RANGE = BUILDER
+            .comment("Scan range in blocks for generic ore scanning (will be limited to scannerScanRange if greater)")
+            .defineInRange("009_scannerOreScanRange", 64, 1, Integer.MAX_VALUE);
+
     private static final ModConfigSpec.IntValue SCANNER_SCAN_DURATION = BUILDER
             .comment("Duration in ticks needed to hold the scanner for scanning (1 second = 20 ticks)")
             .defineInRange("001_scannerScanDuration", 60, 1, 200);
@@ -700,6 +704,7 @@ public class Config
     public static int rubberSapExtractorSpeed;
     public static java.util.List<String> crudeOils;
     public static int scannerScanRange;
+    public static int scannerOreScanRange;
     public static int scannerScanDuration;
     public static int scannerMaxBlocks;
     public static int scannerEnergyConsume;
@@ -894,6 +899,11 @@ public class Config
         rubberSapExtractorSpeed = RUBBER_SAP_EXTRACTOR_SPEED.get();
         
         scannerScanRange = SCANNER_SCAN_RANGE.get();
+        scannerOreScanRange = SCANNER_ORE_SCAN_RANGE.get();
+        // Limit ore scan range to normal scan range if it's greater
+        if (scannerOreScanRange > scannerScanRange) {
+            scannerOreScanRange = scannerScanRange;
+        }
         scannerScanDuration = SCANNER_SCAN_DURATION.get();
         scannerMaxBlocks = SCANNER_MAX_BLOCKS.get();
         scannerEnergyConsume = SCANNER_ENERGY_CONSUME.get();

@@ -284,7 +284,7 @@ public class ScannerItem extends Item {
                         scanSuccess = true;
                     } else if (genericTarget != null) {
                         // Scan based on generic target
-                        if ("ores".equals(genericTarget)) {
+                        if (genericTarget.startsWith("ores")) {
                             serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_ores"), true);
                             scanForAllOres(serverPlayer, itemstack);
                             scanSuccess = true;
@@ -437,6 +437,25 @@ public class ScannerItem extends Item {
             return;
         }
         
+        // Execute the clear command to ensure all markers are cleared
+        try {
+            net.minecraft.commands.CommandSourceStack commandSource = serverPlayer.createCommandSourceStack()
+                    .withPermission(4) // Ensure we have permission
+                    .withSuppressedOutput(); // Suppress command output to avoid spam
+            
+            // Execute the clear command
+            serverPlayer.getServer().getCommands().performPrefixedCommand(commandSource, "iska_utils_marker clear");
+        } catch (Exception e) {
+            LOGGER.warn("Failed to execute clear markers command: {}", e.getMessage());
+            // Fallback to old method if command fails
+            clearMarkersFallback(serverPlayer, itemStack);
+        }
+    }
+    
+    /**
+     * Fallback method to clear markers if command execution fails
+     */
+    private void clearMarkersFallback(ServerPlayer serverPlayer, ItemStack itemStack) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (tag.contains(SCANNER_ID_TAG)) {
             UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
@@ -1026,11 +1045,46 @@ public class ScannerItem extends Item {
             
             tooltipComponents.add(targetText);
         } else if (genericTarget != null) {
-            if ("ores".equals(genericTarget)) {
+            if (genericTarget.startsWith("ores")) {
                 Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_ores_prefix")
-                    .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                    .append(Component.translatable("item.iska_utils.scanner.tooltip.target_ores_value")
-                    .withStyle(ChatFormatting.WHITE));
+                    .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+                
+                // Extract mining level if present
+                int miningLevel = 0;
+                if (genericTarget.length() > 4) {
+                    String levelStr = genericTarget.substring(4); // Get everything after "ores"
+                    if (!levelStr.isEmpty()) {
+                        try {
+                            miningLevel = Integer.parseInt(levelStr);
+                        } catch (NumberFormatException e) {
+                            // Ignore
+                        }
+                    }
+                }
+                
+                if (miningLevel == 0) {
+                    MutableComponent mutableTargetText = targetText.copy();
+                    targetText = mutableTargetText.append(Component.translatable("item.iska_utils.scanner.tooltip.target_ores_value")
+                        .withStyle(ChatFormatting.WHITE));
+                } else {
+                    String levelText = switch (miningLevel) {
+                        case 1 -> "item.iska_utils.scanner.tooltip.mining_level.wood";
+                        case 2 -> "item.iska_utils.scanner.tooltip.mining_level.stone";
+                        case 3 -> "item.iska_utils.scanner.tooltip.mining_level.iron";
+                        case 4 -> "item.iska_utils.scanner.tooltip.mining_level.diamond";
+                        case 5 -> "item.iska_utils.scanner.tooltip.mining_level.netherite";
+                        case 100 -> "item.iska_utils.scanner.tooltip.mining_level.modded";
+                        default -> "item.iska_utils.scanner.tooltip.target_ores_value";
+                    };
+                    MutableComponent mutableTargetText = targetText.copy();
+                    mutableTargetText = mutableTargetText.append(Component.translatable("item.iska_utils.scanner.tooltip.target_ores_value")
+                        .withStyle(ChatFormatting.WHITE))
+                        .append(Component.literal(" (").withStyle(ChatFormatting.GRAY))
+                        .append(Component.translatable(levelText).withStyle(ChatFormatting.YELLOW))
+                        .append(Component.literal(")").withStyle(ChatFormatting.GRAY));
+                    targetText = mutableTargetText;
+                }
+                
                 tooltipComponents.add(targetText);
             } else if ("mobs".equals(genericTarget)) {
                 Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_prefix")
@@ -1232,7 +1286,15 @@ public class ScannerItem extends Item {
             
             // Copy the generic target
             String genericTarget = chipTag.getString("TargetGeneric");
-            scannerTag.putString("TargetGeneric", genericTarget);
+            
+            // If it's ores, append mining level (ores -> ores0, ores1, ores100, etc.)
+            String targetToSet = genericTarget;
+            if ("ores".equals(genericTarget) && offHandItem.getItem() instanceof ScannerChipItem chipItem) {
+                int miningLevel = chipItem.getMiningLevel(offHandItem);
+                targetToSet = "ores" + miningLevel;
+            }
+            
+            scannerTag.putString("TargetGeneric", targetToSet);
             
             // Make sure the scanner has a unique ID
             if (!scannerTag.contains("ScannerId")) {
@@ -1243,7 +1305,7 @@ public class ScannerItem extends Item {
             mainHandItem.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
             
             // Notify the player
-            if ("ores".equals(genericTarget)) {
+            if (genericTarget != null && genericTarget.startsWith("ores")) {
                 player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"), true);
             } else if ("mobs".equals(genericTarget)) {
                 player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"), true);
@@ -1251,6 +1313,60 @@ public class ScannerItem extends Item {
         }
     }
 
+    /**
+     * Determines the mining level of a block
+     * @param blockState The block state to check
+     * @return 0 if no tool required, 1-5 for vanilla levels (wood, stone, iron, diamond, netherite), 100 for modded/unknown
+     */
+    private int getBlockMiningLevel(BlockState blockState) {
+        Block block = blockState.getBlock();
+        
+        // Check vanilla mining level tags in order (highest first)
+        // Note: NEEDS_NETHERITE_TOOL might not exist in all versions
+        try {
+            if (block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL)) {
+                // Check if it also needs netherite (higher level)
+                // Since NEEDS_NETHERITE_TOOL might not exist, we'll use diamond as level 4
+                // and check for netherite blocks manually if needed
+                return 4; // Diamond level
+            }
+        } catch (Exception e) {
+            // Tag might not exist
+        }
+        try {
+            if (block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.NEEDS_IRON_TOOL)) {
+                return 3; // Iron level
+            }
+        } catch (Exception e) {
+            // Tag might not exist
+        }
+        try {
+            if (block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL)) {
+                return 2; // Stone level
+            }
+        } catch (Exception e) {
+            // Tag might not exist
+        }
+        
+        // Check if block requires correct tool (but no specific level tag)
+        // This usually means it can be mined with wood tools (level 1)
+        if (blockState.requiresCorrectToolForDrops()) {
+            // If it requires correct tool but no level tag, it might be wood level or modded
+            // Check if it's mineable at all
+            if (block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE) ||
+                block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.MINEABLE_WITH_AXE) ||
+                block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL) ||
+                block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.MINEABLE_WITH_HOE)) {
+                // It's mineable but has no level tag - could be wood level (1) or modded (100)
+                // We'll default to wood level (1) for vanilla blocks, modded will be detected differently
+                return 1; // Wood level (default for blocks requiring tools but no specific level)
+            }
+        }
+        
+        // Block doesn't require any specific tool level (level 0)
+        return 0;
+    }
+    
     /**
      * Scans the area for all ore blocks based on common tags
      */
@@ -1262,6 +1378,21 @@ public class ScannerItem extends Item {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
         
+        // Extract mining level from target (ores0, ores1, ores100, etc.)
+        String genericTarget = tag.getString(TARGET_GEN_TAG);
+        int requiredMiningLevel = 0; // Default: no filter
+        if (genericTarget != null && genericTarget.startsWith("ores")) {
+            String levelStr = genericTarget.substring(4); // Get everything after "ores"
+            if (!levelStr.isEmpty()) {
+                try {
+                    requiredMiningLevel = Integer.parseInt(levelStr);
+                } catch (NumberFormatException e) {
+                    // Invalid format, use default
+                    requiredMiningLevel = 0;
+                }
+            }
+        }
+        
         // Get or create a list for this scanner's markers
         List<BlockPos> scannerMarkers = ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>());
         
@@ -1269,8 +1400,12 @@ public class ScannerItem extends Item {
         BlockPos playerPos = player.blockPosition();
         ChunkPos playerChunkPos = new ChunkPos(playerPos);
         
-        // Get config values
-        int scanRange = Config.scannerScanRange;
+        // Get config values - use ore-specific range if available, otherwise use normal range
+        int scanRange = Config.scannerOreScanRange;
+        // Ensure scanRange doesn't exceed the normal scanner range
+        if (scanRange > Config.scannerScanRange) {
+            scanRange = Config.scannerScanRange;
+        }
         int maxBlocksScan = Config.scannerMaxBlocks;
         int baseTTL = Config.scannerMarkerTTL;
         int defaultAlpha = Config.scannerDefaultAlpha;
@@ -1409,6 +1544,24 @@ public class ScannerItem extends Item {
                                     isOre = blockId.contains("ore") || 
                                            blockId.contains("raw_block") || 
                                            (blockId.contains("deepslate") && blockId.contains("ore"));
+                                }
+                                
+                                // If mining level filter is active (not 0), check the block's mining level
+                                if (isOre && requiredMiningLevel > 0) {
+                                    int blockMiningLevel = getBlockMiningLevel(blockState);
+                                    
+                                    // Filter based on required level
+                                    if (requiredMiningLevel == 100) {
+                                        // Level 100: only modded/unknown mining levels
+                                        if (blockMiningLevel != 100) {
+                                            isOre = false; // Skip vanilla levels
+                                        }
+                                    } else {
+                                        // Level 1-5: exact match required
+                                        if (blockMiningLevel != requiredMiningLevel) {
+                                            isOre = false; // Skip if doesn't match
+                                        }
+                                    }
                                 }
                                 
                                 if (isOre) {
