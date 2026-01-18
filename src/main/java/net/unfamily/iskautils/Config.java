@@ -211,8 +211,7 @@ public class Config
 
     private static final ModConfigSpec.IntValue DEEP_DRAWERS_SLOT_COUNT = BUILDER
             .comment("Number of slots in the Deep Drawers storage",
-                    "Default: 49995 (9 x 5555, close to 50000)",
-                    "Higher values may impact performance")
+                    "Default: 49995 (9 x 5555, close to 50000)")
             .defineInRange("402_deep_drawers_slot_count", 49995, 1, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_GUI_ENABLED = BUILDER
