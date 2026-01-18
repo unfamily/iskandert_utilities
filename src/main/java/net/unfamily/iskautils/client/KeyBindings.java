@@ -37,6 +37,7 @@ public class KeyBindings {
     private static final String KEY_STRUCTURE_UNDO = "key.iska_utils.structure_undo";
     private static final String KEY_BURNING_BRAZIER_TOGGLE = "key.iska_utils.burning_brazier_toggle";
     private static final String KEY_GHOST_BRAZIER_TOGGLE = "key.iska_utils.ghost_brazier_toggle";
+    private static final String KEY_SCANNER_RANGE = "key.iska_utils.scanner_range";
 
     // Vector Charm keys
     public static final KeyMapping VECTOR_VERTICAL_KEY = new KeyMapping(
@@ -115,6 +116,15 @@ public class KeyBindings {
             KEY_CATEGORY_ISKA_UTILS
     );
 
+    // Scanner range cycle key
+    public static final KeyMapping SCANNER_RANGE_KEY = new KeyMapping(
+            KEY_SCANNER_RANGE,
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_R,  // R key for range
+            KEY_CATEGORY_ISKA_UTILS
+    );
+
     /**
      * Registers key bindings
      */
@@ -129,6 +139,7 @@ public class KeyBindings {
         event.register(STRUCTURE_UNDO_KEY);
         event.register(BURNING_BRAZIER_TOGGLE_KEY);
         event.register(GHOST_BRAZIER_TOGGLE_KEY);
+        event.register(SCANNER_RANGE_KEY);
         LOGGER.info("Registered all key mappings");
     }
 
@@ -221,6 +232,12 @@ public class KeyBindings {
             if (BURNING_BRAZIER_TOGGLE_KEY.consumeClick()) {
                 // Send toggle request to server
                 ModMessages.sendBurningBrazierTogglePacket();
+            }
+
+            // Key for Scanner range cycle
+            if (SCANNER_RANGE_KEY.consumeClick()) {
+                // Send range cycle request to server
+                ModMessages.sendScannerRangeCyclePacket();
             }
 
             // Ghost Brazier keybind is handled in the item's inventoryTick method

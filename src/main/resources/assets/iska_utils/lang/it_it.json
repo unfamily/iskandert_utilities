@@ -180,6 +180,7 @@
   "key.iska_utils.structure_undo": "Disassembla l'Ultima Struttura",
   "key.iska_utils.burning_brazier_toggle": "Attiva/Disattiva Auto-Piazzamento Braciere Infuocato",
   "key.iska_utils.ghost_brazier_toggle": "Attiva/Disattiva Modalità Spettatore Braciere Fantasma",
+  "key.iska_utils.scanner_range": "Cicla Range Scanner",
   
   "message.iska_utils.structure_undo.no_history": "§eNessuna struttura da disassemblare",
   "message.iska_utils.structure_undo.structure_not_found": "§cDefinizione struttura non trovata: %s",
@@ -266,6 +267,8 @@
   "item.iska_utils.scanner.found_mobs": "Trovati %s mob nell'area",
   "item.iska_utils.scanner.no_energy": "Energia insufficiente per usare lo Scanner!",
   "item.iska_utils.scanner.tooltip.energy": "Energia: ",
+  "item.iska_utils.scanner.tooltip.range": "Range",
+  "item.iska_utils.scanner.tooltip.range_units": "blocchi",
   "item.iska_utils.scanner.tooltip.target_block": "Scansione Per",
   "item.iska_utils.scanner.tooltip.target_mob": "Scansione Per",
   "item.iska_utils.scanner.tooltip.target_ores_prefix": "Scansione Per: ",
@@ -289,6 +292,7 @@
   "item.iska_utils.scanner.scan_started_all_mobs": "Scansione di tutti i mob iniziata",
   "item.iska_utils.scanner.found_ores": "Trovati %d blocchi minerali nell'area",
   "item.iska_utils.scanner.found_ores_limit": "Trovati %d blocchi minerali nell'area (limite di %d raggiunto)",
+  "item.iska_utils.scanner.range_set": "Range scanner impostato a %d blocchi",
   "item.iska_utils.scanner.found_all_mobs": "Trovati %d mob nell'area",
   "item.iska_utils.scanner.transferring_from_chip": "Trasferimento dati dal chip allo scanner in corso",
   "item.iska_utils.scanner.fish_powered": "🐟 La scansione è potenziata dai pesci... 🐟",
@@ -642,5 +646,7 @@
   
   "message.iska_utils.deep_drawers.full": "Deep Drawer pieno",
   "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slot riempiti",
-  "message.iska_utils.deep_drawer_extractor.buffer_status": "Buffer Estrattore: %d/%d slot riempiti"
+  "message.iska_utils.deep_drawer_extractor.buffer_status": "Buffer Estrattore: %d/%d slot riempiti",
+  
+  "iska_utils.config.deprecated_scanner_scan_range": "Deprecated Scanner Scan Range"
 }

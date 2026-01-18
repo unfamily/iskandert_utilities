@@ -1223,6 +1223,44 @@ public class ModMessages {
     }
 
     /**
+     * Sends a Scanner range cycle packet to the server
+     * This cycles through the available scan range options
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendScannerRangeCyclePacket() {
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Get scanner from main hand
+                        net.minecraft.world.item.ItemStack mainHandItem = player.getMainHandItem();
+                        if (mainHandItem.getItem() instanceof net.unfamily.iskautils.item.custom.ScannerItem scanner) {
+                            scanner.cycleScanRange(player, mainHandItem);
+                        } else {
+                            // Try offhand
+                            net.minecraft.world.item.ItemStack offHandItem = player.getOffhandItem();
+                            if (offHandItem.getItem() instanceof net.unfamily.iskautils.item.custom.ScannerItem scanner2) {
+                                scanner2.cycleScanRange(player, offHandItem);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to cycle scanner range: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send scanner range cycle packet: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Sends a Ghost Brazier toggle packet to the server
      * This toggles the game mode between Survival and Spectator
      */

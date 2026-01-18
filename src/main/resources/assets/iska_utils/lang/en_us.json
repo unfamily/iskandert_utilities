@@ -180,6 +180,7 @@
   "key.iska_utils.structure_undo": "Disassemble Last Structure",
   "key.iska_utils.burning_brazier_toggle": "Toggle Burning Brazier Auto-Placement",
   "key.iska_utils.ghost_brazier_toggle": "Toggle Ghost Brazier Spectator Mode",
+  "key.iska_utils.scanner_range": "Cycle Scanner Range",
   
   "message.iska_utils.structure_undo.no_history": "§eNo structures to disassemble",
   "message.iska_utils.structure_undo.structure_not_found": "§cStructure definition not found: %s",
@@ -257,6 +258,8 @@
   "item.iska_utils.scanner.found_mobs": "Found %s mobs in the area",
   "item.iska_utils.scanner.no_energy": "Not enough energy to use the Scanner!",
   "item.iska_utils.scanner.tooltip.energy": "Energy: ",
+  "item.iska_utils.scanner.tooltip.range": "Range",
+  "item.iska_utils.scanner.tooltip.range_units": "blocks",
   "item.iska_utils.scanner.tooltip.target_block": "Scanning For",
   "item.iska_utils.scanner.tooltip.target_mob": "Scanning For",
   "item.iska_utils.scanner.tooltip.target_ores_prefix": "Scanning For: ",
@@ -280,6 +283,7 @@
   "item.iska_utils.scanner.scan_started_all_mobs": "Scanning for all mobs",
   "item.iska_utils.scanner.found_ores": "Found %d ore blocks",
   "item.iska_utils.scanner.found_ores_limit": "Found %d ore blocks (limit of %d reached)",
+  "item.iska_utils.scanner.range_set": "Scanner range set to %d blocks",
   "item.iska_utils.scanner.found_all_mobs": "Found %d mobs in the area",
   "item.iska_utils.scanner.transferring_from_chip": "Transferring target from chip to scanner",
   "item.iska_utils.scanner.fish_powered": "🐟 Scanning is powered by fish... 🐟",
@@ -650,5 +654,7 @@
   
   "message.iska_utils.deep_drawers.full": "Deep Drawer is full",
   "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slots filled",
-  "message.iska_utils.deep_drawer_extractor.buffer_status": "Extractor Buffer: %d/%d slots filled"
+  "message.iska_utils.deep_drawer_extractor.buffer_status": "Extractor Buffer: %d/%d slots filled",
+  
+  "iska_utils.config.deprecated_scanner_scan_range": "Deprecated Scanner Scan Range"
 }

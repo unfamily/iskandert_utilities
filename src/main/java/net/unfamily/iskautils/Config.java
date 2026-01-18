@@ -494,12 +494,21 @@ public class Config
     //removed TTL from scanner config is hardcoded now
 
     private static final ModConfigSpec.IntValue SCANNER_SCAN_RANGE = BUILDER
-            .comment("Maximum scan range in blocks")
+            .comment("DEPRECATED: This parameter has been moved to 200_scannerRangeOptions.",
+                    "The maximum scan range is now determined by the highest value in the scannerRangeOptions array.",
+                    "This parameter is kept for backward compatibility but is no longer used.")
+            .translation("iska_utils.config.deprecated_scanner_scan_range")
             .defineInRange("000_scannerScanRange", 64, 1, Integer.MAX_VALUE);
 
-    private static final ModConfigSpec.IntValue SCANNER_ORE_SCAN_RANGE = BUILDER
-            .comment("Scan range in blocks for generic ore scanning (will be limited to scannerScanRange if greater)")
-            .defineInRange("009_scannerOreScanRange", 64, 1, Integer.MAX_VALUE);
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends Integer>> SCANNER_RANGE_OPTIONS = BUILDER
+            .comment("Available scan range options that can be cycled with keybind")
+            .defineList("200_scannerRangeOptions", 
+                    java.util.Arrays.asList(16, 24, 32, 64, 96),
+                    obj -> obj instanceof Integer);
+
+    private static final ModConfigSpec.IntValue SCANNER_DEFAULT_RANGE = BUILDER
+            .comment("Default scan range value (must be one of the values in scannerRangeOptions)")
+            .defineInRange("201_scannerDefaultRange", 32, 1, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue SCANNER_SCAN_DURATION = BUILDER
             .comment("Duration in ticks needed to hold the scanner for scanning (1 second = 20 ticks)")
@@ -704,7 +713,8 @@ public class Config
     public static int rubberSapExtractorSpeed;
     public static java.util.List<String> crudeOils;
     public static int scannerScanRange;
-    public static int scannerOreScanRange;
+    public static java.util.List<Integer> scannerRangeOptions;
+    public static int scannerDefaultRange;
     public static int scannerScanDuration;
     public static int scannerMaxBlocks;
     public static int scannerEnergyConsume;
@@ -898,11 +908,15 @@ public class Config
         
         rubberSapExtractorSpeed = RUBBER_SAP_EXTRACTOR_SPEED.get();
         
-        scannerScanRange = SCANNER_SCAN_RANGE.get();
-        scannerOreScanRange = SCANNER_ORE_SCAN_RANGE.get();
-        // Limit ore scan range to normal scan range if it's greater
-        if (scannerOreScanRange > scannerScanRange) {
-            scannerOreScanRange = scannerScanRange;
+        scannerScanRange = SCANNER_SCAN_RANGE.get(); // Deprecated, kept for backward compatibility
+        scannerRangeOptions = new java.util.ArrayList<>(SCANNER_RANGE_OPTIONS.get());
+        scannerDefaultRange = SCANNER_DEFAULT_RANGE.get();
+        // Ensure default range is in the options array
+        if (scannerRangeOptions != null && !scannerRangeOptions.isEmpty()) {
+            if (!scannerRangeOptions.contains(scannerDefaultRange)) {
+                // If default is not in options, use the first option
+                scannerDefaultRange = scannerRangeOptions.get(0);
+            }
         }
         scannerScanDuration = SCANNER_SCAN_DURATION.get();
         scannerMaxBlocks = SCANNER_MAX_BLOCKS.get();

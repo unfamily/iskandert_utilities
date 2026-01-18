@@ -52,7 +52,8 @@ public class ScannerItem extends Item {
     private static final String TARGET_GEN_TAG = "TargetGeneric";
     private static final String SCANNER_ID_TAG = "ScannerId";
     private static final String CLEAR_MARKERS_TAG = "ClearMarkers";
-    private static final String ENERGY_TAG = "Energy"; 
+    private static final String ENERGY_TAG = "Energy";
+    private static final String SCAN_RANGE_TAG = "ScanRange"; 
     private boolean clear_markers=false;
     private static final int TTL_MULTIPLIER = 1;
     
@@ -104,11 +105,18 @@ public class ScannerItem extends Item {
     @Override
     public ItemStack getDefaultInstance() {
         ItemStack stack = super.getDefaultInstance();
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        
         if (canStoreEnergy()) {
-            CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
             tag.putInt(ENERGY_TAG, 0);
-            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
+        
+        // Initialize scan range to default value
+        if (!tag.contains(SCAN_RANGE_TAG)) {
+            tag.putInt(SCAN_RANGE_TAG, Config.scannerDefaultRange);
+        }
+        
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         return stack;
     }
 
@@ -422,11 +430,99 @@ public class ScannerItem extends Item {
             tag.putUUID(SCANNER_ID_TAG, UUID.randomUUID());
         }
         
+        // Initialize scan range if not set
+        if (!tag.contains(SCAN_RANGE_TAG)) {
+            tag.putInt(SCAN_RANGE_TAG, Config.scannerDefaultRange);
+        }
+        
         // Set clear_markers state
         tag.putBoolean(CLEAR_MARKERS_TAG, clear_markers);
         
         // Save data to ItemStack
         itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+    
+    /**
+     * Gets the current scan range from the scanner
+     */
+    private int getScanRange(ItemStack itemStack) {
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains(SCAN_RANGE_TAG)) {
+            // Initialize with default value
+            int defaultRange = Config.scannerDefaultRange;
+            tag.putInt(SCAN_RANGE_TAG, defaultRange);
+            itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+            return defaultRange;
+        }
+        int range = tag.getInt(SCAN_RANGE_TAG);
+        // Ensure range is valid (exists in options array)
+        java.util.List<Integer> options = Config.scannerRangeOptions;
+        if (options != null && !options.isEmpty()) {
+            // Check if range exists in options using proper int comparison
+            boolean found = false;
+            for (Integer option : options) {
+                if (option != null && option.intValue() == range) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                // If current range is not in options, reset to default
+                range = Config.scannerDefaultRange;
+                tag.putInt(SCAN_RANGE_TAG, range);
+                itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+            }
+        }
+        return range;
+    }
+    
+    /**
+     * Sets the scan range in the scanner
+     */
+    private void setScanRange(ItemStack itemStack, int range) {
+        // Range is validated by the options array, no need to check against deprecated max
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        tag.putInt(SCAN_RANGE_TAG, range);
+        itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+    
+    /**
+     * Cycles through the available scan range options
+     */
+    public void cycleScanRange(ServerPlayer player, ItemStack itemStack) {
+        int currentRange = getScanRange(itemStack);
+        java.util.List<Integer> options = Config.scannerRangeOptions;
+        
+        if (options == null || options.isEmpty()) {
+            return;
+        }
+        
+        // Find current range in options (use intValue() to ensure proper comparison)
+        int currentIndex = -1;
+        for (int i = 0; i < options.size(); i++) {
+            Integer optionValue = options.get(i);
+            if (optionValue != null && optionValue.intValue() == currentRange) {
+                currentIndex = i;
+                break;
+            }
+        }
+        
+        // If current range not found or is last, cycle to first
+        int nextIndex;
+        if (currentIndex == -1 || currentIndex == options.size() - 1) {
+            nextIndex = 0;
+        } else {
+            nextIndex = currentIndex + 1;
+        }
+        
+        Integer nextRangeObj = options.get(nextIndex);
+        int nextRange = nextRangeObj != null ? nextRangeObj.intValue() : Config.scannerDefaultRange;
+        // Range is already validated by being in the options array
+        
+        setScanRange(itemStack, nextRange);
+        
+        // Display message to player
+        player.displayClientMessage(Component.translatable("item.iska_utils.scanner.range_set", nextRange), true);
     }
     
     /**
@@ -536,8 +632,8 @@ public class ScannerItem extends Item {
         BlockPos playerPos = player.blockPosition();
         ChunkPos playerChunkPos = new ChunkPos(playerPos);
         
-        // Get config values
-        int scanRange = Config.scannerScanRange;
+        // Get scan range from scanner (or use default)
+        int scanRange = getScanRange(itemStack);
         int maxBlocksScan = Config.scannerMaxBlocks;
         int baseTTL = Config.scannerMarkerTTL;
         
@@ -766,8 +862,8 @@ public class ScannerItem extends Item {
         // Get player position
         BlockPos playerPos = player.blockPosition();
         
-        // Get config values
-        int scanRange = Config.scannerScanRange;
+        // Get scan range from scanner (or use default)
+        int scanRange = getScanRange(itemStack);
         int maxTTL = Config.scannerMarkerTTL;
         
         // Calculate the total number of chunks to scan
@@ -1024,6 +1120,16 @@ public class ScannerItem extends Item {
             
             tooltipComponents.add(energyText);
         }
+        
+        // Scan range information
+        int scanRange = getScanRange(stack);
+        Component rangeText = Component.translatable("item.iska_utils.scanner.tooltip.range")
+            .withStyle(style -> style.withColor(ChatFormatting.GREEN))
+            .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
+            .append(Component.literal(String.valueOf(scanRange)).withStyle(ChatFormatting.WHITE))
+            .append(Component.literal(" ").withStyle(ChatFormatting.GRAY))
+            .append(Component.translatable("item.iska_utils.scanner.tooltip.range_units").withStyle(ChatFormatting.WHITE));
+        tooltipComponents.add(rangeText);
         
         // Target information
         Block targetBlock = getTargetBlock(stack);
@@ -1400,12 +1506,8 @@ public class ScannerItem extends Item {
         BlockPos playerPos = player.blockPosition();
         ChunkPos playerChunkPos = new ChunkPos(playerPos);
         
-        // Get config values - use ore-specific range if available, otherwise use normal range
-        int scanRange = Config.scannerOreScanRange;
-        // Ensure scanRange doesn't exceed the normal scanner range
-        if (scanRange > Config.scannerScanRange) {
-            scanRange = Config.scannerScanRange;
-        }
+        // Get scan range from scanner (or use default)
+        int scanRange = getScanRange(itemStack);
         int maxBlocksScan = Config.scannerMaxBlocks;
         int baseTTL = Config.scannerMarkerTTL;
         int defaultAlpha = Config.scannerDefaultAlpha;
@@ -1687,8 +1789,8 @@ public class ScannerItem extends Item {
         // Get player position
         BlockPos playerPos = player.blockPosition();
         
-        // Get config values
-        int scanRange = Config.scannerScanRange;
+        // Get scan range from scanner (or use default)
+        int scanRange = getScanRange(itemStack);
         int maxTTL = Config.scannerMarkerTTL;
         int defaultAlpha = Config.scannerDefaultAlpha;
         
