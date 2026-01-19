@@ -91,7 +91,53 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
                 default -> false;
             };
         }
+        
+        @Override
+        public int getSlotLimit(int slot) {
+            return switch (slot) {
+                case 0 -> Config.fanRangeUpgradeMax; // Slot 0: range module limit from config
+                case 1 -> 1; // Slot 1: ghost module limited to 1
+                case 2 -> Config.fanAccelerationUpgradeMax; // Slot 2: acceleration module limit from config
+                default -> super.getSlotLimit(slot);
+            };
+        }
+        
     };
+    
+    // Count how many range modules are currently installed
+    public int countRangeModules() {
+        int count = 0;
+        for (int i = 0; i < moduleHandler.getSlots(); i++) {
+            ItemStack stack = moduleHandler.getStackInSlot(i);
+            if (stack.is(ModItems.RANGE_MODULE.get())) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+    
+    // Count how many acceleration modules are currently installed
+    public int countAccelerationModules() {
+        int count = 0;
+        for (int i = 0; i < moduleHandler.getSlots(); i++) {
+            ItemStack stack = moduleHandler.getStackInSlot(i);
+            if (isSpeedModule(stack)) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+    
+    // Get the effective maximum range (base + range modules)
+    private int getEffectiveMaxRange(int baseMax) {
+        int rangeModules = countRangeModules();
+        return baseMax + rangeModules;
+    }
+    
+    // Get the absolute maximum range (base + max upgrade limit from config)
+    private int getAbsoluteMaxRange(int baseMax) {
+        return baseMax + Config.fanRangeUpgradeMax;
+    }
     
     // Check if item is a speed module
     private boolean isSpeedModule(ItemStack stack) {
@@ -101,6 +147,42 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
                stack.is(ModItems.FAST_MODULE.get()) ||
                stack.is(ModItems.EXTREME_MODULE.get()) ||
                stack.is(ModItems.ULTRA_MODULE.get());
+    }
+    
+    // Get the power value for a speed module item
+    private double getModulePower(ItemStack stack) {
+        if (stack.is(ModItems.SLOW_MODULE.get())) {
+            return Config.fanAccelerationModulePowers.size() > 0 ? Config.fanAccelerationModulePowers.get(0) : 0.1D;
+        } else if (stack.is(ModItems.MODERATE_MODULE.get())) {
+            return Config.fanAccelerationModulePowers.size() > 1 ? Config.fanAccelerationModulePowers.get(1) : 0.5D;
+        } else if (stack.is(ModItems.FAST_MODULE.get())) {
+            return Config.fanAccelerationModulePowers.size() > 2 ? Config.fanAccelerationModulePowers.get(2) : 1.0D;
+        } else if (stack.is(ModItems.EXTREME_MODULE.get())) {
+            return Config.fanAccelerationModulePowers.size() > 3 ? Config.fanAccelerationModulePowers.get(3) : 5.0D;
+        } else if (stack.is(ModItems.ULTRA_MODULE.get())) {
+            return Config.fanAccelerationModulePowers.size() > 4 ? Config.fanAccelerationModulePowers.get(4) : 15.0D;
+        }
+        return 0.0D;
+    }
+    
+    // Calculate effective power (base + sum of acceleration module powers)
+    public double getEffectivePower() {
+        double totalPower = Config.fanDefaultPower;
+        ItemStack slot2Stack = moduleHandler.getStackInSlot(2);
+        if (!slot2Stack.isEmpty() && isSpeedModule(slot2Stack)) {
+            double modulePower = getModulePower(slot2Stack);
+            totalPower += modulePower * slot2Stack.getCount();
+        }
+        return totalPower;
+    }
+    
+    // Get maximum possible power (base + max acceleration modules * max power)
+    private double getMaxPossiblePower() {
+        double maxModulePower = Config.fanAccelerationModulePowers.stream()
+                .mapToDouble(Double::doubleValue)
+                .max()
+                .orElse(0.0D);
+        return Config.fanDefaultPower + (Config.fanAccelerationUpgradeMax * maxModulePower);
     }
 
     public FanBlockEntity(BlockPos pos, BlockState state) {
@@ -127,10 +209,13 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     public void setRangeUp(int value) { 
         if (value < 0) {
             this.rangeUp = 0;
-        } else if (value > Config.fanRangeVerticalMax) {
-            this.rangeUp = Config.fanRangeVerticalMax;
         } else {
-            this.rangeUp = value;
+            int effectiveMax = getEffectiveMaxRange(Config.fanRangeVerticalMax);
+            if (value > effectiveMax) {
+                this.rangeUp = effectiveMax;
+            } else {
+                this.rangeUp = value;
+            }
         }
         setChanged();
     }
@@ -139,10 +224,13 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     public void setRangeDown(int value) { 
         if (value < 0) {
             this.rangeDown = 0;
-        } else if (value > Config.fanRangeVerticalMax) {
-            this.rangeDown = Config.fanRangeVerticalMax;
         } else {
-            this.rangeDown = value;
+            int effectiveMax = getEffectiveMaxRange(Config.fanRangeVerticalMax);
+            if (value > effectiveMax) {
+                this.rangeDown = effectiveMax;
+            } else {
+                this.rangeDown = value;
+            }
         }
         setChanged();
     }
@@ -151,10 +239,19 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     public void setRangeRight(int value) { 
         if (value < 0) {
             this.rangeRight = 0;
-        } else if (value > Config.fanRangeHorizontalMax) {
-            this.rangeRight = Config.fanRangeHorizontalMax;
         } else {
-            this.rangeRight = value;
+            int effectiveMax = getEffectiveMaxRange(Config.fanRangeHorizontalMax);
+            if (value > effectiveMax) {
+                this.rangeRight = effectiveMax;
+            } else {
+                this.rangeRight = value;
+            }
+        }
+        // Update front range to maintain cube (front = horizontal * 2)
+        int effectiveHorizontalMax = getEffectiveMaxRange(Config.fanRangeHorizontalMax);
+        int newFrontMax = effectiveHorizontalMax * 2;
+        if (this.rangeFront > newFrontMax) {
+            this.rangeFront = newFrontMax;
         }
         setChanged();
     }
@@ -163,10 +260,19 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     public void setRangeLeft(int value) { 
         if (value < 0) {
             this.rangeLeft = 0;
-        } else if (value > Config.fanRangeHorizontalMax) {
-            this.rangeLeft = Config.fanRangeHorizontalMax;
         } else {
-            this.rangeLeft = value;
+            int effectiveMax = getEffectiveMaxRange(Config.fanRangeHorizontalMax);
+            if (value > effectiveMax) {
+                this.rangeLeft = effectiveMax;
+            } else {
+                this.rangeLeft = value;
+            }
+        }
+        // Update front range to maintain cube (front = horizontal * 2)
+        int effectiveHorizontalMax = getEffectiveMaxRange(Config.fanRangeHorizontalMax);
+        int newFrontMax = effectiveHorizontalMax * 2;
+        if (this.rangeFront > newFrontMax) {
+            this.rangeFront = newFrontMax;
         }
         setChanged();
     }
@@ -175,17 +281,35 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     public void setRangeFront(int value) { 
         if (value < 0) {
             this.rangeFront = 0;
-        } else if (value > Config.fanRangeFrontMax) {
-            this.rangeFront = Config.fanRangeFrontMax;
         } else {
-            this.rangeFront = value;
+            // Front range is always horizontal range * 2 to maintain cube shape
+            int effectiveHorizontalMax = getEffectiveMaxRange(Config.fanRangeHorizontalMax);
+            int effectiveFrontMax = effectiveHorizontalMax * 2;
+            if (value > effectiveFrontMax) {
+                this.rangeFront = effectiveFrontMax;
+            } else {
+                this.rangeFront = value;
+            }
         }
         setChanged();
     }
 
     public double getFanPower() { return fanPower; }
     public void setFanPower(double value) { 
-        this.fanPower = Math.max(0.0, Math.min(value, 100.0)); 
+        // Validate against effective max power (base + installed acceleration modules)
+        double effectiveMaxPower = getEffectivePower();
+        // Also check against absolute max (base + max modules * max power)
+        double absoluteMaxPower = getMaxPossiblePower();
+        
+        if (value < 0.0) {
+            this.fanPower = 0.0;
+        } else if (value > absoluteMaxPower) {
+            this.fanPower = absoluteMaxPower;
+        } else if (value > effectiveMaxPower) {
+            this.fanPower = effectiveMaxPower;
+        } else {
+            this.fanPower = value;
+        }
         setChanged();
     }
 
@@ -249,6 +373,21 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         this.backMessageTimer = 0;
         setChanged();
     }
+    
+    // Validate and correct power based on installed acceleration modules
+    private void validateAndCorrectPower() {
+        double effectiveMaxPower = getEffectivePower();
+        double absoluteMaxPower = getMaxPossiblePower();
+        
+        // Check and correct power value
+        if (fanPower > absoluteMaxPower) {
+            fanPower = absoluteMaxPower;
+            setChanged();
+        } else if (fanPower > effectiveMaxPower) {
+            fanPower = effectiveMaxPower;
+            setChanged();
+        }
+    }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
@@ -304,6 +443,9 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
+        // Validate and correct power based on installed acceleration modules
+        blockEntity.validateAndCorrectPower();
+
         // Get current redstone mode (ensure it's in valid range)
         int currentRedstoneMode = Math.max(0, Math.min(blockEntity.redstoneMode, 4));
         
@@ -357,10 +499,19 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         var entities = level.getEntitiesOfClass(Entity.class, pushArea, 
             entity -> entity instanceof LivingEntity && !entity.isSpectator());
         
-        // Push each entity based on push type
+        // Check if ghost module is installed (bypasses block obstruction)
+        boolean hasGhostModule = !blockEntity.moduleHandler.getStackInSlot(1).isEmpty() && 
+                                 blockEntity.moduleHandler.getStackInSlot(1).is(ModItems.GHOST_MODULE.get());
+        
+        // Push each entity based on push type (use effective power)
+        double effectivePower = blockEntity.getEffectivePower();
         for (Entity entity : entities) {
             if (shouldPushEntity(entity, blockEntity.pushType)) {
-                pushEntity(entity, facing, blockEntity.fanPower, blockEntity.isPull);
+                // Check if there's a blocking block between fan and entity
+                if (!hasGhostModule && isBlockedByObstacle(level, pos, facing, entity)) {
+                    continue; // Skip this entity if blocked and no ghost module
+                }
+                pushEntity(entity, facing, effectivePower, blockEntity.isPull);
             }
         }
     }
@@ -424,24 +575,26 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
                 maxZ = z + rightOffset;
             }
             case UP -> {
-                // Front is +Y, Left and Right depend on horizontal facing (use NORTH as default)
+                // Front is +Y, Left is -X, Right is +X (horizontal plane)
                 // Area starts at +1 in front direction (y+1), not including fan position (y)
                 minX = x - leftOffset;
                 maxX = x + rightOffset;
                 minY = y + 1; // Exclude fan position, start from y+1
                 maxY = y + frontOffset;
-                minZ = z - 0;
-                maxZ = z + 0;
+                // Use left/right for Z axis when facing UP/DOWN (create horizontal area)
+                minZ = z - leftOffset;
+                maxZ = z + rightOffset;
             }
             case DOWN -> {
-                // Front is -Y, Left and Right depend on horizontal facing (use NORTH as default)
+                // Front is -Y, Left is -X, Right is +X (horizontal plane)
                 // Area starts at +1 in front direction (y-1), not including fan position (y)
                 minX = x - leftOffset;
                 maxX = x + rightOffset;
                 minY = y - frontOffset;
                 maxY = y - 1; // Exclude fan position, start from y-1
-                minZ = z - 0;
-                maxZ = z + 0;
+                // Use left/right for Z axis when facing UP/DOWN (create horizontal area)
+                minZ = z - leftOffset;
+                maxZ = z + rightOffset;
             }
             default -> {
                 minX = x;
@@ -467,6 +620,72 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         };
     }
 
+    // Check if there's a blocking obstacle between fan and entity
+    private static boolean isBlockedByObstacle(Level level, BlockPos fanPos, Direction facing, Entity entity) {
+        // Get entity position (center)
+        Vec3 entityPos = entity.position();
+        Vec3 fanCenter = Vec3.atCenterOf(fanPos);
+        
+        // Calculate direction from fan to entity
+        Vec3 direction = entityPos.subtract(fanCenter);
+        
+        // Project direction onto the facing axis to get the distance along that axis
+        double distanceAlongFacing = switch (facing) {
+            case NORTH -> fanCenter.z() - entityPos.z();
+            case SOUTH -> entityPos.z() - fanCenter.z();
+            case WEST -> fanCenter.x() - entityPos.x();
+            case EAST -> entityPos.x() - fanCenter.x();
+            case UP -> entityPos.y() - fanCenter.y();
+            case DOWN -> fanCenter.y() - entityPos.y();
+        };
+        
+        // Only check if entity is in front of the fan (positive distance)
+        if (distanceAlongFacing <= 0) {
+            return false; // Entity is behind or at same level, not blocked
+        }
+        
+        // Check all blocks along the line from fan to entity in the facing direction
+        // We check at integer block positions along the path
+        int steps = (int) Math.ceil(distanceAlongFacing) + 1;
+        Vec3 stepDirection = switch (facing) {
+            case NORTH -> new Vec3(0, 0, -1);
+            case SOUTH -> new Vec3(0, 0, 1);
+            case WEST -> new Vec3(-1, 0, 0);
+            case EAST -> new Vec3(1, 0, 0);
+            case UP -> new Vec3(0, 1, 0);
+            case DOWN -> new Vec3(0, -1, 0);
+        };
+        
+        // Start from +1 block in front of fan (fan's own position doesn't block)
+        for (int i = 1; i <= steps; i++) {
+            Vec3 checkPos = fanCenter.add(stepDirection.scale(i));
+            BlockPos blockPos = BlockPos.containing(checkPos);
+            
+            // Stop checking if we've passed the entity
+            double checkDistance = switch (facing) {
+                case NORTH -> fanCenter.z() - checkPos.z();
+                case SOUTH -> checkPos.z() - fanCenter.z();
+                case WEST -> fanCenter.x() - checkPos.x();
+                case EAST -> checkPos.x() - fanCenter.x();
+                case UP -> checkPos.y() - fanCenter.y();
+                case DOWN -> fanCenter.y() - checkPos.y();
+            };
+            
+            if (checkDistance > distanceAlongFacing) {
+                break; // Past the entity, no need to check further
+            }
+            
+            // Check if this block is solid and blocks the airflow
+            BlockState blockState = level.getBlockState(blockPos);
+            if (!blockState.isAir() && blockState.isSolid()) {
+                // Block is solid and blocks airflow
+                return true;
+            }
+        }
+        
+        return false; // No blocking obstacles found
+    }
+    
     // Push an entity in the facing direction (or pull if isPull is true)
     private static void pushEntity(Entity entity, Direction facing, double power, boolean isPull) {
         Vec3 currentMotion = entity.getDeltaMovement();

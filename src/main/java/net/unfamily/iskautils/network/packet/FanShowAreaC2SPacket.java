@@ -61,7 +61,7 @@ public record FanShowAreaC2SPacket(BlockPos pos) implements CustomPacketPayload 
                 int purpleColor = 0x80FF00FF;
                 // Red color for border markers when block (ARGB: 0x80FF0000 = 50% transparent red, same transparency)
                 int redColor = 0x80FF0000;
-                int durationTicks = 60; // 3 seconds
+                int durationTicks = 200; // 10 seconds
                 
                 // Add billboard markers only at the edges of the area (not inside faces)
                 // Purple if air, red if block (same transparency)

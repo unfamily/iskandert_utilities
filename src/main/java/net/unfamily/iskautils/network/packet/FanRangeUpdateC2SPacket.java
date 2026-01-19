@@ -70,13 +70,20 @@ public class FanRangeUpdateC2SPacket {
         
         // Calculate new value
         int newValue = currentValue + delta;
+        
+        // Calculate effective max range (base + installed range modules)
+        int rangeModules = fan.countRangeModules();
         int maxValue = switch (rangeType) {
-            case FORWARD -> Config.fanRangeFrontMax;
-            case UP, DOWN -> Config.fanRangeVerticalMax;
-            case LEFT, RIGHT -> Config.fanRangeHorizontalMax;
+            case FORWARD -> {
+                // Front range is always horizontal range * 2 to maintain cube shape
+                int effectiveHorizontalMax = Config.fanRangeHorizontalMax + rangeModules;
+                yield effectiveHorizontalMax * 2;
+            }
+            case UP, DOWN -> Config.fanRangeVerticalMax + rangeModules;
+            case LEFT, RIGHT -> Config.fanRangeHorizontalMax + rangeModules;
         };
         
-        // Apply limits: minimum is 0, if exceeds config max, set to config max
+        // Apply limits: minimum is 0, if exceeds effective max, set to effective max
         if (newValue < 0) {
             newValue = 0;
         } else if (newValue > maxValue) {

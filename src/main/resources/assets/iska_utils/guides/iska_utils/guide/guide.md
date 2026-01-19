@@ -7,6 +7,7 @@ item_ids:
   - iska_utils:deep_drawer_extender
   - iska_utils:deep_drawer_extractor
   - iska_utils:deep_drawer_interface
+  - iska_utils:fan
 ---
 
 # What is Iska Utils?
@@ -22,3 +23,4 @@ Left click and drag to rotate, right click and drag to translate.
 Iska Utils is a utility mod that adds various helpful blocks, items, and features to enhance your Minecraft experience. The mod focuses on providing practical solutions for automation, storage, and gameplay improvements.
 
 * [Deep Drawers](deep_drawers/deep_drawers-index.md)
+* [Modular Fan](fan.md)

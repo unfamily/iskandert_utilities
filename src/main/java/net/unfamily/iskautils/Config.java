@@ -454,26 +454,47 @@ public class Config
             .comment("Maximum horizontal range (left/right) for the fan (in blocks)",
                     "This is the maximum value that can be set for range_left and range_right",
                     "NOTE: This parameter is WITHOUT upgrades")
-            .defineInRange("000_fanRangeHorizontalMax", 8, 0, Integer.MAX_VALUE);
+            .defineInRange("000_fanRangeHorizontalMax", 2, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue FAN_RANGE_VERTICAL_MAX = BUILDER
             .comment("Maximum vertical range (up/down) for the fan (in blocks)",
                     "This is the maximum value that can be set for range_up and range_down",
                     "NOTE: This parameter is WITHOUT upgrades")
-            .defineInRange("001_fanRangeVerticalMax", 8, 0, Integer.MAX_VALUE);
+            .defineInRange("001_fanRangeVerticalMax", 2, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue FAN_RANGE_FRONT_MAX = BUILDER
             .comment("Maximum front range for the fan (in blocks)",
-                    "This is the maximum value that can be set for range_front",
-                    "Default: 8 (inspired by vanilla water flow distance)",
-                    "NOTE: This parameter is WITHOUT upgrades")
-            .defineInRange("002_fanRangeFrontMax", 8, 0, Integer.MAX_VALUE);
+                    "This is automatically calculated as horizontal range * 2 to maintain a cube shape",
+                    "Default: 5 (horizontal 2 * 2) for a 5x5 cube (2+1+2)",
+                    "NOTE: This parameter is WITHOUT upgrades and should be horizontal * 2")
+            .defineInRange("002_fanRangeFrontMax", 5, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.DoubleValue FAN_DEFAULT_POWER = BUILDER
             .comment("Default power/force with which the fan pushes entities",
                     "Default: 0.3 (midway between slow and moderate vector plates)",
                     "NOTE: This parameter is WITHOUT upgrades")
             .defineInRange("003_fanDefaultPower", 0.3D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.IntValue FAN_RANGE_UPGRADE_MAX = BUILDER
+            .comment("Maximum number of range module upgrades that can be installed",
+                    "Each range module increases the maximum range by 1",
+                    "Default: 5")
+            .defineInRange("100_fanRangeUpgradeMax", 5, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue FAN_ACCELERATION_UPGRADE_MAX = BUILDER
+            .comment("Maximum number of acceleration module upgrades (slow, moderate, fast, extreme, ultra) that can be installed",
+                    "Each acceleration module increases the fan's power",
+                    "Default: 3")
+            .defineInRange("101_fanAccelerationUpgradeMax", 3, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends Double>> FAN_ACCELERATION_MODULE_POWERS = BUILDER
+            .comment("Power values for acceleration modules (slow, moderate, fast, extreme, ultra)",
+                    "Each module adds this power value to the fan's base power",
+                    "Order: [slow, moderate, fast, extreme, ultra]",
+                    "Defaults match vector plate speeds: [0.1, 0.5, 1.0, 5.0, 15.0]")
+            .defineList("102_fanAccelerationModulePowers", 
+                    java.util.List.of(0.1D, 0.5D, 1.0D, 5.0D, 15.0D),
+                    o -> o instanceof Double && (Double) o >= 0.0D && (Double) o <= 100.0D);
 
     static {
         BUILDER.pop(); // End of fan category
@@ -796,6 +817,9 @@ public class Config
     public static int fanRangeVerticalMax;
     public static int fanRangeFrontMax;
     public static double fanDefaultPower;
+    public static int fanRangeUpgradeMax;
+    public static int fanAccelerationUpgradeMax;
+    public static java.util.List<Double> fanAccelerationModulePowers;
     
     public static java.util.List<String> deepDrawersAllowedTags;
     public static java.util.List<String> deepDrawersBlacklist;
@@ -890,6 +914,11 @@ public class Config
         fanRangeVerticalMax = FAN_RANGE_VERTICAL_MAX.get();
         fanRangeFrontMax = FAN_RANGE_FRONT_MAX.get();
         fanDefaultPower = FAN_DEFAULT_POWER.get();
+        fanRangeUpgradeMax = FAN_RANGE_UPGRADE_MAX.get();
+        fanAccelerationUpgradeMax = FAN_ACCELERATION_UPGRADE_MAX.get();
+        fanAccelerationModulePowers = new java.util.ArrayList<>(FAN_ACCELERATION_MODULE_POWERS.get().stream()
+                .map(Double::doubleValue)
+                .toList());
         
         // Deep Drawers configuration
         deepDrawersAllowedTags = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOWED_TAGS.get());

@@ -1,7 +1,8 @@
 ---
 navigation:
   parent: guide.md
-  title: Deep Drawers
+  title: Deep Drawer
+  icon: deep_drawers
   position: 10
 ---
 

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BAB",
+    "ACA",
+    "BAB"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:ingots/iron"  
+    },
+    "B": {
+      "item": "minecraft:iron_ingot"
+    },
+    "C": {
+      "tag": "c:storage_blocks/redstone"  
+    }
+  },
+  "result": {
+    "id": "iska_utils:fan",
+    "count": 1
+  }
+} 
