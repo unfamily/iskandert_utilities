@@ -58,6 +58,9 @@ public class ModCreativeModeTabs {
                                 }
                                 // Base module
                                 pOutput.accept(ModItems.BASE_MODULE.get());
+                                // Fan modules
+                                pOutput.accept(ModItems.RANGE_MODULE.get());
+                                pOutput.accept(ModItems.GHOST_MODULE.get());
                                 // Modules (follow vector tier)
                                 pOutput.accept(ModItems.SLOW_MODULE.get());
                                 pOutput.accept(ModItems.MODERATE_MODULE.get());
@@ -100,6 +103,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
                                 pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
                                 pOutput.accept(ModItems.SMART_TIMER.get());
+                                pOutput.accept(ModItems.FAN.get());
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());
                                 pOutput.accept(ModItems.WEATHER_ALTERER.get());
                                 pOutput.accept(ModItems.TIME_ALTERER.get());

@@ -2,6 +2,7 @@ package net.unfamily.iskautils.network.packet;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.FanBlockEntity;
 
 /**
@@ -67,9 +68,20 @@ public class FanRangeUpdateC2SPacket {
             case RIGHT -> fan.getRangeRight();
         };
         
-        // Calculate new value (allow values beyond max, minimum is 0)
-        int newValue = Math.max(0, currentValue + delta);
-        // Note: We allow values beyond the config max - they will be shown in blue in the GUI
+        // Calculate new value
+        int newValue = currentValue + delta;
+        int maxValue = switch (rangeType) {
+            case FORWARD -> Config.fanRangeFrontMax;
+            case UP, DOWN -> Config.fanRangeVerticalMax;
+            case LEFT, RIGHT -> Config.fanRangeHorizontalMax;
+        };
+        
+        // Apply limits: minimum is 0, if exceeds config max, set to config max
+        if (newValue < 0) {
+            newValue = 0;
+        } else if (newValue > maxValue) {
+            newValue = maxValue;
+        }
         
         // Set the new value
         switch (rangeType) {

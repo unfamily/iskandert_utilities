@@ -335,18 +335,8 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
      * Gestisce i click sui pulsanti Save e Cancel
      */
     private void handleSaveClick() {
-        // DEBUG: Stampa informazioni di debug
-        System.out.println("=== SAVE CLICK DEBUG ===");
-        System.out.println("selectedStructureIndex: " + selectedStructureIndex);
-        System.out.println("availableStructures.size(): " + availableStructures.size());
-        System.out.println("scrollOffset: " + scrollOffset);
-        
         if (selectedStructureIndex >= 0 && selectedStructureIndex < availableStructures.size()) {
             net.unfamily.iskautils.structure.StructureDefinition structure = availableStructures.get(selectedStructureIndex);
-            
-            // DEBUG: Stampa informazioni sulla struttura selezionata
-            System.out.println("Selected structure ID: " + structure.getId());
-            System.out.println("Selected structure Name: " + structure.getName());
             
             // Invia il packet al server per salvare la struttura
             net.unfamily.iskautils.network.ModMessages.sendStructurePlacerSavePacket(structure.getId());
@@ -463,27 +453,11 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
             if (mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE &&
                 mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE) {
                 
-                // DEBUG: Stampa informazioni di selezione
-                System.out.println("=== SELECTION BUTTON CLICK DEBUG ===");
-                System.out.println("Clicked entryIndex: " + entryIndex);
-                System.out.println("Current selectedStructureIndex: " + selectedStructureIndex);
-                System.out.println("scrollOffset: " + scrollOffset);
-                System.out.println("Entry visual position i: " + i);
-                
                 // Seleziona/deseleziona la struttura
                 if (selectedStructureIndex == entryIndex) {
                     selectedStructureIndex = -1; // Deseleziona
-                    System.out.println("Deselected -> selectedStructureIndex: " + selectedStructureIndex);
                 } else {
                     selectedStructureIndex = entryIndex; // Seleziona questa
-                    System.out.println("Selected -> selectedStructureIndex: " + selectedStructureIndex);
-                    
-                    // DEBUG: Stampa info sulla struttura selezionata
-                    if (entryIndex < availableStructures.size()) {
-                        var structure = availableStructures.get(entryIndex);
-                        System.out.println("Selected structure ID: " + structure.getId());
-                        System.out.println("Selected structure Name: " + structure.getName());
-                    }
                 }
                 playButtonSound();
                 return true;

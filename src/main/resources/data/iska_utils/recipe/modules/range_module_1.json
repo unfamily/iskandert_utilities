@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CAC",
+    "ABA",
+    "CAC"
+  ],
+  "key": {
+    "A": [
+      {
+        "tag": "c:ingots/iron"
+      },{
+        "tag": "c:ingots/copper"
+      }
+    ],
+    "B": {
+      "item": "iska_utils:base_module"
+    },
+    "C": {
+      "tag": "c:dusts/redstone"
+    }
+
+  },
+  "result": {
+    "id": "iska_utils:range_module",
+    "count": 1
+  }
+} 

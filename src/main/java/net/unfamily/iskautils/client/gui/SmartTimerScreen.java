@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.network.ModMessages;
 
@@ -22,6 +23,12 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
     
+    // Redstone mode button
+    private static final ResourceLocation MEDIUM_BUTTONS = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
+    private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
+    private static final int REDSTONE_BUTTON_SIZE = 16;
+    private static final int REDSTONE_BUTTON_X = CLOSE_BUTTON_X - REDSTONE_BUTTON_SIZE - 5; // Left of close button
+    private static final int REDSTONE_BUTTON_Y = 40; // Above "redstone off for" label (which is at 50)
     
     // Text positions (spacing halved)
     private static final int COOLDOWN_LABEL_Y = 50;
@@ -203,6 +210,83 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
         guiGraphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
+        
+        // Render redstone mode button
+        renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
+    }
+    
+    private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        int buttonX = this.leftPos + REDSTONE_BUTTON_X;
+        int buttonY = this.topPos + REDSTONE_BUTTON_Y;
+        
+        // Check if mouse is over the button
+        boolean isHovered = mouseX >= buttonX && mouseX <= buttonX + REDSTONE_BUTTON_SIZE &&
+                           mouseY >= buttonY && mouseY <= buttonY + REDSTONE_BUTTON_SIZE;
+        
+        // Draw button background (normal or highlighted)
+        int textureY = isHovered ? 16 : 0;
+        guiGraphics.blit(MEDIUM_BUTTONS, buttonX, buttonY, 
+                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
+                        96, 96);
+        
+        // Get current redstone mode from menu
+        int redstoneMode = menu.getRedstoneMode();
+        
+        // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
+        int iconX = buttonX + 2;
+        int iconY = buttonY + 2;
+        int iconSize = 12;
+        
+        switch (redstoneMode) {
+            case 0 -> {
+                // NONE mode: Gunpowder icon
+                ItemStack gunpowder = new ItemStack(net.minecraft.world.item.Items.GUNPOWDER);
+                renderScaledItem(guiGraphics, gunpowder, iconX, iconY, iconSize);
+            }
+            case 1 -> {
+                // LOW mode: Redstone dust icon
+                ItemStack redstone = new ItemStack(net.minecraft.world.item.Items.REDSTONE);
+                renderScaledItem(guiGraphics, redstone, iconX, iconY, iconSize);
+            }
+            case 2 -> {
+                // HIGH mode: Redstone GUI texture
+                renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
+            }
+            case 4 -> {
+                // DISABLED mode: Barrier icon
+                ItemStack barrier = new ItemStack(net.minecraft.world.item.Items.BARRIER);
+                renderScaledItem(guiGraphics, barrier, iconX, iconY, iconSize);
+            }
+            default -> {
+                // Fallback (should never happen)
+                ItemStack redstone = new ItemStack(net.minecraft.world.item.Items.REDSTONE);
+                renderScaledItem(guiGraphics, redstone, iconX, iconY, iconSize);
+            }
+        }
+    }
+    
+    /**
+     * Renders an item scaled to the specified size
+     */
+    private void renderScaledItem(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y, int size) {
+        guiGraphics.pose().pushPose();
+        float scale = (float) size / 16.0f;
+        guiGraphics.pose().translate(x, y, 0);
+        guiGraphics.pose().scale(scale, scale, 1.0f);
+        guiGraphics.renderItem(itemStack, 0, 0);
+        guiGraphics.pose().popPose();
+    }
+    
+    /**
+     * Renders a texture scaled to the specified size (like an item)
+     */
+    private void renderScaledTexture(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int size) {
+        guiGraphics.pose().pushPose();
+        float scale = (float) size / 16.0f;
+        guiGraphics.pose().translate(x, y, 0);
+        guiGraphics.pose().scale(scale, scale, 1.0f);
+        guiGraphics.blit(texture, 0, 0, 0, 0, 16, 16, 16, 16);
+        guiGraphics.pose().popPose();
     }
     
     @Override
@@ -229,6 +313,62 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         
         String signalDurationTicks = formatTicksPart(currentSignalDurationTicks);
         guiGraphics.drawString(this.font, signalDurationTicks, TEXT_START_X, SIGNAL_DURATION_TICKS_Y, 0x404040, false);
+    }
+    
+    @Override
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        
+        // Render tooltips
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
+        
+        // Render redstone mode button tooltip
+        renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
+    }
+    
+    private void renderRedstoneModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        int buttonX = this.leftPos + REDSTONE_BUTTON_X;
+        int buttonY = this.topPos + REDSTONE_BUTTON_Y;
+        if (mouseX >= buttonX && mouseX <= buttonX + REDSTONE_BUTTON_SIZE &&
+            mouseY >= buttonY && mouseY <= buttonY + REDSTONE_BUTTON_SIZE) {
+            // Get current redstone mode from menu
+            int redstoneMode = menu.getRedstoneMode();
+            
+            // Draw the appropriate tooltip
+            Component tooltip = switch (redstoneMode) {
+                case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
+                case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
+                case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
+                case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
+                default -> Component.literal("Unknown mode");
+            };
+            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+        }
+    }
+    
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) { // Left click
+            int buttonX = this.leftPos + REDSTONE_BUTTON_X;
+            int buttonY = this.topPos + REDSTONE_BUTTON_Y;
+            
+            // Check redstone mode button
+            if (mouseX >= buttonX && mouseX <= buttonX + REDSTONE_BUTTON_SIZE &&
+                mouseY >= buttonY && mouseY <= buttonY + REDSTONE_BUTTON_SIZE) {
+                onRedstoneModePressed();
+                return true;
+            }
+        }
+        
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+    
+    private void onRedstoneModePressed() {
+        playButtonSound();
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (!pos.equals(net.minecraft.core.BlockPos.ZERO)) {
+            ModMessages.sendSmartTimerRedstoneModePacket(pos);
+        }
     }
     
     

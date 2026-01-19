@@ -301,6 +301,11 @@ public class IskaUtils {
                     menu.getBlockEntity().onGuiClosed();
                 }
             }
+            if (event.getContainer() instanceof net.unfamily.iskautils.client.gui.FanMenu menu) {
+                if (menu.getBlockEntity() != null) {
+                    menu.getBlockEntity().resetBackMessage();
+                }
+            }
         }
         private static int cooldownCleanupTimer = 0;
         

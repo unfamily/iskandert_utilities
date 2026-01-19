@@ -81,6 +81,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     private Button bottomLeftButton, bottomRightButton; // Below grid
     private Button barLeftButton, barRightButton; // In the bar
     private Button closeButton; // X button top right
+    private Button showButton; // Show button
     private int redstoneModeButtonX, redstoneModeButtonY; // Redstone mode button position
     private int pushPullButtonX, pushPullButtonY; // Push/Pull button position
     private int pushTypeButtonX, pushTypeButtonY; // Push type button position
@@ -117,6 +118,27 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         
         // Create range adjustment buttons around the grid
         createRangeButtons();
+        
+        // Create "Show" button - aligned with right side buttons (redstoneMode, etc.)
+        int gridY = this.topPos + GRID_START_Y;
+        int bottomButtonY = gridY + GRID_TOTAL_SIZE + BUTTON_SPACING;
+        int labelY = bottomButtonY + BUTTON_SIZE + 2;
+        
+        Component showText = Component.translatable("gui.iska_utils.generic.show");
+        int buttonWidth = this.font.width(showText) + 6; // Minimal width: text + 3px padding each side
+        int buttonHeight = this.font.lineHeight + 2; // Minimal height: text + 1px padding each side
+        
+        // Align right edge with right edge of redstoneMode buttons above
+        int rightButtonsRightEdge = rightButtonX + REDSTONE_BUTTON_SIZE;
+        int showButtonX = rightButtonsRightEdge - buttonWidth; // Align right edge
+        int showButtonY = labelY + (this.font.lineHeight - buttonHeight) / 2; // Vertically centered with label text
+        
+        showButton = Button.builder(
+            showText,
+            button -> onShowPressed()
+        ).bounds(showButtonX, showButtonY, buttonWidth, buttonHeight).build();
+        
+        this.addRenderableWidget(showButton);
     }
     
     private void createRangeButtons() {
@@ -422,10 +444,10 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             if (i < rangeFront) {
                 if (rangeFront == 0) {
                     color = 0xFF666666; // Gray (not active)
-                } else if (rangeFront > maxFront) {
-                    color = 0xFF0000FF; // Blue (exceeds max from config)
+                } else if (rangeFront <= BAR_SQUARE_COUNT) {
+                    color = 0xFF00FF00; // Green (<= 5)
                 } else {
-                    color = 0xFF00FF00; // Green (active, within limits)
+                    color = 0xFF0000FF; // Blue (>= 6)
                 }
             } else {
                 color = 0xFF666666; // Gray (not in range)
@@ -433,14 +455,14 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             
             guiGraphics.fill(squareX, barY, squareX + SQUARE_SIZE, barY + BAR_HEIGHT, color);
             // Draw thin borders to separate bar squares (light gray, thinner)
-            if (i > 0) {
-                guiGraphics.vLine(squareX, barY, barY + BAR_HEIGHT - 1, CELL_BORDER_COLOR); // Left border
-            }
-            if (i < BAR_SQUARE_COUNT - 1) {
-                guiGraphics.vLine(squareX + SQUARE_SIZE - 1, barY, barY + BAR_HEIGHT - 1, CELL_BORDER_COLOR); // Right border
-            }
-            guiGraphics.hLine(squareX, squareX + SQUARE_SIZE - 1, barY, CELL_BORDER_COLOR); // Top border
-            guiGraphics.hLine(squareX, squareX + SQUARE_SIZE - 1, barY + BAR_HEIGHT - 1, CELL_BORDER_COLOR); // Bottom border
+            // Left border (always draw, including first square)
+            guiGraphics.vLine(squareX, barY, barY + BAR_HEIGHT - 1, CELL_BORDER_COLOR);
+            // Right border (always draw, including last square)
+            guiGraphics.vLine(squareX + SQUARE_SIZE - 1, barY, barY + BAR_HEIGHT - 1, CELL_BORDER_COLOR);
+            // Top border
+            guiGraphics.hLine(squareX, squareX + SQUARE_SIZE - 1, barY, CELL_BORDER_COLOR);
+            // Bottom border
+            guiGraphics.hLine(squareX, squareX + SQUARE_SIZE - 1, barY + BAR_HEIGHT - 1, CELL_BORDER_COLOR);
         }
     }
     
@@ -488,11 +510,10 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             
             // Draw the appropriate tooltip
             Component tooltip = switch (redstoneMode) {
-                case 0 -> Component.translatable("gui.iska_utils.redstone_mode.none");
-                case 1 -> Component.translatable("gui.iska_utils.redstone_mode.low");
-                case 2 -> Component.translatable("gui.iska_utils.redstone_mode.high");
-                case 3 -> Component.translatable("gui.iska_utils.redstone_mode.pulse");
-                case 4 -> Component.translatable("gui.iska_utils.redstone_mode.disabled");
+                case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
+                case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
+                case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
+                case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
                 default -> Component.literal("Unknown mode");
             };
             guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
@@ -501,7 +522,9 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         // Push/Pull button tooltip
         if (mouseX >= pushPullButtonX && mouseX <= pushPullButtonX + REDSTONE_BUTTON_SIZE &&
             mouseY >= pushPullButtonY && mouseY <= pushPullButtonY + REDSTONE_BUTTON_SIZE) {
-            Component tooltip = Component.translatable("gui.iska_utils.fan.push_pull");
+            // Show current state (Push or Pull)
+            boolean isPull = menu.isPull();
+            Component tooltip = Component.translatable(isPull ? "gui.iska_utils.fan.push_pull.pull" : "gui.iska_utils.fan.push_pull.push");
             guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
         }
         
@@ -581,11 +604,6 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
                 // HIGH mode: Redstone GUI texture
                 renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
             }
-            case 3 -> {
-                // PULSE mode: Repeater icon
-                ItemStack repeater = new ItemStack(net.minecraft.world.item.Items.REPEATER);
-                renderScaledItem(guiGraphics, repeater, iconX, iconY, iconSize);
-            }
             case 4 -> {
                 // DISABLED mode: Barrier icon
                 ItemStack barrier = new ItemStack(net.minecraft.world.item.Items.BARRIER);
@@ -647,17 +665,17 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         
         switch (pushType) {
             case MOBS_ONLY -> {
-                // Mobs only: zombie head or skeleton skull
-                ItemStack zombieHead = new ItemStack(net.minecraft.world.item.Items.ZOMBIE_HEAD);
-                renderScaledItem(guiGraphics, zombieHead, iconX, iconY, iconSize);
+                // Mobs only: creeper head
+                ItemStack creeperHead = new ItemStack(net.minecraft.world.item.Items.CREEPER_HEAD);
+                renderScaledItem(guiGraphics, creeperHead, iconX, iconY, iconSize);
             }
             case MOBS_AND_PLAYERS -> {
-                // Mobs and players: player head or multiple entities
-                ItemStack playerHead = new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD);
-                renderScaledItem(guiGraphics, playerHead, iconX, iconY, iconSize);
+                // Mobs and players: TNT
+                ItemStack tnt = new ItemStack(net.minecraft.world.item.Items.TNT);
+                renderScaledItem(guiGraphics, tnt, iconX, iconY, iconSize);
             }
             case PLAYERS_ONLY -> {
-                // Players only: player head with different representation
+                // Players only: player head
                 ItemStack playerHead = new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD);
                 renderScaledItem(guiGraphics, playerHead, iconX, iconY, iconSize);
             }
@@ -711,6 +729,8 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
                 onPushTypePressed();
                 return true;
             }
+            
+            // Show button is handled by vanilla Button widget
         }
         
         return super.mouseClicked(mouseX, mouseY, button);
@@ -736,6 +756,14 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(BlockPos.ZERO)) {
             ModMessages.sendFanPushTypePacket(pos);
+            playButtonSound();
+        }
+    }
+    
+    private void onShowPressed() {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (!pos.equals(BlockPos.ZERO)) {
+            ModMessages.sendFanShowAreaPacket(pos);
             playButtonSound();
         }
     }

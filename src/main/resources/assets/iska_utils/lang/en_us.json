@@ -32,6 +32,14 @@
   "gui.iska_utils.save_error_no_coordinates": "No blueprint data found! Import a blueprint with coordinates first",
   "gui.iska_utils.update_area": "Area updated",
   
+  "gui.iska_utils.generic.show": "Show",
+  "gui.iska_utils.generic.redstone_mode": "Redstone Mode: %s",
+  "gui.iska_utils.generic.redstone_mode.none": "Redstone Mode: Ignore",
+  "gui.iska_utils.generic.redstone_mode.low": "Redstone Mode: Low",
+  "gui.iska_utils.generic.redstone_mode.high": "Redstone Mode: High",
+  "gui.iska_utils.generic.redstone_mode.pulse": "Redstone Mode: Pulse",
+  "gui.iska_utils.generic.redstone_mode.disabled": "Redstone Mode: Disabled",
+  
   "item.iska_utils.rubber_boots": "Rubber Boots",
   "block.iska_utils.rubber_log": "Rubber Log",
   "block.iska_utils.stripped_rubber_log": "Stripped Rubber Log",
@@ -80,16 +88,13 @@
   "gui.iska_utils.fan.forward": "Forward",
   "gui.iska_utils.fan.redstone_mode": "Redstone Mode",
   "gui.iska_utils.fan.push_pull": "Push/Pull",
+  "gui.iska_utils.fan.push_pull.push": "Push",
+  "gui.iska_utils.fan.push_pull.pull": "Pull",
   "gui.iska_utils.fan.push_type": "Push Type",
   "gui.iska_utils.fan.push_type.mobs_only": "Mobs Only",
   "gui.iska_utils.fan.push_type.mobs_and_players": "Mobs and Players",
   "gui.iska_utils.fan.push_type.players_only": "Players Only",
-  "gui.iska_utils.redstone_mode": "Redstone Mode",
-  "gui.iska_utils.redstone_mode.none": "Redstone Mode: Ignore",
-  "gui.iska_utils.redstone_mode.low": "Redstone Mode: Low",
-  "gui.iska_utils.redstone_mode.high": "Redstone Mode: High",
-  "gui.iska_utils.redstone_mode.pulse": "Redstone Mode: Pulse",
-  "gui.iska_utils.redstone_mode.disabled": "Redstone Mode: Disabled",
+  
   "block.iska_utils.smart_timer": "Smart Timer",
   "gui.iska_utils.smart_timer.cooldown": "Redstone off for:",
   "gui.iska_utils.smart_timer.signal_duration": "Redstone on for:",
@@ -127,6 +132,7 @@
   "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line1": "Left-click: +1 | Right-click: -1",
   "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line2": "Ctrl/Alt + Click: ±5 | Shift + Click: Max/Min",
   "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line3": "Middle-click: Reset to %s",
+  
   "gui.iska_utils.temporal_overclocker.show": "Show",
   "gui.iska_utils.temporal_overclocker.show_modifier_ctrl": "Ctrl/Alt: Same type",
   "gui.iska_utils.temporal_overclocker.show_modifier_shift": "Shift: All",
@@ -199,6 +205,7 @@
   "message.iska_utils.structure_undo.no_positions": "§cNo positions calculated for the structure!",
   "message.iska_utils.structure_undo.success": "§aDisassembly completed! §f%s §aremoved §7(%d blocks removed, %d skipped)",
   "message.iska_utils.structure_undo.no_blocks": "§cNo blocks to remove for §f%s §c(structure not found or already modified)",
+  "message.iska_utils.fan.use_back_side": "It is recommended to access the fan from the back side to view the GUI correctly",
   
   "vectorcharm.factor.none": "None",
   "vectorcharm.factor.slow": "Slow",
@@ -431,7 +438,6 @@
   "direction.iska_utils.west": "West",
 
   "gui.iska_utils.structure_placer_machine.select": "Select",
-  "gui.iska_utils.structure_placer_machine.show": "Show",
   "gui.iska_utils.structure_placer_machine.rotate": "Rotate",
   "gui.iska_utils.structure_placer_machine.set_inventory": "Filter",
   "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line1": "§7Click to save item filters from current inventory",

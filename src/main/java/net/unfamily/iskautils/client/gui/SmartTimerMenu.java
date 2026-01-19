@@ -19,10 +19,11 @@ public class SmartTimerMenu extends AbstractContainerMenu {
     // ContainerData indices for syncing
     private static final int COOLDOWN_TICKS_INDEX = 0;
     private static final int SIGNAL_DURATION_TICKS_INDEX = 1;
-    private static final int BLOCK_POS_X_INDEX = 2;
-    private static final int BLOCK_POS_Y_INDEX = 3;
-    private static final int BLOCK_POS_Z_INDEX = 4;
-    private static final int DATA_COUNT = 5;
+    private static final int REDSTONE_MODE_INDEX = 2;
+    private static final int BLOCK_POS_X_INDEX = 3;
+    private static final int BLOCK_POS_Y_INDEX = 4;
+    private static final int BLOCK_POS_Z_INDEX = 5;
+    private static final int DATA_COUNT = 6;
 
     // Server-side constructor
     public SmartTimerMenu(int containerId, Inventory playerInventory, SmartTimerBlockEntity blockEntity) {
@@ -38,6 +39,7 @@ public class SmartTimerMenu extends AbstractContainerMenu {
                 return switch(index) {
                     case COOLDOWN_TICKS_INDEX -> blockEntity.getCooldownTicks(); // Get directly in ticks
                     case SIGNAL_DURATION_TICKS_INDEX -> blockEntity.getSignalDurationTicks(); // Get directly in ticks
+                    case REDSTONE_MODE_INDEX -> blockEntity.getRedstoneMode();
                     case BLOCK_POS_X_INDEX -> blockPos.getX();
                     case BLOCK_POS_Y_INDEX -> blockPos.getY();
                     case BLOCK_POS_Z_INDEX -> blockPos.getZ();
@@ -113,6 +115,10 @@ public class SmartTimerMenu extends AbstractContainerMenu {
     
     public int getSignalDurationTicks() {
         return containerData.get(SIGNAL_DURATION_TICKS_INDEX);
+    }
+    
+    public int getRedstoneMode() {
+        return containerData.get(REDSTONE_MODE_INDEX);
     }
     
     @Override

@@ -91,6 +91,11 @@ public class Config
                     "Recommended value: 1000, but set to 0 to disable energy consumption")
             .defineInRange("001_hellfireIgniterBuffer", 0, 0, Integer.MAX_VALUE);
 
+    private static final ModConfigSpec.BooleanValue HELLFIRE_IGNITER_VANILLA_LIKE = BUILDER
+            .comment("If true, Hellfire Igniter uses vanilla-like behavior (always PULSE mode, no mode switching)",
+                    "When enabled, shift+click will always set to PULSE mode and no mode change message is shown")
+            .define("002_hellfireIgniterVanillaLike", false);
+
     // Portable Dislocator energy configuration
     private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CAPACITY = BUILDER
             .comment("Energy capacity of the Portable Dislocator in RF/FE",
@@ -729,6 +734,7 @@ public class Config
     public static boolean verticalConveyorEnabled;
     public static int hellfireIgniterConsume;
     public static int hellfireIgniterBuffer;
+    public static boolean hellfireIgniterVanillaLike;
     public static boolean verticalCharmEnabled;
     public static boolean horizontalCharmEnabled;
     public static int vectorCharmEnergyCapacity;
@@ -835,6 +841,7 @@ public class Config
         vectorCharmEnergyConsume = new java.util.ArrayList<>(VECTOR_CHARM_ENERGY_CONSUME.get());
         hellfireIgniterConsume = HELLFIRE_IGNITER_CONSUME.get();
         hellfireIgniterBuffer = HELLFIRE_IGNITER_BUFFER.get();
+        hellfireIgniterVanillaLike = HELLFIRE_IGNITER_VANILLA_LIKE.get();
         portableDislocatorEnergyCapacity = PORTABLE_DISLOCATOR_ENERGY_CAPACITY.get();
         portableDislocatorEnergyConsume = PORTABLE_DISLOCATOR_ENERGY_CONSUME.get();
         portableDislocatorXpConsume = PORTABLE_DISLOCATOR_XP_CONSUME.get();

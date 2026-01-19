@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.FanBlock;
 import net.unfamily.iskautils.item.ModItems;
 
@@ -64,6 +65,14 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     private PushType pushType = PushType.MOBS_ONLY; // Default: only mobs
     private int redstoneMode = 0; // Redstone mode (0=NONE, 1=LOW, 2=HIGH, 3=PULSE, 4=DISABLED)
     private boolean isPull = false; // false = push, true = pull
+    // Redstone pulse mode tracking
+    private boolean previousRedstoneState = false; // For PULSE mode
+    private int pulseIgnoreTimer = 0; // Timer to ignore redstone after pulse
+    private static final int PULSE_IGNORE_INTERVAL = 10; // Ignore pulses for 0.5 seconds after activation
+    // GUI access tracking
+    private boolean hasShownBackMessage = false; // Track if warning message has been shown
+    private int backMessageTimer = 0; // Timer to reset hasShownBackMessage after 3 seconds (60 ticks)
+    private static final int BACK_MESSAGE_RESET_INTERVAL = 60; // 3 seconds
     
     // Module slots (3 slots for upgrades)
     private final ItemStackHandler moduleHandler = new ItemStackHandler(3) {
@@ -116,31 +125,61 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     // Getters and setters for range parameters
     public int getRangeUp() { return rangeUp; }
     public void setRangeUp(int value) { 
-        this.rangeUp = Math.max(0, value); // Allow values beyond max (shown in blue in GUI)
+        if (value < 0) {
+            this.rangeUp = 0;
+        } else if (value > Config.fanRangeVerticalMax) {
+            this.rangeUp = Config.fanRangeVerticalMax;
+        } else {
+            this.rangeUp = value;
+        }
         setChanged();
     }
 
     public int getRangeDown() { return rangeDown; }
     public void setRangeDown(int value) { 
-        this.rangeDown = Math.max(0, value); // Allow values beyond max (shown in blue in GUI)
+        if (value < 0) {
+            this.rangeDown = 0;
+        } else if (value > Config.fanRangeVerticalMax) {
+            this.rangeDown = Config.fanRangeVerticalMax;
+        } else {
+            this.rangeDown = value;
+        }
         setChanged();
     }
 
     public int getRangeRight() { return rangeRight; }
     public void setRangeRight(int value) { 
-        this.rangeRight = Math.max(0, value); // Allow values beyond max (shown in blue in GUI)
+        if (value < 0) {
+            this.rangeRight = 0;
+        } else if (value > Config.fanRangeHorizontalMax) {
+            this.rangeRight = Config.fanRangeHorizontalMax;
+        } else {
+            this.rangeRight = value;
+        }
         setChanged();
     }
 
     public int getRangeLeft() { return rangeLeft; }
     public void setRangeLeft(int value) { 
-        this.rangeLeft = Math.max(0, value); // Allow values beyond max (shown in blue in GUI)
+        if (value < 0) {
+            this.rangeLeft = 0;
+        } else if (value > Config.fanRangeHorizontalMax) {
+            this.rangeLeft = Config.fanRangeHorizontalMax;
+        } else {
+            this.rangeLeft = value;
+        }
         setChanged();
     }
 
     public int getRangeFront() { return rangeFront; }
     public void setRangeFront(int value) { 
-        this.rangeFront = Math.max(0, value); // Allow values beyond max (shown in blue in GUI)
+        if (value < 0) {
+            this.rangeFront = 0;
+        } else if (value > Config.fanRangeFrontMax) {
+            this.rangeFront = Config.fanRangeFrontMax;
+        } else {
+            this.rangeFront = value;
+        }
         setChanged();
     }
 
@@ -156,15 +195,58 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         setChanged();
     }
     
-    public int getRedstoneMode() { return redstoneMode; }
+    public int getRedstoneMode() { 
+        // Ensure value is always in valid range
+        return Math.max(0, Math.min(redstoneMode, 4)); 
+    }
+    
     public void setRedstoneMode(int value) { 
-        this.redstoneMode = Math.max(0, Math.min(value, 4)); // 0-4 range
-        setChanged();
+        // Ensure value is in valid range and skip PULSE mode (3)
+        if (value == 3) {
+            value = 4; // Convert PULSE to DISABLED
+        }
+        int newMode = Math.max(0, Math.min(value, 4)); // 0-4 range (excluding 3)
+        if (this.redstoneMode != newMode) {
+            this.redstoneMode = newMode;
+            setChanged();
+            // Force save to ensure value is persisted
+            if (level != null && !level.isClientSide) {
+                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            }
+        }
+    }
+    
+    public void cycleRedstoneMode() {
+        // Cycle through 0->1->2->4->0 (skip PULSE mode 3)
+        int nextMode = (this.redstoneMode + 1) % 5;
+        if (nextMode == 3) { // Skip PULSE mode
+            nextMode = 4;
+        }
+        setRedstoneMode(nextMode);
     }
     
     public boolean isPull() { return isPull; }
     public void setPull(boolean value) { 
         this.isPull = value; 
+        setChanged();
+    }
+    
+    public boolean hasShownBackMessage() { return hasShownBackMessage; }
+    public void setHasShownBackMessage(boolean value) { 
+        this.hasShownBackMessage = value;
+        if (value) {
+            // Start timer when message is shown
+            this.backMessageTimer = BACK_MESSAGE_RESET_INTERVAL;
+        } else {
+            // Reset timer when flag is cleared
+            this.backMessageTimer = 0;
+        }
+        setChanged();
+    }
+    
+    public void resetBackMessage() {
+        this.hasShownBackMessage = false;
+        this.backMessageTimer = 0;
         setChanged();
     }
 
@@ -179,7 +261,15 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         fanPower = tag.contains("FanPower") ? tag.getDouble("FanPower") : 0.3; // Default 0.3
         pushType = tag.contains("PushType") ? PushType.fromId(tag.getInt("PushType")) : PushType.MOBS_ONLY; // Default: only mobs
         redstoneMode = tag.contains("RedstoneMode") ? tag.getInt("RedstoneMode") : 0; // Default: NONE
+        // Ensure redstoneMode is valid (skip PULSE mode 3)
+        if (redstoneMode == 3) {
+            redstoneMode = 4; // Convert old PULSE mode to DISABLED
+        }
         isPull = tag.contains("IsPull") ? tag.getBoolean("IsPull") : false; // Default: push
+        previousRedstoneState = tag.contains("PreviousRedstoneState") ? tag.getBoolean("PreviousRedstoneState") : false;
+        pulseIgnoreTimer = tag.contains("PulseIgnoreTimer") ? tag.getInt("PulseIgnoreTimer") : 0;
+        hasShownBackMessage = tag.contains("HasShownBackMessage") ? tag.getBoolean("HasShownBackMessage") : false;
+        backMessageTimer = tag.contains("BackMessageTimer") ? tag.getInt("BackMessageTimer") : 0;
         
         // Load module handler
         if (tag.contains("Modules")) {
@@ -199,6 +289,10 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         tag.putInt("PushType", pushType.getId());
         tag.putInt("RedstoneMode", redstoneMode);
         tag.putBoolean("IsPull", isPull);
+        tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
+        tag.putInt("PulseIgnoreTimer", pulseIgnoreTimer);
+        tag.putBoolean("HasShownBackMessage", hasShownBackMessage);
+        tag.putInt("BackMessageTimer", backMessageTimer);
         
         // Save module handler
         tag.put("Modules", moduleHandler.serializeNBT(registries));
@@ -210,8 +304,46 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        // Only push when powered
-        if (!state.getValue(FanBlock.POWERED)) {
+        // Get current redstone mode (ensure it's in valid range)
+        int currentRedstoneMode = Math.max(0, Math.min(blockEntity.redstoneMode, 4));
+        
+        // Check redstone conditions based on redstone mode
+        int redstonePower = level.getBestNeighborSignal(pos);
+        boolean hasRedstoneSignal = redstonePower > 0;
+        boolean shouldPush = false;
+        
+        switch (currentRedstoneMode) {
+            case 0 -> { // NONE: Always active, ignore redstone
+                shouldPush = true;
+            }
+            case 1 -> { // LOW: Only when redstone is OFF (low signal)
+                shouldPush = !hasRedstoneSignal;
+            }
+            case 2 -> { // HIGH: Only when redstone is ON (high signal)
+                shouldPush = hasRedstoneSignal;
+            }
+            case 4 -> { // DISABLED: Always disabled
+                shouldPush = false;
+            }
+            default -> {
+                // Fallback: if mode is invalid, default to NONE (always active)
+                shouldPush = true;
+            }
+        }
+        
+        // Update POWERED state based on advanced redstone logic (for rendering)
+        // This ensures visual state matches the actual logic, not primitive redstone
+        boolean shouldBePowered = shouldPush;
+        if (state.getValue(FanBlock.POWERED) != shouldBePowered) {
+            level.setBlock(pos, state.setValue(FanBlock.POWERED, shouldBePowered), 3);
+        }
+        
+        // If we shouldn't push, update state and return
+        if (!shouldPush) {
+            // Update previous state for PULSE mode even when not pushing
+            if (currentRedstoneMode == 3) {
+                blockEntity.previousRedstoneState = hasRedstoneSignal;
+            }
             return;
         }
 
@@ -228,13 +360,13 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         // Push each entity based on push type
         for (Entity entity : entities) {
             if (shouldPushEntity(entity, blockEntity.pushType)) {
-                pushEntity(entity, facing, blockEntity.fanPower);
+                pushEntity(entity, facing, blockEntity.fanPower, blockEntity.isPull);
             }
         }
     }
 
     // Calculate the AABB for the push area
-    private static AABB calculatePushArea(BlockPos pos, Direction facing, FanBlockEntity blockEntity) {
+    public static AABB calculatePushArea(BlockPos pos, Direction facing, FanBlockEntity blockEntity) {
         int x = pos.getX();
         int y = pos.getY();
         int z = pos.getZ();
@@ -253,26 +385,29 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         switch (facing) {
             case NORTH -> {
                 // Front is -Z, Left is -X, Right is +X
+                // Area starts at +1 in front direction (z-1), not including fan position (z)
                 minX = x - leftOffset;
                 maxX = x + rightOffset;
                 minY = y - downOffset;
                 maxY = y + upOffset;
                 minZ = z - frontOffset;
-                maxZ = z + backOffset;
+                maxZ = z - 1; // Exclude fan position, start from z-1
             }
             case SOUTH -> {
                 // Front is +Z, Left is +X, Right is -X
+                // Area starts at +1 in front direction (z+1), not including fan position (z)
                 minX = x - rightOffset;
                 maxX = x + leftOffset;
                 minY = y - downOffset;
                 maxY = y + upOffset;
-                minZ = z - backOffset;
+                minZ = z + 1; // Exclude fan position, start from z+1
                 maxZ = z + frontOffset;
             }
             case WEST -> {
                 // Front is -X, Left is +Z, Right is -Z
+                // Area starts at +1 in front direction (x-1), not including fan position (x)
                 minX = x - frontOffset;
-                maxX = x + backOffset;
+                maxX = x - 1; // Exclude fan position, start from x-1
                 minY = y - downOffset;
                 maxY = y + upOffset;
                 minZ = z - rightOffset;
@@ -280,7 +415,8 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
             }
             case EAST -> {
                 // Front is +X, Left is -Z, Right is +Z
-                minX = x - backOffset;
+                // Area starts at +1 in front direction (x+1), not including fan position (x)
+                minX = x + 1; // Exclude fan position, start from x+1
                 maxX = x + frontOffset;
                 minY = y - downOffset;
                 maxY = y + upOffset;
@@ -289,19 +425,21 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
             }
             case UP -> {
                 // Front is +Y, Left and Right depend on horizontal facing (use NORTH as default)
+                // Area starts at +1 in front direction (y+1), not including fan position (y)
                 minX = x - leftOffset;
                 maxX = x + rightOffset;
-                minY = y - backOffset;
+                minY = y + 1; // Exclude fan position, start from y+1
                 maxY = y + frontOffset;
                 minZ = z - 0;
                 maxZ = z + 0;
             }
             case DOWN -> {
                 // Front is -Y, Left and Right depend on horizontal facing (use NORTH as default)
+                // Area starts at +1 in front direction (y-1), not including fan position (y)
                 minX = x - leftOffset;
                 maxX = x + rightOffset;
                 minY = y - frontOffset;
-                maxY = y + backOffset;
+                maxY = y - 1; // Exclude fan position, start from y-1
                 minZ = z - 0;
                 maxZ = z + 0;
             }
@@ -329,12 +467,15 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         };
     }
 
-    // Push an entity in the facing direction
-    private static void pushEntity(Entity entity, Direction facing, double power) {
+    // Push an entity in the facing direction (or pull if isPull is true)
+    private static void pushEntity(Entity entity, Direction facing, double power, boolean isPull) {
         Vec3 currentMotion = entity.getDeltaMovement();
         Vec3 pushVector = Vec3.ZERO;
         
-        switch (facing) {
+        // Determine direction: if pull, reverse the facing direction
+        Direction effectiveDirection = isPull ? facing.getOpposite() : facing;
+        
+        switch (effectiveDirection) {
             case NORTH -> pushVector = new Vec3(0, 0, -power);
             case SOUTH -> pushVector = new Vec3(0, 0, power);
             case WEST -> pushVector = new Vec3(-power, 0, 0);

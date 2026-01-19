@@ -144,7 +144,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // Top Right: Show Button (aligned with title end) - testo fisso "Show"
         int showButtonX = this.leftPos + titleEndX - buttonWidth;
         this.showButton = Button.builder(
-                Component.translatable("gui.iska_utils.structure_placer_machine.show"),
+                Component.translatable("gui.iska_utils.generic.show"),
                 button -> onShowPressed()
         ).bounds(showButtonX, topRowY, buttonWidth, buttonHeight).build();
         this.addRenderableWidget(this.showButton);
@@ -534,11 +534,11 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             
             // Draw the appropriate tooltip
             Component tooltip = switch (redstoneMode) {
-                case 0 -> Component.translatable("gui.iska_utils.redstone_mode.none");
-                case 1 -> Component.translatable("gui.iska_utils.redstone_mode.low");
-                case 2 -> Component.translatable("gui.iska_utils.redstone_mode.high");
-                case 3 -> Component.translatable("gui.iska_utils.redstone_mode.pulse");
-                case 4 -> Component.translatable("gui.iska_utils.redstone_mode.disabled");
+                case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
+                case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
+                case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
+                case 3 -> Component.translatable("gui.iska_utils.generic.redstone_mode.pulse");
+                case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
                 default -> Component.literal("Unknown mode");
             };
             

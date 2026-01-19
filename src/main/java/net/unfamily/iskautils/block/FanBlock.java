@@ -74,13 +74,8 @@ public class FanBlock extends DirectionalBlock implements EntityBlock {
 
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        if (!level.isClientSide) {
-            boolean isPowered = level.hasNeighborSignal(pos);
-            
-            if (isPowered != state.getValue(POWERED)) {
-                level.setBlock(pos, state.setValue(POWERED, isPowered), 3);
-            }
-        }
+        // Don't update POWERED state here - it's handled in tick based on advanced redstone logic
+        // This prevents conflicts between primitive and advanced redstone logic
     }
 
     @Nullable
@@ -112,11 +107,33 @@ public class FanBlock extends DirectionalBlock implements EntityBlock {
         }
 
         BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof FanBlockEntity fanEntity && player instanceof ServerPlayer serverPlayer) {
-            serverPlayer.openMenu(fanEntity, pos);
-            return InteractionResult.CONSUME;
+        if (!(blockEntity instanceof FanBlockEntity fanEntity) || !(player instanceof ServerPlayer serverPlayer)) {
+            return InteractionResult.PASS;
         }
+
+        // Check if clicked from the back of the block (opposite to facing direction)
+        Direction facing = state.getValue(FACING);
+        Direction clickDirection = hitResult.getDirection();
+        boolean isFromBack = clickDirection == facing.getOpposite();
         
-        return InteractionResult.PASS;
+        // If clicked from back, reset the message flag
+        if (isFromBack) {
+            fanEntity.resetBackMessage();
+        } else {
+            // If not from back, show message on first click, allow opening on second click
+            if (!fanEntity.hasShownBackMessage()) {
+                // First click: show warning message in yellow action bar
+                net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.translatable("message.iska_utils.fan.use_back_side")
+                    .withStyle(net.minecraft.ChatFormatting.YELLOW);
+                serverPlayer.displayClientMessage(message, true); // true = action bar
+                fanEntity.setHasShownBackMessage(true);
+                return InteractionResult.CONSUME;
+            }
+            // Second click: allow opening even if not from back
+        }
+
+        // Open GUI
+        serverPlayer.openMenu(fanEntity, pos);
+        return InteractionResult.CONSUME;
     }
 }

@@ -107,7 +107,21 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket::handle
         );
         
-        LOGGER.info("Registered {} networking packets", 6);
+        // Register Smart Timer Redstone Mode C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket::handle
+        );
+        
+        // Register Fan Show Area C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket::handle
+        );
+        
+        LOGGER.info("Registered {} networking packets", 8);
     }
     
     /**
@@ -1042,8 +1056,6 @@ public class ModMessages {
      */
     @OnlyIn(Dist.CLIENT)
     public static void sendShopBuyItemPacket(String entryId, int quantity) {
-        System.out.println("DEBUG: sendShopBuyItemPacket chiamato - entryId: " + entryId + ", quantity: " + quantity);
-        
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
@@ -1059,13 +1071,11 @@ public class ModMessages {
                         new net.unfamily.iskautils.network.packet.ShopBuyItemC2SPacket(entryId, quantity).handle(player);
                     }
                 } catch (Exception e) {
-                    System.err.println("DEBUG: Error sending buy packet: " + e.getMessage());
-                    e.printStackTrace();
+                    LOGGER.error("Error sending buy packet", e);
                 }
             });
         } catch (Exception e) {
-            System.err.println("DEBUG: Error in sendShopBuyItemPacket: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Error in sendShopBuyItemPacket", e);
         }
     }
     
@@ -1074,8 +1084,6 @@ public class ModMessages {
      */
     @OnlyIn(Dist.CLIENT)
     public static void sendShopSellItemPacket(String entryId, int quantity) {
-        System.out.println("DEBUG: sendShopSellItemPacket chiamato - entryId: " + entryId + ", quantity: " + quantity);
-        
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
@@ -1091,13 +1099,11 @@ public class ModMessages {
                         new net.unfamily.iskautils.network.packet.ShopSellItemC2SPacket(entryId, quantity).handle(player);
                     }
                 } catch (Exception e) {
-                    System.err.println("DEBUG: Error sending sell packet: " + e.getMessage());
-                    e.printStackTrace();
+                    LOGGER.error("Error sending sell packet", e);
                 }
             });
         } catch (Exception e) {
-            System.err.println("DEBUG: Error in sendShopSellItemPacket: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Error in sendShopSellItemPacket", e);
         }
     }
 
@@ -1879,6 +1885,45 @@ public class ModMessages {
     }
     
     /**
+     * Sends Smart Timer Redstone Mode packet to the server
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendSmartTimerRedstoneModePacket(BlockPos pos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) return;
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) return;
+            
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
+                            // Cycle to next redstone mode (skip PULSE mode 3): 0->1->2->4->0
+                            timer.cycleRedstoneMode();
+                            
+                            // Play click sound
+                            level.playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            
+                            // Mark the block entity as changed
+                            timer.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Smart Timer redstone mode packet: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.error("Could not send Smart Timer redstone mode packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
      * Sends Fan Push/Pull packet to the server
      */
     @OnlyIn(Dist.CLIENT)
@@ -1963,50 +2008,127 @@ public class ModMessages {
     }
     
     /**
-     * Invia il packet per cambiare il redstone mode del timer
+     * Sends Fan Show Area packet to the server
      */
     @OnlyIn(Dist.CLIENT)
-    public static void sendSmartTimerRedstoneModePacket(BlockPos machinePos) {
+    public static void sendFanShowAreaPacket(BlockPos pos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
+            if (minecraft == null) return;
             
             net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-            if (server == null) {
-                LOGGER.error("Singleplayer server is null!");
-                return;
-            }
+            if (server == null) return;
             
-            // Execute on server thread
             server.execute(() -> {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         net.minecraft.server.level.ServerLevel level = player.serverLevel();
-                        
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
-
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
+                            // Get fan facing direction
+                            var state = level.getBlockState(pos);
+                            if (!(state.getBlock() instanceof net.unfamily.iskautils.block.FanBlock)) return;
+                            var facing = state.getValue(net.unfamily.iskautils.block.FanBlock.FACING);
                             
-                            // Play click sound
-                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
-                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            // Calculate the push area AABB
+                            var aabb = net.unfamily.iskautils.block.entity.FanBlockEntity.calculatePushArea(pos, facing, fan);
                             
-                            // Mark the block entity as changed
-                            timer.setChanged();
+                            // Get bounds
+                            int minX = (int) Math.floor(aabb.minX);
+                            int minY = (int) Math.floor(aabb.minY);
+                            int minZ = (int) Math.floor(aabb.minZ);
+                            int maxX = (int) Math.floor(aabb.maxX);
+                            int maxY = (int) Math.floor(aabb.maxY);
+                            int maxZ = (int) Math.floor(aabb.maxZ);
+                            
+                            // Purple color for border markers when air (ARGB: 0x80FF00FF = 50% transparent purple)
+                            int purpleColor = 0x80FF00FF;
+                            // Red color for border markers when block (ARGB: 0x80FF0000 = 50% transparent red, same transparency)
+                            int redColor = 0x80FF0000;
+                            int durationTicks = 60; // 3 seconds
+                            
+                            // Add billboard markers only at the edges of the area (not inside faces)
+                            // Purple if air, red if block (same transparency)
+                            
+                            // Top and bottom faces - only edges (x or z at boundary)
+                            for (int x = minX; x < maxX; x++) {
+                                for (int z = minZ; z < maxZ; z++) {
+                                    // Only place marker if on edge (x or z at boundary)
+                                    boolean isOnEdge = (x == minX || x == maxX - 1 || z == minZ || z == maxZ - 1);
+                                    if (isOnEdge) {
+                                        // Top face
+                                        net.minecraft.core.BlockPos topPos = new net.minecraft.core.BlockPos(x, maxY - 1, z);
+                                        int topColor = level.getBlockState(topPos).isAir() ? purpleColor : redColor;
+                                        sendAddBillboardPacket(player, topPos, topColor, durationTicks);
+                                        
+                                        // Bottom face
+                                        net.minecraft.core.BlockPos bottomPos = new net.minecraft.core.BlockPos(x, minY, z);
+                                        int bottomColor = level.getBlockState(bottomPos).isAir() ? purpleColor : redColor;
+                                        sendAddBillboardPacket(player, bottomPos, bottomColor, durationTicks);
+                                    }
+                                }
+                            }
+                            
+                            // Front and back faces (Z faces) - only edges (x or y at boundary)
+                            for (int x = minX; x < maxX; x++) {
+                                for (int y = minY; y < maxY; y++) {
+                                    // Only place marker if on edge (x or y at boundary)
+                                    boolean isOnEdge = (x == minX || x == maxX - 1 || y == minY || y == maxY - 1);
+                                    if (isOnEdge) {
+                                        // Min Z face
+                                        net.minecraft.core.BlockPos minZPos = new net.minecraft.core.BlockPos(x, y, minZ);
+                                        int minZColor = level.getBlockState(minZPos).isAir() ? purpleColor : redColor;
+                                        sendAddBillboardPacket(player, minZPos, minZColor, durationTicks);
+                                        
+                                        // Max Z face
+                                        net.minecraft.core.BlockPos maxZPos = new net.minecraft.core.BlockPos(x, y, maxZ - 1);
+                                        int maxZColor = level.getBlockState(maxZPos).isAir() ? purpleColor : redColor;
+                                        sendAddBillboardPacket(player, maxZPos, maxZColor, durationTicks);
+                                    }
+                                }
+                            }
+                            
+                            // Left and right faces (X faces) - only edges (z or y at boundary)
+                            for (int z = minZ; z < maxZ; z++) {
+                                for (int y = minY; y < maxY; y++) {
+                                    // Only place marker if on edge (z or y at boundary)
+                                    boolean isOnEdge = (z == minZ || z == maxZ - 1 || y == minY || y == maxY - 1);
+                                    if (isOnEdge) {
+                                        // Min X face
+                                        net.minecraft.core.BlockPos minXPos = new net.minecraft.core.BlockPos(minX, y, z);
+                                        int minXColor = level.getBlockState(minXPos).isAir() ? purpleColor : redColor;
+                                        sendAddBillboardPacket(player, minXPos, minXColor, durationTicks);
+                                        
+                                        // Max X face
+                                        net.minecraft.core.BlockPos maxXPos = new net.minecraft.core.BlockPos(maxX - 1, y, z);
+                                        int maxXColor = level.getBlockState(maxXPos).isAir() ? purpleColor : redColor;
+                                        sendAddBillboardPacket(player, maxXPos, maxXColor, durationTicks);
+                                    }
+                                }
+                            }
+                            
+                            // Add red markers inside the area for blocks (obstacles)
+                            for (int x = minX; x < maxX; x++) {
+                                for (int y = minY; y < maxY; y++) {
+                                    for (int z = minZ; z < maxZ; z++) {
+                                        net.minecraft.core.BlockPos blockPos = new net.minecraft.core.BlockPos(x, y, z);
+                                        // Only place marker if there's a block (not air)
+                                        if (!level.getBlockState(blockPos).isAir()) {
+                                            sendAddBillboardPacket(player, blockPos, redColor, durationTicks);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.error("Error handling Smart Timer redstone mode packet: {}", e.getMessage());
+                    LOGGER.error("Error handling Fan show area packet: {}", e.getMessage());
                 }
             });
-            
         } catch (Exception e) {
-            LOGGER.error("Could not send Smart Timer redstone mode packet: {}", e.getMessage(), e);
+            LOGGER.error("Could not send Fan show area packet: {}", e.getMessage(), e);
         }
     }
-
+    
 } 

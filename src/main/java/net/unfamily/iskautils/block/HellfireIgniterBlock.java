@@ -3,6 +3,9 @@ package net.unfamily.iskautils.block;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -19,9 +22,11 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.HellfireIgniterBlockEntity;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 
@@ -69,11 +74,14 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
             if (isPowered != state.getValue(POWERED)) {
                 level.setBlock(pos, state.setValue(POWERED, isPowered), 3);
                 
+                // Only handle PULSE mode here (other modes are handled in tick)
                 if (isPowered) {
-                    // The block entity will handle fire creation if it has sufficient energy
                     BlockEntity blockEntity = level.getBlockEntity(pos);
                     if (blockEntity instanceof HellfireIgniterBlockEntity igniter) {
-                        igniter.ignite();
+                        // Only ignite in PULSE mode (mode 3)
+                        if (igniter.getRedstoneMode() == 3) {
+                            igniter.ignite();
+                        }
                     }
                 }
             }
@@ -100,6 +108,40 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
     private static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> createTickerHelper(
             BlockEntityType<A> typeCheck, BlockEntityType<E> typeExpected, BlockEntityTicker<? super E> ticker) {
         return typeExpected == typeCheck ? (BlockEntityTicker<A>) ticker : null;
+    }
+    
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+        if (level.isClientSide) {
+            return InteractionResult.SUCCESS;
+        }
+        
+        // Shift+click to cycle redstone mode
+        if (player.isShiftKeyDown()) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof HellfireIgniterBlockEntity igniter) {
+                // Vanilla-like mode: always force PULSE mode (3) and don't show message
+                if (Config.hellfireIgniterVanillaLike) {
+                    igniter.setRedstoneMode(3); // Force PULSE mode
+                    // Don't show message in vanilla-like mode
+                } else {
+                    igniter.cycleRedstoneMode();
+                    int mode = igniter.getRedstoneMode();
+                    Component modeName = switch (mode) {
+                        case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
+                        case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
+                        case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
+                        case 3 -> Component.translatable("gui.iska_utils.generic.redstone_mode.pulse");
+                        case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
+                        default -> Component.literal("Unknown");
+                    };
+                    player.displayClientMessage(Component.translatable("gui.iska_utils.generic.redstone_mode", modeName), true);
+                }
+                return InteractionResult.CONSUME;
+            }
+        }
+        
+        return InteractionResult.PASS;
     }
     
     /**
