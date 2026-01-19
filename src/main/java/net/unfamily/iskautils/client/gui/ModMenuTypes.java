@@ -51,4 +51,7 @@ public class ModMenuTypes {
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<TemporalOverclockerMenu>> TEMPORAL_OVERCLOCKER_MENU =
         MENUS.register("temporal_overclocker_menu", () -> new MenuType<>(TemporalOverclockerMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<FanMenu>> FAN_MENU =
+        MENUS.register("fan_menu", () -> new MenuType<>(FanMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+    
 } 

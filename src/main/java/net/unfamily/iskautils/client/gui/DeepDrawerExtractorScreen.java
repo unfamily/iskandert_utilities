@@ -673,6 +673,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Render redstone mode button (only in main mode, not in how to use)
         if (!isHowToUseMode) {
             renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
+            // Render redstone mode tooltip
+            renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
             // Render scrollbar (only in main mode, not in how to use)
             renderScrollbar(guiGraphics, mouseX, mouseY);
             
@@ -1548,6 +1550,27 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 net.minecraft.world.item.ItemStack barrier = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BARRIER);
                 renderScaledItem(guiGraphics, barrier, iconX, iconY, iconSize);
             }
+        }
+    }
+    
+    private void renderRedstoneModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // Check if mouse is over the button
+        boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
+                           mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
+        
+        if (isHovered) {
+            int redstoneMode = menu.getRedstoneMode();
+            
+            Component tooltip = switch (redstoneMode) {
+                case 0 -> Component.translatable("gui.iska_utils.redstone_mode.none");
+                case 1 -> Component.translatable("gui.iska_utils.redstone_mode.low");
+                case 2 -> Component.translatable("gui.iska_utils.redstone_mode.high");
+                case 3 -> Component.translatable("gui.iska_utils.redstone_mode.pulse");
+                case 4 -> Component.translatable("gui.iska_utils.redstone_mode.disabled");
+                default -> Component.literal("Unknown mode");
+            };
+            
+            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
         }
     }
     

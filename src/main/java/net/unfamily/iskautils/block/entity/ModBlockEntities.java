@@ -117,6 +117,12 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(SmartTimerBlockEntity::new, ModBlocks.SMART_TIMER.get())
                             .build(null));
 
+    // Fan Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FanBlockEntity>> FAN_BE =
+            BLOCK_ENTITIES.register("fan",
+                    () -> BlockEntityType.Builder.of(FanBlockEntity::new, ModBlocks.FAN.get())
+                            .build(null));
+
     /**
      * Registra tutte le entità blocco
      */

@@ -46,6 +46,13 @@ public class ModBlocks {
             .requiresCorrectToolForDrops()
             .lightLevel((state) -> state.getValue(HellfireIgniterBlock.POWERED) ? 7 : 0);
     
+    // Properties for the Fan
+    private static final BlockBehaviour.Properties FAN_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.STONE)
+            .strength(1.5f, 6.0f)
+            .sound(SoundType.STONE)
+            .requiresCorrectToolForDrops();
+    
     // Properties for Rubber Sap Extractor
     private static final BlockBehaviour.Properties RUBBER_SAP_EXTRACTOR_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.STONE)
@@ -162,6 +169,10 @@ public class ModBlocks {
     // Hellfire Igniter (creates fire when activated by redstone)
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
             () -> new HellfireIgniterBlock(HELLFIRE_PROPERTIES));
+    
+    // Fan (directional block with 6 directions placement)
+    public static final DeferredBlock<FanBlock> FAN = BLOCKS.register("fan",
+            () -> new FanBlock(FAN_PROPERTIES));
             
     // Rubber Sap Extractor (automatically extracts sap from rubber logs)
     public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",

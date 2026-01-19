@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "iska_utils:block/fan/fan_side",
+    "up": "iska_utils:block/fan/fan_side",
+    "north": "iska_utils:block/fan/fan_blade_off",
+    "east": "iska_utils:block/fan/fan_side",
+    "south": "iska_utils:block/fan/fan_back",
+    "west": "iska_utils:block/fan/fan_side",
+    "particle": "iska_utils:block/fan/fan_blade_off"
+  },
+  "render_type": "solid"
+}

@@ -439,6 +439,40 @@ public class Config
         BUILDER.pop(); // End of artifacts_settings category
         BUILDER.pop(); // End of general_utilities category
         
+        // Category for Fan Configuration
+        BUILDER.comment("Fan Configuration").push("fan");
+    }
+
+    // Fan Configuration
+    // NOTE: These parameters are WITHOUT upgrades. Upgrades will be added starting from 100.
+    private static final ModConfigSpec.IntValue FAN_RANGE_HORIZONTAL_MAX = BUILDER
+            .comment("Maximum horizontal range (left/right) for the fan (in blocks)",
+                    "This is the maximum value that can be set for range_left and range_right",
+                    "NOTE: This parameter is WITHOUT upgrades")
+            .defineInRange("000_fanRangeHorizontalMax", 8, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue FAN_RANGE_VERTICAL_MAX = BUILDER
+            .comment("Maximum vertical range (up/down) for the fan (in blocks)",
+                    "This is the maximum value that can be set for range_up and range_down",
+                    "NOTE: This parameter is WITHOUT upgrades")
+            .defineInRange("001_fanRangeVerticalMax", 8, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue FAN_RANGE_FRONT_MAX = BUILDER
+            .comment("Maximum front range for the fan (in blocks)",
+                    "This is the maximum value that can be set for range_front",
+                    "Default: 8 (inspired by vanilla water flow distance)",
+                    "NOTE: This parameter is WITHOUT upgrades")
+            .defineInRange("002_fanRangeFrontMax", 8, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue FAN_DEFAULT_POWER = BUILDER
+            .comment("Default power/force with which the fan pushes entities",
+                    "Default: 0.3 (midway between slow and moderate vector plates)",
+                    "NOTE: This parameter is WITHOUT upgrades")
+            .defineInRange("003_fanDefaultPower", 0.3D, 0.0D, 100.0D);
+
+    static {
+        BUILDER.pop(); // End of fan category
+        
         // === Rubber Tree Configuration ===
         BUILDER.comment("Rubber Tree Configuration").push("rubber_tree");
     }
@@ -750,6 +784,13 @@ public class Config
     public static boolean greedyShieldInfo;
     public static boolean burningFlameSuperHot;
     public static boolean giftPlaceHardIce;
+    
+    // Fan configuration
+    public static int fanRangeHorizontalMax;
+    public static int fanRangeVerticalMax;
+    public static int fanRangeFrontMax;
+    public static double fanDefaultPower;
+    
     public static java.util.List<String> deepDrawersAllowedTags;
     public static java.util.List<String> deepDrawersBlacklist;
     public static int deepDrawersSlotCount;
@@ -836,6 +877,12 @@ public class Config
         greedyShieldInfo = GREEDY_SHIELD_INFO.get();
         burningFlameSuperHot = BURNING_FLAME_SUPER_HOT.get();
         giftPlaceHardIce = GIFT_PLACE_HARD_ICE.get();
+        
+        // Fan configuration
+        fanRangeHorizontalMax = FAN_RANGE_HORIZONTAL_MAX.get();
+        fanRangeVerticalMax = FAN_RANGE_VERTICAL_MAX.get();
+        fanRangeFrontMax = FAN_RANGE_FRONT_MAX.get();
+        fanDefaultPower = FAN_DEFAULT_POWER.get();
         
         // Deep Drawers configuration
         deepDrawersAllowedTags = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOWED_TAGS.get());

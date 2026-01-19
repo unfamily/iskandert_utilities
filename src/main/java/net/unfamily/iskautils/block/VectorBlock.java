@@ -519,11 +519,13 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction clickedFace = context.getClickedFace();
         Direction horizontalDirection = context.getHorizontalDirection();
+        Player player = context.getPlayer();
         
         // If the player clicked on a side face, place vertically (if enabled in config)
         // If vertical conveyors are disabled, all placements will be horizontal
         if (clickedFace.getAxis() != Direction.Axis.Y && Config.verticalConveyorEnabled) {
             // When clicking on a face, the plate should face the opposite direction
+            // For vertical placement, shift doesn't change behavior (not intuitive)
             Direction oppositeFace = clickedFace.getOpposite();
             
             BlockState state = this.defaultBlockState()
@@ -532,9 +534,16 @@ public class VectorBlock extends HorizontalDirectionalBlock {
                 
             return state;
         } else {
-            // For horizontal placement, just use the player's facing direction
+            // For horizontal placement, use the player's facing direction
+            Direction facing = horizontalDirection;
+            
+            // If player is crouching (holding shift), invert the direction
+            if (player != null && player.isShiftKeyDown()) {
+                facing = horizontalDirection.getOpposite();
+            }
+            
             BlockState state = this.defaultBlockState()
-                .setValue(FACING, horizontalDirection)
+                .setValue(FACING, facing)
                 .setValue(VERTICAL, false);
                 
             return state;

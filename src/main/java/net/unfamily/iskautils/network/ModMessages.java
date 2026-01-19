@@ -86,7 +86,28 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.TemporalOverclockerTogglePersistentC2SPacket::handle
         );
         
-        LOGGER.info("Registered {} networking packets", 3);
+        // Register Fan Redstone Mode C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FanRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FanRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FanRedstoneModeC2SPacket::handle
+        );
+        
+        // Register Fan Push/Pull C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FanPushPullC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FanPushPullC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FanPushPullC2SPacket::handle
+        );
+        
+        // Register Fan Push Type C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket::handle
+        );
+        
+        LOGGER.info("Registered {} networking packets", 6);
     }
     
     /**
@@ -1332,6 +1353,34 @@ public class ModMessages {
     }
     
     /**
+     * Sends packet to update fan range parameters
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendFanRangeUpdatePacket(BlockPos pos, net.unfamily.iskautils.network.packet.FanRangeUpdateC2SPacket.RangeType rangeType, int delta) {
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        // Create and handle the packet
+                        new net.unfamily.iskautils.network.packet.FanRangeUpdateC2SPacket(pos, rangeType, delta).handle(player);
+                    }
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            });
+        } catch (Exception e) {
+            // Ignore errors
+        }
+    }
+    
+    /**
      * Sends filter update packet to server
      */
     @OnlyIn(Dist.CLIENT)
@@ -1785,6 +1834,131 @@ public class ModMessages {
             
         } catch (Exception e) {
             LOGGER.error("Could not send Temporal Overclocker remove link packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Sends Fan Redstone Mode packet to the server
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendFanRedstoneModePacket(BlockPos pos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) return;
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) return;
+            
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
+                            // Cycle to next redstone mode (0-4)
+                            int currentMode = fan.getRedstoneMode();
+                            int nextMode = (currentMode + 1) % 5; // Cycle 0->1->2->3->4->0
+                            fan.setRedstoneMode(nextMode);
+                            
+                            // Play click sound
+                            level.playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            
+                            // Mark the block entity as changed
+                            fan.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Fan redstone mode packet: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.error("Could not send Fan redstone mode packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Sends Fan Push/Pull packet to the server
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendFanPushPullPacket(BlockPos pos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) return;
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) return;
+            
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
+                            // Toggle push/pull
+                            fan.setPull(!fan.isPull());
+                            
+                            // Play click sound
+                            level.playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            
+                            // Mark the block entity as changed
+                            fan.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Fan push/pull packet: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.error("Could not send Fan push/pull packet: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Sends Fan Push Type packet to the server
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendFanPushTypePacket(BlockPos pos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) return;
+            
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) return;
+            
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
+                            // Cycle to next push type
+                            net.unfamily.iskautils.block.entity.FanBlockEntity.PushType currentType = fan.getPushType();
+                            net.unfamily.iskautils.block.entity.FanBlockEntity.PushType nextType = switch (currentType) {
+                                case MOBS_ONLY -> net.unfamily.iskautils.block.entity.FanBlockEntity.PushType.MOBS_AND_PLAYERS;
+                                case MOBS_AND_PLAYERS -> net.unfamily.iskautils.block.entity.FanBlockEntity.PushType.PLAYERS_ONLY;
+                                case PLAYERS_ONLY -> net.unfamily.iskautils.block.entity.FanBlockEntity.PushType.MOBS_ONLY;
+                            };
+                            fan.setPushType(nextType);
+                            
+                            // Play click sound
+                            level.playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
+                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            
+                            // Mark the block entity as changed
+                            fan.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Fan push type packet: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.error("Could not send Fan push type packet: {}", e.getMessage(), e);
         }
     }
     

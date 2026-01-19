@@ -49,8 +49,20 @@ public class StructureSaverMachineBlock extends BaseEntityBlock {
     
     @Override
     public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) {
+        Player player = context.getPlayer();
+        net.minecraft.core.Direction facing;
+        
+        // If player is crouching (holding shift), place in opposite direction
+        if (player != null && player.isShiftKeyDown()) {
+            // Opposite direction: use the direction player is looking at directly (without getOpposite)
+            facing = context.getHorizontalDirection();
+        } else {
+            // Normal behavior: opposite direction to where player is looking
+            facing = context.getHorizontalDirection().getOpposite();
+        }
+        
         return this.defaultBlockState()
-                .setValue(FACING, context.getHorizontalDirection().getOpposite());
+                .setValue(FACING, facing);
     }
     
     @Override

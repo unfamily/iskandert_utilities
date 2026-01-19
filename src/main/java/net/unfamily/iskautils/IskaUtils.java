@@ -286,6 +286,8 @@ public class IskaUtils {
                           net.unfamily.iskautils.client.gui.DeepDrawerExtractorScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.TEMPORAL_OVERCLOCKER_MENU.get(),
                 net.unfamily.iskautils.client.gui.TemporalOverclockerScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FAN_MENU.get(),
+                net.unfamily.iskautils.client.gui.FanScreen::new);
         }
     }
 

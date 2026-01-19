@@ -283,6 +283,17 @@ public class ModItems {
     // Item for the Hellfire Igniter
     public static final DeferredItem<Item> HELLFIRE_IGNITER = ITEMS.register("hellfire_igniter",
             () -> new BlockItem(ModBlocks.HELLFIRE_IGNITER.get(), ITEM_PROPERTIES));
+    
+    // Item for the Fan
+    public static final DeferredItem<Item> FAN = ITEMS.register("fan",
+            () -> new BlockItem(ModBlocks.FAN.get(), ITEM_PROPERTIES));
+    
+    // Fan upgrade modules
+    public static final DeferredItem<Item> RANGE_MODULE = ITEMS.register("range_module",
+            () -> new Item(ITEM_PROPERTIES));
+    
+    public static final DeferredItem<Item> GHOST_MODULE = ITEMS.register("ghost_module",
+            () -> new Item(ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> SMOOTH_BLACKSTONE = ITEMS.register("smooth_blackstone",
             () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE.get(), ITEM_PROPERTIES));
