@@ -10,7 +10,7 @@
       "tag": "c:ingots/iron"  
     },
     "B": {
-      "item": "minecraft:iron_ingot"
+      "item": "minecraft:cobbled_deepslate_slab"  
     },
     "C": {
       "tag": "c:storage_blocks/redstone"  
