@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ABA",
+    "CDC",
+    "EFE"
+  ],
+  "key": {
+    "A": {
+      "item": "iska_utils:logic_module"
+    },
+    "B": {
+      "tag": "c:nether_stars"  
+    },
+    "C": {
+      "item": "iska_utils:fan"
+    },
+    "D": {
+      "item": "iska_utils:vector_charm"
+    },
+    "E": {
+      "item": "iska_utils:capacitor_module"
+    },
+    "F": [
+      {"tag": "c:storage_blocks/rubber"},
+      {"tag": "c:storage_blocks/slime"}
+    ]
+  },
+  "result": {
+    "id": "iska_utils:fanpack",
+    "count": 1
+  }
+} 

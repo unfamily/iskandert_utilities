@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ACA",
+    "CBC",
+    "ACA"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:ender_eye"
+    },
+    "B": {
+      "item": "iska_utils:base_module"  
+    },
+    "A": {
+      "item": "minecraft:comparator"
+    }
+  },
+  "result": {
+    "id": "iska_utils:logic_module",
+    "count": 1
+  }
+} 

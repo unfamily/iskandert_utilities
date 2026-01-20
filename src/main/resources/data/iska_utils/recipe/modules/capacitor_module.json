@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ACA",
+    "CBC",
+    "ACA"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:redstone_lamp"
+    },
+    "B": {
+      "item": "iska_utils:base_module"  
+    },
+    "A": {
+      "tag": "c:storage_blocks/redstone" 
+    }
+  },
+  "result": {
+    "id": "iska_utils:capacitor_module",
+    "count": 1
+  }
+} 

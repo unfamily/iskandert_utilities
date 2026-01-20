@@ -1,6 +1,6 @@
 ---
 navigation:
-  parent: deep_drawers/deep_drawers-index.md
+  parent: deep_drawer/deep_drawer-index.md
   title: Deep Drawer Extractor
   icon: deep_drawer_extractor
   position: 20

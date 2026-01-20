@@ -1,6 +1,6 @@
 ---
 navigation:
-  parent: deep_drawers/deep_drawers-index.md
+  parent: deep_drawer/deep_drawer-index.md
   title: Deep Drawer Extender
   icon: deep_drawer_extender
   position: 40

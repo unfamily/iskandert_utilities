@@ -1,6 +1,6 @@
 ---
 navigation:
-  parent: deep_drawers/deep_drawers-index.md
+  parent: deep_drawer/deep_drawer-index.md
   title: Deep Drawer
   icon: deep_drawers
   position: 10
