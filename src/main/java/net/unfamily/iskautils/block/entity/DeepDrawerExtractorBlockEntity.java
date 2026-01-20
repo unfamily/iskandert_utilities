@@ -54,6 +54,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     private final String[] invertedFilterFields;
     private boolean isWhitelistMode = true; // false = blacklist, true = whitelist (default: true to prevent random extraction)
     
+    // GUI state flags for filter optimization
+    private boolean reloadFilters = false; // Set to true when GUI closes to trigger filter reordering
+    private boolean openGui = false; // Set to true when GUI is open
+    
     // Redstone mode configuration
     private int redstoneMode = 0; // 0=NONE, 1=LOW, 2=HIGH, 3=PULSE
     private boolean previousRedstoneState = false; // For PULSE mode
@@ -118,6 +122,76 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         return filterFields.length;
     }
     
+    /**
+     * Called when GUI is opened
+     */
+    public void onGuiOpened() {
+        openGui = true;
+        reloadFilters = true;
+    }
+    
+    /**
+     * Called when GUI is closed
+     */
+    public void onGuiClosed() {
+        openGui = false;
+        reloadFilters = true; // Trigger filter reordering when GUI closes
+    }
+    
+    /**
+     * Reorders filters by computational cost (cheapest first)
+     * Order: - (ID), @ (mod ID), & (macro), # (tag), ? (NBT)
+     * This optimizes filter checking by trying cheaper filters first
+     */
+    private void reorderFilters() {
+        // Helper method to get filter priority (lower = cheaper)
+        java.util.function.Function<String, Integer> getPriority = (filter) -> {
+            if (filter == null || filter.trim().isEmpty()) {
+                return 999; // Empty filters go to the end
+            }
+            String trimmed = filter.trim();
+            if (trimmed.startsWith("-")) return 1; // ID filter - cheapest
+            if (trimmed.startsWith("@")) return 2; // Mod ID filter
+            if (trimmed.startsWith("&")) return 3; // Macro filter
+            if (trimmed.startsWith("#")) return 4; // Tag filter
+            if (trimmed.startsWith("?")) return 5; // NBT filter - most expensive
+            return 6; // Unknown format - goes last
+        };
+        
+        // Collect non-empty filters with their indices
+        java.util.List<java.util.Map.Entry<Integer, String>> normalFilters = new java.util.ArrayList<>();
+        java.util.List<java.util.Map.Entry<Integer, String>> invertedFilters = new java.util.ArrayList<>();
+        
+        for (int i = 0; i < getMaxFilterSlots(); i++) {
+            String filter = filterFields[i];
+            if (filter != null && !filter.trim().isEmpty()) {
+                normalFilters.add(new java.util.AbstractMap.SimpleEntry<>(i, filter));
+            }
+            String invertedFilter = invertedFilterFields[i];
+            if (invertedFilter != null && !invertedFilter.trim().isEmpty()) {
+                invertedFilters.add(new java.util.AbstractMap.SimpleEntry<>(i, invertedFilter));
+            }
+        }
+        
+        // Sort by priority (cheapest first)
+        normalFilters.sort((a, b) -> Integer.compare(getPriority.apply(a.getValue()), getPriority.apply(b.getValue())));
+        invertedFilters.sort((a, b) -> Integer.compare(getPriority.apply(a.getValue()), getPriority.apply(b.getValue())));
+        
+        // Clear arrays
+        for (int i = 0; i < getMaxFilterSlots(); i++) {
+            filterFields[i] = "";
+            invertedFilterFields[i] = "";
+        }
+        
+        // Re-insert sorted filters
+        for (int i = 0; i < normalFilters.size() && i < getMaxFilterSlots(); i++) {
+            filterFields[i] = normalFilters.get(i).getValue();
+        }
+        for (int i = 0; i < invertedFilters.size() && i < getMaxFilterSlots(); i++) {
+            invertedFilterFields[i] = invertedFilters.get(i).getValue();
+        }
+    }
+    
     @Override
     public void setChanged() {
         super.setChanged();
@@ -140,6 +214,13 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     public static void serverTick(Level level, BlockPos pos, BlockState state, DeepDrawerExtractorBlockEntity blockEntity) {
         if (level.isClientSide()) {
             return;
+        }
+        
+        // Reorder filters if GUI was closed (reloadFilters flag is set)
+        if (blockEntity.reloadFilters) {
+            blockEntity.reorderFilters();
+            blockEntity.reloadFilters = false;
+            blockEntity.setChanged();
         }
         
         // Invalidate cache after a while
@@ -201,6 +282,11 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             return;
         }
         
+        // Early exit if buffer is full - no need to search drawer if we can't insert items
+        if (blockEntity.isFull()) {
+            return;
+        }
+        
         // Handle extraction based on mode
         if (mode == RedstoneMode.PULSE) {
             // PULSE mode: extract immediately when pulse is detected (already set shouldExtract above)
@@ -239,16 +325,17 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             return;
         }
         
-        // Get all items in drawer to extract one at a time
-        Map<Integer, ItemStack> allItems = drawer.getAllItems();
-        if (allItems.isEmpty()) {
+        // Get storage entries for direct iteration without creating a copy
+        // This avoids O(n) memory allocation and copying overhead
+        Set<Map.Entry<Integer, ItemStack>> storageEntries = drawer.getStorageEntries();
+        if (storageEntries.isEmpty()) {
             return; // Drawer is empty
         }
         
         // Extract the first available item using the optimized API
-        // Iterate over items to find one that matches the filter criteria
+        // Iterate over items directly without creating a copy of the HashMap
         
-        for (Map.Entry<Integer, ItemStack> entry : allItems.entrySet()) {
+        for (Map.Entry<Integer, ItemStack> entry : storageEntries) {
             ItemStack drawerStack = entry.getValue();
             if (drawerStack == null || drawerStack.isEmpty()) {
                 continue;

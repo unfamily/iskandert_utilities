@@ -653,6 +653,8 @@
   "gui.iska_utils.deep_drawer_extractor.inverted_filter_button.normal": "Normal List",
   "gui.iska_utils.deep_drawer_extractor.click_to_add_filter": "Click to add filter",
   "gui.iska_utils.deep_drawer_extractor.clear": "Clear",
+  "gui.iska_utils.deep_drawer_extractor.apply": "Apply",
+  "gui.iska_utils.deep_drawer_extractor.close_without_saving": "Close without saving",
   
   "gui.iska_utils.general_filter_text.id": "- Extracts items by ID (e.g., ",
   "gui.iska_utils.general_filter_text.id.example": "-minecraft:diamond",

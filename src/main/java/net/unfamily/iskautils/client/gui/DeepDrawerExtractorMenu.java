@@ -83,6 +83,11 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
         // Add data slots for synchronization
         addDataSlots(this.containerData);
         
+        // Notify block entity that GUI is opened
+        if (!blockEntity.getLevel().isClientSide()) {
+            blockEntity.onGuiOpened();
+        }
+        
         // Add buffer slots (5 slots in a row)
         addBufferSlots();
         
@@ -133,10 +138,10 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
             itemHandler = new net.neoforged.neoforge.items.ItemStackHandler(5);
         }
         
-        // 5 slots in a row at position 195, 134 (2px right from previous)
+        // 5 slots in a row at position 32, 223
         for (int i = 0; i < 5; i++) {
-            int xPos = 195 + i * 18; // 18 pixels per slot
-            int yPos = 134;
+            int xPos = 32 + i * 18; // 18 pixels per slot
+            int yPos = 223;
             addSlot(new SlotItemHandler(itemHandler, i, xPos, yPos));
         }
     }

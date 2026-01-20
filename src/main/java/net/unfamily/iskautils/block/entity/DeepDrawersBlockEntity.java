@@ -239,6 +239,15 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     }
     
     /**
+     * Gets the entry set of storage for direct iteration without creating a copy
+     * More efficient than getAllItems() for iteration purposes
+     * @return Set of Map.Entry<Integer, ItemStack> for direct iteration
+     */
+    public Set<Map.Entry<Integer, ItemStack>> getStorageEntries() {
+        return storage.entrySet();
+    }
+    
+    /**
      * Gets the current scroll offset for the GUI
      * @return the scroll offset
      */

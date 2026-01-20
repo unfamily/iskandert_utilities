@@ -38,8 +38,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     // Single slot texture for item display
     private static final ResourceLocation SINGLE_SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
     
-    // GUI dimensions (based on image: 330x250)
-    private static final int GUI_WIDTH = 330;
+    // GUI dimensions (based on image: 400x250)
+    private static final int GUI_WIDTH = 400;
     private static final int GUI_HEIGHT = 250;  
     
     // Title position
@@ -137,6 +137,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private Button rightArrowButton = null; // Right arrow button
     private Button editModeCloseButton = null; // X button to close edit mode
     private Button editModeClearButton = null; // C button to clear textbox
+    private Button editModeApplyButton = null; // A button to apply changes
+    private String originalFilterValue = ""; // Original filter value when entering edit mode (to restore if cancelled)
     private java.util.List<String> filterVariants = new java.util.ArrayList<>(); // All possible filter variants for current item
     private int currentFilterVariantIndex = 0; // Current index in filterVariants list
     
@@ -410,9 +412,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                         return true; // Consume the click
                     }
                     
-                    // Click is on entry but not on edit button - start editing
-                    startEditingFilter(filterIndex);
-                    return true;
+                    // Quick edit is disabled - do nothing when clicking on entry
+                    // User must use the edit button (✎) to enter edit mode
+                    return false;
                 }
             }
         }
@@ -1091,14 +1093,29 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      */
     private void enterEditMode(int filterIndex) {
         editModeFilterIndex = filterIndex;
+        // Save original value to restore if user cancels
+        if (filterIndex >= 0 && filterIndex < cachedFilterFields.size()) {
+            originalFilterValue = cachedFilterFields.get(filterIndex) != null ? cachedFilterFields.get(filterIndex) : "";
+        } else {
+            originalFilterValue = "";
+        }
         createEditModeUI();
     }
     
     /**
-     * Exits edit mode
+     * Exits edit mode (without saving - restores original value)
      */
     private void exitEditMode() {
+        // Restore original value (discard changes)
+        if (editModeFilterIndex >= 0) {
+            while (cachedFilterFields.size() <= editModeFilterIndex) {
+                cachedFilterFields.add("");
+            }
+            cachedFilterFields.set(editModeFilterIndex, originalFilterValue);
+            // Don't save to server - changes are discarded
+        }
         editModeFilterIndex = -1;
+        originalFilterValue = "";
         removeEditModeUI();
     }
     
@@ -1147,39 +1164,25 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             .build();
         addRenderableWidget(rightArrowButton);
         
-        // Textbox position (to the right of right arrow button)
-        int textBoxSpacing = 2; // Space between button and textbox
-        int textBoxX = rightButtonX + buttonSize + textBoxSpacing;
-        int textBoxY = slotY + (slotSize - 15) / 2; // Center vertically with slot (15 is textbox height)
-        int textBoxHeight = 15;
-        
-        // Buttons after textbox: C (clear) and X (close)
+        // Buttons C (clear), A (apply), and X (close) - on the same row as slot
         // Align X button with "Valid Keys" button (howToUseButton)
         // Valid Keys button is at BUTTON_X = GUI_WIDTH - BUTTON_WIDTH - 8
-        // We want the X button to align with the right edge of Valid Keys button
         int validKeysButtonRightEdge = this.leftPos + BUTTON_X + BUTTON_WIDTH; // Right edge of Valid Keys button
-        int buttonAfterTextBoxSpacing = 2; // Space between textbox and buttons
+        int buttonAfterSlotSpacing = 2; // Space between slot/buttons and textbox row
         int closeButtonX = validKeysButtonRightEdge - buttonSize; // X button aligned with Valid Keys right edge
-        int clearButtonX = closeButtonX - buttonSize - buttonSpacing; // C button before X button
-        int buttonAfterTextBoxY = slotY + (slotSize - buttonSize) / 2; // Center vertically with slot
+        int applyButtonX = closeButtonX - buttonSize - buttonSpacing; // A button before X button
+        int clearButtonX = applyButtonX - buttonSize - buttonSpacing; // C button before A button
+        int buttonAfterSlotY = slotY + (slotSize - buttonSize) / 2; // Center vertically with slot
         
-        // Calculate textbox width to fill space between textbox start and clear button
-        int textBoxWidth = clearButtonX - textBoxX - buttonAfterTextBoxSpacing;
+        // Textbox position - one row below slot and buttons
+        int textBoxX = this.leftPos + inventoryStartX; // Start from first column of inventory
+        int textBoxY = slotY + slotSize + 2; // One row below slot (slotSize + 2px spacing)
+        int textBoxHeight = 15;
         
-        // Ensure minimum width and don't exceed boundaries
-        int inventoryEndX = this.leftPos + inventoryStartX + (9 * 18); // End of inventory slots
+        // Calculate textbox width - almost to the right edge
         int rightEdge = this.leftPos + GUI_WIDTH;
         int margin = 5; // Margin from right edge
-        int maxTextWidthFromInventory = inventoryEndX - textBoxX;
-        int maxTextWidthFromEdge = rightEdge - textBoxX - margin;
-        // Ensure textbox doesn't exceed boundaries
-        textBoxWidth = Math.max(50, Math.min(textBoxWidth, Math.min(maxTextWidthFromInventory, maxTextWidthFromEdge)));
-        
-        // Recalculate button positions if textbox width was constrained
-        if (textBoxWidth < (clearButtonX - textBoxX - buttonAfterTextBoxSpacing)) {
-            clearButtonX = textBoxX + textBoxWidth + buttonAfterTextBoxSpacing;
-            closeButtonX = clearButtonX + buttonSize + buttonSpacing;
-        }
+        int textBoxWidth = rightEdge - textBoxX - margin; // Almost to the right edge
         
         // Create textbox
         editModeTextBox = new EditBox(this.font, textBoxX, textBoxY, textBoxWidth, textBoxHeight,
@@ -1197,14 +1200,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         editModeTextBox.setEditable(true);
         editModeTextBox.setMaxLength(100);
         
-        // Set responder to save on change
+        // Don't save automatically - user must click Apply button
         editModeTextBox.setResponder(value -> {
-            // Save filter value when text changes
-            while (cachedFilterFields.size() <= editModeFilterIndex) {
-                cachedFilterFields.add("");
-            }
-            cachedFilterFields.set(editModeFilterIndex, value);
-            saveFilterData();
+            // Just update the textbox value, don't save yet
         });
         
         addRenderableWidget(editModeTextBox);
@@ -1217,29 +1215,47 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                     editModeTextBox.setValue("");
                     editModeTextBox.setCursorPosition(0);
                     editModeTextBox.setHighlightPos(0);
-                    // Save empty filter
-                    if (editModeFilterIndex >= 0) {
-                        while (cachedFilterFields.size() <= editModeFilterIndex) {
-                            cachedFilterFields.add("");
-                        }
-                        cachedFilterFields.set(editModeFilterIndex, "");
-                        saveFilterData();
-                    }
                 }
             })
-            .bounds(clearButtonX, buttonAfterTextBoxY, buttonSize, buttonSize)
+            .bounds(clearButtonX, buttonAfterSlotY, buttonSize, buttonSize)
             .tooltip(net.minecraft.client.gui.components.Tooltip.create(
                 Component.translatable("gui.iska_utils.deep_drawer_extractor.clear")))
             .build();
         addRenderableWidget(editModeClearButton);
         
-        // Create close button (X) - exits edit mode
+        // Create apply button (A) - saves changes and exits edit mode
+        editModeApplyButton = Button.builder(Component.literal("A"), 
+            button -> {
+                playButtonSound();
+                // Save the current textbox value
+                if (editModeTextBox != null && editModeFilterIndex >= 0) {
+                    String value = editModeTextBox.getValue();
+                    while (cachedFilterFields.size() <= editModeFilterIndex) {
+                        cachedFilterFields.add("");
+                    }
+                    cachedFilterFields.set(editModeFilterIndex, value);
+                    saveFilterData(); // Save to server
+                }
+                // Exit edit mode (but don't restore original since we're saving)
+                editModeFilterIndex = -1;
+                originalFilterValue = "";
+                removeEditModeUI();
+            })
+            .bounds(applyButtonX, buttonAfterSlotY, buttonSize, buttonSize)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                Component.translatable("gui.iska_utils.deep_drawer_extractor.apply")))
+            .build();
+        addRenderableWidget(editModeApplyButton);
+        
+        // Create close button (X) - exits edit mode without saving
         editModeCloseButton = Button.builder(Component.literal("✕"), 
             button -> {
                 playButtonSound();
                 exitEditMode();
             })
-            .bounds(closeButtonX, buttonAfterTextBoxY, buttonSize, buttonSize)
+            .bounds(closeButtonX, buttonAfterSlotY, buttonSize, buttonSize)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                Component.translatable("gui.iska_utils.deep_drawer_extractor.close_without_saving")))
             .build();
         addRenderableWidget(editModeCloseButton);
         
@@ -1271,6 +1287,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             removeWidget(editModeClearButton);
             editModeClearButton = null;
         }
+        if (editModeApplyButton != null) {
+            removeWidget(editModeApplyButton);
+            editModeApplyButton = null;
+        }
         ghostSlotItem = ItemStack.EMPTY;
         filterVariants.clear();
         currentFilterVariantIndex = 0;
@@ -1294,14 +1314,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             currentFilterVariantIndex = 0;
             if (editModeTextBox != null) {
                 editModeTextBox.setValue("");
-                // Save empty filter
-                if (editModeFilterIndex >= 0) {
-                    while (cachedFilterFields.size() <= editModeFilterIndex) {
-                        cachedFilterFields.add("");
-                    }
-                    cachedFilterFields.set(editModeFilterIndex, "");
-                    saveFilterData();
-                }
+                // Position cursor at the beginning
+                editModeTextBox.setCursorPosition(0);
+                editModeTextBox.setHighlightPos(0);
+                // Don't save - user must click Apply
             }
             playButtonSound();
         } else {
@@ -1319,14 +1335,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 // Position cursor at the beginning and show from start
                 editModeTextBox.setCursorPosition(0);
                 editModeTextBox.setHighlightPos(0);
-                // Save filter immediately
-                if (editModeFilterIndex >= 0) {
-                    while (cachedFilterFields.size() <= editModeFilterIndex) {
-                        cachedFilterFields.add("");
-                    }
-                    cachedFilterFields.set(editModeFilterIndex, filterString);
-                    saveFilterData();
-                }
+                // Don't save - user must click Apply
             }
             
             playButtonSound();
@@ -1357,14 +1366,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             // Position cursor at the beginning and show from start
             editModeTextBox.setCursorPosition(0);
             editModeTextBox.setHighlightPos(0);
-            // Save filter immediately
-            if (editModeFilterIndex >= 0) {
-                while (cachedFilterFields.size() <= editModeFilterIndex) {
-                    cachedFilterFields.add("");
-                }
-                cachedFilterFields.set(editModeFilterIndex, filterString);
-                saveFilterData();
-            }
+            // Don't save - user must click Apply
         }
     }
     
@@ -1715,11 +1717,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             guiGraphics.drawString(this.font, titleComponent, titleX, TITLE_Y, 0x404040, false);
             
             // Render "Deep Drawer Buffer" text centered above the 5 buffer slots
-            // Buffer slots are at X=195, Y=134, 5 slots in a row (5 * 18 = 90 pixels wide)
+            // Buffer slots are at X=32, Y=223, 5 slots in a row (5 * 18 = 90 pixels wide)
             Component bufferLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.buffer_label");
             int bufferLabelWidth = this.font.width(bufferLabel);
-            int bufferLabelX = 195 + (5 * 18) / 2 - bufferLabelWidth / 2; // Center of 5 slots minus half text width
-            int bufferLabelY = 134 - this.font.lineHeight - 2; // Above slots with 2px spacing
+            int bufferLabelX = 32 + (5 * 18) / 2 - bufferLabelWidth / 2; // Center of 5 slots minus half text width (relative to GUI)
+            int bufferLabelY = 223 - this.font.lineHeight - 2; // Above slots with 2px spacing (relative to GUI)
             guiGraphics.drawString(this.font, bufferLabel, bufferLabelX, bufferLabelY, 0x404040, false);
         }
     }
@@ -1969,17 +1971,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 stopEditingFilter();
                 return true;
             }
-            // If edit mode textbox is focused, exit edit mode
-            if (isEditModeTextBoxFocused) {
-                playButtonSound();
-                exitEditMode();
-                return true;
-            }
-            // If in edit mode (but not editing text), exit edit mode
+            // If in edit mode, block ESC (can only exit via buttons)
             if (isInEditMode) {
-                playButtonSound();
-                exitEditMode();
-                return true;
+                return true; // Block ESC, don't exit edit mode
             }
         }
         
@@ -2022,11 +2016,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             if (keyCode == 256 || // ESC key
                 (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode))) {
                 if (!isEditBoxFocused && !isEditModeTextBoxFocused) {
-                    // If in edit mode, exit edit mode first
+                    // If in edit mode, block closing (can only exit via buttons)
                     if (isInEditMode) {
-                        playButtonSound();
-                        exitEditMode();
-                        return true;
+                        return true; // Block, don't exit edit mode
                     }
                     playButtonSound();
                     switchToMainScreen();
@@ -2038,11 +2030,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             if (keyCode == 256 || // ESC key
                 (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode))) {
                 if (!isEditBoxFocused && !isEditModeTextBoxFocused) {
-                    // If in edit mode, exit edit mode instead of closing
+                    // If in edit mode, block closing (can only exit via buttons)
                     if (isInEditMode) {
-                        playButtonSound();
-                        exitEditMode();
-                        return true;
+                        return true; // Block, don't exit edit mode
                     }
                     // Close GUI without sound
                     this.onClose();
