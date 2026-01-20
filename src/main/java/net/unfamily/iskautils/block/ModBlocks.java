@@ -50,7 +50,7 @@ public class ModBlocks {
     private static final BlockBehaviour.Properties FAN_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.STONE)
             .strength(1.5f, 6.0f)
-            .sound(SoundType.STONE)
+            .sound(SoundType.METAL)
             .requiresCorrectToolForDrops();
     
     // Properties for Rubber Sap Extractor

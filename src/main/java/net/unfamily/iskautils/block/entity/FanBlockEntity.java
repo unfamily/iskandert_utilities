@@ -508,8 +508,10 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         for (Entity entity : entities) {
             if (shouldPushEntity(entity, blockEntity.pushType)) {
                 // Check if there's a blocking block between fan and entity
-                if (!hasGhostModule && isBlockedByObstacle(level, pos, facing, entity)) {
+                if (!hasGhostModule && isBlockedByObstacle(level, pos, facing, entity, false)) {
                     continue; // Skip this entity if blocked and no ghost module
+                } else if (hasGhostModule && isBlockedByObstacle(level, pos, facing, entity, true)) {
+                    continue; // Skip this entity if blocked (even with ghost module, if config doesn't allow unbreakable bypass)
                 }
                 pushEntity(entity, facing, effectivePower, blockEntity.isPull);
             }
@@ -621,7 +623,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     // Check if there's a blocking obstacle between fan and entity
-    private static boolean isBlockedByObstacle(Level level, BlockPos fanPos, Direction facing, Entity entity) {
+    private static boolean isBlockedByObstacle(Level level, BlockPos fanPos, Direction facing, Entity entity, boolean hasGhostModule) {
         // Get entity position (center)
         Vec3 entityPos = entity.position();
         Vec3 fanCenter = Vec3.atCenterOf(fanPos);
@@ -678,6 +680,15 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
             // Check if this block is solid and blocks the airflow
             BlockState blockState = level.getBlockState(blockPos);
             if (!blockState.isAir() && blockState.isSolid()) {
+                // If ghost module is installed, check if we can bypass unbreakable blocks
+                if (hasGhostModule && Config.fanGhostModuleBypassUnbreakable) {
+                    // Check if block is unbreakable (hardness < 0)
+                    float destroySpeed = blockState.getDestroySpeed(level, blockPos);
+                    if (destroySpeed < 0) {
+                        // Unbreakable block, but config allows bypass - continue checking
+                        continue;
+                    }
+                }
                 // Block is solid and blocks airflow
                 return true;
             }

@@ -537,6 +537,75 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             Component tooltip = Component.translatable("gui.iska_utils.fan.push_type." + pushType.getName());
             guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
         }
+        
+        // Range adjustment buttons tooltips
+        renderRangeButtonTooltips(guiGraphics, mouseX, mouseY);
+    }
+    
+    private void renderRangeButtonTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // Helper method to check if mouse is over a button and render tooltip
+        if (topLeftButton != null && isMouseOverButton(mouseX, mouseY, topLeftButton)) {
+            renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.UP, -1);
+        } else if (topRightButton != null && isMouseOverButton(mouseX, mouseY, topRightButton)) {
+            renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.UP, 1);
+        } else if (leftTopButton != null && isMouseOverButton(mouseX, mouseY, leftTopButton)) {
+            renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.LEFT, 1);
+        } else if (leftBottomButton != null && isMouseOverButton(mouseX, mouseY, leftBottomButton)) {
+            renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.LEFT, -1);
+        } else if (rightTopButton != null && isMouseOverButton(mouseX, mouseY, rightTopButton)) {
+            renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.RIGHT, 1);
+        } else if (rightBottomButton != null && isMouseOverButton(mouseX, mouseY, rightBottomButton)) {
+            renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.RIGHT, -1);
+        } else if (bottomLeftButton != null && isMouseOverButton(mouseX, mouseY, bottomLeftButton)) {
+            renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.DOWN, -1);
+        } else if (bottomRightButton != null && isMouseOverButton(mouseX, mouseY, bottomRightButton)) {
+            renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.DOWN, 1);
+        } else if (barLeftButton != null && isMouseOverButton(mouseX, mouseY, barLeftButton)) {
+            renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.FORWARD, -1);
+        } else if (barRightButton != null && isMouseOverButton(mouseX, mouseY, barRightButton)) {
+            renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.FORWARD, 1);
+        }
+    }
+    
+    private boolean isMouseOverButton(int mouseX, int mouseY, Button button) {
+        return mouseX >= button.getX() && mouseX <= button.getX() + button.getWidth() &&
+               mouseY >= button.getY() && mouseY <= button.getY() + button.getHeight();
+    }
+    
+    private void renderRangeButtonTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY, 
+                                         FanRangeUpdateC2SPacket.RangeType rangeType, int delta) {
+        // Get current range value
+        int currentValue = switch (rangeType) {
+            case UP -> menu.getRangeUp();
+            case DOWN -> menu.getRangeDown();
+            case LEFT -> menu.getRangeLeft();
+            case RIGHT -> menu.getRangeRight();
+            case FORWARD -> menu.getRangeFront();
+        };
+        
+        // Get direction name
+        String directionKey = switch (rangeType) {
+            case UP -> "up";
+            case DOWN -> "down";
+            case LEFT -> "left";
+            case RIGHT -> "right";
+            case FORWARD -> "forward";
+        };
+        
+        // Get increment/decrement text
+        String actionKey = delta > 0 ? "increment" : "decrement";
+        
+        // Create tooltip with two separate lines: action + direction, and value
+        Component line1 = Component.translatable("gui.iska_utils.fan.range_button." + actionKey, 
+            Component.translatable("gui.iska_utils.fan.range_button.direction." + directionKey));
+        Component line2 = Component.translatable("gui.iska_utils.fan.range_button.blocks", currentValue);
+        
+        // Convert Components to FormattedCharSequence for multi-line tooltip
+        java.util.List<net.minecraft.util.FormattedCharSequence> tooltipLines = java.util.List.of(
+            line1.getVisualOrderText(),
+            line2.getVisualOrderText()
+        );
+        guiGraphics.renderTooltip(this.font, tooltipLines, mouseX, mouseY);
     }
     
     /**

@@ -496,6 +496,11 @@ public class Config
                     java.util.List.of(0.1D, 0.5D, 1.0D, 5.0D, 15.0D),
                     o -> o instanceof Double && (Double) o >= 0.0D && (Double) o <= 100.0D);
     
+    private static final ModConfigSpec.BooleanValue FAN_GHOST_MODULE_BYPASS_UNBREAKABLE = BUILDER
+            .comment("If true, the Ghost Module allows airflow to pass through unbreakable blocks (hardness < 0)",
+                    "When false (default), unbreakable blocks still block airflow even with Ghost Module")
+            .define("103_fanGhostModuleBypassUnbreakable", false);
+    
     // Fanpack Configuration (starts at 200)
     private static final ModConfigSpec.IntValue FANPACK_ENERGY_CAPACITY = BUILDER
             .comment("Energy capacity of the Fanpack in RF/FE",
@@ -832,6 +837,7 @@ public class Config
     public static int fanRangeUpgradeMax;
     public static int fanAccelerationUpgradeMax;
     public static java.util.List<Double> fanAccelerationModulePowers;
+    public static boolean fanGhostModuleBypassUnbreakable;
     public static int fanpackEnergyCapacity;
     public static int fanpackFlightEnergyConsume;
     
@@ -933,6 +939,7 @@ public class Config
         fanAccelerationModulePowers = new java.util.ArrayList<>(FAN_ACCELERATION_MODULE_POWERS.get().stream()
                 .map(Double::doubleValue)
                 .toList());
+        fanGhostModuleBypassUnbreakable = FAN_GHOST_MODULE_BYPASS_UNBREAKABLE.get();
         
         // Fanpack configuration
         fanpackEnergyCapacity = FANPACK_ENERGY_CAPACITY.get();
