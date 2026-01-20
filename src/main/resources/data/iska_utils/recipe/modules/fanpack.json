@@ -23,7 +23,8 @@
     },
     "F": [
       {"tag": "c:storage_blocks/rubber"},
-      {"tag": "c:storage_blocks/slime"}
+      {"tag": "c:storage_blocks/slime"},
+      {"tag": "c:storage_blocks/tar_slime"}
     ]
   },
   "result": {
