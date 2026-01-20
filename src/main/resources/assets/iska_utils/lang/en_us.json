@@ -7,7 +7,7 @@
   "item.iska_utils.ultra_module": "Ultra Vector Module",
   "item.iska_utils.vector_charm": "Vector Charm",
   "item.iska_utils.fanpack": "Fanpack",
-  "tooltip.iska_utils.fanpack.desc": "§7You combined a Vector Charm with a modular fan, what could go wrong?",
+  "tooltip.iska_utils.fanpack.desc": "§7You combined a Vector Charm with a Modular Fan, what could go wrong?",
   "tooltip.iska_utils.fanpack.flight": "§7Grants creative flight (%d RF/tick)",
   "tooltip.iska_utils.fanpack.flight_no_energy": "§7Grants creative flight",
   "item.iska_utils.portable_dislocator": "Portable Dislocator",
