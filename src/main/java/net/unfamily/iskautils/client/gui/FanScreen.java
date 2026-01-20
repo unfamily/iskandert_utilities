@@ -846,3 +846,4 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         guiGraphics.drawString(this.font, titleComponent, titleX, 8, 0x404040, false);
     }
 }
+
