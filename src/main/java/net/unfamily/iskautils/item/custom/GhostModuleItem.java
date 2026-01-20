@@ -29,8 +29,7 @@ public class GhostModuleItem extends Item {
         // Show info when shift is held
         if (Screen.hasShiftDown()) {
             // Show max installable count (always 1 for ghost module)
-            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.max_installable", 
-                    Component.translatable("tooltip.iska_utils.fan_module.ghost_module"), 
+            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.modular_fan_max", 
                     1)
                     .withStyle(ChatFormatting.GRAY));
         } else {

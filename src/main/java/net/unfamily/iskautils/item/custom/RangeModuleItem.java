@@ -29,8 +29,7 @@ public class RangeModuleItem extends Item {
         // Show info when shift is held
         if (Screen.hasShiftDown()) {
             // Show max installable count
-            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.max_installable", 
-                    Component.translatable("tooltip.iska_utils.fan_module.range_module"), 
+            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.modular_fan_max", 
                     Config.fanRangeUpgradeMax)
                     .withStyle(ChatFormatting.GRAY));
         } else {

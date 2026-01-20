@@ -28,13 +28,8 @@ public class UltraModuleItem extends Item {
         
         // Show info when shift is held
         if (Screen.hasShiftDown()) {
-            double power = Config.fanAccelerationModulePowers != null && Config.fanAccelerationModulePowers.size() > 4 
-                    ? Config.fanAccelerationModulePowers.get(4) : 15.0;
-            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.modular_fan", 
-                    String.format("%.1f", power))
-                    .withStyle(ChatFormatting.GRAY));
-            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.max_installable", 
-                    Component.translatable("tooltip.iska_utils.fan_module.ultra_module"), 
+            // Show max installable count
+            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.modular_fan_max", 
                     Config.fanAccelerationUpgradeMax)
                     .withStyle(ChatFormatting.GRAY));
         } else {

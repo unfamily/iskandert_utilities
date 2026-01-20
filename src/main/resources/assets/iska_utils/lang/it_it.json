@@ -648,16 +648,8 @@
   
   "tooltip.iska_utils.shift_place_reverse": "Tieni premuto Shift per piazzarlo al contrario",
   
-  "tooltip.iska_utils.fan_module.press_shift": "Premi Shift per maggiori informazioni",
-  "tooltip.iska_utils.fan_module.modular_fan": "Modular Fan: %s",
-  "tooltip.iska_utils.fan_module.max_installable": "%s: Max %d installabili",
-  "tooltip.iska_utils.fan_module.range_module": "Modulo Range",
-  "tooltip.iska_utils.fan_module.ghost_module": "Modulo Ghost",
-  "tooltip.iska_utils.fan_module.slow_module": "Modulo Lento",
-  "tooltip.iska_utils.fan_module.moderate_module": "Modulo Moderato",
-  "tooltip.iska_utils.fan_module.fast_module": "Modulo Veloce",
-  "tooltip.iska_utils.fan_module.extreme_module": "Modulo Estremo",
-  "tooltip.iska_utils.fan_module.ultra_module": "Modulo Ultra",
+  "tooltip.iska_utils.fan_module.press_shift": "Premi Shift per vedere dove installarlo",
+  "tooltip.iska_utils.fan_module.modular_fan_max": "Modular Fan Max: %d",
   
   "gui.iska_utils.general_filter_text.id": "- Estrae gli item per ID (esempio: ",
   "gui.iska_utils.general_filter_text.id.example": "-minecraft:diamond",

@@ -307,10 +307,10 @@ public class ModItems {
     
     // Fan upgrade modules
     public static final DeferredItem<Item> RANGE_MODULE = ITEMS.register("range_module",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new RangeModuleItem(ITEM_PROPERTIES));
     
     public static final DeferredItem<Item> GHOST_MODULE = ITEMS.register("ghost_module",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new GhostModuleItem(ITEM_PROPERTIES));
     
     public static final DeferredItem<Item> LOGIC_MODULE = ITEMS.register("logic_module",
             () -> new Item(ITEM_PROPERTIES));
