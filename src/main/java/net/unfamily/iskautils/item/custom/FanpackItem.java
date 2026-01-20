@@ -219,8 +219,9 @@ public class FanpackItem extends VectorCharmItem {
                     }
                 }
                 
-                // If player is flying, consume energy
-                if (player.getAbilities().flying && currentEnergy >= requiredEnergy) {
+                // If player is flying, consume energy (but not if in spectator or creative mode)
+                if (player.getAbilities().flying && currentEnergy >= requiredEnergy 
+                        && !player.getAbilities().instabuild && !player.isSpectator()) {
                     int newEnergy = currentEnergy - requiredEnergy;
                     this.setEnergyStored(stack, newEnergy);
                 }
@@ -261,6 +262,9 @@ public class FanpackItem extends VectorCharmItem {
             // Show flight info without consumption (energy disabled or not required)
             tooltipComponents.add(Component.translatable("tooltip.iska_utils.fanpack.flight_no_energy"));
         }
+
+        // Add descriptive tooltip
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.fanpack.desc"));
     }
     
     /**

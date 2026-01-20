@@ -12,4 +12,7 @@ A comprehensive storage system designed for non-stackable items. The Deep Drawer
 
 ## Core Components
 
-<CategoryIndex category="storage" />
+* [Deep Drawer](deep_drawer/deep_drawer.md)
+* [Deep Drawer Extractor](deep_drawer/deep_drawer_extractor.md)
+* [Deep Drawer Interface](deep_drawer/deep_drawer_interface.md)
+* [Deep Drawer Extender](deep_drawer/deep_drawer_extender.md)

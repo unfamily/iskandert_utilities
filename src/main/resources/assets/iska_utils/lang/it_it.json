@@ -7,6 +7,7 @@
   "item.iska_utils.ultra_module": "Modulo Vettoriale Ultra",
   "item.iska_utils.vector_charm": "Amuleto Vettoriale",
   "item.iska_utils.fanpack": "Fanpack",
+  "tooltip.iska_utils.fanpack.desc": "§7Hai unito una Vector Charm con un ventilatore modulare, cosa potrebbe andare storto?",
   "tooltip.iska_utils.fanpack.flight": "§7Concede il volo creativo (%d RF/tick)",
   "tooltip.iska_utils.fanpack.flight_no_energy": "§7Concede il volo creativo",
   "item.iska_utils.portable_dislocator": "Dislocatore Portatile",
@@ -349,6 +350,7 @@
   "minecraft.piston": "Pistoni",
   "minecraft.lever": "Leve",
   "item.iska_utils.scanner_chip.tooltip.ore_chip_desc": "Chip specializzato per la scansione di tutti i minerali",
+  "item.iska_utils.scanner_chip.tooltip.ore_chip_mining_level": "§7Shift+click destro per filtrare per mining level",
 
   "commands.iska_utils.structure.error.not_found": "Struttura non trovata",
   "commands.iska_utils.structure.error.placement_failed": "Impossibile piazzare la struttura",
@@ -573,10 +575,10 @@
   "tooltip.iska_utils.deep_drawers.desc3": "Dalla GUI integrata non è possibile inserire ed estrarre con shift+click, usare hopper, tubi o similari",
   "message.iska_utils.deep_drawers.cannot_break": "§cNon puoi rompere la Cassettiera Profonda che contiene oggetti!",
  
-  "block.iska_utils.deep_drawer_interface": "Interfaccia di Cassettiera Profonda",
-  "block.iska_utils.deep_drawer_extender": "Estensore di Cassettiera Profonda",
-  "block.iska_utils.deep_drawer_extractor": "Estrattore di Cassettiera Profonda",
-  "item.iska_utils.deep_drawer_extractor": "Estrattore di Cassettiera Profonda",
+  "block.iska_utils.deep_drawer_interface": "Interfaccia della Cassettiera Profonda",
+  "block.iska_utils.deep_drawer_extender": "Estensore della Cassettiera Profonda",
+  "block.iska_utils.deep_drawer_extractor": "Estrattore della Cassettiera Profonda",
+  "item.iska_utils.deep_drawer_extractor": "Estrattore della Cassettiera Profonda",
 
   "item.iska_utils.dolly": "Dolly",
   "tooltip.iska_utils.dolly.contains": "§7Contiene: §f%s",

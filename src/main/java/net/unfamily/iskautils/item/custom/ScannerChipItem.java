@@ -669,6 +669,11 @@ public class ScannerChipItem extends Item {
             Component chipTypeText = Component.translatable("item.iska_utils.scanner_chip.tooltip.ore_chip_desc")
                     .withStyle(style -> style.withColor(ChatFormatting.LIGHT_PURPLE));
             tooltipComponents.add(chipTypeText);
+            
+            // Add mining level filter instruction
+            Component miningLevelText = Component.translatable("item.iska_utils.scanner_chip.tooltip.ore_chip_mining_level")
+                    .withStyle(style -> style.withColor(ChatFormatting.GRAY));
+            tooltipComponents.add(miningLevelText);
         } else if (isMobsChip) {
             Component chipTypeText = Component.translatable("item.iska_utils.scanner_chip.tooltip.mob_chip_desc")
                     .withStyle(style -> style.withColor(ChatFormatting.LIGHT_PURPLE));
