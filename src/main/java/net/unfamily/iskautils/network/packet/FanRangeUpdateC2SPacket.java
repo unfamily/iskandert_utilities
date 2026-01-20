@@ -75,9 +75,9 @@ public class FanRangeUpdateC2SPacket {
         int rangeModules = fan.countRangeModules();
         int maxValue = switch (rangeType) {
             case FORWARD -> {
-                // Front range is always horizontal range * 2 to maintain cube shape
+                // Front range is always horizontal range * 2 + 1 to maintain cube shape
                 int effectiveHorizontalMax = Config.fanRangeHorizontalMax + rangeModules;
-                yield effectiveHorizontalMax * 2;
+                yield effectiveHorizontalMax * 2 + 1;
             }
             case UP, DOWN -> Config.fanRangeVerticalMax + rangeModules;
             case LEFT, RIGHT -> Config.fanRangeHorizontalMax + rangeModules;

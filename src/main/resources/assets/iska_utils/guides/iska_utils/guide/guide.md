@@ -3,7 +3,8 @@ navigation:
   title: Iska Utils Guide
   position: 0
 item_ids:
-  - iska_utils:deep_drawers
+  - iska_utils:deep_drawer
+  - iska_utils:deep_drawer
   - iska_utils:deep_drawer_extender
   - iska_utils:deep_drawer_extractor
   - iska_utils:deep_drawer_interface

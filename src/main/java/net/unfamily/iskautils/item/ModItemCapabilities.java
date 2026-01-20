@@ -7,6 +7,7 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
+import net.unfamily.iskautils.item.custom.FanpackItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import net.unfamily.iskautils.item.custom.ElectricTreeTapItem;
 import net.unfamily.iskautils.item.custom.ScannerItem;
@@ -28,6 +29,20 @@ public class ModItemCapabilities {
                     return null;
                 },
                 ModItems.VECTOR_CHARM.get()
+        );
+        
+        // Register energy capability for Fanpack
+        event.registerItem(
+                Capabilities.EnergyStorage.ITEM,
+                (stack, context) -> {
+                    if (stack.getItem() instanceof FanpackItem fanpack) {
+                        if (fanpack.canStoreEnergy()) {
+                            return new FanpackEnergyStorage(fanpack, stack);
+                        }
+                    }
+                    return null;
+                },
+                ModItems.FANPACK.get()
         );
         
         // Register energy capability for Portable Dislocator
@@ -128,6 +143,64 @@ public class ModItemCapabilities {
         @Override
         public boolean canReceive() {
             return vectorCharm.canStoreEnergy();
+        }
+    }
+    
+    /**
+     * Energy storage implementation for Fanpack
+     */
+    public static class FanpackEnergyStorage implements IEnergyStorage {
+        private final FanpackItem fanpack;
+        private final net.minecraft.world.item.ItemStack stack;
+        
+        public FanpackEnergyStorage(FanpackItem fanpack, net.minecraft.world.item.ItemStack stack) {
+            this.fanpack = fanpack;
+            this.stack = stack;
+        }
+        
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int currentEnergy = fanpack.getEnergyStored(stack);
+            int maxEnergy = fanpack.getMaxEnergyStored(stack);
+            int energyToReceive = Math.min(maxReceive, maxEnergy - currentEnergy);
+            
+            if (!simulate && energyToReceive > 0) {
+                fanpack.setEnergyStored(stack, currentEnergy + energyToReceive);
+            }
+            
+            return energyToReceive;
+        }
+        
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            int currentEnergy = fanpack.getEnergyStored(stack);
+            int energyToExtract = Math.min(maxExtract, currentEnergy);
+            
+            if (!simulate && energyToExtract > 0) {
+                fanpack.setEnergyStored(stack, currentEnergy - energyToExtract);
+            }
+            
+            return energyToExtract;
+        }
+        
+        @Override
+        public int getEnergyStored() {
+            return fanpack.getEnergyStored(stack);
+        }
+        
+        @Override
+        public int getMaxEnergyStored() {
+            return fanpack.getMaxEnergyStored(stack);
+        }
+        
+        @Override
+        public boolean canExtract() {
+            return false; // Fanpack doesn't allow energy extraction
+        }
+        
+        @Override
+        public boolean canReceive() {
+            return fanpack.canStoreEnergy();
         }
     }
     

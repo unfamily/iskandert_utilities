@@ -249,8 +249,8 @@ public class PortableDislocatorItem extends Item {
         
         // Genera nuove coordinate randomizzate
         java.util.Random random = new java.util.Random();
-        int minRange = 100;
-        int maxRange = 150;
+        int minRange = 30;
+        int maxRange = 50;
         
         int offsetX = random.nextBoolean() ? 
             (random.nextInt(maxRange - minRange + 1) + minRange) :
@@ -437,27 +437,27 @@ public class PortableDislocatorItem extends Item {
             return;
         }
         
-        // Generate random offset to teleport 100-150 blocks away from the target
+        // Generate random offset to teleport 30-50 blocks away from the target
         java.util.Random random = new java.util.Random();
         
-        // Generate random offset for X: either [-150, -100] or [100, 150]
+        // Generate random offset for X: either [-50, -30] or [30, 50]
         int offsetX;
         if (random.nextBoolean()) {
-            // Positive range: 100 to 150
-            offsetX = random.nextInt(51) + 100; // 100-150
+            // Positive range: 30 to 50
+            offsetX = random.nextInt(21) + 30; // 30-50
         } else {
-            // Negative range: -150 to -100
-            offsetX = -(random.nextInt(51) + 100); // -150 to -100
+            // Negative range: -50 to -30
+            offsetX = -(random.nextInt(21) + 30); // -50 to -30
         }
         
-        // Generate random offset for Z: either [-150, -100] or [100, 150]
+        // Generate random offset for Z: either [-50, -30] or [30, 50]
         int offsetZ;
         if (random.nextBoolean()) {
-            // Positive range: 100 to 150
-            offsetZ = random.nextInt(51) + 100; // 100-150
+            // Positive range: 30 to 50
+            offsetZ = random.nextInt(21) + 30; // 30-50
         } else {
-            // Negative range: -150 to -100
-            offsetZ = -(random.nextInt(51) + 100); // -150 to -100
+            // Negative range: -50 to -30
+            offsetZ = -(random.nextInt(21) + 30); // -50 to -30
         }
         
         // Apply offset to the original coordinates
@@ -762,27 +762,27 @@ public class PortableDislocatorItem extends Item {
         // Generate new coordinates with the same fixed distance range for all attempts
         java.util.Random random = new java.util.Random();
         
-        // Fixed range for all attempts: 100-150 blocks
-        int minRange = 100;
-        int maxRange = 150;
+        // Fixed range for all attempts: 30-50 blocks
+        int minRange = 30;
+        int maxRange = 50;
         
-        // Generate random offset for X: either [-150, -100] or [100, 150]
+        // Generate random offset for X: either [-50, -30] or [30, 50]
         int offsetX;
         if (random.nextBoolean()) {
-            // Positive range: 100 to 150
+            // Positive range: 30 to 50
             offsetX = random.nextInt(maxRange - minRange + 1) + minRange;
         } else {
-            // Negative range: -150 to -100
+            // Negative range: -50 to -30
             offsetX = -(random.nextInt(maxRange - minRange + 1) + minRange);
         }
         
-        // Generate random offset for Z: either [-150, -100] or [100, 150]
+        // Generate random offset for Z: either [-50, -30] or [30, 50]
         int offsetZ;
         if (random.nextBoolean()) {
-            // Positive range: 100 to 150
+            // Positive range: 30 to 50
             offsetZ = random.nextInt(maxRange - minRange + 1) + minRange;
         } else {
-            // Negative range: -150 to -100
+            // Negative range: -50 to -30
             offsetZ = -(random.nextInt(maxRange - minRange + 1) + minRange);
         }
         
@@ -1774,27 +1774,27 @@ public class PortableDislocatorItem extends Item {
         // Generate new coordinates with the same fixed distance range for all attempts
         java.util.Random random = new java.util.Random();
         
-        // Fixed range for all attempts: 100-150 blocks
-        int minRange = 100;
-        int maxRange = 150;
+        // Fixed range for all attempts: 30-50 blocks
+        int minRange = 30;
+        int maxRange = 50;
         
-        // Generate random offset for X: either [-150, -100] or [100, 150]
+        // Generate random offset for X: either [-50, -30] or [30, 50]
         int offsetX;
         if (random.nextBoolean()) {
-            // Positive range: 100 to 150
+            // Positive range: 30 to 50
             offsetX = random.nextInt(maxRange - minRange + 1) + minRange;
         } else {
-            // Negative range: -150 to -100
+            // Negative range: -50 to -30
             offsetX = -(random.nextInt(maxRange - minRange + 1) + minRange);
         }
         
-        // Generate random offset for Z: either [-150, -100] or [100, 150]
+        // Generate random offset for Z: either [-50, -30] or [30, 50]
         int offsetZ;
         if (random.nextBoolean()) {
-            // Positive range: 100 to 150
+            // Positive range: 30 to 50
             offsetZ = random.nextInt(maxRange - minRange + 1) + minRange;
         } else {
-            // Negative range: -150 to -100
+            // Negative range: -50 to -30
             offsetZ = -(random.nextInt(maxRange - minRange + 1) + minRange);
         }
         

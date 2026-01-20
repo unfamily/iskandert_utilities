@@ -124,7 +124,7 @@ dependencies {
     // Using the version that should be compatible with NeoForge 21.1.215
     implementation("io.github.llamalad7:mixinextras-neoforge:0.5.0")
 
-    // Cursio optional dependency
+    // Curios optional dependency
     if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "curios") {
         implementation "curse.maven:curios-309927:6529130"
     } else {

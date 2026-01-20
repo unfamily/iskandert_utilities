@@ -110,11 +110,27 @@ public class VectorCharmMovement {
         // Use provided charm or auto-detect
         ItemStack activeCharm = sourceCharm;
         if (activeCharm == null) {
-            activeCharm = VectorCharmItem.getActiveVectorCharm(player, energyLevel);
+            // Try Fanpack first, then VectorCharm
+            activeCharm = net.unfamily.iskautils.item.custom.FanpackItem.getActiveFanpack(player, energyLevel);
+            if (activeCharm == null) {
+                activeCharm = VectorCharmItem.getActiveVectorCharm(player, energyLevel);
+            }
         }
         
-        if (activeCharm == null || !(activeCharm.getItem() instanceof VectorCharmItem charm)) {
-            // No charm found
+        // Check if it's Fanpack or VectorCharm
+        if (activeCharm == null) {
+            return;
+        }
+        
+        VectorCharmItem charm = null;
+        if (activeCharm.getItem() instanceof net.unfamily.iskautils.item.custom.FanpackItem fanpack) {
+            charm = fanpack; // Fanpack extends VectorCharmItem
+        } else if (activeCharm.getItem() instanceof VectorCharmItem vectorCharm) {
+            charm = vectorCharm;
+        }
+        
+        if (charm == null) {
+            // No valid charm found
             return;
         }
         
@@ -187,11 +203,27 @@ public class VectorCharmMovement {
         // Use provided charm or auto-detect
         ItemStack activeCharm = sourceCharm;
         if (activeCharm == null) {
-            activeCharm = VectorCharmItem.getActiveVectorCharm(player, energyLevel);
+            // Try Fanpack first, then VectorCharm
+            activeCharm = net.unfamily.iskautils.item.custom.FanpackItem.getActiveFanpack(player, energyLevel);
+            if (activeCharm == null) {
+                activeCharm = VectorCharmItem.getActiveVectorCharm(player, energyLevel);
+            }
         }
         
-        if (activeCharm == null || !(activeCharm.getItem() instanceof VectorCharmItem charm)) {
-            // No charm found
+        // Check if it's Fanpack or VectorCharm
+        if (activeCharm == null) {
+            return;
+        }
+        
+        VectorCharmItem charm = null;
+        if (activeCharm.getItem() instanceof net.unfamily.iskautils.item.custom.FanpackItem fanpack) {
+            charm = fanpack; // Fanpack extends VectorCharmItem
+        } else if (activeCharm.getItem() instanceof VectorCharmItem vectorCharm) {
+            charm = vectorCharm;
+        }
+        
+        if (charm == null) {
+            // No valid charm found
             return;
         }
         

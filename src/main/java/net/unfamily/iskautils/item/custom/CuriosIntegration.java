@@ -39,5 +39,8 @@ public class CuriosIntegration {
         
         // Register Necrotic Crystal Heart as curio
         NecroticCrystalHeartCurioHandler.register();
+        
+        // Register Fanpack as curio
+        FanpackCurioHandler.register();
     }
 } 

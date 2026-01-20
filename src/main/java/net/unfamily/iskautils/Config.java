@@ -495,6 +495,18 @@ public class Config
             .defineList("102_fanAccelerationModulePowers", 
                     java.util.List.of(0.1D, 0.5D, 1.0D, 5.0D, 15.0D),
                     o -> o instanceof Double && (Double) o >= 0.0D && (Double) o <= 100.0D);
+    
+    // Fanpack Configuration (starts at 200)
+    private static final ModConfigSpec.IntValue FANPACK_ENERGY_CAPACITY = BUILDER
+            .comment("Energy capacity of the Fanpack in RF/FE",
+                    "Recommended value: same as Vector Charm, but set to 0 to disable energy consumption")
+            .defineInRange("200_fanpackEnergyCapacity", 500000, 0, Integer.MAX_VALUE);
+    
+    private static final ModConfigSpec.IntValue FANPACK_FLIGHT_ENERGY_CONSUME = BUILDER
+            .comment("Energy consumed per tick for creative flight",
+                    "Default: 5 RF/tick",
+                    "Set to 0 to disable energy consumption for flight")
+            .defineInRange("201_fanpackFlightEnergyConsume", 5, 0, Integer.MAX_VALUE);
 
     static {
         BUILDER.pop(); // End of fan category
@@ -820,6 +832,8 @@ public class Config
     public static int fanRangeUpgradeMax;
     public static int fanAccelerationUpgradeMax;
     public static java.util.List<Double> fanAccelerationModulePowers;
+    public static int fanpackEnergyCapacity;
+    public static int fanpackFlightEnergyConsume;
     
     public static java.util.List<String> deepDrawersAllowedTags;
     public static java.util.List<String> deepDrawersBlacklist;
@@ -919,6 +933,10 @@ public class Config
         fanAccelerationModulePowers = new java.util.ArrayList<>(FAN_ACCELERATION_MODULE_POWERS.get().stream()
                 .map(Double::doubleValue)
                 .toList());
+        
+        // Fanpack configuration
+        fanpackEnergyCapacity = FANPACK_ENERGY_CAPACITY.get();
+        fanpackFlightEnergyConsume = FANPACK_FLIGHT_ENERGY_CONSUME.get();
         
         // Deep Drawers configuration
         deepDrawersAllowedTags = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOWED_TAGS.get());

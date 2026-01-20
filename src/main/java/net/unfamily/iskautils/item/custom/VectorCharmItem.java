@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
@@ -48,7 +49,7 @@ public class VectorCharmItem extends Item {
     }
     
     // Determine effective energy capacity based on configurations (lazy initialization)
-    private int determineEffectiveCapacity() {
+    protected int determineEffectiveCapacity() {
         // Check if config is loaded
         if (Config.vectorCharmEnergyConsume == null) {
             return 0; // Config not loaded yet, assume no energy system
@@ -69,7 +70,7 @@ public class VectorCharmItem extends Item {
     }
     
     // Determine effective energy consumption based on configurations (lazy initialization)
-    private List<Integer> determineEffectiveConsumption() {
+    protected List<Integer> determineEffectiveConsumption() {
         java.util.List<Integer> effectiveConsume = new java.util.ArrayList<>();
         
         // Check if config is loaded
@@ -126,7 +127,7 @@ public class VectorCharmItem extends Item {
     }
     
     // Get effective energy capacity (lazy initialization)
-    private int getEffectiveEnergyCapacity() {
+    protected int getEffectiveEnergyCapacity() {
         if (effectiveEnergyCapacity == -1) {
             return determineEffectiveCapacity();
         }
@@ -134,7 +135,7 @@ public class VectorCharmItem extends Item {
     }
     
     // Get effective energy consumption (lazy initialization)
-    private List<Integer> getEffectiveEnergyConsume() {
+    protected List<Integer> getEffectiveEnergyConsume() {
         if (effectiveEnergyConsume.isEmpty() || Config.vectorCharmEnergyConsume == null) {
             return determineEffectiveConsumption();
         }
@@ -151,23 +152,41 @@ public class VectorCharmItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
-        if (canStoreEnergy()) {
+        // Energy information - only show if energy is enabled
+        if (canStoreEnergy() && requiresEnergyToFunction()) {
             int energy = getEnergyStored(stack);
             int maxEnergy = getMaxEnergyStored(stack);
+            float percentage = (float) energy / Math.max(1, maxEnergy) * 100f;
             
-            tooltipComponents.add(Component.literal(String.format("Energy: %,d / %,d RF", energy, maxEnergy)));
+            String energyString = String.format("%,d / %,d RF (%.1f%%)", energy, maxEnergy, percentage);
+            Component energyText = Component.translatable("item.iska_utils.scanner.tooltip.energy")
+                .withStyle(style -> style.withColor(ChatFormatting.RED))
+                .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
             
-            if (requiresEnergyToFunction()) {
-                List<Integer> consumption = getEffectiveEnergyConsume();
-                tooltipComponents.add(Component.literal("§7Energy consumption per tick:"));
-                
-                // Safe access to array elements with fallback to 0
-                String[] speedNames = {"None", "Slow", "Moderate", "Fast", "Extreme", "Ultra", "Hover"};
-                for (int i = 0; i < speedNames.length; i++) {
-                    int energyConsumption = (i < consumption.size()) ? consumption.get(i) : 0;
-                    tooltipComponents.add(Component.literal("§8  " + speedNames[i] + ": " + energyConsumption + " RF"));
-                }
+            tooltipComponents.add(energyText);
+            
+            // Show consumption per speed level
+            List<Integer> consumption = getEffectiveEnergyConsume();
+            tooltipComponents.add(Component.literal("§7Energy consumption per tick:"));
+            
+            // Safe access to array elements with fallback to 0
+            String[] speedNames = {"None", "Slow", "Moderate", "Fast", "Extreme", "Ultra", "Hover"};
+            for (int i = 0; i < speedNames.length; i++) {
+                int energyConsumption = (i < consumption.size()) ? consumption.get(i) : 0;
+                tooltipComponents.add(Component.literal("§8  " + speedNames[i] + ": " + energyConsumption + " RF"));
             }
+        } else if (canStoreEnergy()) {
+            // Energy storage enabled but no consumption required
+            int energy = getEnergyStored(stack);
+            int maxEnergy = getMaxEnergyStored(stack);
+            float percentage = (float) energy / Math.max(1, maxEnergy) * 100f;
+            
+            String energyString = String.format("%,d / %,d RF (%.1f%%)", energy, maxEnergy, percentage);
+            Component energyText = Component.translatable("item.iska_utils.scanner.tooltip.energy")
+                .withStyle(style -> style.withColor(ChatFormatting.RED))
+                .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
+            
+            tooltipComponents.add(energyText);
         } else {
             tooltipComponents.add(Component.literal("§7No energy required"));
         }

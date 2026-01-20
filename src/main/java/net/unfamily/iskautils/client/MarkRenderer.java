@@ -73,7 +73,20 @@ public class MarkRenderer {
      */
     public void addBillboardMarker(BlockPos pos, int color, int durationTicks) {
         // Add the marker to the map, using a special flag to indicate it's a small cube marker
-        billboardMarkers.put(pos, new MarkBlockData(color, Minecraft.getInstance().level.getGameTime() + durationTicks, true));
+        Minecraft mc = Minecraft.getInstance();
+        // Ensure level is available and get current game time
+        if (mc.level == null) {
+            // If level is not available, schedule for next tick
+            mc.execute(() -> {
+                if (mc.level != null) {
+                    long currentTime = mc.level.getGameTime();
+                    billboardMarkers.put(pos, new MarkBlockData(color, currentTime + durationTicks, true));
+                }
+            });
+        } else {
+            long currentTime = mc.level.getGameTime();
+            billboardMarkers.put(pos, new MarkBlockData(color, currentTime + durationTicks, true));
+        }
     }
     
     /**

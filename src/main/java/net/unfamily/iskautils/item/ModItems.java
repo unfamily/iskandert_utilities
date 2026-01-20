@@ -90,6 +90,10 @@ public class ModItems {
     // Registered as a Curio charm when Curios is available
     public static final DeferredItem<Item> VECTOR_CHARM = ITEMS.register("vector_charm",
             () -> new VectorCharmItem(new Item.Properties().stacksTo(1)));
+    
+    // Fanpack - Extension of Vector Charm with creative flight
+    public static final DeferredItem<Item> FANPACK = ITEMS.register("fanpack",
+            () -> new net.unfamily.iskautils.item.custom.FanpackItem(new Item.Properties().stacksTo(1)));
 
     // Portable Dislocator - Custom item with dislocator functionality
     // Registered as a Curio when Curios is available
@@ -293,6 +297,12 @@ public class ModItems {
             () -> new Item(ITEM_PROPERTIES));
     
     public static final DeferredItem<Item> GHOST_MODULE = ITEMS.register("ghost_module",
+            () -> new Item(ITEM_PROPERTIES));
+    
+    public static final DeferredItem<Item> LOGIC_MODULE = ITEMS.register("logic_module",
+            () -> new Item(ITEM_PROPERTIES));
+    
+    public static final DeferredItem<Item> CAPACITOR_MODULE = ITEMS.register("capacitor_module",
             () -> new Item(ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> SMOOTH_BLACKSTONE = ITEMS.register("smooth_blackstone",

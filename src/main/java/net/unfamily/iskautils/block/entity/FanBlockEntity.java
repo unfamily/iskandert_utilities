@@ -247,9 +247,9 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
                 this.rangeRight = value;
             }
         }
-        // Update front range to maintain cube (front = horizontal * 2)
+        // Update front range to maintain cube (front = horizontal * 2 + 1)
         int effectiveHorizontalMax = getEffectiveMaxRange(Config.fanRangeHorizontalMax);
-        int newFrontMax = effectiveHorizontalMax * 2;
+        int newFrontMax = effectiveHorizontalMax * 2 + 1;
         if (this.rangeFront > newFrontMax) {
             this.rangeFront = newFrontMax;
         }
@@ -268,9 +268,9 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
                 this.rangeLeft = value;
             }
         }
-        // Update front range to maintain cube (front = horizontal * 2)
+        // Update front range to maintain cube (front = horizontal * 2 + 1)
         int effectiveHorizontalMax = getEffectiveMaxRange(Config.fanRangeHorizontalMax);
-        int newFrontMax = effectiveHorizontalMax * 2;
+        int newFrontMax = effectiveHorizontalMax * 2 + 1;
         if (this.rangeFront > newFrontMax) {
             this.rangeFront = newFrontMax;
         }
@@ -282,9 +282,9 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         if (value < 0) {
             this.rangeFront = 0;
         } else {
-            // Front range is always horizontal range * 2 to maintain cube shape
+            // Front range is always horizontal range * 2 + 1 to maintain cube shape
             int effectiveHorizontalMax = getEffectiveMaxRange(Config.fanRangeHorizontalMax);
-            int effectiveFrontMax = effectiveHorizontalMax * 2;
+            int effectiveFrontMax = effectiveHorizontalMax * 2 + 1;
             if (value > effectiveFrontMax) {
                 this.rangeFront = effectiveFrontMax;
             } else {
