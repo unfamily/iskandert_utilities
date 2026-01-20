@@ -2,8 +2,8 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     "ACA",
-    "CBC",
-    "ACA"
+    "ABA",
+    "ADA"
   ],
   "key": {
     "C": {
@@ -13,7 +13,10 @@
       "item": "iska_utils:base_module"  
     },
     "A": {
-      "tag": "c:storage_blocks/redstone" 
+      "tag": "c:dusts/redstone"  
+    },
+    "D": {
+      "tag": "c:ingots/gold"  
     }
   },
   "result": {
