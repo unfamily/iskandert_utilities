@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "iska_utils:iska_utils_lethal_damage"
+    }
+  ],
+  "pattern": [
+    " C ",
+    "CAC",
+    " B "
+  ],
+  "key": {
+   "A": [
+    { "tag": "c:nether_stars" },
+    { "item": "minecraft:heart_of_the_sea" },
+    { "item": "minecraft:heavy_core" },
+    { "item": "minecraft:echo_shard" },
+    { "item": "minecraft:dragon_breath" }
+   ],
+   "B": {
+    "item": "iska_utils:iska_utils_improved_damage"
+   },  
+   "C": {
+    "tag": "c:gems/amethyst"
+   }
+  },
+  "result": {
+    "id": "iska_utils:iska_utils_lethal_damage",
+    "count": 1
+  }
+} 

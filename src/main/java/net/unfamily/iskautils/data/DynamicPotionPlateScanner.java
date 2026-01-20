@@ -343,14 +343,23 @@ public class DynamicPotionPlateScanner {
         if (DISCOVERED_CONFIGS.containsKey(plateId)) {
             PotionPlateConfig existingConfig = DISCOVERED_CONFIGS.get(plateId);
             
-            // If existing config is overwritable, it can be replaced by the new one
-            if (existingConfig.isOverwritable()) {
-                DISCOVERED_CONFIGS.put(plateId, config);
-                LOGGER.debug("Replaced configuration for plate {}: existing config was overwritable, replaced with new config", plateId);
-            } else {
-                // Keep existing configuration - existing config is not overwritable
+            // If existing config is not overwritable, it cannot be replaced
+            if (!existingConfig.isOverwritable()) {
                 LOGGER.info("Skipping configuration for plate {}: existing config is not overwritable, keeping existing", plateId);
+                return;
             }
+            
+            // If new config is not overwritable, it should replace the existing (which is overwritable)
+            // and be protected from future overwrites
+            if (!config.isOverwritable()) {
+                DISCOVERED_CONFIGS.put(plateId, config);
+                LOGGER.debug("Replaced configuration for plate {}: new config is not overwritable, replacing existing overwritable config", plateId);
+                return;
+            }
+            
+            // Both are overwritable - new one replaces existing
+            DISCOVERED_CONFIGS.put(plateId, config);
+            LOGGER.debug("Replaced configuration for plate {}: both configs are overwritable, replaced with new config", plateId);
         } else {
             // New configuration - always add it regardless of overwritable flag
             DISCOVERED_CONFIGS.put(plateId, config);
@@ -734,6 +743,17 @@ public class DynamicPotionPlateScanner {
             "      \"id\": \"iska_utils-improved_damage\",\n" +
             "      \"damage_type\": \"minecraft:player\",\n" +
             "      \"damage\": 2.0,\n" +
+            "      \"delay\": 20,\n" +
+            "      \"affects_players\": true,\n" +
+            "      \"affects_mobs\": true,\n" +
+            "      \"creative_tab\": true,\n" +
+            "      \"player_shift_disable\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"plate_type\": \"damage\",\n" +
+            "      \"id\": \"iska_utils-lethal_damage\",\n" +
+            "      \"damage_type\": \"minecraft:player\",\n" +
+            "      \"damage\": 500.0,\n" +
             "      \"delay\": 20,\n" +
             "      \"affects_players\": true,\n" +
             "      \"affects_mobs\": true,\n" +

@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "vertical=false,facing=north": {
+      "model": "iska_utils:block/iska_utils_lethal_damage"
+    },
+    "vertical=false,facing=east": {
+      "model": "iska_utils:block/iska_utils_lethal_damage",
+      "y": 90
+    },
+    "vertical=false,facing=south": {
+      "model": "iska_utils:block/iska_utils_lethal_damage",
+      "y": 180
+    },
+    "vertical=false,facing=west": {
+      "model": "iska_utils:block/iska_utils_lethal_damage",
+      "y": 270
+    },
+    "vertical=true,facing=north": {
+      "model": "iska_utils:block/iska_utils_lethal_damage_vertical"
+    },
+    "vertical=true,facing=east": {
+      "model": "iska_utils:block/iska_utils_lethal_damage_vertical",
+      "y": 90
+    },
+    "vertical=true,facing=south": {
+      "model": "iska_utils:block/iska_utils_lethal_damage_vertical",
+      "y": 180
+    },
+    "vertical=true,facing=west": {
+      "model": "iska_utils:block/iska_utils_lethal_damage_vertical",
+      "y": 270
+    }
+  }
+}

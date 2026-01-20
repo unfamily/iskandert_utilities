@@ -51,10 +51,30 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.PLAYER_FAST_VECT.get());
                                 pOutput.accept(ModItems.PLAYER_EXTREME_VECT.get());
                                 pOutput.accept(ModItems.PLAYER_ULTRA_VECT.get());
-                                // Trap plates (potion plates)
+                                // Damage trap plates (grouped at the beginning)
+                                // These are added first if they exist, otherwise they're simply skipped
+                                DeferredHolder<Item, BlockItem> damagePlate = PotionPlateRegistry.getItem("iska_utils-damage");
+                                if (damagePlate != null && damagePlate.isBound()) {
+                                    pOutput.accept(damagePlate.get());
+                                }
+                                DeferredHolder<Item, BlockItem> improvedDamagePlate = PotionPlateRegistry.getItem("iska_utils-improved_damage");
+                                if (improvedDamagePlate != null && improvedDamagePlate.isBound()) {
+                                    pOutput.accept(improvedDamagePlate.get());
+                                }
+                                DeferredHolder<Item, BlockItem> lethalDamagePlate = PotionPlateRegistry.getItem("iska_utils-lethal_damage");
+                                if (lethalDamagePlate != null && lethalDamagePlate.isBound()) {
+                                    pOutput.accept(lethalDamagePlate.get());
+                                }
+                                // Other trap plates (potion plates)
                                 Map<String, DeferredHolder<Item, BlockItem>> potionPlateItems = PotionPlateRegistry.getAllItems();
-                                for (DeferredHolder<Item, BlockItem> itemHolder : potionPlateItems.values()) {
-                                    pOutput.accept(itemHolder.get());
+                                for (Map.Entry<String, DeferredHolder<Item, BlockItem>> entry : potionPlateItems.entrySet()) {
+                                    String plateId = entry.getKey();
+                                    // Skip the 3 damage plates already added
+                                    if (!plateId.equals("iska_utils-damage") && 
+                                        !plateId.equals("iska_utils-improved_damage") && 
+                                        !plateId.equals("iska_utils-lethal_damage")) {
+                                        pOutput.accept(entry.getValue().get());
+                                    }
                                 }
                                 // Base module
                                 pOutput.accept(ModItems.BASE_MODULE.get());
