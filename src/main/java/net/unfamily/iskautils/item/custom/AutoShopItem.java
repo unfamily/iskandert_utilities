@@ -26,6 +26,10 @@ public class AutoShopItem extends BlockItem {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         
+        // Add shift placement hint as first line
+        tooltip.add(1, Component.translatable("tooltip.iska_utils.shift_place_reverse")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
+        
         // Aggiungi informazioni su come usare l'Auto Shop
         tooltip.add(Component.translatable("item.iska_utils.auto_shop.tooltip.usage"));
         tooltip.add(Component.translatable("item.iska_utils.auto_shop.tooltip.modes"));

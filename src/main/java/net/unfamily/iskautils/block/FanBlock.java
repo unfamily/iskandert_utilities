@@ -53,13 +53,14 @@ public class FanBlock extends DirectionalBlock implements EntityBlock {
         Player player = context.getPlayer();
         Direction facing;
         
-        // If player is crouching (holding shift), place in opposite direction
+        // Default behavior: place in opposite direction (inverted)
+        // If player is crouching (holding shift), place in normal direction
         if (player != null && player.isShiftKeyDown()) {
-            // Opposite direction: use the direction player is looking at directly (without getOpposite)
-            facing = context.getNearestLookingDirection();
-        } else {
-            // Normal behavior: opposite direction to where player is looking
+            // Normal direction: opposite direction to where player is looking
             facing = context.getNearestLookingDirection().getOpposite();
+        } else {
+            // Inverted behavior: use the direction player is looking at directly (without getOpposite)
+            facing = context.getNearestLookingDirection();
         }
         
         return this.defaultBlockState()

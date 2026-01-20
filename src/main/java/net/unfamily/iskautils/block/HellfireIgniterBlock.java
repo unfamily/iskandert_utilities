@@ -20,8 +20,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -56,8 +54,20 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
+        Player player = context.getPlayer();
+        Direction facing;
+        
+        // If player is crouching (holding shift), place in opposite direction
+        if (player != null && player.isShiftKeyDown()) {
+            // Opposite direction: use the direction player is looking at directly (without getOpposite)
+            facing = context.getNearestLookingDirection();
+        } else {
+            // Normal behavior: opposite direction to where player is looking
+            facing = context.getNearestLookingDirection().getOpposite();
+        }
+        
         return this.defaultBlockState()
-                .setValue(FACING, context.getNearestLookingDirection().getOpposite())
+                .setValue(FACING, facing)
                 .setValue(POWERED, Boolean.FALSE);
     }
 

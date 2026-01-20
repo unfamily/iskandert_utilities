@@ -1431,6 +1431,12 @@ public class StructurePlacerItem extends Item {
     
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
+        
+        // Add shift placement hint as first line
+        tooltip.add(1, Component.translatable("tooltip.iska_utils.shift_place_reverse")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
+        
         String structureId = getSelectedStructure(stack);
         
         if (structureId != null && !structureId.isEmpty()) {

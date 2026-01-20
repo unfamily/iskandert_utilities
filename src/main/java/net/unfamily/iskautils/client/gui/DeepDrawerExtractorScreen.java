@@ -430,18 +430,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 
                 if (mouseX >= textBoxX && mouseX < textBoxX + textBoxWidth &&
                     mouseY >= textBoxY && mouseY < textBoxY + textBoxHeight) {
-                    // Right click on edit mode textbox: clear it
+                    // Right click on edit mode textbox: clear it (don't save - user must click Apply)
                     editModeTextBox.setValue("");
                     editModeTextBox.setCursorPosition(0);
                     editModeTextBox.setHighlightPos(0);
-                    // Save empty filter
-                    if (editModeFilterIndex >= 0) {
-                        while (cachedFilterFields.size() <= editModeFilterIndex) {
-                            cachedFilterFields.add("");
-                        }
-                        cachedFilterFields.set(editModeFilterIndex, "");
-                        saveFilterData();
-                    }
                     // Clear ghost slot and variants
                     ghostSlotItem = ItemStack.EMPTY;
                     filterVariants.clear();

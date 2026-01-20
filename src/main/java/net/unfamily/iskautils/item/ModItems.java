@@ -27,6 +27,19 @@ import net.unfamily.iskautils.item.custom.AutoShopItem;
 import net.unfamily.iskautils.item.custom.GiftItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerChipsetItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerBlockItem;
+import net.unfamily.iskautils.item.custom.FanBlockItem;
+import net.unfamily.iskautils.item.custom.ShopBlockItem;
+import net.unfamily.iskautils.item.custom.HellfireIgniterBlockItem;
+import net.unfamily.iskautils.item.custom.RubberSapExtractorBlockItem;
+import net.unfamily.iskautils.item.custom.StructurePlacerMachineBlockItem;
+import net.unfamily.iskautils.item.custom.StructureSaverMachineBlockItem;
+import net.unfamily.iskautils.item.custom.RangeModuleItem;
+import net.unfamily.iskautils.item.custom.GhostModuleItem;
+import net.unfamily.iskautils.item.custom.SlowModuleItem;
+import net.unfamily.iskautils.item.custom.ModerateModuleItem;
+import net.unfamily.iskautils.item.custom.FastModuleItem;
+import net.unfamily.iskautils.item.custom.ExtremeModuleItem;
+import net.unfamily.iskautils.item.custom.UltraModuleItem;
 
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
@@ -72,19 +85,19 @@ public class ModItems {
             () -> new Item(ITEM_PROPERTIES));
             
     public static final DeferredItem<Item> SLOW_MODULE = ITEMS.register("slow_module",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new SlowModuleItem(ITEM_PROPERTIES));
             
     public static final DeferredItem<Item> MODERATE_MODULE = ITEMS.register("moderate_module",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new ModerateModuleItem(ITEM_PROPERTIES));
             
     public static final DeferredItem<Item> FAST_MODULE = ITEMS.register("fast_module",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new FastModuleItem(ITEM_PROPERTIES));
             
     public static final DeferredItem<Item> EXTREME_MODULE = ITEMS.register("extreme_module",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new ExtremeModuleItem(ITEM_PROPERTIES));
             
     public static final DeferredItem<Item> ULTRA_MODULE = ITEMS.register("ultra_module",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new UltraModuleItem(ITEM_PROPERTIES));
             
     // Vector Charm - Custom item with special functionality
     // Registered as a Curio charm when Curios is available
@@ -286,11 +299,11 @@ public class ModItems {
     
     // Item for the Hellfire Igniter
     public static final DeferredItem<Item> HELLFIRE_IGNITER = ITEMS.register("hellfire_igniter",
-            () -> new BlockItem(ModBlocks.HELLFIRE_IGNITER.get(), ITEM_PROPERTIES));
+            () -> new HellfireIgniterBlockItem(ModBlocks.HELLFIRE_IGNITER.get(), ITEM_PROPERTIES));
     
     // Item for the Fan
     public static final DeferredItem<Item> FAN = ITEMS.register("fan",
-            () -> new BlockItem(ModBlocks.FAN.get(), ITEM_PROPERTIES));
+            () -> new FanBlockItem(ModBlocks.FAN.get(), ITEM_PROPERTIES));
     
     // Fan upgrade modules
     public static final DeferredItem<Item> RANGE_MODULE = ITEMS.register("range_module",
@@ -334,7 +347,7 @@ public class ModItems {
             
     // ===== UTILITY BLOCKS =====
     public static final DeferredItem<Item> RUBBER_SAP_EXTRACTOR = ITEMS.register("rubber_sap_extractor", 
-            () -> new BlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), ITEM_PROPERTIES));
+            () -> new RubberSapExtractorBlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> WEATHER_DETECTOR = ITEMS.register("weather_detector",
             () -> new BlockItem(ModBlocks.WEATHER_DETECTOR.get(), ITEM_PROPERTIES));
@@ -359,13 +372,13 @@ public class ModItems {
 
     // ===== STRUCTURE SYSTEM =====
     public static final DeferredItem<Item> STRUCTURE_PLACER_MACHINE = ITEMS.register("structure_placer_machine",
-            () -> new BlockItem(ModBlocks.STRUCTURE_PLACER_MACHINE.get(), ITEM_PROPERTIES));
+            () -> new StructurePlacerMachineBlockItem(ModBlocks.STRUCTURE_PLACER_MACHINE.get(), ITEM_PROPERTIES));
     
     public static final DeferredItem<Item> STRUCTURE_SAVER_MACHINE = ITEMS.register("structure_saver_machine",
-            () -> new BlockItem(ModBlocks.STRUCTURE_SAVER_MACHINE.get(), ITEM_PROPERTIES));
+            () -> new StructureSaverMachineBlockItem(ModBlocks.STRUCTURE_SAVER_MACHINE.get(), ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> SHOP = ITEMS.register("shop",
-            () -> new BlockItem(ModBlocks.SHOP.get(), ITEM_PROPERTIES));
+            () -> new ShopBlockItem(ModBlocks.SHOP.get(), ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> AUTO_SHOP = ITEMS.register("auto_shop",
             () -> new AutoShopItem(ModBlocks.AUTO_SHOP.get(), ITEM_PROPERTIES));

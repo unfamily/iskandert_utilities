@@ -23,6 +23,10 @@ public class DeepDrawersBlockItem extends BlockItem {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         
+        // Add shift placement hint as first line
+        tooltip.add(1, Component.translatable("tooltip.iska_utils.shift_place_reverse")
+                .withStyle(ChatFormatting.GRAY));
+        
         // Add description from lang file in light gray
         tooltip.add(Component.translatable("tooltip.iska_utils.deep_drawers.desc0")
                 .withStyle(ChatFormatting.GRAY));
