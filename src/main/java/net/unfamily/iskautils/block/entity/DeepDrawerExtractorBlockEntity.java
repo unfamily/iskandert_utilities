@@ -64,6 +64,9 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     private int pulseIgnoreTimer = 0; // Timer to ignore redstone after pulse extraction
     private static final int PULSE_IGNORE_INTERVAL = 10; // Ignore pulses for 0.5 seconds after extraction
     
+    // Data version for migration/reset logic
+    private String dataVersion = null; // "V2" for new format, null/empty for old blocks
+    
     /**
      * Enum for redstone modes
      */
@@ -738,6 +741,11 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         tag.putInt("redstoneMode", redstoneMode);
         tag.putBoolean("previousRedstoneState", previousRedstoneState);
         tag.putInt("pulseIgnoreTimer", pulseIgnoreTimer);
+        
+        // Save data version
+        if (dataVersion != null) {
+            tag.putString("dataVersion", dataVersion);
+        }
     }
     
     @Override
@@ -868,6 +876,27 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         }
         if (tag.contains("pulseIgnoreTimer")) {
             pulseIgnoreTimer = tag.getInt("pulseIgnoreTimer");
+        }
+        
+        // Load data version and reset if needed
+        if (tag.contains("dataVersion", CompoundTag.TAG_STRING)) {
+            dataVersion = tag.getString("dataVersion");
+        } else {
+            dataVersion = null;
+        }
+        
+        // If data version is not "V2", reset to base conditions
+        if (dataVersion == null || !dataVersion.equals("V2")) {
+            // Reset all filters to empty
+            for (int i = 0; i < maxSlots; i++) {
+                filterFields[i] = "";
+                invertedFilterFields[i] = "";
+            }
+            // Reset whitelist mode to default (true)
+            isWhitelistMode = true;
+            // Set version to V2
+            dataVersion = "V2";
+            setChanged();
         }
     }
     

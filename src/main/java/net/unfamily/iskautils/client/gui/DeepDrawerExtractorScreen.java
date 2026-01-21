@@ -94,20 +94,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private int redstoneModeButtonX, redstoneModeButtonY;
     private static final int REDSTONE_BUTTON_SIZE = 16;
     
-    // Allow/Deny button (whitelist/blacklist toggle) - wider button, same height as redstone
-    private Button modeButton;
-    private static final int MODE_BUTTON_HEIGHT = 16;
-    private static final int MODE_BUTTON_WIDTH = 60; // Wider button
-    private static final int BUTTON_SPACING = 4; // Space between redstone and mode button
-    
-    // Bypass/Exclusion List button (dynamic based on mode)
+    // Bypass/Exclusion List button (dynamic based on mode) - now in place of Allow/Deny button
     private Button invertedFilterButton;
     private static final int INVERTED_FILTER_BUTTON_HEIGHT = 16;
-    private static final int INVERTED_FILTER_BUTTON_WIDTH = 80; // Wider button for longer text
-    
-    // Placeholder buttons shown in edit mode (disabled, same size as original buttons)
-    private Button howToUsePlaceholderButton;
-    private Button invertedFilterPlaceholderButton;
+    private static final int INVERTED_FILTER_BUTTON_WIDTH = 60; // Same width as old mode button
+    private static final int BUTTON_SPACING = 4; // Space between redstone and inverted filter button
     
     // Track current mode locally (for immediate UI feedback on button click)
     private boolean isWhitelistMode = false;
@@ -187,72 +178,23 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                               .build();
         addRenderableWidget(howToUseButton);
         
-        // Placeholder button for edit mode (disabled, same position and size)
-        howToUsePlaceholderButton = Button.builder(
-                Component.translatable("gui.iska_utils.deep_drawer_extractor.not_available_in_edit_mode"),
-                button -> {}) // No action - disabled
-                .bounds(this.leftPos + BUTTON_X, this.topPos + HOW_TO_USE_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)
-                .build();
-        // Disable the placeholder button using reflection
-        try {
-            java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
-            activeField.setAccessible(true);
-            activeField.setBoolean(howToUsePlaceholderButton, false);
-        } catch (Exception e) {
-            // If reflection fails, button will still be visible but non-functional
-        }
-        howToUsePlaceholderButton.visible = false; // Hidden by default, shown only in edit mode
-        addRenderableWidget(howToUsePlaceholderButton);
-        
         // Redstone mode button (below how to use)
         this.redstoneModeButtonX = this.leftPos + BUTTON_X;
         this.redstoneModeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + VERTICAL_BUTTON_SPACING; // Reduced spacing
         
-        // Allow/Deny button (wider, to the left of redstone button, same Y and height)
-        int modeButtonX = this.leftPos + BUTTON_X; // Start from same X as how to use
-        int modeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + VERTICAL_BUTTON_SPACING; // Same Y as redstone button
-        // Initialize with current mode from ContainerData (will be updated in containerTick)
-        Component buttonText = isWhitelistMode
-                ? Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.allow")
-                : Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.deny");
-        
-        modeButton = Button.builder(buttonText, button -> onModeButtonClicked())
-                .bounds(modeButtonX, modeButtonY, MODE_BUTTON_WIDTH, MODE_BUTTON_HEIGHT)
-                .build();
-        addRenderableWidget(modeButton);
-        
-        // Update redstone button X position to be after mode button with spacing
-        this.redstoneModeButtonX = modeButtonX + MODE_BUTTON_WIDTH + BUTTON_SPACING;
-        
-        // Bypass/Exclusion List button (below Allow/Deny button)
-        int invertedFilterButtonX = this.leftPos + BUTTON_X; // Same X as mode button
-        int invertedFilterButtonY = modeButtonY + MODE_BUTTON_HEIGHT + VERTICAL_BUTTON_SPACING; // Reduced spacing
-        // Initialize with current mode from ContainerData (will be updated in containerTick)
-        Component invertedFilterButtonText = isWhitelistMode
-                ? Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.exclusion")
-                : Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.bypass");
+        // Deny Filter List button (now in place of Allow/Deny button, same Y as redstone button)
+        int invertedFilterButtonX = this.leftPos + BUTTON_X; // Start from same X as how to use
+        int invertedFilterButtonY = this.redstoneModeButtonY; // Same Y as redstone button
+        // Initialize with "Deny Filter List" (will be updated in containerTick)
+        Component invertedFilterButtonText = Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny");
         
         invertedFilterButton = Button.builder(invertedFilterButtonText, button -> onInvertedFilterButtonClicked())
                 .bounds(invertedFilterButtonX, invertedFilterButtonY, INVERTED_FILTER_BUTTON_WIDTH, INVERTED_FILTER_BUTTON_HEIGHT)
                 .build();
         addRenderableWidget(invertedFilterButton);
         
-        // Placeholder button for edit mode (disabled, same position and size)
-        invertedFilterPlaceholderButton = Button.builder(
-                Component.translatable("gui.iska_utils.deep_drawer_extractor.not_available_in_edit_mode"),
-                button -> {}) // No action - disabled
-                .bounds(invertedFilterButtonX, invertedFilterButtonY, INVERTED_FILTER_BUTTON_WIDTH, INVERTED_FILTER_BUTTON_HEIGHT)
-                .build();
-        // Disable the placeholder button using reflection
-        try {
-            java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
-            activeField.setAccessible(true);
-            activeField.setBoolean(invertedFilterPlaceholderButton, false);
-        } catch (Exception e) {
-            // If reflection fails, button will still be visible but non-functional
-        }
-        invertedFilterPlaceholderButton.visible = false; // Hidden by default, shown only in edit mode
-        addRenderableWidget(invertedFilterPlaceholderButton);
+        // Update redstone button X position to be after inverted filter button with spacing
+        this.redstoneModeButtonX = invertedFilterButtonX + INVERTED_FILTER_BUTTON_WIDTH + BUTTON_SPACING;
         
         // Back button (for how to use screen)
         backButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.back"), 
@@ -312,22 +254,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         this.inventoryLabelY = isHowToUseMode ? 10000 : 165 - this.font.lineHeight - 2;
         
         // Update buttons
-        // Valid Keys and Exclusion List buttons are hidden in edit mode, placeholders shown instead
+        // Valid Keys and Deny Filter List buttons are hidden in edit mode
         if (howToUseButton != null) {
             howToUseButton.visible = showMain && !isInEditMode;
         }
-        if (modeButton != null) {
-            modeButton.visible = showMain;
-        }
         if (invertedFilterButton != null) {
             invertedFilterButton.visible = showMain && !isInEditMode;
-        }
-        // Show placeholder buttons in edit mode
-        if (howToUsePlaceholderButton != null) {
-            howToUsePlaceholderButton.visible = showMain && isInEditMode;
-        }
-        if (invertedFilterPlaceholderButton != null) {
-            invertedFilterPlaceholderButton.visible = showMain && isInEditMode;
         }
         if (backButton != null) {
             backButton.visible = isHowToUseMode;
@@ -554,10 +486,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Update button text
         if (invertedFilterButton != null) {
             Component buttonText = isInvertedMode
-                    ? Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.normal") // "Normal List"
-                    : (isWhitelistMode
-                            ? Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.exclusion")
-                            : Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.bypass"));
+                    ? Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.allow") // "Allow Filter List"
+                    : Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny"); // "Deny Filter List"
             invertedFilterButton.setMessage(buttonText);
         }
         
@@ -583,28 +513,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         while (cachedFilterFields.size() > MAX_FILTER_SLOTS) {
             cachedFilterFields.remove(cachedFilterFields.size() - 1);
-        }
-    }
-    
-    private void onModeButtonClicked() {
-        // Get the machine position from the menu (synced from server, like rotation)
-        BlockPos machinePos = menu.getSyncedBlockPos();
-        
-        // If synced position is ZERO, try fallback methods (like StructurePlacerMachineScreen.onShowPressed)
-        if (machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            // Try to get position from block entity as fallback
-            if (this.minecraft != null && this.minecraft.level != null) {
-                DeepDrawerExtractorBlockEntity blockEntity = menu.getBlockEntityFromLevel(this.minecraft.level);
-                if (blockEntity != null) {
-                    machinePos = blockEntity.getBlockPos();
-                }
-            }
-        }
-        
-        if (!machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            // Send mode toggle packet to toggle whitelist/blacklist mode (like rotation)
-            // Do NOT call saveFilterData() here - it would overwrite the mode change with old local state
-            ModMessages.sendDeepDrawerExtractorModeTogglePacket(machinePos);
         }
     }
     
@@ -649,7 +557,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     /**
      * Saves filter data to server
-     * Uses the same pattern as onModeButtonClicked() - get position with fallback
      * Always reads whitelist mode from synced ContainerData (not local state)
      */
     private void saveFilterData() {
@@ -700,17 +607,15 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         guiGraphics.blit(backgroundTexture, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
         // Render filter list label (only in main mode, not in how to use)
-        // Label changes based on mode: "Normal Filter List" or "Bypass/Exclusion Filter List"
+        // Label changes based on mode: "Allow Filter List" or "Deny Filter List"
         if (!isHowToUseMode) {
             Component filtersLabel;
             if (isInvertedMode) {
-                // In inverted mode, show "Bypass Filter List" or "Exclusion Filter List" based on extractor mode
-                filtersLabel = isWhitelistMode
-                        ? Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.exclusion")
-                        : Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.bypass");
+                // In inverted mode, show "Deny Filter List"
+                filtersLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.deny");
             } else {
-                // In normal mode, show "Normal Filter List"
-                filtersLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.filters");
+                // In normal mode, show "Allow Filter List"
+                filtersLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.allow");
             }
             int labelWidth = this.font.width(filtersLabel);
             // Center the label with the entries
@@ -1148,21 +1053,14 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         } else {
             originalFilterValue = "";
         }
-        // Hide Valid Keys and Exclusion List buttons when in edit mode, show placeholders instead
+        // Hide Valid Keys and Deny Filter List buttons when in edit mode
         if (howToUseButton != null) {
             howToUseButton.visible = false;
         }
         if (invertedFilterButton != null) {
             invertedFilterButton.visible = false;
         }
-        // Show placeholder buttons in edit mode
-        if (howToUsePlaceholderButton != null) {
-            howToUsePlaceholderButton.visible = true;
-        }
-        if (invertedFilterPlaceholderButton != null) {
-            invertedFilterPlaceholderButton.visible = true;
-        }
-        // Update widget visibility to ensure placeholders are shown
+        // Update widget visibility
         updateWidgetVisibility();
         createEditModeUI();
     }
@@ -1181,21 +1079,14 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         editModeFilterIndex = -1;
         originalFilterValue = "";
-        // Show Valid Keys and Exclusion List buttons when exiting edit mode, hide placeholders
+        // Show Valid Keys and Deny Filter List buttons when exiting edit mode
         if (howToUseButton != null) {
             howToUseButton.visible = true;
         }
         if (invertedFilterButton != null) {
             invertedFilterButton.visible = true;
         }
-        // Hide placeholder buttons when exiting edit mode
-        if (howToUsePlaceholderButton != null) {
-            howToUsePlaceholderButton.visible = false;
-        }
-        if (invertedFilterPlaceholderButton != null) {
-            invertedFilterPlaceholderButton.visible = false;
-        }
-        // Update widget visibility to ensure original buttons are shown
+        // Update widget visibility to ensure buttons are shown
         updateWidgetVisibility();
         removeEditModeUI();
     }
@@ -1333,6 +1224,15 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 editModeFilterIndex = -1;
                 originalFilterValue = "";
                 removeEditModeUI();
+                // Show Valid Keys and Deny Filter List buttons when exiting edit mode
+                if (howToUseButton != null) {
+                    howToUseButton.visible = true;
+                }
+                if (invertedFilterButton != null) {
+                    invertedFilterButton.visible = true;
+                }
+                // Update widget visibility to ensure buttons are shown
+                updateWidgetVisibility();
             })
             .bounds(applyButtonX, buttonAfterSlotY, buttonSize, buttonSize)
             .tooltip(net.minecraft.client.gui.components.Tooltip.create(
@@ -2035,29 +1935,17 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Update mode button from synced ContainerData (like rotation in StructurePlacerMachineScreen)
         // Always read from ContainerData and update button - ContainerData is automatically synced
-        if (modeButton != null) {
-            boolean syncedWhitelistMode = menu.getWhitelistMode();
-            Component buttonText = syncedWhitelistMode
-                    ? Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.allow")
-                    : Component.translatable("gui.iska_utils.deep_drawer_extractor.mode.deny");
-            modeButton.setMessage(buttonText);
-            // Update local state to match
-            isWhitelistMode = syncedWhitelistMode;
-        }
-        
-        // Update inverted filter button (Bypass/Exclusion List) from synced ContainerData
-        // Button text changes based on inverted mode: "Normal List" when in inverted mode, otherwise "Bypass/Exclusion List"
+        // Update inverted filter button (Deny/Allow Filter List) from synced ContainerData
+        // Button text changes based on inverted mode: "Allow Filter List" when in inverted mode, otherwise "Deny Filter List"
         if (invertedFilterButton != null) {
             boolean syncedWhitelistMode = menu.getWhitelistMode();
             Component invertedFilterButtonText;
             if (isInvertedMode) {
-                // In inverted mode, show "Normal List" to exit
-                invertedFilterButtonText = Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.normal");
+                // In inverted mode, show "Allow Filter List" to exit
+                invertedFilterButtonText = Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.allow");
             } else {
-                // Not in inverted mode, show "Bypass List" or "Exclusion List" based on extractor mode
-                invertedFilterButtonText = syncedWhitelistMode
-                        ? Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.exclusion")
-                        : Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.bypass");
+                // Not in inverted mode, show "Deny Filter List"
+                invertedFilterButtonText = Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny");
             }
             invertedFilterButton.setMessage(invertedFilterButtonText);
             // Update local state to match

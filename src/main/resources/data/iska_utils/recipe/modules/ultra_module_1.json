@@ -1,9 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "AAA",
+    "A A",
     "ABA",
-    "AAA"
+    "A A"
   ],
   "key": {
     "A": [
@@ -11,7 +11,7 @@
       {"item": "iska_utils:player_ultra_vect"}
     ],
     "B": {
-      "item": "iska_utils:extreme_module"
+      "item": "iska_utils:base_module"
     }
   },
   "result": {
