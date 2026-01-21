@@ -105,6 +105,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int INVERTED_FILTER_BUTTON_HEIGHT = 16;
     private static final int INVERTED_FILTER_BUTTON_WIDTH = 80; // Wider button for longer text
     
+    // Placeholder buttons shown in edit mode (disabled, same size as original buttons)
+    private Button howToUsePlaceholderButton;
+    private Button invertedFilterPlaceholderButton;
+    
     // Track current mode locally (for immediate UI feedback on button click)
     private boolean isWhitelistMode = false;
     
@@ -183,6 +187,23 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                               .build();
         addRenderableWidget(howToUseButton);
         
+        // Placeholder button for edit mode (disabled, same position and size)
+        howToUsePlaceholderButton = Button.builder(
+                Component.translatable("gui.iska_utils.deep_drawer_extractor.not_available_in_edit_mode"),
+                button -> {}) // No action - disabled
+                .bounds(this.leftPos + BUTTON_X, this.topPos + HOW_TO_USE_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .build();
+        // Disable the placeholder button using reflection
+        try {
+            java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
+            activeField.setAccessible(true);
+            activeField.setBoolean(howToUsePlaceholderButton, false);
+        } catch (Exception e) {
+            // If reflection fails, button will still be visible but non-functional
+        }
+        howToUsePlaceholderButton.visible = false; // Hidden by default, shown only in edit mode
+        addRenderableWidget(howToUsePlaceholderButton);
+        
         // Redstone mode button (below how to use)
         this.redstoneModeButtonX = this.leftPos + BUTTON_X;
         this.redstoneModeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + VERTICAL_BUTTON_SPACING; // Reduced spacing
@@ -215,6 +236,23 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 .bounds(invertedFilterButtonX, invertedFilterButtonY, INVERTED_FILTER_BUTTON_WIDTH, INVERTED_FILTER_BUTTON_HEIGHT)
                 .build();
         addRenderableWidget(invertedFilterButton);
+        
+        // Placeholder button for edit mode (disabled, same position and size)
+        invertedFilterPlaceholderButton = Button.builder(
+                Component.translatable("gui.iska_utils.deep_drawer_extractor.not_available_in_edit_mode"),
+                button -> {}) // No action - disabled
+                .bounds(invertedFilterButtonX, invertedFilterButtonY, INVERTED_FILTER_BUTTON_WIDTH, INVERTED_FILTER_BUTTON_HEIGHT)
+                .build();
+        // Disable the placeholder button using reflection
+        try {
+            java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
+            activeField.setAccessible(true);
+            activeField.setBoolean(invertedFilterPlaceholderButton, false);
+        } catch (Exception e) {
+            // If reflection fails, button will still be visible but non-functional
+        }
+        invertedFilterPlaceholderButton.visible = false; // Hidden by default, shown only in edit mode
+        addRenderableWidget(invertedFilterPlaceholderButton);
         
         // Back button (for how to use screen)
         backButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.back"), 
@@ -268,19 +306,28 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private void updateWidgetVisibility() {
         // Update visibility of widgets based on current mode
         boolean showMain = !isHowToUseMode;
+        boolean isInEditMode = editModeFilterIndex >= 0;
         
         // Hide inventory label in how to use mode
         this.inventoryLabelY = isHowToUseMode ? 10000 : 165 - this.font.lineHeight - 2;
         
         // Update buttons
+        // Valid Keys and Exclusion List buttons are hidden in edit mode, placeholders shown instead
         if (howToUseButton != null) {
-            howToUseButton.visible = showMain;
+            howToUseButton.visible = showMain && !isInEditMode;
         }
         if (modeButton != null) {
             modeButton.visible = showMain;
         }
         if (invertedFilterButton != null) {
-            invertedFilterButton.visible = showMain;
+            invertedFilterButton.visible = showMain && !isInEditMode;
+        }
+        // Show placeholder buttons in edit mode
+        if (howToUsePlaceholderButton != null) {
+            howToUsePlaceholderButton.visible = showMain && isInEditMode;
+        }
+        if (invertedFilterPlaceholderButton != null) {
+            invertedFilterPlaceholderButton.visible = showMain && isInEditMode;
         }
         if (backButton != null) {
             backButton.visible = isHowToUseMode;
@@ -1101,28 +1148,22 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         } else {
             originalFilterValue = "";
         }
-        // Disable Valid Keys and Exclusion List buttons when in edit mode
-        // Use reflection to set the active field (Button.active is protected)
+        // Hide Valid Keys and Exclusion List buttons when in edit mode, show placeholders instead
         if (howToUseButton != null) {
-            try {
-                java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
-                activeField.setAccessible(true);
-                activeField.setBoolean(howToUseButton, false);
-            } catch (Exception e) {
-                // Fallback: just make it invisible if reflection fails
-                howToUseButton.visible = false;
-            }
+            howToUseButton.visible = false;
         }
         if (invertedFilterButton != null) {
-            try {
-                java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
-                activeField.setAccessible(true);
-                activeField.setBoolean(invertedFilterButton, false);
-            } catch (Exception e) {
-                // Fallback: just make it invisible if reflection fails
-                invertedFilterButton.visible = false;
-            }
+            invertedFilterButton.visible = false;
         }
+        // Show placeholder buttons in edit mode
+        if (howToUsePlaceholderButton != null) {
+            howToUsePlaceholderButton.visible = true;
+        }
+        if (invertedFilterPlaceholderButton != null) {
+            invertedFilterPlaceholderButton.visible = true;
+        }
+        // Update widget visibility to ensure placeholders are shown
+        updateWidgetVisibility();
         createEditModeUI();
     }
     
@@ -1140,30 +1181,22 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         editModeFilterIndex = -1;
         originalFilterValue = "";
-        // Re-enable Valid Keys and Exclusion List buttons when exiting edit mode
-        // Use reflection to set the active field (Button.active is protected)
+        // Show Valid Keys and Exclusion List buttons when exiting edit mode, hide placeholders
         if (howToUseButton != null) {
-            try {
-                java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
-                activeField.setAccessible(true);
-                activeField.setBoolean(howToUseButton, true);
-                howToUseButton.visible = true; // Ensure it's visible
-            } catch (Exception e) {
-                // Fallback: just make it visible if reflection fails
-                howToUseButton.visible = true;
-            }
+            howToUseButton.visible = true;
         }
         if (invertedFilterButton != null) {
-            try {
-                java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
-                activeField.setAccessible(true);
-                activeField.setBoolean(invertedFilterButton, true);
-                invertedFilterButton.visible = true; // Ensure it's visible
-            } catch (Exception e) {
-                // Fallback: just make it visible if reflection fails
-                invertedFilterButton.visible = true;
-            }
+            invertedFilterButton.visible = true;
         }
+        // Hide placeholder buttons when exiting edit mode
+        if (howToUsePlaceholderButton != null) {
+            howToUsePlaceholderButton.visible = false;
+        }
+        if (invertedFilterPlaceholderButton != null) {
+            invertedFilterPlaceholderButton.visible = false;
+        }
+        // Update widget visibility to ensure original buttons are shown
+        updateWidgetVisibility();
         removeEditModeUI();
     }
     
