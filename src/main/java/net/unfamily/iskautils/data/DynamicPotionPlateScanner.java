@@ -116,6 +116,7 @@ public class DynamicPotionPlateScanner {
             // Check for version marker - if it contains the current format markers, it's up to date
             return content.contains("## Array Format:") && 
                    content.contains("- `delay`: Delay between applications in ticks") &&
+                   content.contains("- `tooltip_lines`: Number of tooltip description lines") &&
                    content.contains("## Overwritable System:");
         } catch (Exception e) {
             LOGGER.debug("Error reading README file for version check: {}", e.getMessage());
@@ -186,7 +187,8 @@ public class DynamicPotionPlateScanner {
                 "      \"affects_players\": true,\n" +
                 "      \"affects_mobs\": true,\n" +
                 "      \"creative_tab\": true,\n" +
-                "      \"player_shift_disable\": true\n" +
+                "      \"player_shift_disable\": true,\n" +
+                "      \"tooltip_lines\": 1\n" +
                 "    },\n" +
                 "    {\n" +
                 "      \"plate_type\": \"special\",\n" +
@@ -210,7 +212,15 @@ public class DynamicPotionPlateScanner {
                 "- `affects_mobs`: Whether this plate affects non-player entities [optional, default: true]\n" +
                 "- `delay`: Delay in ticks between applying effects (20 ticks = 1 second) [optional, type-specific defaults]\n" +
                 "- `creative_tab`: Whether this plate should appear in the creative tab [optional, default: true]\n" +
-                "- `player_shift_disable`: Whether players can avoid the effect by sneaking [optional, default: true]\n\n" +
+                "- `player_shift_disable`: Whether players can avoid the effect by sneaking [optional, default: true]\n" +
+                "- `tooltip_lines`: Number of tooltip description lines to display [optional, default: 0]\n" +
+                "  - If set to 1, displays one tooltip line using the key `tooltip.iska_utils.{plate_id}.desc0`\n" +
+                "  - If set to 2, displays two tooltip lines using `desc0` and `desc1`, and so on\n" +
+                "  - The `{plate_id}` in the translation key uses underscores instead of hyphens (e.g., `iska_utils-damage` becomes `iska_utils_damage`)\n" +
+                "  - Example: For a plate with `id: \"iska_utils-damage\"` and `tooltip_lines: 1`, add to your lang file:\n" +
+                "    ```json\n" +
+                "    \"tooltip.iska_utils.iska_utils_damage.desc0\": \"Your tooltip text here\"\n" +
+                "    ```\n\n" +
                 "### Effect Plate Fields\n" +
                 "- `effect`: The effect to apply, e.g., `minecraft:poison` [required]\n" +
                 "- `amplifier`: The amplifier (level) of the effect, starting at 0 [optional, default: 0]\n" +
@@ -231,6 +241,25 @@ public class DynamicPotionPlateScanner {
                 "- Plates are sorted alphabetically by ID for registration purposes.\n" +
                 "- When `player_shift_disable` is true, players can avoid the effect by sneaking (shift key)\n" +
                 "- When `creative_tab` is false, the plate won't appear in creative tabs but can still be used with commands\n\n" +
+                "## Tooltip Translations\n\n" +
+                "When using `tooltip_lines`, you need to add the corresponding translation keys to your language files.\n\n" +
+                "The translation key format is: `tooltip.iska_utils.{plate_id}.desc{X}`\n\n" +
+                "- `{plate_id}` is the plate's ID with hyphens (`-`) replaced by underscores (`_`)\n" +
+                "- `{X}` is the line number starting from 0 (desc0, desc1, desc2, etc.)\n\n" +
+                "**Example:**\n\n" +
+                "For a plate with `id: \"iska_utils-damage\"` and `tooltip_lines: 1`, add to your lang file (e.g., `assets/iska_utils/lang/en_us.json`):\n\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"tooltip.iska_utils.iska_utils_damage.desc0\": \"Damage: 2 (not player)\"\n" +
+                "}\n" +
+                "```\n\n" +
+                "For multiple tooltip lines (e.g., `tooltip_lines: 2`), add both keys:\n\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"tooltip.iska_utils.iska_utils_damage.desc0\": \"First line of tooltip\",\n" +
+                "  \"tooltip.iska_utils.iska_utils_damage.desc1\": \"Second line of tooltip\"\n" +
+                "}\n" +
+                "```\n\n" +
                 "## Example File Locations\n\n" +
                 "- KubeJS: `" + externalScriptsBasePath + "/iska_utils_plates/custom_plates.json`\n" +
                 "- Default plates: `" + externalScriptsBasePath + "/iska_utils_plates/iska_utils_plates.json`\n\n" +
