@@ -42,6 +42,11 @@ public class FanpackFlightHandler {
             return;
         }
         
+        // Don't interfere with spectator mode flight
+        if (player.isSpectator()) {
+            return;
+        }
+        
         long currentTick = player.level().getGameTime();
         UUID playerId = player.getUUID();
         

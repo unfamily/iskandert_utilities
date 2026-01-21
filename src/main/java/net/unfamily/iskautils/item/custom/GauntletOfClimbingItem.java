@@ -2,6 +2,7 @@ package net.unfamily.iskautils.item.custom;
 
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.ChatFormatting;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -78,14 +79,15 @@ public class GauntletOfClimbingItem extends Item {
         
         // Handle keybind - toggle on both client and server (like Cyclic)
         if (KeyBindings.consumeGauntletClimbingToggleKeyClick()) {
+            // Toggle the state
             toggle(player, stack);
-            // Show feedback
-            if (level.isClientSide) {
-                boolean enabled = isOn(stack);
-                player.displayClientMessage(
-                    Component.translatable(enabled ? "message.iska_utils.gauntlet_climbing.enabled" : "message.iska_utils.gauntlet_climbing.disabled"),
-                    true
-                );
+            boolean nowEnabled = isOn(stack);
+            
+            // Show feedback on server side (like Burning Brazier) for real-time updates
+            if (!level.isClientSide && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                Component message = Component.translatable(nowEnabled ? "message.iska_utils.gauntlet_climbing.enabled" : "message.iska_utils.gauntlet_climbing.disabled")
+                    .withStyle(nowEnabled ? ChatFormatting.GREEN : ChatFormatting.RED);
+                serverPlayer.displayClientMessage(message, true);
             }
         }
         
