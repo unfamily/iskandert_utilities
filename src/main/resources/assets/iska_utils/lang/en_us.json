@@ -131,6 +131,10 @@
   "block.iska_utils.iska_utils_lethal_damage": "Lethal Damage Trap Plate",
   "block.iska_utils.iska_utils_fire": "Fire Trap Plate",
   "block.iska_utils.iska_utils_freeze": "Freeze Trap Plate",
+  
+  "tooltip.iska_utils.iska_utils_damage.desc0": "Damage: 2 (not player)",
+  "tooltip.iska_utils.iska_utils_improved_damage.desc0": "Damage: 4 (player)",
+  "tooltip.iska_utils.iska_utils_lethal_damage.desc0": "Damage: 500 (player)",
 
   "block.iska_utils.weather_detector": "Weather Detector",
   "block.iska_utils.weather_alterer": "Weather Alterer",

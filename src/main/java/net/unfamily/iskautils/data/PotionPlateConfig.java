@@ -42,6 +42,9 @@ public class PotionPlateConfig {
     private boolean creativeTabVisible;
     private boolean playerShiftDisable;
     
+    // Tooltip configuration
+    private int tooltipLines; // Number of tooltip description lines (default 0)
+    
     // Cached effect holder for performance
     private Holder<MobEffect> cachedEffect;
     
@@ -72,6 +75,7 @@ public class PotionPlateConfig {
         // Default values for visibility and behavior
         this.creativeTabVisible = true;
         this.playerShiftDisable = true;
+        this.tooltipLines = 0;
     }
     
     /**
@@ -101,6 +105,7 @@ public class PotionPlateConfig {
         // Default values for visibility and behavior
         this.creativeTabVisible = true;
         this.playerShiftDisable = true;
+        this.tooltipLines = 0;
     }
     
     /**
@@ -130,6 +135,7 @@ public class PotionPlateConfig {
         // Default values for visibility and behavior
         this.creativeTabVisible = true;
         this.playerShiftDisable = true;
+        this.tooltipLines = 0;
     }
     
     /**
@@ -164,6 +170,7 @@ public class PotionPlateConfig {
         // Default values for visibility and behavior
         this.creativeTabVisible = true;
         this.playerShiftDisable = true;
+        this.tooltipLines = 0;
     }
     
     // Backward compatibility constructors
@@ -348,6 +355,20 @@ public class PotionPlateConfig {
     }
     
     /**
+     * Gets the number of tooltip description lines
+     */
+    public int getTooltipLines() {
+        return tooltipLines;
+    }
+    
+    /**
+     * Sets the number of tooltip description lines
+     */
+    public void setTooltipLines(int lines) {
+        this.tooltipLines = Math.max(0, lines);
+    }
+    
+    /**
      * Gets the effect for this configuration
      */
     public Holder<MobEffect> getEffect() {
@@ -461,6 +482,7 @@ public class PotionPlateConfig {
                 // Copy visibility and behavior settings
                 mergedEffectConfig.setCreativeTabVisible(other.isCreativeTabVisible());
                 mergedEffectConfig.setPlayerShiftDisable(other.isPlayerShiftDisable());
+                mergedEffectConfig.setTooltipLines(other.getTooltipLines());
                 
                 return mergedEffectConfig;
                 
@@ -478,6 +500,7 @@ public class PotionPlateConfig {
                 // Copy visibility and behavior settings
                 mergedDamageConfig.setCreativeTabVisible(other.isCreativeTabVisible());
                 mergedDamageConfig.setPlayerShiftDisable(other.isPlayerShiftDisable());
+                mergedDamageConfig.setTooltipLines(other.getTooltipLines());
                 
                 return mergedDamageConfig;
                 
@@ -494,6 +517,7 @@ public class PotionPlateConfig {
                 // Copy visibility and behavior settings
                 mergedSpecialConfig.setCreativeTabVisible(other.isCreativeTabVisible());
                 mergedSpecialConfig.setPlayerShiftDisable(other.isPlayerShiftDisable());
+                mergedSpecialConfig.setTooltipLines(other.getTooltipLines());
                 
                 return mergedSpecialConfig;
                 

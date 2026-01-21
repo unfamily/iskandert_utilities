@@ -451,6 +451,9 @@ public class DynamicPotionPlateScanner {
             PotionPlateConfig config = new PotionPlateConfig(plateId, effectId, amplifier, duration, delay, affectsPlayers, affectsMobs, hideParticles, arrayOverwritable);
             config.setCreativeTabVisible(creativeTabVisible);
             config.setPlayerShiftDisable(playerShiftDisable);
+            // Optional tooltip_lines field (default 0)
+            int tooltipLines = json.has("tooltip_lines") ? json.get("tooltip_lines").getAsInt() : 0;
+            config.setTooltipLines(tooltipLines);
             return config;
             
         } catch (Exception e) {
@@ -498,6 +501,9 @@ public class DynamicPotionPlateScanner {
             PotionPlateConfig config = new PotionPlateConfig(plateId, damageType, damageAmount, delay, affectsPlayers, affectsMobs, arrayOverwritable);
             config.setCreativeTabVisible(creativeTabVisible);
             config.setPlayerShiftDisable(playerShiftDisable);
+            // Optional tooltip_lines field (default 0)
+            int tooltipLines = json.has("tooltip_lines") ? json.get("tooltip_lines").getAsInt() : 0;
+            config.setTooltipLines(tooltipLines);
             return config;
             
         } catch (Exception e) {
@@ -566,6 +572,9 @@ public class DynamicPotionPlateScanner {
             // Apply additional settings
             config.setCreativeTabVisible(creativeTabVisible);
             config.setPlayerShiftDisable(playerShiftDisable);
+            // Optional tooltip_lines field (default 0)
+            int tooltipLines = json.has("tooltip_lines") ? json.get("tooltip_lines").getAsInt() : 0;
+            config.setTooltipLines(tooltipLines);
             return config;
             
         } catch (Exception e) {
@@ -742,7 +751,7 @@ public class DynamicPotionPlateScanner {
             "      \"plate_type\": \"damage\",\n" +
             "      \"id\": \"iska_utils-improved_damage\",\n" +
             "      \"damage_type\": \"minecraft:player\",\n" +
-            "      \"damage\": 2.0,\n" +
+            "      \"damage\": 4.0,\n" +
             "      \"delay\": 20,\n" +
             "      \"affects_players\": true,\n" +
             "      \"affects_mobs\": true,\n" +

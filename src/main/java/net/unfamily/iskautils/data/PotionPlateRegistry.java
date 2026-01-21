@@ -107,7 +107,7 @@ public class PotionPlateRegistry {
         
         // Register the item with appropriate properties
         DeferredHolder<Item, BlockItem> itemHolder = POTION_PLATE_ITEMS.register(blockName,
-            () -> new BlockItem(blockHolder.get(), itemProperties));
+            () -> new net.unfamily.iskautils.item.custom.PotionPlateBlockItem(blockHolder.get(), itemProperties));
         
         REGISTERED_BLOCKS.put(plateId, blockHolder);
         REGISTERED_ITEMS.put(plateId, itemHolder);
