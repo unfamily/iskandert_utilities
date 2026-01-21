@@ -352,6 +352,16 @@ public class ModBlocks {
                     .friction(0.8f)
                     .jumpFactor(0.5f)
                     .noOcclusion()));
+    
+    // ===== SAP BLOCK =====
+    public static final DeferredBlock<SapBlock> SAP_BLOCK = BLOCKS.register("sap_block",
+            () -> new SapBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(0.5f, 1.0f)
+                    .sound(SoundType.SLIME_BLOCK)
+                    .friction(0.8f)
+                    .jumpFactor(0.5f)
+                    .noOcclusion()));
 
     // ===== WEATHER DETECTOR =====
     public static final DeferredBlock<WeatherDetectorBlock> WEATHER_DETECTOR = BLOCKS.register("weather_detector",

@@ -96,6 +96,7 @@ public class ModCreativeModeTabs {
                                 
                                 // 3. Rubber and related items
                                 pOutput.accept(ModItems.SAP.get());
+                                pOutput.accept(ModItems.SAP_BLOCK.get());
                                 pOutput.accept(ModItems.RUBBER.get());
                                 pOutput.accept(ModItems.RUBBER_CHUNK.get());
                                 pOutput.accept(ModItems.RUBBER_BLOCK.get());
@@ -185,6 +186,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.MINING_EQUITIZER.get());
                                 pOutput.accept(ModItems.BURNING_BRAZIER.get());
                                 pOutput.accept(ModItems.GHOST_BRAZIER.get());
+                                pOutput.accept(ModItems.GAUNTLET_OF_CLIMBING.get());
 
                             }).build());
 

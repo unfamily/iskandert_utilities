@@ -38,6 +38,7 @@ public class KeyBindings {
     private static final String KEY_BURNING_BRAZIER_TOGGLE = "key.iska_utils.burning_brazier_toggle";
     private static final String KEY_GHOST_BRAZIER_TOGGLE = "key.iska_utils.ghost_brazier_toggle";
     private static final String KEY_SCANNER_RANGE = "key.iska_utils.scanner_range";
+    private static final String KEY_GAUNTLET_CLIMBING_TOGGLE = "key.iska_utils.gauntlet_climbing_toggle";
 
     // Vector Charm keys
     public static final KeyMapping VECTOR_VERTICAL_KEY = new KeyMapping(
@@ -125,6 +126,15 @@ public class KeyBindings {
             KEY_CATEGORY_ISKA_UTILS
     );
 
+    // Gauntlet of Climbing toggle key
+    public static final KeyMapping GAUNTLET_CLIMBING_TOGGLE_KEY = new KeyMapping(
+            KEY_GAUNTLET_CLIMBING_TOGGLE,
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_N,  // N key for climbing
+            KEY_CATEGORY_ISKA_UTILS
+    );
+
     /**
      * Registers key bindings
      */
@@ -140,6 +150,7 @@ public class KeyBindings {
         event.register(BURNING_BRAZIER_TOGGLE_KEY);
         event.register(GHOST_BRAZIER_TOGGLE_KEY);
         event.register(SCANNER_RANGE_KEY);
+        event.register(GAUNTLET_CLIMBING_TOGGLE_KEY);
         LOGGER.info("Registered all key mappings");
     }
 
@@ -275,5 +286,13 @@ public class KeyBindings {
      */
     public static boolean consumeGhostBrazierToggleKeyClick() {
         return GHOST_BRAZIER_TOGGLE_KEY.consumeClick();
+    }
+
+    /**
+     * Checks if the gauntlet climbing toggle key has been pressed and consumes the event
+     * @return true if the key was pressed, false otherwise
+     */
+    public static boolean consumeGauntletClimbingToggleKeyClick() {
+        return GAUNTLET_CLIMBING_TOGGLE_KEY.consumeClick();
     }
 } 

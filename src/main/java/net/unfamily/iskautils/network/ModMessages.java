@@ -1288,6 +1288,44 @@ public class ModMessages {
     }
 
     /**
+     * Sends a Gauntlet of Climbing toggle packet to the server
+     * This toggles the climbing ability on/off
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendGauntletClimbingTogglePacket() {
+        // Simplified implementation for single player compatibility
+        try {
+            // Get the server from single player or dedicated server
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) return;
+
+            // Create and handle the packet on server thread
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player == null) {
+                        return;
+                    }
+
+                    // Toggle climbing for the player
+                    boolean newState = net.unfamily.iskautils.data.GauntletClimbingData.toggleClimbing(player);
+                    
+                    // Show feedback in action bar
+                    if (newState) {
+                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.enabled"), true);
+                    } else {
+                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.disabled"), true);
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to toggle Gauntlet of Climbing: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send Gauntlet of Climbing toggle packet: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Sends a Ghost Brazier toggle packet to the server
      * This toggles the game mode between Survival and Spectator
      */

@@ -11,6 +11,14 @@
   "tooltip.iska_utils.fanpack.flight": "§7Grants creative flight (%d RF/tick)",
   "tooltip.iska_utils.fanpack.flight_no_energy": "§7Grants creative flight",
   "item.iska_utils.portable_dislocator": "Portable Dislocator",
+  "item.iska_utils.gauntlet_of_climbing": "Gauntlet of Climbing",
+  "tooltip.iska_utils.gauntlet_of_climbing.desc": "§7Allows you to climb walls when held in inventory",
+  "tooltip.iska_utils.gauntlet_of_climbing.toggle": "§7Press %s to toggle",
+  "tooltip.iska_utils.gauntlet_of_climbing.status.enabled": "§aClimbing: Enabled",
+  "tooltip.iska_utils.gauntlet_of_climbing.status.disabled": "§cClimbing: Disabled",
+  "message.iska_utils.gauntlet_climbing.enabled": "§aClimbing enabled",
+  "message.iska_utils.gauntlet_climbing.disabled": "§cClimbing disabled",
+  "key.iska_utils.gauntlet_climbing_toggle": "Toggle Climbing",
   "item.iska_utils.sap": "Rubber Sap",
   "item.iska_utils.rubber": "Rubber",
   "item.iska_utils.treetap": "Treetap",
@@ -71,6 +79,7 @@
   "block.iska_utils.wither_proof_wall": "Wither Proof Wall",
   
   "block.iska_utils.tar_slime_block": "Tar Slime Block",
+  "block.iska_utils.sap_block": "Rubber Sap Block",
   "item.iska_utils.tar_slimeball": "Tar Slimeball",
   
   "block.iska_utils.slow_vect": "Mobfarm Slow Vector Plate",

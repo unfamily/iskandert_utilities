@@ -11,6 +11,14 @@
   "tooltip.iska_utils.fanpack.flight": "§7Concede il volo creativo (%d RF/tick)",
   "tooltip.iska_utils.fanpack.flight_no_energy": "§7Concede il volo creativo",
   "item.iska_utils.portable_dislocator": "Dislocatore Portatile",
+  "item.iska_utils.gauntlet_of_climbing": "Guanto dell'Arrampicata",
+  "tooltip.iska_utils.gauntlet_of_climbing.desc": "§7Permette di arrampicarsi sui muri quando tenuto in inventario",
+  "tooltip.iska_utils.gauntlet_of_climbing.toggle": "§7Premi %s per attivare/disattivare",
+  "tooltip.iska_utils.gauntlet_of_climbing.status.enabled": "§aArrampicata: Attiva",
+  "tooltip.iska_utils.gauntlet_of_climbing.status.disabled": "§cArrampicata: Disattiva",
+  "message.iska_utils.gauntlet_climbing.enabled": "§aArrampicata attivata",
+  "message.iska_utils.gauntlet_climbing.disabled": "§cArrampicata disattivata",
+  "key.iska_utils.gauntlet_climbing_toggle": "Attiva/Disattiva Arrampicata",
   "item.iska_utils.sap": "Linfa di Caucciù",
   "item.iska_utils.rubber": "Gomma",
   "item.iska_utils.treetap": "Estrattore di Linfa Manuale",
@@ -71,6 +79,7 @@
   "block.iska_utils.wither_proof_wall": "Muretto Resiliente al Wither",
   
   "block.iska_utils.tar_slime_block": "Blocco di Gelatina Catramosa",
+  "block.iska_utils.sap_block": "Blocco di Linfa Caucciù",
   "item.iska_utils.tar_slimeball": "Gelatina Catramosa",
 
   "block.iska_utils.slow_vect": "Piastra Vettoriale Lenta per Mob",

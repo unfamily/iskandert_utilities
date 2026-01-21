@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    "AAA",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:rubber_sap"
+    }
+  },
+  "result": {
+    "id": "iska_utils:sap_block",
+    "count": 1
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CCC",
+    "BDB",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:storage_blocks/copper"
+    },
+    "B": [
+      {"tag": "c:slime_balls"},
+      {"tag": "c:slimeballs"},
+      {"tag": "c:storage_blocks/sap"}
+    ],
+    "C": {
+      "tag": "c:leathers"
+    },
+    "D": {
+      "tag": "c:dyes/black"
+    }
+  },
+  "result": {
+    "id": "iska_utils:gauntlet_of_climbing",
+    "count": 1
+  }
+} 

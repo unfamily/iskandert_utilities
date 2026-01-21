@@ -11,6 +11,7 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
+import net.unfamily.iskautils.item.custom.GauntletOfClimbingItem;
 import net.unfamily.iskautils.item.custom.TreeTapItem;
 import net.unfamily.iskautils.item.custom.ElectricTreeTapItem;
 import net.unfamily.iskautils.item.custom.ScannerItem;
@@ -112,6 +113,10 @@ public class ModItems {
     // Registered as a Curio when Curios is available
     public static final DeferredItem<Item> PORTABLE_DISLOCATOR = ITEMS.register("portable_dislocator",
             () -> new PortableDislocatorItem(new Item.Properties().stacksTo(1)));
+    
+    // Gauntlet of Climbing - Custom item that allows wall climbing when in inventory
+    public static final DeferredItem<Item> GAUNTLET_OF_CLIMBING = ITEMS.register("gauntlet_of_climbing",
+            () -> new GauntletOfClimbingItem(new Item.Properties().stacksTo(1)));
             
     
     // Scanner - Custom item for scanning specific blocks in an area
@@ -336,6 +341,10 @@ public class ModItems {
     // ===== TAR =====
     public static final DeferredItem<Item> TAR_SLIME_BLOCK = ITEMS.register("tar_slime_block",
             () -> new BlockItem(ModBlocks.TAR_SLIME_BLOCK.get(), ITEM_PROPERTIES));
+    
+    // ===== SAP =====
+    public static final DeferredItem<Item> SAP_BLOCK = ITEMS.register("sap_block",
+            () -> new BlockItem(ModBlocks.SAP_BLOCK.get(), ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> TAR_SLIMEBALL = ITEMS.register("tar_slimeball",
             () -> new Item(ITEM_PROPERTIES));

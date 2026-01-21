@@ -419,7 +419,7 @@ public class Config
     
     private static final ModConfigSpec.BooleanValue ARTIFACTS_INFO= BUILDER
             .comment("If false not desplay where obtain the artifacts or mod dependecy required for obtain it (only for lootable artifacts)")
-            .define("100_artifacts_info", true);
+            .define("900_artifacts_info", true);
 
     private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_BLOCK_CHANCE = BUILDER
             .comment("Chance for Greedy Shield to completely block damage (0.0 to 1.0)",
@@ -439,6 +439,11 @@ public class Config
     private static final ModConfigSpec.BooleanValue GREEDY_SHIELD_INFO = BUILDER
             .comment("If false, hide where to obtain the Greedy Shield (only for lootable artifacts)")
             .define("003_greedy_shield_info", true);
+
+    private static final ModConfigSpec.DoubleValue GAUNTLET_CLIMBING_SPEED = BUILDER
+            .comment("Speed of the Gauntlet of Climbing (0.0 to 10.0)",
+                    "Default: 0.15 (0.288 is like a ladder speed)")
+            .defineInRange("010_gauntlet_climbing_speed", 0.15D, 0.0D, 10.0D);
 
     static {
         BUILDER.pop(); // End of artifacts_settings category
@@ -828,6 +833,7 @@ public class Config
     public static boolean greedyShieldInfo;
     public static boolean burningFlameSuperHot;
     public static boolean giftPlaceHardIce;
+    public static double gauntletClimbingSpeed;
     
     // Fan configuration
     public static int fanRangeHorizontalMax;
@@ -1116,8 +1122,10 @@ public class Config
             structurePlacerMachineEnergyConsume = structurePlacerMachineEnergyBuffer;
         }
         
+        // Gauntlet of Climbing logic
+        gauntletClimbingSpeed = GAUNTLET_CLIMBING_SPEED.get();
     }
-    
+
     @SubscribeEvent
     static void onReload(final ModConfigEvent.Reloading event) {
         onLoad(event);
