@@ -484,6 +484,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     }
     
     private void onInvertedFilterButtonClicked() {
+        // Block click if in edit mode
+        if (editModeFilterIndex >= 0) {
+            return;
+        }
+        
         // Save current filters before switching mode
         saveFilterData();
         
@@ -1096,6 +1101,28 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         } else {
             originalFilterValue = "";
         }
+        // Disable Valid Keys and Exclusion List buttons when in edit mode
+        // Use reflection to set the active field (Button.active is protected)
+        if (howToUseButton != null) {
+            try {
+                java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
+                activeField.setAccessible(true);
+                activeField.setBoolean(howToUseButton, false);
+            } catch (Exception e) {
+                // Fallback: just make it invisible if reflection fails
+                howToUseButton.visible = false;
+            }
+        }
+        if (invertedFilterButton != null) {
+            try {
+                java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
+                activeField.setAccessible(true);
+                activeField.setBoolean(invertedFilterButton, false);
+            } catch (Exception e) {
+                // Fallback: just make it invisible if reflection fails
+                invertedFilterButton.visible = false;
+            }
+        }
         createEditModeUI();
     }
     
@@ -1113,6 +1140,30 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         editModeFilterIndex = -1;
         originalFilterValue = "";
+        // Re-enable Valid Keys and Exclusion List buttons when exiting edit mode
+        // Use reflection to set the active field (Button.active is protected)
+        if (howToUseButton != null) {
+            try {
+                java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
+                activeField.setAccessible(true);
+                activeField.setBoolean(howToUseButton, true);
+                howToUseButton.visible = true; // Ensure it's visible
+            } catch (Exception e) {
+                // Fallback: just make it visible if reflection fails
+                howToUseButton.visible = true;
+            }
+        }
+        if (invertedFilterButton != null) {
+            try {
+                java.lang.reflect.Field activeField = Button.class.getDeclaredField("active");
+                activeField.setAccessible(true);
+                activeField.setBoolean(invertedFilterButton, true);
+                invertedFilterButton.visible = true; // Ensure it's visible
+            } catch (Exception e) {
+                // Fallback: just make it visible if reflection fails
+                invertedFilterButton.visible = true;
+            }
+        }
         removeEditModeUI();
     }
     
