@@ -127,7 +127,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      */
     public void onGuiOpened() {
         openGui = true;
-        reloadFilters = true;
+        // Don't reorder filters on open - user might modify them
     }
     
     /**
@@ -135,7 +135,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      */
     public void onGuiClosed() {
         openGui = false;
-        reloadFilters = true; // Trigger filter reordering when GUI closes
+        reloadFilters = true; // Trigger filter reordering when GUI closes (only once)
     }
     
     /**
@@ -341,13 +341,19 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 continue;
             }
             
+            // Pre-compute item metadata once per item (used by multiple filter checks)
+            Item item = drawerStack.getItem();
+            net.minecraft.resources.ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
+            String itemIdStr = itemId.toString();
+            String itemModId = itemId.getNamespace();
+            
             // FIRST: Check inverted filter (applied before normal filter)
             // The inverted filter has opposite logic:
             // - If extractor is in allow (whitelist): inverted filter is in deny (blacklist)
             //   If inverted filter matches, item is NOT extracted and does NOT pass to normal filter
             // - If extractor is in deny (blacklist): inverted filter is in allow (whitelist)
             //   If inverted filter matches, item is extracted IMMEDIATELY, otherwise passes to normal filter
-            boolean invertedFilterResult = matchesInvertedFilter(drawerStack);
+            boolean invertedFilterResult = matchesInvertedFilter(drawerStack, item, itemId, itemIdStr, itemModId);
             
             if (isWhitelistMode) {
                 // Extractor in allow mode: inverted filter is in deny mode
@@ -377,7 +383,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             }
             
             // SECOND: Check normal filter (only if inverted filter didn't block/extract)
-            if (!matchesFilter(drawerStack)) {
+            if (!matchesFilter(drawerStack, item, itemId, itemIdStr, itemModId)) {
                 continue; // Item doesn't match normal filter, skip it
             }
             
@@ -531,26 +537,31 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      * The inverted filter has opposite logic to the normal filter:
      * - If extractor is in allow (whitelist): inverted filter acts as deny (blacklist)
      * - If extractor is in deny (blacklist): inverted filter acts as allow (whitelist)
+     * 
+     * @param stack The ItemStack to check
+     * @param item Pre-computed Item (to avoid repeated getItem() calls)
+     * @param itemId Pre-computed ResourceLocation (to avoid repeated registry lookups)
+     * @param itemIdStr Pre-computed item ID string (to avoid repeated toString() calls)
+     * @param itemModId Pre-computed mod ID (to avoid repeated getNamespace() calls)
      */
-    private boolean matchesInvertedFilter(ItemStack stack) {
+    private boolean matchesInvertedFilter(ItemStack stack, Item item, net.minecraft.resources.ResourceLocation itemId, 
+                                         String itemIdStr, String itemModId) {
         if (stack == null || stack.isEmpty()) {
             return false;
         }
         
-        // If no valid inverted filters, return false (no match)
-        if (!hasValidInvertedFilters()) {
-            return false;
-        }
-        
         // Check if item matches any inverted filter
+        // After reorderFilters(), empty filters are at the end, so we can early exit
         boolean matchesAnyFilter = false;
         for (int i = 0; i < getMaxFilterSlots(); i++) {
             String filter = invertedFilterFields[i];
-            if (filter != null && !filter.trim().isEmpty()) {
-                if (matchesFilterEntry(stack, filter.trim())) {
-                    matchesAnyFilter = true;
-                    break;
-                }
+            // Early exit: after reorderFilters(), empty filters are at the end
+            if (filter == null || filter.isEmpty()) {
+                break; // No more valid filters
+            }
+            if (matchesFilterEntry(stack, item, itemId, itemIdStr, itemModId, filter)) {
+                matchesAnyFilter = true;
+                break;
             }
         }
         
@@ -562,27 +573,39 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     /**
      * Checks if an ItemStack matches the filter criteria
      * Returns true if the item should be extracted based on whitelist/blacklist mode
+     * 
+     * @param stack The ItemStack to check
+     * @param item Pre-computed Item (to avoid repeated getItem() calls)
+     * @param itemId Pre-computed ResourceLocation (to avoid repeated registry lookups)
+     * @param itemIdStr Pre-computed item ID string (to avoid repeated toString() calls)
+     * @param itemModId Pre-computed mod ID (to avoid repeated getNamespace() calls)
      */
-    private boolean matchesFilter(ItemStack stack) {
+    private boolean matchesFilter(ItemStack stack, Item item, net.minecraft.resources.ResourceLocation itemId, 
+                                  String itemIdStr, String itemModId) {
         if (stack == null || stack.isEmpty()) {
             return false;
         }
         
-        // If no valid filters, whitelist mode = extract nothing, blacklist mode = extract everything
-        if (!hasValidFilters()) {
-            return !isWhitelistMode; // Blacklist with no filters = extract all
-        }
-        
         // Check if item matches any filter
+        // After reorderFilters(), empty filters are at the end, so we can early exit
         boolean matchesAnyFilter = false;
+        boolean hasAnyFilter = false;
         for (int i = 0; i < getMaxFilterSlots(); i++) {
             String filter = filterFields[i];
-            if (filter != null && !filter.trim().isEmpty()) {
-                if (matchesFilterEntry(stack, filter.trim())) {
-                    matchesAnyFilter = true;
-                    break;
-                }
+            // Early exit: after reorderFilters(), empty filters are at the end
+            if (filter == null || filter.isEmpty()) {
+                break; // No more valid filters
             }
+            hasAnyFilter = true;
+            if (matchesFilterEntry(stack, item, itemId, itemIdStr, itemModId, filter)) {
+                matchesAnyFilter = true;
+                break;
+            }
+        }
+        
+        // If no valid filters, whitelist mode = extract nothing, blacklist mode = extract everything
+        if (!hasAnyFilter) {
+            return !isWhitelistMode; // Blacklist with no filters = extract all
         }
         
         // Whitelist: extract only if matches a filter
@@ -598,23 +621,45 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      * - Mod ID filter: @iska_utils
      * - NBT filter: ?"apotheosis:rarity":"apotheosis:mythic"
      * - Macro filter: &enchanted, &damaged
+     * 
+     * @param stack The ItemStack to check
+     * @param item Pre-computed Item (to avoid repeated getItem() calls)
+     * @param itemId Pre-computed ResourceLocation (to avoid repeated registry lookups)
+     * @param itemIdStr Pre-computed item ID string (to avoid repeated toString() calls)
+     * @param itemModId Pre-computed mod ID (to avoid repeated getNamespace() calls)
+     * @param filter The filter string to match against (already trimmed)
      */
-    private boolean matchesFilterEntry(ItemStack stack, String filter) {
+    private boolean matchesFilterEntry(ItemStack stack, Item item, net.minecraft.resources.ResourceLocation itemId, 
+                                      String itemIdStr, String itemModId, String filter) {
         if (filter == null || filter.isEmpty()) {
             return false;
         }
         
-        Item item = stack.getItem();
-        net.minecraft.resources.ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
-        String itemIdStr = itemId.toString();
-        
-        // ID filter: -minecraft:diamond
+        // ID filter: -minecraft:diamond (cheapest - check first)
         if (filter.startsWith("-")) {
             String idFilter = filter.substring(1);
             return itemIdStr.equals(idFilter);
         }
         
-        // Tag filter: #c:ingots
+        // Mod ID filter: @iska_utils (cheap - check second)
+        // Supports abbreviations, e.g., @meka matches mekanism, mekanismtools, etc.
+        if (filter.startsWith("@")) {
+            String modIdFilter = filter.substring(1);
+            // Check if mod ID starts with the filter (supports abbreviations)
+            return itemModId.startsWith(modIdFilter);
+        }
+        
+        // Macro filter: &enchanted, &damaged (cheap - check third)
+        if (filter.startsWith("&")) {
+            String macroFilter = filter.substring(1).toLowerCase();
+            return switch (macroFilter) {
+                case "enchanted" -> stack.isEnchanted();
+                case "damaged" -> stack.isDamaged();
+                default -> false;
+            };
+        }
+        
+        // Tag filter: #c:ingots (more expensive - check fourth)
         if (filter.startsWith("#")) {
             String tagFilter = filter.substring(1);
             try {
@@ -627,16 +672,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             }
         }
         
-        // Mod ID filter: @iska_utils (supports abbreviations, e.g., @meka matches mekanism, mekanismtools, etc.)
-        if (filter.startsWith("@")) {
-            String modIdFilter = filter.substring(1);
-            String itemModId = itemId.getNamespace();
-            // Check if mod ID starts with the filter (supports abbreviations)
-            return itemModId.startsWith(modIdFilter);
-        }
-        
-        // NBT filter: ?"apotheosis:rarity":"apotheosis:mythic"
-        // Uses the same method as the original hardcoded example
+        // NBT filter: ?"apotheosis:rarity":"apotheosis:mythic" (most expensive - check last)
         if (filter.startsWith("?")) {
             String nbtFilter = filter.substring(1);
             try {
@@ -653,16 +689,6 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 // Error reading NBT, consider not matching
                 return false;
             }
-        }
-        
-        // Macro filter: &enchanted, &damaged
-        if (filter.startsWith("&")) {
-            String macroFilter = filter.substring(1).toLowerCase();
-            return switch (macroFilter) {
-                case "enchanted" -> stack.isEnchanted();
-                case "damaged" -> stack.isDamaged();
-                default -> false;
-            };
         }
         
         // Default: treat as direct ID match (without prefix)
@@ -687,6 +713,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             if (filter != null && !filter.trim().isEmpty()) {
                 CompoundTag filterEntry = new CompoundTag();
                 filterEntry.putInt("index", i);
+                // Debug: log filter length before saving
+                // LOGGER.debug("Saving filter at index {}: length={}, value={}", i, filter != null ? filter.length() : 0, filter);
                 filterEntry.putString("value", filter);
                 filterList.add(filterEntry);
             }
@@ -757,6 +785,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                         if (filterEntry.contains("index", CompoundTag.TAG_INT) && filterEntry.contains("value", CompoundTag.TAG_STRING)) {
                             int index = filterEntry.getInt("index");
                             String value = filterEntry.getString("value");
+                            // Debug: log filter length after loading
+                            // LOGGER.debug("Loading filter at index {}: length={}, value={}", index, value != null ? value.length() : 0, value);
                             // Ignore indices outside valid range (0 to maxSlots-1)
                             if (index >= 0 && index < maxSlots) {
                                 filterFields[index] = value != null ? value : "";
@@ -965,10 +995,16 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 // Ignore indices outside valid range
                 if (index >= 0 && index < maxSlots) {
                     if (value != null) {
+                        // Debug: log value before processing
+                        // LOGGER.debug("setFilterFieldsFromMap: index={}, original length={}, value={}", index, value.length(), value);
                         value = value.trim();
                         // Remove single quotes (') for KubeJS compatibility
                         value = value.replace("'", "");
+                        // Debug: log value after processing
+                        // LOGGER.debug("setFilterFieldsFromMap: index={}, processed length={}, value={}", index, value.length(), value);
                         filterFields[index] = value;
+                        // Debug: log value after setting
+                        // LOGGER.debug("setFilterFieldsFromMap: index={}, stored length={}, value={}", index, filterFields[index] != null ? filterFields[index].length() : 0, filterFields[index]);
                     } else {
                         filterFields[index] = "";
                     }

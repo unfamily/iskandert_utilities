@@ -15,12 +15,16 @@ import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity;
 import net.unfamily.iskautils.network.ModMessages;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Screen for Deep Drawer Extractor GUI
  * Shows scrollable EditBoxes for infinite filter fields, allow/deny button, and help text
  */
 public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawerExtractorMenu> {
+    
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DeepDrawerExtractorScreen.class);
     
     private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer_extractor.png");
@@ -617,7 +621,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             for (int i = 0; i < cachedFilterFields.size(); i++) {
                 String filter = cachedFilterFields.get(i);
                 if (filter != null && !filter.trim().isEmpty()) {
-                    filterMap.put(i, filter.trim());
+                    String trimmed = filter.trim();
+                    filterMap.put(i, trimmed);
                 }
             }
             
@@ -1180,17 +1185,29 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         editModeTextBox = new EditBox(this.font, textBoxX, textBoxY, textBoxWidth, textBoxHeight,
             Component.literal("Edit Filter"));
         
-        // Set initial value from cached filter fields
-        if (editModeFilterIndex >= 0 && editModeFilterIndex < cachedFilterFields.size()) {
-            String currentFilter = cachedFilterFields.get(editModeFilterIndex);
-            editModeTextBox.setValue(currentFilter != null ? currentFilter : "");
-        } else {
-            editModeTextBox.setValue("");
-        }
+        // IMPORTANT: Set maxLength BEFORE setValue() to avoid truncation
+        // NBT filters can be voluminous, so we allow up to 512 characters
+        editModeTextBox.setMaxLength(512);
         
         editModeTextBox.setVisible(true);
         editModeTextBox.setEditable(true);
-        editModeTextBox.setMaxLength(100);
+        
+        // Set initial value from cached filter fields
+        if (editModeFilterIndex >= 0 && editModeFilterIndex < cachedFilterFields.size()) {
+            String currentFilter = cachedFilterFields.get(editModeFilterIndex);
+            // Debug: log when setting value in EditBox from NBT/cache
+            // if (currentFilter != null && currentFilter.length() > 30) {
+            //     LOGGER.info("DEBUG: Setting EditBox value from cache: index={}, length={}, value={}", editModeFilterIndex, currentFilter.length(), currentFilter);
+            // }
+            editModeTextBox.setValue(currentFilter != null ? currentFilter : "");
+            // Debug: log after setting to verify
+            // String setValue = editModeTextBox.getValue();
+            // if (setValue != null && setValue.length() > 30) {
+            //     LOGGER.info("DEBUG: EditBox value after setValue: index={}, length={}, value={}", editModeFilterIndex, setValue.length(), setValue);
+            // }
+        } else {
+            editModeTextBox.setValue("");
+        }
         
         // Don't save automatically - user must click Apply button
         editModeTextBox.setResponder(value -> {
@@ -1323,10 +1340,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             // Update textbox with first variant
             if (editModeTextBox != null && !filterVariants.isEmpty()) {
                 String filterString = filterVariants.get(0);
+                // Debug: log when setting value from variant
+                // if (filterString != null && filterString.length() > 30) {
+                //     LOGGER.info("DEBUG: Setting EditBox value from variant: length={}, value={}", filterString.length(), filterString);
+                // }
                 editModeTextBox.setValue(filterString);
                 // Position cursor at the beginning and show from start
                 editModeTextBox.setCursorPosition(0);
                 editModeTextBox.setHighlightPos(0);
+                // Debug: log after setting to verify
+                // String setValue = editModeTextBox.getValue();
+                // if (setValue != null && setValue.length() > 30) {
+                //     LOGGER.info("DEBUG: EditBox value after setValue (variant): length={}, value={}", setValue.length(), setValue);
+                // }
                 // Don't save - user must click Apply
             }
             
@@ -1354,10 +1380,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Update textbox with new variant
         String filterString = filterVariants.get(currentFilterVariantIndex);
         if (editModeTextBox != null) {
+            // Debug: log when setting value from variant cycle
+            // if (filterString != null && filterString.length() > 30) {
+            //     LOGGER.info("DEBUG: Setting EditBox value from variant cycle: length={}, value={}", filterString.length(), filterString);
+            // }
             editModeTextBox.setValue(filterString);
             // Position cursor at the beginning and show from start
             editModeTextBox.setCursorPosition(0);
             editModeTextBox.setHighlightPos(0);
+            // Debug: log after setting to verify
+            // String setValue = editModeTextBox.getValue();
+            // if (setValue != null && setValue.length() > 30) {
+            //     LOGGER.info("DEBUG: EditBox value after setValue (variant cycle): length={}, value={}", setValue.length(), setValue);
+            // }
             // Don't save - user must click Apply
         }
     }
@@ -1466,7 +1501,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 textWidth,
                 15,
                 Component.empty());
-        editingEditBox.setMaxLength(100);
+        // NBT filters can be voluminous, so we allow up to 512 characters
+        editingEditBox.setMaxLength(512);
         editingEditBox.setValue(cachedFilterFields.get(filterIndex) != null ? cachedFilterFields.get(filterIndex) : "");
         editingEditBox.setEditable(true);
         editingEditBox.setFocused(true);

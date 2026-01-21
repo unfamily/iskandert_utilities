@@ -50,14 +50,15 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     private final Map<Integer, Integer> logicalToPhysical = new HashMap<>(); // logicalSlot -> physicalSlot
     private final Map<Integer, Integer> physicalToLogical = new HashMap<>(); // physicalSlot -> logicalSlot
     
-    // Cached slot count from config
-    private int maxSlots;
-    
     // Scroll offset for GUI (persisted in NBT)
     private int scrollOffset = 0;
     
     // Track if GUI is open to prevent input/output conflicts
     private int guiOpenCount = 0;
+    
+    // Periodic cleanup counter for empty slots (every 200 ticks = ~10 seconds)
+    private int cleanupCounter = 0;
+    private static final int CLEANUP_INTERVAL = 200;
     
     // Compaction removed: caused issues with interface slot mapping
     // Items would disappear when extracting/inserting through interface due to logical slot remapping
@@ -67,7 +68,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     
     public DeepDrawersBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DEEP_DRAWERS_BE.get(), pos, state);
-        this.maxSlots = Config.deepDrawersSlotCount;
+        // maxSlots is now read directly from config in real-time (no caching)
     }
     
     /**
@@ -89,11 +90,14 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     /**
      * Gets item stack directly from physical slot (for GUI use)
      * Returns empty stack if slot is empty
+     * Note: Allows reading slots beyond current maxSlots limit to preserve existing items
+     * when config is reduced (items won't be lost, just no new insertions allowed)
      */
     public ItemStack getStackInPhysicalSlot(int physicalSlot) {
-        if (physicalSlot < 0 || physicalSlot >= maxSlots) {
+        if (physicalSlot < 0) {
             return ItemStack.EMPTY;
         }
+        // Allow reading even if slot is beyond current maxSlots (for existing items)
         ItemStack stack = storage.get(physicalSlot);
         return stack != null ? stack.copy() : ItemStack.EMPTY;
     }
@@ -161,6 +165,14 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             return; // Server-side only
         }
         
+        // Periodic cleanup of empty slots to prevent iteration overhead
+        // Clean up every CLEANUP_INTERVAL ticks (~10 seconds) to avoid performance impact
+        blockEntity.cleanupCounter++;
+        if (blockEntity.cleanupCounter >= CLEANUP_INTERVAL) {
+            blockEntity.cleanupEmptySlots();
+            blockEntity.cleanupCounter = 0;
+        }
+        
         // Compaction removed: caused issues with interface slot mapping
         // Items disappearing when extracting/inserting through interface
     }
@@ -201,18 +213,20 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     }
     
     /**
-     * Gets the maximum number of slots
-     * @return max slots from config
+     * Gets the maximum number of slots (read from config in real-time)
+     * @return max slots from config (always up-to-date)
      */
     public int getMaxSlots() {
-        return maxSlots;
+        return Config.deepDrawersSlotCount;
     }
     
     /**
      * Checks if the drawer is full (all slots occupied)
+     * Uses real-time config value, so if config is reduced, new insertions are blocked
+     * until items are removed and storage.size() < getMaxSlots()
      */
     public boolean isFull() {
-        return storage.size() >= maxSlots;
+        return storage.size() >= getMaxSlots();
     }
     
     /**
@@ -242,9 +256,55 @@ public class DeepDrawersBlockEntity extends BlockEntity {
      * Gets the entry set of storage for direct iteration without creating a copy
      * More efficient than getAllItems() for iteration purposes
      * @return Set of Map.Entry<Integer, ItemStack> for direct iteration
+     * Note: Storage is sparse (only contains non-empty slots), so this returns only occupied slots
      */
     public Set<Map.Entry<Integer, ItemStack>> getStorageEntries() {
         return storage.entrySet();
+    }
+    
+    /**
+     * Cleans up any empty slots that might have been left in storage (defensive cleanup)
+     * Should be called periodically, not every tick, to avoid performance overhead
+     */
+    public void cleanupEmptySlots() {
+        Iterator<Map.Entry<Integer, ItemStack>> it = storage.entrySet().iterator();
+        boolean changed = false;
+        while (it.hasNext()) {
+            Map.Entry<Integer, ItemStack> entry = it.next();
+            ItemStack stack = entry.getValue();
+            if (stack == null || stack.isEmpty()) {
+                // Found empty slot - remove it to prevent iteration overhead
+                Integer physicalSlot = entry.getKey();
+                it.remove();
+                changed = true;
+                
+                // Clean up indices
+                Item item = stack != null ? stack.getItem() : null;
+                if (item != null) {
+                    Set<Integer> slots = itemIndex.get(item);
+                    if (slots != null) {
+                        slots.remove(physicalSlot);
+                        if (slots.isEmpty()) {
+                            itemIndex.remove(item);
+                        }
+                    }
+                }
+                
+                // Remove from logical mapping
+                Integer logicalSlot = physicalToLogical.remove(physicalSlot);
+                if (logicalSlot != null) {
+                    logicalToPhysical.remove(logicalSlot);
+                    occupiedSlots.remove(Integer.valueOf(physicalSlot));
+                    rebuildLogicalMapping();
+                }
+                
+                // Add to empty slots queue
+                emptySlotsQueue.offer(physicalSlot);
+            }
+        }
+        if (changed) {
+            setChanged();
+        }
     }
     
     /**
@@ -263,6 +323,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         if (offset < 0) {
             offset = 0;
         }
+        int maxSlots = getMaxSlots(); // Read from config in real-time
         int maxOffset = Math.max(0, maxSlots - DeepDrawersMenu.VISIBLE_SLOTS);
         if (offset > maxOffset) {
             offset = maxOffset;
@@ -278,8 +339,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     protected void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.saveAdditional(tag, provider);
         
-        // Save max slots (in case config changes)
-        tag.putInt("MaxSlots", this.maxSlots);
+        // Note: maxSlots is no longer saved - it's read from config in real-time
         
         // Save scroll offset
         tag.putInt("ScrollOffset", this.scrollOffset);
@@ -304,11 +364,8 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     protected void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
         
-        // Load max slots
-        this.maxSlots = tag.getInt("MaxSlots");
-        if (this.maxSlots <= 0) {
-            this.maxSlots = Config.deepDrawersSlotCount;
-        }
+        // Note: maxSlots is no longer loaded - it's read from config in real-time
+        // Old saves may have MaxSlots in NBT, but we ignore it now
         
         // Load scroll offset
         this.scrollOffset = tag.getInt("ScrollOffset");
@@ -333,7 +390,9 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 CompoundTag itemTag = itemsList.getCompound(i);
                 int physicalSlot = itemTag.getInt("Slot");
                 
-                if (physicalSlot >= 0 && physicalSlot < maxSlots) {
+                // Allow loading items even if slot is beyond current maxSlots (for existing items)
+                // This preserves items when config is reduced
+                if (physicalSlot >= 0) {
                     ItemStack stack = ItemStack.parseOptional(provider, itemTag.getCompound("Item"));
                     if (!stack.isEmpty()) {
                         // Rebuild all indices
@@ -350,7 +409,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         // Sending all items would exceed the 2MB NBT limit for network packets
         // Items are synced separately when the GUI is opened
         CompoundTag tag = new CompoundTag();
-        tag.putInt("MaxSlots", this.maxSlots);
+        // Note: maxSlots is no longer sent - client reads from config
         tag.putInt("ScrollOffset", this.scrollOffset);
         // Note: We intentionally do NOT include the Items list here
         // to avoid exceeding the 2MB NBT packet limit
@@ -373,12 +432,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         if (pkt.getTag() != null) {
             CompoundTag tag = pkt.getTag();
             // Only update metadata, not storage
-            if (tag.contains("MaxSlots", Tag.TAG_INT)) {
-                this.maxSlots = tag.getInt("MaxSlots");
-                if (this.maxSlots <= 0) {
-                    this.maxSlots = Config.deepDrawersSlotCount;
-                }
-            }
+            // Note: maxSlots is no longer loaded from NBT - it's read from config in real-time
             if (tag.contains("ScrollOffset", Tag.TAG_INT)) {
                 this.scrollOffset = tag.getInt("ScrollOffset");
                 if (this.scrollOffset < 0) {
@@ -556,8 +610,10 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     
     /**
      * Finds the next empty slot starting from cursor (circular search)
+     * Only searches within current maxSlots limit (from config)
      */
     private int findNextEmptySlot(int startFrom) {
+        int maxSlots = getMaxSlots(); // Read from config in real-time
         // Search forward from cursor
         for (int i = 0; i < maxSlots; i++) {
             int slot = (startFrom + i) % maxSlots;
@@ -565,7 +621,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 return slot;
             }
         }
-        return -1; // Storage is full
+        return -1; // Storage is full (within current limit)
     }
     
     // ===== Deep Drawer Extractor (Optimized Extraction API) =====
@@ -863,7 +919,9 @@ public class DeepDrawersBlockEntity extends BlockEntity {
          * Package-private for access from menu
          */
         @NotNull ItemStack insertItemIntoPhysicalSlot(int physicalSlot, @NotNull ItemStack stack, boolean simulate) {
-            if (stack.isEmpty() || physicalSlot < 0 || physicalSlot >= maxSlots) {
+            int maxSlots = getMaxSlots(); // Read from config in real-time
+            // Block insertion if drawer is full (based on current config)
+            if (stack.isEmpty() || physicalSlot < 0 || physicalSlot >= maxSlots || isFull()) {
                 return stack;
             }
             
@@ -963,7 +1021,9 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 }
             }
             
-            if (emptySlot != null && emptySlot >= 0 && emptySlot < maxSlots) {
+            // Only allow insertion if drawer is not full (based on current config)
+            int maxSlots = getMaxSlots(); // Read from config in real-time
+            if (emptySlot != null && emptySlot >= 0 && emptySlot < maxSlots && !isFull()) {
                 if (!simulate) {
                     addItemToStorage(emptySlot, stack.copy());
                     setChanged();
