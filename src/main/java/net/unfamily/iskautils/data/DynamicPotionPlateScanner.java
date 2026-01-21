@@ -774,7 +774,8 @@ public class DynamicPotionPlateScanner {
             "      \"affects_players\": true,\n" +
             "      \"affects_mobs\": true,\n" +
             "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true\n" +
+            "      \"player_shift_disable\": true,\n" +
+            "      \"tooltip_lines\": 1\n" +
             "    },\n" +
             "    {\n" +
             "      \"plate_type\": \"damage\",\n" +
@@ -785,7 +786,8 @@ public class DynamicPotionPlateScanner {
             "      \"affects_players\": true,\n" +
             "      \"affects_mobs\": true,\n" +
             "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true\n" +
+            "      \"player_shift_disable\": true,\n" +
+            "      \"tooltip_lines\": 1\n" +
             "    },\n" +
             "    {\n" +
             "      \"plate_type\": \"damage\",\n" +
@@ -796,7 +798,8 @@ public class DynamicPotionPlateScanner {
             "      \"affects_players\": true,\n" +
             "      \"affects_mobs\": true,\n" +
             "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true\n" +
+            "      \"player_shift_disable\": true,\n" +
+            "      \"tooltip_lines\": 1\n" +
             "    },\n" +
             "    {\n" +
             "      \"plate_type\": \"special\",\n" +

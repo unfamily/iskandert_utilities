@@ -130,9 +130,9 @@
   "block.iska_utils.iska_utils_fire": "Piastra Trappola Fuoco",
   "block.iska_utils.iska_utils_freeze": "Piastra Trappola Gelo",
   
-  "tooltip.iska_utils.iska_utils_damage.desc0": "Danno: 2 (non giocatore)",
-  "tooltip.iska_utils.iska_utils_improved_damage.desc0": "Danno: 4 (giocatore)",
-  "tooltip.iska_utils.iska_utils_lethal_damage.desc0": "Danno: 500 (giocatore)",
+  "tooltip.iska_utils.iska_utils_damage.desc0": "§7Danno: 2 (non giocatore)",
+  "tooltip.iska_utils.iska_utils_improved_damage.desc0": "§7Danno: 4 (giocatore)",
+  "tooltip.iska_utils.iska_utils_lethal_damage.desc0": "§7Danno: 500 (giocatore)",
 
   "block.iska_utils.weather_detector": "Rilevatore del Meteo",
   "block.iska_utils.weather_alterer": "Alteratore del Meteo",
