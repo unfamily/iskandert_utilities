@@ -202,7 +202,7 @@ public class Config
                     "Items without # are item IDs (e.g. apotheosis:gem, minecraft:enchanted_book)",
                     "Only items matching these tags/IDs will be accepted")
             .defineList("400_deep_drawers_allowed_tags", 
-                       java.util.Arrays.asList("#c:enchantables", "apotheosis:gem", "minecraft:enchanted_book", "minecraft:potion"), 
+                       java.util.Arrays.asList("#c:enchantables", "apotheosis:gem", "minecraft:enchanted_book", "minecraft:potion", "#c:tools", "#c:armors"), 
                        obj -> obj instanceof String);
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DEEP_DRAWERS_BLACKLIST = BUILDER
@@ -211,7 +211,7 @@ public class Config
                     "Tags starting with # are item tags, items without # are item IDs",
                     "Default includes minecraft:book for safety reasons")
             .defineList("401_deep_drawers_blacklist",
-                    java.util.Arrays.asList("minecraft:book"),
+                    java.util.Arrays.asList("minecraft:book", "#c:skulls", "#minecraft:skulls"),
                     obj -> obj instanceof String);
 
     private static final ModConfigSpec.IntValue DEEP_DRAWERS_SLOT_COUNT = BUILDER
