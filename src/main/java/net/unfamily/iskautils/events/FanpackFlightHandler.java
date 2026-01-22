@@ -71,8 +71,8 @@ public class FanpackFlightHandler {
                 StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1", true);
                 flight1StageTime.remove(playerId);
                 
-                // Disable flight
-                if (!player.getAbilities().instabuild) {
+                // Disable flight (stage system ensures we only disable if we enabled it)
+                if (!player.getAbilities().instabuild && player.getAbilities().mayfly) {
                     player.getAbilities().mayfly = false;
                     player.getAbilities().flying = false;
                     player.onUpdateAbilities();
@@ -87,20 +87,21 @@ public class FanpackFlightHandler {
         // Only enable flight if flight0 stage is present (heartbeat from fanpack)
         // This ensures the fanpack is actually present and ticking
         boolean hasFlight0Stage = StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight0");
+        boolean hasFlight = player.getAbilities().mayfly;
         
         if (!hasFlight0Stage) {
-            // No heartbeat - disable flight
-            if (!player.getAbilities().instabuild && player.getAbilities().mayfly) {
-                player.getAbilities().mayfly = false;
-                player.getAbilities().flying = false;
-                player.onUpdateAbilities();
-            }
+            // No heartbeat - if flight is active, it's from another mod, don't interfere
+            // Only disable if we enabled it (which we know because we only enable when stage is present)
+            // Since stage is not present, we didn't enable it, so don't disable
+            // Clear any timers
+            lastStageCheckTime.remove(playerId);
+            flight1StageTime.remove(playerId);
             return;
         }
         
         // If flight0 stage is present, enable flight (fanpack is present and ticking)
-        // The stage itself is proof that the fanpack is equipped and working
-        if (!player.getAbilities().mayfly) {
+        // Only enable if not already enabled (to avoid interfering with other mods)
+        if (!hasFlight) {
             player.getAbilities().mayfly = true;
             player.onUpdateAbilities();
         }

@@ -1,15 +1,23 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.events.FanpackFlightHandler;
+import net.unfamily.iskautils.stage.StageRegistry;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Class that handles Curios integration for the Fanpack.
@@ -17,6 +25,10 @@ import java.lang.reflect.Method;
  */
 public class FanpackCurioHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(FanpackCurioHandler.class);
+    
+    // Track last warning time for low energy messages (same as FanpackItem)
+    private static final Map<UUID, Long> lastWarningTime = new HashMap<>();
+    private static final long WARNING_COOLDOWN = 40; // 2 seconds (40 ticks)
     
     /**
      * Registers the Fanpack as a curio.
@@ -53,7 +65,7 @@ public class FanpackCurioHandler {
                     String methodName = method.getName();
                     
                     if ("curioTick".equals(methodName)) {
-                        // Handle curioTick
+                        // Handle curioTick - same logic as inventoryTick in FanpackItem
                         Object slotContext = args[0];
                         ItemStack stack = (ItemStack) args[1];
                         
@@ -65,9 +77,77 @@ public class FanpackCurioHandler {
                             return null;
                         }
                         
-                        if (entity instanceof ServerPlayer player) {
-                            // The flight handler already manages flight, but we can add additional logic here if needed
-                            // For now, we rely on the existing FanpackFlightHandler
+                        if (entity instanceof ServerPlayer serverPlayer && stack.getItem() instanceof FanpackItem fanpack) {
+                            // Handle energy consumption for flight (same as inventoryTick)
+                            boolean flightEnergyRequired = Config.fanpackFlightEnergyConsume > 0;
+                            boolean hasEnoughEnergyForFlight = true;
+                            
+                            if (flightEnergyRequired && Config.fanpackEnergyCapacity > 0) {
+                                int currentEnergy = fanpack.getEnergyStored(stack);
+                                int maxEnergy = fanpack.getMaxEnergyStored(stack);
+                                int requiredEnergy = Config.fanpackFlightEnergyConsume;
+                                
+                                // Check if we have enough energy for flight
+                                hasEnoughEnergyForFlight = currentEnergy >= requiredEnergy;
+                                
+                                // Check if energy is at 10% or below and show warning
+                                if (maxEnergy > 0 && currentEnergy <= maxEnergy * 0.1) {
+                                    long currentTick = serverPlayer.level().getGameTime();
+                                    UUID playerId = serverPlayer.getUUID();
+                                    Long lastWarning = lastWarningTime.get(playerId);
+                                    
+                                    // Show warning every 2 seconds (40 ticks)
+                                    if (lastWarning == null || currentTick - lastWarning >= WARNING_COOLDOWN) {
+                                        // Calculate current energy percentage
+                                        int energyPercent = (int) Math.round((currentEnergy * 100.0) / maxEnergy);
+                                        
+                                        // Show warning message in action bar with current percentage
+                                        serverPlayer.displayClientMessage(
+                                            Component.translatable("message.iska_utils.fanpack.low_energy", energyPercent)
+                                                .withStyle(net.minecraft.ChatFormatting.RED),
+                                            true // action bar
+                                        );
+                                        
+                                        // Play breeze sound
+                                        serverPlayer.level().playSound(
+                                            null,
+                                            serverPlayer.getX(),
+                                            serverPlayer.getY(),
+                                            serverPlayer.getZ(),
+                                            SoundEvents.BREEZE_IDLE_AIR,
+                                            SoundSource.PLAYERS,
+                                            0.5f,
+                                            1.0f
+                                        );
+                                        
+                                        lastWarningTime.put(playerId, currentTick);
+                                    }
+                                }
+                                
+                                // If player is flying, consume energy (but not if in spectator or creative mode)
+                                if (serverPlayer.getAbilities().flying && currentEnergy >= requiredEnergy 
+                                        && !serverPlayer.getAbilities().instabuild && !serverPlayer.isSpectator()) {
+                                    int newEnergy = currentEnergy - requiredEnergy;
+                                    fanpack.setEnergyStored(stack, newEnergy);
+                                }
+                            }
+                            
+                            // Set internal stage to indicate fanpack is present (heartbeat)
+                            // Only add stage if we have enough energy for flight (or energy is not required)
+                            // This works for items in Curios slots
+                            if (hasEnoughEnergyForFlight) {
+                                StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
+                            } else {
+                                // Not enough energy - remove stage if present
+                                if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight0")) {
+                                    StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
+                                }
+                            }
+                            
+                            // Auto-remove flight1 stage if present (indicates handler detected it)
+                            if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight1")) {
+                                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1", true);
+                            }
                         }
                         
                         return null;
