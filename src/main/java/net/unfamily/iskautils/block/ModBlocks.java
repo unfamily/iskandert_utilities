@@ -210,6 +210,12 @@ public class ModBlocks {
             .mapColor(MapColor.WOOD)
             .strength(2.0f)
             .sound(SoundType.WOOD);
+    
+    // Sacred Rubber Root properties (harder than regular logs, but not obsidian-level)
+    private static final BlockBehaviour.Properties SACRED_RUBBER_ROOT_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
+            .strength(5.0f, 600.0f) // Harder than logs, but not obsidian-level
+            .sound(SoundType.WOOD);
             
             
     private static final BlockBehaviour.Properties RUBBER_LOG_SAP_PROPERTIES = BlockBehaviour.Properties.of()
@@ -230,6 +236,14 @@ public class ModBlocks {
             .mapColor(MapColor.PLANT)
             .noCollission()
             .randomTicks()
+            .instabreak()
+            .sound(SoundType.GRASS)
+            .pushReaction(PushReaction.DESTROY);
+            
+    // Properties for sacred rubber sapling (no randomTicks, will use scheduled ticks instead)
+    private static final BlockBehaviour.Properties SACRED_RUBBER_SAPLING_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.PLANT)
+            .noCollission()
             .instabreak()
             .sound(SoundType.GRASS)
             .pushReaction(PushReaction.DESTROY);
@@ -281,6 +295,18 @@ public class ModBlocks {
             
     public static final DeferredBlock<RubberSaplingBlock> RUBBER_SAPLING = BLOCKS.register("rubber_sapling",
             () -> new RubberSaplingBlock(RUBBER_SAPLING_PROPERTIES));
+            
+    // Sacred Rubber Sapling (without tree growth)
+    public static final DeferredBlock<SacredRubberSaplingBlock> SACRED_RUBBER_SAPLING = BLOCKS.register("sacred_rubber_sapling",
+            () -> new SacredRubberSaplingBlock(SACRED_RUBBER_SAPLING_PROPERTIES));
+    
+    // Sacred Rubber Root (replaces sapling when growth completes)
+    public static final DeferredBlock<SacredRubberRootBlock> SACRED_RUBBER_ROOT = BLOCKS.register("sacred_rubber_root",
+            () -> new SacredRubberRootBlock(SACRED_RUBBER_ROOT_PROPERTIES));
+    
+    // Sacred Rubber Log (for grid structure, not visible in creative tab, drops normal rubber_log)
+    public static final DeferredBlock<RubberLogSacredBlock> RUBBER_LOG_SACRED = BLOCKS.register("rubber_log_sacred",
+            () -> new RubberLogSacredBlock(RUBBER_LOG_PROPERTIES));
 
     // Rubber Block
     public static final DeferredBlock<RubberBlock> RUBBER_BLOCK = BLOCKS.register("rubber_block",

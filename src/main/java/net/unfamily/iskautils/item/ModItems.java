@@ -41,6 +41,7 @@ import net.unfamily.iskautils.item.custom.ModerateModuleItem;
 import net.unfamily.iskautils.item.custom.FastModuleItem;
 import net.unfamily.iskautils.item.custom.ExtremeModuleItem;
 import net.unfamily.iskautils.item.custom.UltraModuleItem;
+import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
@@ -235,6 +236,17 @@ public class ModItems {
             
     public static final DeferredItem<Item> RUBBER_SAPLING = ITEMS.register("rubber_sapling",
             () -> new BlockItem(ModBlocks.RUBBER_SAPLING.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> SACRED_RUBBER_SAPLING = ITEMS.register("sacred_rubber_sapling",
+            () -> new SacredRubberSaplingBlockItem(ModBlocks.SACRED_RUBBER_SAPLING.get(), ITEM_PROPERTIES));
+            
+    public static final DeferredItem<Item> SACRED_RUBBER_ROOT = ITEMS.register("sacred_rubber_root",
+            () -> new BlockItem(ModBlocks.SACRED_RUBBER_ROOT.get(), ITEM_PROPERTIES));
+            // Not added to creative tab - hidden item
+            
+    public static final DeferredItem<Item> RUBBER_LOG_SACRED = ITEMS.register("rubber_log_sacred",
+            () -> new BlockItem(ModBlocks.RUBBER_LOG_SACRED.get(), ITEM_PROPERTIES));
+            // Not added to creative tab - hidden item
 
     public static final DeferredItem<Item> RUBBER_BLOCK = ITEMS.register("rubber_block",
             () -> new BlockItem(ModBlocks.RUBBER_BLOCK.get(), ITEM_PROPERTIES));

@@ -16,12 +16,12 @@ public class SapBlock extends SlimeBlock {
 
     @Override
     public int getFlammability(BlockState state, BlockGetter world, BlockPos pos, Direction face) {
-        return 80;
+        return 40;
     }
 
     @Override
     public int getFireSpreadSpeed(BlockState state, BlockGetter world, BlockPos pos, Direction face) {
-        return 120;
+        return 100;
     }
 
     @Override

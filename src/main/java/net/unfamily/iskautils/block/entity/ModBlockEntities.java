@@ -122,6 +122,18 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("fan",
                     () -> BlockEntityType.Builder.of(FanBlockEntity::new, ModBlocks.FAN.get())
                             .build(null));
+    
+    // Sacred Rubber Sapling Block Entity
+    // BlockEntity for RubberLogSacredBlock (stores root coordinates)
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RubberLogSacredBlockEntity>> RUBBER_LOG_SACRED_BE =
+            BLOCK_ENTITIES.register("rubber_log_sacred", () ->
+                    BlockEntityType.Builder.of(RubberLogSacredBlockEntity::new,
+                            ModBlocks.RUBBER_LOG_SACRED.get()).build(null));
+    
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SacredRubberSaplingBlockEntity>> SACRED_RUBBER_SAPLING_BE =
+            BLOCK_ENTITIES.register("sacred_rubber_sapling",
+                    () -> BlockEntityType.Builder.of(SacredRubberSaplingBlockEntity::new, ModBlocks.SACRED_RUBBER_SAPLING.get())
+                            .build(null));
 
     /**
      * Registra tutte le entità blocco

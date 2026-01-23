@@ -13,6 +13,8 @@ import java.util.List;
 
 /**
  * Rubber leaves block with flammability properties.
+ * Note: The decay distance is controlled by the vanilla LeavesBlock system (5 blocks).
+ * Additional rubber_wood blocks are placed within the canopy to ensure all leaves stay within range.
  */
 public class RubberLeavesBlock extends LeavesBlock {
     public static final MapCodec<RubberLeavesBlock> CODEC = simpleCodec(RubberLeavesBlock::new);
@@ -28,11 +30,11 @@ public class RubberLeavesBlock extends LeavesBlock {
 
     @Override
     public int getFlammability(BlockState state, BlockGetter world, BlockPos pos, Direction face) {
-        return 30;
+        return 80;
     }
 
     @Override
     public int getFireSpreadSpeed(BlockState state, BlockGetter world, BlockPos pos, Direction face) {
-        return 60;
+        return 50;
     }
 } 

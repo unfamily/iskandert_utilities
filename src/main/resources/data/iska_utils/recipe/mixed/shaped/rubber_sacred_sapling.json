@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " B ",
+    "BAB",
+    " B "
+  ],
+  "key": {
+    "A": {
+      "item": "iska_utils:rubber_sapling"
+    },
+    "B": {
+      "item": "minecraft:ghast_tear"
+    }
+  },
+  "result": {
+    "id": "iska_utils:sacred_rubber_sapling",
+    "count": 1
+  }
+} 

@@ -14,6 +14,10 @@
   "item.iska_utils.gauntlet_of_climbing": "Gauntlet of Climbing",
   "tooltip.iska_utils.gauntlet_of_climbing.desc": "§7Allows you to climb walls when held in inventory",
   "tooltip.iska_utils.gauntlet_of_climbing.toggle": "§7Press %s to toggle",
+  
+  "tooltip.iska_utils.sacred_rubber_sapling.desc0": "Don't worry, it doesn't grow by itself...",
+  "tooltip.iska_utils.sacred_rubber_sapling.desc1": "It requires a large dose of fertilizer.",
+  "tooltip.iska_utils.sacred_rubber_sapling.desc2": "Tree of enormous size.",
   "tooltip.iska_utils.gauntlet_of_climbing.status.enabled": "§aClimbing: Enabled",
   "tooltip.iska_utils.gauntlet_of_climbing.status.disabled": "§cClimbing: Disabled",
   "message.iska_utils.gauntlet_climbing.enabled": "§aClimbing enabled",
@@ -62,6 +66,9 @@
   "block.iska_utils.rubber_log_filled": "Rubber Log",
   "block.iska_utils.rubber_leaves": "Rubber Leaves",
   "block.iska_utils.rubber_sapling": "Rubber Sapling",
+  "block.iska_utils.sacred_rubber_sapling": "Sacred Rubber Sapling",
+  "block.iska_utils.sacred_rubber_root": "Sacred Rubber Root",
+  "block.iska_utils.rubber_log_sacred": "Sacred Rubber Log",
   "block.iska_utils.rubber_block": "Rubber Block",
   "block.iska_utils.rubber_fence": "Rubber Fence",
   "block.iska_utils.rubber_fence_gate": "Rubber Fence Gate",
@@ -703,6 +710,8 @@
   
   "message.iska_utils.deep_drawers.full": "Deep Drawer is full",
   "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slots filled",
+  "message.iska_utils.deep_drawers.empty": "Deep Drawer is empty",
+  "message.iska_utils.deep_drawers.debug_extracted": "§7[DEBUG] Extracted: %s",
   "message.iska_utils.deep_drawer_extractor.buffer_status": "Extractor Buffer: %d/%d slots filled",
   
   "iska_utils.config.deprecated_scanner_scan_range": "000 [Deprecated] Scanner Scan Range"

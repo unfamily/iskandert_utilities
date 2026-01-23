@@ -113,6 +113,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_PLANKS.get());
                                 pOutput.accept(ModItems.RUBBER_LEAVES.get());
                                 pOutput.accept(ModItems.RUBBER_SAPLING.get());
+                                pOutput.accept(ModItems.SACRED_RUBBER_SAPLING.get());
                                 // Rubber wood variants
                                 pOutput.accept(ModItems.RUBBER_STAIRS.get());
                                 pOutput.accept(ModItems.RUBBER_SLAB.get());

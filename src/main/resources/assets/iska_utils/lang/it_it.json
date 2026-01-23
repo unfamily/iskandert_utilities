@@ -14,6 +14,10 @@
   "item.iska_utils.gauntlet_of_climbing": "Guanto dell'Arrampicata",
   "tooltip.iska_utils.gauntlet_of_climbing.desc": "§7Permette di arrampicarsi sui muri quando tenuto in inventario",
   "tooltip.iska_utils.gauntlet_of_climbing.toggle": "§7Premi %s per attivare/disattivare",
+  
+  "tooltip.iska_utils.sacred_rubber_sapling.desc0": "Non ti preoccupare, non cresce da solo...",
+  "tooltip.iska_utils.sacred_rubber_sapling.desc1": "Richiede una grossa dose di fertilizzante.",
+  "tooltip.iska_utils.sacred_rubber_sapling.desc2": "Albero di dimensioni enormi.",
   "tooltip.iska_utils.gauntlet_of_climbing.status.enabled": "§aArrampicata: Attiva",
   "tooltip.iska_utils.gauntlet_of_climbing.status.disabled": "§cArrampicata: Disattiva",
   "message.iska_utils.gauntlet_climbing.enabled": "§aArrampicata attivata",
@@ -59,6 +63,9 @@
   "block.iska_utils.rubber_log_filled": "Tronco di Caucciù",
   "block.iska_utils.rubber_leaves": "Foglie di Caucciù",
   "block.iska_utils.rubber_sapling": "Arboscello di Caucciù",
+  "block.iska_utils.sacred_rubber_sapling": "Arboscello Sacro di Caucciù",
+  "block.iska_utils.sacred_rubber_root": "Radice Sacra di Caucciù",
+  "block.iska_utils.rubber_log_sacred": "Tronco di Caucciù Sacro",
   "block.iska_utils.rubber_wood": "Legno di Caucciù",
   "block.iska_utils.stripped_rubber_wood": "Legno di Caucciù Scortecciato",
   "block.iska_utils.rubber_planks": "Assi di Caucciù",
@@ -693,6 +700,8 @@
   
   "message.iska_utils.deep_drawers.full": "Deep Drawer pieno",
   "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slot riempiti",
+  "message.iska_utils.deep_drawers.empty": "Deep Drawer vuoto",
+  "message.iska_utils.deep_drawers.debug_extracted": "§7[DEBUG] Estratto: %s",
   "message.iska_utils.deep_drawer_extractor.buffer_status": "Buffer Estrattore: %d/%d slot riempiti",
   
   "iska_utils.config.deprecated_scanner_scan_range": "000 [Obsoleto] Scanner Scan Range"

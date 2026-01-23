@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "iska_utils:rubber_sapling"
+    "iska_utils:rubber_sapling",
+    "iska_utils:sacred_rubber_sapling"
   ]
 } 

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "stage=0": {
+      "model": "iska_utils:block/sacred_rubber_sapling"
+    },
+    "stage=1": {
+      "model": "iska_utils:block/sacred_rubber_sapling"
+    }
+  }
+}

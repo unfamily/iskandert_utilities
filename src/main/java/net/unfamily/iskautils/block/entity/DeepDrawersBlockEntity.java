@@ -8,6 +8,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -263,6 +264,47 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     }
     
     /**
+     * DEBUG TEMPORANEO: Gets the first storage entry for direct extraction
+     * TODO: RIMUOVERE DOPO I TEST
+     */
+    public Map.Entry<Integer, ItemStack> getFirstStorageEntry() {
+        if (storage.isEmpty()) {
+            return null;
+        }
+        return storage.entrySet().iterator().next();
+    }
+    
+    /**
+     * DEBUG TEMPORANEO: Extracts item from a physical slot
+     * TODO: RIMUOVERE DOPO I TEST
+     */
+    public ItemStack extractItemFromPhysicalSlot(int physicalSlot, int amount, boolean simulate) {
+        ItemStack existing = storage.get(physicalSlot);
+        if (existing == null || existing.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        
+        int toExtract = Math.min(amount, existing.getCount());
+        ItemStack extracted = existing.copy();
+        extracted.setCount(toExtract);
+        
+        if (!simulate) {
+            if (toExtract >= existing.getCount()) {
+                // Remove entire stack
+                removeItemFromStorage(physicalSlot);
+            } else {
+                // Reduce stack size
+                ItemStack newStack = existing.copy();
+                newStack.shrink(toExtract);
+                storage.put(physicalSlot, newStack);
+                setChanged();
+            }
+        }
+        
+        return extracted;
+    }
+    
+    /**
      * Cleans up any empty slots that might have been left in storage (defensive cleanup)
      * Should be called periodically, not every tick, to avoid performance overhead
      */
@@ -509,15 +551,28 @@ public class DeepDrawersBlockEntity extends BlockEntity {
      * @return true if it matches
      */
     private boolean matchesTagOrId(ItemStack stack, String tagOrId) {
+        if (tagOrId == null || tagOrId.isEmpty()) {
+            return false;
+        }
+        
         if (tagOrId.startsWith("#")) {
-            // It's a tag
-            String tagName = tagOrId.substring(1); // Remove #
+            // It's a tag - remove the # prefix
+            String tagName = tagOrId.substring(1).trim(); // Remove # and trim whitespace
+            if (tagName.isEmpty()) {
+                return false;
+            }
             try {
                 ResourceLocation tagLocation = ResourceLocation.parse(tagName);
-                TagKey<Item> itemTag = TagKey.create(BuiltInRegistries.ITEM.key(), tagLocation);
-                return stack.is(itemTag);
+                // Use ItemTags.create() like in DeepDrawerExtractorBlockEntity for consistency
+                TagKey<Item> itemTag = ItemTags.create(tagLocation);
+                // Use item.builtInRegistryHolder().is() to check if the item has this specific tag
+                // This is the same method used in DeepDrawerExtractorBlockEntity and other places
+                Item item = stack.getItem();
+                return item.builtInRegistryHolder().is(itemTag);
             } catch (Exception e) {
-                // Invalid tag format
+                // Invalid tag format - log for debugging
+                org.slf4j.LoggerFactory.getLogger(DeepDrawersBlockEntity.class).debug(
+                    "Failed to parse tag '{}' for blacklist check: {}", tagOrId, e.getMessage());
                 return false;
             }
         } else {
@@ -925,6 +980,11 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 return stack;
             }
             
+            // Validate item (check blacklist and allowed tags)
+            if (!DeepDrawersBlockEntity.this.isItemValid(stack)) {
+                return stack; // Reject invalid items
+            }
+            
             // Use Deep Drawer context to enable stack size modification via mixin
             return DeepDrawerStackSizeContext.withDeepDrawerContext(() -> {
                 ItemStack existing = storage.get(physicalSlot);
@@ -975,6 +1035,11 @@ public class DeepDrawersBlockEntity extends BlockEntity {
          * Uses item index and empty slots queue for O(1) performance
          */
         private @NotNull ItemStack insertItemAuto(@NotNull ItemStack stack, boolean simulate) {
+            // Validate item (check blacklist and allowed tags)
+            if (!DeepDrawersBlockEntity.this.isItemValid(stack)) {
+                return stack; // Reject invalid items
+            }
+            
             Item item = stack.getItem();
             
             // First, try to merge into existing slot with same item
@@ -1037,8 +1102,20 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         
         @Override
         public @NotNull ItemStack extractItem(int logicalSlot, int amount, boolean simulate) {
-            // Block extraction from drawer (only insertion allowed)
-            return ItemStack.EMPTY;
+            // DEBUG TEMPORANEO: Allow extraction from drawer via hoppers/pipes
+            // TODO: RIMUOVERE DOPO I TEST - È SOLO PER DEBUG
+            if (logicalSlot < 0 || logicalSlot >= occupiedSlots.size()) {
+                return ItemStack.EMPTY;
+            }
+            
+            // Map logical slot to physical slot
+            Integer physicalSlot = logicalToPhysical.get(logicalSlot);
+            if (physicalSlot == null) {
+                return ItemStack.EMPTY;
+            }
+            
+            // Extract from physical slot
+            return DeepDrawersBlockEntity.this.extractItemFromPhysicalSlot(physicalSlot, amount, simulate);
         }
         
         @Override

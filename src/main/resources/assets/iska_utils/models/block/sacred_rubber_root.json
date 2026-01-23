@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "iska_utils:block/stripped_rubber_log_top",
+    "bottom": "iska_utils:block/rubber_log_top",
+    "side": "iska_utils:block/sacred_rubber_root"
+  }
+}

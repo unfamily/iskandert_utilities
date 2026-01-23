@@ -161,6 +161,31 @@ public class DeepDrawersBlock extends BaseEntityBlock {
         if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
             BlockEntity entity = level.getBlockEntity(pos);
             if (entity instanceof DeepDrawersBlockEntity deepDrawers) {
+                // ===== DEBUG TEMPORANEO: Estrazione diretta con Ctrl+Click =====
+                // TODO: RIMUOVERE QUESTO CODICE DOPO I TEST - È SOLO PER DEBUG
+                if (player.isCrouching() && player.isShiftKeyDown()) {
+                    // Ctrl+Shift+Click: estrai un item direttamente (DEBUG TEMPORANEO)
+                    java.util.Map.Entry<Integer, net.minecraft.world.item.ItemStack> firstEntry = deepDrawers.getFirstStorageEntry();
+                    if (firstEntry != null) {
+                        net.minecraft.world.item.ItemStack extracted = deepDrawers.extractItemFromPhysicalSlot(firstEntry.getKey(), 1, false);
+                        if (!extracted.isEmpty()) {
+                            if (!player.getInventory().add(extracted)) {
+                                // Inventory full, drop item
+                                player.drop(extracted, false);
+                            }
+                            serverPlayer.displayClientMessage(
+                                net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.debug_extracted", extracted.getDisplayName()),
+                                true); // true = actionbar
+                        }
+                    } else {
+                        serverPlayer.displayClientMessage(
+                            net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.empty"),
+                            true); // true = actionbar
+                    }
+                    return net.minecraft.world.InteractionResult.CONSUME;
+                }
+                // ===== FINE DEBUG TEMPORANEO =====
+                
                 // Show status message (actionbar) if:
                 // - Shift+click (always), OR
                 // - Normal click when GUI is disabled

@@ -216,6 +216,8 @@ public class IskaUtils {
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.SLOW_VECT.get(), RenderType.cutout());
                 // Aggiungi RenderType cutout per il rubber_sapling
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.RUBBER_SAPLING.get(), RenderType.cutout());
+                // Aggiungi RenderType cutout per il sacred_rubber_sapling
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.SACRED_RUBBER_SAPLING.get(), RenderType.cutout());
                 // Aggiungi RenderType cutout_mipped per le netherite_bars
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.NETHERITE_BARS.get(), RenderType.cutoutMipped());
                 
