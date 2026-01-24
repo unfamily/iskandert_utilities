@@ -427,7 +427,7 @@ public class ModItems {
     public static final DeferredItem<Item> BURNING_BRAZIER = ITEMS.register("burning_brazier",
             () -> new BurningBrazierItem(new Item.Properties().stacksTo(1)));
     
-    public static final DeferredItem<Item> REDSTONE_SIGNAL = ITEMS.register("redstone_signal",
+    public static final DeferredItem<Item> REDSTONE_ACTIVATOR = ITEMS.register("redstone_activator",
             () -> new RedstoneSignalItem(new Item.Properties().stacksTo(1)));
     
     // Redstone Activator Signal Block Item (not indexed in creative tab)

@@ -7,13 +7,13 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.block.ModBlocks;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -57,23 +57,31 @@ public class RedstoneSignalItem extends Item {
             return InteractionResult.FAIL;
         }
 
-        // Get the position where we want to place the signal (above the clicked block)
-        BlockPos placePos = clickedPos.above();
+        // Use BlockPlaceContext to place the block where the player is looking (like a normal block)
+        BlockPlaceContext placeContext = new BlockPlaceContext(context);
+        BlockPos placePos = placeContext.getClickedPos();
+        
+        // If clicking on a replaceable block or air, place at clicked position
+        // Otherwise, place at the adjacent position
+        if (!placeContext.canPlace()) {
+            placePos = placeContext.getClickedPos().relative(placeContext.getClickedFace());
+        }
 
-        // Check if the target position is air
+        // Check if the target position is air or replaceable
         BlockState targetState = level.getBlockState(placePos);
-        if (!targetState.isAir()) {
+        if (!targetState.isAir() && !targetState.canBeReplaced(placeContext)) {
             return InteractionResult.FAIL;
         }
 
         // Place the redstone activator signal block
-        BlockState signalState = ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get().defaultBlockState();
-        level.setBlock(placePos, signalState, 3);
+        BlockState signalState = ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get().getStateForPlacement(placeContext);
+        if (signalState != null && level.setBlock(placePos, signalState, 3)) {
+            // Consume durability
+            stack.setDamageValue(stack.getDamageValue() + 1);
+            return InteractionResult.SUCCESS;
+        }
 
-        // Consume durability
-        stack.setDamageValue(stack.getDamageValue() + 1);
-
-        return InteractionResult.SUCCESS;
+        return InteractionResult.FAIL;
     }
 
     @Override
@@ -82,6 +90,6 @@ public class RedstoneSignalItem extends Item {
         super.appendHoverText(stack, context, tooltip, flag);
         
         // Add description tooltip
-        tooltip.add(Component.translatable("tooltip.iska_utils.redstone_signal.desc"));
+        tooltip.add(Component.translatable("tooltip.iska_utils.redstone_activator.desc"));
     }
 }

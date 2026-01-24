@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "iska_utils:item/redstone_signal"
+    "layer0": "iska_utils:item/redstone_activator"
   }
 }

@@ -20,8 +20,8 @@ import org.joml.Vector3f;
  */
 public class RedstoneSignalBlock extends Block {
 
-    // Small hitbox: 4x4 base, 4 pixels high, centered
-    private static final VoxelShape SIGNAL_SHAPE = Block.box(6.0D, 0.0D, 6.0D, 10.0D, 4.0D, 10.0D);
+    // Small hitbox: 4x4x4 pixels, fully centered in the block (from 6,6,6 to 10,10,10)
+    private static final VoxelShape SIGNAL_SHAPE = Block.box(6.0D, 6.0D, 6.0D, 10.0D, 10.0D, 10.0D);
     private static final int REMOVAL_TICKS = 60; // 3 seconds (60 ticks)
 
     public RedstoneSignalBlock(Properties properties) {
