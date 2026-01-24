@@ -1,14 +1,21 @@
 package net.unfamily.iskautils.item.custom;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.block.ModBlocks;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * Redstone Signal Item - Places an invisible block that emits a temporary redstone signal
@@ -67,5 +74,14 @@ public class RedstoneSignalItem extends Item {
         stack.setDamageValue(stack.getDamageValue() + 1);
 
         return InteractionResult.SUCCESS;
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
+        
+        // Add description tooltip
+        tooltip.add(Component.translatable("tooltip.iska_utils.redstone_signal.desc"));
     }
 }
