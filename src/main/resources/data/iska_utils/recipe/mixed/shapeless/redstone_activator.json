@@ -1,7 +1,7 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {"tag": "c:nuggets/gold"},
+    {"tag": "c:ingots/gold"},
     {"tag": "c:dusts/redstone"}
   ],
   "result": {
