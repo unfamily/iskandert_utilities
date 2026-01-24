@@ -569,6 +569,10 @@
   "tooltip.iska_utils.burning_brazier.desc1": "§7Premi §f%s §7per attivare/disattivare il piazzamento automatico delle fiamme",
   "tooltip.iska_utils.burning_brazier.desc2": "§7Tasto destro sulle fiamme per rimuoverle e ricaricare",
   
+  "item.iska_utils.redstone_signal": "Segnale di Redstone",
+  "block.iska_utils.redstone_activator_signal": "Segnale Attivatore di Redstone",
+  "tooltip.iska_utils.redstone_signal.desc": "§7Permette di emettere un segnale temporaneo di redstone",
+  
   "item.iska_utils.ghost_brazier": "Braciere Fantasma",
   "tooltip.iska_utils.ghost_brazier.desc0": "§fUn braciere che permette di dissolvere temporaneamente il tuo corpo e divenire un fantasma",
   "tooltip.iska_utils.ghost_brazier.desc1": "§7Premi §e%s §7per passare tra forma fisica e forma eterea",

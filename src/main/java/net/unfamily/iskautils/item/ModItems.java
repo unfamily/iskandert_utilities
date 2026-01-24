@@ -21,6 +21,7 @@ import net.unfamily.iskautils.item.custom.SwissWrenchItem;
 import net.unfamily.iskautils.item.custom.AngelBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
 import net.unfamily.iskautils.item.custom.BurningBrazierItem;
+import net.unfamily.iskautils.item.custom.RedstoneSignalItem;
 import net.unfamily.iskautils.item.custom.GhostBrazierItem;
 import net.unfamily.iskautils.item.custom.GreedyShieldItem;
 import net.unfamily.iskautils.item.custom.BlueprintItem;
@@ -425,6 +426,13 @@ public class ModItems {
     // Burning Brazier (places burning flame blocks when light level is low)
     public static final DeferredItem<Item> BURNING_BRAZIER = ITEMS.register("burning_brazier",
             () -> new BurningBrazierItem(new Item.Properties().stacksTo(1)));
+    
+    public static final DeferredItem<Item> REDSTONE_SIGNAL = ITEMS.register("redstone_signal",
+            () -> new RedstoneSignalItem(new Item.Properties().stacksTo(1)));
+    
+    // Redstone Activator Signal Block Item (not indexed in creative tab)
+    public static final DeferredItem<Item> REDSTONE_ACTIVATOR_SIGNAL = ITEMS.register("redstone_activator_signal",
+            () -> new BlockItem(ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get(), ITEM_PROPERTIES));
 
     // Burning Flame Block Item (not indexed in creative tab)
     public static final DeferredItem<Item> BURNING_FLAME = ITEMS.register("burning_flame",

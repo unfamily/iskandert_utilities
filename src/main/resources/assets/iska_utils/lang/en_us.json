@@ -575,6 +575,10 @@
   "tooltip.iska_utils.burning_brazier.desc1": "§7Press §f%s §7to toggle automatic flame placement",
   "tooltip.iska_utils.burning_brazier.desc2": "§7Right-click on flames to remove and recharge",
   
+  "item.iska_utils.redstone_signal": "Redstone Signal",
+  "block.iska_utils.redstone_activator_signal": "Redstone Activator Signal",
+  "tooltip.iska_utils.redstone_signal.desc": "§7Allows you to emit a temporary redstone signal",
+  
   "item.iska_utils.ghost_brazier": "Ghost Brazier",
   "tooltip.iska_utils.ghost_brazier.desc0": "§fA brazier that allows you to temporarily dissolve your body and become a ghost",
   "tooltip.iska_utils.ghost_brazier.desc1": "§7Press §e%s §7to toggle between physical and ethereal form",

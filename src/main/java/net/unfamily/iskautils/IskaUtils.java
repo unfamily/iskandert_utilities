@@ -220,6 +220,8 @@ public class IskaUtils {
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.SACRED_RUBBER_SAPLING.get(), RenderType.cutout());
                 // Aggiungi RenderType cutout_mipped per le netherite_bars
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.NETHERITE_BARS.get(), RenderType.cutoutMipped());
+                // Aggiungi RenderType cutout per il redstone_activator_signal
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get(), RenderType.cutout());
                 
                 // Register item property functions for dolly filled state
                 ItemProperties.register(

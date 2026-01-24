@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.WallBlock;
 import net.unfamily.iskautils.block.ShopBlock;
 import net.unfamily.iskautils.block.AutoShopBlock;
 import net.unfamily.iskautils.block.BurningFlameBlock;
+import net.unfamily.iskautils.block.RedstoneSignalBlock;
 import net.unfamily.iskautils.block.ChaoticTntBlock;
 import net.unfamily.iskautils.block.HardIceBlock;
 import net.unfamily.iskautils.block.SmartTimerBlock;
@@ -451,6 +452,21 @@ public class ModBlocks {
     // Burning Flame Block (provides light like a torch, fragile to liquids)
     public static final DeferredBlock<BurningFlameBlock> BURNING_FLAME = BLOCKS.register("burning_flame",
             () -> new BurningFlameBlock(BURNING_FLAME_PROPERTIES));
+
+    // ===== REDSTONE SIGNAL BLOCK =====
+    private static final BlockBehaviour.Properties REDSTONE_SIGNAL_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.NONE)
+            .noCollission()
+            .instabreak()
+            .sound(SoundType.STONE)
+            .noOcclusion()
+            .replaceable()
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false);
+
+    // Redstone Activator Signal Block (invisible block with small hitbox that emits redstone signal, removes itself after 3 seconds)
+    public static final DeferredBlock<RedstoneSignalBlock> REDSTONE_ACTIVATOR_SIGNAL = BLOCKS.register("redstone_activator_signal",
+            () -> new RedstoneSignalBlock(REDSTONE_SIGNAL_PROPERTIES));
 
     // ===== DEEP DRAWERS =====
     private static final BlockBehaviour.Properties DEEP_DRAWERS_PROPERTIES = BlockBehaviour.Properties.of()
