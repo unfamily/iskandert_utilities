@@ -104,20 +104,27 @@ public class GauntletOfClimbingItem extends Item {
     }
     
     /**
-     * Makes the player climb by setting their vertical movement
+     * Makes the player climb by setting their vertical movement.
+     * If shift is held, player stays in place and takes no fall damage.
      */
     private void makePlayerClimb(Player player, double climbSpeed) {
         Vec3 motion = player.getDeltaMovement();
         
-        // Set vertical movement to climb speed
-        // Use max to ensure we climb up, but allow natural upward movement
-        double newY = Math.max(motion.y, climbSpeed);
-        
-        // Apply the climbing movement
-        player.setDeltaMovement(motion.x, newY, motion.z);
-        
-        // Reset fall distance to prevent fall damage
-        player.fallDistance = 0.0f;
+        if (player.isShiftKeyDown()) {
+            // Shift held: stay in place (zero movement) and prevent fall damage
+            player.setDeltaMovement(0.0D, 0.0D, 0.0D);
+            player.fallDistance = 0.0f;
+        } else {
+            // Original climbing logic: set vertical movement to climb speed
+            // Use max to ensure we climb up, but allow natural upward movement
+            double newY = Math.max(motion.y, climbSpeed);
+            
+            // Apply the climbing movement
+            player.setDeltaMovement(motion.x, newY, motion.z);
+            
+            // Reset fall distance to prevent fall damage
+            player.fallDistance = 0.0f;
+        }
         
         // Mark that physics should be updated
         player.hurtMarked = true;
