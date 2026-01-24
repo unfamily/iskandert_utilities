@@ -19,12 +19,12 @@ import java.util.List;
 
 /**
  * Redstone Signal Item - Places an invisible block that emits a temporary redstone signal
- * Has 128 durability and consumes 1 durability per successful placement.
+ * Has 256 durability and consumes 1 durability per successful placement.
  * The block removes itself after 3 seconds and emits redstone signal.
  */
 public class RedstoneSignalItem extends Item {
 
-    private static final int MAX_DURABILITY = 128;
+    private static final int MAX_DURABILITY = 256;
 
     public RedstoneSignalItem(Properties properties) {
         super(properties.durability(MAX_DURABILITY));
