@@ -680,16 +680,24 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
             // Check if this block is solid and blocks the airflow
             BlockState blockState = level.getBlockState(blockPos);
             if (!blockState.isAir() && blockState.isSolid()) {
-                // If ghost module is installed, check if we can bypass unbreakable blocks
-                if (hasGhostModule && Config.fanGhostModuleBypassUnbreakable) {
+                // If ghost module is installed, we can bypass most blocks
+                if (hasGhostModule) {
                     // Check if block is unbreakable (hardness < 0)
                     float destroySpeed = blockState.getDestroySpeed(level, blockPos);
                     if (destroySpeed < 0) {
-                        // Unbreakable block, but config allows bypass - continue checking
-                        continue;
+                        // Unbreakable block - check if config allows bypass
+                        if (Config.fanGhostModuleBypassUnbreakable) {
+                            // Config allows bypass - continue checking
+                            continue;
+                        } else {
+                            // Config doesn't allow bypass - block is unbreakable, so it blocks
+                            return true;
+                        }
                     }
+                    // Block is solid but not unbreakable - ghost module allows bypass
+                    continue;
                 }
-                // Block is solid and blocks airflow
+                // No ghost module - block is solid and blocks airflow
                 return true;
             }
         }
