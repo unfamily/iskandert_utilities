@@ -705,6 +705,50 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         return false; // No blocking obstacles found
     }
     
+    /**
+     * Checks if ghost module is installed in this fan
+     * @return true if ghost module is installed, false otherwise
+     */
+    public boolean hasGhostModule() {
+        return !moduleHandler.getStackInSlot(1).isEmpty() && 
+               moduleHandler.getStackInSlot(1).is(ModItems.GHOST_MODULE.get());
+    }
+    
+    /**
+     * Checks if a block is an obstacle (blocks airflow) considering ghost module
+     * @param level The level
+     * @param blockPos The block position to check
+     * @param hasGhostModule Whether ghost module is installed
+     * @return true if the block is an obstacle, false if it can be bypassed
+     */
+    public static boolean isBlockObstacle(Level level, BlockPos blockPos, boolean hasGhostModule) {
+        BlockState blockState = level.getBlockState(blockPos);
+        if (blockState.isAir() || !blockState.isSolid()) {
+            return false; // Not an obstacle
+        }
+        
+        // If ghost module is installed, we can bypass most blocks
+        if (hasGhostModule) {
+            // Check if block is unbreakable (hardness < 0)
+            float destroySpeed = blockState.getDestroySpeed(level, blockPos);
+            if (destroySpeed < 0) {
+                // Unbreakable block - check if config allows bypass
+                if (Config.fanGhostModuleBypassUnbreakable) {
+                    // Config allows bypass - not an obstacle
+                    return false;
+                } else {
+                    // Config doesn't allow bypass - block is unbreakable, so it's an obstacle
+                    return true;
+                }
+            }
+            // Block is solid but not unbreakable - ghost module allows bypass, not an obstacle
+            return false;
+        }
+        
+        // No ghost module - solid blocks are obstacles
+        return true;
+    }
+    
     // Push an entity in the facing direction (or pull if isPull is true)
     private static void pushEntity(Entity entity, Direction facing, double power, boolean isPull) {
         Vec3 currentMotion = entity.getDeltaMovement();

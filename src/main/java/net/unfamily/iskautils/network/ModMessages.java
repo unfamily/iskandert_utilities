@@ -2069,6 +2069,9 @@ public class ModMessages {
                             if (!(state.getBlock() instanceof net.unfamily.iskautils.block.FanBlock)) return;
                             var facing = state.getValue(net.unfamily.iskautils.block.FanBlock.FACING);
                             
+                            // Check if ghost module is installed
+                            boolean hasGhostModule = fan.hasGhostModule();
+                            
                             // Calculate the push area AABB
                             var aabb = net.unfamily.iskautils.block.entity.FanBlockEntity.calculatePushArea(pos, facing, fan);
                             
@@ -2097,12 +2100,14 @@ public class ModMessages {
                                     if (isOnEdge) {
                                         // Top face
                                         net.minecraft.core.BlockPos topPos = new net.minecraft.core.BlockPos(x, maxY - 1, z);
-                                        int topColor = level.getBlockState(topPos).isAir() ? purpleColor : redColor;
+                                        boolean topIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, topPos, hasGhostModule);
+                                        int topColor = topIsObstacle ? redColor : purpleColor;
                                         sendAddBillboardPacket(player, topPos, topColor, durationTicks);
                                         
                                         // Bottom face
                                         net.minecraft.core.BlockPos bottomPos = new net.minecraft.core.BlockPos(x, minY, z);
-                                        int bottomColor = level.getBlockState(bottomPos).isAir() ? purpleColor : redColor;
+                                        boolean bottomIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, bottomPos, hasGhostModule);
+                                        int bottomColor = bottomIsObstacle ? redColor : purpleColor;
                                         sendAddBillboardPacket(player, bottomPos, bottomColor, durationTicks);
                                     }
                                 }
@@ -2116,12 +2121,14 @@ public class ModMessages {
                                     if (isOnEdge) {
                                         // Min Z face
                                         net.minecraft.core.BlockPos minZPos = new net.minecraft.core.BlockPos(x, y, minZ);
-                                        int minZColor = level.getBlockState(minZPos).isAir() ? purpleColor : redColor;
+                                        boolean minZIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, minZPos, hasGhostModule);
+                                        int minZColor = minZIsObstacle ? redColor : purpleColor;
                                         sendAddBillboardPacket(player, minZPos, minZColor, durationTicks);
                                         
                                         // Max Z face
                                         net.minecraft.core.BlockPos maxZPos = new net.minecraft.core.BlockPos(x, y, maxZ - 1);
-                                        int maxZColor = level.getBlockState(maxZPos).isAir() ? purpleColor : redColor;
+                                        boolean maxZIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, maxZPos, hasGhostModule);
+                                        int maxZColor = maxZIsObstacle ? redColor : purpleColor;
                                         sendAddBillboardPacket(player, maxZPos, maxZColor, durationTicks);
                                     }
                                 }
@@ -2135,24 +2142,27 @@ public class ModMessages {
                                     if (isOnEdge) {
                                         // Min X face
                                         net.minecraft.core.BlockPos minXPos = new net.minecraft.core.BlockPos(minX, y, z);
-                                        int minXColor = level.getBlockState(minXPos).isAir() ? purpleColor : redColor;
+                                        boolean minXIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, minXPos, hasGhostModule);
+                                        int minXColor = minXIsObstacle ? redColor : purpleColor;
                                         sendAddBillboardPacket(player, minXPos, minXColor, durationTicks);
                                         
                                         // Max X face
                                         net.minecraft.core.BlockPos maxXPos = new net.minecraft.core.BlockPos(maxX - 1, y, z);
-                                        int maxXColor = level.getBlockState(maxXPos).isAir() ? purpleColor : redColor;
+                                        boolean maxXIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, maxXPos, hasGhostModule);
+                                        int maxXColor = maxXIsObstacle ? redColor : purpleColor;
                                         sendAddBillboardPacket(player, maxXPos, maxXColor, durationTicks);
                                     }
                                 }
                             }
                             
                             // Add red markers inside the area for blocks (obstacles)
+                            // Only highlight blocks that actually block airflow (considering ghost module)
                             for (int x = minX; x < maxX; x++) {
                                 for (int y = minY; y < maxY; y++) {
                                     for (int z = minZ; z < maxZ; z++) {
                                         net.minecraft.core.BlockPos blockPos = new net.minecraft.core.BlockPos(x, y, z);
-                                        // Only place marker if there's a block (not air)
-                                        if (!level.getBlockState(blockPos).isAir()) {
+                                        // Only place marker if block is an obstacle (considering ghost module)
+                                        if (net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, blockPos, hasGhostModule)) {
                                             sendAddBillboardPacket(player, blockPos, redColor, durationTicks);
                                         }
                                     }

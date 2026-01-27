@@ -46,6 +46,9 @@ public record FanShowAreaC2SPacket(BlockPos pos) implements CustomPacketPayload 
                 if (!(state.getBlock() instanceof FanBlock)) return;
                 var facing = state.getValue(FanBlock.FACING);
                 
+                // Check if ghost module is installed
+                boolean hasGhostModule = fan.hasGhostModule();
+                
                 // Calculate the push area AABB
                 var aabb = FanBlockEntity.calculatePushArea(packet.pos(), facing, fan);
                 
@@ -74,12 +77,14 @@ public record FanShowAreaC2SPacket(BlockPos pos) implements CustomPacketPayload 
                         if (isOnEdge) {
                             // Top face
                             BlockPos topPos = new BlockPos(x, maxY - 1, z);
-                            int topColor = level.getBlockState(topPos).isAir() ? purpleColor : redColor;
+                            boolean topIsObstacle = FanBlockEntity.isBlockObstacle(level, topPos, hasGhostModule);
+                            int topColor = topIsObstacle ? redColor : purpleColor;
                             ModMessages.sendAddBillboardPacket(player, topPos, topColor, durationTicks);
                             
                             // Bottom face
                             BlockPos bottomPos = new BlockPos(x, minY, z);
-                            int bottomColor = level.getBlockState(bottomPos).isAir() ? purpleColor : redColor;
+                            boolean bottomIsObstacle = FanBlockEntity.isBlockObstacle(level, bottomPos, hasGhostModule);
+                            int bottomColor = bottomIsObstacle ? redColor : purpleColor;
                             ModMessages.sendAddBillboardPacket(player, bottomPos, bottomColor, durationTicks);
                         }
                     }
@@ -93,12 +98,14 @@ public record FanShowAreaC2SPacket(BlockPos pos) implements CustomPacketPayload 
                         if (isOnEdge) {
                             // Min Z face
                             BlockPos minZPos = new BlockPos(x, y, minZ);
-                            int minZColor = level.getBlockState(minZPos).isAir() ? purpleColor : redColor;
+                            boolean minZIsObstacle = FanBlockEntity.isBlockObstacle(level, minZPos, hasGhostModule);
+                            int minZColor = minZIsObstacle ? redColor : purpleColor;
                             ModMessages.sendAddBillboardPacket(player, minZPos, minZColor, durationTicks);
                             
                             // Max Z face
                             BlockPos maxZPos = new BlockPos(x, y, maxZ - 1);
-                            int maxZColor = level.getBlockState(maxZPos).isAir() ? purpleColor : redColor;
+                            boolean maxZIsObstacle = FanBlockEntity.isBlockObstacle(level, maxZPos, hasGhostModule);
+                            int maxZColor = maxZIsObstacle ? redColor : purpleColor;
                             ModMessages.sendAddBillboardPacket(player, maxZPos, maxZColor, durationTicks);
                         }
                     }
@@ -112,24 +119,27 @@ public record FanShowAreaC2SPacket(BlockPos pos) implements CustomPacketPayload 
                         if (isOnEdge) {
                             // Min X face
                             BlockPos minXPos = new BlockPos(minX, y, z);
-                            int minXColor = level.getBlockState(minXPos).isAir() ? purpleColor : redColor;
+                            boolean minXIsObstacle = FanBlockEntity.isBlockObstacle(level, minXPos, hasGhostModule);
+                            int minXColor = minXIsObstacle ? redColor : purpleColor;
                             ModMessages.sendAddBillboardPacket(player, minXPos, minXColor, durationTicks);
                             
                             // Max X face
                             BlockPos maxXPos = new BlockPos(maxX - 1, y, z);
-                            int maxXColor = level.getBlockState(maxXPos).isAir() ? purpleColor : redColor;
+                            boolean maxXIsObstacle = FanBlockEntity.isBlockObstacle(level, maxXPos, hasGhostModule);
+                            int maxXColor = maxXIsObstacle ? redColor : purpleColor;
                             ModMessages.sendAddBillboardPacket(player, maxXPos, maxXColor, durationTicks);
                         }
                     }
                 }
                 
                 // Add red markers inside the area for blocks (obstacles)
+                // Only highlight blocks that actually block airflow (considering ghost module)
                 for (int x = minX; x < maxX; x++) {
                     for (int y = minY; y < maxY; y++) {
                         for (int z = minZ; z < maxZ; z++) {
                             BlockPos blockPos = new BlockPos(x, y, z);
-                            // Only place marker if there's a block (not air)
-                            if (!level.getBlockState(blockPos).isAir()) {
+                            // Only place marker if block is an obstacle (considering ghost module)
+                            if (FanBlockEntity.isBlockObstacle(level, blockPos, hasGhostModule)) {
                                 ModMessages.sendAddBillboardPacket(player, blockPos, redColor, durationTicks);
                             }
                         }
