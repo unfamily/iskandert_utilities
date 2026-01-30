@@ -17,6 +17,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.unfamily.iskautils.block.VectorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.unfamily.iskautils.events.SetWrenchDirectionBlock;
@@ -69,8 +70,12 @@ public class SwissWrenchItem extends Item {
         
         // check if the player is using Shift + right click
         if (player != null && player.isShiftKeyDown()) {
-            // check if the block belongs to the tag that excludes rotation
+            // check if the block belongs to the tag that excludes rotation (e.g. vanilla beds)
             if (blockState.is(WRENCH_NOT_ROTATE)) {
+                return InteractionResult.PASS;
+            }
+            // hardcoded: vector plates, iska_utils:plate_base_block, potion plates (all extend VectorBlock)
+            if (block instanceof VectorBlock) {
                 return InteractionResult.PASS;
             }
             

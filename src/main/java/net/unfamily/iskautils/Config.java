@@ -93,7 +93,8 @@ public class Config
 
     private static final ModConfigSpec.BooleanValue HELLFIRE_IGNITER_VANILLA_LIKE = BUILDER
             .comment("If true, Hellfire Igniter uses vanilla-like behavior (always PULSE mode, no mode switching)",
-                    "When enabled, shift+click will always set to PULSE mode and no mode change message is shown")
+                    "When enabled, shift+click will always set to PULSE mode and no mode change message is shown",
+                    "Also disables inverted placement (Shift when placing the block has no effect on direction)")
             .define("002_hellfireIgniterVanillaLike", false);
 
     // Portable Dislocator energy configuration

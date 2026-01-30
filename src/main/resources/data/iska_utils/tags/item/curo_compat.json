@@ -1,0 +1,13 @@
+{
+    "replace": false,
+    "values": [
+      "portable_dislocator:portable_dislocator",
+      "vector_charm:vector_charm",
+      "fanpack:fanpack",
+      "mining_equitizer:mining_equitizer",
+      "burning_brazier:burning_brazier",
+      "ghost_brazier:ghost_brazier",
+      "greedy_shield:greedy_shield",
+      "necrotic_crystal_heart:necrotic_crystal_heart"
+    ]
+  } 

@@ -679,7 +679,7 @@
   "gui.iska_utils.deep_drawer_extractor.close_without_saving": "Close without saving",
   "gui.iska_utils.deep_drawer_extractor.not_available_in_edit_mode": "Not available",
   
-  "tooltip.iska_utils.shift_place_reverse": "Hold Shift to place it reversed",
+  "tooltip.iska_utils.shift_place_reverse": "§9Hold Shift to place it reversed",
   
   "tooltip.iska_utils.fan_module.press_shift": "Press Shift to see where to install it",
   "tooltip.iska_utils.fan_module.modular_fan_max": "Modular Fan Max: %d",

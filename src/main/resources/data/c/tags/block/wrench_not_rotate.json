@@ -1,26 +1,6 @@
 {
   "replace": false,
   "values": [
-    "#minecraft:beds",
-    "iska_utils:slow_vect",
-    "iska_utils:moderate_vect",
-    "iska_utils:fast_vect",
-    "iska_utils:extreme_vect",
-    "iska_utils:ultra_vect",
-    "iska_utils:player_slow_vect",
-    "iska_utils:player_moderate_vect",
-    "iska_utils:player_fast_vect",
-    "iska_utils:player_extreme_vect",
-    "iska_utils:player_ultra_vect",
-    "iska_utils:iska_utils_damage",
-    "iska_utils:iska_utils_improved_damage",
-    "iska_utils:iska_utils_freeze",
-    "iska_utils:iska_utils_fire",
-    "iska_utils:iska_utils_poison",
-    "iska_utils:iska_utils_slowness",
-    "iska_utils:iska_utils_weakness",
-    "iska_utils:plate_base_block",
-    "#c:clusters",
-    "oritech:uranium_crystal"
+    "#minecraft:beds"
   ]
 }

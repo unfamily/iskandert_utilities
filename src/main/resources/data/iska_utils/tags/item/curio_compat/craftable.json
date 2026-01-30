@@ -1,0 +1,12 @@
+{
+    "replace": false,
+    "values": [
+        "iska_utils:portable_dislocator",
+        "iska_utils:vector_charm",
+        "iska_utils:fanpack",
+        "iska_utils:mining_equitizer",
+        "iska_utils:burning_brazier",
+        "iska_utils:ghost_brazier",
+        "iska_utils:greedy_shield"
+    ]
+}

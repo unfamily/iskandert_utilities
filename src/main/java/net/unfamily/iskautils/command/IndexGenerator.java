@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 /**
  * Generates an index file containing documentation about mod commands
@@ -37,10 +36,8 @@ public class IndexGenerator {
             
             // Generate the index file
             Path indexPath = basePath.resolve("iska_utils_index.md");
-            
             String indexContent = generateIndexContent();
             Files.writeString(indexPath, indexContent);
-            
             LOGGER.info("Generated index file at: {}", indexPath.toAbsolutePath());
             
         } catch (IOException e) {
@@ -59,6 +56,11 @@ public class IndexGenerator {
         
         sb.append("# Iska Utils - Documentation Index\n\n");
         sb.append("This document provides an overview of the commands and scripting systems provided by the Iska Utils mod.\n\n");
+        sb.append("## Table of Contents\n\n");
+        sb.append("1. [Commands Added by the Mod](#commands-added-by-the-mod)\n");
+        sb.append("2. [Scripting System](#scripting-system)\n");
+        sb.append("3. [Configurable Tags](#configurable-tags)\n");
+        sb.append("4. [Advanced Features](#advanced-features)\n\n");
         
         // Commands section
         sb.append("## Commands Added by the Mod\n\n");
@@ -160,6 +162,20 @@ public class IndexGenerator {
         sb.append("- `iska_utils:shop_entry` - For declaring items available in the shop with prices and properties.\n");
         sb.append("  * Location: `" + Config.externalScriptsPath + "/shop/entries/`\n");
         sb.append("  * Documentation: See README.txt in the shop folder for complete examples and NBT support\n\n");
+        
+        // Configurable Tags
+        sb.append("## Configurable Tags\n\n");
+        sb.append("Tags read by the mod at runtime, extensible via datapack.\n\n");
+        sb.append("### Tag: `iska_utils:curio_compat/mimic` (item)\n\n");
+        sb.append("Extra drop added to the Mimic loot table (Artifacts). Defines which Curio items can drop from the Mimic as additional loot.\n\n");
+        sb.append("- **Pool chance:** 5% per Mimic kill\n");
+        sb.append("- **Item selection:** 1 item chosen from the tag with equal weight per item\n");
+        sb.append("- **Default items:** `necrotic_crystal_heart`, `mining_equitizer`\n\n");
+        sb.append("Extend via datapack: create `data/iska_utils/tags/item/curio_compat/mimic.json` with `replace: false` and add your item IDs to `values`. Requires Artifacts and Curios mods.\n\n");
+        sb.append("### Tag: `c:wrench_not_rotate` (block)\n\n");
+        sb.append("Blacklist for the Swiss Wrench. Blocks in this tag cannot be rotated by the Swiss Wrench.\n\n");
+        sb.append("- **Default:** vanilla beds (`#minecraft:beds`)\n");
+        sb.append("Extend via datapack: create `data/c/tags/block/wrench_not_rotate.json` (or your namespace) with `replace: false` and add block IDs to `values`.\n\n");
         
         // Advanced Features
         sb.append("## Advanced Features\n\n");

@@ -54,15 +54,16 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        Player player = context.getPlayer();
         Direction facing;
         
-        // If player is crouching (holding shift), place in opposite direction
-        if (player != null && player.isShiftKeyDown()) {
-            // Opposite direction: use the direction player is looking at directly (without getOpposite)
+        // Vanilla-like mode: no inverted placement (shift has no effect on direction)
+        if (Config.hellfireIgniterVanillaLike) {
+            facing = context.getNearestLookingDirection().getOpposite();
+        } else if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
+            // Shift: place in opposite direction (inverted)
             facing = context.getNearestLookingDirection();
         } else {
-            // Normal behavior: opposite direction to where player is looking
+            // Normal: opposite direction to where player is looking
             facing = context.getNearestLookingDirection().getOpposite();
         }
         

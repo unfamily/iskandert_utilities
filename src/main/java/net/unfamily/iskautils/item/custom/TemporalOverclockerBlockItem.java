@@ -23,10 +23,6 @@ public class TemporalOverclockerBlockItem extends BlockItem {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         
-        // Add shift placement hint as first line
-        tooltip.add(1, Component.translatable("tooltip.iska_utils.shift_place_reverse")
-                .withStyle(ChatFormatting.GRAY));
-        
         // Add description from lang file
         tooltip.add(Component.translatable("tooltip.iska_utils.temporal_overclocker.desc0")
                 .withStyle(ChatFormatting.GRAY));
