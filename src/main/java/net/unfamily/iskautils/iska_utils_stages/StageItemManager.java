@@ -279,13 +279,33 @@ public class StageItemManager {
                 "      ],\n" +
                 "      \"items\":[\n" +
                 "        \"minecraft:example_item\",\n" +
-                "        \"#c:example_tag\"\n" +
+                "        \"#c:example_tag\",\n" +
+                "        \"@rep_ae2_bridge\"\n" +
                 "      ],\n" +
                 "      \"consequence\":\"block_drop\"\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}\n" +
                 "```\n\n" +
+                
+                "## Exclude Example\n\n" +
+                "Use the optional `exclude` array to exempt specific items from the rule (same format as `items`):\n\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"type\": \"iska_utils:stage_item\",\n" +
+                "  \"overwritable\": true,\n" +
+                "  \"restrictions\": [\n" +
+                "    {\n" +
+                "      \"stages_logic\": \"AND\",\n" +
+                "      \"stages\": [{\"stage_type\": \"player\", \"stage\": \"no_advanced\", \"is\": false}],\n" +
+                "      \"items\": [\"@minecraft\", \"#c:ingots\", \"iska_utils:dolly\"],\n" +
+                "      \"exclude\": [\"minecraft:diamond\", \"#c:ingots/lead\", \"@iska_utils\"],\n" +
+                "      \"consequence\": \"drop\"\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "```\n\n" +
+                "Here, diamond, lead (from the tag), and all iska_utils items are exempt and will not be dropped.\n\n" +
                 
                 "## DEF_OR Example\n\n" +
                 "You can use DEF_OR logic to apply different restrictions based on specific conditions:\n\n" +
@@ -347,6 +367,13 @@ public class StageItemManager {
                 "Container filtering is controlled by two parameters:\n\n" +
                 "- `containers_whitelist`: When `true`, only the containers in the list are affected; when `false`, all containers EXCEPT those in the list are affected\n" +
                 "- `containers_list`: A list of container class names to include or exclude based on the whitelist setting\n\n" +
+                
+                "## Items List Format\n\n" +
+                "Each entry in the `items` array can be:\n\n" +
+                "- **Item ID**: exact match, e.g. `minecraft:diamond_sword`\n" +
+                "- **#tag**: item tag, e.g. `#c:ingots` matches all items in that tag\n" +
+                "- **@modid**: all items from a mod, e.g. `@rep_ae2_bridge` matches every item whose namespace is `rep_ae2_bridge`\n\n" +
+                "The optional **`exclude`** array (default empty) uses the same format. Any item matching an exclude entry is exempt from the rule even if it matches `items`. Example: `items` has `@minecraft`, `#c:ingots`, `iska_utils:dolly` and `exclude` has `minecraft:diamond`, `#c:ingots/lead`, `@iska_utils` — then diamond, lead ingots, and all iska_utils items are not affected.\n\n" +
                 
                 "## Other Case Contexts\n\n" +
                 "The `other_case` field allows specifying additional contexts where restrictions should be applied:\n\n" +

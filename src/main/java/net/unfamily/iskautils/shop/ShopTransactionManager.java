@@ -35,8 +35,7 @@ public class ShopTransactionManager {
             return false;
         }
         
-        if (entry.buy <= 0) {
-            // Send error to client instead of chat
+        if (entry.buy <= 0 && !entry.free) {
             sendTransactionErrorToClient(player, "cannot_buy", entryId, null);
             return false;
         }
@@ -49,7 +48,7 @@ public class ShopTransactionManager {
         }
         
         String valuteId = entry.valute != null ? entry.valute : "null_coin";
-        double totalCost = entry.buy * quantity;
+        double totalCost = entry.free ? 0 : (entry.buy * quantity);
         
         // Check if player is in a team
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());

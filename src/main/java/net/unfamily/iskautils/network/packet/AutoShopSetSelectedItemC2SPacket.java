@@ -25,37 +25,30 @@ public class AutoShopSetSelectedItemC2SPacket {
     }
     
     /**
-     * Gestisce il packet sul server
+     * Handles the packet on the server.
+     * If stack is empty: clears the filter (ghost slot). Otherwise sets the filter to a copy of the stack.
      */
     public void handle(ServerPlayer player) {
         if (player == null || player.level() == null) return;
         
-        // Ottieni la BlockEntity
         var blockEntity = player.level().getBlockEntity(pos);
         if (!(blockEntity instanceof AutoShopBlockEntity autoShop)) return;
         
-        // Se non abbiamo uno stack specifico, usa l'item dalla mano del player
-        ItemStack itemToSet = this.stack;
-        if (itemToSet.isEmpty()) {
-            itemToSet = player.getMainHandItem();
-            if (itemToSet.isEmpty()) {
-                // If hand is empty, clear the slot
-                autoShop.setSelectedItem(ItemStack.EMPTY);
-            } else {
-                // Altrimenti, copia l'item nella slot (1 item alla volta)
-                ItemStack copyStack = itemToSet.copy();
-                copyStack.setCount(1);
-                autoShop.setSelectedItem(copyStack);
-            }
+        if (stack.isEmpty()) {
+            autoShop.setSelectedItem(ItemStack.EMPTY);
         } else {
-            // Usa lo stack specificato nel packet
-            autoShop.setSelectedItem(itemToSet.copy());
+            ItemStack copyStack = stack.copy();
+            copyStack.setCount(1);
+            autoShop.setSelectedItem(copyStack);
         }
         
-        // Marca la BlockEntity come modificata
         autoShop.setChanged();
-        
-        // Aggiorna il client
         player.level().sendBlockUpdated(pos, blockEntity.getBlockState(), blockEntity.getBlockState(), 3);
+        
+        // Refresh open menu so client sees the updated ghost slot
+        if (player.containerMenu instanceof net.unfamily.iskautils.client.gui.AutoShopMenu autoMenu
+                && autoMenu.getBlockPos().equals(pos)) {
+            autoMenu.broadcastFullState();
+        }
     }
 } 

@@ -187,6 +187,7 @@ public class ShopLoader {
             category.name = categoryObj.has("name") ? categoryObj.get("name").getAsString() : id;
             category.description = categoryObj.has("description") ? categoryObj.get("description").getAsString() : "";
             category.item = categoryObj.has("item") ? categoryObj.get("item").getAsString() : "minecraft:stone";
+            category.priority = categoryObj.has("priority") ? categoryObj.get("priority").getAsInt() : 0;
             
             CATEGORIES.put(id, category);
             PROTECTED_CATEGORIES.put(id, !overwritable);
@@ -246,6 +247,8 @@ public class ShopLoader {
             }
             entry.buy = entryObj.has("buy") ? entryObj.get("buy").getAsDouble() : 0.0;
             entry.sell = entryObj.has("sell") ? entryObj.get("sell").getAsDouble() : 0.0;
+            entry.priority = entryObj.has("priority") ? entryObj.get("priority").getAsInt() : 0;
+            entry.free = entryObj.has("free") && entryObj.get("free").getAsBoolean();
             
             if (entryObj.has("stages") && entryObj.get("stages").isJsonArray()) {
                 JsonArray stagesArray = entryObj.get("stages").getAsJsonArray();
@@ -312,13 +315,15 @@ public class ShopLoader {
                 "      \"id\": \"000_default\",\n" +
                 "      \"name\": \"shop.category.default\",\n" +
                 "      \"description\": \"shop.category.default.desc\",\n" +
-                "      \"item\": \"minecraft:gold_nugget\"\n" +
+                "      \"item\": \"minecraft:gold_nugget\",\n" +
+                "      \"priority\": 0\n" +
                 "    },\n" +
                 "    {\n" +
                 "      \"id\": \"tools\",\n" +
                 "      \"name\": \"shop.category.tools\",\n" +
                 "      \"description\": \"shop.category.tools.desc\",\n" +
-                "      \"item\": \"minecraft:diamond_pickaxe\"\n" +
+                "      \"item\": \"minecraft:diamond_pickaxe\",\n" +
+                "      \"priority\": 10\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}\n" +
@@ -327,7 +332,8 @@ public class ShopLoader {
                 "- `id`: Unique identifier for the category\n" +
                 "- `name`: Translation key for the category name\n" +
                 "- `description`: Translation key for the category description\n" +
-                "- `item`: Item ID used as icon for the category\n\n" +
+                "- `item`: Item ID used as icon for the category\n" +
+                "- `priority`: Display order (optional, default 0). Higher value = category shown first.\n\n" +
                 "### 3. shop_entry.json - Shop Products\n" +
                 "Defines specific products available in the shop.\n\n" +
                 "```json\n" +
@@ -342,7 +348,9 @@ public class ShopLoader {
                 "      \"item_count\": 1,\n" +
                 "      \"currency\": \"null_coin\",\n" +
                 "      \"buy\": 1.0,\n" +
-                "      \"sell\": 0.5\n" +
+                "      \"sell\": 0.5,\n" +
+                "      \"priority\": 0,\n" +
+                "      \"free\": false\n" +
                 "    },\n" +
                 "    {\n" +
                 "      \"id\": \"diamond_pickaxe_silk\",\n" +
@@ -352,6 +360,7 @@ public class ShopLoader {
                 "      \"currency\": \"emerald\",\n" +
                 "      \"buy\": 50.0,\n" +
                 "      \"sell\": 25.0,\n" +
+                "      \"priority\": 10,\n" +
                 "      \"stages\": [\n" +
                 "        {\n" +
                 "          \"stage\": \"advanced_tools\",\n" +
@@ -371,6 +380,8 @@ public class ShopLoader {
                 "- `currency`: Currency ID for this product\n" +
                 "- `buy`: Price to buy the item\n" +
                 "- `sell`: Price to sell the item\n" +
+                "- `priority`: Display order within category (optional, default 0). Higher value = entry shown first.\n" +
+                "- `free`: If true, item can be bought at no cost even when buy is 0; Buy button is shown (optional, default false).\n" +
                 "- `stages`: Array of required stages (optional)\n\n" +
                 "## 🎯 Stage System\n\n" +
                 "Stages allow unlocking products based on player/world progress.\n\n" +

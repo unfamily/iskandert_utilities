@@ -8,6 +8,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import org.jetbrains.annotations.NotNull;
 import net.minecraft.world.item.ItemStack;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -41,18 +42,37 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
     };
     
-    // Slot for selected item (for auto buy/sell)
-    private final ItemStackHandler selectedSlot = new ItemStackHandler(1) {
+    /** Read-only handler for the filter slot display (ghost slot: no insert/extract). */
+    private final IItemHandler filterDisplayHandler = new IItemHandler() {
         @Override
-        protected void onContentsChanged(int slot) {
-            setChanged();
+        public int getSlots() {
+            return 1;
         }
         @Override
-        public boolean isItemValid(int slot, ItemStack stack) {
-            return true;
+        @NotNull
+        public ItemStack getStackInSlot(int slot) {
+            return slot == 0 ? selectedItem.copy() : ItemStack.EMPTY;
+        }
+        @Override
+        @NotNull
+        public ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+            return stack; // No-op: ghost slot does not accept items
+        }
+        @Override
+        @NotNull
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            return ItemStack.EMPTY; // No-op: ghost slot does not give items
+        }
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return false;
         }
     };
-    
+
     // Shop state (simplified)
     private boolean isActive = false;
     private String currentCategory = "000_default";
@@ -91,10 +111,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         // Save encapsulated slot
         tag.put("encapsulatedSlot", encapsulatedSlot.serializeNBT(registries));
         
-        // Save selected slot
-        tag.put("selectedSlot", selectedSlot.serializeNBT(registries));
-        
-        // Save shop state
+        // Save shop state (filter/selected item is in shopData.selectedItem)
         CompoundTag shopData = new CompoundTag();
         shopData.putBoolean("isActive", isActive);
         shopData.putString("currentCategory", currentCategory);
@@ -135,12 +152,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             encapsulatedSlot.deserializeNBT(registries, tag.getCompound("encapsulatedSlot"));
         }
         
-        // Load selected slot
-        if (tag.contains("selectedSlot")) {
-            selectedSlot.deserializeNBT(registries, tag.getCompound("selectedSlot"));
-        }
-        
-        // Load shop state
+        // Load shop state (filter slot is logical only, stored in shopData.selectedItem)
         if (tag.contains("shopData")) {
             CompoundTag shopData = tag.getCompound("shopData");
             this.isActive = shopData.getBoolean("isActive");
@@ -193,9 +205,21 @@ public class AutoShopBlockEntity extends BlockEntity {
                     this.selectedItem = ItemStack.EMPTY;
                 }
             } else {
-
                 this.selectedItem = ItemStack.EMPTY; // Default if not present
             }
+        }
+        // Migration: if old save had physical selectedSlot NBT, copy first slot to logical selectedItem
+        if (tag.contains("selectedSlot")) {
+            try {
+                var itemsList = tag.getCompound("selectedSlot").getList("Items", 10);
+                if (itemsList.size() > 0) {
+                    var oldSelected = ItemStack.parse(registries, itemsList.getCompound(0)).orElse(ItemStack.EMPTY);
+                    if (!oldSelected.isEmpty() && this.selectedItem.isEmpty()) {
+                        this.selectedItem = oldSelected.copy();
+                        this.selectedItem.setCount(1);
+                    }
+                }
+            } catch (Exception ignored) {}
         }
     }
     
@@ -231,8 +255,9 @@ public class AutoShopBlockEntity extends BlockEntity {
         return encapsulatedSlot;
     }
     
-    public ItemStackHandler getSelectedSlot() {
-        return selectedSlot;
+    /** Returns the read-only filter display handler (ghost slot: display only, no put/take). */
+    public IItemHandler getFilterDisplayHandler() {
+        return filterDisplayHandler;
     }
     
     public String getSelectedValute() {
@@ -445,18 +470,8 @@ public class AutoShopBlockEntity extends BlockEntity {
             }
 
             // Determine which template to use for ShopEntry search
-            // If there's a template in the selected slot, use it, otherwise use the item itself
-            ItemStackHandler selectedSlot = entity.getSelectedSlot();
-            ItemStack templateStack = selectedSlot.getStackInSlot(0);
-            ItemStack templateItem;
-            
-            if (!templateStack.isEmpty()) {
-                // Use template from selected slot
-                templateItem = templateStack;
-            } else {
-                // Use item from encapsulated slot as template
-                templateItem = stack;
-            }
+            ItemStack filterItem = entity.getSelectedItem();
+            ItemStack templateItem = !filterItem.isEmpty() ? filterItem : stack;
 
             // Find ShopEntry using the most appropriate template
             net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(templateItem);
@@ -525,17 +540,16 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return;
             }
 
-            // Check if there's an item in the selected slot
-            ItemStackHandler selectedSlot = entity.getSelectedSlot();
-            ItemStack selectedStack = selectedSlot.getStackInSlot(0);
+            // Check if there's a filter item set (ghost slot)
+            ItemStack selectedStack = entity.getSelectedItem();
             if (selectedStack.isEmpty()) {
                 return;
             }
 
-            // Find ShopEntry for selected item - use complete item representation
-            ItemStack itemId = selectedStack; // Include NBT/data components
+            // Find ShopEntry for selected filter item
+            ItemStack itemId = selectedStack;
             net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(itemId);
-            if (entry == null || entry.buy <= 0) {
+            if (entry == null || (entry.buy <= 0 && !entry.free)) {
                 return;
             }
 
@@ -576,14 +590,15 @@ public class AutoShopBlockEntity extends BlockEntity {
                 }
             }
 
-            // Check team funds
+            // Check team funds (free entries cost 0)
+            double cost = entry.free ? 0 : entry.buy;
             double teamBalance = teamManager.getTeamValuteBalance(teamName, currencyId);
-            if (teamBalance < entry.buy) {
+            if (teamBalance < cost) {
                 return; // Insufficient funds
             }
 
             // Deduct money from team
-            if (!teamManager.removeTeamValutes(teamName, currencyId, entry.buy)) {
+            if (!teamManager.removeTeamValutes(teamName, currencyId, cost)) {
                 return; // Removal failed
             }
 

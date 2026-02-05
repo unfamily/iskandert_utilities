@@ -22,6 +22,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
+
+    /** Result of a stage check: required = stage was required but missing, !required = stage must not be present but player has it */
+    private record StageFailure(String stageType, String stageId, boolean required) {}
+
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
     private static final ResourceLocation ENTRY_TEXTURE =
@@ -444,9 +448,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         Map<String, ShopCategory> categories = ShopLoader.getCategories();
         availableCurrencies = ShopLoader.getCurrencies();
         
-        // Converte in lista e ordina per ID
+        // Convert to list and sort by priority (higher first), then by id
         availableCategories = categories.values().stream()
-                .sorted(Comparator.comparing(cat -> cat.id))
+                .sorted(Comparator.comparingInt((ShopCategory cat) -> cat.priority).reversed()
+                        .thenComparing(cat -> cat.id))
                 .collect(Collectors.toList());
         
         // Inizializza modalità categorie
@@ -604,8 +609,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                         int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
                         int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
                         
-                        // Se il click è nell'area dei pulsanti, non gestirlo qui
-                        boolean clickOnBuyButton = item.buy > 0 && 
+                        // If click is on buttons, let super.mouseClicked handle them
+                        boolean clickOnBuyButton = (item.buy > 0 || item.free) &&
                             mouseX >= buyButtonX && mouseX < buyButtonX + BUTTON_WIDTH &&
                             mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT;
                             
@@ -636,11 +641,12 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         currentCategoryId = category.id;
         currentCategoryName = Component.translatable(category.name).getString();
         
-        // Carica gli item di questa categoria
+        // Load items for this category (order: higher priority first, then by item)
         Map<String, ShopEntry> allEntries = ShopLoader.getEntries();
         availableItems = allEntries.values().stream()
                 .filter(entry -> category.id.equals(entry.inCategory))
-                .sorted(Comparator.comparing(entry -> entry.item))
+                .sorted(Comparator.comparingInt((ShopEntry e) -> e.priority).reversed()
+                        .thenComparing(entry -> entry.item))
                 .collect(Collectors.toList());
         
         totalShopEntries = availableItems.size();
@@ -743,8 +749,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 int correctSellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
                 int correctButtonsY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2; // Centrati verticalmente
                 
-                // Tooltip per pulsante Buy
-                if (item.buy > 0 && mouseX >= correctBuyButtonX && mouseX < correctBuyButtonX + BUTTON_WIDTH &&
+                // Tooltip for Buy button
+                if ((item.buy > 0 || item.free) && mouseX >= correctBuyButtonX && mouseX < correctBuyButtonX + BUTTON_WIDTH &&
                     mouseY >= correctButtonsY && mouseY < correctButtonsY + BUTTON_HEIGHT) {
                     
                     List<Component> buyTooltip = createBuyTooltip(item);
@@ -765,16 +771,17 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Crea il tooltip per il pulsante Buy
+     * Creates the tooltip for the Buy button
      */
     private List<Component> createBuyTooltip(ShopEntry item) {
         List<Component> tooltip = new ArrayList<>();
         
-        // Costo con simbolo della valuta
-        String currencySymbol = getCurrencySymbol(item.valute);
-        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.cost", item.buy, currencySymbol));
-        
-        // Istruzioni
+        if (item.free) {
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.free"));
+        } else {
+            String currencySymbol = getCurrencySymbol(item.valute);
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.cost", item.buy, currencySymbol));
+        }
         tooltip.add(Component.literal(""));
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.click"));
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.ctrl"));
@@ -1007,8 +1014,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             ShopEntry item = availableItems.get(entryIndex);
             int entryY = this.topPos + ENTRY_START_Y + i * ENTRY_HEIGHT;
             
-            // Pulsante Buy
-            if (item.buy > 0) {
+            // Buy button (shown when buy > 0 or entry is free)
+            if (item.buy > 0 || item.free) {
                 int buyButtonX = this.leftPos + ENTRY_START_X + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
                 int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2; // Centrati verticalmente
                 
@@ -1081,10 +1088,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             return;
         }
         
-        // Controlla i fondi prima di inviare al server
+        // Check balance before sending to server (free entries cost 0)
         String valuteId = item.valute != null ? item.valute : "null_coin";
         double currentBalance = playerTeamBalances.getOrDefault(valuteId, 0.0);
-        double totalCost = item.buy * multiplier;
+        double totalCost = item.free ? 0 : (item.buy * multiplier);
         
         if (currentBalance < totalCost) {
             String currencyName = getCurrencyName(valuteId);
@@ -1136,6 +1143,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 currentInstance.showInsufficientItemsError();
             } else if ("no_team".equals(errorType)) {
                 Component message = Component.translatable("gui.iska_utils.shop.feedback.no_team");
+                currentInstance.showFeedback(message.getString(), 0xFF4444);
+            } else if ("stage_requirements".equals(errorType)) {
+                Component message = Component.translatable("gui.iska_utils.shop.feedback.stage_requirements");
                 currentInstance.showFeedback(message.getString(), 0xFF4444);
             } else {
                 Component message = Component.translatable("gui.iska_utils.shop.feedback.transaction_error");
@@ -1195,17 +1205,15 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
 
     /**
-     * Controlla se un item ha stage mancanti
+     * Returns stage requirements that are not satisfied: required but missing, or forbidden but present.
      */
-    private List<String> getMissingStages(ShopEntry item) {
-        List<String> missingStages = new ArrayList<>();
+    private List<StageFailure> getMissingStages(ShopEntry item) {
+        List<StageFailure> failures = new ArrayList<>();
         
         if (item.stages != null && this.minecraft != null && this.minecraft.player != null) {
             try {
-                // Ottieni il server player per i controlli stage
                 net.minecraft.server.MinecraftServer server = this.minecraft.getSingleplayerServer();
                 if (server != null) {
-                    // Trova il server player corrispondente al client player
                     net.minecraft.server.level.ServerPlayer serverPlayer = null;
                     for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
                         if (player.getName().getString().equals(this.minecraft.player.getName().getString())) {
@@ -1215,14 +1223,11 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                     }
                     
                     if (serverPlayer != null) {
-                        // Ottieni il registry degli stage
-                        net.unfamily.iskautils.stage.StageRegistry registry = 
+                        net.unfamily.iskautils.stage.StageRegistry registry =
                             net.unfamily.iskautils.stage.StageRegistry.getInstance(server);
                         
-                        // Controlla ogni stage richiesto
                         for (net.unfamily.iskautils.shop.ShopStage stage : item.stages) {
                             boolean hasStage = false;
-                            
                             switch (stage.stageType.toLowerCase()) {
                                 case "player":
                                     hasStage = registry.hasPlayerStage(serverPlayer, stage.stage);
@@ -1234,20 +1239,21 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                                     hasStage = registry.hasPlayerTeamStage(serverPlayer, stage.stage);
                                     break;
                             }
-                            
-                            // Se lo stage non è presente quando dovrebbe essere, o viceversa
+                            // stage.is == required; hasStage != stage.is means requirement not met
                             if (hasStage != stage.is) {
-                                missingStages.add(stage.stageType + ":" + stage.stage);
+                                // required=true  -> stage required but missing (stage.is true, hasStage false)
+                                // required=false -> must not have but present (stage.is false, hasStage true)
+                                failures.add(new StageFailure(stage.stageType, stage.stage, stage.is));
                             }
                         }
                     }
                 }
             } catch (Exception e) {
-                // Ignora errori - in caso di problemi, non mostrare stage mancanti
+                // ignore
             }
         }
         
-        return missingStages;
+        return failures;
     }
     
     /**
@@ -1258,48 +1264,55 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Crea il tooltip per gli stage mancanti
+     * Crea il tooltip per stage non soddisfatti: mancanti richiesti e "non devi avere".
      */
     private List<Component> createMissingStagesTooltip(ShopEntry item) {
         List<Component> tooltip = new ArrayList<>();
-        List<String> missingStages = getMissingStages(item);
+        List<StageFailure> failures = getMissingStages(item);
         
-        if (!missingStages.isEmpty()) {
-            // Raggruppa stage mancanti per tipo
-            Map<String, List<String>> missingByType = new HashMap<>();
-            
-            for (String missingStage : missingStages) {
-                String[] parts = missingStage.split(":", 2);
-                if (parts.length == 2) {
-                    String type = parts[0];
-                    String stage = parts[1];
-                    missingByType.computeIfAbsent(type, k -> new ArrayList<>()).add(stage);
-                }
-            }
-            
-            // Crea tooltip strutturato
+        if (failures.isEmpty()) {
+            return tooltip;
+        }
+        
+        List<StageFailure> requiredMissing = failures.stream().filter(f -> f.required()).toList();
+        List<StageFailure> mustNotHave = failures.stream().filter(f -> !f.required()).toList();
+        
+        if (!requiredMissing.isEmpty()) {
             tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.missing_stages"));
             tooltip.add(Component.literal(""));
-            
-            for (Map.Entry<String, List<String>> entry : missingByType.entrySet()) {
-                String type = entry.getKey();
-                List<String> stages = entry.getValue();
-                
-                String typeLabel = switch (type.toLowerCase()) {
-                    case "world" -> "World:";
-                    case "player" -> "Player:";
-                    case "team" -> "Team:";
-                    default -> type + ":";
-                };
-                
-                tooltip.add(Component.literal(typeLabel));
-                for (String stage : stages) {
-                    tooltip.add(Component.literal("  -" + stage));
-                }
+            groupByTypeAndAppend(requiredMissing, tooltip);
+        }
+        
+        if (!mustNotHave.isEmpty()) {
+            if (!requiredMissing.isEmpty()) {
+                tooltip.add(Component.literal(""));
             }
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.must_not_have_stages"));
+            tooltip.add(Component.literal(""));
+            groupByTypeAndAppend(mustNotHave, tooltip);
         }
         
         return tooltip;
+    }
+    
+    private void groupByTypeAndAppend(List<StageFailure> failures, List<Component> tooltip) {
+        Map<String, List<String>> byType = new HashMap<>();
+        for (StageFailure f : failures) {
+            byType.computeIfAbsent(f.stageType(), k -> new ArrayList<>()).add(f.stageId());
+        }
+        for (Map.Entry<String, List<String>> entry : byType.entrySet()) {
+            String type = entry.getKey();
+            String typeLabel = switch (type.toLowerCase()) {
+                case "world" -> "World:";
+                case "player" -> "Player:";
+                case "team" -> "Team:";
+                default -> type + ":";
+            };
+            tooltip.add(Component.literal(typeLabel));
+            for (String stage : entry.getValue()) {
+                tooltip.add(Component.literal("  - " + stage));
+            }
+        }
     }
     
     /**

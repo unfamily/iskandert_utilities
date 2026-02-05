@@ -3,6 +3,7 @@ package net.unfamily.iskautils.client.gui;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -12,6 +13,7 @@ import net.unfamily.iskautils.block.ModBlocks;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import org.jetbrains.annotations.NotNull;
 
 public class AutoShopMenu extends AbstractContainerMenu {
     private final AutoShopBlockEntity blockEntity;
@@ -53,6 +55,25 @@ public class AutoShopMenu extends AbstractContainerMenu {
         return stillValid(levelAccess, player, ModBlocks.AUTO_SHOP.get());
     }
 
+    /**
+     * Ghost filter slot (slot 0): on click, set filter to a copy of carried item or clear if carried empty.
+     * No item movement, no sound. We do not call super so the cursor is not modified.
+     */
+    @Override
+    public void clicked(int slotId, int button, ClickType clickType, Player player) {
+        if (slotId == 0 && blockEntity != null) {
+            ItemStack carried = getCarried();
+            ItemStack toSet = carried.isEmpty() ? ItemStack.EMPTY : carried.copy();
+            if (!toSet.isEmpty()) {
+                toSet.setCount(1);
+            }
+            blockEntity.setSelectedItem(toSet);
+            broadcastFullState();
+            return;
+        }
+        super.clicked(slotId, button, clickType, player);
+    }
+
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         ItemStack itemstack = ItemStack.EMPTY;
@@ -91,22 +112,31 @@ public class AutoShopMenu extends AbstractContainerMenu {
     }
     
     private void addAutoShopSlots() {
-        IItemHandler selectedHandler;
+        IItemHandler filterHandler;
         IItemHandler encapsulatedHandler;
         
         if (blockEntity != null) {
-            selectedHandler = blockEntity.getSelectedSlot();
+            filterHandler = blockEntity.getFilterDisplayHandler();
             encapsulatedHandler = blockEntity.getEncapsulatedSlot();
         } else {
-            // Client-side fallback
-            selectedHandler = new ItemStackHandler(1);
+            // Client-side fallback (filter is logical only, syncs from server)
+            filterHandler = new ItemStackHandler(1);
             encapsulatedHandler = new ItemStackHandler(1);
         }
         
-        // Slot per l'item selezionato (per auto compra/vendi)
-        this.addSlot(new SlotItemHandler(selectedHandler, 0, 56, 23));
+        // Ghost slot for filter (display only: set/clear via click, no put/take)
+        this.addSlot(new SlotItemHandler(filterHandler, 0, 56, 23) {
+            @Override
+            public boolean mayPlace(@NotNull ItemStack stack) {
+                return false;
+            }
+            @Override
+            public boolean mayPickup(@NotNull Player player) {
+                return false;
+            }
+        });
         
-        // Slot per l'item encapsulated (auto comprato/venduto)
+        // Physical slot for encapsulated item (auto buy/sell output or input)
         this.addSlot(new SlotItemHandler(encapsulatedHandler, 0, 56, 48));
     }
     

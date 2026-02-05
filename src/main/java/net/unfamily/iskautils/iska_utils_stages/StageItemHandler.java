@@ -249,7 +249,7 @@ public class StageItemHandler {
         // Find all slots containing target items
         for (int i = 0; i < container.slots.size(); i++) {
             ItemStack stack = container.slots.get(i).getItem();
-            if (!stack.isEmpty() && isItemAffected(stack.getItem(), rule.items)) {
+            if (!stack.isEmpty() && isItemAffected(stack.getItem(), rule.items, rule.exclude)) {
                 slotsToAffect.add(i);
             }
         }
@@ -303,28 +303,34 @@ public class StageItemHandler {
     }
     
     /**
-     * Checks if an item is affected by the rule
+     * Returns true if the item matches any entry in the list (item ID, #tag, or @modid).
      */
-    private static boolean isItemAffected(Item item, List<String> itemsList) {
+    private static boolean itemMatchesList(Item item, List<String> list) {
+        if (list == null || list.isEmpty()) return false;
         ResourceLocation itemId = ResourceUtil.getKey(item);
         String itemIdStr = itemId.toString();
-        
-        for (String entry : itemsList) {
+        String modId = itemId.getNamespace();
+        for (String entry : list) {
             if (entry.startsWith("#")) {
-                // It's an item tag
                 ResourceLocation tagId = ResourceLocation.tryParse(entry.substring(1));
-                if (tagId != null && item.builtInRegistryHolder().is(ItemTags.create(tagId))) {
-                    return true;
-                }
+                if (tagId != null && item.builtInRegistryHolder().is(ItemTags.create(tagId))) return true;
+            } else if (entry.startsWith("@")) {
+                String entryModId = entry.substring(1).trim();
+                if (!entryModId.isEmpty() && modId.equals(entryModId)) return true;
             } else {
-                // It's a direct item ID
-                if (itemIdStr.equals(entry)) {
-                    return true;
-                }
+                if (itemIdStr.equals(entry)) return true;
             }
         }
-        
         return false;
+    }
+
+    /**
+     * Checks if an item is affected by the rule (matches items and is not in exclude).
+     * Supports in both items and exclude: item ID, #tag, @modid. Exclude entries exempt the item.
+     */
+    private static boolean isItemAffected(Item item, List<String> itemsList, List<String> excludeList) {
+        if (excludeList != null && !excludeList.isEmpty() && itemMatchesList(item, excludeList)) return false;
+        return itemMatchesList(item, itemsList);
     }
     
     /**
@@ -384,6 +390,14 @@ public class StageItemHandler {
                             }
                         }
                     }
+                    // Parse exclude list (optional, default empty)
+                    if (ruleObj.has("exclude") && ruleObj.get("exclude").isJsonArray()) {
+                        for (JsonElement exElement : ruleObj.getAsJsonArray("exclude")) {
+                            if (exElement.isJsonPrimitive()) {
+                                rule.exclude.add(exElement.getAsString());
+                            }
+                        }
+                    }
                     
                     // Parse consequence
                     rule.consequence = ruleObj.has("consequence") ? ruleObj.get("consequence").getAsString() : "drop";
@@ -440,6 +454,14 @@ public class StageItemHandler {
                                         if (itemElement.isJsonPrimitive()) {
                                             String itemId = itemElement.getAsString();
                                             ifRule.items.add(itemId);
+                                        }
+                                    }
+                                }
+                                // Parse exclude list (optional)
+                                if (ifObj.has("exclude") && ifObj.get("exclude").isJsonArray()) {
+                                    for (JsonElement exElement : ifObj.getAsJsonArray("exclude")) {
+                                        if (exElement.isJsonPrimitive()) {
+                                            ifRule.exclude.add(exElement.getAsString());
                                         }
                                     }
                                 }
@@ -606,7 +628,7 @@ public class StageItemHandler {
                     }
                     
                     // Check if item is affected
-                    if (isItemAffected(item, rule.items)) {
+                    if (isItemAffected(item, rule.items, rule.exclude)) {
                         return rule.consequence;
                     }
                 }
@@ -620,7 +642,7 @@ public class StageItemHandler {
                             // Check if conditions are met
                             if (checkIfRuleConditions(ifRule, rule.stages, player, level)) {
                                 // Check if item is affected
-                                if (isItemAffected(item, ifRule.items)) {
+                                if (isItemAffected(item, ifRule.items, ifRule.exclude)) {
                                     return ifRule.consequence;
                                 }
                             }
@@ -694,6 +716,8 @@ public class StageItemHandler {
         public boolean containersWhitelist = true;
         public List<String> containersList = new ArrayList<>();
         public List<String> items = new ArrayList<>();
+        /** Exempt items: same format as items (id, #tag, @modid). Default empty. */
+        public List<String> exclude = new ArrayList<>();
         public String consequence = "drop";
         public List<StageItemIfRule> ifConditions = new ArrayList<>();
         public List<String> otherCase = new ArrayList<>();
@@ -706,6 +730,8 @@ public class StageItemHandler {
         public List<Integer> conditions = new ArrayList<>();
         public List<String> containersList = new ArrayList<>();
         public List<String> items = new ArrayList<>();
+        /** Exempt items: same format as items. Default empty. */
+        public List<String> exclude = new ArrayList<>();
         public String consequence = "drop";
         public boolean containersWhitelist = true;
         public List<String> otherCase = new ArrayList<>();

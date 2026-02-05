@@ -118,12 +118,13 @@ public class ShopDefaultGenerator {
             
             JsonArray categories = new JsonArray();
             
-            // Default category
+            // Default category (priority 0 = default order)
             JsonObject defaultCategory = new JsonObject();
             defaultCategory.addProperty("id", "000_default");
             defaultCategory.addProperty("name", "shop.category.default");
             defaultCategory.addProperty("description", "shop.category.default.desc");
             defaultCategory.addProperty("item", "minecraft:gold_nugget");
+            defaultCategory.addProperty("priority", 0);
             categories.add(defaultCategory);
             
             root.add("categories", categories);
@@ -175,7 +176,7 @@ public class ShopDefaultGenerator {
             
             JsonArray entries = new JsonArray();
             
-            // Default bread entry
+            // Default bread entry (priority 0)
             JsonObject breadEntry = new JsonObject();
             breadEntry.addProperty("id", "bread_default");
             breadEntry.addProperty("in_category", "000_default");
@@ -184,6 +185,7 @@ public class ShopDefaultGenerator {
             breadEntry.addProperty("currency", "null_coin");
             breadEntry.addProperty("buy", 1.0);
             breadEntry.addProperty("sell", 0.5);
+            breadEntry.addProperty("priority", 0);
             entries.add(breadEntry);
             
             root.add("entries", entries);
@@ -257,13 +259,15 @@ Example:
       "id": "000_default",
       "name": "shop.category.default",
       "description": "shop.category.default.desc",
-      "item": "minecraft:gold_nugget"
+      "item": "minecraft:gold_nugget",
+      "priority": 0
     },
     {
       "id": "tools",
       "name": "shop.category.tools",
       "description": "shop.category.tools.desc", 
-      "item": "minecraft:diamond_pickaxe"
+      "item": "minecraft:diamond_pickaxe",
+      "priority": 10
     }
   ]
 }
@@ -272,6 +276,7 @@ Example:
 - name: Translation key for the category name
 - description: Translation key for the category description
 - item: Item ID used as icon for the category
+- priority: Display order (optional, default 0). Higher value = category shown first.
 
 ENTRIES (default_entries.json):
 ===============================
@@ -288,7 +293,8 @@ Example:
       "item_count": 1,
       "currency": "null_coin",
       "buy": 1.0,
-      "sell": 0.5
+      "sell": 0.5,
+      "priority": 0
     },
     {
       "id": "diamond_pickaxe_silk",
@@ -297,7 +303,8 @@ Example:
       "item_count": 1,
       "currency": "emerald",
       "buy": 50.0,
-      "sell": 25.0
+      "sell": 25.0,
+      "priority": 10
     }
   ]
 }
@@ -309,6 +316,8 @@ Example:
 - currency: Currency ID for this entry
 - buy: Price to buy the item
 - sell: Price to sell the item
+- priority: Display order within category (optional, default 0). Higher value = entry shown first.
+- free: If true, item can be bought at no cost even when buy is 0; Buy button is shown (optional, default false).
 
 NBT/COMPOUND TAGS SUPPORT:
 ==========================
