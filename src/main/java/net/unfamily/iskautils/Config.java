@@ -748,12 +748,12 @@ public class Config
 
     private static final ModConfigSpec.BooleanValue BURNING_BRAZIER_SUPER_HOT = BUILDER
             .comment("If true, makes the Burning Brazier extra hot - when placing a flame, set on fire the player!",
-                    "Also activates automatically if player has stage 'iska_utils_internal-flame_curse'")
+                    "Also activates automatically if player has stage 'iska_utils_internal-curse_flame'")
             .define("000_burning_brazier_super_hot", false);
 
     private static final ModConfigSpec.BooleanValue BURNING_FLAME_SUPER_HOT = BUILDER
             .comment("If true, makes Burning Flame blocks extra hot - mobs & players touching them will catch fire!",
-                    "Also activates automatically if world has stage 'iska_utils_internal-flame_curse'")
+                    "Also activates automatically if world has stage 'iska_utils_internal-curse_flame'")
             .define("001_burning_flame_super_hot", false);
 
     private static final ModConfigSpec.BooleanValue GIFT_PLACE_HARD_ICE = BUILDER

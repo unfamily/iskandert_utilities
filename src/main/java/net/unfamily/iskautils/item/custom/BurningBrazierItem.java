@@ -33,6 +33,14 @@ public class BurningBrazierItem extends Item {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BurningBrazierItem.class);
     private static final int MAX_DURABILITY = 512;
+    private static final String CURSE_FLAME_STAGE = "iska_utils_internal-curse_flame";
+
+    /** Curse flame is scalable: player (single), team (player's team), world (everyone). */
+    private static boolean hasCurseFlame(ServerPlayer player) {
+        return StageRegistry.playerHasStage(player, CURSE_FLAME_STAGE)
+                || StageRegistry.playerTeamHasStage(player, CURSE_FLAME_STAGE)
+                || StageRegistry.worldHasStage(player.level(), CURSE_FLAME_STAGE);
+    }
 
     public BurningBrazierItem(Properties properties) {
         super(properties.durability(MAX_DURABILITY));
@@ -84,13 +92,9 @@ public class BurningBrazierItem extends Item {
         BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();
         level.setBlock(placePos, flameState, 3);
 
-        // If super hot mode is enabled OR player has flame curse stage, set the player on fire
-        boolean shouldBurn = Config.burningBrazierSuperHot;
-
-        if (!shouldBurn) {
-            // Check if player has the flame curse stage
-            shouldBurn = StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-flame_curse");
-        }
+        // If super hot mode is enabled OR curse_flame on player/team/world, set the player on fire
+        boolean shouldBurn = Config.burningBrazierSuperHot
+                || hasCurseFlame(serverPlayer);
 
         if (shouldBurn) {
             serverPlayer.setRemainingFireTicks(5 * 20); // 5 seconds of fire (5 * 20 ticks)
@@ -143,13 +147,9 @@ public class BurningBrazierItem extends Item {
         BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();
         level.setBlock(flamePos, flameState, 3);
 
-        // If super hot mode is enabled OR player has flame curse stage, set the player on fire
-        boolean shouldBurn = Config.burningBrazierSuperHot;
-
-        if (!shouldBurn) {
-            // Check if player has the flame curse stage
-            shouldBurn = StageRegistry.playerHasStage(player, "iska_utils_internal-flame_curse");
-        }
+        // If super hot mode is enabled OR curse_flame on player/team/world, set the player on fire
+        boolean shouldBurn = Config.burningBrazierSuperHot
+                || hasCurseFlame(player);
 
         if (shouldBurn) {
             player.setRemainingFireTicks(5 * 20); // 5 seconds of fire (5 * 20 ticks)

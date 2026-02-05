@@ -60,7 +60,8 @@ public class IndexGenerator {
         sb.append("1. [Commands Added by the Mod](#commands-added-by-the-mod)\n");
         sb.append("2. [Scripting System](#scripting-system)\n");
         sb.append("3. [Configurable Tags](#configurable-tags)\n");
-        sb.append("4. [Advanced Features](#advanced-features)\n\n");
+        sb.append("4. [Internal Stages](#internal-stages)\n");
+        sb.append("5. [Advanced Features](#advanced-features)\n\n");
         
         // Commands section
         sb.append("## Commands Added by the Mod\n\n");
@@ -176,6 +177,37 @@ public class IndexGenerator {
         sb.append("Blacklist for the Swiss Wrench. Blocks in this tag cannot be rotated by the Swiss Wrench.\n\n");
         sb.append("- **Default:** vanilla beds (`#minecraft:beds`)\n");
         sb.append("Extend via datapack: create `data/c/tags/block/wrench_not_rotate.json` (or your namespace) with `replace: false` and add block IDs to `values`.\n\n");
+        
+        // Internal Stages
+        sb.append("## Internal Stages\n\n");
+        sb.append("The mod uses stages with the `iska_utils_internal-` prefix for internal logic. The following are documented for packdev and integrations.\n\n");
+        sb.append("### Stages for packdev\n\n");
+        sb.append("These stages can be assigned via datapack/macro. **Curse stages** are scalable: they can be applied at **player** (single player), **team** (all members of the player's team), or **world** (everyone). The mod checks in that order; if any level has the stage, the effect applies.\n\n");
+        sb.append("- **`iska_utils_internal-curse_flight`** (player | team | world)\n");
+        sb.append("  * **Use:** Disables creative flight (and from other mods) while the stage is present at the given level.\n");
+        sb.append("  * **Where:** `FlightHandler` (player tick event).\n");
+        sb.append("  * **Effect:** Every tick, if the stage is on the player, their team, or the world, `mayfly` and `flying` are forced to `false`; spectator is not affected.\n\n");
+        sb.append("- **`iska_utils_internal-curse_flame`** (player | team | world)\n");
+        sb.append("  * **Use:** Enables \"super hot\" mode for Burning Brazier and Burning Flame block without using config.\n");
+        sb.append("  * **Where:** `BurningBrazierItem` (flame placement and inventoryTick), `BurningFlameBlock` (entityInside), `Config` (evil_things options comments).\n");
+        sb.append("  * **Effect:** If the stage is on the player, their team, or the world, Brazier and Flame set entities on fire as with `burning_brazier_super_hot` / `burning_flame_super_hot` options. For non-player entities in the flame block, only world stage is checked.\n\n");
+        sb.append("### Other internal stages\n\n");
+        sb.append("- **`iska_utils_internal-funpack_flight0`** / **`iska_utils_internal-funpack_flight1`** (player)\n");
+        sb.append("  * **Use:** Fanpack flight heartbeat: the mod enables flight only when `funpack_flight0` is present (set by item/curio).\n");
+        sb.append("  * **Where:** `FlightHandler`, `FanpackItem`, `FanpackCurioHandler`.\n");
+        sb.append("  * **Effect:** Ensures the Fanpack is actually present; do not assign manually for flight.\n\n");
+        sb.append("- **`iska_utils_internal-greedy_shield_equip`** (player)\n");
+        sb.append("  * **Use:** Indicates that the Greedy Shield is equipped.\n");
+        sb.append("  * **Where:** `GreedyShieldItem`, `LivingIncomingDamageEventHandler`.\n\n");
+        sb.append("- **`iska_utils_internal-necro_crystal_heart_equip`** (player)\n");
+        sb.append("  * **Use:** Indicates that the Necrotic Crystal Heart is equipped.\n");
+        sb.append("  * **Where:** `NecroticCrystalHeartItem`, `LivingIncomingDamageEventHandler`.\n\n");
+        sb.append("- **`iska_utils_internal-necrotic_crystal_heart`** (player)\n");
+        sb.append("  * **Use:** Removed when the player wakes up.\n");
+        sb.append("  * **Where:** `PlayerSleep`.\n\n");
+        sb.append("- **`iska_utils_internal-CH:<year>`** (e.g. `iska_utils_internal-CH:2025`)\n");
+        sb.append("  * **Use:** Dynamic stages per year (Calendar/Date events).\n");
+        sb.append("  * **Where:** `DateEvents`.\n\n");
         
         // Advanced Features
         sb.append("## Advanced Features\n\n");

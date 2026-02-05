@@ -4,6 +4,7 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.stage.StageRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -69,16 +70,23 @@ public class BurningFlameBlock extends Block {
         return true;
     }
 
+    private static final String CURSE_FLAME_STAGE = "iska_utils_internal-curse_flame";
+
+    /** Curse flame scalable: for players check player/team/world; for other entities only world. */
+    private static boolean hasCurseFlame(Level level, Entity entity) {
+        if (entity instanceof ServerPlayer player) {
+            return StageRegistry.playerHasStage(player, CURSE_FLAME_STAGE)
+                    || StageRegistry.playerTeamHasStage(player, CURSE_FLAME_STAGE)
+                    || StageRegistry.worldHasStage(level, CURSE_FLAME_STAGE);
+        }
+        return StageRegistry.worldHasStage(level, CURSE_FLAME_STAGE);
+    }
+
     @Override
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (!level.isClientSide && entity instanceof net.minecraft.world.entity.LivingEntity livingEntity) {
-            // Check if super hot mode is enabled OR world has the flame curse stage
-            boolean shouldBurn = Config.burningFlameSuperHot;
-
-            if (!shouldBurn) {
-                // Check if world has the flame curse stage
-                shouldBurn = StageRegistry.worldHasStage(level, "iska_utils_internal-flame_curse");
-            }
+            // Super hot config OR curse_flame on player/team/world (scalable)
+            boolean shouldBurn = Config.burningFlameSuperHot || hasCurseFlame(level, entity);
 
             if (shouldBurn) {
                 livingEntity.setRemainingFireTicks(5 * 20); // 5 seconds of fire (5 * 20 ticks)

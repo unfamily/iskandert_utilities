@@ -16,7 +16,7 @@ import java.util.UUID;
  * Event handler for Fanpack flight management
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
-public class FanpackFlightHandler {
+public class FlightHandler {
     
     // Track stage check timing for each player
     private static final Map<UUID, Long> lastStageCheckTime = new HashMap<>();
@@ -44,6 +44,19 @@ public class FanpackFlightHandler {
         
         // Don't interfere with spectator mode flight
         if (player.isSpectator()) {
+            return;
+        }
+        
+        // Curse flight: if stage is present on player, player's team, or world, disable creative flight (scalable)
+        boolean curseFlight = StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-curse_flight")
+                || StageRegistry.playerTeamHasStage(serverPlayer, "iska_utils_internal-curse_flight")
+                || StageRegistry.worldHasStage(serverPlayer.level(), "iska_utils_internal-curse_flight");
+        if (curseFlight) {
+            if (player.getAbilities().mayfly || player.getAbilities().flying) {
+                player.getAbilities().mayfly = false;
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+            }
             return;
         }
         
