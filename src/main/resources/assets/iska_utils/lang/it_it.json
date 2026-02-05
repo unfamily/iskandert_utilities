@@ -211,7 +211,7 @@
   "gui.iska_utils.shop.feedback.insufficient_funds": "Soldi insufficienti: %s",
   "gui.iska_utils.shop.feedback.insufficient_items": "Oggetti insufficienti",
   "gui.iska_utils.shop.feedback.no_team": "Non sei in un team",
-  "gui.iska_utils.shop.feedback.stage_requirements": "Ti serve uno stage richiesto o hai uno stage incompatibile",
+  "gui.iska_utils.shop.feedback.stage_requirements": "Stage mancante o incompatibile",
   "gui.iska_utils.shop.feedback.transaction_error": "Errore nella transazione",
 
   "creativetab.iska_utils.tab": "Utilità di Iskandert",
