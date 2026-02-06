@@ -302,7 +302,7 @@ public class CommandItemLoader {
                 
                 "## Notes\n\n" +
                 "- Command items are loaded during game startup from JSON files in this directory.\n" +
-                "- Changes require a game restart to take effect.\n" +
+                "- Reload: `/iska_utils_debug reload` (quick) or `/reload` (full) to apply changes without restart.\n" +
                 "- You can create as many command item configurations as needed.\n";
             
             Files.write(readmePath, readmeContent.getBytes());

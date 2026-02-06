@@ -74,6 +74,8 @@ public class StageCommand {
         COMMAND_USAGE.put("clear_team", "/iska_utils_stage clear team <team_name> [silent=false] [hide=false]");
         COMMAND_USAGE.put("clear_team_player", "/iska_utils_stage clear team_player [target player] [silent=false] [hide=false]");
         COMMAND_USAGE.put("clear_all", "/iska_utils_stage clear all [target player] [silent=false] [hide=false]");
+
+        COMMAND_USAGE.put("call_action", "/iska_utils_stage call_action <target> <action_id> [force=false] [silent=false] [hide=false]");
     }
     
     @SubscribeEvent
@@ -310,6 +312,18 @@ public class StageCommand {
                                 .executes(ctx -> setTeamPlayerStageForSelf(ctx, null, false, false))
                                 .then(Commands.argument("silent", BoolArgumentType.bool())
                                     .executes(ctx -> setTeamPlayerStageForSelf(ctx, null, null, false)))))))
+                // CALL_ACTION: run stage action for target(s), stages rechecked at execution
+                .then(Commands.literal("call_action")
+                    .then(Commands.argument("target", EntityArgument.entities())
+                        .then(Commands.argument("action_id", StringArgumentType.word()).suggests(StageCommand::suggestActionIds)
+                            .executes(ctx -> callAction(ctx))
+                            .then(Commands.argument("force", BoolArgumentType.bool())
+                                .suggests((c, b) -> SharedSuggestionProvider.suggest(new String[]{"false", "true"}, b))
+                                .executes(ctx -> callAction(ctx))
+                                .then(Commands.argument("silent", BoolArgumentType.bool())
+                                    .executes(ctx -> callAction(ctx))
+                                    .then(Commands.argument("hide", BoolArgumentType.bool())
+                                        .executes(ctx -> callAction(ctx))))))))
                 // CLEAR commands
                 .then(clearNode)
         );
@@ -330,6 +344,52 @@ public class StageCommand {
         return COMMAND_USAGE.getOrDefault(commandKey, "/iska_utils_stage " + commandKey.replace('_', ' '));
     }
     
+    /**
+     * call_action command: runs a stage action for target(s). Stages are rechecked at execution.
+     */
+    private static int callAction(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String actionId = StringArgumentType.getString(context, "action_id");
+        boolean force = getOptionalBool(context, "force", false);
+        boolean silent = getOptionalBool(context, "silent", false);
+        boolean hide = getOptionalBool(context, "hide", false);
+
+        List<ServerPlayer> players;
+        try {
+            players = getTargetPlayers(context, "target");
+        } catch (CommandSyntaxException e) {
+            if (!silent) source.sendFailure(Component.literal("§cInvalid target: " + e.getMessage()));
+            return 0;
+        }
+
+        if (players.isEmpty()) {
+            if (!silent) source.sendFailure(Component.literal("§cNo valid players found"));
+            return 0;
+        }
+
+        int executed = net.unfamily.iskautils.command.StageActionsManager.executeActionById(actionId, players, force);
+        if (executed == -1) {
+            if (!silent) source.sendFailure(Component.literal("§cUnknown action id: " + actionId));
+            return 0;
+        }
+        if (executed == 0 && !force) {
+            if (!silent) source.sendFailure(Component.literal("§cAction '" + actionId + "' has onCall=false. Use force=true to bypass."));
+            return 0;
+        }
+        if (!silent && !hide) {
+            source.sendSuccess(() -> Component.literal("§aExecuted action §e" + actionId + " §afor §f" + executed + " §aplayer(s)"), false);
+        }
+        return executed;
+    }
+
+    private static boolean getOptionalBool(CommandContext<CommandSourceStack> context, String name, boolean defaultValue) {
+        try {
+            return context.getArgument(name, Boolean.class);
+        } catch (IllegalArgumentException e) {
+            return defaultValue;
+        }
+    }
+
     /**
      * Gets target players from the argument (supports @p, @a, @r, @e, @s, @n).
      * Filters to ServerPlayer only because stages are for players.
@@ -352,6 +412,14 @@ public class StageCommand {
         } catch (Exception e) {
             return Suggestions.empty();
         }
+    }
+
+    /**
+     * Suggestion provider for stage action ids (autocomplete).
+     */
+    private static CompletableFuture<Suggestions> suggestActionIds(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+        List<String> ids = net.unfamily.iskautils.command.StageActionsLoader.getActionIds();
+        return SharedSuggestionProvider.suggest(ids, builder);
     }
 
     /**

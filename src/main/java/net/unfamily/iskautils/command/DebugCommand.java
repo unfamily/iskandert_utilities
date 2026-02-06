@@ -24,6 +24,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.shop.ShopLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,14 +41,89 @@ public class DebugCommand {
         
         dispatcher.register(Commands.literal("iska_utils_debug")
                 .requires(source -> source.hasPermission(0))
+                .then(Commands.literal("reload")
+                        .requires(source -> source.hasPermission(2))
+                        .executes(DebugCommand::executeReload))
                 .then(Commands.argument("action", StringArgumentType.word())
-                        .suggests((context, builder) -> 
+                        .suggests((context, builder) ->
                             SharedSuggestionProvider.suggest(new String[]{"hand"}, builder))
                         .executes(context -> executeDebug(context))
                 )
         );
     }
     
+    private static int executeReload(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        source.sendSuccess(() -> Component.literal("§7Reloading IskaUtils JSON Scripting Eninge"), false);
+
+        int ok = 0;
+        int err = 0;
+
+        try {
+            net.unfamily.iskautils.item.CommandItemRegistry.reloadDefinitions();
+            source.sendSuccess(() -> Component.literal("§a  Command items reloaded"), false);
+            ok++;
+        } catch (Exception e) {
+            LOGGER.error("Error reloading command items: {}", e.getMessage());
+            source.sendFailure(Component.literal("§c  Command items: " + e.getMessage()));
+            err++;
+        }
+
+        try {
+            StageActionsLoader.reloadAllActions();
+            source.sendSuccess(() -> Component.literal("§a  Stage actions reloaded"), false);
+            ok++;
+        } catch (Exception e) {
+            LOGGER.error("Error reloading stage actions: {}", e.getMessage());
+            source.sendFailure(Component.literal("§c  Stage actions: " + e.getMessage()));
+            err++;
+        }
+
+        try {
+            net.unfamily.iskautils.iska_utils_stages.StageItemManager.reloadItemRestrictions();
+            source.sendSuccess(() -> Component.literal("§a  Stage items reloaded"), false);
+            ok++;
+        } catch (Exception e) {
+            LOGGER.error("Error reloading stage items: {}", e.getMessage());
+            source.sendFailure(Component.literal("§c  Stage items: " + e.getMessage()));
+            err++;
+        }
+
+        try {
+            ShopLoader.reloadAllConfigurations();
+            ShopCommand.notifyClientGUIReload();
+            source.sendSuccess(() -> Component.literal("§a  Shop reloaded"), false);
+            ok++;
+        } catch (Exception e) {
+            LOGGER.error("Error reloading shop: {}", e.getMessage());
+            source.sendFailure(Component.literal("§c  Shop: " + e.getMessage()));
+            err++;
+        }
+
+        try {
+            net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(true);
+            var server = source.getServer();
+            if (server != null && !server.isSingleplayer()) {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
+                }
+                source.sendSuccess(() -> Component.literal("§a  Structures reloaded (synced to clients)"), false);
+            } else {
+                source.sendSuccess(() -> Component.literal("§a  Structures reloaded"), false);
+            }
+            ok++;
+        } catch (Exception e) {
+            LOGGER.error("Error reloading structures: {}", e.getMessage());
+            source.sendFailure(Component.literal("§c  Structures: " + e.getMessage()));
+            err++;
+        }
+
+        final int okCount = ok;
+        final int errCount = err;
+        source.sendSuccess(() -> Component.literal("§7Reload complete: §a" + okCount + " §7ok" + (errCount > 0 ? ", §c" + errCount + " §7failed" : "")), false);
+        return errCount > 0 ? 0 : 1;
+    }
+
     private static int executeDebug(CommandContext<CommandSourceStack> context) {
         String action = StringArgumentType.getString(context, "action");
         

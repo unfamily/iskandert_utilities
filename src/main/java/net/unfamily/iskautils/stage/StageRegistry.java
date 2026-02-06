@@ -176,7 +176,9 @@ public class StageRegistry {
         } else {
             data.removeStage(stage);
         }
-        
+
+        net.unfamily.iskautils.command.StageActionsManager.onPlayerStageChanged(player, stage, value);
+
         if (!hideLog) {
             LOGGER.info("Set player stage '{}' to {} for player {}", stage, value, player.getName().getString());
         }
@@ -205,8 +207,10 @@ public class StageRegistry {
         } else {
             data.removeStage(stage);
         }
-        
+
         data.setDirty();
+        net.unfamily.iskautils.command.StageActionsManager.onWorldStageChanged(server, stage, value);
+
         if (!hideLog) {
             LOGGER.info("Set world stage '{}' to {}", stage, value);
         }
@@ -235,8 +239,10 @@ public class StageRegistry {
         } else {
             data.removeTeamStage(teamName, stage);
         }
-        
+
         data.setDirty();
+        net.unfamily.iskautils.command.StageActionsManager.onTeamStageChanged(server, teamName, stage, value);
+
         if (!hideLog) {
             LOGGER.info("Set team stage '{}' to {} for team '{}'", stage, value, teamName);
         }

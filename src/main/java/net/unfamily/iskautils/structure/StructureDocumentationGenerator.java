@@ -792,7 +792,7 @@ The Structure Placer Machine provides automated structure placement with advance
 - **Use Creative Mode**: Test structures safely without resource loss
 - **Check Game Logs**: Look for structure loading and parsing messages
 - **Test Incrementally**: Start with simple patterns and add complexity
-- **Use `/reload`** command to refresh structures without game restart
+- **Use `/iska_utils_debug reload`** (quick) or **`/reload`** (full) to refresh structures without game restart
 
 ---
 

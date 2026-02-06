@@ -166,7 +166,10 @@ public class IskaUtils {
         
         // Scan and load command macros
         MacroLoader.scanConfigDirectory();
-        
+
+        // Scan and load stage actions (run when stages are added/removed)
+        net.unfamily.iskautils.command.StageActionsLoader.scanConfigDirectory();
+
         // Gli item di comando sono già stati inizializzati nel costruttore
         // Non chiamare più CommandItemRegistry.initializeItems() qui
         
@@ -389,7 +392,14 @@ public class IskaUtils {
             } catch (Exception e) {
                 LOGGER.error("Error loading macros at server startup: {}", e.getMessage());
             }
-            
+
+            // Reload stage actions
+            try {
+                net.unfamily.iskautils.command.StageActionsLoader.reloadAllActions();
+            } catch (Exception e) {
+                LOGGER.error("Error loading stage actions at server startup: {}", e.getMessage());
+            }
+
             // Reload command item definitions
             try {
                 CommandItemRegistry.reloadDefinitions();
@@ -441,10 +451,22 @@ public class IskaUtils {
                         MacroLoader.reloadAllMacros();
                         // Reload command item definitions
                         CommandItemRegistry.reloadDefinitions();
+                        // Reload stage actions
+                        net.unfamily.iskautils.command.StageActionsLoader.reloadAllActions();
                         // Reload stage item restrictions
                         net.unfamily.iskautils.iska_utils_stages.StageItemManager.reloadItemRestrictions();
                         // Reload shop system
                         ShopLoader.reloadAllConfigurations();
+                        net.unfamily.iskautils.command.ShopCommand.notifyClientGUIReload();
+                        // Reload structures
+                        net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(true);
+                        // Sync structures to connected clients
+                        MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+                        if (server != null) {
+                            for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
+                                net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
+                            }
+                        }
                     }, gameExecutor).thenCompose(preparationBarrier::wait);
                 }
                 

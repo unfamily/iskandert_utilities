@@ -168,7 +168,8 @@ public class MacroLoader {
                 "\n" +
                 "This directory allows you to create command macros that can be executed directly in the game.\n" +
                 "\n"+
-                "All commands are reloadable by /reload or better verison provided by this mod\n/reloader, so you can modify them at any time, if you change a default generated file set overwritable to false in the file.\n" +
+                "Macros are reloadable by /reload or /reloader. For other configs (command items, stage actions, shop, structures) use `/iska_utils_debug reload` for a quick reload.\n" +
+                "If you change a default generated file, set overwritable to false in the file.\n" +
                 "\n" +
                 "## Format\n" +
                 "\n" +

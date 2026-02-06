@@ -391,7 +391,7 @@ public class StageItemManager {
                 "- `block_delete`: Blocks usage of the item and deletes it (for non-container contexts specified in other_case)\n\n" +
                 
                 "## Reloading Configurations\n\n" +
-                "Configurations are loaded at server startup and can be reloaded using the `/reload` command.\n\n" +
+                "Configurations are loaded at server startup. Reload: `/iska_utils_debug reload` (quick) or `/reload` (full).\n\n" +
                 
                 "## Messages\n\n" +
                 "The system will display a message to the player when an item restriction is applied. This helps players understand why certain items are being removed from containers they access. The message will indicate whether items were dropped, deleted, or blocked based on the restriction settings.\n";

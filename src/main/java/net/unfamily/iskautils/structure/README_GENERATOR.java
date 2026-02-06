@@ -637,7 +637,7 @@ When `place_like_player` is true:
 - Check game logs for parsing errors
 - Verify mod compatibility for block alternatives
 - Test patterns in creative mode
-- Use `/reload` to refresh structures without restart
+- Use `/iska_utils_debug reload` (quick) or `/reload` (full) to refresh structures without restart
 
 ---
 

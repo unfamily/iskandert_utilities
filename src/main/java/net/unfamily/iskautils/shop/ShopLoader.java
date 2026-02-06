@@ -439,6 +439,8 @@ public class ShopLoader {
                 "```json\n" +
                 "\"item\": \"minecraft:book[pages:['\\\"{\\\\\\\"text\\\\\\\":\\\\\\\"Magical spell\\\\\\\"}\\\"'],title:\\\"Spellbook\\\",author:\\\"Wizard\\\"]\"\n" +
                 "```\n\n" +
+                "## Reloading\n\n" +
+                "Reload: `/iska_utils_debug reload` (quick) or `/reload` (full). Also `/iska_utils_shop reload` for shop only.\n\n" +
                 "## Overwritable System\n\n" +
                 "- `overwritable: false` = File cannot be overwritten by other files\n" +
                 "- `overwritable: true` = File can be overwritten by files loaded later\n" +

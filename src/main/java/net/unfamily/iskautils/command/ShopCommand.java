@@ -185,9 +185,10 @@ public class ShopCommand {
     }
     
     /**
-     * Notifies client GUIs of reload (executed on client)
+     * Notifies client GUIs of reload (executed on client).
+     * Public for use by iska_utils_debug reload.
      */
-    private static void notifyClientGUIReload() {
+    public static void notifyClientGUIReload() {
         try {
             // This runs on server, but must notify the client
             // On integrated server (single player), we can call GUIs directly
