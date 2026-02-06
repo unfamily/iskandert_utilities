@@ -289,7 +289,7 @@ public class MacroLoader {
                 "- `int`: An integer number\n" +
                 "- `float`/`double`: A decimal number\n" +
                 "- `boolean`: true or false\n" +
-                "- `target`: Player selector (e.g., @p, @a, or player name)\n" +
+                "- `target`: Entity selector (@p, @a, @r, @e, @s, @n or player name)\n" +
                 "- `static`: Value from a predefined list with autocomplete (like vanilla command arguments)\n" +
                 "\n" +
                 "### Parameter Usage in Commands\n" +

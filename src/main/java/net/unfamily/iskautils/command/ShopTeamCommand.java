@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -14,21 +15,48 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.entity.Entity;
 import net.unfamily.iskautils.shop.ShopTeamManager;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCurrency;
 
-import java.util.concurrent.CompletableFuture;
-
+import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * Command for managing shop teams
  */
 public class ShopTeamCommand {
-    
+
+    private static final SimpleCommandExceptionType ERROR_PLAYER_NOT_FOUND = new SimpleCommandExceptionType(
+            Component.literal("Nessun giocatore trovato dal selettore"));
+
+    /**
+     * Ottiene i giocatori target dall'argomento (supporta @p, @a, @r, @e, @s, @n).
+     */
+    private static List<ServerPlayer> getTargetPlayers(CommandContext<CommandSourceStack> context, String argumentName) throws CommandSyntaxException {
+        Collection<? extends Entity> entities = EntityArgument.getEntities(context, argumentName);
+        return entities.stream()
+                .filter(ServerPlayer.class::isInstance)
+                .map(ServerPlayer.class::cast)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Ottiene un singolo giocatore target (per comandi come newLeader; se il selettore restituisce più giocatori, usa il primo).
+     */
+    private static ServerPlayer getSingleTargetPlayer(CommandContext<CommandSourceStack> context, String argumentName) throws CommandSyntaxException {
+        List<ServerPlayer> players = getTargetPlayers(context, argumentName);
+        if (players.isEmpty()) {
+            throw ERROR_PLAYER_NOT_FOUND.create();
+        }
+        return players.get(0);
+    }
+
     /**
      * Registers the team command
      */
@@ -50,20 +78,20 @@ public class ShopTeamCommand {
                         .requires(source -> source.hasPermission(2)) // Admin only for other teams
                         .executes(ShopTeamCommand::renameTeam))))
             .then(Commands.literal("leader")
-                .then(Commands.argument("newLeader", EntityArgument.player())
+                .then(Commands.argument("newLeader", EntityArgument.entities())
                     .executes(ShopTeamCommand::transferOwnTeamLeadership)
                     .then(Commands.argument("teamName", StringArgumentType.word())
                         .requires(source -> source.hasPermission(2)) // Admin only for other teams
                         .executes(ShopTeamCommand::transferTeamLeadership))))
             .then(Commands.literal("assistant")
                 .then(Commands.literal("add")
-                    .then(Commands.argument("player", EntityArgument.player())
+                    .then(Commands.argument("player", EntityArgument.entities())
                         .executes(ShopTeamCommand::addAssistantToOwnTeam)
                         .then(Commands.argument("teamName", StringArgumentType.word())
                             .requires(source -> source.hasPermission(2)) // Admin only for other teams
                             .executes(ShopTeamCommand::addTeamAssistant))))
                 .then(Commands.literal("remove")
-                    .then(Commands.argument("player", EntityArgument.player())
+                    .then(Commands.argument("player", EntityArgument.entities())
                         .executes(ShopTeamCommand::removeAssistantFromOwnTeam)
                         .then(Commands.argument("teamName", StringArgumentType.word())
                             .requires(source -> source.hasPermission(2)) // Admin only for other teams
@@ -73,13 +101,13 @@ public class ShopTeamCommand {
                     .then(Commands.argument("teamName", StringArgumentType.word())
                         .executes(ShopTeamCommand::listTeamAssistants))))
             .then(Commands.literal("invite")
-                .then(Commands.argument("player", EntityArgument.player())
+                .then(Commands.argument("player", EntityArgument.entities())
                     .executes(ShopTeamCommand::inviteToOwnTeam)
                     .then(Commands.argument("teamName", StringArgumentType.word())
                         .requires(source -> source.hasPermission(2)) // Admin only for other teams
                         .executes(ShopTeamCommand::inviteToTeam))))
             .then(Commands.literal("cancelInvite")
-                .then(Commands.argument("player", EntityArgument.player())
+                .then(Commands.argument("player", EntityArgument.entities())
                     .executes(ShopTeamCommand::cancelInviteFromOwnTeam)
                     .then(Commands.argument("teamName", StringArgumentType.word())
                         .requires(source -> source.hasPermission(2)) // Admin only for other teams
@@ -90,14 +118,14 @@ public class ShopTeamCommand {
             .then(Commands.literal("leave")
                 .executes(ShopTeamCommand::leaveTeam))
             .then(Commands.literal("add")
-                .then(Commands.argument("player", EntityArgument.player())
+                .then(Commands.argument("player", EntityArgument.entities())
                     .requires(source -> source.hasPermission(2)) // Admin only - add is special
                     .executes(ShopTeamCommand::addToOwnTeam)
                     .then(Commands.argument("teamName", StringArgumentType.word())
                         .requires(source -> source.hasPermission(2)) // Admin only for other teams
                         .executes(ShopTeamCommand::addPlayer))))
             .then(Commands.literal("remove")
-                .then(Commands.argument("player", EntityArgument.player())
+                .then(Commands.argument("player", EntityArgument.entities())
                     .executes(ShopTeamCommand::removeFromOwnTeam)
                     .then(Commands.argument("teamName", StringArgumentType.word())
                         .requires(source -> source.hasPermission(2)) // Admin only for other teams
@@ -130,7 +158,7 @@ public class ShopTeamCommand {
                                 .suggests(ShopTeamCommand::suggestTeams)
                                 .executes(ShopTeamCommand::addCurrencyToTeam)))
                         .then(Commands.literal("player")
-                            .then(Commands.argument("player", EntityArgument.player())
+                            .then(Commands.argument("player", EntityArgument.entities())
                                 .executes(ShopTeamCommand::addCurrencyToPlayerTeam))))))
             .then(Commands.literal("removeCurrency")
                 .requires(source -> source.hasPermission(2)) // Admin only
@@ -143,7 +171,7 @@ public class ShopTeamCommand {
                                 .suggests(ShopTeamCommand::suggestTeams)
                                 .executes(ShopTeamCommand::removeCurrencyFromTeam)))
                         .then(Commands.literal("player")
-                            .then(Commands.argument("player", EntityArgument.player())
+                            .then(Commands.argument("player", EntityArgument.entities())
                                 .executes(ShopTeamCommand::removeCurrencyFromPlayerTeam))))))
             .then(Commands.literal("setCurrency")
                 .requires(source -> source.hasPermission(2)) // Admin only
@@ -156,7 +184,7 @@ public class ShopTeamCommand {
                                 .suggests(ShopTeamCommand::suggestTeams)
                                 .executes(ShopTeamCommand::setCurrencyForTeam)))
                         .then(Commands.literal("player")
-                            .then(Commands.argument("player", EntityArgument.player())
+                            .then(Commands.argument("player", EntityArgument.entities())
                                 .executes(ShopTeamCommand::setCurrencyForPlayerTeam))))))
             .then(Commands.literal("moveCurrency")
                 .then(Commands.argument("currencyId", StringArgumentType.word())
@@ -307,7 +335,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ServerPlayer newLeader = EntityArgument.getPlayer(context, "newLeader");
+        ServerPlayer newLeader = getSingleTargetPlayer(context, "newLeader");
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
         String teamName = teamManager.getPlayerTeam(player);
         
@@ -336,7 +364,7 @@ public class ShopTeamCommand {
         }
         
         String teamName = StringArgumentType.getString(context, "teamName");
-        ServerPlayer newLeader = EntityArgument.getPlayer(context, "newLeader");
+        ServerPlayer newLeader = getSingleTargetPlayer(context, "newLeader");
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
         
         if (teamManager.transferLeadership(teamName, player, newLeader)) {
@@ -358,7 +386,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ServerPlayer assistant = EntityArgument.getPlayer(context, "player");
+        List<ServerPlayer> assistants = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
         String teamName = teamManager.getPlayerTeam(player);
         
@@ -366,15 +394,22 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
-        
-        if (teamManager.addTeamAssistant(teamName, player, assistant)) {
-            source.sendSuccess(() -> Component.literal("Added " + assistant.getName().getString() + " as assistant to your team!"), false);
-            assistant.sendSystemMessage(Component.literal("You are now an assistant of team '" + teamName + "'!"));
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to add assistant. They might not be in your team or you're not the leader."));
+        if (assistants.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
             return 0;
         }
+        int count = 0;
+        for (ServerPlayer assistant : assistants) {
+            if (teamManager.addTeamAssistant(teamName, player, assistant)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Added " + assistant.getName().getString() + " as assistant to your team!"), false);
+                assistant.sendSystemMessage(Component.literal("You are now an assistant of team '" + teamName + "'!"));
+            }
+        }
+        if (count == 0) {
+            source.sendFailure(Component.literal("Failed to add assistant. They might not be in your team or you're not the leader."));
+        }
+        return count;
     }
     
     private static int addTeamAssistant(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -387,17 +422,24 @@ public class ShopTeamCommand {
         }
         
         String teamName = StringArgumentType.getString(context, "teamName");
-        ServerPlayer assistant = EntityArgument.getPlayer(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
-        
-        if (teamManager.addTeamAssistant(teamName, player, assistant)) {
-            source.sendSuccess(() -> Component.literal("Added " + assistant.getName().getString() + " as assistant to team '" + teamName + "'!"), false);
-            assistant.sendSystemMessage(Component.literal("You are now an assistant of team '" + teamName + "'!"));
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to add assistant to team."));
+        List<ServerPlayer> assistants = getTargetPlayers(context, "player");
+        if (assistants.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
             return 0;
         }
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        int count = 0;
+        for (ServerPlayer assistant : assistants) {
+            if (teamManager.addTeamAssistant(teamName, player, assistant)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Added " + assistant.getName().getString() + " as assistant to team '" + teamName + "'!"), false);
+                assistant.sendSystemMessage(Component.literal("You are now an assistant of team '" + teamName + "'!"));
+            }
+        }
+        if (count == 0) {
+            source.sendFailure(Component.literal("Failed to add assistant to team."));
+        }
+        return count;
     }
     
     private static int removeAssistantFromOwnTeam(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -409,7 +451,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ServerPlayer assistant = EntityArgument.getPlayer(context, "player");
+        List<ServerPlayer> assistants = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
         String teamName = teamManager.getPlayerTeam(player);
         
@@ -417,15 +459,22 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
-        
-        if (teamManager.removeTeamAssistant(teamName, player, assistant)) {
-            source.sendSuccess(() -> Component.literal("Removed " + assistant.getName().getString() + " as assistant from your team!"), false);
-            assistant.sendSystemMessage(Component.literal("You are no longer an assistant of team '" + teamName + "'!"));
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to remove assistant. You might not be the leader."));
+        if (assistants.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
             return 0;
         }
+        int count = 0;
+        for (ServerPlayer assistant : assistants) {
+            if (teamManager.removeTeamAssistant(teamName, player, assistant)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Removed " + assistant.getName().getString() + " as assistant from your team!"), false);
+                assistant.sendSystemMessage(Component.literal("You are no longer an assistant of team '" + teamName + "'!"));
+            }
+        }
+        if (count == 0) {
+            source.sendFailure(Component.literal("Failed to remove assistant. You might not be the leader."));
+        }
+        return count;
     }
     
     private static int removeTeamAssistant(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -438,17 +487,24 @@ public class ShopTeamCommand {
         }
         
         String teamName = StringArgumentType.getString(context, "teamName");
-        ServerPlayer assistant = EntityArgument.getPlayer(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
-        
-        if (teamManager.removeTeamAssistant(teamName, player, assistant)) {
-            source.sendSuccess(() -> Component.literal("Removed " + assistant.getName().getString() + " as assistant from team '" + teamName + "'!"), false);
-            assistant.sendSystemMessage(Component.literal("You are no longer an assistant of team '" + teamName + "'!"));
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to remove assistant from team."));
+        List<ServerPlayer> assistants = getTargetPlayers(context, "player");
+        if (assistants.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
             return 0;
         }
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        int count = 0;
+        for (ServerPlayer assistant : assistants) {
+            if (teamManager.removeTeamAssistant(teamName, player, assistant)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Removed " + assistant.getName().getString() + " as assistant from team '" + teamName + "'!"), false);
+                assistant.sendSystemMessage(Component.literal("You are no longer an assistant of team '" + teamName + "'!"));
+            }
+        }
+        if (count == 0) {
+            source.sendFailure(Component.literal("Failed to remove assistant from team."));
+        }
+        return count;
     }
     
     private static int listOwnTeamAssistants(CommandContext<CommandSourceStack> context) {
@@ -509,7 +565,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
+        List<ServerPlayer> targets = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
         String teamName = teamManager.getPlayerTeam(player);
         
@@ -517,15 +573,22 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
-        
-        if (teamManager.invitePlayerToTeam(teamName, player, targetPlayer)) {
-            source.sendSuccess(() -> Component.literal("Invited " + targetPlayer.getName().getString() + " to your team!"), false);
-            targetPlayer.sendSystemMessage(Component.literal("You have been invited to join team '" + teamName + "'! Use /iska_utils_team accept " + teamName + " to join."));
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to invite player. They might already be in a team."));
+        if (targets.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
             return 0;
         }
+        int count = 0;
+        for (ServerPlayer targetPlayer : targets) {
+            if (teamManager.invitePlayerToTeam(teamName, player, targetPlayer)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Invited " + targetPlayer.getName().getString() + " to your team!"), false);
+                targetPlayer.sendSystemMessage(Component.literal("You have been invited to join team '" + teamName + "'! Use /iska_utils_team accept " + teamName + " to join."));
+            }
+        }
+        if (count == 0) {
+            source.sendFailure(Component.literal("Failed to invite player. They might already be in a team."));
+        }
+        return count;
     }
     
     private static int inviteToTeam(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -538,17 +601,24 @@ public class ShopTeamCommand {
         }
         
         String teamName = StringArgumentType.getString(context, "teamName");
-        ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
-        
-        if (teamManager.invitePlayerToTeam(teamName, player, targetPlayer)) {
-            source.sendSuccess(() -> Component.literal("Invited " + targetPlayer.getName().getString() + " to team '" + teamName + "'!"), false);
-            targetPlayer.sendSystemMessage(Component.literal("You have been invited to join team '" + teamName + "'! Use /iska_utils_team accept " + teamName + " to join."));
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to invite player to team."));
+        List<ServerPlayer> targets = getTargetPlayers(context, "player");
+        if (targets.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
             return 0;
         }
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        int count = 0;
+        for (ServerPlayer targetPlayer : targets) {
+            if (teamManager.invitePlayerToTeam(teamName, player, targetPlayer)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Invited " + targetPlayer.getName().getString() + " to team '" + teamName + "'!"), false);
+                targetPlayer.sendSystemMessage(Component.literal("You have been invited to join team '" + teamName + "'! Use /iska_utils_team accept " + teamName + " to join."));
+            }
+        }
+        if (count == 0) {
+            source.sendFailure(Component.literal("Failed to invite player to team."));
+        }
+        return count;
     }
     
     private static int acceptInvitation(CommandContext<CommandSourceStack> context) {
@@ -601,7 +671,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
+        List<ServerPlayer> targets = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
         String teamName = teamManager.getPlayerTeam(player);
         
@@ -609,15 +679,22 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
-        
-        if (teamManager.addPlayerToTeam(teamName, targetPlayer)) {
-            source.sendSuccess(() -> Component.literal("Added " + targetPlayer.getName().getString() + " to your team!"), false);
-            targetPlayer.sendSystemMessage(Component.literal("You have been added to team '" + teamName + "'!"));
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to add player to team. They might already be in a team."));
+        if (targets.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
             return 0;
         }
+        int count = 0;
+        for (ServerPlayer targetPlayer : targets) {
+            if (teamManager.addPlayerToTeam(teamName, targetPlayer)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Added " + targetPlayer.getName().getString() + " to your team!"), false);
+                targetPlayer.sendSystemMessage(Component.literal("You have been added to team '" + teamName + "'!"));
+            }
+        }
+        if (count == 0) {
+            source.sendFailure(Component.literal("Failed to add player to team. They might already be in a team."));
+        }
+        return count;
     }
     
     private static int addPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -630,17 +707,24 @@ public class ShopTeamCommand {
         }
         
         String teamName = StringArgumentType.getString(context, "teamName");
-        ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
-        
-        if (teamManager.addPlayerToTeam(teamName, targetPlayer)) {
-            source.sendSuccess(() -> Component.literal("Added " + targetPlayer.getName().getString() + " to team '" + teamName + "'!"), false);
-            targetPlayer.sendSystemMessage(Component.literal("You have been added to team '" + teamName + "'!"));
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to add player to team. Team might not exist or player is already in a team."));
+        List<ServerPlayer> targets = getTargetPlayers(context, "player");
+        if (targets.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
             return 0;
         }
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        int count = 0;
+        for (ServerPlayer targetPlayer : targets) {
+            if (teamManager.addPlayerToTeam(teamName, targetPlayer)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Added " + targetPlayer.getName().getString() + " to team '" + teamName + "'!"), false);
+                targetPlayer.sendSystemMessage(Component.literal("You have been added to team '" + teamName + "'!"));
+            }
+        }
+        if (count == 0) {
+            source.sendFailure(Component.literal("Failed to add player to team. Team might not exist or player is already in a team."));
+        }
+        return count;
     }
     
     private static int removeFromOwnTeam(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -652,7 +736,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
+        List<ServerPlayer> targets = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
         String teamName = teamManager.getPlayerTeam(player);
         
@@ -660,15 +744,22 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
-        
-        if (teamManager.removePlayerFromTeam(teamName, targetPlayer)) {
-            source.sendSuccess(() -> Component.literal("Removed " + targetPlayer.getName().getString() + " from your team!"), false);
-            targetPlayer.sendSystemMessage(Component.literal("You have been removed from team '" + teamName + "'!"));
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to remove player from team. You might not be the leader or the player is not in the team."));
+        if (targets.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
             return 0;
         }
+        int count = 0;
+        for (ServerPlayer targetPlayer : targets) {
+            if (teamManager.removePlayerFromTeam(teamName, targetPlayer)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Removed " + targetPlayer.getName().getString() + " from your team!"), false);
+                targetPlayer.sendSystemMessage(Component.literal("You have been removed from team '" + teamName + "'!"));
+            }
+        }
+        if (count == 0) {
+            source.sendFailure(Component.literal("Failed to remove player from team. You might not be the leader or the player is not in the team."));
+        }
+        return count;
     }
     
     private static int removePlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -681,17 +772,24 @@ public class ShopTeamCommand {
         }
         
         String teamName = StringArgumentType.getString(context, "teamName");
-        ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
-        
-        if (teamManager.removePlayerFromTeam(teamName, targetPlayer)) {
-            source.sendSuccess(() -> Component.literal("Removed " + targetPlayer.getName().getString() + " from team '" + teamName + "'!"), false);
-            targetPlayer.sendSystemMessage(Component.literal("You have been removed from team '" + teamName + "'!"));
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Failed to remove player from team. You might not be the leader or the player is not in the team."));
+        List<ServerPlayer> targets = getTargetPlayers(context, "player");
+        if (targets.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
             return 0;
         }
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        int count = 0;
+        for (ServerPlayer targetPlayer : targets) {
+            if (teamManager.removePlayerFromTeam(teamName, targetPlayer)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Removed " + targetPlayer.getName().getString() + " from team '" + teamName + "'!"), false);
+                targetPlayer.sendSystemMessage(Component.literal("You have been removed from team '" + teamName + "'!"));
+            }
+        }
+        if (count == 0) {
+            source.sendFailure(Component.literal("Failed to remove player from team. You might not be the leader or the player is not in the team."));
+        }
+        return count;
     }
     
     private static int ownTeamInfo(CommandContext<CommandSourceStack> context) {
@@ -953,30 +1051,29 @@ public class ShopTeamCommand {
         double amount = DoubleArgumentType.getDouble(context, "amount");
         
         try {
-            ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
-            ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
-            String teamName = teamManager.getPlayerTeam(targetPlayer);
-            
-            if (teamName == null) {
-                source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
+            List<ServerPlayer> targets = getTargetPlayers(context, "player");
+            if (targets.isEmpty()) {
+                source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
                 return 0;
             }
-            
-            if (teamManager.addTeamCurrency(teamName, currencyId, amount)) {
-                ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
-                String currencyDisplay;
-                if (currency != null) {
-                    String localizedName = Component.translatable(currency.name).getString();
-                    currencyDisplay = localizedName + " " + currency.charSymbol;
-                } else {
-                    currencyDisplay = currencyId;
+            int count = 0;
+            for (ServerPlayer targetPlayer : targets) {
+                ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
+                String teamName = teamManager.getPlayerTeam(targetPlayer);
+                if (teamName == null) {
+                    source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
+                    continue;
                 }
-                source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
-                return 1;
-            } else {
-                source.sendFailure(Component.literal("Failed to add currencies to team."));
-                return 0;
+                if (teamManager.addTeamCurrency(teamName, currencyId, amount)) {
+                    count++;
+                    ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
+                    String currencyDisplay = currency != null ? Component.translatable(currency.name).getString() + " " + currency.charSymbol : currencyId;
+                    source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
+                } else {
+                    source.sendFailure(Component.literal("Failed to add currencies to team."));
+                }
             }
+            return count;
         } catch (Exception e) {
             source.sendFailure(Component.literal("Player not found or error occurred"));
             return 0;
@@ -1054,30 +1151,29 @@ public class ShopTeamCommand {
         double amount = DoubleArgumentType.getDouble(context, "amount");
         
         try {
-            ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
-            ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
-            String teamName = teamManager.getPlayerTeam(targetPlayer);
-            
-            if (teamName == null) {
-                source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
+            List<ServerPlayer> targets = getTargetPlayers(context, "player");
+            if (targets.isEmpty()) {
+                source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
                 return 0;
             }
-            
-            if (teamManager.removeTeamCurrency(teamName, currencyId, amount)) {
-                ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
-                String currencyDisplay;
-                if (currency != null) {
-                    String localizedName = Component.translatable(currency.name).getString();
-                    currencyDisplay = localizedName + " " + currency.charSymbol;
-                } else {
-                    currencyDisplay = currencyId;
+            int count = 0;
+            for (ServerPlayer targetPlayer : targets) {
+                ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
+                String teamName = teamManager.getPlayerTeam(targetPlayer);
+                if (teamName == null) {
+                    source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
+                    continue;
                 }
-                source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
-                return 1;
-            } else {
-                source.sendFailure(Component.literal("Failed to remove currencies from team. Insufficient balance or team doesn't exist."));
-                return 0;
+                if (teamManager.removeTeamCurrency(teamName, currencyId, amount)) {
+                    count++;
+                    ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
+                    String currencyDisplay = currency != null ? Component.translatable(currency.name).getString() + " " + currency.charSymbol : currencyId;
+                    source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
+                } else {
+                    source.sendFailure(Component.literal("Failed to remove currencies from team. Insufficient balance or team doesn't exist."));
+                }
             }
+            return count;
         } catch (Exception e) {
             source.sendFailure(Component.literal("Player not found or error occurred"));
             return 0;
@@ -1126,16 +1222,22 @@ public class ShopTeamCommand {
         double amount = DoubleArgumentType.getDouble(context, "amount");
         
         try {
-            ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
-            ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
-            String teamName = teamManager.getPlayerTeam(targetPlayer);
-            
-            if (teamName == null) {
-                source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
+            List<ServerPlayer> targets = getTargetPlayers(context, "player");
+            if (targets.isEmpty()) {
+                source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
                 return 0;
             }
-            
-            return setTeamCurrency(source, teamManager, teamName, currencyId, amount);
+            int total = 0;
+            for (ServerPlayer targetPlayer : targets) {
+                ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
+                String teamName = teamManager.getPlayerTeam(targetPlayer);
+                if (teamName == null) {
+                    source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
+                    continue;
+                }
+                total += setTeamCurrency(source, teamManager, teamName, currencyId, amount);
+            }
+            return total;
         } catch (Exception e) {
             source.sendFailure(Component.literal("Player not found or error occurred"));
             return 0;
@@ -1306,7 +1408,7 @@ public class ShopTeamCommand {
             return 0;
         }
 
-        ServerPlayer invitee = EntityArgument.getPlayer(context, "player");
+        List<ServerPlayer> invitees = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
         String teamName = teamManager.getPlayerTeam(player);
 
@@ -1314,14 +1416,21 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
-
-        if (teamManager.cancelTeamInvitation(teamName, player, invitee)) {
-            source.sendSuccess(() -> Component.literal("Cancelled invitation for '" + invitee.getName().getString() + "' to join team '" + teamName + "'"), false);
-        } else {
+        if (invitees.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            return 0;
+        }
+        int count = 0;
+        for (ServerPlayer invitee : invitees) {
+            if (teamManager.cancelTeamInvitation(teamName, player, invitee)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Cancelled invitation for '" + invitee.getName().getString() + "' to join team '" + teamName + "'"), false);
+            }
+        }
+        if (count == 0) {
             source.sendFailure(Component.literal("Failed to cancel invitation. You might not be authorized or there might be no invitation."));
         }
-
-        return 1;
+        return count;
     }
 
     private static int cancelInviteFromTeam(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -1333,17 +1442,24 @@ public class ShopTeamCommand {
             return 0;
         }
 
-        ServerPlayer invitee = EntityArgument.getPlayer(context, "player");
+        List<ServerPlayer> invitees = getTargetPlayers(context, "player");
         String teamName = StringArgumentType.getString(context, "teamName");
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
-
-        if (teamManager.cancelTeamInvitation(teamName, player, invitee)) {
-            source.sendSuccess(() -> Component.literal("Cancelled invitation for '" + invitee.getName().getString() + "' to join team '" + teamName + "'"), false);
-        } else {
+        if (invitees.isEmpty()) {
+            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            return 0;
+        }
+        int count = 0;
+        for (ServerPlayer invitee : invitees) {
+            if (teamManager.cancelTeamInvitation(teamName, player, invitee)) {
+                count++;
+                source.sendSuccess(() -> Component.literal("Cancelled invitation for '" + invitee.getName().getString() + "' to join team '" + teamName + "'"), false);
+            }
+        }
+        if (count == 0) {
             source.sendFailure(Component.literal("Failed to cancel invitation. You might not be authorized or there might be no invitation."));
         }
-
-        return 1;
+        return count;
     }
 
     /**

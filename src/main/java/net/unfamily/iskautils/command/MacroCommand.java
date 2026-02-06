@@ -15,8 +15,6 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
-import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -202,7 +200,17 @@ public class MacroCommand {
             case "boolean":
                 return Commands.argument(name, BoolArgumentType.bool());
             case "target":
-                return Commands.argument(name, EntityArgument.player());
+                // Supporta @p, @a, @r, @e, @s, @n: argomento stringa con suggest per sostituzione verbatim nel comando
+                RequiredArgumentBuilder<CommandSourceStack, String> targetArg = Commands.argument(name, StringArgumentType.word());
+                targetArg.suggests((context, builder) -> {
+                    for (String sel : new String[]{"@p", "@a", "@r", "@e", "@s", "@n"}) {
+                        if (sel.startsWith(builder.getRemaining().toLowerCase())) {
+                            builder.suggest(sel);
+                        }
+                    }
+                    return builder.buildFuture();
+                });
+                return targetArg;
             case "static":
                 // For static values, we use a word argument with suggestions
                 RequiredArgumentBuilder<CommandSourceStack, String> arg = Commands.argument(name, StringArgumentType.word());
@@ -264,7 +272,7 @@ public class MacroCommand {
                         values[i] = BoolArgumentType.getBool(context, paramName);
                         break;
                     case "target":
-                        values[i] = EntityArgument.getPlayer(context, paramName);
+                        values[i] = StringArgumentType.getString(context, paramName);
                         break;
                     default:
                         values[i] = StringArgumentType.getString(context, paramName);
@@ -757,11 +765,8 @@ public class MacroCommand {
     private static String formatParameterValue(Object value) {
         if (value == null) {
             return "";
-        } else if (value instanceof EntitySelector) {
-            return "@s"; // For entity selectors, use the current player
-        } else {
-            return value.toString();
         }
+        return value.toString();
     }
     
     /**
