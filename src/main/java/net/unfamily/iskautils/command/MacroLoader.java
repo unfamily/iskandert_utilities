@@ -771,7 +771,7 @@ public class MacroLoader {
             
             LOGGER.info("Macro reload completed. {} macros available.", macroCount);
             
-            // Registra i comandi se il server è attivo
+            // Register commands if the server is active
             registerCommandsIfServerAvailable();
             
         } catch (Exception e) {
@@ -783,25 +783,25 @@ public class MacroLoader {
     }
 
     /**
-     * Registra i comandi per tutti i macro nel CommandDispatcher se il server è disponibile
+     * Registers commands for all macros in the CommandDispatcher if the server is available
      */
     private static void registerCommandsIfServerAvailable() {
         try {
-            // Ottiene il server
+            // Get the server
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
             if (server == null) {
                 LOGGER.debug("Server not available, commands will be registered when the server starts");
                 return;
             }
             
-            // Ottiene il CommandDispatcher
+            // Get the CommandDispatcher
             CommandDispatcher<CommandSourceStack> dispatcher = server.getCommands().getDispatcher();
             if (dispatcher == null) {
                 LOGGER.error("CommandDispatcher not available");
                 return;
             }
             
-            // Registra i comandi per tutti i macro
+            // Register commands for all macros
             for (String macroId : MacroCommand.getAvailableMacros()) {
                 MacroCommand.MacroDefinition macro = MacroCommand.getMacro(macroId);
                 if (macro != null) {
@@ -817,7 +817,7 @@ public class MacroLoader {
     }
 
     /**
-     * Registra i comandi quando viene caricato il server
+     * Registers commands when the server is loaded
      */
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -825,7 +825,7 @@ public class MacroLoader {
         
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
         
-        // Registra i comandi per tutti i macro
+        // Register commands for all macros
         for (String macroId : MacroCommand.getAvailableMacros()) {
             MacroCommand.MacroDefinition macro = MacroCommand.getMacro(macroId);
             if (macro != null) {

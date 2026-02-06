@@ -200,7 +200,7 @@ public class MacroCommand {
             case "boolean":
                 return Commands.argument(name, BoolArgumentType.bool());
             case "target":
-                // Supporta @p, @a, @r, @e, @s, @n: argomento stringa con suggest per sostituzione verbatim nel comando
+                // Supports @p, @a, @r, @e, @s, @n: string argument with suggest for verbatim substitution in the command
                 RequiredArgumentBuilder<CommandSourceStack, String> targetArg = Commands.argument(name, StringArgumentType.word());
                 targetArg.suggests((context, builder) -> {
                     for (String sel : new String[]{"@p", "@a", "@r", "@e", "@s", "@n"}) {

@@ -33,10 +33,10 @@ import java.util.stream.Collectors;
 public class ShopTeamCommand {
 
     private static final SimpleCommandExceptionType ERROR_PLAYER_NOT_FOUND = new SimpleCommandExceptionType(
-            Component.literal("Nessun giocatore trovato dal selettore"));
+            Component.literal("No player found from selector"));
 
     /**
-     * Ottiene i giocatori target dall'argomento (supporta @p, @a, @r, @e, @s, @n).
+     * Gets target players from the argument (supports @p, @a, @r, @e, @s, @n).
      */
     private static List<ServerPlayer> getTargetPlayers(CommandContext<CommandSourceStack> context, String argumentName) throws CommandSyntaxException {
         Collection<? extends Entity> entities = EntityArgument.getEntities(context, argumentName);
@@ -47,7 +47,7 @@ public class ShopTeamCommand {
     }
 
     /**
-     * Ottiene un singolo giocatore target (per comandi come newLeader; se il selettore restituisce più giocatori, usa il primo).
+     * Gets a single target player (for commands like newLeader; if the selector returns multiple players, uses the first).
      */
     private static ServerPlayer getSingleTargetPlayer(CommandContext<CommandSourceStack> context, String argumentName) throws CommandSyntaxException {
         List<ServerPlayer> players = getTargetPlayers(context, argumentName);
@@ -395,7 +395,7 @@ public class ShopTeamCommand {
             return 0;
         }
         if (assistants.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         int count = 0;
@@ -424,7 +424,7 @@ public class ShopTeamCommand {
         String teamName = StringArgumentType.getString(context, "teamName");
         List<ServerPlayer> assistants = getTargetPlayers(context, "player");
         if (assistants.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
@@ -460,7 +460,7 @@ public class ShopTeamCommand {
             return 0;
         }
         if (assistants.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         int count = 0;
@@ -489,7 +489,7 @@ public class ShopTeamCommand {
         String teamName = StringArgumentType.getString(context, "teamName");
         List<ServerPlayer> assistants = getTargetPlayers(context, "player");
         if (assistants.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
@@ -574,7 +574,7 @@ public class ShopTeamCommand {
             return 0;
         }
         if (targets.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         int count = 0;
@@ -603,7 +603,7 @@ public class ShopTeamCommand {
         String teamName = StringArgumentType.getString(context, "teamName");
         List<ServerPlayer> targets = getTargetPlayers(context, "player");
         if (targets.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
@@ -680,7 +680,7 @@ public class ShopTeamCommand {
             return 0;
         }
         if (targets.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         int count = 0;
@@ -709,7 +709,7 @@ public class ShopTeamCommand {
         String teamName = StringArgumentType.getString(context, "teamName");
         List<ServerPlayer> targets = getTargetPlayers(context, "player");
         if (targets.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
@@ -745,7 +745,7 @@ public class ShopTeamCommand {
             return 0;
         }
         if (targets.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         int count = 0;
@@ -774,7 +774,7 @@ public class ShopTeamCommand {
         String teamName = StringArgumentType.getString(context, "teamName");
         List<ServerPlayer> targets = getTargetPlayers(context, "player");
         if (targets.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
@@ -1053,7 +1053,7 @@ public class ShopTeamCommand {
         try {
             List<ServerPlayer> targets = getTargetPlayers(context, "player");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("No player found from selector"));
                 return 0;
             }
             int count = 0;
@@ -1153,7 +1153,7 @@ public class ShopTeamCommand {
         try {
             List<ServerPlayer> targets = getTargetPlayers(context, "player");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("No player found from selector"));
                 return 0;
             }
             int count = 0;
@@ -1224,7 +1224,7 @@ public class ShopTeamCommand {
         try {
             List<ServerPlayer> targets = getTargetPlayers(context, "player");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("No player found from selector"));
                 return 0;
             }
             int total = 0;
@@ -1417,7 +1417,7 @@ public class ShopTeamCommand {
             return 0;
         }
         if (invitees.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         int count = 0;
@@ -1446,7 +1446,7 @@ public class ShopTeamCommand {
         String teamName = StringArgumentType.getString(context, "teamName");
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
         if (invitees.isEmpty()) {
-            source.sendFailure(Component.literal("Nessun giocatore trovato dal selettore"));
+            source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
         int count = 0;

@@ -86,7 +86,7 @@ public class StageCommand {
      * Registers the stage command
      */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        // CLEAR nodes (estratti per evitare parentesi incasinate; supporto hide)
+        // CLEAR nodes (extracted to avoid messy parentheses; hide support)
         LiteralArgumentBuilder<CommandSourceStack> clearPlayerNode = Commands.literal("player")
             .then(Commands.argument("target", EntityArgument.entities())
                 .executes(ctx -> clearPlayerStages(ctx, false, false))
@@ -147,7 +147,7 @@ public class StageCommand {
             .then(clearTeamPlayerNode)
             .then(clearAllNode);
 
-        // ADD node: player, world, team, team_player come fratelli (stesso livello)
+        // ADD node: player, world, team, team_player as siblings (same level)
         LiteralArgumentBuilder<CommandSourceStack> addNode = Commands.literal("add")
             .then(Commands.literal("player")
                 .then(Commands.argument("target", EntityArgument.entities())
@@ -193,7 +193,7 @@ public class StageCommand {
                         .then(Commands.argument("hide", BoolArgumentType.bool())
                             .executes(ctx -> setTeamPlayerStageForSelf(ctx, true, null, ctx.getArgument("hide", Boolean.class)))))));
 
-        // REMOVE node: player, world, team, team_player come fratelli (stesso livello)
+        // REMOVE node: player, world, team, team_player as siblings (same level)
         LiteralArgumentBuilder<CommandSourceStack> removeNode = Commands.literal("remove")
             .then(Commands.literal("player")
                 .then(Commands.argument("target", EntityArgument.entities())
@@ -242,7 +242,7 @@ public class StageCommand {
         dispatcher.register(
             Commands.literal("iska_utils_stage")
                 .requires(source -> source.hasPermission(2))
-                // ADD e REMOVE per primi così compaiono nei suggerimenti (add, clear, list, remove, set)
+                // ADD and REMOVE first so they appear in suggestions (add, clear, list, remove, set)
                 .then(addNode)
                 .then(removeNode)
                 // LIST commands
@@ -331,8 +331,8 @@ public class StageCommand {
     }
     
     /**
-     * Ottiene i giocatori target dall'argomento (supporta @p, @a, @r, @e, @s, @n).
-     * Filtra solo ServerPlayer perché gli stage sono per giocatori.
+     * Gets target players from the argument (supports @p, @a, @r, @e, @s, @n).
+     * Filters to ServerPlayer only because stages are for players.
      */
     private static List<ServerPlayer> getTargetPlayers(CommandContext<CommandSourceStack> context, String argumentName) throws CommandSyntaxException {
         Collection<? extends Entity> entities = EntityArgument.getEntities(context, argumentName);
@@ -343,7 +343,7 @@ public class StageCommand {
     }
 
     /**
-     * Suggestion provider per i nomi degli stage (autocompletamento).
+     * Suggestion provider for stage names (autocomplete).
      */
     private static CompletableFuture<Suggestions> suggestStages(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         try {
@@ -355,7 +355,7 @@ public class StageCommand {
     }
 
     /**
-     * Suggestion provider per i nomi dei team (autocompletamento).
+     * Suggestion provider for team names (autocomplete).
      */
     private static CompletableFuture<Suggestions> suggestTeamNames(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         try {
@@ -413,7 +413,7 @@ public class StageCommand {
             StageRegistry registry = StageRegistry.getInstance(source.getServer());
             List<ServerPlayer> targets = getTargetPlayers(context, "target");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("§cNessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("§cNo player found from selector"));
                 return 0;
             }
             // World stages (once)
@@ -471,7 +471,7 @@ public class StageCommand {
             StageRegistry registry = StageRegistry.getInstance(source.getServer());
             List<ServerPlayer> targets = getTargetPlayers(context, "target");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("§cNessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("§cNo player found from selector"));
                 return 0;
             }
             for (ServerPlayer targetPlayer : targets) {
@@ -572,7 +572,7 @@ public class StageCommand {
             StageRegistry registry = StageRegistry.getInstance(source.getServer());
             List<ServerPlayer> targets = getTargetPlayers(context, "target");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("§cNessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("§cNo player found from selector"));
                 return 0;
             }
             for (ServerPlayer targetPlayer : targets) {
@@ -600,7 +600,7 @@ public class StageCommand {
             StageRegistry registry = StageRegistry.getInstance(source.getServer());
             List<ServerPlayer> targets = getTargetPlayers(context, "target");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("§cNessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("§cNo player found from selector"));
                 return 0;
             }
             String stage = StringArgumentType.getString(context, "stage");
@@ -669,7 +669,7 @@ public class StageCommand {
             StageRegistry registry = StageRegistry.getInstance(source.getServer());
             List<ServerPlayer> targets = getTargetPlayers(context, "target");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("§cNessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("§cNo player found from selector"));
                 return 0;
             }
             boolean silent = silentOverride != null ? silentOverride : false;
@@ -731,7 +731,7 @@ public class StageCommand {
             CommandSourceStack source = context.getSource();
             List<ServerPlayer> targets = getTargetPlayers(context, "target");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("§cNessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("§cNo player found from selector"));
                 return 0;
             }
             int playerStagesCleared = clearPlayerStages(context, true, hideInLog);
@@ -894,7 +894,7 @@ public class StageCommand {
             StageRegistry registry = StageRegistry.getInstance(source.getServer());
             List<ServerPlayer> targets = getTargetPlayers(context, "target");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("§cNessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("§cNo player found from selector"));
                 return 0;
             }
             String stage = StringArgumentType.getString(context, "stage");
@@ -963,7 +963,7 @@ public class StageCommand {
     }
 
     /**
-     * Cancella tutti gli stage di un team specifico
+     * Clears all stages of a specific team
      * @param hideInLog se true, il feedback non viene inviato agli op / non viene registrato nel log
      */
     private static int clearTeamStages(CommandContext<CommandSourceStack> context, Boolean silentOverride, boolean hideInLog) {
@@ -991,7 +991,7 @@ public class StageCommand {
     }
 
     /**
-     * Cancella tutti gli stage del team per target player(s) (@p, @a, @r, @e, @s, @n)
+     * Clears all team stages for target player(s) (@p, @a, @r, @e, @s, @n)
      * @param hideInLog se true, il feedback non viene inviato agli op / non viene registrato nel log
      */
     private static int clearTeamPlayerStages(CommandContext<CommandSourceStack> context, Boolean silentOverride, boolean hideInLog) {
@@ -1000,7 +1000,7 @@ public class StageCommand {
             StageRegistry registry = StageRegistry.getInstance(source.getServer());
             List<ServerPlayer> targets = getTargetPlayers(context, "target");
             if (targets.isEmpty()) {
-                source.sendFailure(Component.literal("§cNessun giocatore trovato dal selettore"));
+                source.sendFailure(Component.literal("§cNo player found from selector"));
                 return 0;
             }
             boolean silent = silentOverride != null ? silentOverride : false;
@@ -1026,7 +1026,7 @@ public class StageCommand {
     }
 
     /**
-     * Cancella tutti gli stage del team del player che esegue il comando
+     * Clears all stages of the team of the player executing the command
      * @param hideInLog se true, il feedback non viene inviato agli op / non viene registrato nel log
      */
     private static int clearTeamPlayerStagesForSelf(CommandContext<CommandSourceStack> context, Boolean silentOverride, boolean hideInLog) {
