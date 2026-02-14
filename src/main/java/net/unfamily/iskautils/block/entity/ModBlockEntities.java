@@ -9,6 +9,7 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity;
@@ -258,10 +259,14 @@ public class ModBlockEntities {
             // Il negozio funziona solo tramite GUI diretta del giocatore
             
             // Register item handler capability for Deep Drawers
+            // When deepDrawersDirectPipeAccess is false, return null so pipes/hoppers need the Extender
             event.registerBlockEntity(
                     Capabilities.ItemHandler.BLOCK,
                     DEEP_DRAWERS_BE.get(),
                     (blockEntity, context) -> {
+                        if (!Config.deepDrawersDirectPipeAccess) {
+                            return null;
+                        }
                         if (blockEntity instanceof DeepDrawersBlockEntity deepDrawersEntity) {
                             return deepDrawersEntity.getItemHandler();
                         }

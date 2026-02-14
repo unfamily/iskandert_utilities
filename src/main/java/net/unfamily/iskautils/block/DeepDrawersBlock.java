@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * - Contents are NEVER dropped when broken (prevents lag from massive item drops)
  * 
  * Configuration:
- * - deep_drawers_slot_count: Number of storage slots
+ * - deep_drawers_slot_count_v2: Number of storage slots (default 1024)
  * - deep_drawers_allowed_tags: List of allowed item tags/IDs
  * - deep_drawers_blacklist: List of forbidden item tags/IDs (default: minecraft:book)
  * 
@@ -150,10 +150,8 @@ public class DeepDrawersBlock extends BaseEntityBlock {
         if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
             BlockEntity entity = level.getBlockEntity(pos);
             if (entity instanceof DeepDrawersBlockEntity deepDrawers) {
-                // ===== DEBUG TEMPORANEO: Estrazione diretta con Ctrl+Click =====
-                // TODO: RIMUOVERE QUESTO CODICE DOPO I TEST - È SOLO PER DEBUG
-                if (player.isCrouching() && player.isShiftKeyDown()) {
-                    // Ctrl+Shift+Click: estrai un item direttamente (DEBUG TEMPORANEO)
+                // Debug extraction: Shift+Right-click to extract one item (configurable, default disabled)
+                if (net.unfamily.iskautils.Config.deepDrawersDebugExtractionEnabled && player.isCrouching() && player.isShiftKeyDown()) {
                     java.util.Map.Entry<Integer, net.minecraft.world.item.ItemStack> firstEntry = deepDrawers.getFirstStorageEntry();
                     if (firstEntry != null) {
                         net.minecraft.world.item.ItemStack extracted = deepDrawers.extractItemFromPhysicalSlot(firstEntry.getKey(), 1, false);
@@ -173,12 +171,11 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                     }
                     return net.minecraft.world.InteractionResult.CONSUME;
                 }
-                // ===== FINE DEBUG TEMPORANEO =====
                 
                 // Show status message (actionbar) if:
                 // - Shift+click (always), OR
                 // - Normal click when GUI is disabled
-                boolean showStatus = player.isShiftKeyDown() || !net.unfamily.iskautils.Config.deepDrawersGuiEnabled;
+                boolean showStatus = player.isShiftKeyDown() || true; // GUI always disabled
                 
                 if (showStatus) {
                     boolean isFull = deepDrawers.isFull();
@@ -195,25 +192,6 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                     }
                     return net.minecraft.world.InteractionResult.CONSUME;
                 }
-                
-                // Normal click: open GUI (if enabled)
-                if (!net.unfamily.iskautils.Config.deepDrawersGuiEnabled) {
-                    return net.minecraft.world.InteractionResult.SUCCESS;
-                }
-                
-                // Open Deep Drawers GUI
-                deepDrawers.onGuiOpened(); // Mark GUI as open
-                serverPlayer.openMenu(new net.minecraft.world.SimpleMenuProvider(
-                    (containerId, playerInventory, playerEntity) -> {
-                        net.unfamily.iskautils.client.gui.DeepDrawersMenu menu = 
-                            new net.unfamily.iskautils.client.gui.DeepDrawersMenu(containerId, playerInventory, deepDrawers);
-                        // Send all slots to client when menu opens
-                        menu.sendAllSlotsToClient(serverPlayer);
-                        return menu;
-                    },
-                    Component.translatable("container.iska_utils.deep_drawers")
-                ), pos);
-                return net.minecraft.world.InteractionResult.CONSUME;
             }
         }
         return net.minecraft.world.InteractionResult.SUCCESS;

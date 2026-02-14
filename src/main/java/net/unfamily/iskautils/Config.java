@@ -217,14 +217,20 @@ public class Config
 
     private static final ModConfigSpec.IntValue DEEP_DRAWERS_SLOT_COUNT = BUILDER
             .comment("Number of slots in the Deep Drawers storage",
-                    "Default: 49995 (9 x 5555, close to 50000)")
-            .defineInRange("402_deep_drawers_slot_count", 49995, 1, Integer.MAX_VALUE);
+                    "Default: 1024")
+            .defineInRange("402_deep_drawers_slot_count_v2", 1024, 1, Integer.MAX_VALUE);
 
-    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_GUI_ENABLED = BUILDER
-            .comment("Enable the Deep Drawers GUI (not perfect, use at your own risk)",
-                    "Default: false (disabled)",
-                    "WARNING: The GUI is not perfect and its use is discouraged")
-            .define("403_deep_drawers_gui_enabled", false);
+    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_DIRECT_PIPE_ACCESS = BUILDER
+            .comment("Allow hoppers and item pipes to interact directly with the Deep Drawer block (without Extender)",
+                    "Default: false - pipes/hoppers need the Deep Drawer Extender module to insert items",
+                    "When true, the Deep Drawer exposes IItemHandler capability directly to adjacent blocks")
+            .define("404_deep_drawers_direct_pipe_access", false);
+
+    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_DEBUG_EXTRACTION_ENABLED = BUILDER
+            .comment("Enable debug extraction: Shift+Right-click to extract one item directly from the Deep Drawer",
+                    "Default: false - debug extraction is disabled",
+                    "WARNING: Debug feature, use only for testing")
+            .define("405_deep_drawers_debug_extraction_enabled", false);
 
     // Deep Drawer Extractor Configuration (starts at 410)
     private static final ModConfigSpec.IntValue DEEP_DRAWER_EXTRACTOR_INTERVAL = BUILDER
@@ -851,7 +857,8 @@ public class Config
     public static java.util.List<String> deepDrawersAllowedTags;
     public static java.util.List<String> deepDrawersBlacklist;
     public static int deepDrawersSlotCount;
-    public static boolean deepDrawersGuiEnabled;
+    public static boolean deepDrawersDirectPipeAccess;
+    public static boolean deepDrawersDebugExtractionEnabled;
     public static int deepDrawerExtractorInterval;
     public static int deepDrawerExtractorMaxFilters;
     
@@ -956,7 +963,8 @@ public class Config
         deepDrawersAllowedTags = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOWED_TAGS.get());
         deepDrawersBlacklist = new java.util.ArrayList<>(DEEP_DRAWERS_BLACKLIST.get());
         deepDrawersSlotCount = DEEP_DRAWERS_SLOT_COUNT.get();
-        deepDrawersGuiEnabled = DEEP_DRAWERS_GUI_ENABLED.get();
+        deepDrawersDirectPipeAccess = DEEP_DRAWERS_DIRECT_PIPE_ACCESS.get();
+        deepDrawersDebugExtractionEnabled = DEEP_DRAWERS_DEBUG_EXTRACTION_ENABLED.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         
