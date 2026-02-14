@@ -478,10 +478,10 @@
 
   "gui.iska_utils.structure_placer_machine.select": "Select",
   "gui.iska_utils.structure_placer_machine.rotate": "Rotate",
-  "gui.iska_utils.structure_placer_machine.set_inventory": "Filter",
-  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line1": "§7Click to save item filters from current inventory",
-  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line2": "§7Shift+Click to clear all filters",
-  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line3": "§7Ctrl/Alt+Click to clear filters without matching items",
+  "gui.iska_utils.structure_placer_machine.set_inventory": "Mark Input",
+  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line1": "§7Click to save mark input from current inventory",
+  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line2": "§7Shift+Click to clear all mark input",
+  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line3": "§7Ctrl/Alt+Click to clear mark input without matching items",
   "gui.iska_utils.structure_placer_machine.selected_structure": "Selected Structure",
   "gui.iska_utils.structure_placer_machine.none_selected": "None",
   "gui.iska_utils.structure_placer_machine.preview_enabled": "Preview enabled",
@@ -686,6 +686,8 @@
   
   "tooltip.iska_utils.fan_module.press_shift": "Press Shift to see where to install it",
   "tooltip.iska_utils.fan_module.modular_fan_max": "Modular Fan Max: %d",
+  "tooltip.iska_utils.pattern_crafter.speed_module": "Pattern Crafter: max %d, reduces crafting time to %d%% of base",
+  "tooltip.iska_utils.pattern_crafter.logic_module": "Pattern Crafter Max: %d",
   
   "gui.iska_utils.general_filter_text.id": "- Extracts items by ID (e.g., ",
   "gui.iska_utils.general_filter_text.id.example": "-minecraft:diamond",

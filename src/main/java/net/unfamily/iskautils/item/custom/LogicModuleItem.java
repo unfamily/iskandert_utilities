@@ -9,18 +9,17 @@ import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.fml.ModList;
-import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.integration.PatternCrafterTooltipHelper;
 
 import java.util.List;
 
 /**
- * Custom Item for Slow Module with tooltip showing max installable count
- * (Modular Fan and Pattern Crafter when present).
+ * Logic Module: used by Pattern Crafter (adds pattern slots).
+ * Tooltip shows Pattern Crafter max when mod is present and shift is held.
  */
-public class SlowModuleItem extends Item {
+public class LogicModuleItem extends Item {
 
-    public SlowModuleItem(Properties properties) {
+    public LogicModuleItem(Properties properties) {
         super(properties);
     }
 
@@ -29,16 +28,13 @@ public class SlowModuleItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
 
-        if (Screen.hasShiftDown()) {
-            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.modular_fan_max",
-                    Config.fanAccelerationUpgradeMax)
-                    .withStyle(ChatFormatting.GRAY));
-            if (ModList.get().isLoaded("pattern_crafter")) {
-                PatternCrafterTooltipHelper.addSpeedModuleTooltip(tooltip, "slow");
+        if (ModList.get().isLoaded("pattern_crafter")) {
+            if (Screen.hasShiftDown()) {
+                PatternCrafterTooltipHelper.addLogicModuleTooltip(tooltip);
+            } else {
+                tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.press_shift")
+                        .withStyle(ChatFormatting.GRAY));
             }
-        } else {
-            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.press_shift")
-                    .withStyle(ChatFormatting.GRAY));
         }
     }
 }

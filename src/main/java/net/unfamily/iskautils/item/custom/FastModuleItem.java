@@ -8,32 +8,35 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.fml.ModList;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.integration.PatternCrafterTooltipHelper;
 
 import java.util.List;
 
 /**
  * Custom Item for Fast Module with tooltip showing power and max installable count
+ * (Modular Fan and Pattern Crafter when present).
  */
 public class FastModuleItem extends Item {
-    
+
     public FastModuleItem(Properties properties) {
         super(properties);
     }
-    
+
     @Override
     @OnlyIn(Dist.CLIENT)
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        
-        // Show info when shift is held
+
         if (Screen.hasShiftDown()) {
-            // Show max installable count
-            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.modular_fan_max", 
+            tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.modular_fan_max",
                     Config.fanAccelerationUpgradeMax)
                     .withStyle(ChatFormatting.GRAY));
+            if (ModList.get().isLoaded("pattern_crafter")) {
+                PatternCrafterTooltipHelper.addSpeedModuleTooltip(tooltip, "fast");
+            }
         } else {
-            // Show hint to press shift
             tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.press_shift")
                     .withStyle(ChatFormatting.GRAY));
         }

@@ -120,6 +120,9 @@ configurations {
 }
 
 dependencies {
+    // Optional local library: Pattern Crafter (NeoForge 1.21.1)
+    compileOnly files('libs/pattern_crafter-1.0.0.0.0-neoforge-1.21.1.jar')
+
     // MixinExtras for advanced mixin features
     // NeoForge 20.2+ includes MixinExtras by default, but we can override with a specific version if needed
     // Using the version that should be compatible with NeoForge 21.1.215

@@ -480,10 +480,10 @@
   "block.iska_utils.structure_placer_machine": "Macchina Piazza-Strutture",
   "gui.iska_utils.structure_placer_machine.select": "Seleziona",
   "gui.iska_utils.structure_placer_machine.rotate": "Ruota",
-  "gui.iska_utils.structure_placer_machine.set_inventory": "Filtro",
-  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line1": "§7Click per salvare filtri item dall'inventario corrente",
-  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line2": "§7Shift+Click per cancellare tutti i filtri",
-  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line3": "§7Ctrl/Alt+Click per cancellare filtri senza item corrispondenti",
+  "gui.iska_utils.structure_placer_machine.set_inventory": "Segna input",
+  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line1": "§7Click per salvare l'input segnato dall'inventario corrente",
+  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line2": "§7Shift+Click per cancellare tutto l'input segnato",
+  "gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line3": "§7Ctrl/Alt+Click per cancellare l'input segnato senza item corrispondenti",
   "gui.iska_utils.structure_placer_machine.selected_structure": "Struttura Selezionata",
   "gui.iska_utils.structure_placer_machine.none_selected": "Nessuna",
   "gui.iska_utils.structure_placer_machine.preview_enabled": "Anteprima attivata",
@@ -676,6 +676,8 @@
   
   "tooltip.iska_utils.fan_module.press_shift": "Premi Shift per vedere dove installarlo",
   "tooltip.iska_utils.fan_module.modular_fan_max": "Modular Fan Max: %d",
+  "tooltip.iska_utils.pattern_crafter.speed_module": "Pattern Crafter: max %d, riduce il tempo di fabbricazione al %d%% del base",
+  "tooltip.iska_utils.pattern_crafter.logic_module": "Pattern Crafter Max: %d",
   
   "gui.iska_utils.general_filter_text.id": "- Estrae gli item per ID (esempio: ",
   "gui.iska_utils.general_filter_text.id.example": "-minecraft:diamond",
