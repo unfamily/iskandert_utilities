@@ -880,6 +880,10 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 level.setBlock(blockPos, blockState, 3);
             }
             
+            if (structure.isRefresh()) {
+                level.scheduleTick(blockPos, block, 10);
+            }
+            
             // Consume energy after successful placement
             if (energyRequired > 0) {
                 int energyBefore = energyStorage.getEnergyStored();

@@ -23,14 +23,15 @@ public class StructurePlacer {
 
     /**
      * Places a structure in the world
-     * 
+     *
      * @param level The server level where to place the structure
      * @param centerPos The position where to place the structure center
      * @param structure The structure definition to place
      * @param player The player who requested the placement (can be null)
+     * @param force If true, overwrite any existing blocks (caller must ensure structure.isCanForce())
      * @return true if placement succeeded, false otherwise
      */
-    public static boolean placeStructure(ServerLevel level, BlockPos centerPos, StructureDefinition structure, ServerPlayer player) {
+    public static boolean placeStructure(ServerLevel level, BlockPos centerPos, StructureDefinition structure, ServerPlayer player, boolean force) {
         try {
             // Verify prerequisites
             if (!canPlaceStructure(level, centerPos, structure, player)) {
@@ -92,7 +93,7 @@ public class StructurePlacer {
                                 BlockPos blockPos = offsetPos.offset(worldX, worldY, worldZ);
                                 
                                 // Place block based on key
-                                if (!placeBlockFromKey(level, blockPos, character, key, structure)) {
+                                if (!placeBlockFromKey(level, blockPos, character, key, structure, force)) {
                                     LOGGER.warn("Cannot place block '{}' at position {} for structure {}", 
                                         character, blockPos, structure.getId());
                                     // Continue with other blocks anyway
@@ -139,9 +140,9 @@ public class StructurePlacer {
     /**
      * Places a single block based on key definition
      */
-    private static boolean placeBlockFromKey(ServerLevel level, BlockPos pos, String keyCharacter, 
-                                           Map<String, List<StructureDefinition.BlockDefinition>> key, 
-                                           StructureDefinition structure) {
+    private static boolean placeBlockFromKey(ServerLevel level, BlockPos pos, String keyCharacter,
+                                           Map<String, List<StructureDefinition.BlockDefinition>> key,
+                                           StructureDefinition structure, boolean force) {
         
         // Get definitions for this character
         List<StructureDefinition.BlockDefinition> blockDefs = key.get(keyCharacter);
@@ -156,9 +157,12 @@ public class StructurePlacer {
         try {
             BlockState blockState = getBlockStateFromDefinition(blockDef);
             if (blockState != null) {
-                // Verify if we can replace existing block
-                if (canReplaceBlock(level, pos, structure)) {
+                // Verify if we can replace existing block (force = always allow)
+                if (canReplaceBlock(level, pos, structure, force)) {
                     level.setBlock(pos, blockState, 3); // Flag 3 = update + notify clients
+                    if (structure.isRefresh()) {
+                        level.scheduleTick(pos, blockState.getBlock(), 0);
+                    }
                     return true;
                 } else {
                     LOGGER.debug("Cannot replace block at position {} for structure {}", pos, structure.getId());
@@ -260,7 +264,10 @@ public class StructurePlacer {
     /**
      * Verifies if a block can be replaced
      */
-    private static boolean canReplaceBlock(ServerLevel level, BlockPos pos, StructureDefinition structure) {
+    private static boolean canReplaceBlock(ServerLevel level, BlockPos pos, StructureDefinition structure, boolean force) {
+        if (force) {
+            return true;
+        }
         BlockState existingState = level.getBlockState(pos);
         
         // Air can always be replaced

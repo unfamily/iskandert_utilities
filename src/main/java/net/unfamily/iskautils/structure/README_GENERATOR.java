@@ -143,9 +143,10 @@ kubejs/external_scripts/iska_utils_structures/
 #### Optional Properties
 - `description`: Detailed description
 - `icon`: Display icon in GUIs
-- `can_force`: Allow forced placement (default: false)
+- `can_force`: Allow forced placement (default: false). Required for command `place ... force` and for shift+place with item.
 - `slower`: Place blocks with 5-tick delays (default: false)
 - `place_like_player`: Simulate player placement (default: false)
+- `refresh`: Schedule one tick per placed block after placement to activate/update blocks (default: false). Use for redstone, observers, etc.
 - `can_replace`: List of blocks that can be replaced
 - `stages`: Required progression stages
 
@@ -247,6 +248,10 @@ Patterns use a 3D array structure: `[X][Y][Z]`
 ## Advanced Features
 
 ### Force Placement
+When `can_force` is true:
+- **Structure Placer Item**: Hold **Shift + right-click** on second click to place over occupied spaces.
+- **Command**: `/iska_utils_structure place <structure_id> <x> <y> <z> force` overwrites any block at structure positions (structure must have `can_force: true`).
+
 ```json
 {
     "id": "my_mod-force_structure",
@@ -257,6 +262,18 @@ Patterns use a 3D array structure: `[X][Y][Z]`
         "$replaceable",
         "#minecraft:flowers"
     ]
+}
+```
+
+### Refresh (block tick after placement)
+When `refresh` is true, each placed block gets one scheduled tick (delay 0) after placement. Use for redstone, observers, or blocks that need to update. Default: false.
+
+```json
+{
+    "id": "my_mod-redstone_structure",
+    "refresh": true,
+    "pattern": [...],
+    "key": {...}
 }
 ```
 

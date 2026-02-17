@@ -4,7 +4,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.BlockPos;
@@ -19,6 +21,13 @@ public class AutoShopMenu extends AbstractContainerMenu {
     private final AutoShopBlockEntity blockEntity;
     private final ContainerLevelAccess levelAccess;
     private final BlockPos blockPos;
+    private final ContainerData containerData;
+
+    private static final int BLOCK_POS_X_INDEX = 0;
+    private static final int BLOCK_POS_Y_INDEX = 1;
+    private static final int BLOCK_POS_Z_INDEX = 2;
+    private static final int REDSTONE_MODE_INDEX = 3;
+    private static final int DATA_COUNT = 4;
 
     // Costruttore server-side
     public AutoShopMenu(int containerId, Inventory playerInventory, AutoShopBlockEntity blockEntity) {
@@ -26,10 +35,24 @@ public class AutoShopMenu extends AbstractContainerMenu {
         this.blockEntity = blockEntity;
         this.blockPos = blockEntity.getBlockPos();
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
-        
-        // Aggiungi le slot speciali dell'Auto Shop
+        this.containerData = new ContainerData() {
+            @Override
+            public int get(int index) {
+                return switch (index) {
+                    case BLOCK_POS_X_INDEX -> blockPos.getX();
+                    case BLOCK_POS_Y_INDEX -> blockPos.getY();
+                    case BLOCK_POS_Z_INDEX -> blockPos.getZ();
+                    case REDSTONE_MODE_INDEX -> blockEntity.getRedstoneMode();
+                    default -> 0;
+                };
+            }
+            @Override
+            public void set(int index, int value) {}
+            @Override
+            public int getCount() { return DATA_COUNT; }
+        };
+        this.addDataSlots(this.containerData);
         addAutoShopSlots();
-        
         addPlayerInventory(playerInventory);
         addPlayerHotbar(playerInventory);
     }
@@ -37,15 +60,12 @@ public class AutoShopMenu extends AbstractContainerMenu {
     // Costruttore client-side (NeoForge factory)
     public AutoShopMenu(int containerId, Inventory playerInventory) {
         super(ModMenuTypes.AUTO_SHOP_MENU.get(), containerId);
-        // Client-side: non abbiamo accesso diretto alla BlockEntity
-        // I dati verranno sincronizzati tramite packet se necessario
         this.blockEntity = null;
         this.blockPos = BlockPos.ZERO;
         this.levelAccess = ContainerLevelAccess.NULL;
-        
-        // Aggiungi le slot speciali dell'Auto Shop anche nel client-side
+        this.containerData = new SimpleContainerData(DATA_COUNT);
+        this.addDataSlots(this.containerData);
         addAutoShopSlots();
-        
         addPlayerInventory(playerInventory);
         addPlayerHotbar(playerInventory);
     }
@@ -109,6 +129,23 @@ public class AutoShopMenu extends AbstractContainerMenu {
     
     public BlockPos getBlockPos() {
         return blockPos;
+    }
+
+    public BlockPos getSyncedBlockPos() {
+        if (blockEntity != null) {
+            return blockPos;
+        }
+        int x = containerData.get(BLOCK_POS_X_INDEX);
+        int y = containerData.get(BLOCK_POS_Y_INDEX);
+        int z = containerData.get(BLOCK_POS_Z_INDEX);
+        if (x == 0 && y == 0 && z == 0) {
+            return blockPos;
+        }
+        return new BlockPos(x, y, z);
+    }
+
+    public int getRedstoneMode() {
+        return containerData.get(REDSTONE_MODE_INDEX);
     }
     
     private void addAutoShopSlots() {

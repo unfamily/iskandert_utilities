@@ -495,6 +495,40 @@ public class ModMessages {
     }
     
     /**
+     * Sends an Auto Shop Redstone Mode packet to the server (cycle mode on button click)
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendAutoShopRedstoneModePacket(BlockPos machinePos) {
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft == null) return;
+            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            if (server == null) return;
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
+                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.AutoShopBlockEntity autoShop) {
+                            net.unfamily.iskautils.block.entity.AutoShopBlockEntity.RedstoneMode current =
+                                    net.unfamily.iskautils.block.entity.AutoShopBlockEntity.RedstoneMode.fromValue(autoShop.getRedstoneMode());
+                            autoShop.setRedstoneMode(current.next().getValue());
+                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                                    net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            autoShop.setChanged();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error handling Auto Shop redstone mode packet: {}", e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.error("Could not send Auto Shop redstone mode packet: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
      * Sends a Structure Placer Machine Redstone Mode packet to the server
      */
     @OnlyIn(Dist.CLIENT)

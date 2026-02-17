@@ -681,17 +681,21 @@ public class StructurePlacerItem extends Item {
                                     // Fallback to normal placement
                                     level.setBlock(pos, blockState, 3);
                                 }
+                                if (structure.isRefresh()) level.scheduleTick(pos, block, 0);
                             } else {
                                 // Fallback to normal placement
                                 level.setBlock(pos, blockState, 3);
+                                if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
                             }
                         } catch (Exception e) {
                             // If player-like placement fails, fallback to normal placement
                             level.setBlock(pos, blockState, 3);
+                            if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
                         }
                     } else {
                         // Normal placement
                         level.setBlock(pos, blockState, 3);
+                        if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
                     }
                     placedBlocks++;
                 } else {
@@ -837,17 +841,21 @@ public class StructurePlacerItem extends Item {
                                 // Fallback to normal placement
                                 level.setBlock(pos, blockState, 3);
                             }
+                            if (structure.isRefresh()) level.scheduleTick(pos, block, 0);
                         } else {
                             // Fallback to normal placement
                             level.setBlock(pos, blockState, 3);
+                            if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
                         }
                     } catch (Exception e) {
                         // If player-like placement fails, fallback to normal placement
                         level.setBlock(pos, blockState, 3);
+                        if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
                     }
                 } else {
                     // Normal placement
                     level.setBlock(pos, blockState, 3);
+                    if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
                 }
                 return true;
             } else {

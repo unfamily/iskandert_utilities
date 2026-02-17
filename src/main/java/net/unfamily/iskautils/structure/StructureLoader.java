@@ -673,6 +673,11 @@ public class StructureLoader {
                 definition.setOverwritable(structureJson.get("overwritable").getAsBoolean());
             }
             
+            // Parse refresh (schedule tick for each placed block after placement)
+            if (structureJson.has("refresh")) {
+                definition.setRefresh(structureJson.get("refresh").getAsBoolean());
+            }
+            
             // Parse can_replace
             if (structureJson.has("can_replace") && structureJson.get("can_replace").isJsonArray()) {
                 JsonArray replaceArray = structureJson.getAsJsonArray("can_replace");
@@ -1073,6 +1078,11 @@ public class StructureLoader {
         // Parse overwritable
         if (structureJson.has("overwritable")) {
             definition.setOverwritable(structureJson.get("overwritable").getAsBoolean());
+        }
+        
+        // Parse refresh
+        if (structureJson.has("refresh")) {
+            definition.setRefresh(structureJson.get("refresh").getAsBoolean());
         }
         
         // Parse machine visibility parameter (default: true)

@@ -38,6 +38,9 @@ public class StructureCommand {
     private static final SimpleCommandExceptionType ERROR_PLACEMENT_FAILED = new SimpleCommandExceptionType(
             Component.translatable("commands.iska_utils.structure.error.placement_failed"));
 
+    private static final SimpleCommandExceptionType ERROR_FORCE_NOT_ALLOWED = new SimpleCommandExceptionType(
+            Component.translatable("commands.iska_utils.structure.error.force_not_allowed"));
+
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
 
@@ -60,29 +63,21 @@ public class StructureCommand {
         dispatcher.register(
             Commands.literal("iska_utils_structure")
                 .requires(source -> source.hasPermission(2)) // Requires OP level 2
-                
-                // Command to list available structures
                 .then(Commands.literal("list")
                     .executes(StructureCommand::listStructures))
-                
-                // Command to reload structures
                 .then(Commands.literal("reload")
                     .executes(StructureCommand::reloadStructures))
-                    
-                // Command to get information about a specific structure
                 .then(Commands.literal("info")
                     .then(Commands.argument("structure_id", StringArgumentType.string())
                         .suggests(SUGGEST_STRUCTURE_IDS)
                         .executes(StructureCommand::showStructureInfo)))
-                
-                // Main command to place a structure
                 .then(Commands.literal("place")
                     .then(Commands.argument("structure_id", StringArgumentType.string())
                         .suggests(SUGGEST_STRUCTURE_IDS)
                         .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                            .executes(StructureCommand::placeStructure))))
-                
-                // Show help if no sub-command is specified
+                            .executes(ctx -> placeStructure(ctx, false))
+                            .then(Commands.literal("force")
+                                .executes(ctx -> placeStructure(ctx, true))))))
                 .executes(StructureCommand::showUsage)
         );
     }
@@ -96,7 +91,7 @@ public class StructureCommand {
         source.sendSuccess(() -> Component.literal("§a/iska_utils_structure list §7- List all available structures"), false);
         source.sendSuccess(() -> Component.literal("§a/iska_utils_structure reload §7- Reload structure definitions"), false);
         source.sendSuccess(() -> Component.literal("§a/iska_utils_structure info <structure_id> §7- Show structure information"), false);
-        source.sendSuccess(() -> Component.literal("§a/iska_utils_structure place <structure_id> <x> <y> <z> §7- Place a structure"), false);
+        source.sendSuccess(() -> Component.literal("§a/iska_utils_structure place <structure_id> <x> <y> <z> [force] §7- Place a structure (force overwrites blocks)"), false);
         return 1;
     }
 
@@ -262,9 +257,10 @@ public class StructureCommand {
     }
 
     /**
-     * Places a structure at the specified coordinates
+     * Places a structure at the specified coordinates.
+     * @param force if true, overwrite any existing blocks (requires structure can_force)
      */
-    private static int placeStructure(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    private static int placeStructure(CommandContext<CommandSourceStack> context, boolean force) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
         String structureId = StringArgumentType.getString(context, "structure_id");
         BlockPos pos = BlockPosArgument.getBlockPos(context, "pos");
@@ -273,6 +269,9 @@ public class StructureCommand {
         StructureDefinition structure = StructureLoader.getStructure(structureId);
         if (structure == null) {
             throw ERROR_STRUCTURE_NOT_FOUND.create();
+        }
+        if (force && !structure.isCanForce()) {
+            throw ERROR_FORCE_NOT_ALLOWED.create();
         }
         
         // Get the server level
@@ -289,7 +288,7 @@ public class StructureCommand {
         
         try {
             // Attempt to place the structure
-            boolean success = StructurePlacer.placeStructure(level, pos, structure, player);
+            boolean success = StructurePlacer.placeStructure(level, pos, structure, player, force);
             
             if (success) {
                 // Add to placement history for undo functionality if player exists

@@ -386,6 +386,7 @@
 
   "commands.iska_utils.structure.error.not_found": "Struttura non trovata",
   "commands.iska_utils.structure.error.placement_failed": "Impossibile piazzare la struttura",
+  "commands.iska_utils.structure.error.force_not_allowed": "Il piazzamento forzato non è consentito per questa struttura",
   "item.iska_utils.scanner_chip.tooltip.mob_chip_desc": "Chip specializzato per la scansione di tutti i mob",
   "item.iska_utils.scanner_chip.generic_target_set_ores": "Target impostato per scansionare tutti i minerali",
   "item.iska_utils.scanner_chip.generic_target_set_mobs": "Target impostato per scansionare tutti i mob",

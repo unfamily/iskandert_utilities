@@ -29,6 +29,7 @@ public class StructureDefinition {
     private boolean overwritable;
     private boolean slower = false; // If true, apply delay to each individual block instead of layers
     private boolean placeAsPlayer = false; // If true, place blocks as if done by a player
+    private boolean refresh = false; // If true, schedule a tick for each placed block after placement to activate/refresh it
     private List<String> stages;
     private boolean machine = true; // If false, not visible in Structure Placer Machine GUI
     private boolean hidden = false; // If true, only visible via commands
@@ -96,6 +97,8 @@ public class StructureDefinition {
     public void setSlower(boolean slower) { this.slower = slower; }
     public boolean isPlaceAsPlayer() { return placeAsPlayer; }
     public void setPlaceAsPlayer(boolean placeAsPlayer) { this.placeAsPlayer = placeAsPlayer; }
+    public boolean isRefresh() { return refresh; }
+    public void setRefresh(boolean refresh) { this.refresh = refresh; }
     public List<String> getStages() { return stages; }
     public void setStages(List<String> stages) { this.stages = stages; }
     public boolean isMachine() { return machine; }
@@ -183,6 +186,7 @@ public class StructureDefinition {
         if (slower) structureObj.addProperty("slower", slower);
         if (placeAsPlayer) structureObj.addProperty("place_like_player", placeAsPlayer);
         if (overwritable) structureObj.addProperty("overwritable", overwritable);
+        if (refresh) structureObj.addProperty("refresh", refresh);
         if (!machine) structureObj.addProperty("machine", machine); // Only save if false (non-default)
         if (hidden) structureObj.addProperty("hidden", hidden); // Only save if true (non-default)
         

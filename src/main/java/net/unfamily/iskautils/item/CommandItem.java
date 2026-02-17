@@ -17,6 +17,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.command.CommandItemAction;
 import net.unfamily.iskautils.command.CommandItemDefinition;
+import net.unfamily.iskautils.command.CommandItemLoader;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -55,26 +56,29 @@ public class CommandItem extends Item {
     // Queue for delayed actions - CopyOnWriteArrayList is inherently thread-safe
     private static final Map<UUID, CopyOnWriteArrayList<DelayedAction>> DELAYED_ACTIONS = new ConcurrentHashMap<>();
     
-    // Fixed definition assigned at registration
+    // Definition at registration (fallback if removed from config). ID used for reload lookup.
     private final CommandItemDefinition definition;
+    private final String definitionId;
     
     public CommandItem(Properties properties, CommandItemDefinition definition) {
         super(properties);
         this.definition = definition;
+        this.definitionId = definition.getId();
     }
     
     /**
-     * Gets the definition for this command item
+     * Gets the definition for this command item. At runtime resolves from loader so reload applies.
      */
     public CommandItemDefinition getDefinition() {
-        return definition;
+        CommandItemDefinition loaded = CommandItemLoader.getCommandItem(definitionId);
+        return loaded != null ? loaded : definition;
     }
     
     /**
      * Gets the ID of this command item
      */
     public String getDefinitionId() {
-        return definition.getId();
+        return definitionId;
     }
     
     @Override
@@ -88,7 +92,7 @@ public class CommandItem extends Item {
     
     @Override
     public boolean isFoil(ItemStack stack) {
-        return definition.isGlowing() || super.isFoil(stack);
+        return getDefinition().isGlowing() || super.isFoil(stack);
     }
     
     /**
@@ -145,12 +149,12 @@ public class CommandItem extends Item {
         
         if (!processedFirstTick) {
             // First time we see this item - execute first tick actions
-            if (!definition.getFirstTickActions().isEmpty()) {
+            if (!getDefinition().getFirstTickActions().isEmpty()) {
                 LOGGER.debug("Executing first tick actions for command item {} for player {}", 
-                        definition.getId(), player.getName().getString());
+                        getDefinitionId(), player.getName().getString());
                 
                 // Execute first tick actions
-                executeFirstTickActions(player, definition.getFirstTickActions(), stack, slot);
+                executeFirstTickActions(player, getDefinition().getFirstTickActions(), stack, slot);
                 
                 // If the item was consumed, do not continue
                 if (stack.isEmpty()) {
@@ -166,13 +170,13 @@ public class CommandItem extends Item {
         } else {
             // For the DEF_AND and DEF_OR logic, stages are checked for each action
             // and no global check is needed here
-            if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
-                definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) {
+            if (getDefinition().getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
+                getDefinition().getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) {
                 // No check needed, proceed
             } 
             // For the AND and OR logic, we check that all required stages are satisfied
-            else if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.AND || 
-                     definition.getStagesLogic() == CommandItemDefinition.StagesLogic.OR) {
+            else if (getDefinition().getStagesLogic() == CommandItemDefinition.StagesLogic.AND || 
+                     getDefinition().getStagesLogic() == CommandItemDefinition.StagesLogic.OR) {
                 // We use the areConditionsMet method we've already called above
                 // This is just an extra check in case stages have changed
                 if (!areConditionsMet(player)) {
@@ -183,18 +187,18 @@ public class CommandItem extends Item {
         }
         
         // Check cooldown for regular tick actions
-        if (isOnCooldown(playerUuid, definition.getId())) {
+        if (isOnCooldown(playerUuid, getDefinitionId())) {
             return;
         }
         
         // Execute regular tick actions
-        if (!definition.getTickActions().isEmpty()) {
+        if (!getDefinition().getTickActions().isEmpty()) {
             LOGGER.debug("Executing tick actions for command item {} for player {}", 
-                    definition.getId(), player.getName().getString());
-            executeActions(player, definition.getTickActions(), stack, slot);
+                    getDefinitionId(), player.getName().getString());
+            executeActions(player, getDefinition().getTickActions(), stack, slot);
             
             // Update cooldown
-            updateCooldown(playerUuid, definition.getId());
+            updateCooldown(playerUuid, getDefinitionId());
         }
     }
     
@@ -233,7 +237,7 @@ public class CommandItem extends Item {
         }
         
         LOGGER.debug("First tick actions for item {}: has explicit delete action = {}", 
-                definition.getId(), hasExplicitDeleteAction);
+                getDefinitionId(), hasExplicitDeleteAction);
         
         for (CommandItemAction action : actions) {
             if (stack.isEmpty() && !itemDeleted) {
@@ -243,10 +247,10 @@ public class CommandItem extends Item {
             }
             
             // Check if this action has its own stage requirements (for DEF logic)
-            if ((definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
-                 definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) &&
+            if ((getDefinition().getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
+                 getDefinition().getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) &&
                 !action.getStages().isEmpty() &&
-                !action.checkActionStages(player, definition)) {
+                !action.checkActionStages(player, getDefinition())) {
                 // Skip this action if its requirements are not met
                 LOGGER.debug("Skipping action due to stage requirements not met");
                 continue;
@@ -255,7 +259,7 @@ public class CommandItem extends Item {
             // Special case for IF actions
             if (action.getType() == CommandItemAction.ActionType.IF) {
                 // Check if conditions are met based on the indices
-                boolean conditionsMet = action.checkConditionsByIndices(player, definition);
+                boolean conditionsMet = action.checkConditionsByIndices(player, getDefinition());
                 LOGGER.debug("IF condition check result for conditions {}: {}", 
                     action.getConditionIndices(), conditionsMet);
                     
@@ -408,14 +412,14 @@ public class CommandItem extends Item {
         }
         
         // Execute use actions
-        if (!definition.getUseActions().isEmpty()) {
+        if (!getDefinition().getUseActions().isEmpty()) {
             LOGGER.debug("Executing use actions for command item {} for player {}", 
-                    definition.getId(), player.getName().getString());
-            executeActions(serverPlayer, definition.getUseActions(), stack, 
+                    getDefinitionId(), player.getName().getString());
+            executeActions(serverPlayer, getDefinition().getUseActions(), stack, 
                     hand == InteractionHand.MAIN_HAND ? player.getInventory().selected : -1);
             
             // Update cooldown
-            updateCooldown(serverPlayer.getUUID(), definition.getId());
+            updateCooldown(serverPlayer.getUUID(), getDefinitionId());
             
             return InteractionResultHolder.success(stack);
         }
@@ -427,27 +431,28 @@ public class CommandItem extends Item {
      * Checks if all conditions are met for this command item
      */
     private boolean areConditionsMet(ServerPlayer player) {
+        CommandItemDefinition def = getDefinition();
         // For the DEF logic, the check is done for each action
         // so here we simply return true
-        if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
-            definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) {
-            LOGGER.debug("Item {} uses DEF logic, stage checks will be done per action");
+        if (def.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
+            def.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) {
+            LOGGER.debug("Item {} uses DEF logic, stage checks will be done per action", getDefinitionId());
             return true;
         }
         
         // Otherwise we use the checkAllStages method of the definition
-        boolean result = definition.checkAllStages(player);
+        boolean result = def.checkAllStages(player);
         
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Item {} stage check result: {} (logic: {})", 
-                definition.getId(), result, definition.getStagesLogic());
+                getDefinitionId(), result, def.getStagesLogic());
             
             // Detailed log of all stages
-            List<CommandItemDefinition.StageCondition> stages = definition.getStages();
+            List<CommandItemDefinition.StageCondition> stages = def.getStages();
             if (!stages.isEmpty()) {
                 for (int i = 0; i < stages.size(); i++) {
                     CommandItemDefinition.StageCondition stage = stages.get(i);
-                    boolean stageResult = definition.checkSingleStage(player, stage);
+                    boolean stageResult = def.checkSingleStage(player, stage);
                     LOGGER.debug("Stage[{}]: {}.{} should be {} = {}", 
                         i, stage.getStageType(), stage.getStage(), stage.shouldBeSet(), stageResult);
                 }
@@ -465,7 +470,7 @@ public class CommandItem extends Item {
     private void executeActions(ServerPlayer player, List<CommandItemAction> actions, ItemStack stack, int slot) {
         boolean itemDeleted = false;
         
-        LOGGER.debug("Executing {} actions for player {} with item {}", actions.size(), player.getName().getString(), definition.getId());
+        LOGGER.debug("Executing {} actions for player {} with item {}", actions.size(), player.getName().getString(), getDefinitionId());
         
         // Debug: show all IF block indices
         if (LOGGER.isDebugEnabled()) {
@@ -490,10 +495,10 @@ public class CommandItem extends Item {
             }
             
             // Check if this action has its own stage requirements (for DEF logic)
-            if ((definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
-                 definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) &&
+            if ((getDefinition().getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 
+                 getDefinition().getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) &&
                 !action.getStages().isEmpty() &&
-                !action.checkActionStages(player, definition)) {
+                !action.checkActionStages(player, getDefinition())) {
                 // Skip this action if its requirements are not met
                 LOGGER.debug("Skipping action due to stage requirements not met");
                 continue;
@@ -507,7 +512,7 @@ public class CommandItem extends Item {
                 // Recheck conditions to ensure they are still valid
                 // This is important especially for consecutive actions that might
                 // modify the same stages
-                boolean conditionsMet = action.checkConditionsByIndices(player, definition);
+                boolean conditionsMet = action.checkConditionsByIndices(player, getDefinition());
                 LOGGER.debug("Checking IF action at index {} with conditions {}: {}", 
                     actionIndex, action.getConditionIndices(), conditionsMet);
                 
@@ -593,7 +598,7 @@ public class CommandItem extends Item {
                 
             case IF:
                 // Check if conditions are met based on the indices
-                boolean conditionsMet = action.checkConditionsByIndices(player, definition);
+                boolean conditionsMet = action.checkConditionsByIndices(player, getDefinition());
                 LOGGER.debug("Checking IF condition: {} = {}", action.getConditionIndices(), conditionsMet);
                 
                 if (conditionsMet) {
@@ -852,7 +857,7 @@ public class CommandItem extends Item {
                     // If damage exceeds max durability, destroy the item
                     if (stack.getDamageValue() >= stack.getMaxDamage()) {
                         stack.shrink(1);
-                        LOGGER.debug("Item {} destroyed due to excessive damage", definition.getId());
+                        LOGGER.debug("Item {} destroyed due to excessive damage", getDefinitionId());
                     }
                 }
                 return stack.isEmpty();
@@ -861,7 +866,7 @@ public class CommandItem extends Item {
                 // Check if there are actually items to remove
                 boolean itemsFound = false;
                 int itemCount = 0;
-                String currentItemId = definition.getId();
+                String currentItemId = getDefinitionId();
                 
                 // Check if there are items of this type in inventory
                 for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
@@ -898,13 +903,13 @@ public class CommandItem extends Item {
                 }
                 
                 LOGGER.debug("Removed {} command items {} from player inventory (found: {})", 
-                        removed, definition.getId(), itemCount);
+                        removed, getDefinitionId(), itemCount);
                 return true;
                 
             case DROP_ALL:
                 // Drop all items of this type from inventory
                 int dropped = 0;
-                String dropItemId = definition.getId();
+                String dropItemId = getDefinitionId();
                 
                 // Search in all inventory slots
                 for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
@@ -922,7 +927,7 @@ public class CommandItem extends Item {
                 }
                 
                 LOGGER.debug("Dropped {} command items {} from player inventory", 
-                        dropped, definition.getId());
+                        dropped, getDefinitionId());
                 return true;
                 
             default:
@@ -960,7 +965,7 @@ public class CommandItem extends Item {
         }
         
         long currentTime = System.currentTimeMillis();
-        int cooldownMillis = definition.getCooldown() * 50; // Convert ticks to milliseconds
+        int cooldownMillis = getDefinition().getCooldown() * 50; // Convert ticks to milliseconds
         
         return currentTime - lastUse < cooldownMillis;
     }

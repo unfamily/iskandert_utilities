@@ -430,6 +430,7 @@
 
   "commands.iska_utils.structure.error.not_found": "Structure not found",
   "commands.iska_utils.structure.error.placement_failed": "Failed to place structure",
+  "commands.iska_utils.structure.error.force_not_allowed": "Force placement is not allowed for this structure",
 
   "gui.iska_utils.structure_placer.title": "Structure Placer",
   "gui.iska_utils.structure_placer.apply": "Apply",

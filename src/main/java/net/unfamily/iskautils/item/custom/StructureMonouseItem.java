@@ -446,18 +446,22 @@ public class StructureMonouseItem extends Item {
                                 // Fallback to normal placement
                                 ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
                             }
+                            if (structure.isRefresh()) ((ServerLevel) player.level()).scheduleTick(blockPos, block, 0);
                         } else {
                             // Fallback to normal placement
                             ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
+                            if (structure.isRefresh()) ((ServerLevel) player.level()).scheduleTick(blockPos, block, 0);
                         }
                     } catch (Exception e) {
                         // If player-like placement fails, fallback to normal placement
                         LOGGER.debug("Player-like placement failed for {}, using normal placement: {}", blockDef.getBlock(), e.getMessage());
                         ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
+                        if (structure.isRefresh()) ((ServerLevel) player.level()).scheduleTick(blockPos, block, 0);
                     }
                 } else {
                     // Normal placement
                     ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
+                    if (structure.isRefresh()) ((ServerLevel) player.level()).scheduleTick(blockPos, block, 0);
                 }
             }
         }

@@ -59,6 +59,7 @@ public class StructureDocumentationGenerator {
         doc.append(getCompleteExamplesSection());
         doc.append(getBestPracticesSection());
         doc.append(getMachineIntegrationSection());
+        doc.append(getCommandsSection());
         doc.append(getErrorHandlingSection());
         doc.append(getFooter());
         
@@ -83,7 +84,8 @@ public class StructureDocumentationGenerator {
 10. [Complete Examples](#complete-examples)
 11. [Best Practices](#best-practices)
 12. [Machine Integration](#machine-integration)
-13. [Error Handling](#error-handling)
+13. [Commands](#commands)
+14. [Error Handling](#error-handling)
 
 ---
 
@@ -197,9 +199,10 @@ kubejs/external_scripts/iska_utils_structures/
 #### ⚙️ Optional Properties
 - **`description`**: Detailed tooltip description
 - **`icon`**: Display icon in GUIs and tooltips
-- **`can_force`**: Allow forced placement over existing blocks
+- **`can_force`**: Allow forced placement over existing blocks (required for command `force` and shift+place)
 - **`slower`**: Place blocks with 5-tick delays for dramatic effect
 - **`place_like_player`**: Simulate player placement (triggers events)
+- **`refresh`**: After placing each block, schedule one tick so blocks activate/update (default: false). Use for redstone, observers, etc.
 - **`can_replace`**: List of blocks/tags that can be replaced
 - **`stages`**: Required progression stages (ALL must be completed)
 - **`machine`**: Visibility in Structure Placer Machine GUI (default: true)
@@ -350,6 +353,12 @@ The `display` field controls how blocks appear in tooltips and GUIs:
 ## Advanced Features
 
 ### 💪 Force Placement
+When **`can_force`** is **true**:
+- **Structure Placer Item**: Hold **Shift + right-click** on second click to place over occupied spaces (only replaces blocks allowed by `can_replace`, others are skipped).
+- **Command**: Use **`force`** to overwrite any block at target positions.
+  - `/iska_utils_structure place <structure_id> <x> <y> <z>` — normal placement (respects `can_replace`).
+  - `/iska_utils_structure place <structure_id> <x> <y> <z> force` — overwrite all blocks at structure positions (structure must have `can_force: true`).
+
 ```json
 {
     "id": "my_mod-force_structure",
@@ -361,6 +370,24 @@ The `display` field controls how blocks appear in tooltips and GUIs:
         "$replaceable",
         "#minecraft:flowers"
     ]
+}
+```
+
+### 🔄 Refresh (Block Tick After Placement)
+When **`refresh`** is **true**, each placed block receives one scheduled tick (delay 0) after placement. Use this for:
+- **Redstone** and components that need to update
+- **Observers** and blocks that react to neighbors
+- **Block entities** or logic that run on first tick
+
+Default is **false**. Only set to **true** when the structure contains blocks that need it.
+
+```json
+{
+    "id": "my_mod-redstone_contraption",
+    "name": "Redstone Contraption",
+    "refresh": true,
+    "pattern": [...],
+    "key": {...}
 }
 ```
 
@@ -761,6 +788,25 @@ The Structure Placer Machine provides automated structure placement with advance
 """;
     }
     
+    private static String getCommandsSection() {
+        return """
+## Commands
+
+Structure-related commands (OP level 2):
+
+- **`/iska_utils_structure list`** — List all available structures (server + client).
+- **`/iska_utils_structure reload`** — Reload structure definitions from disk and sync to clients.
+- **`/iska_utils_structure info <structure_id>`** — Show structure info (dimensions, center, can_force, etc.).
+- **`/iska_utils_structure place <structure_id> <x> <y> <z>`** — Place structure at the given position. Respects `can_replace`; blocks not in the list are not overwritten.
+- **`/iska_utils_structure place <structure_id> <x> <y> <z> force`** — Place structure and **overwrite any block** at the structure positions. The structure must have **`can_force: true`** in its definition; otherwise the command fails with an error.
+
+Use **`force`** when you want to paste a structure regardless of existing blocks (e.g. admin builds, schematics).
+
+---
+
+""";
+    }
+    
     private static String getErrorHandlingSection() {
         return """
 ## Error Handling
@@ -839,6 +885,7 @@ The Structure Placer Machine provides automated structure placement with advance
             "can_force": boolean,
             "slower": boolean,
             "place_like_player": boolean,
+            "refresh": boolean,
             "can_replace": ["string"],
             "stages": ["string"],
             "pattern": [[[["string"]]]],

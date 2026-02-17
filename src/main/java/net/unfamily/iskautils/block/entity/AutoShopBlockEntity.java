@@ -82,6 +82,37 @@ public class AutoShopBlockEntity extends BlockEntity {
     private ItemStack selectedItem = ItemStack.EMPTY; // Selected item for encapsulated slot
     private boolean autoBuyMode = true; // true = Auto Buy, false = Auto Sell
     
+    // Redstone mode: when to run auto buy/sell (same logic as Structure Placer Machine)
+    private int redstoneMode = 0;
+    private boolean previousRedstoneState = false;
+    
+    /**
+     * Redstone modes: when the auto shop is allowed to run
+     */
+    public enum RedstoneMode {
+        NONE(0),    // Always active
+        LOW(1),     // Only when redstone signal is OFF
+        HIGH(2),    // Only when redstone signal is ON
+        PULSE(3),   // Only on redstone rising edge (low to high)
+        DISABLED(4); // Never active
+        private final int value;
+        RedstoneMode(int value) { this.value = value; }
+        public int getValue() { return value; }
+        public static RedstoneMode fromValue(int value) {
+            for (RedstoneMode m : values()) if (m.value == value) return m;
+            return NONE;
+        }
+        public RedstoneMode next() {
+            return switch (this) {
+                case NONE -> LOW;
+                case LOW -> HIGH;
+                case HIGH -> PULSE;
+                case PULSE -> DISABLED;
+                case DISABLED -> NONE;
+            };
+        }
+    }
+    
     public AutoShopBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.AUTO_SHOP_BE.get(), pos, blockState);
     }
@@ -138,7 +169,9 @@ public class AutoShopBlockEntity extends BlockEntity {
             selectedItem.save(registries, selectedTag);
             // Always save the item if valid, even if tag is empty (can happen for simple items)
             shopData.put("selectedItem", selectedTag);
-        } 
+        }
+        shopData.putInt("redstoneMode", redstoneMode);
+        shopData.putBoolean("previousRedstoneState", previousRedstoneState);
         
         tag.put("shopData", shopData);
     }
@@ -206,6 +239,12 @@ public class AutoShopBlockEntity extends BlockEntity {
                 }
             } else {
                 this.selectedItem = ItemStack.EMPTY; // Default if not present
+            }
+            if (shopData.contains("redstoneMode")) {
+                this.redstoneMode = shopData.getInt("redstoneMode");
+            }
+            if (shopData.contains("previousRedstoneState")) {
+                this.previousRedstoneState = shopData.getBoolean("previousRedstoneState");
             }
         }
         // Migration: if old save had physical selectedSlot NBT, copy first slot to logical selectedItem
@@ -342,6 +381,15 @@ public class AutoShopBlockEntity extends BlockEntity {
         setChanged();
     }
     
+    public int getRedstoneMode() {
+        return redstoneMode;
+    }
+    
+    public void setRedstoneMode(int redstoneMode) {
+        this.redstoneMode = redstoneMode % 5;
+        setChanged();
+    }
+    
     /**
      * Checks if a player can use this AutoShop
      * Verifies that the player still belongs to the saved team
@@ -425,6 +473,27 @@ public class AutoShopBlockEntity extends BlockEntity {
      */
     public static void tick(Level level, BlockPos pos, BlockState state, AutoShopBlockEntity entity) {
         if (level.isClientSide()) {
+            return;
+        }
+
+        // Redstone gate: decide if auto shop is allowed to run this tick
+        int redstonePower = level.getBestNeighborSignal(pos);
+        boolean hasRedstoneSignal = redstonePower > 0;
+        RedstoneMode mode = RedstoneMode.fromValue(entity.getRedstoneMode());
+        boolean shouldRun = false;
+        switch (mode) {
+            case DISABLED -> shouldRun = false;
+            case NONE -> shouldRun = true;
+            case LOW -> shouldRun = !hasRedstoneSignal;
+            case HIGH -> shouldRun = hasRedstoneSignal;
+            case PULSE -> {
+                if (hasRedstoneSignal && !entity.previousRedstoneState) {
+                    shouldRun = true;
+                }
+                entity.previousRedstoneState = hasRedstoneSignal;
+            }
+        }
+        if (!shouldRun) {
             return;
         }
 
