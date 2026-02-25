@@ -30,13 +30,20 @@ public class DynamicPotionPlateScanner {
     private static final Map<String, PotionPlateConfig> DISCOVERED_CONFIGS = new HashMap<>();
     
     /**
-     * Scans external scripts directory for potion plate configurations
-     * This is called during mod initialization, before RegisterEvent
+     * Scans external scripts directory for potion plate configurations.
+     * Internal defaults are registered first, then external scripts can override them.
+     * This is called during mod initialization, before RegisterEvent.
      */
     public static void scanConfigDirectory() {
         LOGGER.info("Scanning external scripts directory for iska utils plate configurations...");
         
         try {
+            // Clear previous configurations
+            DISCOVERED_CONFIGS.clear();
+            
+            // Register internal defaults first (scripts can override these)
+            registerInternalDefaults();
+            
             // Get the configured external scripts path
             String externalScriptsBasePath = net.unfamily.iskautils.Config.externalScriptsPath;
             if (externalScriptsBasePath == null || externalScriptsBasePath.trim().isEmpty()) {
@@ -48,12 +55,9 @@ public class DynamicPotionPlateScanner {
             if (!Files.exists(configPath)) {
                 Files.createDirectories(configPath);
                 LOGGER.info("Created external scripts directory: {}", configPath.toAbsolutePath());
-                
-                // Create a README file to explain the directory
                 createConfigReadme(configPath, externalScriptsBasePath);
                 
-                // Generate default configuration files
-                generateDefaultConfigurations(configPath);
+                LOGGER.info("Plate configurations scan completed. Total configurations: {} (internal defaults only)", DISCOVERED_CONFIGS.size());
                 return;
             }
             
@@ -70,22 +74,6 @@ public class DynamicPotionPlateScanner {
                 LOGGER.info("README.md missing or outdated, regenerating...");
                 createConfigReadme(configPath, externalScriptsBasePath);
             }
-            
-            // Check if iska_utils.json exists and if it's overwritable
-            Path iskaUtilsFile = configPath.resolve("iska_utils.json");
-            if (Files.exists(iskaUtilsFile)) {
-                if (shouldRegenerateIskaUtils(iskaUtilsFile)) {
-                    LOGGER.info("iska_utils.json has overwritable=true, regenerating with defaults...");
-                    generateIskaUtilsPlates(configPath);
-                }
-            } else {
-                // If iska_utils.json doesn't exist, generate it
-                LOGGER.info("iska_utils.json not found, generating default configuration...");
-                generateIskaUtilsPlates(configPath);
-            }
-            
-            // Clear previous configurations
-            DISCOVERED_CONFIGS.clear();
             
             // Scan all JSON files in the external scripts directory recursively
             // Files are processed in alphabetical order for consistent override behavior
@@ -108,6 +96,60 @@ public class DynamicPotionPlateScanner {
     }
     
     /**
+     * Registers internal default potion plate configurations.
+     * These are always available as fallback; external scripts can override them.
+     */
+    private static void registerInternalDefaults() {
+        // Effect plates
+        PotionPlateConfig poison = new PotionPlateConfig("iska_utils-poison", "minecraft:poison", 0, 100, 40, true, true, false, true);
+        poison.setCreativeTabVisible(true);
+        poison.setPlayerShiftDisable(true);
+        DISCOVERED_CONFIGS.put("iska_utils-poison", poison);
+        
+        PotionPlateConfig weakness = new PotionPlateConfig("iska_utils-weakness", "minecraft:weakness", 0, 100, 40, true, true, false, true);
+        weakness.setCreativeTabVisible(true);
+        weakness.setPlayerShiftDisable(true);
+        DISCOVERED_CONFIGS.put("iska_utils-weakness", weakness);
+        
+        PotionPlateConfig slowness = new PotionPlateConfig("iska_utils-slowness", "minecraft:slowness", 0, 200, 40, true, true, false, true);
+        slowness.setCreativeTabVisible(true);
+        slowness.setPlayerShiftDisable(true);
+        DISCOVERED_CONFIGS.put("iska_utils-slowness", slowness);
+        
+        // Damage plates
+        PotionPlateConfig damage = new PotionPlateConfig("iska_utils-damage", "minecraft:generic", 2.0f, 20, true, true, true);
+        damage.setCreativeTabVisible(true);
+        damage.setPlayerShiftDisable(true);
+        damage.setTooltipLines(1);
+        DISCOVERED_CONFIGS.put("iska_utils-damage", damage);
+        
+        PotionPlateConfig improvedDamage = new PotionPlateConfig("iska_utils-improved_damage", "minecraft:player", 4.0f, 20, true, true, true);
+        improvedDamage.setCreativeTabVisible(true);
+        improvedDamage.setPlayerShiftDisable(true);
+        improvedDamage.setTooltipLines(1);
+        DISCOVERED_CONFIGS.put("iska_utils-improved_damage", improvedDamage);
+        
+        PotionPlateConfig lethalDamage = new PotionPlateConfig("iska_utils-lethal_damage", "minecraft:player", 500.0f, 20, true, true, true);
+        lethalDamage.setCreativeTabVisible(true);
+        lethalDamage.setPlayerShiftDisable(true);
+        lethalDamage.setTooltipLines(1);
+        DISCOVERED_CONFIGS.put("iska_utils-lethal_damage", lethalDamage);
+        
+        // Special plates
+        PotionPlateConfig fire = new PotionPlateConfig("iska_utils-fire", 60, 40, true, true, true);
+        fire.setCreativeTabVisible(true);
+        fire.setPlayerShiftDisable(true);
+        DISCOVERED_CONFIGS.put("iska_utils-fire", fire);
+        
+        PotionPlateConfig freeze = PotionPlateConfig.createFreezePlate("iska_utils-freeze", 100, 40, true, true, true);
+        freeze.setCreativeTabVisible(true);
+        freeze.setPlayerShiftDisable(true);
+        DISCOVERED_CONFIGS.put("iska_utils-freeze", freeze);
+        
+        LOGGER.debug("Registered {} internal default potion plate configurations", DISCOVERED_CONFIGS.size());
+    }
+    
+    /**
      * Checks if the README file is up to date by looking for a version marker
      */
     private static boolean isReadmeUpToDate(Path readmePath) {
@@ -124,31 +166,6 @@ public class DynamicPotionPlateScanner {
         }
     }
     
-    /**
-     * Checks if iska_utils.json should be regenerated based on its overwritable flag
-     */
-    private static boolean shouldRegenerateIskaUtils(Path iskaUtilsFile) {
-        try {
-            try (InputStream inputStream = Files.newInputStream(iskaUtilsFile);
-                 InputStreamReader reader = new InputStreamReader(inputStream)) {
-                
-                JsonElement jsonElement = GSON.fromJson(reader, JsonElement.class);
-                if (jsonElement != null && jsonElement.isJsonObject()) {
-                    JsonObject json = jsonElement.getAsJsonObject();
-                    
-                    // Check if overwritable field exists and is true
-                    if (json.has("overwritable")) {
-                        return json.get("overwritable").getAsBoolean();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Error reading iska_utils.json for overwritable check: {}", e.getMessage());
-        }
-        
-        // Default to false if we can't read the file or field doesn't exist
-        return false;
-    }
     
     /**
      * Creates a README file in the external scripts directory to explain its purpose
@@ -261,8 +278,11 @@ public class DynamicPotionPlateScanner {
                 "}\n" +
                 "```\n\n" +
                 "## Example File Locations\n\n" +
-                "- KubeJS: `" + externalScriptsBasePath + "/iska_utils_plates/custom_plates.json`\n" +
-                "- Default plates: `" + externalScriptsBasePath + "/iska_utils_plates/iska_utils_plates.json`\n\n" +
+                "- KubeJS: `" + externalScriptsBasePath + "/iska_utils_plates/custom_plates.json`\n\n" +
+                "## Default Plates\n\n" +
+                "Default plates (poison, weakness, slowness, damage, improved_damage, lethal_damage, fire, freeze) are registered internally and always available.\n" +
+                "To see the internal defaults as JSON files, run: `/iska_utils_debug dump_default`\n" +
+                "Configuration files in this directory override the internal defaults.\n\n" +
                 "Changes require a game restart to apply.";
             
             Files.write(readmePath, readmeContent.getBytes());
@@ -672,57 +692,13 @@ public class DynamicPotionPlateScanner {
     }
     
     /**
-     * Gets all discovered configurations
+     * Dumps the internal default potion plate configs to a JSON file.
+     * Called by /iska_utils_debug dump_default to let users see and override defaults.
      */
-    public static Map<String, PotionPlateConfig> getDiscoveredConfigs() {
-        return new HashMap<>(DISCOVERED_CONFIGS);
-    }
-    
-    /**
-     * Checks if any configurations were discovered
-     */
-    public static boolean hasDiscoveredConfigs() {
-        return !DISCOVERED_CONFIGS.isEmpty();
-    }
-    
-    /**
-     * Gets the number of discovered configurations
-     */
-    public static int getDiscoveredCount() {
-        return DISCOVERED_CONFIGS.size();
-    }
-    
-    /**
-     * Clears all discovered configurations (for testing)
-     */
-    public static void clearDiscovered() {
-        DISCOVERED_CONFIGS.clear();
-    }
-    
-    /**
-     * Generates default potion plate configurations based on the original internal configs
-     */
-    private static void generateDefaultConfigurations(Path configPath) {
-        try {
-            LOGGER.info("Generating default potion plate configurations...");
-            
-            // Generate single iska_utils configuration file
-            generateIskaUtilsPlates(configPath);
-            
-            LOGGER.info("Default configuration files generated successfully");
-            
-        } catch (Exception e) {
-            LOGGER.error("Failed to generate default configurations: {}", e.getMessage());
-        }
-    }
-    
-    /**
-     * Generates the iska_utils_plates.json file
-     */
-    private static void generateIskaUtilsPlates(Path configPath) throws IOException {
-        Path iskaUtilsFile = configPath.resolve("iska_utils_plates.json");
+    public static void dumpDefaultFile(java.nio.file.Path configPath) throws IOException {
+        java.nio.file.Path iskaUtilsFile = configPath.resolve("iska_utils_plates.json");
         
-        String iskaUtilsContent = "{\n" +
+        String content = "{\n" +
             "  \"type\": \"iska_utils:plates\",\n" +
             "  \"overwritable\": true,\n" +
             "  \"plates\": [\n" +
@@ -826,7 +802,36 @@ public class DynamicPotionPlateScanner {
             "  ]\n" +
             "}\n";
         
-        Files.write(iskaUtilsFile, iskaUtilsContent.getBytes());
-        LOGGER.info("Generated default iska_utils_plates.json file");
+        java.nio.file.Files.write(iskaUtilsFile, content.getBytes());
+        LOGGER.info("Dumped default potion plates to {}", iskaUtilsFile);
     }
+    
+    /**
+     * Gets all discovered configurations
+     */
+    public static Map<String, PotionPlateConfig> getDiscoveredConfigs() {
+        return new HashMap<>(DISCOVERED_CONFIGS);
+    }
+    
+    /**
+     * Checks if any configurations were discovered
+     */
+    public static boolean hasDiscoveredConfigs() {
+        return !DISCOVERED_CONFIGS.isEmpty();
+    }
+    
+    /**
+     * Gets the number of discovered configurations
+     */
+    public static int getDiscoveredCount() {
+        return DISCOVERED_CONFIGS.size();
+    }
+    
+    /**
+     * Clears all discovered configurations (for testing)
+     */
+    public static void clearDiscovered() {
+        DISCOVERED_CONFIGS.clear();
+    }
+    
 } 

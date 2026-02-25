@@ -6,7 +6,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -35,7 +34,8 @@ public class CommandItemLoader {
     private static final Map<String, Boolean> PROTECTED_DEFINITIONS = new HashMap<>();
     
     /**
-     * Scans the configuration directory for command item definitions
+     * Scans the configuration directory for command item definitions.
+     * Internal defaults are registered first, then external scripts can override them.
      */
     public static void scanConfigDirectory() {
         if (LOGGER.isInfoEnabled()) {
@@ -43,6 +43,13 @@ public class CommandItemLoader {
         }
         
         try {
+            // Clear previous protections and definitions
+            PROTECTED_DEFINITIONS.clear();
+            COMMAND_ITEMS.clear();
+            
+            // Register internal defaults first (scripts can override these)
+            registerInternalDefaults();
+            
             // Get the configured path for external scripts
             String externalScriptsBasePath = net.unfamily.iskautils.Config.externalScriptsPath;
             if (externalScriptsBasePath == null || externalScriptsBasePath.trim().isEmpty()) {
@@ -56,12 +63,11 @@ public class CommandItemLoader {
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info("Created directory for command item definitions: {}", configPath.toAbsolutePath());
                 }
-                
-                // Create a README file to explain the directory
                 createReadme(configPath);
                 
-                // Generate default configurations
-                generateDefaultConfigurations(configPath);
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("Command item definitions scan completed. Loaded {} definitions (internal defaults only)", COMMAND_ITEMS.size());
+                }
                 return;
             }
             
@@ -80,20 +86,7 @@ public class CommandItemLoader {
                 LOGGER.debug("Updated README.md");
             }
             
-            // Clear previous protections and definitions
-            PROTECTED_DEFINITIONS.clear();
-            COMMAND_ITEMS.clear();
-            
-            // Check if default_command_items.json exists and check if it's overwritable
-            Path defaultItemsFile = configPath.resolve("default_command_items.json");
-            if (!Files.exists(defaultItemsFile) || shouldRegenerateDefaultItems(defaultItemsFile)) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Generating or regenerating default_command_items.json file");
-                }
-                generateDefaultCommandItems(configPath);
-            }
-            
-            // Scan all JSON files in the directory
+            // Scan all JSON files in the directory (scripts can override internal defaults)
             try (Stream<Path> files = Files.walk(configPath)) {
                 files.filter(Files::isRegularFile)
                      .filter(path -> path.toString().endsWith(".json"))
@@ -115,30 +108,105 @@ public class CommandItemLoader {
     }
     
     /**
-     * Checks if the default_command_items.json file should be regenerated
+     * Registers internal default command item definitions.
+     * These are always available as fallback; external scripts can override them.
      */
-    private static boolean shouldRegenerateDefaultItems(Path filePath) {
-        try {
-            try (InputStream inputStream = Files.newInputStream(filePath);
-                 InputStreamReader reader = new InputStreamReader(inputStream)) {
-                
-                JsonElement jsonElement = GSON.fromJson(reader, JsonElement.class);
-                if (jsonElement != null && jsonElement.isJsonObject()) {
-                    JsonObject json = jsonElement.getAsJsonObject();
-                    
-                    // Check if the overwritable field exists and is true
-                    if (json.has("overwritable")) {
-                        return json.get("overwritable").getAsBoolean();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Error reading default_command_items.json file: {}", e.getMessage());
+    private static void registerInternalDefaults() {
+        // Default: iska_utils-world_init
+        CommandItemDefinition worldInit = new CommandItemDefinition("iska_utils-world_init");
+        worldInit.setCreativeTabVisible(false);
+        worldInit.setMaxStackSize(1);
+        worldInit.setGlowing(false);
+        worldInit.setStagesLogic(CommandItemDefinition.StagesLogic.DEF_AND);
+        worldInit.setCooldown(10);
+        worldInit.addStage("world", "initializing", false);  // index 0
+        worldInit.addStage("world", "initialized", false);    // index 1
+        worldInit.addStage("world", "initialized", true);     // index 2
+        
+        // onTick: if conditions [0,1] -> initialization sequence
+        CommandItemAction ifAction1 = new CommandItemAction();
+        ifAction1.setType(CommandItemAction.ActionType.IF);
+        List<Integer> cond1 = new ArrayList<>();
+        cond1.add(0);
+        cond1.add(1);
+        ifAction1.setConditionIndices(cond1);
+        
+        String[] initCommands = {
+            "iska_utils_stage add world initializing true",
+            "title @a times 20 100 40",
+            "title @a subtitle {\"text\":\"please stand still and do nothing.\",\"color\":\"dark_red\"}",
+            "title @a title {\"text\":\"World Initialization:\",\"color\":\"dark_red\"}"
+        };
+        for (String cmd : initCommands) {
+            CommandItemAction exec = new CommandItemAction();
+            exec.setType(CommandItemAction.ActionType.EXECUTE);
+            exec.setCommand(cmd);
+            ifAction1.addSubAction(exec);
         }
         
-        // If the file can't be read or doesn't have the overwritable field, regenerate it
-        return true;
+        CommandItemAction delay1 = new CommandItemAction();
+        delay1.setType(CommandItemAction.ActionType.DELAY);
+        delay1.setDelay(160);
+        ifAction1.addSubAction(delay1);
+        
+        String[] reloadCommands = {
+            "kubejs reload server-scripts",
+            "reload"
+        };
+        for (String cmd : reloadCommands) {
+            CommandItemAction exec = new CommandItemAction();
+            exec.setType(CommandItemAction.ActionType.EXECUTE);
+            exec.setCommand(cmd);
+            ifAction1.addSubAction(exec);
+        }
+        
+        CommandItemAction delay2 = new CommandItemAction();
+        delay2.setType(CommandItemAction.ActionType.DELAY);
+        delay2.setDelay(20);
+        ifAction1.addSubAction(delay2);
+        
+        String[] finishCommands = {
+            "custommachinery reload",
+            "title @a times 20 100 40",
+            "title @a subtitle {\"text\":\"completed, apologies for the wait\",\"color\":\"dark_green\"}",
+            "title @a title {\"text\":\"World Initialization:\",\"color\":\"dark_green\"}",
+            "title @a times 20 100 20",
+            "iska_utils_stage add world initialized true",
+            "iska_utils_stage remove world initializing true"
+        };
+        for (String cmd : finishCommands) {
+            CommandItemAction exec = new CommandItemAction();
+            exec.setType(CommandItemAction.ActionType.EXECUTE);
+            exec.setCommand(cmd);
+            ifAction1.addSubAction(exec);
+        }
+        
+        CommandItemAction deleteAll1 = new CommandItemAction();
+        deleteAll1.setType(CommandItemAction.ActionType.ITEM);
+        deleteAll1.setItemAction(CommandItemAction.ItemActionType.DELETE_ALL);
+        ifAction1.addSubAction(deleteAll1);
+        
+        worldInit.addTickAction(ifAction1);
+        
+        // onTick: if conditions [0,2] -> already initialized, just delete
+        CommandItemAction ifAction2 = new CommandItemAction();
+        ifAction2.setType(CommandItemAction.ActionType.IF);
+        List<Integer> cond2 = new ArrayList<>();
+        cond2.add(0);
+        cond2.add(2);
+        ifAction2.setConditionIndices(cond2);
+        
+        CommandItemAction deleteAll2 = new CommandItemAction();
+        deleteAll2.setType(CommandItemAction.ActionType.ITEM);
+        deleteAll2.setItemAction(CommandItemAction.ItemActionType.DELETE_ALL);
+        ifAction2.addSubAction(deleteAll2);
+        
+        worldInit.addTickAction(ifAction2);
+        
+        COMMAND_ITEMS.put("iska_utils-world_init", worldInit);
+        LOGGER.debug("Registered internal default command item: iska_utils-world_init");
     }
+    
     
     /**
      * Creates a README file in the configuration directory
@@ -302,6 +370,9 @@ public class CommandItemLoader {
                 
                 "## Notes\n\n" +
                 "- Command items are loaded during game startup from JSON files in this directory.\n" +
+                "- Default items are registered internally and always available even without configuration files.\n" +
+                "- To see the internal defaults as JSON files, run: `/iska_utils_debug dump_default`\n" +
+                "- Configuration files in this directory override the internal defaults.\n" +
                 "- Reload: `/iska_utils_debug reload` (quick) or `/reload` (full) to apply changes without restart.\n" +
                 "- You can create as many command item configurations as needed.\n";
             
@@ -760,22 +831,12 @@ public class CommandItemLoader {
         }
     }
     
-    /**
-     * Generate default configurations
-     */
-    private static void generateDefaultConfigurations(Path configPath) {
-        try {
-            generateDefaultCommandItems(configPath);
-        } catch (Exception e) {
-            LOGGER.error("Error generating default command item configurations: {}", e.getMessage());
-        }
-    }
     
     /**
-     * Generate default command item definition file
+     * Dumps the internal default command items to a JSON file.
+     * Called by /iska_utils_debug dump_default to let users see and override defaults.
      */
-    private static void generateDefaultCommandItems(Path configPath) throws IOException {
-        // Create default example item configuration
+    public static void dumpDefaultFile(Path configPath) throws IOException {
         Path defaultItemsPath = configPath.resolve("default_command_items.json");
         
         String defaultItemsContent = "{\n" +
@@ -811,7 +872,7 @@ public class CommandItemLoader {
             "                {\"execute\": \"title @a times 20 100 40\"},\n" +
             "                {\"execute\": \"title @a subtitle {\\\"text\\\":\\\"completed, apologies for the wait\\\",\\\"color\\\":\\\"dark_green\\\"}\"},\n" +
             "                {\"execute\": \"title @a title {\\\"text\\\":\\\"World Initialization:\\\",\\\"color\\\":\\\"dark_green\\\"}\"},\n" +
-            "                {\"execute\": \"title @a times 20 100 20\"},\n" +   
+            "                {\"execute\": \"title @a times 20 100 20\"},\n" +
             "                {\"execute\": \"iska_utils_stage add world initialized true\"},\n" +
             "                {\"execute\": \"iska_utils_stage remove world initializing true\"},\n" +
             "                {\"item\": \"delete_all\"}\n" +
@@ -828,7 +889,7 @@ public class CommandItemLoader {
             "}";
         
         Files.write(defaultItemsPath, defaultItemsContent.getBytes());
-        LOGGER.info("Created example command item configuration at {}", defaultItemsPath);
+        LOGGER.info("Dumped default command items to {}", defaultItemsPath);
     }
     
     /**

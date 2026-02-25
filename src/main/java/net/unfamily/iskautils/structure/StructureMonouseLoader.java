@@ -8,7 +8,6 @@ import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
@@ -32,10 +31,18 @@ public class StructureMonouseLoader {
     private static final Map<String, Boolean> PROTECTED_DEFINITIONS = new HashMap<>();
     
     /**
-     * Scans the configuration directory for monouse item definitions
+     * Scans the configuration directory for monouse item definitions.
+     * Internal defaults are registered first, then external scripts can override them.
      */
     public static void scanConfigDirectory() {
         try {
+            // Clear previous definitions
+            PROTECTED_DEFINITIONS.clear();
+            MONOUSE_ITEMS.clear();
+            
+            // Register internal defaults first (scripts can override these)
+            registerInternalDefaults();
+            
             String configPathStr = net.unfamily.iskautils.Config.externalScriptsPath;
             if (configPathStr == null || configPathStr.trim().isEmpty()) {
                 configPathStr = "kubejs/external_scripts";
@@ -47,17 +54,7 @@ public class StructureMonouseLoader {
                 return;
             }
             
-            // Clear previous definitions
-            PROTECTED_DEFINITIONS.clear();
-            MONOUSE_ITEMS.clear();
-            
-            // Generate default file if it doesn't exist
-            Path defaultMonouseFile = configPath.resolve("default_monouse.json");
-            if (!Files.exists(defaultMonouseFile) || shouldRegenerateDefaultMonouse(defaultMonouseFile)) {
-                generateDefaultMonouse(configPath);
-            }
-            
-            // Scan all JSON files in the directory
+            // Scan all JSON files in the directory (scripts can override internal defaults)
             try (Stream<Path> files = Files.walk(configPath)) {
                 files.filter(Files::isRegularFile)
                      .filter(path -> path.toString().endsWith(".json"))
@@ -69,6 +66,23 @@ public class StructureMonouseLoader {
         } catch (Exception e) {
             LOGGER.error("Error scanning structure monouse item definitions directory: {}", e.getMessage());
         }
+    }
+    
+    /**
+     * Registers internal default monouse item definitions.
+     * These are always available as fallback; external scripts can override them.
+     */
+    private static void registerInternalDefaults() {
+        String itemId = "iska_utils_wither_grinder";
+        StructureMonouseDefinition witherGrinder = new StructureMonouseDefinition(itemId);
+        witherGrinder.setStructureId("iska_utils-wither_grinder");
+        witherGrinder.setPlaceName("iska_utils-wither_grinder");
+        witherGrinder.setAggressive(false);
+        witherGrinder.addGiveItem(new StructureMonouseDefinition.GiveItem("minecraft:wither_skeleton_skull", 3));
+        witherGrinder.addGiveItem(new StructureMonouseDefinition.GiveItem("minecraft:soul_sand", 4));
+        
+        MONOUSE_ITEMS.put(itemId, witherGrinder);
+        LOGGER.debug("Registered internal default monouse item: {}", itemId);
     }
     
     /**
@@ -217,65 +231,39 @@ public class StructureMonouseLoader {
         return new HashMap<>(MONOUSE_ITEMS);
     }
     
-    /**
-     * Checks if the default_monouse.json file should be regenerated
-     */
-    private static boolean shouldRegenerateDefaultMonouse(Path defaultFile) {
-        try {
-            if (!Files.exists(defaultFile)) return true;
-            
-            // Read file and check if it has overwritable field
-            try (InputStream inputStream = Files.newInputStream(defaultFile)) {
-                JsonElement jsonElement = GSON.fromJson(new InputStreamReader(inputStream), JsonElement.class);
-                if (jsonElement != null && jsonElement.isJsonObject()) {
-                    JsonObject json = jsonElement.getAsJsonObject();
-                    if (json.has("overwritable")) {
-                        return json.get("overwritable").getAsBoolean();
-                    }
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            LOGGER.warn("Error reading default monouse items file, will regenerate: {}", e.getMessage());
-            return true;
-        }
-    }
     
     /**
-     * Generates the default monouse items file
+     * Dumps the internal default monouse item definitions to a JSON file.
+     * Called by /iska_utils_debug dump_default to let users see and override defaults.
      */
-    private static void generateDefaultMonouse(Path configPath) {
-        try {
-            Path defaultMonousePath = configPath.resolve("default_monouse.json");
-            
-            String defaultMonouseContent =
-                "{\n" +
-                "    \"type\": \"iska_utils:structure_monouse_item\",\n" +
-                "    \"overwritable\": true,\n" +
-                "    \"structure\": [\n" +
-                "        {\n" +
-                "            \"id\": \"iska_utils-wither_grinder\",\n" +
-                "            \"place\": \"iska_utils-wither_grinder\",\n" +
-                "            \"aggressive\": false,\n" +
-                "            \"give\": [\n" +
-                "                {\n" +
-                "                    \"item\": \"minecraft:wither_skeleton_skull\",\n" +
-                "                    \"count\": 3\n" +
-                "                },\n" +
-                "                {\n" +
-                "                    \"item\": \"minecraft:soul_sand\",\n" +
-                "                    \"count\": 4\n" +
-                "                }\n" +
-                "            ]\n" +
-                "        }\n" +
-                "    ]\n" +
-                "}";
-            
-            Files.write(defaultMonousePath, defaultMonouseContent.getBytes());
-            
-        } catch (IOException e) {
-            LOGGER.error("Cannot create default monouse items file: {}", e.getMessage());
-        }
+    public static void dumpDefaultFile(Path configPath) throws java.io.IOException {
+        Path defaultMonousePath = configPath.resolve("default_monouse.json");
+        
+        String content =
+            "{\n" +
+            "    \"type\": \"iska_utils:structure_monouse_item\",\n" +
+            "    \"overwritable\": true,\n" +
+            "    \"structure\": [\n" +
+            "        {\n" +
+            "            \"id\": \"iska_utils-wither_grinder\",\n" +
+            "            \"place\": \"iska_utils-wither_grinder\",\n" +
+            "            \"aggressive\": false,\n" +
+            "            \"give\": [\n" +
+            "                {\n" +
+            "                    \"item\": \"minecraft:wither_skeleton_skull\",\n" +
+            "                    \"count\": 3\n" +
+            "                },\n" +
+            "                {\n" +
+            "                    \"item\": \"minecraft:soul_sand\",\n" +
+            "                    \"count\": 4\n" +
+            "                }\n" +
+            "            ]\n" +
+            "        }\n" +
+            "    ]\n" +
+            "}";
+        
+        Files.write(defaultMonousePath, content.getBytes());
+        LOGGER.info("Dumped default monouse items to {}", defaultMonousePath);
     }
     
     /**

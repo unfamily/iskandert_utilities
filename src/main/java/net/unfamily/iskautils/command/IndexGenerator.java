@@ -104,9 +104,10 @@ public class IndexGenerator {
         sb.append("  * `silent`, `hide` - Suppress feedback (optional)\n\n");
 
         // Shop commands
-        sb.append("### `/iska_utils_debug hand|reload`\n\n");
+        sb.append("### `/iska_utils_debug hand|reload|dump_default`\n\n");
         sb.append("- `hand` - Dumps the item in hand (ID, NBT, tags) for debugging\n");
-        sb.append("- `reload` - Reloads all dynamic configs without a full `/reload`: command items, stage actions, stage items, shop, structures. Requires OP level 2.\n\n");
+        sb.append("- `reload` - Reloads all dynamic configs without a full `/reload`: command items, stage actions, stage items, shop, structures. Requires OP level 2.\n");
+        sb.append("- `dump_default` - Generates default configuration files for command items, potion plates and structure monouse items. These files show the internal defaults and can be edited to override them. Requires OP level 2.\n\n");
 
         sb.append("### `/iska_utils_shop reload|info|currencies|categories|entries|balance`\n\n");
         sb.append("- `reload` - Reloads all shop configurations from files\n");

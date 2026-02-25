@@ -44,6 +44,9 @@ public class DebugCommand {
                 .then(Commands.literal("reload")
                         .requires(source -> source.hasPermission(2))
                         .executes(DebugCommand::executeReload))
+                .then(Commands.literal("dump_default")
+                        .requires(source -> source.hasPermission(2))
+                        .executes(DebugCommand::executeDumpDefault))
                 .then(Commands.argument("action", StringArgumentType.word())
                         .suggests((context, builder) ->
                             SharedSuggestionProvider.suggest(new String[]{"hand"}, builder))
@@ -121,6 +124,60 @@ public class DebugCommand {
         final int okCount = ok;
         final int errCount = err;
         source.sendSuccess(() -> Component.literal("§7Reload complete: §a" + okCount + " §7ok" + (errCount > 0 ? ", §c" + errCount + " §7failed" : "")), false);
+        return errCount > 0 ? 0 : 1;
+    }
+
+    private static int executeDumpDefault(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        source.sendSuccess(() -> Component.literal("§7Dumping default configuration files..."), false);
+
+        String configuredPath = net.unfamily.iskautils.Config.externalScriptsPath;
+        final String basePath = (configuredPath == null || configuredPath.trim().isEmpty())
+                ? "kubejs/external_scripts" : configuredPath;
+
+        int ok = 0;
+        int err = 0;
+
+        try {
+            java.nio.file.Path cmdPath = java.nio.file.Paths.get(basePath, "iska_utils_command_items");
+            java.nio.file.Files.createDirectories(cmdPath);
+            CommandItemLoader.dumpDefaultFile(cmdPath);
+            source.sendSuccess(() -> Component.literal("§a  Command items default dumped"), false);
+            ok++;
+        } catch (Exception e) {
+            LOGGER.error("Error dumping command items default: {}", e.getMessage());
+            source.sendFailure(Component.literal("§c  Command items: " + e.getMessage()));
+            err++;
+        }
+
+        try {
+            java.nio.file.Path platesPath = java.nio.file.Paths.get(basePath, "iska_utils_plates");
+            java.nio.file.Files.createDirectories(platesPath);
+            net.unfamily.iskautils.data.DynamicPotionPlateScanner.dumpDefaultFile(platesPath);
+            source.sendSuccess(() -> Component.literal("§a  Potion plates default dumped"), false);
+            ok++;
+        } catch (Exception e) {
+            LOGGER.error("Error dumping potion plates default: {}", e.getMessage());
+            source.sendFailure(Component.literal("§c  Potion plates: " + e.getMessage()));
+            err++;
+        }
+
+        try {
+            java.nio.file.Path structPath = java.nio.file.Paths.get(basePath, "iska_utils_structures");
+            java.nio.file.Files.createDirectories(structPath);
+            net.unfamily.iskautils.structure.StructureMonouseLoader.dumpDefaultFile(structPath);
+            source.sendSuccess(() -> Component.literal("§a  Structure monouse default dumped"), false);
+            ok++;
+        } catch (Exception e) {
+            LOGGER.error("Error dumping structure monouse default: {}", e.getMessage());
+            source.sendFailure(Component.literal("§c  Structure monouse: " + e.getMessage()));
+            err++;
+        }
+
+        final int okCount = ok;
+        final int errCount = err;
+        source.sendSuccess(() -> Component.literal("§7Dump complete: §a" + okCount + " §7ok" + (errCount > 0 ? ", §c" + errCount + " §7failed" : "")), false);
+        source.sendSuccess(() -> Component.literal("§7Files written to: §e" + basePath), false);
         return errCount > 0 ? 0 : 1;
     }
 
