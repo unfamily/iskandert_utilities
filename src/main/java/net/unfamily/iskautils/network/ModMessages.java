@@ -120,6 +120,18 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.SoundMufflerVolumeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.SoundMufflerVolumeC2SPacket::handle
         );
+        // Register Sound Muffler Mode Toggle C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.SoundMufflerModeToggleC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.SoundMufflerModeToggleC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.SoundMufflerModeToggleC2SPacket::handle
+        );
+        // Register Sound Muffler Filter Update C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.SoundMufflerFilterUpdateC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.SoundMufflerFilterUpdateC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.SoundMufflerFilterUpdateC2SPacket::handle
+        );
         
         // Register Fan Show Area C2S Packet (Client to Server)
         registrar.playToServer(
@@ -2029,7 +2041,51 @@ public class ModMessages {
         } catch (Exception ignored) {}
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
     }
-    
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendSoundMufflerModeTogglePacket(BlockPos pos) {
+        var packet = new net.unfamily.iskautils.network.packet.SoundMufflerModeToggleC2SPacket(pos);
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc != null && mc.getSingleplayerServer() != null) {
+                mc.getSingleplayerServer().execute(() -> {
+                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty() ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
+                            muffler.toggleAllowList();
+                            player.level().playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {}
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendSoundMufflerFilterUpdatePacket(BlockPos pos, java.util.List<String> filterSoundIds) {
+        var packet = new net.unfamily.iskautils.network.packet.SoundMufflerFilterUpdateC2SPacket(pos, filterSoundIds != null ? new java.util.ArrayList<>(filterSoundIds) : new java.util.ArrayList<>());
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc != null && mc.getSingleplayerServer() != null) {
+                mc.getSingleplayerServer().execute(() -> {
+                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty() ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
+                            muffler.setFilterSoundIds(packet.filterSoundIds());
+                            player.level().playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {}
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+    }
+
     /**
      * Sends Fan Push/Pull packet to the server
      */

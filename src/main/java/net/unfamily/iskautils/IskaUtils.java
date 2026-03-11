@@ -513,6 +513,7 @@ public class IskaUtils {
                 return;
             }
             net.minecraft.core.BlockPos soundPos = net.minecraft.core.BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
+            String soundId = sound.getLocation().toString();
             int radiusSq = SOUND_MUFFLER_RADIUS * SOUND_MUFFLER_RADIUS;
             int effectivePercent = 100;
             for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(
@@ -521,6 +522,7 @@ public class IskaUtils {
                 if (pos.distSqr(soundPos) > radiusSq) continue;
                 var be = level.getBlockEntity(pos);
                 if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
+                    if (muffler.hasFilter() && !muffler.isSoundAllowedByFilter(soundId)) continue;
                     int p = muffler.getEffectiveVolumeFor(sound.getSource());
                     if (p < effectivePercent) effectivePercent = p;
                 }

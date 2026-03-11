@@ -3,12 +3,17 @@ package net.unfamily.iskautils.block.entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.ModBlocks;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Block entity for Sound Muffler. Stores per-category volume (0-100%).
@@ -27,6 +32,11 @@ public class SoundMufflerBlockEntity extends BlockEntity {
 
     /** 0=ALL (excl. music), 1=OTHER (uncatalogued), 2=RECORDS, 3=WEATHER, 4=BLOCKS, 5=HOSTILE, 6=NEUTRAL, 7=PLAYERS, 8=AMBIENT, 9=VOICE. */
     private final int[] volumes = new int[CATEGORY_COUNT];
+
+    /** true = allow list (muffle only sounds in filterSoundIds), false = deny list (muffle all except filterSoundIds). */
+    private boolean allowList = false;
+    /** Sound IDs (e.g. "minecraft:entity.creeper.hiss") in the filter. Empty = no filter applied. */
+    private final List<String> filterSoundIds = new ArrayList<>();
 
     public SoundMufflerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SOUND_MUFFLER_BE.get(), pos, state);
@@ -54,6 +64,55 @@ public class SoundMufflerBlockEntity extends BlockEntity {
 
     public void addVolume(int categoryIndex, int delta) {
         setVolume(categoryIndex, getVolume(categoryIndex) + delta);
+    }
+
+    public boolean isAllowList() {
+        return allowList;
+    }
+
+    public void setAllowList(boolean allowList) {
+        if (this.allowList != allowList) {
+            this.allowList = allowList;
+            setChanged();
+            sendUpdateToClients();
+        }
+    }
+
+    public void toggleAllowList() {
+        setAllowList(!allowList);
+    }
+
+    /** Returns a copy of the filter sound IDs. */
+    public List<String> getFilterSoundIds() {
+        return new ArrayList<>(filterSoundIds);
+    }
+
+    public void setFilterSoundIds(List<String> ids) {
+        this.filterSoundIds.clear();
+        if (ids != null) this.filterSoundIds.addAll(ids);
+        setChanged();
+        sendUpdateToClients();
+    }
+
+    /** True if the filter list is active (non-empty). */
+    public boolean hasFilter() {
+        return !filterSoundIds.isEmpty();
+    }
+
+    /** True if this sound ID is allowed by the filter (filter not active, or matches allow/deny list). */
+    public boolean isSoundAllowedByFilter(String soundId) {
+        if (filterSoundIds.isEmpty()) return true;
+        boolean inList = filterSoundIds.contains(soundId);
+        return allowList ? inList : !inList;
+    }
+
+    private void sendUpdateToClients() {
+        if (level != null && !level.isClientSide && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            var pkt = net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
+            var chunkPos = new net.minecraft.world.level.ChunkPos(worldPosition);
+            serverLevel.getChunkSource().chunkMap.getPlayers(chunkPos, false).forEach(p -> p.connection.send(pkt));
+        }
     }
 
     /**
@@ -93,6 +152,10 @@ public class SoundMufflerBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putIntArray("Volumes", volumes);
+        tag.putBoolean("AllowList", allowList);
+        ListTag list = new ListTag();
+        for (String id : filterSoundIds) list.add(StringTag.valueOf(id));
+        tag.put("FilterSounds", list);
     }
 
     @Override
@@ -101,7 +164,6 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         if (tag.contains("Volumes", net.minecraft.nbt.Tag.TAG_INT_ARRAY)) {
             int[] loaded = tag.getIntArray("Volumes");
             if (loaded.length == 11) {
-                // Migrate from 11 (All, Other, Master, Records, ...) to 10 (All=Master, Other, Records, ...)
                 volumes[0] = clamp(loaded[0]);
                 volumes[1] = clamp(loaded[1]);
                 for (int i = 2; i < CATEGORY_COUNT; i++) volumes[i] = clamp(loaded[i + 1]);
@@ -110,6 +172,12 @@ public class SoundMufflerBlockEntity extends BlockEntity {
                     volumes[i] = clamp(loaded[i]);
                 }
             }
+        }
+        if (tag.contains("AllowList", Tag.TAG_ANY_NUMERIC)) allowList = tag.getBoolean("AllowList");
+        if (tag.contains("FilterSounds", Tag.TAG_LIST)) {
+            filterSoundIds.clear();
+            ListTag list = tag.getList("FilterSounds", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) filterSoundIds.add(list.getString(i));
         }
     }
 
@@ -127,6 +195,10 @@ public class SoundMufflerBlockEntity extends BlockEntity {
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         CompoundTag tag = super.getUpdateTag(registries);
         tag.putIntArray("Volumes", volumes);
+        tag.putBoolean("AllowList", allowList);
+        ListTag list = new ListTag();
+        for (String id : filterSoundIds) list.add(StringTag.valueOf(id));
+        tag.put("FilterSounds", list);
         return tag;
     }
 
@@ -135,11 +207,17 @@ public class SoundMufflerBlockEntity extends BlockEntity {
                              net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt,
                              HolderLookup.Provider registries) {
         super.onDataPacket(connection, pkt, registries);
-        if (pkt.getTag() != null && pkt.getTag().contains("Volumes", net.minecraft.nbt.Tag.TAG_INT_ARRAY)) {
-            int[] loaded = pkt.getTag().getIntArray("Volumes");
-            for (int i = 0; i < Math.min(loaded.length, CATEGORY_COUNT); i++) {
-                volumes[i] = clamp(loaded[i]);
-            }
+        CompoundTag t = pkt.getTag();
+        if (t == null) return;
+        if (t.contains("Volumes", net.minecraft.nbt.Tag.TAG_INT_ARRAY)) {
+            int[] loaded = t.getIntArray("Volumes");
+            for (int i = 0; i < Math.min(loaded.length, CATEGORY_COUNT); i++) volumes[i] = clamp(loaded[i]);
+        }
+        if (t.contains("AllowList", Tag.TAG_ANY_NUMERIC)) allowList = t.getBoolean("AllowList");
+        if (t.contains("FilterSounds", Tag.TAG_LIST)) {
+            filterSoundIds.clear();
+            ListTag list = t.getList("FilterSounds", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) filterSoundIds.add(list.getString(i));
         }
     }
 }

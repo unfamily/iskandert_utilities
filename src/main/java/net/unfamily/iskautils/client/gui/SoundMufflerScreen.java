@@ -33,7 +33,13 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
 
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_MARGIN = 5;
+    private static final int BOTTOM_BUTTONS_Y = TOP + 4 * ROW_H + 2;
+    private static final int BOTTOM_BUTTON_W = 72;
+    private static final int BOTTOM_BUTTON_H = 18;
+    private static final int BOTTOM_BUTTON_GAP = 6;
     private Button closeButton;
+    private Button denyAllowListButton;
+    private Button filterButton;
 
     /** Display order: All first (alone), then Records..Voice, Other last. Maps display slot -> BE category index. */
     private static final int[] DISPLAY_TO_CATEGORY = { 0, 2, 3, 4, 5, 6, 7, 8, 9, 1 };
@@ -103,6 +109,36 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
                             .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.iska_utils.sound_muffler.tooltip.step")))
                             .build());
         }
+
+        int twoButtonsW = BOTTOM_BUTTON_W * 2 + BOTTOM_BUTTON_GAP;
+        int startX = leftPos + (GUI_WIDTH - twoButtonsW) / 2;
+        denyAllowListButton = Button.builder(
+                        menu.isAllowList() ? Component.translatable("gui.iska_utils.sound_muffler.allow_list") : Component.translatable("gui.iska_utils.sound_muffler.deny_list"),
+                        btn -> onDenyAllowListClicked())
+                .bounds(startX, topPos + BOTTOM_BUTTONS_Y, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
+                .build();
+        addRenderableWidget(denyAllowListButton);
+        filterButton = Button.builder(Component.translatable("gui.iska_utils.sound_muffler.filter"), btn -> onFilterClicked())
+                .bounds(startX + BOTTOM_BUTTON_W + BOTTOM_BUTTON_GAP, topPos + BOTTOM_BUTTONS_Y, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
+                .build();
+        addRenderableWidget(filterButton);
+    }
+
+    private void onDenyAllowListClicked() {
+        playButtonSound();
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos.equals(BlockPos.ZERO)) return;
+        ModMessages.sendSoundMufflerModeTogglePacket(pos);
+    }
+
+    private void onFilterClicked() {
+        playButtonSound();
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos.equals(BlockPos.ZERO)) return;
+        if (minecraft == null || minecraft.player == null) return;
+        SoundMufflerFilterMenu filterMenu = new SoundMufflerFilterMenu(0, minecraft.player.getInventory(), pos);
+        minecraft.setScreen(new SoundMufflerFilterScreen(filterMenu, minecraft.player.getInventory(),
+                Component.translatable("gui.iska_utils.sound_muffler.filter_title")));
     }
 
     /** Click 10%, Ctrl 5%, Shift 1% */
@@ -175,5 +211,9 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
     @Override
     public void containerTick() {
         super.containerTick();
+        if (denyAllowListButton != null) {
+            denyAllowListButton.setMessage(
+                    menu.isAllowList() ? Component.translatable("gui.iska_utils.sound_muffler.allow_list") : Component.translatable("gui.iska_utils.sound_muffler.deny_list"));
+        }
     }
 }
