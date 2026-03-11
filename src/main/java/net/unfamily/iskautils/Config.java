@@ -195,7 +195,11 @@ public class Config
     private static final ModConfigSpec.IntValue STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER = BUILDER
             .comment("Energy capacity of the Structure Placer Machine in RF/FE")
             .defineInRange("301_structurePlacerMachineEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
-    
+
+    private static final ModConfigSpec.IntValue SOUND_MUFFLER_RANGE_MAX = BUILDER
+            .comment("Maximum range (blocks) for Sound Muffler effect. Minimum is always 8. Allowed values in GUI: 8, 16, 32, and up to this max (default 64).")
+            .defineInRange("302_soundMufflerRangeMax", 64, 8, 256);
+
     // Deep Drawers Configuration (in general_utilities category)
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DEEP_DRAWERS_ALLOWED_TAGS = BUILDER
             .comment("List of item tags that can be stored in the Deep Drawers",
@@ -845,6 +849,7 @@ public class Config
     public static java.util.List<String> scannerOreTags;
     public static int structurePlacerMachineEnergyConsume;
     public static int structurePlacerMachineEnergyBuffer;
+    public static int soundMufflerRangeMax;
     public static String clientStructurePath;
     public static boolean acceptClientStructure;
     public static boolean allowClientStructurePlayerLike;
@@ -943,6 +948,7 @@ public class Config
         // Structure Placer Machine logic
         structurePlacerMachineEnergyConsume = STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME.get();
         structurePlacerMachineEnergyBuffer = STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER.get();
+        soundMufflerRangeMax = SOUND_MUFFLER_RANGE_MAX.get();
 
         // Client Structure Path logic
         clientStructurePath = CLIENT_STRUCTURE_PATH.get();

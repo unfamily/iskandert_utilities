@@ -35,6 +35,8 @@ public class SoundMufflerBlockEntity extends BlockEntity {
 
     /** true = allow list (muffle only sounds in filterSoundIds), false = deny list (muffle all except filterSoundIds). */
     private boolean allowList = false;
+    /** Effect range in blocks (min 8, max from config, default 8). */
+    private int range = 8;
     /** Sound IDs (e.g. "minecraft:entity.creeper.hiss") in the filter. Empty = no filter applied. */
     private final List<String> filterSoundIds = new ArrayList<>();
 
@@ -106,6 +108,19 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         return allowList ? inList : !inList;
     }
 
+    public static final int RANGE_MIN = 8;
+
+    public int getRange() {
+        return range;
+    }
+
+    public void setRange(int value) {
+        int max = net.unfamily.iskautils.Config.soundMufflerRangeMax;
+        this.range = Math.max(RANGE_MIN, Math.min(max, value));
+        setChanged();
+        sendUpdateToClients();
+    }
+
     private void sendUpdateToClients() {
         if (level != null && !level.isClientSide && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
@@ -153,6 +168,7 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         super.saveAdditional(tag, registries);
         tag.putIntArray("Volumes", volumes);
         tag.putBoolean("AllowList", allowList);
+        tag.putInt("Range", range);
         ListTag list = new ListTag();
         for (String id : filterSoundIds) list.add(StringTag.valueOf(id));
         tag.put("FilterSounds", list);
@@ -174,6 +190,7 @@ public class SoundMufflerBlockEntity extends BlockEntity {
             }
         }
         if (tag.contains("AllowList", Tag.TAG_ANY_NUMERIC)) allowList = tag.getBoolean("AllowList");
+        if (tag.contains("Range", Tag.TAG_ANY_NUMERIC)) range = Math.max(RANGE_MIN, Math.min(net.unfamily.iskautils.Config.soundMufflerRangeMax, tag.getInt("Range")));
         if (tag.contains("FilterSounds", Tag.TAG_LIST)) {
             filterSoundIds.clear();
             ListTag list = tag.getList("FilterSounds", Tag.TAG_STRING);
@@ -196,6 +213,7 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         CompoundTag tag = super.getUpdateTag(registries);
         tag.putIntArray("Volumes", volumes);
         tag.putBoolean("AllowList", allowList);
+        tag.putInt("Range", range);
         ListTag list = new ListTag();
         for (String id : filterSoundIds) list.add(StringTag.valueOf(id));
         tag.put("FilterSounds", list);
@@ -214,6 +232,7 @@ public class SoundMufflerBlockEntity extends BlockEntity {
             for (int i = 0; i < Math.min(loaded.length, CATEGORY_COUNT); i++) volumes[i] = clamp(loaded[i]);
         }
         if (t.contains("AllowList", Tag.TAG_ANY_NUMERIC)) allowList = t.getBoolean("AllowList");
+        if (t.contains("Range", Tag.TAG_ANY_NUMERIC)) range = Math.max(RANGE_MIN, Math.min(net.unfamily.iskautils.Config.soundMufflerRangeMax, t.getInt("Range")));
         if (t.contains("FilterSounds", Tag.TAG_LIST)) {
             filterSoundIds.clear();
             ListTag list = t.getList("FilterSounds", Tag.TAG_STRING);

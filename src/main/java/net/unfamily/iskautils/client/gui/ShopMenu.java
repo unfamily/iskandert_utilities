@@ -86,20 +86,20 @@ public class ShopMenu extends AbstractContainerMenu {
     }
     
     private void addPlayerInventorySlots(Inventory playerInventory) {
-        // Player inventory (3 rows x 9 slots) - starting at 20, 154
+        // Player inventory (3 rows x 9 slots) - do not move (background widened right only)
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = col + row * 9 + 9; // +9 to skip hotbar
-                int xPos = 20 + col * 18; // Starting at x=20
-                int yPos = 154 + row * 18; // Starting at y=154
+                int xPos = 20 + col * 18;
+                int yPos = 154 + row * 18;
                 this.addSlot(new Slot(playerInventory, slotIndex, xPos, yPos));
             }
         }
         
-        // Player hotbar (1 row x 9 slots) - starting at 20, 212
+        // Player hotbar (1 row x 9 slots)
         for (int col = 0; col < 9; col++) {
             int slotIndex = col;
-            int xPos = 20 + col * 18; // Starting at x=20
+            int xPos = 20 + col * 18;
             int yPos = 212; // Below inventory (154 + 3*18 = 208, +4 spacing)
             this.addSlot(new Slot(playerInventory, slotIndex, xPos, yPos));
         }

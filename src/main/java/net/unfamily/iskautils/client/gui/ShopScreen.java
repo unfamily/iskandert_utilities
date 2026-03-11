@@ -29,42 +29,47 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
     private static final ResourceLocation ENTRY_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/entry_wide.png");
+            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/enrty_wide_wide_wide.png");
     private static final ResourceLocation SCROLLBAR_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
     private static final ResourceLocation SINGLE_SLOT_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
 
-    private static final int GUI_WIDTH = 240;
+    // Background widened only to the right (shop.png 300x240)
+    private static final int GUI_WIDTH = 300;
     private static final int GUI_HEIGHT = 240;
-    private static final int ENTRY_WIDTH = 140;
+    // Entry texture: enrty_wide_wide_wide.png = 220x24, aligned with inventory start (x=20)
+    private static final int ENTRY_WIDTH = 220;
     private static final int ENTRY_HEIGHT = 24;
     private static final int ENTRIES = 5;
-    private static final int ENTRY_START_X = 30; // (200-140)/2
+    private static final int ENTRY_START_X = 20;
     private static final int ENTRY_START_Y = 20;
+    
+    // Margin from right edge (don't go below this)
+    private static final int RIGHT_EDGE_MARGIN = 10;
     
     // Scrollbar constants (from StructurePlacerScreen)
     private static final int SCROLLBAR_WIDTH = 8;
     private static final int SCROLLBAR_HEIGHT = 34;
     private static final int HANDLE_SIZE = 8;
     
-    // Scrollbar positions (next to first entry)
-    private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 4; // 4 pixel margin
-    private static final int BUTTON_UP_Y = ENTRY_START_Y; // UP button at start
-    private static final int SCROLLBAR_Y = ENTRY_START_Y + HANDLE_SIZE; // Scrollbar under UP button
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT; // DOWN button right after
+    // Scrollbar: right next to entries
+    private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 4;
+    private static final int BUTTON_UP_Y = ENTRY_START_Y;
+    private static final int SCROLLBAR_Y = ENTRY_START_Y + HANDLE_SIZE;
+    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
     
     // Buy/Sell button constants
-    private static final int BUTTON_WIDTH = 30; // Widened (was 25)
-    private static final int BUTTON_HEIGHT = 12; // Taller (was 10)
-    private static final int BUTTONS_SPACING = 3; // Space between Buy and Sell (was 2)
+    private static final int BUTTON_WIDTH = 30;
+    private static final int BUTTON_HEIGHT = 12;
+    private static final int BUTTONS_SPACING = 3;
     
-    // Right info area constants
-    private static final int INFO_AREA_X = 185; // Moved further left (was 195, scrollbar ends at 182)
-    private static final int INFO_AREA_WIDTH = 35; // Info area width
-    private static final int BACK_BUTTON_WIDTH = 30; // Reduced to fit in area
+    // Right info area: as left as possible after scrollbar, but back button must end at least RIGHT_EDGE_MARGIN from right
+    private static final int BACK_BUTTON_WIDTH = 30;
     private static final int BACK_BUTTON_HEIGHT = 15;
-    private static final int BACK_BUTTON_X = INFO_AREA_X + 2; // Moved more left (was centered)
+    private static final int BACK_BUTTON_X = GUI_WIDTH - RIGHT_EDGE_MARGIN - BACK_BUTTON_WIDTH;  // 260
+    private static final int INFO_AREA_X = BACK_BUTTON_X - 2;
+    private static final int INFO_AREA_WIDTH = 35;
     private static final int BACK_BUTTON_Y = 20; // Same level as entries
     private static final int CURRENCIES_START_Y = BACK_BUTTON_Y + BACK_BUTTON_HEIGHT + 13; // Spostato da 10px a 13px sotto il pulsante
     
@@ -176,8 +181,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             int entryX = guiX + ENTRY_START_X;
             int entryY = guiY + ENTRY_START_Y + i * ENTRY_HEIGHT;
             
-            // Render entry background first (always visible)
-            guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
+            // Render entry background (enrty_wide_wide_wide.png 220x24)
+            guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, 220, 24);
             
             // Render entry content only if there's data to show
             if (showingCategories) {
@@ -679,8 +684,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         Component titleComponent = Component.literal(currentCategoryName);
         int titleWidth = this.font.width(titleComponent);
         // Centra il titolo nell'area delle entry (da ENTRY_START_X a ENTRY_START_X + ENTRY_WIDTH)
-        int entryAreaStart = ENTRY_START_X; // 30
-        int entryAreaWidth = ENTRY_WIDTH; // 140
+        int entryAreaStart = ENTRY_START_X;
+        int entryAreaWidth = ENTRY_WIDTH;
         int titleX = entryAreaStart + (entryAreaWidth - titleWidth) / 2;
         guiGraphics.drawString(this.font, titleComponent, titleX, 9, 0x404040, false); // Spostato da Y=7 a Y=9
         
@@ -1164,7 +1169,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
 
     /**
-     * Renderizza testo scalato per adattarsi alla larghezza disponibile
+     * Renderizza testo scalato per adattarsi alla larghezza disponibile.
+     * Se anche alla scala minima sfora, tronca e aggiunge "..."
      */
     private void renderScaledText(GuiGraphics guiGraphics, String text, int x, int y, int maxWidth, int color) {
         Component textComponent = Component.literal(text);
@@ -1174,15 +1180,36 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             // Il testo sta già nella larghezza disponibile
             guiGraphics.drawString(this.font, textComponent, x, y, color, false);
         } else {
-            // Il testo è troppo lungo, dobbiamo scalarlo
+            // Il testo è troppo lungo, dobbiamo scalarlo (min scale to reduce narrowing)
             float scale = (float) maxWidth / textWidth;
+            float minScale = 0.85f;
+            if (scale < minScale) {
+                scale = minScale;
+            }
+            
+            // Se anche con la scala minima sfora, tronchiamo e aggiungiamo "..."
+            if (textWidth * scale > maxWidth && text.length() > 3) {
+                String base = text;
+                String ellipsis = "...";
+                String truncated = base;
+                // Riduci finché non entra nello spazio disponibile
+                while (truncated.length() > 3) {
+                    String candidate = truncated + ellipsis;
+                    int candidateWidth = this.font.width(candidate);
+                    if (candidateWidth * scale <= maxWidth) {
+                        textComponent = Component.literal(candidate);
+                        break;
+                    }
+                    truncated = truncated.substring(0, truncated.length() - 1);
+                }
+            }
             
             // Applica la trasformazione di scaling
             guiGraphics.pose().pushPose();
             guiGraphics.pose().translate(x, y, 0);
             guiGraphics.pose().scale(scale, scale, 1.0f);
             
-            // Renderizza il testo scalato alla posizione (0,0) nella matrice trasformata
+            // Renderizza il testo scalato (eventualmente troncato) alla posizione (0,0)
             guiGraphics.drawString(this.font, textComponent, 0, 0, color, false);
             
             // Ripristina la matrice
