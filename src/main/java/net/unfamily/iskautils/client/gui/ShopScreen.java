@@ -42,7 +42,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final int ENTRY_WIDTH = 220;
     private static final int ENTRY_HEIGHT = 24;
     private static final int ENTRIES = 5;
-    private static final int ENTRY_START_X = 20;
+    private static final int ENTRY_START_X = 19;
     private static final int ENTRY_START_Y = 20;
     
     // Margin from right edge (don't go below this)

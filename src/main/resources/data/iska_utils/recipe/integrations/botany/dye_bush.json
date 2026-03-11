@@ -1,0 +1,47 @@
+{
+  "type": "botanypots:block_derived_crop",
+  "block": "iska_utils:dye_bush_empty",
+  "input": [
+    {
+      "item": "iska_utils:dye_bush_empty"
+    }
+  ],
+  "grow_time": 60,
+  "display": [
+    {
+      "type": "botanypots:transitional",
+      "phases": [
+        {
+          "type": "botanypots:simple",
+          "block_state": {
+            "block": "iska_utils:dye_bush_empty"
+          }
+        },
+        {
+          "type": "botanypots:simple",
+          "block_state": {
+            "block": "iska_utils:dye_bush_empty"
+          }
+        },
+        {
+          "type": "botanypots:simple",
+          "block_state": {
+            "block": "iska_utils:dye_bush_filled"
+          }
+        },
+        {
+          "type": "botanypots:simple",
+          "block_state": {
+            "block": "iska_utils:dye_bush_filled"
+          }
+        }
+      ]
+    }
+  ],
+  "drops": [
+    {
+      "type": "botanypots:loot_table",
+      "table_id": "iska_utils:integrations/dye_bush"
+    }
+  ]
+}

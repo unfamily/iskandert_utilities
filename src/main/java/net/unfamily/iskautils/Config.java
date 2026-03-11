@@ -198,7 +198,7 @@ public class Config
 
     private static final ModConfigSpec.IntValue SOUND_MUFFLER_RANGE_MAX = BUILDER
             .comment("Maximum range (blocks) for Sound Muffler effect. Minimum is always 8. Allowed values in GUI: 8, 16, 32, and up to this max (default 500).")
-            .defineInRange("302_soundMufflerRangeMax", 500, 8, 1024);
+            .defineInRange("302_soundMufflerRangeMax", 16, 8, 1024);
 
     // Deep Drawers Configuration (in general_utilities category)
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DEEP_DRAWERS_ALLOWED_TAGS = BUILDER

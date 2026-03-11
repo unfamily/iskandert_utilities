@@ -67,9 +67,11 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     // Three buttons: Deny/Allow, Apply, Cancel (narrower to fit inside filter area)
     private static final int THREE_BUTTONS_W = BOTTOM_BUTTON_W * 3 + BOTTOM_BUTTON_GAP * 2;
     private static final int BOTTOM_ROW_START_X = (GUI_WIDTH - THREE_BUTTONS_W) / 2;
-    private static final int CLOSE_BUTTON_Y = BORDER_MARGIN;
+    // Same position as main Sound Muffler GUI (CLOSE_BUTTON_MARGIN = 5 there)
+    private static final int CLOSE_BUTTON_MARGIN = 5;
     private static final int CLOSE_BUTTON_SIZE = 12;
-    private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - BORDER_MARGIN;
+    private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - CLOSE_BUTTON_MARGIN;
+    private static final int CLOSE_BUTTON_Y = CLOSE_BUTTON_MARGIN;
 
     private final List<String> allSoundIds = new ArrayList<>();
     private final List<String> filteredSoundIds = new ArrayList<>();
