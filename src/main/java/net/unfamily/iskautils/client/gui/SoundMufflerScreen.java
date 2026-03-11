@@ -26,6 +26,8 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
     private static final int CELL_W = (GUI_WIDTH - 2 * MARGIN) / COLS;
     private static final int ROW_H = 32;
     private static final int TOP = 24;
+    /** Extra Y offset for label text only (categories + Range), not for buttons. */
+    private static final int LABEL_VERTICAL_OFFSET = 3;
     private static final int BUTTON_W = 14;
     private static final int BUTTON_H = 12;
     private static final int ROW_CONTENT_W = BUTTON_W + 4 + 22 + 4 + BUTTON_W;
@@ -220,7 +222,7 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
                 text = font.plainSubstrByWidth(text, labelMaxWidth - 4) + "..";
             }
             int labelX = cellX + (ROW_CONTENT_W - font.width(text)) / 2;
-            guiGraphics.drawString(this.font, text, labelX, cellY, 0x404040, false);
+            guiGraphics.drawString(this.font, text, labelX, cellY + LABEL_VERTICAL_OFFSET, 0x404040, false);
 
             int percent = menu.getVolume(DISPLAY_TO_CATEGORY[i]);
             int lineY = (i == 0) ? TOP + ROW_Y_OFFSET : TOP + ((i - 1) / COLS + 1) * ROW_H + ROW_Y_OFFSET;
@@ -236,7 +238,7 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
         // Range -/+ buttons top in init() is BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - BUTTON_H)/2; label uses same offset as categories
         int rangeLineY = BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - BUTTON_H) / 2;
         int rangeCellY = rangeLineY - ROW_Y_OFFSET;
-        int rangeLabelY = rangeCellY;
+        int rangeLabelY = rangeCellY + LABEL_VERTICAL_OFFSET;
         guiGraphics.drawString(this.font, rangeLabel, rangeLabelX, rangeLabelY, 0x404040, false);
         int currentRange = menu.getRange();
         if (minecraft != null && minecraft.level != null) {

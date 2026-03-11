@@ -165,11 +165,14 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     }
 
     /**
-     * Inventory close key (E) always behaves like Cancel: close without applying.
-     * When search box is focused, other keys are still handled by it.
+     * ESC and inventory key (E) return to parent (like Cancel); search box gets other keys when focused.
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256) { // GLFW_KEY_ESCAPE
+            handleCancel();
+            return true;
+        }
         if (minecraft != null && minecraft.options.keyInventory.matches(keyCode, scanCode)) {
             handleCancel();
             return true;
