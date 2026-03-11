@@ -169,6 +169,8 @@
   "gui.iska_utils.sound_muffler.cat.ambient": "Ambiente",
   "gui.iska_utils.sound_muffler.cat.voice": "Voce",
   "gui.iska_utils.sound_muffler.tooltip.step": "Click: 10%\nCtrl/Alt: 5%\nMaiusc: 1%",
+  "gui.iska_utils.sound_muffler.range_label": "Portata",
+  "gui.iska_utils.sound_muffler.tooltip.range_step": "Click: 1\nCtrl/Alt: 5\nMaiusc: 10",
   "gui.iska_utils.sound_muffler.deny_list": "Lista negata",
   "gui.iska_utils.sound_muffler.allow_list": "Lista consentita",
   "gui.iska_utils.sound_muffler.filter": "Filtro",

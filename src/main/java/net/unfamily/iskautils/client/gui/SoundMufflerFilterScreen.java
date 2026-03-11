@@ -3,6 +3,7 @@ package net.unfamily.iskautils.client.gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -13,7 +14,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity;
 import net.unfamily.iskautils.network.ModMessages;
-import net.minecraft.core.BlockPos;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -61,10 +61,10 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     private static final int VISIBLE_ENTRIES = 8;
     // Same height as the two buttons on main Sound Muffler screen (BOTTOM_BUTTONS_Y = 154)
     private static final int BOTTOM_ROW_Y = 154;
-    private static final int BOTTOM_BUTTON_W = 72;
+    private static final int BOTTOM_BUTTON_W = 52;
     private static final int BOTTOM_BUTTON_H = 18;
     private static final int BOTTOM_BUTTON_GAP = 6;
-    // Three buttons: Deny/Allow, Apply, Cancel
+    // Three buttons: Deny/Allow, Apply, Cancel (narrower to fit inside filter area)
     private static final int THREE_BUTTONS_W = BOTTOM_BUTTON_W * 3 + BOTTOM_BUTTON_GAP * 2;
     private static final int BOTTOM_ROW_START_X = (GUI_WIDTH - THREE_BUTTONS_W) / 2;
     private static final int CLOSE_BUTTON_Y = BORDER_MARGIN;
@@ -86,10 +86,18 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     private Button cancelButton;
     private Button closeButton;
 
+    /** Parent screen to return to on Apply/Cancel (e.g. main Sound Muffler screen). If null, onClose() is used. */
+    private final Screen parentScreen;
+
     public SoundMufflerFilterScreen(SoundMufflerFilterMenu menu, Inventory playerInventory, Component title) {
+        this(menu, playerInventory, title, null);
+    }
+
+    public SoundMufflerFilterScreen(SoundMufflerFilterMenu menu, Inventory playerInventory, Component title, Screen parentScreen) {
         super(menu, playerInventory, title);
         this.imageWidth = GUI_WIDTH;
         this.imageHeight = GUI_HEIGHT;
+        this.parentScreen = parentScreen;
     }
 
     private void loadSoundIds() {
@@ -157,38 +165,49 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     }
 
     /**
-     * Prevents closing with inventory key (E) when search EditBox is focused (like Structure Saver).
+     * Inventory close key (E) always behaves like Cancel: close without applying.
+     * When search box is focused, other keys are still handled by it.
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (minecraft != null && minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+            handleCancel();
+            return true;
+        }
         if (searchBox != null && searchBox.isFocused()) {
-            if (searchBox.keyPressed(keyCode, scanCode, modifiers)) return true;
-            if (minecraft != null && minecraft.options.keyInventory.matches(keyCode, scanCode)) return true;
+            return searchBox.keyPressed(keyCode, scanCode, modifiers);
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    private void playButtonSound() {
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-        }
-    }
-
     private void handleApply() {
-        playButtonSound();
         BlockPos pos = menu.getBlockPos();
         if (pos.equals(BlockPos.ZERO)) return;
         ModMessages.sendSoundMufflerFilterUpdatePacket(pos, new ArrayList<>(selectedSoundIds));
-        onClose();
+        returnToParent();
     }
 
     private void handleCancel() {
-        playButtonSound();
-        onClose();
+        returnToParent();
+    }
+
+    private void returnToParent() {
+        if (minecraft != null && parentScreen != null) {
+            minecraft.setScreen(parentScreen);
+        } else {
+            onClose();
+        }
+    }
+
+    /** Play click for custom UI only (scrollbar, entry toggle). Vanilla Button widgets already play their own. */
+    private void playButtonSound() {
+        if (minecraft != null) {
+            minecraft.getSoundManager().play(
+                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        }
     }
 
     private void onDenyAllowListClicked() {
-        playButtonSound();
         BlockPos pos = menu.getBlockPos();
         if (pos.equals(BlockPos.ZERO)) return;
         ModMessages.sendSoundMufflerModeTogglePacket(pos);

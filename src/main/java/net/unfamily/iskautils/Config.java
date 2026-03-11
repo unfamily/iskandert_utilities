@@ -197,8 +197,8 @@ public class Config
             .defineInRange("301_structurePlacerMachineEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue SOUND_MUFFLER_RANGE_MAX = BUILDER
-            .comment("Maximum range (blocks) for Sound Muffler effect. Minimum is always 8. Allowed values in GUI: 8, 16, 32, and up to this max (default 64).")
-            .defineInRange("302_soundMufflerRangeMax", 64, 8, 256);
+            .comment("Maximum range (blocks) for Sound Muffler effect. Minimum is always 8. Allowed values in GUI: 8, 16, 32, and up to this max (default 500).")
+            .defineInRange("302_soundMufflerRangeMax", 500, 8, 1024);
 
     // Deep Drawers Configuration (in general_utilities category)
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DEEP_DRAWERS_ALLOWED_TAGS = BUILDER
@@ -424,6 +424,21 @@ public class Config
     static {
         BUILDER.pop(); // End of dolly category
         
+        // Dye Bush Configuration (under general_utilities)
+        BUILDER.comment("Dye Bush Configuration").push("dye_bush");
+    }
+
+    public static final ModConfigSpec.IntValue MIN_DYE_BUSH_REFILL_TIME = BUILDER
+            .comment("Minimum time in ticks for a dye bush to refill with berries (1 tick = 1/20 second, default 30 seconds)")
+            .defineInRange("000_minDyeBushRefillTime", 600, 0, Integer.MAX_VALUE);
+
+    public static final ModConfigSpec.IntValue MAX_DYE_BUSH_REFILL_TIME = BUILDER
+            .comment("Maximum time in ticks for a dye bush to refill with berries (1 tick = 1/20 second, default 1 minute)")
+            .defineInRange("001_maxDyeBushRefillTime", 1200, 0, Integer.MAX_VALUE);
+
+    static {
+        BUILDER.pop(); // End of dye_bush category
+        
         // Category for Artifacts Settings (under general_utilities)
         BUILDER.comment("Artifacts Settings").push("artifacts_settings");
     }
@@ -564,24 +579,9 @@ public class Config
     static {
         BUILDER.pop(); // End of rubber_tree category
 
-        // === Dye Bush Configuration ===
-        BUILDER.comment("Dye Bush Configuration").push("dye_bush");
-    }
-
-    public static final ModConfigSpec.IntValue MIN_DYE_BUSH_REFILL_TIME = BUILDER
-            .comment("Minimum time in ticks for a dye bush to refill with berries (1 tick = 1/20 second, default 30 seconds)")
-            .defineInRange("000_minDyeBushRefillTime", 600, 0, Integer.MAX_VALUE);
-
-    public static final ModConfigSpec.IntValue MAX_DYE_BUSH_REFILL_TIME = BUILDER
-            .comment("Maximum time in ticks for a dye bush to refill with berries (1 tick = 1/20 second, default 1 minute)")
-            .defineInRange("001_maxDyeBushRefillTime", 1200, 0, Integer.MAX_VALUE);
-
-    static {
-        BUILDER.pop(); // End of dye_bush category
-
         // Category for Development/Advanced Configuration
         BUILDER.comment("Tweaks Configuration").push("tweaks");
-        }
+    }
  
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>>  sticky_fluids = BUILDER
             .comment("List of fluids that should be sticky")

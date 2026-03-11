@@ -29,8 +29,10 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
     private static final int BUTTON_W = 14;
     private static final int BUTTON_H = 12;
     private static final int ROW_CONTENT_W = BUTTON_W + 4 + 22 + 4 + BUTTON_W;
-    private static final int LABEL_Y_OFFSET = 0;
-    private static final int ROW_Y_OFFSET = 12;
+    /** Same vertical gap from label (bottom) to button row (top) for all rows (categories + Range). */
+    private static final int LABEL_TO_BUTTON_GAP = 3;
+    private static final int FONT_LINE_HEIGHT = 9;
+    private static final int ROW_Y_OFFSET = FONT_LINE_HEIGHT + LABEL_TO_BUTTON_GAP;
 
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_MARGIN = 5;
@@ -38,12 +40,7 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
     private static final int BOTTOM_BUTTON_W = 72;
     private static final int BOTTOM_BUTTON_H = 18;
     private static final int BOTTOM_BUTTON_GAP = 6;
-    /** Range row: label + small buttons (same structure as category rows). */
-    private static final int RANGE_LABEL_WIDTH = 30;
-    private static final int RANGE_LABEL_GAP = 4;
-    private static final int RANGE_BUTTON_W = BUTTON_W;
-    private static final int RANGE_BUTTON_H = BUTTON_H;
-    private static final int RANGE_BUTTON_GAP = 4;
+    /** Range row: same structure as category rows (Blocks etc.): [-] label [+] then Filter button. */
     private Button closeButton;
     private Button filterButton;
 
@@ -76,10 +73,7 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
         // Pulsante X di chiusura in alto a destra
         int closeX = this.leftPos + GUI_WIDTH - CLOSE_BUTTON_SIZE - CLOSE_BUTTON_MARGIN;
         int closeY = this.topPos + CLOSE_BUTTON_MARGIN;
-        closeButton = Button.builder(Component.literal("✕"), btn -> {
-                    playButtonSound();
-                    this.onClose();
-                })
+        closeButton = Button.builder(Component.literal("✕"), btn -> this.onClose())
                 .bounds(closeX, closeY, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                 .build();
         addRenderableWidget(closeButton);
@@ -116,48 +110,66 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
                             .build());
         }
 
-        // Range row: label "Range: X" + buttons 8, 16, 32, 64 (up to config max), then Filter
-        int maxRange = Config.soundMufflerRangeMax;
-        int[] rangeValues = { 8, 16, 32, 64 };
-        int rangeCount = 0;
-        for (int v : rangeValues) {
-            if (v <= maxRange) rangeCount++;
-        }
-        int rangeRowW = RANGE_LABEL_WIDTH + RANGE_LABEL_GAP + rangeCount * RANGE_BUTTON_W + (rangeCount - 1) * RANGE_BUTTON_GAP;
-        int totalBottomW = rangeRowW + BOTTOM_BUTTON_GAP + BOTTOM_BUTTON_W;
-        int baseX = (GUI_WIDTH - totalBottomW) / 2;
-        int rangeButtonsStartX = leftPos + baseX + RANGE_LABEL_WIDTH + RANGE_LABEL_GAP;
-        int lineY = topPos + BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - RANGE_BUTTON_H) / 2;
-        for (int i = 0; i < rangeCount; i++) {
-            final int value = rangeValues[i];
-            int bx = rangeButtonsStartX + i * (RANGE_BUTTON_W + RANGE_BUTTON_GAP);
-            addRenderableWidget(
-                    Button.builder(Component.literal(String.valueOf(value)), btn -> setRange(value))
-                            .bounds(bx, lineY, RANGE_BUTTON_W, RANGE_BUTTON_H)
-                            .build());
-        }
-        int filterX = leftPos + baseX + rangeRowW + BOTTOM_BUTTON_GAP;
+        // Range row: same structure as category rows (Blocks etc.) — [-] "Range: 8" [+] then Filter
+        int totalBottomW = ROW_CONTENT_W + BOTTOM_BUTTON_GAP + BOTTOM_BUTTON_W;
+        int rangeRowX = leftPos + (GUI_WIDTH - totalBottomW) / 2;
+        int lineY = topPos + BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - BUTTON_H) / 2;
+        int minusX = rangeRowX;
+        int plusX = rangeRowX + ROW_CONTENT_W - BUTTON_W;
+        addRenderableWidget(
+                Button.builder(Component.literal("-"), btn -> setRangeStep(-1))
+                        .bounds(minusX, lineY, BUTTON_W, BUTTON_H)
+                        .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.iska_utils.sound_muffler.tooltip.range_step")))
+                        .build());
+        addRenderableWidget(
+                Button.builder(Component.literal("+"), btn -> setRangeStep(1))
+                        .bounds(plusX, lineY, BUTTON_W, BUTTON_H)
+                        .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.iska_utils.sound_muffler.tooltip.range_step")))
+                        .build());
+        int filterX = leftPos + (GUI_WIDTH - totalBottomW) / 2 + ROW_CONTENT_W + BOTTOM_BUTTON_GAP;
         filterButton = Button.builder(Component.translatable("gui.iska_utils.sound_muffler.filter"), btn -> onFilterClicked())
                 .bounds(filterX, topPos + BOTTOM_BUTTONS_Y, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
                 .build();
         addRenderableWidget(filterButton);
     }
 
+    /** Range step: click 1, ctrl/alt 5, shift 10 (like volume but for range value). */
+    private int getRangeStep() {
+        if (minecraft == null || minecraft.player == null) return 1;
+        if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) return 10;
+        if (net.minecraft.client.gui.screens.Screen.hasControlDown() || net.minecraft.client.gui.screens.Screen.hasAltDown()) return 5;
+        return 1;
+    }
+
+    private int getCurrentRangeForStep() {
+        if (minecraft != null && minecraft.level != null) {
+            var be = menu.getBlockEntityFromLevel(minecraft.level);
+            if (be != null) return be.getRange();
+        }
+        return menu.getRange();
+    }
+
+    private void setRangeStep(int delta) {
+        int step = getRangeStep();
+        int current = getCurrentRangeForStep();
+        int maxRange = Config.soundMufflerRangeMax;
+        int newValue = Math.max(SoundMufflerBlockEntity.RANGE_MIN, Math.min(maxRange, current + delta * step));
+        setRange(newValue);
+    }
+
     private void setRange(int value) {
-        playButtonSound();
         BlockPos pos = menu.getSyncedBlockPos();
         if (pos.equals(BlockPos.ZERO)) return;
         ModMessages.sendSoundMufflerRangePacket(pos, value);
     }
 
     private void onFilterClicked() {
-        playButtonSound();
         BlockPos pos = menu.getSyncedBlockPos();
         if (pos.equals(BlockPos.ZERO)) return;
         if (minecraft == null || minecraft.player == null) return;
         SoundMufflerFilterMenu filterMenu = new SoundMufflerFilterMenu(0, minecraft.player.getInventory(), pos);
         minecraft.setScreen(new SoundMufflerFilterScreen(filterMenu, minecraft.player.getInventory(),
-                Component.translatable("gui.iska_utils.sound_muffler.filter_title")));
+                Component.translatable("gui.iska_utils.sound_muffler.filter_title"), this));
     }
 
     /** Click 10%, Ctrl 5%, Shift 1% */
@@ -169,18 +181,9 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
     }
 
     private void adjustVolume(int categoryIndex, int delta) {
-        playButtonSound();
         BlockPos pos = menu.getSyncedBlockPos();
         if (pos.equals(BlockPos.ZERO)) return;
         ModMessages.sendSoundMufflerVolumePacket(pos, categoryIndex, delta);
-    }
-
-    private void playButtonSound() {
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(
-                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                            net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
-        }
     }
 
     @Override
@@ -202,13 +205,13 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
             int cellX, cellY;
             if (i == 0) {
                 cellX = (imageWidth - ROW_CONTENT_W) / 2;
-                cellY = TOP + LABEL_Y_OFFSET;
+                cellY = TOP;
             } else {
                 int gridIndex = i - 1;
                 int col = gridIndex % COLS;
                 int row = gridIndex / COLS;
                 cellX = MARGIN + col * CELL_W + (CELL_W - ROW_CONTENT_W) / 2;
-                cellY = TOP + (row + 1) * ROW_H + LABEL_Y_OFFSET;
+                cellY = TOP + (row + 1) * ROW_H;
             }
             Component label = Component.translatable(CATEGORY_KEYS[i]);
             String text = label.getString();
@@ -225,25 +228,25 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
             int percentY = lineY + (BUTTON_H - this.font.lineHeight) / 2;
             guiGraphics.drawString(this.font, percent + "%", percentX, percentY, 0x404040, false);
         }
-        // Range label on bottom row (left of range value buttons); read from BE when available so it updates after packet
-        int rangeLabelY = BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - font.lineHeight) / 2;
+        // Range row: same layout as category rows — label at (rangeRowCellY), buttons at (rangeRowCellY + ROW_Y_OFFSET)
+        int totalBottomW = ROW_CONTENT_W + BOTTOM_BUTTON_GAP + BOTTOM_BUTTON_W;
+        int rangeRowX = (imageWidth - totalBottomW) / 2;
+        Component rangeLabel = Component.translatable("gui.iska_utils.sound_muffler.range_label");
+        int rangeLabelX = rangeRowX + (ROW_CONTENT_W - font.width(rangeLabel)) / 2;
+        // Range -/+ buttons top in init() is BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - BUTTON_H)/2; label uses same offset as categories
+        int rangeLineY = BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - BUTTON_H) / 2;
+        int rangeCellY = rangeLineY - ROW_Y_OFFSET;
+        int rangeLabelY = rangeCellY;
+        guiGraphics.drawString(this.font, rangeLabel, rangeLabelX, rangeLabelY, 0x404040, false);
         int currentRange = menu.getRange();
         if (minecraft != null && minecraft.level != null) {
             var be = menu.getBlockEntityFromLevel(minecraft.level);
             if (be != null) currentRange = be.getRange();
         }
-        Component rangeLabel = Component.translatable("gui.iska_utils.sound_muffler.range", currentRange);
-        int maxRange = Config.soundMufflerRangeMax;
-        int[] rangeValues = { 8, 16, 32, 64 };
-        int rangeCount = 0;
-        for (int v : rangeValues) {
-            if (v <= maxRange) rangeCount++;
-        }
-        int rangeRowW = RANGE_LABEL_WIDTH + RANGE_LABEL_GAP + rangeCount * RANGE_BUTTON_W + (rangeCount - 1) * RANGE_BUTTON_GAP;
-        int totalBottomW = rangeRowW + BOTTOM_BUTTON_GAP + BOTTOM_BUTTON_W;
-        int baseX = (imageWidth - totalBottomW) / 2;
-        int labelX = baseX;
-        guiGraphics.drawString(this.font, rangeLabel, labelX, rangeLabelY, 0x404040, false);
+        String valueStr = String.valueOf(currentRange);
+        int valueX = rangeRowX + BUTTON_W + (ROW_CONTENT_W - 2 * BUTTON_W - font.width(valueStr)) / 2;
+        int valueY = BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - font.lineHeight) / 2;
+        guiGraphics.drawString(this.font, valueStr, valueX, valueY, 0x404040, false);
     }
 
     @Override
