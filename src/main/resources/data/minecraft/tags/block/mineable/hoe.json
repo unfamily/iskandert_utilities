@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "iska_utils:rubber_leaves"
+    "iska_utils:rubber_leaves",
+    "iska_utils:dye_bush_empty",
+    "iska_utils:dye_bush_filled"
   ]
 } 

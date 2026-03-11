@@ -190,6 +190,12 @@ public class ModItems {
     // Sap item dropped from rubber logs
     public static final DeferredItem<Item> SAP = ITEMS.register("sap",
             () -> new Item(ITEM_PROPERTIES));
+
+    // Dye bush items
+    public static final DeferredItem<Item> DYE_BERRY = ITEMS.register("dye_berry",
+            () -> new net.unfamily.iskautils.item.custom.DyeBerryItem(new Item.Properties().food(ModFoodProperties.DYE_BERRY)));
+    public static final DeferredItem<Item> GREEN_SLUDGE = ITEMS.register("green_sludge",
+            () -> new Item(ITEM_PROPERTIES));
             
     // Rubber chunk item created from rubber
     public static final DeferredItem<Item> RUBBER_CHUNK = ITEMS.register("rubber_chunk",
@@ -235,6 +241,11 @@ public class ModItems {
             
     public static final DeferredItem<Item> RUBBER_LEAVES = ITEMS.register("rubber_leaves",
             () -> new BlockItem(ModBlocks.RUBBER_LEAVES.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> DYE_BUSH_EMPTY = ITEMS.register("dye_bush_empty",
+            () -> new BlockItem(ModBlocks.DYE_BUSH_EMPTY.get(), new Item.Properties().stacksTo(64)));
+    public static final DeferredItem<Item> DYE_BUSH_FILLED = ITEMS.register("dye_bush_filled",
+            () -> new BlockItem(ModBlocks.DYE_BUSH_FILLED.get(), new Item.Properties().stacksTo(64)));
             
     public static final DeferredItem<Item> RUBBER_SAPLING = ITEMS.register("rubber_sapling",
             () -> new BlockItem(ModBlocks.RUBBER_SAPLING.get(), ITEM_PROPERTIES));
@@ -374,6 +385,9 @@ public class ModItems {
 
     public static final DeferredItem<Item> WEATHER_DETECTOR = ITEMS.register("weather_detector",
             () -> new BlockItem(ModBlocks.WEATHER_DETECTOR.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> SOUND_MUFFLER = ITEMS.register("sound_muffler",
+            () -> new BlockItem(ModBlocks.SOUND_MUFFLER.get(), ITEM_PROPERTIES));
             
     public static final DeferredItem<Item> WEATHER_ALTERER = ITEMS.register("weather_alterer",
             () -> new BlockItem(ModBlocks.WEATHER_ALTERER.get(), ITEM_PROPERTIES));

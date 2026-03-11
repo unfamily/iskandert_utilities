@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "tag": "minecraft:leaves" },
+    { "tag": "c:dusts/redstone" },
+    { "tag": "c:dusts/redstone" },
+    { "item": "iska_utils:green_sludge" },
+    { "item": "iska_utils:green_sludge" },
+    { "tag": "c:gems/lapis" },
+    { "tag": "c:gems/lapis" }
+  ],
+  "result": {
+    "id": "iska_utils:dye_bush_empty",
+    "count": 1
+  }
+}

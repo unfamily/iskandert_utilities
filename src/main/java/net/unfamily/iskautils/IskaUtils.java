@@ -221,6 +221,8 @@ public class IskaUtils {
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.RUBBER_SAPLING.get(), RenderType.cutout());
                 // Aggiungi RenderType cutout per il sacred_rubber_sapling
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.SACRED_RUBBER_SAPLING.get(), RenderType.cutout());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_EMPTY.get(), RenderType.cutout());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_FILLED.get(), RenderType.cutout());
                 // Aggiungi RenderType cutout_mipped per le netherite_bars
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.NETHERITE_BARS.get(), RenderType.cutoutMipped());
                 // Aggiungi RenderType cutout per il redstone_activator_signal
@@ -495,6 +497,28 @@ public class IskaUtils {
     
     @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
     public static class ClientGameEvents {
+        private static final int SOUND_MUFFLER_RADIUS = 8;
+
+        @SubscribeEvent
+        public static void onPlaySound(net.neoforged.neoforge.client.event.sound.PlaySoundEvent event) {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            net.minecraft.world.level.Level level = mc.level;
+            if (level == null || event.getSound() == null) {
+                return;
+            }
+            net.minecraft.client.resources.sounds.SoundInstance sound = event.getOriginalSound();
+            net.minecraft.core.BlockPos soundPos = net.minecraft.core.BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
+            int radiusSq = SOUND_MUFFLER_RADIUS * SOUND_MUFFLER_RADIUS;
+            for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(
+                    soundPos.offset(-SOUND_MUFFLER_RADIUS, -SOUND_MUFFLER_RADIUS, -SOUND_MUFFLER_RADIUS),
+                    soundPos.offset(SOUND_MUFFLER_RADIUS, SOUND_MUFFLER_RADIUS, SOUND_MUFFLER_RADIUS))) {
+                if (pos.distSqr(soundPos) <= radiusSq && level.getBlockState(pos).is(ModBlocks.SOUND_MUFFLER.get())) {
+                    event.setSound(null);
+                    return;
+                }
+            }
+        }
+
         @SubscribeEvent
         public static void onClientPlayerLoggedIn(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
             // Solo per il client locale (singleplayer) o quando il client si connette a un server

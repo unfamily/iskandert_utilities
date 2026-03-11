@@ -559,7 +559,22 @@ public class Config
 
     static {
         BUILDER.pop(); // End of rubber_tree category
-        
+
+        // === Dye Bush Configuration ===
+        BUILDER.comment("Dye Bush Configuration").push("dye_bush");
+    }
+
+    public static final ModConfigSpec.IntValue MIN_DYE_BUSH_REFILL_TIME = BUILDER
+            .comment("Minimum time in ticks for a dye bush to refill with berries (1 tick = 1/20 second, default 30 seconds)")
+            .defineInRange("000_minDyeBushRefillTime", 600, 0, Integer.MAX_VALUE);
+
+    public static final ModConfigSpec.IntValue MAX_DYE_BUSH_REFILL_TIME = BUILDER
+            .comment("Maximum time in ticks for a dye bush to refill with berries (1 tick = 1/20 second, default 1 minute)")
+            .defineInRange("001_maxDyeBushRefillTime", 1200, 0, Integer.MAX_VALUE);
+
+    static {
+        BUILDER.pop(); // End of dye_bush category
+
         // Category for Development/Advanced Configuration
         BUILDER.comment("Tweaks Configuration").push("tweaks");
         }

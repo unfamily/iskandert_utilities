@@ -125,12 +125,18 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_TRAPDOOR.get());
                                 // Not including rubber_log_empty/filled (hidden)
                                 
+                                //dye things
+                                pOutput.accept(ModItems.DYE_BUSH_EMPTY.get());
+                                pOutput.accept(ModItems.DYE_BERRY.get());
+                                pOutput.accept(ModItems.GREEN_SLUDGE.get());
+
                                 // 4. Machines
                                 pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
                                 pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
                                 pOutput.accept(ModItems.SMART_TIMER.get());
                                 pOutput.accept(ModItems.FAN.get());
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());
+                                pOutput.accept(ModItems.SOUND_MUFFLER.get());
                                 pOutput.accept(ModItems.WEATHER_ALTERER.get());
                                 pOutput.accept(ModItems.TIME_ALTERER.get());
                                 pOutput.accept(ModItems.TEMPORAL_OVERCLOCKER.get());

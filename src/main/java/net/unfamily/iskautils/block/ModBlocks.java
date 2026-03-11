@@ -293,6 +293,12 @@ public class ModBlocks {
             
     public static final DeferredBlock<LeavesBlock> RUBBER_LEAVES = BLOCKS.register("rubber_leaves",
             () -> new RubberLeavesBlock(RUBBER_LEAVES_PROPERTIES));
+
+    // Dye bush (full block, leaves-like): empty refills over time to filled; filled harvest with dye_berry
+    public static final DeferredBlock<DyeBushEmptyBlock> DYE_BUSH_EMPTY = BLOCKS.register("dye_bush_empty",
+            () -> new DyeBushEmptyBlock(RUBBER_LEAVES_PROPERTIES));
+    public static final DeferredBlock<DyeBushFilledBlock> DYE_BUSH_FILLED = BLOCKS.register("dye_bush_filled",
+            () -> new DyeBushFilledBlock(RUBBER_LEAVES_PROPERTIES));
             
     public static final DeferredBlock<RubberSaplingBlock> RUBBER_SAPLING = BLOCKS.register("rubber_sapling",
             () -> new RubberSaplingBlock(RUBBER_SAPLING_PROPERTIES));
@@ -396,6 +402,13 @@ public class ModBlocks {
                     .strength(0.5f, 1.0f)
                     .sound(SoundType.COPPER)
                     .noOcclusion()));
+
+    // ===== SOUND MUFFLER =====
+    public static final DeferredBlock<SoundMufflerBlock> SOUND_MUFFLER = BLOCKS.register("sound_muffler",
+            () -> new SoundMufflerBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.WOOL)
+                    .strength(0.8f, 1.0f)
+                    .sound(SoundType.WOOL)));
                     
     // Weather Alterer Block
     public static final DeferredBlock<WeatherAltererBlock> WEATHER_ALTERER = BLOCKS.register("weather_alterer",

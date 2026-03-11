@@ -12,15 +12,22 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.block.entity.ModBlockEntities;
+import net.unfamily.iskautils.block.entity.PassiveFilledBlockEntity;
 import net.unfamily.iskautils.block.entity.RubberLogEmptyBlockEntity;
 import net.unfamily.iskautils.item.ModItems;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -28,8 +35,9 @@ import java.util.List;
  * Rubber wood block with full sap.
  * Directional towards the 4 cardinal points.
  * When clicked with a treetap, releases sap and becomes an empty block.
+ * Has a passive BlockEntity that ticks at normal rate but does nothing (no logic).
  */
-public class RubberLogFilledBlock extends HorizontalDirectionalBlock {
+public class RubberLogFilledBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<RubberLogFilledBlock> CODEC = simpleCodec(RubberLogFilledBlock::new);
     
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
@@ -99,6 +107,23 @@ public class RubberLogFilledBlock extends HorizontalDirectionalBlock {
         }
         
         return InteractionResult.sidedSuccess(level.isClientSide());
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new PassiveFilledBlockEntity(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        return createTickerHelper(type, ModBlockEntities.PASSIVE_FILLED.get(), (lvl, pos, st, be) -> {});
+    }
+
+    private static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> createTickerHelper(
+            BlockEntityType<A> actualType, BlockEntityType<E> expectedType, BlockEntityTicker<? super E> ticker) {
+        return expectedType == actualType ? (BlockEntityTicker<A>) ticker : null;
     }
 
     @Override

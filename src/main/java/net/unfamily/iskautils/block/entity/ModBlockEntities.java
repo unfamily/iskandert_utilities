@@ -35,6 +35,19 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(RubberLogEmptyBlockEntity::new, 
                             ModBlocks.RUBBER_LOG_EMPTY.get()).build(null));
 
+    // BlockEntity for empty dye bush (refill timer)
+    public static final Supplier<BlockEntityType<DyeBushEmptyBlockEntity>> DYE_BUSH_EMPTY = 
+            BLOCK_ENTITIES.register("dye_bush_empty", 
+                    () -> BlockEntityType.Builder.of(DyeBushEmptyBlockEntity::new, 
+                            ModBlocks.DYE_BUSH_EMPTY.get()).build(null));
+
+    // Passive BlockEntity for filled blocks (no logic); keeps block position "active" for tick accelerators
+    public static final Supplier<BlockEntityType<PassiveFilledBlockEntity>> PASSIVE_FILLED = 
+            BLOCK_ENTITIES.register("passive_filled", 
+                    () -> BlockEntityType.Builder.of(PassiveFilledBlockEntity::new, 
+                            ModBlocks.RUBBER_LOG_FILLED.get(), 
+                            ModBlocks.DYE_BUSH_FILLED.get()).build(null));
+
     // BlockEntity per il RubberSapExtractor
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RubberSapExtractorBlockEntity>> RUBBER_SAP_EXTRACTOR =
             BLOCK_ENTITIES.register("rubber_sap_extractor", () ->
