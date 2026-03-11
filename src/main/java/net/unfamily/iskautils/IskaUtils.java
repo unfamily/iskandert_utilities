@@ -499,7 +499,6 @@ public class IskaUtils {
     
     @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
     public static class ClientGameEvents {
-        private static final int SOUND_MUFFLER_RADIUS = 8;
 
         @SubscribeEvent
         public static void onPlaySound(net.neoforged.neoforge.client.event.sound.PlaySoundEvent event) {
@@ -514,14 +513,15 @@ public class IskaUtils {
             }
             net.minecraft.core.BlockPos soundPos = net.minecraft.core.BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
             String soundId = sound.getLocation().toString();
-            int radiusSq = SOUND_MUFFLER_RADIUS * SOUND_MUFFLER_RADIUS;
+            int maxRadius = net.unfamily.iskautils.Config.soundMufflerRangeMax;
             int effectivePercent = 100;
             for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(
-                    soundPos.offset(-SOUND_MUFFLER_RADIUS, -SOUND_MUFFLER_RADIUS, -SOUND_MUFFLER_RADIUS),
-                    soundPos.offset(SOUND_MUFFLER_RADIUS, SOUND_MUFFLER_RADIUS, SOUND_MUFFLER_RADIUS))) {
-                if (pos.distSqr(soundPos) > radiusSq) continue;
+                    soundPos.offset(-maxRadius, -maxRadius, -maxRadius),
+                    soundPos.offset(maxRadius, maxRadius, maxRadius))) {
                 var be = level.getBlockEntity(pos);
                 if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
+                    int r = muffler.getRange();
+                    if (pos.distSqr(soundPos) > (long) r * r) continue;
                     if (muffler.hasFilter() && !muffler.isSoundAllowedByFilter(soundId)) continue;
                     int p = muffler.getEffectiveVolumeFor(sound.getSource());
                     if (p < effectivePercent) effectivePercent = p;

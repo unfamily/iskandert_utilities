@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity;
 import net.unfamily.iskautils.network.ModMessages;
@@ -37,8 +38,13 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
     private static final int BOTTOM_BUTTON_W = 72;
     private static final int BOTTOM_BUTTON_H = 18;
     private static final int BOTTOM_BUTTON_GAP = 6;
+    /** Range row: label + small buttons (same structure as category rows). */
+    private static final int RANGE_LABEL_WIDTH = 30;
+    private static final int RANGE_LABEL_GAP = 4;
+    private static final int RANGE_BUTTON_W = BUTTON_W;
+    private static final int RANGE_BUTTON_H = BUTTON_H;
+    private static final int RANGE_BUTTON_GAP = 4;
     private Button closeButton;
-    private Button denyAllowListButton;
     private Button filterButton;
 
     /** Display order: All first (alone), then Records..Voice, Other last. Maps display slot -> BE category index. */
@@ -110,25 +116,38 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
                             .build());
         }
 
-        int twoButtonsW = BOTTOM_BUTTON_W * 2 + BOTTOM_BUTTON_GAP;
-        int startX = leftPos + (GUI_WIDTH - twoButtonsW) / 2;
-        denyAllowListButton = Button.builder(
-                        menu.isAllowList() ? Component.translatable("gui.iska_utils.sound_muffler.allow_list") : Component.translatable("gui.iska_utils.sound_muffler.deny_list"),
-                        btn -> onDenyAllowListClicked())
-                .bounds(startX, topPos + BOTTOM_BUTTONS_Y, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
-                .build();
-        addRenderableWidget(denyAllowListButton);
+        // Range row: label "Range: X" + buttons 8, 16, 32, 64 (up to config max), then Filter
+        int maxRange = Config.soundMufflerRangeMax;
+        int[] rangeValues = { 8, 16, 32, 64 };
+        int rangeCount = 0;
+        for (int v : rangeValues) {
+            if (v <= maxRange) rangeCount++;
+        }
+        int rangeRowW = RANGE_LABEL_WIDTH + RANGE_LABEL_GAP + rangeCount * RANGE_BUTTON_W + (rangeCount - 1) * RANGE_BUTTON_GAP;
+        int totalBottomW = rangeRowW + BOTTOM_BUTTON_GAP + BOTTOM_BUTTON_W;
+        int baseX = (GUI_WIDTH - totalBottomW) / 2;
+        int rangeButtonsStartX = leftPos + baseX + RANGE_LABEL_WIDTH + RANGE_LABEL_GAP;
+        int lineY = topPos + BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - RANGE_BUTTON_H) / 2;
+        for (int i = 0; i < rangeCount; i++) {
+            final int value = rangeValues[i];
+            int bx = rangeButtonsStartX + i * (RANGE_BUTTON_W + RANGE_BUTTON_GAP);
+            addRenderableWidget(
+                    Button.builder(Component.literal(String.valueOf(value)), btn -> setRange(value))
+                            .bounds(bx, lineY, RANGE_BUTTON_W, RANGE_BUTTON_H)
+                            .build());
+        }
+        int filterX = leftPos + baseX + rangeRowW + BOTTOM_BUTTON_GAP;
         filterButton = Button.builder(Component.translatable("gui.iska_utils.sound_muffler.filter"), btn -> onFilterClicked())
-                .bounds(startX + BOTTOM_BUTTON_W + BOTTOM_BUTTON_GAP, topPos + BOTTOM_BUTTONS_Y, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
+                .bounds(filterX, topPos + BOTTOM_BUTTONS_Y, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
                 .build();
         addRenderableWidget(filterButton);
     }
 
-    private void onDenyAllowListClicked() {
+    private void setRange(int value) {
         playButtonSound();
         BlockPos pos = menu.getSyncedBlockPos();
         if (pos.equals(BlockPos.ZERO)) return;
-        ModMessages.sendSoundMufflerModeTogglePacket(pos);
+        ModMessages.sendSoundMufflerRangePacket(pos, value);
     }
 
     private void onFilterClicked() {
@@ -206,14 +225,29 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
             int percentY = lineY + (BUTTON_H - this.font.lineHeight) / 2;
             guiGraphics.drawString(this.font, percent + "%", percentX, percentY, 0x404040, false);
         }
+        // Range label on bottom row (left of range value buttons); read from BE when available so it updates after packet
+        int rangeLabelY = BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - font.lineHeight) / 2;
+        int currentRange = menu.getRange();
+        if (minecraft != null && minecraft.level != null) {
+            var be = menu.getBlockEntityFromLevel(minecraft.level);
+            if (be != null) currentRange = be.getRange();
+        }
+        Component rangeLabel = Component.translatable("gui.iska_utils.sound_muffler.range", currentRange);
+        int maxRange = Config.soundMufflerRangeMax;
+        int[] rangeValues = { 8, 16, 32, 64 };
+        int rangeCount = 0;
+        for (int v : rangeValues) {
+            if (v <= maxRange) rangeCount++;
+        }
+        int rangeRowW = RANGE_LABEL_WIDTH + RANGE_LABEL_GAP + rangeCount * RANGE_BUTTON_W + (rangeCount - 1) * RANGE_BUTTON_GAP;
+        int totalBottomW = rangeRowW + BOTTOM_BUTTON_GAP + BOTTOM_BUTTON_W;
+        int baseX = (imageWidth - totalBottomW) / 2;
+        int labelX = baseX;
+        guiGraphics.drawString(this.font, rangeLabel, labelX, rangeLabelY, 0x404040, false);
     }
 
     @Override
     public void containerTick() {
         super.containerTick();
-        if (denyAllowListButton != null) {
-            denyAllowListButton.setMessage(
-                    menu.isAllowList() ? Component.translatable("gui.iska_utils.sound_muffler.allow_list") : Component.translatable("gui.iska_utils.sound_muffler.deny_list"));
-        }
     }
 }

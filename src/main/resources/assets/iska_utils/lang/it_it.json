@@ -173,6 +173,7 @@
   "gui.iska_utils.sound_muffler.allow_list": "Lista consentita",
   "gui.iska_utils.sound_muffler.filter": "Filtro",
   "gui.iska_utils.sound_muffler.filter_title": "Filtro suoni",
+  "gui.iska_utils.sound_muffler.range": "Portata: %s",
   "gui.iska_utils.sound_muffler.search": "Cerca",
   "gui.iska_utils.sound_muffler.search_hint": "Cerca per ID suono...",
   "block.iska_utils.weather_alterer": "Alteratore del Meteo",

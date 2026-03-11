@@ -25,7 +25,8 @@ public class SoundMufflerMenu extends AbstractContainerMenu {
     private static final int POS_Y_INDEX = VOLUME_COUNT + 1;
     private static final int POS_Z_INDEX = VOLUME_COUNT + 2;
     private static final int ALLOW_LIST_INDEX = VOLUME_COUNT + 3;
-    private static final int DATA_COUNT = VOLUME_COUNT + 4;
+    private static final int RANGE_INDEX = VOLUME_COUNT + 4;
+    private static final int DATA_COUNT = VOLUME_COUNT + 5;
 
     public SoundMufflerMenu(int containerId, Inventory playerInventory, SoundMufflerBlockEntity blockEntity) {
         super(ModMenuTypes.SOUND_MUFFLER_MENU.get(), containerId);
@@ -44,6 +45,7 @@ public class SoundMufflerMenu extends AbstractContainerMenu {
                     case POS_Y_INDEX -> blockPos.getY();
                     case POS_Z_INDEX -> blockPos.getZ();
                     case ALLOW_LIST_INDEX -> blockEntity.isAllowList() ? 1 : 0;
+                    case RANGE_INDEX -> blockEntity.getRange();
                     default -> 0;
                 };
             }
@@ -101,6 +103,11 @@ public class SoundMufflerMenu extends AbstractContainerMenu {
     public boolean isAllowList() {
         if (blockEntity != null) return blockEntity.isAllowList();
         return containerData.get(ALLOW_LIST_INDEX) != 0;
+    }
+
+    public int getRange() {
+        if (blockEntity != null) return blockEntity.getRange();
+        return containerData.get(RANGE_INDEX);
     }
 
     public SoundMufflerBlockEntity getBlockEntityFromLevel(Level level) {

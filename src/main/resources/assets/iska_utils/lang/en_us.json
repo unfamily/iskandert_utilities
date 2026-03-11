@@ -175,6 +175,7 @@
   "gui.iska_utils.sound_muffler.allow_list": "Allow list",
   "gui.iska_utils.sound_muffler.filter": "Filter",
   "gui.iska_utils.sound_muffler.filter_title": "Sound filter",
+  "gui.iska_utils.sound_muffler.range": "Range: %s",
   "gui.iska_utils.sound_muffler.search": "Search",
   "gui.iska_utils.sound_muffler.search_hint": "Search by sound ID...",
   "block.iska_utils.weather_alterer": "Weather Alterer",

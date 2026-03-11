@@ -132,6 +132,12 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.SoundMufflerFilterUpdateC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.SoundMufflerFilterUpdateC2SPacket::handle
         );
+        // Register Sound Muffler Range C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket::handle
+        );
         
         // Register Fan Show Area C2S Packet (Client to Server)
         registrar.playToServer(
@@ -2037,6 +2043,28 @@ public class ModMessages {
                     });
                     return;
                 }
+            }
+        } catch (Exception ignored) {}
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendSoundMufflerRangePacket(BlockPos pos, int range) {
+        var packet = new net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket(pos, range);
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc != null && mc.getSingleplayerServer() != null) {
+                mc.getSingleplayerServer().execute(() -> {
+                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty() ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
+                            muffler.setRange(range);
+                            player.level().playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                        }
+                    }
+                });
+                return;
             }
         } catch (Exception ignored) {}
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);

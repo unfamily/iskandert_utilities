@@ -13,6 +13,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity;
 import net.unfamily.iskautils.network.ModMessages;
+import net.minecraft.core.BlockPos;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -56,13 +57,16 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE;
     private static final int SCROLLBAR_HEIGHT = 34;
     private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
-    // 8 entries fit in 180px height (52 + 8*12 + 8 + 20)
+    // 8 entries fit in 180px height
     private static final int VISIBLE_ENTRIES = 8;
-    private static final int SAVE_CANCEL_Y = LIST_ENTRIES_START_Y + VISIBLE_ENTRIES * (ENTRY_HEIGHT + ENTRY_SPACING) + 8;
-    private static final int SAVE_BUTTON_X = ENTRIES_START_X + 20;
-    private static final int CANCEL_BUTTON_X = ENTRIES_START_X + ENTRY_WIDTH - 60;
-    private static final int SAVE_CANCEL_BUTTON_WIDTH = 40;
-    private static final int SAVE_CANCEL_BUTTON_HEIGHT = 20;
+    // Same height as the two buttons on main Sound Muffler screen (BOTTOM_BUTTONS_Y = 154)
+    private static final int BOTTOM_ROW_Y = 154;
+    private static final int BOTTOM_BUTTON_W = 72;
+    private static final int BOTTOM_BUTTON_H = 18;
+    private static final int BOTTOM_BUTTON_GAP = 6;
+    // Three buttons: Deny/Allow, Apply, Cancel
+    private static final int THREE_BUTTONS_W = BOTTOM_BUTTON_W * 3 + BOTTOM_BUTTON_GAP * 2;
+    private static final int BOTTOM_ROW_START_X = (GUI_WIDTH - THREE_BUTTONS_W) / 2;
     private static final int CLOSE_BUTTON_Y = BORDER_MARGIN;
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - BORDER_MARGIN;
@@ -77,6 +81,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     private String lastSearchText = "";
 
     private EditBox searchBox;
+    private Button denyAllowListButton;
     private Button saveButton;
     private Button cancelButton;
     private Button closeButton;
@@ -129,15 +134,20 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
         addRenderableWidget(searchBox);
         loadSoundIds();
         lastSearchText = searchBox.getValue() != null ? searchBox.getValue() : "";
-        int saveX = leftPos + SAVE_BUTTON_X;
-        int cancelX = leftPos + CANCEL_BUTTON_X;
-        int buttonY = topPos + SAVE_CANCEL_Y;
+        int buttonY = topPos + BOTTOM_ROW_Y;
+        int x1 = leftPos + BOTTOM_ROW_START_X;
+        int x2 = x1 + BOTTOM_BUTTON_W + BOTTOM_BUTTON_GAP;
+        int x3 = x2 + BOTTOM_BUTTON_W + BOTTOM_BUTTON_GAP;
+        denyAllowListButton = Button.builder(Component.translatable("gui.iska_utils.sound_muffler.deny_list"), btn -> onDenyAllowListClicked())
+                .bounds(x1, buttonY, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
+                .build();
         saveButton = Button.builder(Component.translatable("gui.iska_utils.structure_placer.apply"), btn -> handleApply())
-                .bounds(saveX, buttonY, SAVE_CANCEL_BUTTON_WIDTH, SAVE_CANCEL_BUTTON_HEIGHT)
+                .bounds(x2, buttonY, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
                 .build();
         cancelButton = Button.builder(Component.translatable("gui.iska_utils.structure_placer.cancel"), btn -> handleCancel())
-                .bounds(cancelX, buttonY, SAVE_CANCEL_BUTTON_WIDTH, SAVE_CANCEL_BUTTON_HEIGHT)
+                .bounds(x3, buttonY, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
                 .build();
+        addRenderableWidget(denyAllowListButton);
         addRenderableWidget(saveButton);
         addRenderableWidget(cancelButton);
         closeButton = Button.builder(Component.literal("✕"), btn -> handleCancel())
@@ -177,6 +187,13 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
         onClose();
     }
 
+    private void onDenyAllowListClicked() {
+        playButtonSound();
+        BlockPos pos = menu.getBlockPos();
+        if (pos.equals(BlockPos.ZERO)) return;
+        ModMessages.sendSoundMufflerModeTogglePacket(pos);
+    }
+
     @Override
     public void containerTick() {
         super.containerTick();
@@ -186,6 +203,12 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
                 lastSearchText = current;
                 applySearchFilter();
             }
+        }
+        if (denyAllowListButton != null) {
+            SoundMufflerBlockEntity be = menu.getBlockEntityFromLevel(minecraft != null ? minecraft.level : null);
+            boolean allowList = be != null && be.isAllowList();
+            denyAllowListButton.setMessage(
+                    allowList ? Component.translatable("gui.iska_utils.sound_muffler.allow_list") : Component.translatable("gui.iska_utils.sound_muffler.deny_list"));
         }
     }
 
