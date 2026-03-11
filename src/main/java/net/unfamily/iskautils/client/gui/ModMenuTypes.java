@@ -53,5 +53,8 @@ public class ModMenuTypes {
     
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<FanMenu>> FAN_MENU =
         MENUS.register("fan_menu", () -> new MenuType<>(FanMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<SoundMufflerMenu>> SOUND_MUFFLER_MENU =
+        MENUS.register("sound_muffler_menu", () -> new MenuType<>(SoundMufflerMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
 } 

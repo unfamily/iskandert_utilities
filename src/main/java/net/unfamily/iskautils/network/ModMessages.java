@@ -113,6 +113,13 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket::handle
         );
+
+        // Register Sound Muffler Volume C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.SoundMufflerVolumeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.SoundMufflerVolumeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.SoundMufflerVolumeC2SPacket::handle
+        );
         
         // Register Fan Show Area C2S Packet (Client to Server)
         registrar.playToServer(
@@ -1993,6 +2000,34 @@ public class ModMessages {
         } catch (Exception e) {
             LOGGER.error("Could not send Smart Timer redstone mode packet: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * Sends Sound Muffler volume change to the server (client-only).
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendSoundMufflerVolumePacket(BlockPos pos, int categoryIndex, int delta) {
+        var packet = new net.unfamily.iskautils.network.packet.SoundMufflerVolumeC2SPacket(pos, categoryIndex, delta);
+        try {
+            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+            if (minecraft != null) {
+                net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+                if (server != null) {
+                    server.execute(() -> {
+                        net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().isEmpty() ? null : server.getPlayerList().getPlayers().get(0);
+                        if (player != null) {
+                            net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(packet.pos());
+                            if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
+                                muffler.addVolume(packet.categoryIndex(), packet.delta());
+                                player.level().playSound(null, packet.pos(), net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            }
+                        }
+                    });
+                    return;
+                }
+            }
+        } catch (Exception ignored) {}
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
     }
     
     /**

@@ -297,6 +297,8 @@ public class IskaUtils {
                 net.unfamily.iskautils.client.gui.TemporalOverclockerScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FAN_MENU.get(),
                 net.unfamily.iskautils.client.gui.FanScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SOUND_MUFFLER_MENU.get(),
+                net.unfamily.iskautils.client.gui.SoundMufflerScreen::new);
         }
     }
 
@@ -507,15 +509,28 @@ public class IskaUtils {
                 return;
             }
             net.minecraft.client.resources.sounds.SoundInstance sound = event.getOriginalSound();
+            if (sound.getSource() == net.minecraft.sounds.SoundSource.MUSIC) {
+                return;
+            }
             net.minecraft.core.BlockPos soundPos = net.minecraft.core.BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
             int radiusSq = SOUND_MUFFLER_RADIUS * SOUND_MUFFLER_RADIUS;
+            int effectivePercent = 100;
             for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(
                     soundPos.offset(-SOUND_MUFFLER_RADIUS, -SOUND_MUFFLER_RADIUS, -SOUND_MUFFLER_RADIUS),
                     soundPos.offset(SOUND_MUFFLER_RADIUS, SOUND_MUFFLER_RADIUS, SOUND_MUFFLER_RADIUS))) {
-                if (pos.distSqr(soundPos) <= radiusSq && level.getBlockState(pos).is(ModBlocks.SOUND_MUFFLER.get())) {
-                    event.setSound(null);
-                    return;
+                if (pos.distSqr(soundPos) > radiusSq) continue;
+                var be = level.getBlockEntity(pos);
+                if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
+                    int p = muffler.getEffectiveVolumeFor(sound.getSource());
+                    if (p < effectivePercent) effectivePercent = p;
                 }
+            }
+            if (effectivePercent <= 0) {
+                event.setSound(null);
+                return;
+            }
+            if (effectivePercent < 100) {
+                event.setSound(new net.unfamily.iskautils.client.SoundMufflerVolumeScaledSound(sound, effectivePercent / 100f));
             }
         }
 

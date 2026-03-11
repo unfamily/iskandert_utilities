@@ -131,6 +131,12 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(SmartTimerBlockEntity::new, ModBlocks.SMART_TIMER.get())
                             .build(null));
 
+    // Sound Muffler Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SoundMufflerBlockEntity>> SOUND_MUFFLER_BE =
+            BLOCK_ENTITIES.register("sound_muffler",
+                    () -> BlockEntityType.Builder.of(SoundMufflerBlockEntity::new, ModBlocks.SOUND_MUFFLER.get())
+                            .build(null));
+
     // Fan Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FanBlockEntity>> FAN_BE =
             BLOCK_ENTITIES.register("fan",
