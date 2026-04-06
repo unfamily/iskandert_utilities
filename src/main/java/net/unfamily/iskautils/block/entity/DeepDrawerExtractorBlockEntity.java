@@ -64,8 +64,9 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     private int pulseIgnoreTimer = 0; // Timer to ignore redstone after pulse extraction
     private static final int PULSE_IGNORE_INTERVAL = 10; // Ignore pulses for 0.5 seconds after extraction
     
-    // Data version for migration/reset logic
-    private String dataVersion = null; // "V2" for new format, null/empty for old blocks
+    // Data version for migration/reset logic ("V2" = current). Must always persist to NBT;
+    // null on disk used to mean "wipe filters" which broke blocks that saved filters but never wrote this key.
+    private String dataVersion = "V2";
     
     /**
      * Enum for redstone modes
@@ -742,10 +743,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         tag.putBoolean("previousRedstoneState", previousRedstoneState);
         tag.putInt("pulseIgnoreTimer", pulseIgnoreTimer);
         
-        // Save data version
-        if (dataVersion != null) {
-            tag.putString("dataVersion", dataVersion);
-        }
+        // Always persist so chunk reload / sync packets do not trigger a false "legacy" wipe in loadAdditional
+        tag.putString("dataVersion", dataVersion != null ? dataVersion : "V2");
     }
     
     @Override
@@ -878,23 +877,21 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             pulseIgnoreTimer = tag.getInt("pulseIgnoreTimer");
         }
         
-        // Load data version and reset if needed
+        // Load data version; missing key means "never had migration marker" — do not wipe loaded filters (see saveAdditional)
         if (tag.contains("dataVersion", CompoundTag.TAG_STRING)) {
             dataVersion = tag.getString("dataVersion");
         } else {
-            dataVersion = null;
+            dataVersion = "V2";
+            setChanged();
         }
         
-        // If data version is not "V2", reset to base conditions
-        if (dataVersion == null || !dataVersion.equals("V2")) {
-            // Reset all filters to empty
+        // Explicit non-V2 tag: legacy reset (blocks that stored an older marker)
+        if (!dataVersion.equals("V2")) {
             for (int i = 0; i < maxSlots; i++) {
                 filterFields[i] = "";
                 invertedFilterFields[i] = "";
             }
-            // Reset whitelist mode to default (true)
             isWhitelistMode = true;
-            // Set version to V2
             dataVersion = "V2";
             setChanged();
         }
