@@ -6,6 +6,8 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 /**
  * Block entity for the Angel Block
@@ -18,24 +20,20 @@ public class AngelBlockEntity extends BlockEntity {
     }
     
     @Override
-    public void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
-        
-        // Save the "no_drop" tag if present
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
         if (this.getPersistentData().contains("no_drop")) {
-            boolean noDrop = this.getPersistentData().getBoolean("no_drop");
-            tag.putBoolean("no_drop", noDrop);
+            boolean noDrop = this.getPersistentData().getBoolean("no_drop").orElse(false);
+            output.putBoolean("no_drop", noDrop);
         }
     }
     
     @Override
-    public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
-        
-        // Load the "no_drop" tag if present
-        if (tag.contains("no_drop")) {
-            boolean noDrop = tag.getBoolean("no_drop");
-            this.getPersistentData().putBoolean("no_drop", noDrop);
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        boolean noDrop = input.getBooleanOr("no_drop", false);
+        if (noDrop) {
+            this.getPersistentData().putBoolean("no_drop", true);
         }
     }
     
@@ -46,13 +44,6 @@ public class AngelBlockEntity extends BlockEntity {
     
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
-        CompoundTag tag = new CompoundTag();
-        saveAdditional(tag, provider);
-        return tag;
-    }
-    
-    public CompoundTag getUpdateTag(CompoundTag tag, HolderLookup.Provider provider) {
-        saveAdditional(tag, provider);
-        return tag;
+        return saveWithoutMetadata(provider);
     }
 } 

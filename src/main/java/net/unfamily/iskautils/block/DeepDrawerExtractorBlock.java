@@ -3,6 +3,7 @@ package net.unfamily.iskautils.block;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -72,9 +73,10 @@ public class DeepDrawerExtractorBlock extends BaseEntityBlock {
         if (player instanceof ServerPlayer serverPlayer && player.isShiftKeyDown()) {
             int occupiedSlots = extractor.getOccupiedSlots();
             int totalSlots = extractor.getTotalSlots();
-            serverPlayer.displayClientMessage(
+            serverPlayer.connection.send(new ClientboundSystemChatPacket(
                 net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawer_extractor.buffer_status", occupiedSlots, totalSlots),
-                true); // true = actionbar
+                true
+            ));
             return InteractionResult.CONSUME;
         }
         
@@ -97,27 +99,22 @@ public class DeepDrawerExtractorBlock extends BaseEntityBlock {
     }
     
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!state.is(newState.getBlock())) {
-            // Drop items from buffer when the block is destroyed
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof DeepDrawerExtractorBlockEntity extractor) {
-                for (int i = 0; i < extractor.getContainerSize(); i++) {
-                    ItemStack stack = extractor.getItem(i);
-                    if (!stack.isEmpty()) {
-                        // Create an item entity in the world
-                        double x = pos.getX() + 0.5;
-                        double y = pos.getY() + 0.5;
-                        double z = pos.getZ() + 0.5;
-                        
-                        ItemEntity itemEntity = new ItemEntity(level, x, y, z, stack);
-                        itemEntity.setDefaultPickUpDelay();
-                        level.addFreshEntity(itemEntity);
-                    }
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof DeepDrawerExtractorBlockEntity extractor) {
+            for (int i = 0; i < extractor.getContainerSize(); i++) {
+                ItemStack stack = extractor.getItem(i);
+                if (!stack.isEmpty()) {
+                    double x = pos.getX() + 0.5;
+                    double y = pos.getY() + 0.5;
+                    double z = pos.getZ() + 0.5;
+                    ItemEntity itemEntity = new ItemEntity(level, x, y, z, stack);
+                    itemEntity.setDefaultPickUpDelay();
+                    level.addFreshEntity(itemEntity);
                 }
             }
         }
-        
-        super.onRemove(state, level, pos, newState, isMoving);
+
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 }

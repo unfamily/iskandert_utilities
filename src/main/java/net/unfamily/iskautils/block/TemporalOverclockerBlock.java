@@ -87,7 +87,7 @@ public class TemporalOverclockerBlock extends Block implements EntityBlock {
     
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         
@@ -122,8 +122,8 @@ public class TemporalOverclockerBlock extends Block implements EntityBlock {
     }
     
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        super.neighborChanged(state, level, pos, block, fromPos, isMoving);
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, net.minecraft.world.level.redstone.Orientation orientation, boolean isMoving) {
+        super.neighborChanged(state, level, pos, block, orientation, isMoving);
         
         if (!level.isClientSide()) {
             boolean isPowered = level.hasNeighborSignal(pos);

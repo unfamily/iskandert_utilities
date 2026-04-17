@@ -1,9 +1,8 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -11,6 +10,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.Config;
@@ -26,12 +27,53 @@ public class WeatherAltererBlockEntity extends BlockEntity {
     
     // Energy storage for NeoForge Energy API
     private final EnergyStorageImpl energyStorage;
+    private final net.neoforged.neoforge.transfer.energy.EnergyHandler energyHandler26;
     
     public WeatherAltererBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.WEATHER_ALTERER_BE.get(), pos, state);
         this.energyStorage = new EnergyStorageImpl(Config.weatherAltererEnergyBuffer);
         // Start with 0 energy
         this.energyStorage.setEnergy(0);
+        this.energyHandler26 = new EnergyHandlerImpl();
+    }
+
+    private final class EnergyHandlerImpl extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
+        implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
+        @Override
+        protected Integer createSnapshot() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        protected void revertToSnapshot(Integer snapshot) {
+            energyStorage.setEnergy(snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        public long getCapacityAsLong() {
+            return Config.weatherAltererEnergyBuffer;
+        }
+
+        @Override
+        public int insert(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.receiveEnergy(amount, false);
+        }
+
+        @Override
+        public int extract(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.extractEnergy(amount, false);
+        }
     }
 
     /**
@@ -66,26 +108,20 @@ public class WeatherAltererBlockEntity extends BlockEntity {
                 break;
         }
         
-        // Duration of the weather (in ticks, 24000 = 1 minecraft day)
-        int weatherDuration = 24000;
-        
-        // Change weather based on mode
-        switch (mode) {
-            case 0 -> { // Sunny
-                if (serverLevel.isRaining()) {
-                    serverLevel.setWeatherParameters(weatherDuration, 0, false, false);
-                }
-            }
-            case 1 -> { // Rain
-                if (!serverLevel.isRaining() || serverLevel.isThundering()) {
-                    serverLevel.setWeatherParameters(0, weatherDuration, true, false);
-                }
-            }
-            case 2 -> { // Storm
-                if (!serverLevel.isThundering()) {
-                    serverLevel.setWeatherParameters(0, weatherDuration, true, true);
-                }
-            }
+        // Duration in seconds for the vanilla /weather command (24000 ticks = 1200 seconds)
+        int durationSeconds = 1200;
+
+        String cmd = switch (mode) {
+            case 0 -> "weather clear " + durationSeconds;
+            case 1 -> "weather rain " + durationSeconds;
+            case 2 -> "weather thunder " + durationSeconds;
+            default -> null;
+        };
+        if (cmd != null) {
+            serverLevel.getServer().getCommands().performPrefixedCommand(
+                serverLevel.getServer().createCommandSourceStack().withLevel(serverLevel),
+                cmd
+            );
         }
         
         return true; // Weather was changed
@@ -106,7 +142,7 @@ public class WeatherAltererBlockEntity extends BlockEntity {
      * Notifies nearby players with a message
      */
     private void notifyNearbyPlayers(Component message) {
-        if (level == null || level.isClientSide) {
+        if (level == null || level.isClientSide()) {
             return;
         }
         
@@ -117,7 +153,7 @@ public class WeatherAltererBlockEntity extends BlockEntity {
         
         // Send message to all nearby players
         for (ServerPlayer player : nearbyPlayers) {
-            player.displayClientMessage(message, true);
+            player.connection.send(new ClientboundSystemChatPacket(message, true));
         }
     }
     
@@ -125,7 +161,7 @@ public class WeatherAltererBlockEntity extends BlockEntity {
      * Called when the block receives a redstone signal, similar to HellfireIgniter
      */
     public void activateWeatherChange() {
-        if (level == null || level.isClientSide) {
+        if (level == null || level.isClientSide()) {
             return;
         }
         
@@ -205,33 +241,28 @@ public class WeatherAltererBlockEntity extends BlockEntity {
      * Save data to NBT
      */
     @Override
-    public void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
         // Save energy directly from the energy storage
-        tag.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
-        tag.putInt(ACTIVE_MODE_TAG, activeMode);
+        output.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
+        output.putInt(ACTIVE_MODE_TAG, activeMode);
     }
     
     /**
      * Load data from NBT
      */
     @Override
-    public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
-        if (tag.contains(ENERGY_TAG)) {
-            // Load energy directly into the energy storage
-            this.energyStorage.setEnergy(tag.getInt(ENERGY_TAG));
-        }
-        if (tag.contains(ACTIVE_MODE_TAG)) {
-            activeMode = tag.getInt(ACTIVE_MODE_TAG);
-        }
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        this.energyStorage.setEnergy(input.getInt(ENERGY_TAG).orElse(0));
+        this.activeMode = input.getInt(ACTIVE_MODE_TAG).orElse(-1);
     }
     
     /**
      * Ticker method that handles block entity updates
      */
     public static void tick(Level level, BlockPos blockPos, BlockState blockState, WeatherAltererBlockEntity blockEntity) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
         
@@ -251,6 +282,10 @@ public class WeatherAltererBlockEntity extends BlockEntity {
      */
     public IEnergyStorage getEnergyStorage() {
         return this.energyStorage;
+    }
+
+    public net.neoforged.neoforge.transfer.energy.EnergyHandler getEnergyHandler() {
+        return this.energyHandler26;
     }
     
     /**

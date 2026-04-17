@@ -13,7 +13,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -22,14 +21,9 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.ScheduledTickAccess;
+import net.minecraft.util.RandomSource;
 
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Raft Block - A thin block that can float in air and be placed on walls
@@ -120,8 +114,16 @@ public class RaftBlock extends HorizontalDirectionalBlock {
     
     // Don't destroy the raft if the block below is removed
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, 
-                                 LevelAccessor level, BlockPos currentPos, BlockPos neighborPos) {
+    protected BlockState updateShape(
+        BlockState state,
+        LevelReader level,
+        ScheduledTickAccess ticks,
+        BlockPos pos,
+        Direction directionToNeighbour,
+        BlockPos neighbourPos,
+        BlockState neighbourState,
+        RandomSource random
+    ) {
         return state;
     }
 
@@ -130,7 +132,7 @@ public class RaftBlock extends HorizontalDirectionalBlock {
     public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         // Check if the player is pressing shift
         if (player.isShiftKeyDown()) {
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 // Get the current direction
                 Direction currentDirection = state.getValue(FACING);
                 Direction newDirection = currentDirection.getClockWise();
@@ -141,7 +143,7 @@ public class RaftBlock extends HorizontalDirectionalBlock {
                 // Play a click sound when the block is rotated
                 level.playSound(null, pos, SoundEvents.WOOD_PLACE, SoundSource.BLOCKS, 0.3F, 0.8F);
             }
-            return InteractionResult.sidedSuccess(level.isClientSide);
+            return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         }
         
         return InteractionResult.PASS;

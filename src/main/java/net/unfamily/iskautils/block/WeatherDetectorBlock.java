@@ -17,12 +17,10 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 
 /**
  * The Weather Detector is a block that emits a redstone signal based on the weather
@@ -68,7 +66,7 @@ public class WeatherDetectorBlock extends Block {
      */
     @Override
     public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         
@@ -94,7 +92,9 @@ public class WeatherDetectorBlock extends Block {
         };
         
         // Send the feedback message to the player in the action bar
-        player.displayClientMessage(modeMessage, true);
+        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            serverPlayer.connection.send(new ClientboundSystemChatPacket(modeMessage, true));
+        }
         
         // Force an update of the redstone signal
         level.updateNeighborsAt(pos, this);
@@ -173,7 +173,7 @@ public class WeatherDetectorBlock extends Block {
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
         super.onPlace(state, level, pos, oldState, isMoving);
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             // Schedule the first tick when the block is placed
             level.scheduleTick(pos, this, 20); // Check after 1 second (20 tick)
         }

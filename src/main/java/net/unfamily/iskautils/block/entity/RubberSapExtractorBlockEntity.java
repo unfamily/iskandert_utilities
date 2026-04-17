@@ -2,9 +2,7 @@ package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.WorldlyContainer;
@@ -17,6 +15,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.Config;
@@ -33,6 +33,7 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     
     // Energy
     private final EnergyStorageImpl energyStorage;
+    private final net.neoforged.neoforge.transfer.energy.EnergyHandler energyHandler26;
     
     // Counters and state
     private int extractionProgress = 0;
@@ -43,6 +44,46 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
         super(ModBlockEntities.RUBBER_SAP_EXTRACTOR.get(), pos, state);
         int maxEnergy = Config.rubberSapExtractorEnergyConsume <= 0 ? 0 : Config.rubberSapExtractorEnergyBuffer;
         this.energyStorage = new EnergyStorageImpl(maxEnergy);
+        this.energyHandler26 = new EnergyHandlerImpl();
+    }
+
+    private final class EnergyHandlerImpl extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
+        implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
+        @Override
+        protected Integer createSnapshot() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        protected void revertToSnapshot(Integer snapshot) {
+            energyStorage.setEnergy(snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        public long getCapacityAsLong() {
+            return energyStorage.getMaxEnergyStored();
+        }
+
+        @Override
+        public int insert(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.receiveEnergy(amount, false);
+        }
+
+        @Override
+        public int extract(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.extractEnergy(amount, false);
+        }
     }
     
     /**
@@ -259,31 +300,25 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     }
     
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
-        
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
         // save the inventory
-        ContainerHelper.saveAllItems(tag, this.items, provider);
-        
+        ContainerHelper.saveAllItems(output, this.items);
         // save the extraction state
-        tag.putInt("ExtractionProgress", this.extractionProgress);
-        
+        output.putInt("ExtractionProgress", this.extractionProgress);
         // save energy
-        tag.putInt("Energy", this.energyStorage.getEnergyStored());
+        output.putInt("Energy", this.energyStorage.getEnergyStored());
     }
     
     @Override
-    public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
-        
-        // load the inventory 
-        ContainerHelper.loadAllItems(tag, this.items, provider);
-        
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        // load the inventory
+        ContainerHelper.loadAllItems(input, this.items);
         // load the extraction state
-        this.extractionProgress = tag.getInt("ExtractionProgress");
-        
+        this.extractionProgress = input.getInt("ExtractionProgress").orElse(0);
         // load energy
-        this.energyStorage.setEnergy(tag.getInt("Energy"));
+        this.energyStorage.setEnergy(input.getInt("Energy").orElse(0));
     }
     
     /**
@@ -304,6 +339,10 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
      */
     public IEnergyStorage getEnergyStorage() {
         return this.energyStorage;
+    }
+
+    public net.neoforged.neoforge.transfer.energy.EnergyHandler getEnergyHandler() {
+        return this.energyHandler26;
     }
     
     // --- WorldlyContainer Implementation ---

@@ -42,13 +42,13 @@ public class DyeBushFilledBlock extends Block implements EntityBlock {
     @Override
     public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         performHarvest(level, pos, player);
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
 
     @Override
     protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
         performHarvest(level, pos, player);
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
 
     private void performHarvest(Level level, BlockPos pos, Player player) {

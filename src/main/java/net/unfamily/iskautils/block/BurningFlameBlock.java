@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -33,18 +34,18 @@ public class BurningFlameBlock extends Block {
     }
 
     @Override
-    public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+    protected boolean propagatesSkylightDown(BlockState state) {
         return true;
     }
 
     @Override
-	public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
-		return adjacentBlockState.getBlock() == this ? true : super.skipRendering(state, adjacentBlockState, side);
+	protected boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
+		return adjacentBlockState.getBlock() == this || super.skipRendering(state, adjacentBlockState, side);
 	}
 
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
-        super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, net.minecraft.world.level.redstone.Orientation orientation, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, orientation, movedByPiston);
 
         // Check if any neighboring block is a liquid
         for (var direction : net.minecraft.core.Direction.values()) {
@@ -83,8 +84,15 @@ public class BurningFlameBlock extends Block {
     }
 
     @Override
-    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if (!level.isClientSide && entity instanceof net.minecraft.world.entity.LivingEntity livingEntity) {
+    protected void entityInside(
+        BlockState state,
+        Level level,
+        BlockPos pos,
+        Entity entity,
+        InsideBlockEffectApplier effectApplier,
+        boolean isPrecise
+    ) {
+        if (!level.isClientSide() && entity instanceof net.minecraft.world.entity.LivingEntity livingEntity) {
             // Super hot config OR curse_flame on player/team/world (scalable)
             boolean shouldBurn = Config.burningFlameSuperHot || hasCurseFlame(level, entity);
 

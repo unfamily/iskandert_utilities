@@ -75,7 +75,7 @@ public class SacredRubberSaplingBlock extends SaplingBlock implements net.minecr
      */
     @Override
     public void performBonemeal(@NotNull ServerLevel level, @NotNull RandomSource random, @NotNull BlockPos pos, @NotNull BlockState state) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
         
@@ -111,7 +111,7 @@ public class SacredRubberSaplingBlock extends SaplingBlock implements net.minecr
     @Override
     public void onPlace(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState oldState, boolean isMoving) {
         super.onPlace(state, level, pos, oldState, isMoving);
-        if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
+        if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
             // Schedule first tick after 10 ticks
             serverLevel.scheduleTick(pos, this, 10);
         }

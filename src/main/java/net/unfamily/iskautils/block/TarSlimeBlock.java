@@ -25,17 +25,16 @@ public class TarSlimeBlock extends SlimeBlock {
     }
 
     @Override
-	public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
-		return adjacentBlockState.getBlock() == this ? true : super.skipRendering(state, adjacentBlockState, side);
+	protected boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
+		return adjacentBlockState.getBlock() == this || super.skipRendering(state, adjacentBlockState, side);
 	}
 
-	@Override
 	public int getLightBlock(BlockState state, BlockGetter worldIn, BlockPos pos) {
 		return 0;
 	}
     
 	@Override
-	public boolean propagatesSkylightDown(BlockState state, BlockGetter reader, BlockPos pos) {
+	protected boolean propagatesSkylightDown(BlockState state) {
 		return true;
 	}
 }

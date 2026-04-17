@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.unfamily.iskautils.block.entity.DeepDrawersBlockEntity;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 
 
 /**
@@ -109,10 +110,12 @@ public class DeepDrawersBlock extends BaseEntityBlock {
         if (blockEntity instanceof DeepDrawersBlockEntity deepDrawers) {
             if (deepDrawers.hasItems() && !level.isClientSide()) {
                 // Display warning message to player
-                player.displayClientMessage(
-                    Component.translatable("message.iska_utils.deep_drawers.cannot_break"),
-                    true
-                );
+                if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                    serverPlayer.connection.send(new ClientboundSystemChatPacket(
+                        Component.translatable("message.iska_utils.deep_drawers.cannot_break"),
+                        true
+                    ));
+                }
             }
         }
         super.attack(state, level, pos, player);
@@ -160,14 +163,16 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                                 // Inventory full, drop item
                                 player.drop(extracted, false);
                             }
-                            serverPlayer.displayClientMessage(
+                            serverPlayer.connection.send(new ClientboundSystemChatPacket(
                                 net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.debug_extracted", extracted.getDisplayName()),
-                                true); // true = actionbar
+                                true
+                            ));
                         }
                     } else {
-                        serverPlayer.displayClientMessage(
+                        serverPlayer.connection.send(new ClientboundSystemChatPacket(
                             net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.empty"),
-                            true); // true = actionbar
+                            true
+                        ));
                     }
                     return net.minecraft.world.InteractionResult.CONSUME;
                 }
@@ -180,15 +185,17 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                 if (showStatus) {
                     boolean isFull = deepDrawers.isFull();
                     if (isFull) {
-                        serverPlayer.displayClientMessage(
+                        serverPlayer.connection.send(new ClientboundSystemChatPacket(
                             net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.full"),
-                            true); // true = actionbar
+                            true
+                        ));
                     } else {
                         int occupiedSlots = deepDrawers.getOccupiedSlotsCount();
                         int totalSlots = deepDrawers.getMaxSlots();
-                        serverPlayer.displayClientMessage(
+                        serverPlayer.connection.send(new ClientboundSystemChatPacket(
                             net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.status", occupiedSlots, totalSlots),
-                            true); // true = actionbar
+                            true
+                        ));
                     }
                     return net.minecraft.world.InteractionResult.CONSUME;
                 }
@@ -202,34 +209,26 @@ public class DeepDrawersBlock extends BaseEntityBlock {
      * IMPORTANT: Contents are NOT dropped to prevent lag
      */
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        // Only process if the block is actually being removed (not just state change)
-        if (!state.is(newState.getBlock())) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            
-            if (blockEntity instanceof DeepDrawersBlockEntity deepDrawers) {
-                // Close any open GUIs
-                while (deepDrawers.isGuiOpen()) {
-                    deepDrawers.onGuiClosed();
-                }
-                
-                // SECURITY: Do NOT drop items - clear storage to prevent lag
-                // This should never happen due to break protection, but is a failsafe
-                if (deepDrawers.hasItems()) {
-                    // Log warning if this happens (shouldn't be possible)
-                    org.slf4j.LoggerFactory.getLogger(DeepDrawersBlock.class).warn(
-                        "Deep Drawers at {} was broken with items inside! Contents destroyed to prevent lag. " +
-                        "This should not happen due to break protection.",
-                        pos
-                    );
-                    
-                    // Clear storage without dropping (prevents lag)
-                    deepDrawers.clearStorage();
-                }
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+
+        if (blockEntity instanceof DeepDrawersBlockEntity deepDrawers) {
+            while (deepDrawers.isGuiOpen()) {
+                deepDrawers.onGuiClosed();
+            }
+
+            // SECURITY: Do NOT drop items - clear storage to prevent lag
+            if (deepDrawers.hasItems()) {
+                org.slf4j.LoggerFactory.getLogger(DeepDrawersBlock.class).warn(
+                    "Deep Drawers at {} was broken with items inside! Contents destroyed to prevent lag. " +
+                    "This should not happen due to break protection.",
+                    pos
+                );
+                deepDrawers.clearStorage();
             }
         }
-        
-        super.onRemove(state, level, pos, newState, isMoving);
+
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 }
 

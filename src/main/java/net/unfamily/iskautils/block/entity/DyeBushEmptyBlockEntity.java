@@ -1,13 +1,13 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
 
@@ -53,14 +53,14 @@ public class DyeBushEmptyBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
-        tag.putInt("refill_timer", this.refillTimer);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        output.putInt("refill_timer", this.refillTimer);
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
-        this.refillTimer = tag.getInt("refill_timer");
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        this.refillTimer = input.getInt("refill_timer").orElse(0);
     }
 }

@@ -69,12 +69,7 @@ public class AutoShopBlock extends BaseEntityBlock {
     }
     
     @Override
-    public SoundType getSoundType(BlockState state) {
-        return SoundType.METAL;
-    }
-    
     @Nullable
-    @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new AutoShopBlockEntity(pos, state);
     }
@@ -91,7 +86,7 @@ public class AutoShopBlock extends BaseEntityBlock {
                 
                 // Save also the team ID of the player if they belong to a team
                 net.unfamily.iskalib.team.ShopTeamManager teamManager =
-                    net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverPlayer.serverLevel());
+                    net.unfamily.iskalib.team.ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) serverPlayer.level());
                 String teamName = teamManager.getPlayerTeam(serverPlayer);
                 if (teamName != null) {
                     UUID teamId = teamManager.getTeamIdByName(teamName);
@@ -167,9 +162,12 @@ public class AutoShopBlock extends BaseEntityBlock {
         
         // Feedback message with translation and symbol
         if ("unset".equals(newCurrency)) {
-            player.displayClientMessage(
-                net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.currency_changed.unset"),
-                true);
+            if (player instanceof ServerPlayer serverPlayer) {
+                serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSystemChatPacket(
+                    net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.currency_changed.unset"),
+                    true
+                ));
+            }
         } else {
             net.unfamily.iskautils.shop.ShopCurrency currency = availableCurrencies.get(newCurrency);
             String currencyName = net.minecraft.network.chat.Component.translatable(currency.name).getString();
@@ -178,9 +176,12 @@ public class AutoShopBlock extends BaseEntityBlock {
             // Concatenate symbol at the end of translated message
             String fullMessage = net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.currency_changed", currencyName).getString() + " " + currencySymbol;
             
-            player.displayClientMessage(
-                net.minecraft.network.chat.Component.literal(fullMessage),
-                true);
+            if (player instanceof ServerPlayer serverPlayer) {
+                serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSystemChatPacket(
+                    net.minecraft.network.chat.Component.literal(fullMessage),
+                    true
+                ));
+            }
         }
     }
     
@@ -190,21 +191,18 @@ public class AutoShopBlock extends BaseEntityBlock {
     private void toggleAutoMode(AutoShopBlockEntity autoShop, Player player) {
         autoShop.toggleAutoMode();
         String modeName = autoShop.isAutoBuyMode() ? "Auto Buy" : "Auto Sell";
-        player.displayClientMessage(
-            net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.mode_changed", modeName),
-            true
-        );
+        if (player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSystemChatPacket(
+                net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.mode_changed", modeName),
+                true
+            ));
+        }
     }
     
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (state.getBlock() != newState.getBlock()) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof AutoShopBlockEntity autoShopEntity) {
-
-            }
-        }
-        super.onRemove(state, level, pos, newState, isMoving);
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        // No inventory to drop here (handled by BE / UI), but keep hook for future if needed.
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
     
     @Nullable

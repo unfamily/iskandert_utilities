@@ -76,11 +76,62 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     };
     
     // Energy storage for the machine (configured capacity, max input, and max extract)
-    private final EnergyStorage energyStorage = new EnergyStorage(
+    private final EnergyStorageImpl energyStorage = new EnergyStorageImpl(
         net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer, 
         net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer, // Max input = max capacity
         net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer  // Max extract = max capacity (allow full extraction)
     );
+
+    private final net.neoforged.neoforge.transfer.energy.EnergyHandler energyHandler26 = new EnergyHandlerImpl();
+
+    private static final class EnergyStorageImpl extends EnergyStorage {
+        public EnergyStorageImpl(int capacity, int maxReceive, int maxExtract) {
+            super(capacity, maxReceive, maxExtract);
+        }
+
+        public void setEnergy(int energy) {
+            this.energy = Math.max(0, Math.min(capacity, energy));
+        }
+    }
+
+    private final class EnergyHandlerImpl extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
+        implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
+        @Override
+        protected Integer createSnapshot() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        protected void revertToSnapshot(Integer snapshot) {
+            energyStorage.setEnergy(snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        public long getCapacityAsLong() {
+            return net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer;
+        }
+
+        @Override
+        public int insert(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.receiveEnergy(amount, false);
+        }
+
+        @Override
+        public int extract(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.extractEnergy(amount, false);
+        }
+    }
     
     // Auto-placement counter for NONE mode (places every 10 ticks)
     private int autoPulseTimer = 0;
@@ -218,8 +269,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         }
 
         input.getInt("energy").ifPresent(savedEnergy -> {
-            energyStorage.extractEnergy(energyStorage.getEnergyStored(), false);
-            energyStorage.receiveEnergy(savedEnergy, false);
+            energyStorage.setEnergy(savedEnergy);
             LOGGER.debug("Structure Placer Machine loaded energy: {}", savedEnergy);
         });
 
@@ -261,6 +311,10 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     
     public IEnergyStorage getEnergyStorage() {
         return energyStorage;
+    }
+
+    public net.neoforged.neoforge.transfer.energy.EnergyHandler getEnergyHandler() {
+        return this.energyHandler26;
     }
     
     public String getSelectedStructure() {

@@ -1,13 +1,15 @@
 package net.unfamily.iskautils.block;
 
 import com.mojang.serialization.MapCodec;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.util.ParticleUtils;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.core.Direction;
-import net.minecraft.core.BlockPos;
 
 import java.util.List;
 
@@ -20,7 +22,7 @@ public class RubberLeavesBlock extends LeavesBlock {
     public static final MapCodec<RubberLeavesBlock> CODEC = simpleCodec(RubberLeavesBlock::new);
     
     public RubberLeavesBlock(Properties properties) {
-        super(properties);
+        super(0.01F, properties);
     }
     
     @Override
@@ -36,5 +38,10 @@ public class RubberLeavesBlock extends LeavesBlock {
     @Override
     public int getFireSpreadSpeed(BlockState state, BlockGetter world, BlockPos pos, Direction face) {
         return 50;
+    }
+
+    @Override
+    protected void spawnFallingLeavesParticle(Level level, BlockPos pos, RandomSource random) {
+        ParticleUtils.spawnParticleBelow(level, pos, random, ParticleTypes.PALE_OAK_LEAVES);
     }
 } 

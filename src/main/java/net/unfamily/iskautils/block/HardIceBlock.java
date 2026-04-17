@@ -3,6 +3,7 @@ package net.unfamily.iskautils.block;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -82,10 +83,12 @@ public class HardIceBlock extends Block {
                 UUID playerUuid = entry.getKey();
                 Player player = level.getPlayerByUUID(playerUuid);
                 if (player != null && player.isAlive()) {
-                    player.displayClientMessage(
-                        Component.translatable("message.iska_utils.hard_ice.use_dolly"),
-                        true // actionbar
-                    );
+                    if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                        serverPlayer.connection.send(new ClientboundSystemChatPacket(
+                            Component.translatable("message.iska_utils.hard_ice.use_dolly"),
+                            true
+                        ));
+                    }
                 }
                 return true; // Remove this entry
             }
@@ -108,10 +111,12 @@ public class HardIceBlock extends Block {
             
             if (lastMessageTime == null || (currentTime - lastMessageTime) >= MESSAGE_COOLDOWN_TICKS) {
                 // Show first message immediately
-                player.displayClientMessage(
-                    Component.translatable("message.iska_utils.hard_ice.cannot_break"),
-                    true // actionbar
-                );
+                if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                    serverPlayer.connection.send(new ClientboundSystemChatPacket(
+                        Component.translatable("message.iska_utils.hard_ice.cannot_break"),
+                        true
+                    ));
+                }
                 
                 // Schedule second message after DELAY_TICKS (2 seconds)
                 if (worldLevel instanceof ServerLevel serverLevel) {

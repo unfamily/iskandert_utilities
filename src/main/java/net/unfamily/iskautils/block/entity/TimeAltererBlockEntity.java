@@ -1,9 +1,8 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -11,6 +10,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.Config;
@@ -26,12 +27,53 @@ public class TimeAltererBlockEntity extends BlockEntity {
     
     // Energy storage for NeoForge Energy API
     private final EnergyStorageImpl energyStorage;
+    private final net.neoforged.neoforge.transfer.energy.EnergyHandler energyHandler26;
     
     public TimeAltererBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TIME_ALTERER_BE.get(), pos, state);
         this.energyStorage = new EnergyStorageImpl(Config.timeAltererEnergyBuffer);
         // Start with 0 energy
         this.energyStorage.setEnergy(0);
+        this.energyHandler26 = new EnergyHandlerImpl();
+    }
+
+    private final class EnergyHandlerImpl extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
+        implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
+        @Override
+        protected Integer createSnapshot() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        protected void revertToSnapshot(Integer snapshot) {
+            energyStorage.setEnergy(snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        public long getCapacityAsLong() {
+            return Config.timeAltererEnergyBuffer;
+        }
+
+        @Override
+        public int insert(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.receiveEnergy(amount, false);
+        }
+
+        @Override
+        public int extract(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.extractEnergy(amount, false);
+        }
     }
 
     /**
@@ -58,8 +100,11 @@ public class TimeAltererBlockEntity extends BlockEntity {
             default -> newTime = 0;       // Should never happen
         }
         
-        // Set the time
-        serverLevel.setDayTime(newTime);
+        // Set time via vanilla command (API changed; keep 1:1 behavior)
+        serverLevel.getServer().getCommands().performPrefixedCommand(
+            serverLevel.getServer().createCommandSourceStack().withLevel(serverLevel),
+            "time set " + newTime
+        );
         
         return true; // Time was changed
     }
@@ -80,7 +125,7 @@ public class TimeAltererBlockEntity extends BlockEntity {
      * Notifies nearby players with a message
      */
     private void notifyNearbyPlayers(Component message) {
-        if (level == null || level.isClientSide) {
+        if (level == null || level.isClientSide()) {
             return;
         }
         
@@ -91,7 +136,7 @@ public class TimeAltererBlockEntity extends BlockEntity {
         
         // Send message to all nearby players
         for (ServerPlayer player : nearbyPlayers) {
-            player.displayClientMessage(message, true);
+            player.connection.send(new ClientboundSystemChatPacket(message, true));
         }
     }
     
@@ -99,7 +144,7 @@ public class TimeAltererBlockEntity extends BlockEntity {
      * Called when the block receives a redstone signal
      */
     public void activateTimeChange() {
-        if (level == null || level.isClientSide) {
+        if (level == null || level.isClientSide()) {
             return;
         }
         
@@ -179,33 +224,28 @@ public class TimeAltererBlockEntity extends BlockEntity {
      * Save data to NBT
      */
     @Override
-    public void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
         // Save energy directly from the energy storage
-        tag.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
-        tag.putInt(ACTIVE_MODE_TAG, activeMode);
+        output.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
+        output.putInt(ACTIVE_MODE_TAG, activeMode);
     }
     
     /**
      * Load data from NBT
      */
     @Override
-    public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
-        if (tag.contains(ENERGY_TAG)) {
-            // Load energy directly into the energy storage
-            this.energyStorage.setEnergy(tag.getInt(ENERGY_TAG));
-        }
-        if (tag.contains(ACTIVE_MODE_TAG)) {
-            activeMode = tag.getInt(ACTIVE_MODE_TAG);
-        }
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        this.energyStorage.setEnergy(input.getInt(ENERGY_TAG).orElse(0));
+        this.activeMode = input.getInt(ACTIVE_MODE_TAG).orElse(-1);
     }
     
     /**
      * Ticker method that handles block entity updates
      */
     public static void tick(Level level, BlockPos blockPos, BlockState blockState, TimeAltererBlockEntity blockEntity) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
         
@@ -225,6 +265,10 @@ public class TimeAltererBlockEntity extends BlockEntity {
      */
     public IEnergyStorage getEnergyStorage() {
         return this.energyStorage;
+    }
+
+    public net.neoforged.neoforge.transfer.energy.EnergyHandler getEnergyHandler() {
+        return this.energyHandler26;
     }
     
     /**

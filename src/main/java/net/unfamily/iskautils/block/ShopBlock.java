@@ -9,7 +9,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -61,12 +60,6 @@ public class ShopBlock extends BaseEntityBlock {
     }
     
     @Override
-    public SoundType getSoundType(BlockState state) {
-        return SoundType.METAL;
-    }
-    
-    @Nullable
-    @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new ShopBlockEntity(pos, state);
     }
@@ -81,17 +74,6 @@ public class ShopBlock extends BaseEntityBlock {
             }
         }
         return InteractionResult.SUCCESS;
-    }
-    
-    @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (state.getBlock() != newState.getBlock()) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof ShopBlockEntity shopEntity) {
-                
-            }
-        }
-        super.onRemove(state, level, pos, newState, isMoving);
     }
     
     @Nullable

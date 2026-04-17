@@ -1,11 +1,11 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.unfamily.iskautils.block.ModBlocks;
 
 public class RubberLogSacredBlockEntity extends BlockEntity {
@@ -25,7 +25,7 @@ public class RubberLogSacredBlockEntity extends BlockEntity {
     }
     
     public static void tick(Level level, BlockPos pos, BlockState state, RubberLogSacredBlockEntity blockEntity) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
         
@@ -54,20 +54,18 @@ public class RubberLogSacredBlockEntity extends BlockEntity {
     }
     
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
         if (rootPos != null) {
-            tag.putLong("rootPos", rootPos.asLong());
+            output.putLong("rootPos", rootPos.asLong());
         }
-        tag.putInt("checkCounter", checkCounter);
+        output.putInt("checkCounter", checkCounter);
     }
     
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("rootPos")) {
-            rootPos = BlockPos.of(tag.getLong("rootPos"));
-        }
-        checkCounter = tag.getInt("checkCounter");
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        input.getLong("rootPos").ifPresent(val -> rootPos = BlockPos.of(val));
+        checkCounter = input.getInt("checkCounter").orElse(0);
     }
 }

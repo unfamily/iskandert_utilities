@@ -2,24 +2,24 @@ package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.HellfireIgniterBlock;
 
-import javax.annotation.Nullable;
-import java.util.Optional;
+import org.jetbrains.annotations.Nullable;
 
 public class HellfireIgniterBlockEntity extends BlockEntity {
     // Energy storage
     private final EnergyStorageImpl energyStorage;
     private IEnergyStorage energyHandler;
+    private final net.neoforged.neoforge.transfer.energy.EnergyHandler energyHandler26;
     
     // Effective consumption and capacity values
     private final int effectiveBufferCapacity;
@@ -43,6 +43,46 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
         // Create storage with configured buffer
         this.energyStorage = new EnergyStorageImpl(this.effectiveBufferCapacity);
         this.energyHandler = this.energyStorage;
+        this.energyHandler26 = new EnergyHandlerImpl();
+    }
+
+    private final class EnergyHandlerImpl extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
+        implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
+        @Override
+        protected Integer createSnapshot() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        protected void revertToSnapshot(Integer snapshot) {
+            energyStorage.setEnergy(snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        public long getCapacityAsLong() {
+            return effectiveBufferCapacity;
+        }
+
+        @Override
+        public int insert(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0 || effectiveBufferCapacity <= 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.receiveEnergy(amount, false);
+        }
+
+        @Override
+        public int extract(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0 || effectiveBufferCapacity <= 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.extractEnergy(amount, false);
+        }
     }
     
     // Determine effective energy capacity based on configurations
@@ -96,7 +136,7 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
     public void ignite() {
         // Get the target position where fire should be created
         Level level = this.getLevel();
-        if (level == null || level.isClientSide) {
+        if (level == null || level.isClientSide()) {
             return;
         }
         
@@ -137,34 +177,34 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
         // Load energy only if the block has a capacity
         if (canReceiveEnergy()) {
-            energyStorage.setEnergy(tag.getInt("Energy"));
+            energyStorage.setEnergy(input.getInt("Energy").orElse(0));
         }
         // Load redstone mode (default: 3 = PULSE)
-        redstoneMode = tag.contains("RedstoneMode") ? tag.getInt("RedstoneMode") : 3;
-        previousRedstoneState = tag.contains("PreviousRedstoneState") ? tag.getBoolean("PreviousRedstoneState") : false;
-        pulseIgnoreTimer = tag.contains("PulseIgnoreTimer") ? tag.getInt("PulseIgnoreTimer") : 0;
+        redstoneMode = input.getInt("RedstoneMode").orElse(3);
+        previousRedstoneState = input.getBooleanOr("PreviousRedstoneState", false);
+        pulseIgnoreTimer = input.getInt("PulseIgnoreTimer").orElse(0);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
         // Save energy only if the block has a capacity
         if (canReceiveEnergy()) {
-            tag.putInt("Energy", energyStorage.getEnergyStored());
+            output.putInt("Energy", energyStorage.getEnergyStored());
         }
         // Save redstone mode
-        tag.putInt("RedstoneMode", redstoneMode);
-        tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
-        tag.putInt("PulseIgnoreTimer", pulseIgnoreTimer);
+        output.putInt("RedstoneMode", redstoneMode);
+        output.putBoolean("PreviousRedstoneState", previousRedstoneState);
+        output.putInt("PulseIgnoreTimer", pulseIgnoreTimer);
     }
 
     // Tick method called every frame
     public static void tick(Level level, BlockPos pos, BlockState state, HellfireIgniterBlockEntity blockEntity) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
         
@@ -262,6 +302,10 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
     // Method to get the energy storage
     public IEnergyStorage getEnergyStorage() {
         return this.energyStorage;
+    }
+
+    public net.neoforged.neoforge.transfer.energy.EnergyHandler getEnergyHandler() {
+        return this.energyHandler26;
     }
     
     // Getters for effective values

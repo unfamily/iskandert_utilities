@@ -1992,20 +1992,6 @@ public class PortableDislocatorItem extends Item {
                     
                     // force saving of the block entity
                     if (blockEntity instanceof AngelBlockEntity angelEntity) {
-                        // create a new CompoundTag to save the data
-                        CompoundTag tag = new CompoundTag();
-                        
-                        // add the no_drop tag
-                        tag.putBoolean("no_drop", true);
-                        
-                        // load the tag into the block entity
-                        if (level instanceof ServerLevel serverLevel) {
-                            angelEntity.loadAdditional(tag, serverLevel.registryAccess());
-                            
-                            // save also in the persistent data for safety
-                            angelEntity.getPersistentData().putBoolean("no_drop", true);
-                        }
-                        
                         // force saving
                         angelEntity.setChanged();
                         

@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -21,14 +22,10 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.capabilities.BlockCapability;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.HellfireIgniterBlockEntity;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
-
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public class HellfireIgniterBlock extends DirectionalBlock implements EntityBlock {
     public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
@@ -78,7 +75,7 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, net.minecraft.world.level.redstone.Orientation orientation, boolean isMoving) {
         if (!level.isClientSide()) {
             boolean isPowered = level.hasNeighborSignal(pos);
             
@@ -123,7 +120,7 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
     
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         
@@ -146,7 +143,9 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
                         case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
                         default -> Component.literal("Unknown");
                     };
-                    player.displayClientMessage(Component.translatable("gui.iska_utils.generic.redstone_mode", modeName), true);
+                    if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                        serverPlayer.connection.send(new ClientboundSystemChatPacket(Component.translatable("gui.iska_utils.generic.redstone_mode", modeName), true));
+                    }
                 }
                 return InteractionResult.CONSUME;
             }
@@ -155,23 +154,4 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
         return InteractionResult.PASS;
     }
     
-    /**
-     * Supporto per le capabilities di energia da altre mod
-     */
-    @Nullable
-    public <T> T getCapability(BlockState state, Level level, BlockPos pos, BlockCapability<T, Direction> capability, @Nullable Direction facing) {
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity == null) {
-            return null;
-        }
-        
-        if (capability == Capabilities.EnergyStorage.BLOCK) {
-            if (blockEntity instanceof HellfireIgniterBlockEntity igniter) {
-                IEnergyStorage energyStorage = igniter.getEnergyStorage();
-                return (T) energyStorage;
-            }
-        }
-        
-        return null;
-    }
 } 

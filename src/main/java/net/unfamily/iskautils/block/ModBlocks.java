@@ -33,7 +33,7 @@ public class ModBlocks {
             .strength(0.3f, 1.0f)
             .sound(SoundType.DEEPSLATE)
             .noOcclusion()
-            .noCollission()
+            .noCollision()
             .isRedstoneConductor((state, level, pos) -> false)
             .pushReaction(PushReaction.DESTROY)
             .isViewBlocking((state, level, pos) -> false)
@@ -235,7 +235,7 @@ public class ModBlocks {
     
     private static final BlockBehaviour.Properties RUBBER_SAPLING_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.PLANT)
-            .noCollission()
+            .noCollision()
             .randomTicks()
             .instabreak()
             .sound(SoundType.GRASS)
@@ -244,7 +244,7 @@ public class ModBlocks {
     // Properties for sacred rubber sapling (no randomTicks, will use scheduled ticks instead)
     private static final BlockBehaviour.Properties SACRED_RUBBER_SAPLING_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.PLANT)
-            .noCollission()
+            .noCollision()
             .instabreak()
             .sound(SoundType.GRASS)
             .pushReaction(PushReaction.DESTROY);
@@ -343,11 +343,11 @@ public class ModBlocks {
             
     // Rubber Button
     public static final DeferredBlock<RubberButtonBlock> RUBBER_BUTTON = BLOCKS.register("rubber_button",
-            () -> new RubberButtonBlock(RUBBER_PLANKS_PROPERTIES.noCollission()));
+            () -> new RubberButtonBlock(RUBBER_PLANKS_PROPERTIES.noCollision()));
             
     // Rubber Pressure Plate
     public static final DeferredBlock<RubberPressurePlateBlock> RUBBER_PRESSURE_PLATE = BLOCKS.register("rubber_pressure_plate",
-            () -> new RubberPressurePlateBlock(RUBBER_PLANKS_PROPERTIES.noCollission()));
+            () -> new RubberPressurePlateBlock(RUBBER_PLANKS_PROPERTIES.noCollision()));
             
     // Rubber Door
     public static final DeferredBlock<RubberDoorBlock> RUBBER_DOOR = BLOCKS.register("rubber_door",
@@ -453,7 +453,7 @@ public class ModBlocks {
     // ===== BURNING FLAME BLOCK =====
     private static final BlockBehaviour.Properties BURNING_FLAME_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.COLOR_ORANGE)
-            .noCollission()
+            .noCollision()
             .instabreak()
             .sound(SoundType.WOOL)
             .lightLevel((state) -> 15)
@@ -469,7 +469,7 @@ public class ModBlocks {
     // ===== REDSTONE SIGNAL BLOCK =====
     private static final BlockBehaviour.Properties REDSTONE_SIGNAL_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.NONE)
-            .noCollission()
+            .noCollision()
             .instabreak()
             .sound(SoundType.STONE)
             .noOcclusion()
@@ -507,7 +507,7 @@ public class ModBlocks {
 
     // ===== GIFT BLOCK =====
     private static final BlockBehaviour.Properties GIFT_PROPERTIES = BlockBehaviour.Properties.of()
-            .noCollission()
+            .noCollision()
             .instabreak()
             .sound(SoundType.WOOL)
             .pushReaction(PushReaction.DESTROY)

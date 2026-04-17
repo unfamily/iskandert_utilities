@@ -12,7 +12,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.joml.Vector3f;
 
 /**
  * Redstone Signal Block - A visible block with a small hitbox (4x4x4) that emits redstone signal
@@ -39,18 +38,18 @@ public class RedstoneSignalBlock extends Block {
     }
 
     @Override
-    public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+    protected boolean propagatesSkylightDown(BlockState state) {
         return true;
     }
 
     @Override
-    public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
-        return adjacentBlockState.getBlock() == this ? true : super.skipRendering(state, adjacentBlockState, side);
+    protected boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
+        return adjacentBlockState.getBlock() == this || super.skipRendering(state, adjacentBlockState, side);
     }
 
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
-        if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
+        if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
             // Emit redstone signal when placed
             level.updateNeighborsAt(pos, this);
             
@@ -76,7 +75,7 @@ public class RedstoneSignalBlock extends Block {
             
             // Redstone dust particle (red color)
             level.addParticle(
-                new DustParticleOptions(new Vector3f(1.0f, 0.0f, 0.0f), 1.0f),
+                new DustParticleOptions(0xFF0000, 1.0f),
                 x, y, z,
                 0.0D, 0.0D, 0.0D
             );

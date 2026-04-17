@@ -42,7 +42,7 @@ public class ChaoticTntBlock extends Block {
     }
 
     @Override
-    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
         if (!oldState.is(state.getBlock())) {
             if (level.hasNeighborSignal(pos)) {
                 triggerExplosion(level, pos, null);
@@ -52,7 +52,7 @@ public class ChaoticTntBlock extends Block {
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, net.minecraft.world.level.redstone.Orientation orientation, boolean isMoving) {
         if (level.hasNeighborSignal(pos)) {
             triggerExplosion(level, pos, null);
             level.removeBlock(pos, false);

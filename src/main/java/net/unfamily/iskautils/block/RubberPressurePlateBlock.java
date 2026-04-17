@@ -12,7 +12,6 @@ public class RubberPressurePlateBlock extends PressurePlateBlock {
         super(ModWoodTypes.RUBBER_SET_TYPE, properties);
     }
     
-    @Override
     public int getLightBlock(BlockState state, BlockGetter world, BlockPos pos) {
         return 0;
     }

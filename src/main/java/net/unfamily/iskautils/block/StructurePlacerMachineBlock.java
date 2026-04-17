@@ -88,7 +88,7 @@ public class StructurePlacerMachineBlock extends BaseEntityBlock {
     
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
+        if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
                 serverPlayer.openMenu(machineEntity);
@@ -99,14 +99,12 @@ public class StructurePlacerMachineBlock extends BaseEntityBlock {
     }
     
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!state.is(newState.getBlock())) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
-                machineEntity.drops();
-            }
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
+            machineEntity.drops();
         }
-        super.onRemove(state, level, pos, newState, isMoving);
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
     
     @Override

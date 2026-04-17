@@ -33,6 +33,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     
     // Energy storage
     private final EnergyStorageImpl energyStorage;
+    private final net.neoforged.neoforge.transfer.energy.EnergyHandler energyHandler26;
     
     // Counter to manage acceleration (accelerates every N ticks)
     private int tickCounter = 0;
@@ -51,7 +52,47 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         super(ModBlockEntities.TEMPORAL_OVERCLOCKER_BE.get(), pos, state);
         int maxEnergy = Config.temporalOverclockerEnergyPerAcceleration <= 0 ? 0 : Config.temporalOverclockerEnergyBuffer;
         this.energyStorage = new EnergyStorageImpl(maxEnergy);
+        this.energyHandler26 = new EnergyHandlerImpl();
         // accelerationFactor is already initialized from the field with the value from config
+    }
+
+    private final class EnergyHandlerImpl extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
+        implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
+        @Override
+        protected Integer createSnapshot() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        protected void revertToSnapshot(Integer snapshot) {
+            energyStorage.setEnergy(snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        public long getCapacityAsLong() {
+            return energyStorage.getMaxEnergyStored();
+        }
+
+        @Override
+        public int insert(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.receiveEnergy(amount, false);
+        }
+
+        @Override
+        public int extract(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) return 0;
+            updateSnapshots(transaction);
+            return energyStorage.extractEnergy(amount, false);
+        }
     }
     
     /**
@@ -354,6 +395,10 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
      */
     public IEnergyStorage getEnergyStorage() {
         return this.energyStorage;
+    }
+
+    public net.neoforged.neoforge.transfer.energy.EnergyHandler getEnergyHandler() {
+        return this.energyHandler26;
     }
     
     @Override

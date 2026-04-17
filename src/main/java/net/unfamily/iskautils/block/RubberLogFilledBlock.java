@@ -106,7 +106,7 @@ public class RubberLogFilledBlock extends HorizontalDirectionalBlock implements 
             }
         }
         
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
 
     @Nullable

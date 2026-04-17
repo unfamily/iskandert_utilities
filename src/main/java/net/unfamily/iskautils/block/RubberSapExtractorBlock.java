@@ -61,7 +61,7 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
     private static final VoxelShape SHAPE_EAST = Shapes.or(BASE_SHAPE, PIPE_EAST);
 
     @Override
-	public VoxelShape getVisualShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+	protected VoxelShape getVisualShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
 		return Shapes.empty();
 	}
     
@@ -85,17 +85,16 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
     }
 
     @Override
-	public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
-		return adjacentBlockState.getBlock() == this ? true : super.skipRendering(state, adjacentBlockState, side);
+	protected boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
+		return adjacentBlockState.getBlock() == this || super.skipRendering(state, adjacentBlockState, side);
 	}
 
-	@Override
 	public int getLightBlock(BlockState state, BlockGetter worldIn, BlockPos pos) {
 		return 0;
 	}
     
 	@Override
-	public boolean propagatesSkylightDown(BlockState state, BlockGetter reader, BlockPos pos) {
+	protected boolean propagatesSkylightDown(BlockState state) {
 		return true;
 	}
 
@@ -128,7 +127,7 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
      */
     @Override   
     public InteractionResult useWithoutItem(BlockState blockstate, Level world, BlockPos pos, Player entity, BlockHitResult hit) {
-        if (world.isClientSide) {
+        if (world.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         
@@ -185,8 +184,8 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
     
     // when the block receives a redstone signal
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        super.neighborChanged(state, level, pos, block, fromPos, isMoving);
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, net.minecraft.world.level.redstone.Orientation orientation, boolean isMoving) {
+        super.neighborChanged(state, level, pos, block, orientation, isMoving);
         
         if (!level.isClientSide()) {
             boolean isPowered = level.hasNeighborSignal(pos);
@@ -204,26 +203,21 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
     }
     
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!state.is(newState.getBlock())) {
-            // release items from inventory when the block is destroyed
-            if (level.getBlockEntity(pos) instanceof RubberSapExtractorBlockEntity blockEntity) {
-                for (int i = 0; i < blockEntity.getItems().size(); i++) {
-                    ItemStack stack = blockEntity.getItems().get(i);
-                    if (!stack.isEmpty()) {
-                        // create an item entity in the world
-                        double x = pos.getX() + 0.5;
-                        double y = pos.getY() + 0.5;
-                        double z = pos.getZ() + 0.5;
-                        
-                        ItemEntity itemEntity = new ItemEntity(level, x, y, z, stack);
-                        itemEntity.setDefaultPickUpDelay();
-                        level.addFreshEntity(itemEntity);
-                    }
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        // release items from inventory when the block is destroyed
+        if (level.getBlockEntity(pos) instanceof RubberSapExtractorBlockEntity blockEntity) {
+            for (int i = 0; i < blockEntity.getItems().size(); i++) {
+                ItemStack stack = blockEntity.getItems().get(i);
+                if (!stack.isEmpty()) {
+                    double x = pos.getX() + 0.5;
+                    double y = pos.getY() + 0.5;
+                    double z = pos.getZ() + 0.5;
+                    ItemEntity itemEntity = new ItemEntity(level, x, y, z, stack);
+                    itemEntity.setDefaultPickUpDelay();
+                    level.addFreshEntity(itemEntity);
                 }
             }
-            
-            super.onRemove(state, level, pos, newState, isMoving);
         }
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 } 

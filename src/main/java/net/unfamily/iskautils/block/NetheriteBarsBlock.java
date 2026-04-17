@@ -11,7 +11,6 @@ public class NetheriteBarsBlock extends IronBarsBlock {
         super(properties);
     }
     
-	@Override
 	public int getLightBlock(BlockState state, BlockGetter worldIn, BlockPos pos) {
 		return 0;
 	}

@@ -12,7 +12,6 @@ public class RubberSlabBlock extends SlabBlock {
         super(properties);
     }
     
-    @Override
     public int getLightBlock(BlockState state, BlockGetter world, BlockPos pos) {
         return 0;
     }

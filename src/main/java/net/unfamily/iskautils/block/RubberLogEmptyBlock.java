@@ -112,7 +112,7 @@ public class RubberLogEmptyBlock extends HorizontalDirectionalBlock implements E
             }
         }
         
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
     
     @Override

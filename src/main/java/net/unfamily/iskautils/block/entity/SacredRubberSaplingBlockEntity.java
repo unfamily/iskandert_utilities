@@ -1,13 +1,13 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.SacredRubberSaplingBlock;
 import net.unfamily.iskautils.worldgen.tree.SacredRubberTreeGrower;
@@ -27,7 +27,7 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, SacredRubberSaplingBlockEntity blockEntity) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
         
@@ -233,26 +233,22 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
     }
     
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.putBoolean("isGrowing", isGrowing);
-        tag.putInt("growthTick", growthTick);
-        tag.putInt("currentTrunkY", currentTrunkY);
-        tag.putInt("currentLeavesY", currentLeavesY);
-        tag.putLong("basePos", basePos.asLong());
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        output.putBoolean("isGrowing", isGrowing);
+        output.putInt("growthTick", growthTick);
+        output.putInt("currentTrunkY", currentTrunkY);
+        output.putInt("currentLeavesY", currentLeavesY);
+        output.putLong("basePos", basePos.asLong());
     }
     
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        isGrowing = tag.getBoolean("isGrowing");
-        growthTick = tag.getInt("growthTick");
-        currentTrunkY = tag.getInt("currentTrunkY");
-        currentLeavesY = tag.getInt("currentLeavesY");
-        if (tag.contains("basePos")) {
-            basePos = BlockPos.of(tag.getLong("basePos"));
-        } else {
-            basePos = worldPosition; // Fallback to current position if not saved
-        }
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        isGrowing = input.getBooleanOr("isGrowing", false);
+        growthTick = input.getInt("growthTick").orElse(0);
+        currentTrunkY = input.getInt("currentTrunkY").orElse(0);
+        currentLeavesY = input.getInt("currentLeavesY").orElse(0);
+        basePos = input.getLong("basePos").map(BlockPos::of).orElse(worldPosition);
     }
 }

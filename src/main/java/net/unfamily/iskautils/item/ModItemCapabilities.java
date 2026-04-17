@@ -3,7 +3,10 @@ package net.unfamily.iskautils.item;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.transfer.TransferPreconditions;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.transaction.SnapshotJournal;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.FanpackItem;
@@ -17,7 +20,7 @@ public class ModItemCapabilities {
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {
         // Register energy capability for Vector Charm
         event.registerItem(
-                Capabilities.EnergyStorage.ITEM,
+                Capabilities.Energy.ITEM,
                 (stack, context) -> {
                     if (stack.getItem() instanceof VectorCharmItem vectorCharm) {
                         if (vectorCharm.canStoreEnergy()) {
@@ -31,7 +34,7 @@ public class ModItemCapabilities {
         
         // Register energy capability for Fanpack
         event.registerItem(
-                Capabilities.EnergyStorage.ITEM,
+                Capabilities.Energy.ITEM,
                 (stack, context) -> {
                     if (stack.getItem() instanceof FanpackItem fanpack) {
                         if (fanpack.canStoreEnergy()) {
@@ -45,7 +48,7 @@ public class ModItemCapabilities {
         
         // Register energy capability for Portable Dislocator
         event.registerItem(
-                Capabilities.EnergyStorage.ITEM,
+                Capabilities.Energy.ITEM,
                 (stack, context) -> {
                     if (stack.getItem() instanceof PortableDislocatorItem dislocator) {
                         if (dislocator.canStoreEnergy()) {
@@ -59,7 +62,7 @@ public class ModItemCapabilities {
         
         // Register energy capability for Electric TreeTap
         event.registerItem(
-                Capabilities.EnergyStorage.ITEM,
+                Capabilities.Energy.ITEM,
                 (stack, context) -> {
                     if (stack.getItem() instanceof ElectricTreeTapItem treeTap) {
                         if (treeTap.canStoreEnergy()) {
@@ -73,7 +76,7 @@ public class ModItemCapabilities {
         
         // Register energy capability for Scanner
         event.registerItem(
-                Capabilities.EnergyStorage.ITEM,
+                Capabilities.Energy.ITEM,
                 (stack, context) -> {
                     if (stack.getItem() instanceof ScannerItem scanner) {
                         if (scanner.canStoreEnergy()) {
@@ -89,7 +92,7 @@ public class ModItemCapabilities {
     /**
      * Energy storage implementation for Vector Charm
      */
-    public static class VectorCharmEnergyStorage implements IEnergyStorage {
+    public static class VectorCharmEnergyStorage extends SnapshotJournal<Integer> implements EnergyHandler {
         private final VectorCharmItem vectorCharm;
         private final net.minecraft.world.item.ItemStack stack;
         
@@ -99,55 +102,50 @@ public class ModItemCapabilities {
         }
         
         @Override
-        public int receiveEnergy(int maxReceive, boolean simulate) {
-            int currentEnergy = vectorCharm.getEnergyStored(stack);
-            int maxEnergy = vectorCharm.getMaxEnergyStored(stack);
-            int energyToReceive = Math.min(maxReceive, maxEnergy - currentEnergy);
-            
-            if (!simulate && energyToReceive > 0) {
-                vectorCharm.setEnergyStored(stack, currentEnergy + energyToReceive);
-            }
-            
-            return energyToReceive;
-        }
-        
-        @Override
-        public int extractEnergy(int maxExtract, boolean simulate) {
-            int currentEnergy = vectorCharm.getEnergyStored(stack);
-            int energyToExtract = Math.min(maxExtract, currentEnergy);
-            
-            if (!simulate && energyToExtract > 0) {
-                vectorCharm.setEnergyStored(stack, currentEnergy - energyToExtract);
-            }
-            
-            return energyToExtract;
-        }
-        
-        @Override
-        public int getEnergyStored() {
+        protected Integer createSnapshot() {
             return vectorCharm.getEnergyStored(stack);
         }
-        
+
         @Override
-        public int getMaxEnergyStored() {
+        protected void revertToSnapshot(Integer snapshot) {
+            vectorCharm.setEnergyStored(stack, snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return vectorCharm.getEnergyStored(stack);
+        }
+
+        @Override
+        public long getCapacityAsLong() {
             return vectorCharm.getMaxEnergyStored(stack);
         }
-        
+
         @Override
-        public boolean canExtract() {
-            return false; // Vector Charm doesn't allow energy extraction
+        public int insert(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
+            updateSnapshots(transaction);
+
+            int current = vectorCharm.getEnergyStored(stack);
+            int max = vectorCharm.getMaxEnergyStored(stack);
+            int inserted = Math.min(amount, Math.max(0, max - current));
+            if (inserted > 0) {
+                vectorCharm.setEnergyStored(stack, current + inserted);
+            }
+            return inserted;
         }
-        
+
         @Override
-        public boolean canReceive() {
-            return vectorCharm.canStoreEnergy();
+        public int extract(int amount, TransactionContext transaction) {
+            // Keep legacy behavior: these items don't expose extraction.
+            return 0;
         }
     }
     
     /**
      * Energy storage implementation for Fanpack
      */
-    public static class FanpackEnergyStorage implements IEnergyStorage {
+    public static class FanpackEnergyStorage extends SnapshotJournal<Integer> implements EnergyHandler {
         private final FanpackItem fanpack;
         private final net.minecraft.world.item.ItemStack stack;
         
@@ -157,55 +155,49 @@ public class ModItemCapabilities {
         }
         
         @Override
-        public int receiveEnergy(int maxReceive, boolean simulate) {
-            int currentEnergy = fanpack.getEnergyStored(stack);
-            int maxEnergy = fanpack.getMaxEnergyStored(stack);
-            int energyToReceive = Math.min(maxReceive, maxEnergy - currentEnergy);
-            
-            if (!simulate && energyToReceive > 0) {
-                fanpack.setEnergyStored(stack, currentEnergy + energyToReceive);
-            }
-            
-            return energyToReceive;
-        }
-        
-        @Override
-        public int extractEnergy(int maxExtract, boolean simulate) {
-            int currentEnergy = fanpack.getEnergyStored(stack);
-            int energyToExtract = Math.min(maxExtract, currentEnergy);
-            
-            if (!simulate && energyToExtract > 0) {
-                fanpack.setEnergyStored(stack, currentEnergy - energyToExtract);
-            }
-            
-            return energyToExtract;
-        }
-        
-        @Override
-        public int getEnergyStored() {
+        protected Integer createSnapshot() {
             return fanpack.getEnergyStored(stack);
         }
-        
+
         @Override
-        public int getMaxEnergyStored() {
+        protected void revertToSnapshot(Integer snapshot) {
+            fanpack.setEnergyStored(stack, snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return fanpack.getEnergyStored(stack);
+        }
+
+        @Override
+        public long getCapacityAsLong() {
             return fanpack.getMaxEnergyStored(stack);
         }
-        
+
         @Override
-        public boolean canExtract() {
-            return false; // Fanpack doesn't allow energy extraction
+        public int insert(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
+            updateSnapshots(transaction);
+
+            int current = fanpack.getEnergyStored(stack);
+            int max = fanpack.getMaxEnergyStored(stack);
+            int inserted = Math.min(amount, Math.max(0, max - current));
+            if (inserted > 0) {
+                fanpack.setEnergyStored(stack, current + inserted);
+            }
+            return inserted;
         }
-        
+
         @Override
-        public boolean canReceive() {
-            return fanpack.canStoreEnergy();
+        public int extract(int amount, TransactionContext transaction) {
+            return 0;
         }
     }
     
     /**
      * Energy storage implementation for Portable Dislocator
      */
-    public static class PortableDislocatorEnergyStorage implements IEnergyStorage {
+    public static class PortableDislocatorEnergyStorage extends SnapshotJournal<Integer> implements EnergyHandler {
         private final PortableDislocatorItem dislocator;
         private final net.minecraft.world.item.ItemStack stack;
         
@@ -215,55 +207,49 @@ public class ModItemCapabilities {
         }
         
         @Override
-        public int receiveEnergy(int maxReceive, boolean simulate) {
-            int currentEnergy = dislocator.getEnergyStored(stack);
-            int maxEnergy = dislocator.getMaxEnergyStored(stack);
-            int energyToReceive = Math.min(maxReceive, maxEnergy - currentEnergy);
-            
-            if (!simulate && energyToReceive > 0) {
-                dislocator.setEnergyStored(stack, currentEnergy + energyToReceive);
-            }
-            
-            return energyToReceive;
-        }
-        
-        @Override
-        public int extractEnergy(int maxExtract, boolean simulate) {
-            int currentEnergy = dislocator.getEnergyStored(stack);
-            int energyToExtract = Math.min(maxExtract, currentEnergy);
-            
-            if (!simulate && energyToExtract > 0) {
-                dislocator.setEnergyStored(stack, currentEnergy - energyToExtract);
-            }
-            
-            return energyToExtract;
-        }
-        
-        @Override
-        public int getEnergyStored() {
+        protected Integer createSnapshot() {
             return dislocator.getEnergyStored(stack);
         }
-        
+
         @Override
-        public int getMaxEnergyStored() {
+        protected void revertToSnapshot(Integer snapshot) {
+            dislocator.setEnergyStored(stack, snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return dislocator.getEnergyStored(stack);
+        }
+
+        @Override
+        public long getCapacityAsLong() {
             return dislocator.getMaxEnergyStored(stack);
         }
-        
+
         @Override
-        public boolean canExtract() {
-            return false; // Portable Dislocator doesn't allow energy extraction
+        public int insert(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
+            updateSnapshots(transaction);
+
+            int current = dislocator.getEnergyStored(stack);
+            int max = dislocator.getMaxEnergyStored(stack);
+            int inserted = Math.min(amount, Math.max(0, max - current));
+            if (inserted > 0) {
+                dislocator.setEnergyStored(stack, current + inserted);
+            }
+            return inserted;
         }
-        
+
         @Override
-        public boolean canReceive() {
-            return dislocator.canStoreEnergy();
+        public int extract(int amount, TransactionContext transaction) {
+            return 0;
         }
     }
     
     /**
      * Energy storage implementation for Electric TreeTap
      */
-    public static class ElectricTreeTapEnergyStorage implements IEnergyStorage {
+    public static class ElectricTreeTapEnergyStorage extends SnapshotJournal<Integer> implements EnergyHandler {
         private final ElectricTreeTapItem treeTap;
         private final net.minecraft.world.item.ItemStack stack;
         
@@ -273,55 +259,49 @@ public class ModItemCapabilities {
         }
         
         @Override
-        public int receiveEnergy(int maxReceive, boolean simulate) {
-            int currentEnergy = treeTap.getEnergyStored(stack);
-            int maxEnergy = treeTap.getMaxEnergyStored(stack);
-            int energyToReceive = Math.min(maxReceive, maxEnergy - currentEnergy);
-            
-            if (!simulate && energyToReceive > 0) {
-                treeTap.setEnergyStored(stack, currentEnergy + energyToReceive);
-            }
-            
-            return energyToReceive;
-        }
-        
-        @Override
-        public int extractEnergy(int maxExtract, boolean simulate) {
-            int currentEnergy = treeTap.getEnergyStored(stack);
-            int energyToExtract = Math.min(maxExtract, currentEnergy);
-            
-            if (!simulate && energyToExtract > 0) {
-                treeTap.setEnergyStored(stack, currentEnergy - energyToExtract);
-            }
-            
-            return energyToExtract;
-        }
-        
-        @Override
-        public int getEnergyStored() {
+        protected Integer createSnapshot() {
             return treeTap.getEnergyStored(stack);
         }
-        
+
         @Override
-        public int getMaxEnergyStored() {
+        protected void revertToSnapshot(Integer snapshot) {
+            treeTap.setEnergyStored(stack, snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return treeTap.getEnergyStored(stack);
+        }
+
+        @Override
+        public long getCapacityAsLong() {
             return treeTap.getMaxEnergyStored(stack);
         }
-        
+
         @Override
-        public boolean canExtract() {
-            return false; // Electric TreeTap doesn't allow energy extraction
+        public int insert(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
+            updateSnapshots(transaction);
+
+            int current = treeTap.getEnergyStored(stack);
+            int max = treeTap.getMaxEnergyStored(stack);
+            int inserted = Math.min(amount, Math.max(0, max - current));
+            if (inserted > 0) {
+                treeTap.setEnergyStored(stack, current + inserted);
+            }
+            return inserted;
         }
-        
+
         @Override
-        public boolean canReceive() {
-            return treeTap.canStoreEnergy();
+        public int extract(int amount, TransactionContext transaction) {
+            return 0;
         }
     }
     
     /**
      * Energy storage implementation for Scanner
      */
-    public static class ScannerEnergyStorage implements IEnergyStorage {
+    public static class ScannerEnergyStorage extends SnapshotJournal<Integer> implements EnergyHandler {
         private final ScannerItem scanner;
         private final net.minecraft.world.item.ItemStack stack;
         
@@ -331,48 +311,42 @@ public class ModItemCapabilities {
         }
         
         @Override
-        public int receiveEnergy(int maxReceive, boolean simulate) {
-            int currentEnergy = scanner.getEnergyStored(stack);
-            int maxEnergy = scanner.getMaxEnergyStored(stack);
-            int energyToReceive = Math.min(maxReceive, maxEnergy - currentEnergy);
-            
-            if (!simulate && energyToReceive > 0) {
-                scanner.setEnergyStored(stack, currentEnergy + energyToReceive);
-            }
-            
-            return energyToReceive;
-        }
-        
-        @Override
-        public int extractEnergy(int maxExtract, boolean simulate) {
-            int currentEnergy = scanner.getEnergyStored(stack);
-            int energyToExtract = Math.min(maxExtract, currentEnergy);
-            
-            if (!simulate && energyToExtract > 0) {
-                scanner.setEnergyStored(stack, currentEnergy - energyToExtract);
-            }
-            
-            return energyToExtract;
-        }
-        
-        @Override
-        public int getEnergyStored() {
+        protected Integer createSnapshot() {
             return scanner.getEnergyStored(stack);
         }
-        
+
         @Override
-        public int getMaxEnergyStored() {
+        protected void revertToSnapshot(Integer snapshot) {
+            scanner.setEnergyStored(stack, snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return scanner.getEnergyStored(stack);
+        }
+
+        @Override
+        public long getCapacityAsLong() {
             return scanner.getMaxEnergyStored(stack);
         }
-        
+
         @Override
-        public boolean canExtract() {
-            return false; // Scanner doesn't allow energy extraction
+        public int insert(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
+            updateSnapshots(transaction);
+
+            int current = scanner.getEnergyStored(stack);
+            int max = scanner.getMaxEnergyStored(stack);
+            int inserted = Math.min(amount, Math.max(0, max - current));
+            if (inserted > 0) {
+                scanner.setEnergyStored(stack, current + inserted);
+            }
+            return inserted;
         }
-        
+
         @Override
-        public boolean canReceive() {
-            return scanner.canStoreEnergy();
+        public int extract(int amount, TransactionContext transaction) {
+            return 0;
         }
     }
 } 

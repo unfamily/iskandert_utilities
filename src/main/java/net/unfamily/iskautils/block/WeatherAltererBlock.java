@@ -5,6 +5,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -24,15 +25,10 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.capabilities.BlockCapability;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.block.entity.WeatherAltererBlockEntity;
 import net.unfamily.iskautils.Config;
-
-import javax.annotation.Nullable;
-import java.util.Optional;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The Weather Alterer is a block that can change the weather when powered by redstone
@@ -78,7 +74,7 @@ public class WeatherAltererBlock extends Block implements EntityBlock {
      */
     @Override
     public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         
@@ -103,14 +99,16 @@ public class WeatherAltererBlock extends Block implements EntityBlock {
         };
         
         // Send the feedback message to the player in the action bar
-        player.displayClientMessage(modeMessage, true);
+        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            serverPlayer.connection.send(new ClientboundSystemChatPacket(modeMessage, true));
+        }
         
         return InteractionResult.CONSUME;
     }
     
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        if (!level.isClientSide) {
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, net.minecraft.world.level.redstone.Orientation orientation, boolean isMoving) {
+        if (!level.isClientSide()) {
             boolean isPowered = level.hasNeighborSignal(pos);
             
             // Only trigger weather change on rising edge (from unpowered to powered)
@@ -152,23 +150,4 @@ public class WeatherAltererBlock extends Block implements EntityBlock {
         return typeExpected == typeCheck ? (BlockEntityTicker<A>) ticker : null;
     }
     
-    /**
-     * Supporto per le capabilities di energia da altre mod
-     */
-    @Nullable
-    public <T> T getCapability(BlockState state, Level level, BlockPos pos, BlockCapability<T, Direction> capability, @Nullable Direction facing) {
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity == null) {
-            return null;
-        }
-        
-        if (capability == Capabilities.EnergyStorage.BLOCK) {
-            if (blockEntity instanceof WeatherAltererBlockEntity weatherAlterer) {
-                IEnergyStorage energyStorage = weatherAlterer.getEnergyStorage();
-                return (T) energyStorage;
-            }
-        }
-        
-        return null;
-    }
 } 

@@ -12,7 +12,6 @@ public class RubberButtonBlock extends ButtonBlock {
         super(ModWoodTypes.RUBBER_SET_TYPE, 30, properties);
     }
     
-    @Override
     public int getLightBlock(BlockState state, BlockGetter world, BlockPos pos) {
         return 0;
     }

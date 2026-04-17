@@ -12,7 +12,6 @@ public class RubberStairsBlock extends StairBlock {
         super(baseState, properties);
     }
     
-    @Override
     public int getLightBlock(BlockState state, BlockGetter world, BlockPos pos) {
         return 0;
     }

@@ -69,7 +69,7 @@ public class AngelBlock extends Block implements EntityBlock {
         // If the block entity exists and has the "no_drop" tag, don't drop anything
         if (blockEntity != null && 
             (blockEntity.getPersistentData().contains("no_drop") && 
-             blockEntity.getPersistentData().getBoolean("no_drop"))) {
+             blockEntity.getPersistentData().getBoolean("no_drop").orElse(false))) {
             return Collections.emptyList();
         }
         
