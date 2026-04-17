@@ -8,6 +8,7 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 
@@ -210,6 +211,61 @@ public class ModBlockEntities {
                         }
                         return null;
                     }
+            );
+
+            // Item transfer (NeoForge 26 ResourceHandler; wraps legacy IItemHandler for hoppers / pipes)
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    DEEP_DRAWERS_BE.get(),
+                    (blockEntity, ctx) -> {
+                        if (!(blockEntity instanceof DeepDrawersBlockEntity be)) {
+                            return null;
+                        }
+                        if (!Config.deepDrawersDirectPipeAccess) {
+                            return null;
+                        }
+                        return be.getItemTransferHandler();
+                    }
+            );
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    DEEP_DRAWER_EXTRACTOR.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof DeepDrawerExtractorBlockEntity be ? be.getItemTransferHandler() : null
+            );
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    DEEP_DRAWER_INTERFACE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof DeepDrawerInterfaceBlockEntity be ? be.getItemTransferHandler() : null
+            );
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    DEEP_DRAWER_EXTENDER.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof DeepDrawerExtenderBlockEntity be ? be.getItemTransferHandler() : null
+            );
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    SHOP_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof ShopBlockEntity be ? be.getItemTransferHandler() : null
+            );
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    AUTO_SHOP_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof AutoShopBlockEntity be ? be.getItemTransferHandler() : null
+            );
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    STRUCTURE_PLACER_MACHINE_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof StructurePlacerMachineBlockEntity be ? be.getItemTransferHandler() : null
+            );
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    STRUCTURE_SAVER_MACHINE_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof StructureSaverMachineBlockEntity be ? be.getItemTransferHandler() : null
+            );
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    FAN_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof FanBlockEntity be ? be.getItemTransferHandler() : null
             );
         }
     }

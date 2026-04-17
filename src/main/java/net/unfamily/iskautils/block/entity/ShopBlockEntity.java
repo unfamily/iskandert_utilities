@@ -13,6 +13,9 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.minecraft.world.item.ItemStack;
@@ -38,7 +41,9 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
             return true;
         }
     };
-    
+
+    private final ResourceHandler<ItemResource> itemTransferHandler = LegacyItemHandlerResourceHandler.wrap(itemHandler);
+
     // Shop state (simplified)
     private boolean isActive = false;
     private String currentCategory = "000_default";
@@ -88,7 +93,11 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
     public IItemHandler getItemHandler() {
         return this.itemHandler;
     }
-    
+
+    public ResourceHandler<ItemResource> getItemTransferHandler() {
+        return itemTransferHandler;
+    }
+
     public boolean isActive() {
         return this.isActive;
     }

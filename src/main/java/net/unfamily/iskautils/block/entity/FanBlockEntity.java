@@ -19,6 +19,9 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.FanBlock;
 import net.unfamily.iskautils.item.ModItems;
@@ -104,7 +107,9 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         }
         
     };
-    
+
+    private final ResourceHandler<ItemResource> itemTransferHandler = LegacyItemHandlerResourceHandler.wrap(moduleHandler);
+
     // Count how many range modules are currently installed
     public int countRangeModules() {
         int count = 0;
@@ -193,7 +198,11 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     public ItemStackHandler getModuleHandler() {
         return moduleHandler;
     }
-    
+
+    public ResourceHandler<ItemResource> getItemTransferHandler() {
+        return itemTransferHandler;
+    }
+
     // MenuProvider implementation
     @Override
     public Component getDisplayName() {

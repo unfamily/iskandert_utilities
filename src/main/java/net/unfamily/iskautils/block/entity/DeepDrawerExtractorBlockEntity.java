@@ -17,6 +17,9 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.block.DeepDrawerExtractorBlock;
 import net.unfamily.iskautils.util.DeepDrawerConnectorHelper;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +44,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     
     // ItemHandler for capability (exposes the 5 slots)
     private final IItemHandler itemHandler = new ExtractorItemHandler();
-    
+    private final ResourceHandler<ItemResource> itemTransferHandler = LegacyItemHandlerResourceHandler.wrap(itemHandler);
+
     // Timer for extraction (interval from config, default 1 tick = 0.05 seconds, maximum speed)
     private int extractionTimer = 0;
     
@@ -213,7 +217,11 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     public IItemHandler getItemHandler() {
         return itemHandler;
     }
-    
+
+    public ResourceHandler<ItemResource> getItemTransferHandler() {
+        return itemTransferHandler;
+    }
+
     /**
      * Main tick called by the block
      */

@@ -32,6 +32,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.client.gui.StructurePlacerMachineMenu;
@@ -74,7 +77,9 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             return true;
         }
     };
-    
+
+    private final ResourceHandler<ItemResource> itemTransferHandler = LegacyItemHandlerResourceHandler.wrap(itemHandler);
+
     // Energy storage for the machine (configured capacity, max input, and max extract)
     private final EnergyStorageImpl energyStorage = new EnergyStorageImpl(
         net.unfamily.iskautils.Config.structurePlacerMachineEnergyBuffer, 
@@ -308,7 +313,11 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     public IItemHandler getItemHandler() {
         return itemHandler;
     }
-    
+
+    public ResourceHandler<ItemResource> getItemTransferHandler() {
+        return itemTransferHandler;
+    }
+
     public IEnergyStorage getEnergyStorage() {
         return energyStorage;
     }

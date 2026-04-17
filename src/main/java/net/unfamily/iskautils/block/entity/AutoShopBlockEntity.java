@@ -8,6 +8,9 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import org.jetbrains.annotations.NotNull;
 import net.minecraft.world.item.ItemStack;
 import java.util.UUID;
@@ -41,7 +44,9 @@ public class AutoShopBlockEntity extends BlockEntity {
             return super.extractItem(slot, amount, simulate);
         }
     };
-    
+
+    private final ResourceHandler<ItemResource> itemTransferHandler = LegacyItemHandlerResourceHandler.wrap(encapsulatedSlot);
+
     /** Read-only handler for the filter slot display (ghost slot: no insert/extract). */
     private final IItemHandler filterDisplayHandler = new IItemHandler() {
         @Override
@@ -184,7 +189,11 @@ public class AutoShopBlockEntity extends BlockEntity {
     public ItemStackHandler getEncapsulatedSlot() {
         return encapsulatedSlot;
     }
-    
+
+    public ResourceHandler<ItemResource> getItemTransferHandler() {
+        return itemTransferHandler;
+    }
+
     /** Returns the read-only filter display handler (ghost slot: display only, no put/take). */
     public IItemHandler getFilterDisplayHandler() {
         return filterDisplayHandler;

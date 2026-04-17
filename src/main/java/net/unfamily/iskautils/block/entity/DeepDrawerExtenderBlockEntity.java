@@ -4,7 +4,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.util.DeepDrawerConnectorHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,7 +28,8 @@ public class DeepDrawerExtenderBlockEntity extends BlockEntity {
     
     // ItemHandler that wraps the adjacent drawer's content
     private final IItemHandler itemHandler = new ExtenderItemHandler();
-    
+    private final ResourceHandler<ItemResource> itemTransferHandler = LegacyItemHandlerResourceHandler.wrap(itemHandler);
+
     public DeepDrawerExtenderBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DEEP_DRAWER_EXTENDER.get(), pos, state);
     }
@@ -34,7 +40,11 @@ public class DeepDrawerExtenderBlockEntity extends BlockEntity {
     public IItemHandler getItemHandler() {
         return itemHandler;
     }
-    
+
+    public ResourceHandler<ItemResource> getItemTransferHandler() {
+        return itemTransferHandler;
+    }
+
     /**
      * Finds a connected Deep Drawer through connector network (extender, interface, extractor)
      * All connectors can connect to each other to find the drawer
@@ -94,8 +104,20 @@ public class DeepDrawerExtenderBlockEntity extends BlockEntity {
      * IItemHandler implementation that wraps the adjacent drawer's content
      * This allows hoppers and other blocks to interact with the drawer through the extender
      */
-    private class ExtenderItemHandler implements IItemHandler {
-        
+    private class ExtenderItemHandler implements IItemHandlerModifiable {
+
+        @Override
+        public void setStackInSlot(int slot, @NotNull ItemStack stack) {
+            DeepDrawersBlockEntity drawer = findAdjacentDrawer();
+            if (drawer == null) {
+                return;
+            }
+            IItemHandler drawerHandler = drawer.getItemHandler();
+            if (drawerHandler instanceof IItemHandlerModifiable modifiable) {
+                modifiable.setStackInSlot(slot, stack);
+            }
+        }
+
         @Override
         public int getSlots() {
             DeepDrawersBlockEntity drawer = findAdjacentDrawer();
@@ -108,7 +130,7 @@ public class DeepDrawerExtenderBlockEntity extends BlockEntity {
         
         @NotNull
         @Override
-        public net.minecraft.world.item.ItemStack getStackInSlot(int slot) {
+        public ItemStack getStackInSlot(int slot) {
             DeepDrawersBlockEntity drawer = findAdjacentDrawer();
             if (drawer == null) {
                 return net.minecraft.world.item.ItemStack.EMPTY;
@@ -119,7 +141,7 @@ public class DeepDrawerExtenderBlockEntity extends BlockEntity {
         
         @NotNull
         @Override
-        public net.minecraft.world.item.ItemStack insertItem(int slot, @NotNull net.minecraft.world.item.ItemStack stack, boolean simulate) {
+        public ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
             DeepDrawersBlockEntity drawer = findAdjacentDrawer();
             if (drawer == null) {
                 return stack;
@@ -130,7 +152,7 @@ public class DeepDrawerExtenderBlockEntity extends BlockEntity {
         
         @NotNull
         @Override
-        public net.minecraft.world.item.ItemStack extractItem(int slot, int amount, boolean simulate) {
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
             // Block extraction from extender (only insertion allowed)
             return net.minecraft.world.item.ItemStack.EMPTY;
         }
@@ -145,7 +167,7 @@ public class DeepDrawerExtenderBlockEntity extends BlockEntity {
         }
         
         @Override
-        public boolean isItemValid(int slot, @NotNull net.minecraft.world.item.ItemStack stack) {
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
             DeepDrawersBlockEntity drawer = findAdjacentDrawer();
             if (drawer == null) {
                 return false;

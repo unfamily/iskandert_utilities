@@ -19,6 +19,9 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.client.gui.DeepDrawersMenu;
 import net.unfamily.iskautils.util.DeepDrawerStackSizeContext;
@@ -69,7 +72,8 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     
     // Custom item handler for hopper/pipe interaction
     private final IItemHandler itemHandler = new DeepDrawersItemHandler();
-    
+    private final ResourceHandler<ItemResource> itemTransferHandler = LegacyItemHandlerResourceHandler.wrap(itemHandler);
+
     public DeepDrawersBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DEEP_DRAWERS_BE.get(), pos, state);
         // maxSlots is now read directly from config in real-time (no caching)
@@ -81,7 +85,14 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     public IItemHandler getItemHandler() {
         return itemHandler;
     }
-    
+
+    /**
+     * NeoForge 26 item transfer capability (hopper / pipe automation).
+     */
+    public ResourceHandler<ItemResource> getItemTransferHandler() {
+        return itemTransferHandler;
+    }
+
     /**
      * Converts a physical slot to logical slot
      * Returns -1 if physical slot is not occupied

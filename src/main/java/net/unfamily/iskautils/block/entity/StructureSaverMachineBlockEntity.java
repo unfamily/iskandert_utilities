@@ -16,6 +16,9 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.minecraft.world.item.ItemStack;
@@ -51,7 +54,9 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
             return stack;
         }
     };
-    
+
+    private final ResourceHandler<ItemResource> itemTransferHandler = LegacyItemHandlerResourceHandler.wrap(itemHandler);
+
     // Compound tags storage per dati struttura
     private CompoundTag structureData = new CompoundTag();
     
@@ -327,7 +332,11 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     public IItemHandler getItemHandler() {
         return itemHandler;
     }
-    
+
+    public ResourceHandler<ItemResource> getItemTransferHandler() {
+        return itemTransferHandler;
+    }
+
     public CompoundTag getStructureData() {
         return structureData.copy();
     }
