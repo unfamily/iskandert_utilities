@@ -9,7 +9,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -19,15 +18,15 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.unfamily.iskautils.block.entity.FanBlockEntity;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 
 import javax.annotation.Nullable;
 
-public class FanBlock extends DirectionalBlock implements EntityBlock {
-    public static final DirectionProperty FACING = DirectionalBlock.FACING;
+public class FanBlock extends Block implements EntityBlock {
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final MapCodec<FanBlock> CODEC = simpleCodec(FanBlock::new);
 
@@ -36,11 +35,6 @@ public class FanBlock extends DirectionalBlock implements EntityBlock {
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(POWERED, Boolean.FALSE));
-    }
-
-    @Override
-    protected MapCodec<? extends DirectionalBlock> codec() {
-        return CODEC;
     }
 
     @Override
@@ -73,12 +67,6 @@ public class FanBlock extends DirectionalBlock implements EntityBlock {
         return RenderShape.MODEL;
     }
 
-    @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        // Don't update POWERED state here - it's handled in tick based on advanced redstone logic
-        // This prevents conflicts between primitive and advanced redstone logic
-    }
-
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
@@ -103,7 +91,7 @@ public class FanBlock extends DirectionalBlock implements EntityBlock {
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
 
@@ -126,7 +114,7 @@ public class FanBlock extends DirectionalBlock implements EntityBlock {
                 // First click: show warning message in yellow action bar
                 net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.translatable("message.iska_utils.fan.use_back_side")
                     .withStyle(net.minecraft.ChatFormatting.YELLOW);
-                serverPlayer.displayClientMessage(message, true); // true = action bar
+                serverPlayer.sendSystemMessage(message);
                 fanEntity.setHasShownBackMessage(true);
                 return InteractionResult.CONSUME;
             }

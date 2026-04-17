@@ -5,7 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -17,7 +17,7 @@ import net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity;
 public record SoundMufflerVolumeC2SPacket(BlockPos pos, int categoryIndex, int delta) implements CustomPacketPayload {
 
     public static final Type<SoundMufflerVolumeC2SPacket> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "sound_muffler_volume"));
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "sound_muffler_volume"));
 
     public static final StreamCodec<FriendlyByteBuf, SoundMufflerVolumeC2SPacket> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC,

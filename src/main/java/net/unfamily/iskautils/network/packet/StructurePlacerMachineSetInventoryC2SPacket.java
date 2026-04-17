@@ -5,11 +5,11 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
@@ -26,7 +26,7 @@ public record StructurePlacerMachineSetInventoryC2SPacket(BlockPos pos, int mode
     public static final int MODE_CTRL = 2;
     
     public static final Type<StructurePlacerMachineSetInventoryC2SPacket> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "structure_placer_machine_set_inventory")
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "structure_placer_machine_set_inventory")
     );
     
     public static final StreamCodec<FriendlyByteBuf, StructurePlacerMachineSetInventoryC2SPacket> STREAM_CODEC = StreamCodec.composite(
@@ -45,7 +45,7 @@ public record StructurePlacerMachineSetInventoryC2SPacket(BlockPos pos, int mode
     public static void handle(StructurePlacerMachineSetInventoryC2SPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             ServerPlayer player = (ServerPlayer) context.player();
-            ServerLevel level = player.serverLevel();
+            ServerLevel level = (ServerLevel) player.level();
             
             BlockEntity blockEntity = level.getBlockEntity(packet.pos());
             if (blockEntity instanceof StructurePlacerMachineBlockEntity machine) {

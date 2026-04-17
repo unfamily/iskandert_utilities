@@ -35,7 +35,7 @@ public class RubberFallHandler {
         }
         
         // Handle the fall with the specialized function of the rubber boots
-        if (RubberBootsItem.handleFallDamage(boots, player, event.getDistance())) {
+        if (RubberBootsItem.handleFallDamage(boots, player, (float) event.getDistance())) {
             // If the handling function has handled the event correctly, cancel the damage
             event.setCanceled(true);
         }

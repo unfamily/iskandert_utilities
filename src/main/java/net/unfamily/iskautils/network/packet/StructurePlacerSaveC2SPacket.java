@@ -36,14 +36,14 @@ public class StructurePlacerSaveC2SPacket {
         }
         
         if (structureId == null || structureId.isEmpty()) {
-            player.displayClientMessage(Component.literal("§cInvalid structure ID!"), true);
+            player.sendSystemMessage(Component.literal("§cInvalid structure ID!"));
             return;
         }
         
         // Verifica che la struttura esista
         StructureDefinition structure = StructureLoader.getStructure(structureId);
         if (structure == null) {
-            player.displayClientMessage(Component.literal("§cStructure not found: " + structureId), true);
+            player.sendSystemMessage(Component.literal("§cStructure not found: " + structureId));
             return;
         }
         
@@ -59,7 +59,7 @@ public class StructurePlacerSaveC2SPacket {
         }
         
         if (targetStack == null) {
-            player.displayClientMessage(Component.literal("§cNo Structure Placer Item in hand!"), true);
+            player.sendSystemMessage(Component.literal("§cNo Structure Placer Item in hand!"));
             return;
         }
         
@@ -68,7 +68,7 @@ public class StructurePlacerSaveC2SPacket {
         
         // Informa il giocatore del successo
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-        player.displayClientMessage(
+        player.sendSystemMessage(
             Component.literal("§aSaved structure: §f" + structureName + " §7(" + structure.getId() + ")"), 
             true);
         

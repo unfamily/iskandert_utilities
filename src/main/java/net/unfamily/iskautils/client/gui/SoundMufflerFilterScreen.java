@@ -1,14 +1,18 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.unfamily.iskautils.IskaUtils;
@@ -24,10 +28,10 @@ import java.util.stream.StreamSupport;
 public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMufflerFilterMenu> {
 
     // Same background as main Sound Muffler GUI (230x180)
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/sound_muffler.png");
-    private static final ResourceLocation ENTRY_TEXTURE = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/entry_low_wide_wide.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
-    private static final ResourceLocation TINY_BUTTONS_TEXTURE = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/tiny_buttons.png");
+    private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/sound_muffler.png");
+    private static final Identifier ENTRY_TEXTURE = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/entry_low_wide_wide.png");
+    private static final Identifier SCROLLBAR_TEXTURE = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
+    private static final Identifier TINY_BUTTONS_TEXTURE = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/tiny_buttons.png");
 
     // Same size as main muffler; 9px margin each side => entry = 230 - 9 - 4 - 8 - 9 = 200
     private static final int BORDER_MARGIN = 9;
@@ -96,9 +100,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     }
 
     public SoundMufflerFilterScreen(SoundMufflerFilterMenu menu, Inventory playerInventory, Component title, Screen parentScreen) {
-        super(menu, playerInventory, title);
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
         this.parentScreen = parentScreen;
     }
 
@@ -237,61 +239,62 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        guiGraphics.blit(BACKGROUND, leftPos, topPos, 0, 0, imageWidth, imageHeight, GUI_WIDTH, GUI_HEIGHT);
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, leftPos, topPos, 0.0F, 0.0F, imageWidth, imageHeight, GUI_WIDTH, GUI_HEIGHT);
         renderEntries(guiGraphics, mouseX, mouseY);
         renderScrollbar(guiGraphics, mouseX, mouseY);
     }
 
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         Component titleComponent = Component.translatable("gui.iska_utils.sound_muffler.filter_title");
         int titleX = (imageWidth - font.width(titleComponent)) / 2;
-        guiGraphics.drawString(font, titleComponent, titleX, 8, 0x404040, false);
+        guiGraphics.text(font, titleComponent, titleX, 8, 0x404040, false);
     }
 
-    private void renderEntries(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderEntries(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         for (int i = 0; i < VISIBLE_ENTRIES; i++) {
             int entryIndex = scrollOffset + i;
             int entryX = leftPos + ENTRIES_START_X;
             int entryY = topPos + LIST_ENTRIES_START_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
-            guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_TEX_WIDTH, ENTRY_TEX_HEIGHT);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENTRY_TEXTURE, entryX, entryY, 0.0F, 0.0F, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_TEX_WIDTH, ENTRY_TEX_HEIGHT);
             if (entryIndex < filteredSoundIds.size()) {
                 String soundId = filteredSoundIds.get(entryIndex);
                 int maxW = ENTRY_WIDTH - 8 - BUTTON_SIZE - 6;
                 String display = font.plainSubstrByWidth(soundId, maxW);
                 if (display.length() < soundId.length()) display = display + "..";
-                guiGraphics.drawString(font, display, entryX + 4, entryY + (ENTRY_HEIGHT - font.lineHeight) / 2, 0x404040, false);
+                guiGraphics.text(font, Component.literal(display), entryX + 4, entryY + (ENTRY_HEIGHT - font.lineHeight) / 2, 0x404040, false);
                 renderSelectionButton(guiGraphics, entryX, entryY, entryIndex, mouseX, mouseY);
             }
         }
     }
 
-    private void renderSelectionButton(GuiGraphics guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
+    private void renderSelectionButton(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
         int buttonX = entryX + ENTRY_WIDTH - BUTTON_SIZE - 4;
         int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2;
         boolean isHovered = mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE && mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE;
         boolean isSelected = entryIndex < filteredSoundIds.size() && selectedSoundIds.contains(filteredSoundIds.get(entryIndex));
         int buttonU = isSelected ? BUTTON_FILLED_U : BUTTON_EMPTY_U;
         int buttonV = isHovered ? BUTTON_HOVERED_V : BUTTON_NORMAL_V;
-        guiGraphics.blit(TINY_BUTTONS_TEXTURE, buttonX, buttonY, buttonU, buttonV, BUTTON_SIZE, BUTTON_SIZE, 64, 96);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TINY_BUTTONS_TEXTURE, buttonX, buttonY, (float)buttonU, (float)buttonV, BUTTON_SIZE, BUTTON_SIZE, 64, 96);
     }
 
-    private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int scrollbarX = leftPos + SCROLLBAR_X;
         int scrollbarY = topPos + SCROLLBAR_Y;
         int buttonUpY = topPos + BUTTON_UP_Y;
         int buttonDownY = topPos + BUTTON_DOWN_Y;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
         boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, SCROLLBAR_WIDTH * 2, upHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, (float)(SCROLLBAR_WIDTH * 2), (float)(upHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, SCROLLBAR_WIDTH * 3, downHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, (float)(SCROLLBAR_WIDTH * 3), (float)(downHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         int total = filteredSoundIds.size();
         float scrollRatio = total <= VISIBLE_ENTRIES ? 0 : (float) scrollOffset / (total - VISIBLE_ENTRIES);
         int handleY = scrollbarY + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
         boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, handleY, SCROLLBAR_WIDTH, handleHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, handleY, (float)SCROLLBAR_WIDTH, (float)(handleHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
     }
 
     private void scrollUp() {
@@ -304,8 +307,10 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        if (event.button() == 0) {
             int scrollbarX = leftPos + SCROLLBAR_X;
             if (filteredSoundIds.size() > VISIBLE_ENTRIES) {
                 int upButtonY = topPos + BUTTON_UP_Y;
@@ -343,13 +348,13 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
                 return true;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0) isDraggingHandle = false;
-        return super.mouseReleased(mouseX, mouseY, button);
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0) isDraggingHandle = false;
+        return super.mouseReleased(event);
     }
 
     @Override
@@ -375,5 +380,17 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
             }
         }
         super.mouseMoved(mouseX, mouseY);
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        // Drag behavior is implemented in mouseMoved.
+        return super.mouseDragged(event, dragX, dragY);
+    }
+
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+        // No extra overlays; tooltips are handled by widgets.
     }
 }

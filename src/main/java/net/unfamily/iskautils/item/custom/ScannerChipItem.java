@@ -8,10 +8,12 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -49,19 +51,16 @@ public class ScannerChipItem extends Item {
     }
     
     @Override
-    public void onCraftedBy(ItemStack itemStack, Level level, Player player) {
-        super.onCraftedBy(itemStack, level, player);
+    public void onCraftedBy(ItemStack itemStack, Player player) {
+        super.onCraftedBy(itemStack, player);
         
         // Inizializza l'NBT per i chip specifici
         initializeSpecializedChip(itemStack);
     }
     
     @Override
-    public void inventoryTick(ItemStack itemStack, Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(itemStack, level, entity, slotId, isSelected);
-        
-        // Verifica se il chip è già inizializzato
-        if (level.isClientSide) return;
+    public void inventoryTick(ItemStack itemStack, ServerLevel level, Entity entity, EquipmentSlot slot) {
+        super.inventoryTick(itemStack, level, entity, slot);
         
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (tag.contains(INITIALIZED_TAG)) return;
@@ -79,7 +78,7 @@ public class ScannerChipItem extends Item {
      * Inizializza i chip specializzati con il loro target predefinito
      */
     private void initializeSpecializedChip(ItemStack itemStack) {
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
         String itemPath = itemId.getPath();
         
         if (itemPath.contains("scanner_chip_ores") && getGenericTarget(itemStack) == null) {
@@ -113,12 +112,12 @@ public class ScannerChipItem extends Item {
         ItemStack itemStack = context.getItemInHand();
         BlockPos blockPos = context.getClickedPos();
         
-        if (level.isClientSide || player == null) {
+        if (level.isClientSide() || player == null) {
             return InteractionResult.SUCCESS;
         }
         
         // Check if this is a specialized chip (ores or mobs) - these cannot be overwritten
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
         String itemPath = itemId.getPath();
         boolean isSpecializedChip = itemPath.contains("scanner_chip_ores") || itemPath.contains("scanner_chip_mobs");
         
@@ -131,7 +130,7 @@ public class ScannerChipItem extends Item {
                 // Register the target block in the chip
                 setTargetBlock(itemStack, block);
                 
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.target_set", block.getName()), true);
+                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.target_set", block.getName()));
                 return InteractionResult.SUCCESS;
             }
         }
@@ -157,7 +156,7 @@ public class ScannerChipItem extends Item {
                 transferGenericTargetToScanner(itemStack, mainHandItem, scanner, player);
                 return InteractionResult.SUCCESS;
             } else {
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"), true);
+                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"));
                 return InteractionResult.FAIL;
             }
         }
@@ -166,15 +165,15 @@ public class ScannerChipItem extends Item {
     }
     
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack itemStack = player.getItemInHand(hand);
         
-        if (level.isClientSide) {
-            return InteractionResultHolder.success(itemStack);
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
         }
         
         // Check if this is a specialized chip (ores or mobs)
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
         String itemPath = itemId.getPath();
         boolean isSpecializedChip = itemPath.contains("scanner_chip_ores") || itemPath.contains("scanner_chip_mobs");
         
@@ -216,21 +215,21 @@ public class ScannerChipItem extends Item {
                             case 100 -> "item.iska_utils.scanner_chip.mining_level.modded";
                             default -> "item.iska_utils.scanner_chip.mining_level.none";
                         };
-                        player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.mining_level.set", 
-                                Component.translatable(levelText)), true);
-                        return InteractionResultHolder.success(itemStack);
+                        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.mining_level.set",
+                                Component.translatable(levelText)));
+                        return InteractionResult.SUCCESS;
                     }
                     // Set the chip to scan for all ores if not already set
                     if (getGenericTarget(itemStack) == null) {
                         setGenericTarget(itemStack, "ores");
                     }
-                    return InteractionResultHolder.success(itemStack);
+                    return InteractionResult.SUCCESS;
                 } else if (itemPath.contains("scanner_chip_mobs")) {
                     // Set the chip to scan for all mobs if not already set
                     if (getGenericTarget(itemStack) == null) {
                         setGenericTarget(itemStack, "mobs");
                     }
-                    return InteractionResultHolder.success(itemStack);
+                    return InteractionResult.SUCCESS;
                 }
             } else {
                 // For regular chips, check the item's registry name to determine its type
@@ -250,22 +249,22 @@ public class ScannerChipItem extends Item {
             if (targetBlock != null) {
                 // Transfer the target block to the scanner
                 transferBlockTargetToScanner(itemStack, mainHandItem, scanner, player);
-                return InteractionResultHolder.success(itemStack);
+                return InteractionResult.SUCCESS;
             } else if (targetMob != null) {
                 // Transfer the target mob to the scanner
                 transferMobTargetToScanner(itemStack, mainHandItem, scanner, player);
-                return InteractionResultHolder.success(itemStack);
+                return InteractionResult.SUCCESS;
             } else if (genericTarget != null) {
                 // Transfer the generic target to the scanner
                 transferGenericTargetToScanner(itemStack, mainHandItem, scanner, player);
-                return InteractionResultHolder.success(itemStack);
+                return InteractionResult.SUCCESS;
             } else {
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"), true);
-                return InteractionResultHolder.fail(itemStack);
+                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"));
+                return InteractionResult.FAIL;
             }
         }
         
-        return InteractionResultHolder.pass(itemStack);
+        return InteractionResult.PASS;
     }
     
     /**
@@ -294,8 +293,9 @@ public class ScannerChipItem extends Item {
             return null;
         }
         
-        String blockId = tag.getString(TARGET_BLOCK_TAG);
-        return BuiltInRegistries.BLOCK.get(ResourceLocation.parse(blockId));
+        String blockId = tag.getString(TARGET_BLOCK_TAG).orElse("");
+        Identifier id = Identifier.tryParse(blockId);
+        return id == null ? null : BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
     }
     
     /**
@@ -324,7 +324,7 @@ public class ScannerChipItem extends Item {
             return null;
         }
         
-        return tag.getString(TARGET_MOB_TAG);
+        return tag.getString(TARGET_MOB_TAG).orElse(null);
     }
 
     /**
@@ -356,7 +356,7 @@ public class ScannerChipItem extends Item {
             return null;
         }
         
-        return tag.getString(TARGET_GEN_TAG);
+        return tag.getString(TARGET_GEN_TAG).orElse(null);
     }
     
     /**
@@ -385,7 +385,7 @@ public class ScannerChipItem extends Item {
             return 0; // Default: no filter
         }
         
-        return tag.getInt(MINING_LEVEL_TAG);
+        return tag.getInt(MINING_LEVEL_TAG).orElse(0);
     }
     
     /**
@@ -408,17 +408,17 @@ public class ScannerChipItem extends Item {
         scannerTag.remove(TARGET_GEN_TAG);
         
         // Set the new target block
-        scannerTag.putString(TARGET_BLOCK_TAG, chipTag.getString(TARGET_BLOCK_TAG));
+        scannerTag.putString(TARGET_BLOCK_TAG, chipTag.getString(TARGET_BLOCK_TAG).orElse(""));
         
         // Ensure the scanner has a unique ID
         if (!scannerTag.contains("ScannerId")) {
-            scannerTag.putUUID("ScannerId", java.util.UUID.randomUUID());
+            scannerTag.putString("ScannerId", java.util.UUID.randomUUID().toString());
         }
         
         // Save the data in the scanner
         scannerStack.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
         
-        player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success", targetBlock.getName()), true);
+        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success", targetBlock.getName()));
     }
     
     /**
@@ -441,18 +441,18 @@ public class ScannerChipItem extends Item {
         scannerTag.remove(TARGET_GEN_TAG);
         
         // Set the new target mob
-        scannerTag.putString(TARGET_MOB_TAG, chipTag.getString(TARGET_MOB_TAG));
+        scannerTag.putString(TARGET_MOB_TAG, chipTag.getString(TARGET_MOB_TAG).orElse(""));
         
         // Ensure the scanner has a unique ID
         if (!scannerTag.contains("ScannerId")) {
-            scannerTag.putUUID("ScannerId", java.util.UUID.randomUUID());
+            scannerTag.putString("ScannerId", java.util.UUID.randomUUID().toString());
         }
         
         // Save the data in the scanner
         scannerStack.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
         
-        player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
-                getLocalizedMobName(targetMob)), true);
+        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
+                getLocalizedMobName(targetMob)));
     }
     
     /**
@@ -486,7 +486,7 @@ public class ScannerChipItem extends Item {
         
         // Ensure the scanner has a unique ID
         if (!scannerTag.contains("ScannerId")) {
-            scannerTag.putUUID("ScannerId", java.util.UUID.randomUUID());
+            scannerTag.putString("ScannerId", java.util.UUID.randomUUID().toString());
         }
         
         // Save the data in the scanner
@@ -494,9 +494,9 @@ public class ScannerChipItem extends Item {
         
         // Display appropriate message based on target type
         if ("ores".equals(genericTarget)) {
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"), true);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"));
         } else if ("mobs".equals(genericTarget)) {
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"), true);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"));
         }
     }
     
@@ -533,12 +533,10 @@ public class ScannerChipItem extends Item {
         return translated;
     }
     
-    @Override
+    // TODO(neoforge-26): update to the new tooltip callback signature (List->Consumer)
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
-        
         // Check if this is a specialized chip (ores or mobs)
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         String itemPath = itemId.getPath();
         boolean isOresChip = itemPath.contains("scanner_chip_ores");
         boolean isMobsChip = itemPath.contains("scanner_chip_mobs");

@@ -1,11 +1,17 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
+import com.mojang.blaze3d.platform.InputConstants;
+import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.core.BlockPos;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
@@ -19,13 +25,13 @@ import net.minecraft.world.item.ItemStack;
  */
 public class StructurePlacerMachineScreen extends AbstractContainerScreen<StructurePlacerMachineMenu> {
     
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/block_structure.png");
-    private static final ResourceLocation ENERGY_BAR = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/energy_bar.png");
+    private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/block_structure.png");
+    private static final Identifier ENERGY_BAR = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/energy_bar.png");
     
     // Medium buttons texture (16x32 - normal and highlighted)
-    private static final ResourceLocation MEDIUM_BUTTONS = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
+    private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
     // Redstone GUI icon
-    private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
+    private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
     
     // GUI dimensions (based on block_structure.png: 176x248 - increased button area height by 48px)
     private static final int GUI_WIDTH = 176;
@@ -52,11 +58,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5; // 5px from right edge
     
     public StructurePlacerMachineScreen(StructurePlacerMachineMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        
-        // Set the GUI dimensions
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
     }
     
     @Override
@@ -247,9 +249,9 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             // Determine the mode based on modifier keys
             int mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_NORMAL;
             
-            if (hasShiftDown()) {
+            if (isShiftDownNow()) {
                 mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_SHIFT;
-            } else if (hasControlDown() || hasAltDown()) {
+            } else if (isCtrlDownNow() || isAltDownNow()) {
                 // Support both Ctrl and Alt/AltGr for the same functionality
                 mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_CTRL;
             }
@@ -265,9 +267,9 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                     
                     // Determine mode again for fallback
                     int mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_NORMAL;
-                    if (hasShiftDown()) {
+                    if (isShiftDownNow()) {
                         mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_SHIFT;
-                    } else if (hasControlDown() || hasAltDown()) {
+                    } else if (isCtrlDownNow() || isAltDownNow()) {
                         mode = net.unfamily.iskautils.network.packet.StructurePlacerMachineSetInventoryC2SPacket.MODE_CTRL;
                     }
                     
@@ -311,20 +313,34 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineRedstoneModePacket(machinePos);
         }
     }
+
+    private boolean isShiftDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+    }
+
+    private boolean isCtrlDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+    }
+
+    private boolean isAltDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
+    }
     
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        // Draw the background texture
-        guiGraphics.blit(BACKGROUND, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
-        
-        // Draw the energy bar
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, this.leftPos, this.topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         renderEnergyBar(guiGraphics);
-        
-        // Draw the custom redstone mode button
         renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
     }
     
-    private void renderEnergyBar(GuiGraphics guiGraphics) {
+    private void renderEnergyBar(GuiGraphicsExtractor guiGraphics) {
         // Position energy bar more internally and centered between left buttons (Select and Rotate)
         // Select button is at X=20, so center the energy bar between it and the left edge
         int energyBarX = this.leftPos + ((20 - ENERGY_BAR_WIDTH) / 2); // Centered between left edge and Select button
@@ -335,9 +351,9 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         int energyBarY = this.topPos + 57 - (ENERGY_BAR_HEIGHT / 2); // Centered between button rows
         
         // Always draw empty energy bar background (right half of texture - pixels 8-15)
-        guiGraphics.blit(ENERGY_BAR, energyBarX, energyBarY, 
-                       8, 0, // Source: right half starts at x=8 (empty part)
-                       ENERGY_BAR_WIDTH, ENERGY_BAR_HEIGHT, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENERGY_BAR, energyBarX, energyBarY,
+                       8.0F, 0.0F, // Source: right half starts at x=8 (empty part)
+                       ENERGY_BAR_WIDTH, ENERGY_BAR_HEIGHT,
                        16, 32); // Total texture size: 16x32
         
         // Calculate energy fill percentage and draw filled part using synced data
@@ -349,22 +365,22 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             int energyY = energyBarY + (ENERGY_BAR_HEIGHT - energyHeight);
             
             // Draw filled energy bar (left half of texture - pixels 0-7, from bottom up)
-            guiGraphics.blit(ENERGY_BAR, energyBarX, energyY,
-                           0, ENERGY_BAR_HEIGHT - energyHeight, // Source: left half (charged part), from bottom
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENERGY_BAR, energyBarX, energyY,
+                           0.0F, (float)(ENERGY_BAR_HEIGHT - energyHeight), // Source: left half (charged part), from bottom
                            ENERGY_BAR_WIDTH, energyHeight,
                            16, 32); // Total texture size: 16x32
         }
     }
     
-    private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderRedstoneModeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the button
         boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                            mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
         
         // Draw button background (normal or highlighted)
         int textureY = isHovered ? 16 : 0; // Highlighted version is below the normal one
-        guiGraphics.blit(MEDIUM_BUTTONS, this.redstoneModeButtonX, this.redstoneModeButtonY, 
-                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, this.redstoneModeButtonX, this.redstoneModeButtonY,
+                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
                         96, 96); // Correct texture size: 96x96
         
         // Get current redstone mode from menu
@@ -406,70 +422,54 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     /**
      * Renders an item scaled to the specified size
      */
-    private void renderScaledItem(GuiGraphics guiGraphics, net.minecraft.world.item.ItemStack itemStack, int x, int y, int size) {
-        // Save current matrix state
-        guiGraphics.pose().pushPose();
+    private void renderScaledItem(GuiGraphicsExtractor guiGraphics, net.minecraft.world.item.ItemStack itemStack, int x, int y, int size) {
+        guiGraphics.pose().pushMatrix();
         
         // Calculate scale: original item size is 16x16, we want 12x12
         float scale = (float) size / 16.0f;
         
         // Translate to position and apply scale
-        guiGraphics.pose().translate(x, y, 0);
-        guiGraphics.pose().scale(scale, scale, 1.0f);
+        guiGraphics.pose().translate(x, y);
+        guiGraphics.pose().scale(scale, scale);
         
         // Render the item
-        guiGraphics.renderItem(itemStack, 0, 0);
+        guiGraphics.item(itemStack, 0, 0);
         
-        // Restore matrix state
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
     
     /**
      * Renders a texture scaled to the specified size (like an item)
      */
-    private void renderScaledTexture(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int size) {
-        // Save current matrix state
-        guiGraphics.pose().pushPose();
+    private void renderScaledTexture(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y, int size) {
+        guiGraphics.pose().pushMatrix();
         
         // Calculate scale: original texture size is 16x16, we want 12x12
         float scale = (float) size / 16.0f;
         
         // Translate to position and apply scale
-        guiGraphics.pose().translate(x, y, 0);
-        guiGraphics.pose().scale(scale, scale, 1.0f);
+        guiGraphics.pose().translate(x, y);
+        guiGraphics.pose().scale(scale, scale);
         
         // Render the texture (assuming it's 16x16)
-        guiGraphics.blit(texture, 0, 0, 0, 0, 16, 16, 16, 16);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16, 16, 16);
         
-        // Restore matrix state
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
-    
+
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Render the background
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        
-        // Render ghost items on top of empty slots
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
         renderGhostItems(guiGraphics);
-        
-        // Render energy bar tooltip
         renderEnergyTooltip(guiGraphics, mouseX, mouseY);
-        
-        // Render redstone mode button tooltip
         renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
-        
-        // Render Set Inventory button tooltip
         renderSetInventoryTooltip(guiGraphics, mouseX, mouseY);
-        
-        // Render item tooltips
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
     
     /**
      * Renders ghost items (semi-transparent) in slots that have filters but are empty
      */
-    private void renderGhostItems(GuiGraphics guiGraphics) {
+    private void renderGhostItems(GuiGraphicsExtractor guiGraphics) {
         for (int slot = 0; slot < 27; slot++) { // Only machine slots (first 27)
             if (this.menu.hasGhostFilter(slot)) {
                 // Get the actual slot to check if it's empty
@@ -488,24 +488,22 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     /**
      * Renders a single ghost item (semi-transparent) at the specified position
      */
-    private void renderGhostItem(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y) {
-        // Save current matrix state
-        guiGraphics.pose().pushPose();
+    private void renderGhostItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y) {
+        guiGraphics.pose().pushMatrix();
         
         // Translate to the slot position (relative to GUI)
-        guiGraphics.pose().translate(this.leftPos + x, this.topPos + y, 0);
+        guiGraphics.pose().translate(this.leftPos + x, this.topPos + y);
         
         // Render the item first
-        guiGraphics.renderItem(itemStack, 0, 0);
+        guiGraphics.item(itemStack, 0, 0);
         
         // Then apply a semi-transparent dark overlay to create ghost effect
         guiGraphics.fill(0, 0, 16, 16, 0x80000000); // 50% transparent black overlay
         
-        // Restore matrix state
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
-    
-    private void renderEnergyTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+
+    private void renderEnergyTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Use same position calculation as in renderEnergyBar
         int energyBarX = this.leftPos + ((20 - ENERGY_BAR_WIDTH) / 2); // Centered between left edge and Select button
         int energyBarY = this.topPos + 57 - (ENERGY_BAR_HEIGHT / 2); // Centered between button rows
@@ -519,11 +517,11 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             int maxEnergy = this.menu.getMaxEnergyStored();
             
             Component tooltip = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy));
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(this.font, java.util.List.of(tooltip.getVisualOrderText()), DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
         }
     }
-    
-    private void renderRedstoneModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+
+    private void renderRedstoneModeTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the button
         boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                            mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
@@ -542,12 +540,11 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                 default -> Component.literal("Unknown mode");
             };
             
-            // Use the standard tooltip rendering system (with background and border)
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(this.font, java.util.List.of(tooltip.getVisualOrderText()), DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
         }
     }
-    
-    private void renderSetInventoryTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+
+    private void renderSetInventoryTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the Set Inventory button
         if (this.setInventoryButton != null && this.setInventoryButton.isHovered()) {
             java.util.List<Component> tooltipLines = new java.util.ArrayList<>();
@@ -555,24 +552,24 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             tooltipLines.add(Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line2"));
             tooltipLines.add(Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line3"));
             
-            // Use the correct method for multi-line tooltips
-            guiGraphics.renderComponentTooltip(this.font, tooltipLines, mouseX, mouseY);
+            java.util.List<FormattedCharSequence> lines = tooltipLines.stream().map(Component::getVisualOrderText).toList();
+            guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
         }
     }
-    
+
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Draw the title (centered)
         Component titleComponent = Component.translatable("block.iska_utils.structure_placer_machine");
         String title = titleComponent.getString();
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
-        guiGraphics.drawString(this.font, title, titleX, 6, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(title), titleX, 6, 0x404040, false);
         
         // Draw selected structure text (centered between button rows)
         renderSelectedStructureText(guiGraphics);
     }
     
-    private void renderSelectedStructureText(GuiGraphics guiGraphics) {
+    private void renderSelectedStructureText(GuiGraphicsExtractor guiGraphics) {
         // Use the new cached structure method from the menu instead of directly accessing block entity
         String selectedStructure = this.menu.getCachedSelectedStructure();
         
@@ -607,8 +604,8 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         int secondLineY = 60; // Second line (structure name) slightly below center
         
         // Save current matrix state
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().scale(scale, scale, 1.0f);
+        guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().scale(scale, scale);
         
         // Calculate scaled positions
         int scaledFirstLineY = Math.round(firstLineY / scale);
@@ -617,31 +614,34 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // Draw first line: "Selected Structure:" (centered, dark color)
         int scaledLabelWidth = this.font.width(labelText);
         int scaledLabelX = Math.round((this.imageWidth / scale - scaledLabelWidth) / 2);
-        guiGraphics.drawString(this.font, labelText, scaledLabelX, scaledFirstLineY, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(labelText), scaledLabelX, scaledFirstLineY, 0x404040, false);
         
         // Draw second line: structure name or "None" (centered, colored)
         int scaledStructureWidth = this.font.width(structureText);
         int scaledStructureX = Math.round((this.imageWidth / scale - scaledStructureWidth) / 2);
         int structureColor = displayName.isEmpty() ? 0xFF4040 : 0x4040FF;
-        guiGraphics.drawString(this.font, structureText, scaledStructureX, scaledSecondLineY, structureColor, false);
+        guiGraphics.text(this.font, Component.literal(structureText), scaledStructureX, scaledSecondLineY, structureColor, false);
         
-        // Restore matrix state
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
-    
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Check if click is on redstone mode button
+
+    private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) { // Left click
             if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                 mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-                
                 onRedstoneModePressed();
                 return true;
             }
         }
-        
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (handleMouseClicked(event.x(), event.y(), event.button())) {
+            return true;
+        }
+        return super.mouseClicked(event, doubleClick);
     }
     
     /**

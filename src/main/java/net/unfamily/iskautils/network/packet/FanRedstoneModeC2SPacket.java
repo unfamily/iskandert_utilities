@@ -5,7 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -21,7 +21,7 @@ import net.unfamily.iskautils.block.entity.FanBlockEntity;
 public record FanRedstoneModeC2SPacket(BlockPos pos) implements CustomPacketPayload {
     
     public static final Type<FanRedstoneModeC2SPacket> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "fan_redstone_mode")
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "fan_redstone_mode")
     );
     
     public static final StreamCodec<FriendlyByteBuf, FanRedstoneModeC2SPacket> STREAM_CODEC = StreamCodec.composite(
@@ -38,7 +38,7 @@ public record FanRedstoneModeC2SPacket(BlockPos pos) implements CustomPacketPayl
     public static void handle(FanRedstoneModeC2SPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             ServerPlayer player = (ServerPlayer) context.player();
-            ServerLevel level = player.serverLevel();
+            ServerLevel level = (ServerLevel) player.level();
             
             BlockEntity blockEntity = level.getBlockEntity(packet.pos());
             if (blockEntity instanceof FanBlockEntity fan) {

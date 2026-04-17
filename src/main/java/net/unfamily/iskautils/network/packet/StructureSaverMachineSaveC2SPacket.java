@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity;
 import net.unfamily.iskautils.structure.StructureLoader;
@@ -86,12 +86,12 @@ public class StructureSaverMachineSaveC2SPacket {
 
         
         if (structureName == null || structureName.trim().isEmpty()) {
-            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.invalid_name"), true);
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.error.invalid_name"));
             return;
         }
         
         if (structureId == null || structureId.trim().isEmpty()) {
-            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.invalid_id"), true);
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.error.invalid_id"));
             return;
         }
         
@@ -109,29 +109,29 @@ public class StructureSaverMachineSaveC2SPacket {
             // Verify that the structure to modify exists
             if (!allClientStructures.containsKey(oldStructureId)) {
                 LOGGER.warn("Attempt to modify non-existent structure: {}", oldStructureId);
-                player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.structure_not_found_for_modify"), true);
+                player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.error.structure_not_found_for_modify"));
                 return;
             }
             
             // If the ID changes, verify that the new ID is not already in use (but different from the structure we're modifying)
             if (!oldStructureId.equals(finalStructureId) && allClientStructures.containsKey(finalStructureId)) {
                 LOGGER.warn("Attempt to modify with duplicate ID: {}", finalStructureId);
-                player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id"), true);
-                player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id_hint"), true);
+                player.sendSystemMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id"));
+                player.sendSystemMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id_hint"));
                 return;
             }
         } else {
             // Save operation: verify there are no duplicates
             if (allClientStructures.containsKey(finalStructureId)) {
                 LOGGER.warn("Attempt to save structure with duplicate ID: {}", finalStructureId);
-                player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id"), true);
-                player.displayClientMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id_hint"), true);
+                player.sendSystemMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id"));
+                player.sendSystemMessage(Component.translatable("gui.iska_utils.save_error_duplicate_id_hint"));
                 return;
             }
         }
         
         if (machinePos == null) {
-            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.invalid_machine_position"), true);
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.error.invalid_machine_position"));
             return;
         }
         
@@ -140,13 +140,13 @@ public class StructureSaverMachineSaveC2SPacket {
         BlockEntity blockEntity = level.getBlockEntity(machinePos);
         
         if (!(blockEntity instanceof StructureSaverMachineBlockEntity machineEntity)) {
-            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.machine_not_found_at_position", machinePos.toString()), true);
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.error.machine_not_found_at_position", machinePos.toString()));
             return;
         }
         
         // Verify that the machine has blueprint data
         if (!machineEntity.hasBlueprintData()) {
-            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.no_blueprint_data"), true);
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.error.no_blueprint_data"));
             return;
         }
         
@@ -155,13 +155,13 @@ public class StructureSaverMachineSaveC2SPacket {
         BlockPos center = machineEntity.getBlueprintCenter();
         
         if (vertex1 == null || vertex2 == null || center == null) {
-            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.incomplete_blueprint_data"), true);
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.error.incomplete_blueprint_data"));
             return;
         }
         
         try {
             // Determine if we're in singleplayer or multiplayer
-            boolean isSingleplayer = player.getServer().isSingleplayer();
+            boolean isSingleplayer = level.getServer().isSingleplayer();
             
             if (isSingleplayer) {
                 // Singleplayer: save directly on the server (which is also the client)
@@ -181,17 +181,17 @@ public class StructureSaverMachineSaveC2SPacket {
             
             if (isSingleplayer) {
                 String operationType = isModifyOperation ? "modified" : "saved";
-                player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.success", structureName, operationType), true);
+                player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.success", structureName, operationType));
 
             } else {
                 String operationType = isModifyOperation ? "modification" : "save";
-                player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.command_sent", operationType), true);
+                player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.command_sent", operationType));
 
             }
             
         } catch (Exception e) {
             LOGGER.error("Error during structure save '{}': {}", structureName, e.getMessage());
-            player.displayClientMessage(Component.translatable("gui.iska_utils.structure_saver.error.save_failed", e.getMessage()), true);
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.error.save_failed", e.getMessage()));
         }
     }
     
@@ -279,7 +279,7 @@ public class StructureSaverMachineSaveC2SPacket {
      */
     private String generateBlockKey(BlockState state) {
         Block block = state.getBlock();
-        ResourceLocation blockLocation = BuiltInRegistries.BLOCK.getKey(block);
+        Identifier blockLocation = BuiltInRegistries.BLOCK.getKey(block);
         
         if (state.getProperties().isEmpty()) {
             return blockLocation.toString();

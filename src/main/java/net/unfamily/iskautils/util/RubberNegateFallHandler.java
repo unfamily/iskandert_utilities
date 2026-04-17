@@ -45,7 +45,7 @@ public class RubberNegateFallHandler {
         
         PlayerBounceData negateFallData = NEGATE_FALL_PLAYERS.get(playerUUID);
 
-        if (player.isSwimming() || player.isInWaterOrBubble() || player.onClimbable() || 
+        if (player.isSwimming() || player.isInWater() || player.onClimbable() || 
             player.isSpectator() || player.isFallFlying() || player.getAbilities().flying) {
             NEGATE_FALL_PLAYERS.remove(playerUUID);
             return;

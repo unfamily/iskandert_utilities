@@ -1,6 +1,6 @@
 package net.unfamily.iskautils.network;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
@@ -431,7 +431,7 @@ public class ModMessages {
                     
                     String selectedStructure = machineEntity.getSelectedStructure();
                     if (selectedStructure.isEmpty()) {
-                        player.displayClientMessage(net.minecraft.network.chat.Component.literal("§cNo structure selected!"), true);
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cNo structure selected!"));
                         return;
                     }
                     
@@ -439,7 +439,7 @@ public class ModMessages {
                     net.unfamily.iskautils.structure.StructureDefinition structure = 
                         net.unfamily.iskautils.structure.StructureLoader.getStructure(selectedStructure);
                     if (structure == null) {
-                        player.displayClientMessage(net.minecraft.network.chat.Component.literal("§cStructure not found: " + selectedStructure), true);
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cStructure not found: " + selectedStructure));
                         return;
                     }
                     
@@ -450,7 +450,7 @@ public class ModMessages {
                     showStructurePreview(level, machinePos, player, structure, machineEntity.getRotation());
                     
                     String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-                    player.displayClientMessage(net.minecraft.network.chat.Component.literal("§bShowing preview: §f" + structureName), true);
+                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§bShowing preview: §f" + structureName));
                     
                 } catch (Exception e) {
                     LOGGER.error("Error executing packet on server thread: {}", e.getMessage());
@@ -487,7 +487,7 @@ public class ModMessages {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         // Directly call the rotate logic
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = player.serverLevel().getBlockEntity(machinePos);
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = ((net.minecraft.server.level.ServerLevel) player.level()).getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity machine) {
                             String structureId = machine.getSelectedStructure();
                             if (structureId != null && !structureId.isEmpty()) {
@@ -506,7 +506,7 @@ public class ModMessages {
                                 };
                                 
                                 // Notify player
-                                player.displayClientMessage(net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_placer_machine.rotated", rotationText), true);
+                                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_placer_machine.rotated", rotationText));
                             }
                         }
                     }
@@ -533,7 +533,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.AutoShopBlockEntity autoShop) {
                             net.unfamily.iskautils.block.entity.AutoShopBlockEntity.RedstoneMode current =
@@ -579,7 +579,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof StructurePlacerMachineBlockEntity machine) {
@@ -631,7 +631,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
@@ -687,7 +687,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel world = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel world = (net.minecraft.server.level.ServerLevel) player.level();
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(machinePos);
                         
                         if (blockEntity instanceof StructurePlacerMachineBlockEntity machine) {
@@ -901,9 +901,12 @@ public class ModMessages {
         if (structure.getCanReplace() != null) {
             for (String replaceableBlock : structure.getCanReplace()) {
                 try {
-                    net.minecraft.resources.ResourceLocation blockLocation = net.minecraft.resources.ResourceLocation.parse(replaceableBlock);
-                    net.minecraft.world.level.block.Block allowedBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
-                    if (block == allowedBlock) {
+                    Identifier blockLocation = Identifier.tryParse(replaceableBlock);
+                    if (blockLocation == null) {
+                        continue;
+                    }
+                    net.minecraft.world.level.block.Block allowedBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
+                    if (allowedBlock != null && block == allowedBlock) {
                         return true;
                     }
                 } catch (Exception e) {
@@ -976,7 +979,7 @@ public class ModMessages {
     public static void sendStructureSyncPacket(ServerPlayer player) {
         try {
             // Check if we're in singleplayer mode
-            boolean isSingleplayer = player.getServer().isSingleplayer();
+            boolean isSingleplayer = ((net.minecraft.server.level.ServerLevel) player.level()).getServer().isSingleplayer();
             
             if (isSingleplayer) {
                 LOGGER.debug("Singleplayer mode detected, skipping structure sync for player {}", 
@@ -1296,8 +1299,8 @@ public class ModMessages {
                         net.unfamily.iskautils.data.BurningBrazierData.setAutoPlacementEnabledToPlayer(player, newState);
 
                         // Send message to player
-                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.burning_brazier_auto_placement." +
-                                                     (newState ? "enabled" : "disabled")), true);
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.burning_brazier_auto_placement." +
+                                                     (newState ? "enabled" : "disabled")));
                     }
                 } catch (Exception e) {
                     LOGGER.warn("Failed to toggle Burning Brazier auto-placement: {}", e.getMessage());
@@ -1371,9 +1374,9 @@ public class ModMessages {
                     
                     // Show feedback in action bar
                     if (newState) {
-                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.enabled"), true);
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.enabled"));
                     } else {
-                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.disabled"), true);
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.disabled"));
                     }
                 } catch (Exception e) {
                     LOGGER.warn("Failed to toggle Gauntlet of Climbing: {}", e.getMessage());
@@ -1411,12 +1414,12 @@ public class ModMessages {
                         net.minecraft.world.level.GameType previousMode = net.unfamily.iskautils.data.GhostBrazierData.getPreviousGameMode(player);
                         player.setGameMode(previousMode);
                         net.unfamily.iskautils.data.GhostBrazierData.clearPreviousGameMode(player);
-                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_physical"), true);
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_physical"));
                     } else {
                         // Switch to Spectator mode, save current mode
                         net.unfamily.iskautils.data.GhostBrazierData.setPreviousGameMode(player, currentGameMode);
                         player.setGameMode(net.minecraft.world.level.GameType.SPECTATOR);
-                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_ethereal"), true);
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_ethereal"));
                     }
                 } catch (Exception e) {
                     LOGGER.warn("Failed to toggle Ghost Brazier game mode: {}", e.getMessage());
@@ -1507,7 +1510,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
@@ -1558,7 +1561,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
@@ -1608,7 +1611,7 @@ public class ModMessages {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         // Directly call the toggle logic
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = player.serverLevel().getBlockEntity(machinePos);
+                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = ((net.minecraft.server.level.ServerLevel) player.level()).getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
                             // Toggle whitelist/blacklist mode
                             boolean currentMode = extractor.isWhitelistMode();
@@ -1649,7 +1652,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
@@ -1695,7 +1698,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
@@ -1743,7 +1746,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
@@ -1797,7 +1800,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
@@ -1922,7 +1925,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(overclockerPos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
@@ -1956,7 +1959,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
                             // Cycle to next redstone mode (0-4)
@@ -1997,7 +2000,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
                             // Cycle to next redstone mode (skip PULSE mode 3): 0->1->2->4->0
@@ -2045,7 +2048,7 @@ public class ModMessages {
                 }
             }
         } catch (Exception ignored) {}
-        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+        // TODO(neoforge-26): replace with new client->server sender API
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -2067,7 +2070,7 @@ public class ModMessages {
                 return;
             }
         } catch (Exception ignored) {}
-        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+        // TODO(neoforge-26): replace with new client->server sender API
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -2089,7 +2092,7 @@ public class ModMessages {
                 return;
             }
         } catch (Exception ignored) {}
-        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+        // TODO(neoforge-26): replace with new client->server sender API
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -2111,7 +2114,7 @@ public class ModMessages {
                 return;
             }
         } catch (Exception ignored) {}
-        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+        // TODO(neoforge-26): replace with new client->server sender API
     }
 
     /**
@@ -2130,7 +2133,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
                             // Toggle push/pull
@@ -2169,7 +2172,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
                             // Cycle to next push type
@@ -2214,7 +2217,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
                             // Get fan facing direction

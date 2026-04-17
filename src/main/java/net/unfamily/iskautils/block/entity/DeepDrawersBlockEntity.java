@@ -7,7 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
@@ -562,7 +562,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 return false;
             }
             try {
-                ResourceLocation tagLocation = ResourceLocation.parse(tagName);
+                Identifier tagLocation = Identifier.parse(tagName);
                 // Use ItemTags.create() like in DeepDrawerExtractorBlockEntity for consistency
                 TagKey<Item> itemTag = ItemTags.create(tagLocation);
                 // Use item.builtInRegistryHolder().is() to check if the item has this specific tag
@@ -578,8 +578,8 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         } else {
             // It's an item ID
             try {
-                ResourceLocation itemId = ResourceLocation.parse(tagOrId);
-                ResourceLocation stackId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+                Identifier itemId = Identifier.parse(tagOrId);
+                Identifier stackId = BuiltInRegistries.ITEM.getKey(stack.getItem());
                 return itemId.equals(stackId);
             } catch (Exception e) {
                 // Invalid item ID format

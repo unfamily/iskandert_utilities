@@ -85,9 +85,9 @@ public class StructureSaverMachineClientSaveS2CPacket {
             var player = net.minecraft.client.Minecraft.getInstance().player;
             if (player != null) {
                 String operationType = isModifyOperation ? "modificata" : "salvata";
-                player.displayClientMessage(
-                    net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_saver.client_success", structureName, operationType), 
-                    true);
+                player.sendSystemMessage(
+                    net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_saver.client_success", structureName, operationType)
+                    );
             }
             
         } catch (Exception e) {
@@ -96,9 +96,9 @@ public class StructureSaverMachineClientSaveS2CPacket {
             // Mostra messaggio di errore al giocatore
             var player = net.minecraft.client.Minecraft.getInstance().player;
             if (player != null) {
-                player.displayClientMessage(
-                    net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_saver.error.client_save_failed", e.getMessage()), 
-                    true);
+                player.sendSystemMessage(
+                    net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_saver.error.client_save_failed", e.getMessage())
+                    );
             }
         }
     }

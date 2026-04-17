@@ -1,25 +1,31 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.core.BlockPos;
+import com.mojang.blaze3d.platform.InputConstants;
+import org.lwjgl.glfw.GLFW;
 
 /**
  * Screen per la GUI del Temporal Overclocker
  */
 public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalOverclockerMenu> {
-    
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/temporal_overclocker.png");
-    private static final ResourceLocation ENERGY_BAR = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/energy_bar.png");
-    private static final ResourceLocation ENTRY_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
-    private static final ResourceLocation MEDIUM_BUTTONS = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
-    private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
-    private static final ResourceLocation SINGLE_SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
+
+    private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/temporal_overclocker.png");
+    private static final Identifier ENERGY_BAR = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/energy_bar.png");
+    private static final Identifier ENTRY_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
+    private static final Identifier SCROLLBAR_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
+    private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
+    private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
+    private static final Identifier SINGLE_SLOT_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
     
     // GUI dimensions (based on temporal_overclocker.png: 200x200)
     private static final int GUI_WIDTH = 200;
@@ -80,10 +86,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     private int lastLinkedBlocksSize = -1;
     
     public TemporalOverclockerScreen(TemporalOverclockerMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
     }
     
     @Override
@@ -244,40 +247,28 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     }
     
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        // Draw the background texture
-        guiGraphics.blit(BACKGROUND, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
-        
-        // Draw the energy bar
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, this.leftPos, this.topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         renderEnergyBar(guiGraphics);
-        
-        // Draw the custom persistent mode button
         renderPersistentModeButton(guiGraphics, mouseX, mouseY);
-        
-        // Draw the custom redstone mode button
         renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
-        
-        // Acceleration button is rendered automatically by vanilla Button
-        
-        // Draw entries (always draw backgrounds, content only if blocks are linked)
         renderEntries(guiGraphics, mouseX, mouseY);
-        
-        // Draw scrollbar (only if there are more entries than visible)
         if (linkedBlocks.size() > VISIBLE_ENTRIES) {
             renderScrollbar(guiGraphics, mouseX, mouseY);
         }
     }
     
-    private void renderEnergyBar(GuiGraphics guiGraphics) {
+    private void renderEnergyBar(GuiGraphicsExtractor guiGraphics) {
         // Position energy bar on the left side, centered in the space between left edge and entries start
         // ENTRIES_START_X is the space available (30px), center the bar in that space
         int energyBarX = this.leftPos + (ENTRIES_START_X - ENERGY_BAR_WIDTH) / 2;
         int energyBarY = this.topPos + (GUI_HEIGHT / 2) - (ENERGY_BAR_HEIGHT / 2);
         
         // Always draw empty energy bar background
-        guiGraphics.blit(ENERGY_BAR, energyBarX, energyBarY, 
-                       8, 0, // Source: right half starts at x=8 (empty part)
-                       ENERGY_BAR_WIDTH, ENERGY_BAR_HEIGHT, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENERGY_BAR, energyBarX, energyBarY,
+                       8.0F, 0.0F,
+                       ENERGY_BAR_WIDTH, ENERGY_BAR_HEIGHT,
                        16, 32); // Total texture size: 16x32
         
         // Calculate energy fill percentage
@@ -289,8 +280,8 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
             int energyY = energyBarY + (ENERGY_BAR_HEIGHT - energyHeight);
             
             // Draw filled energy bar
-            guiGraphics.blit(ENERGY_BAR, energyBarX, energyY,
-                           0, ENERGY_BAR_HEIGHT - energyHeight, // Source: left half (charged part), from bottom
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENERGY_BAR, energyBarX, energyY,
+                           0.0F, (float)(ENERGY_BAR_HEIGHT - energyHeight),
                            ENERGY_BAR_WIDTH, energyHeight,
                            16, 32); // Total texture size: 16x32
         }
@@ -299,7 +290,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     /**
      * Renders linked block entries
      */
-    private void renderEntries(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderEntries(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Always draw entry backgrounds for visible entries
         for (int i = 0; i < VISIBLE_ENTRIES; i++) {
             int entryIndex = scrollOffset + i;
@@ -307,7 +298,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
             int entryY = this.topPos + ENTRIES_START_Y + i * ENTRY_HEIGHT;
             
             // Draw entry background
-            guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, 
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENTRY_TEXTURE, entryX, entryY, 0.0F, 0.0F,
                            ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
             
             // If entry has a linked block, show information
@@ -321,11 +312,11 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     /**
      * Renders a single linked block entry
      */
-    private void renderLinkedBlockEntry(GuiGraphics guiGraphics, int entryX, int entryY, BlockPos pos, int mouseX, int mouseY) {
+    private void renderLinkedBlockEntry(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, BlockPos pos, int mouseX, int mouseY) {
         // Draw single slot for block item
         int slotX = entryX + 3; // 3 pixels from left edge
         int slotY = entryY + 3; // 3 pixels from top edge
-        guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
         
         // Get block state and render as item if possible
         if (this.minecraft != null && this.minecraft.level != null) {
@@ -333,7 +324,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
             if (blockState != null && !blockState.isAir()) {
                 net.minecraft.world.item.ItemStack blockStack = new net.minecraft.world.item.ItemStack(blockState.getBlock().asItem());
                 if (!blockStack.isEmpty()) {
-                    guiGraphics.renderItem(blockStack, slotX + 1, slotY + 1);
+                    guiGraphics.item(blockStack, slotX + 1, slotY + 1);
                 }
                 
                 // Show block name (truncated if too long)
@@ -359,7 +350,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                     blockNameString = truncated + "...";
                 }
                 
-                guiGraphics.drawString(this.font, blockNameString, textX, textY, 0x404040, false);
+                guiGraphics.text(this.font, Component.literal(blockNameString), textX, textY, 0x404040, false);
             }
         }
         
@@ -369,15 +360,15 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     /**
      * Renderizza il pulsante redstone mode
      */
-    private void renderPersistentModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderPersistentModeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the button
         boolean isHovered = mouseX >= this.persistentModeButtonX && mouseX <= this.persistentModeButtonX + PERSISTENT_BUTTON_SIZE &&
                            mouseY >= this.persistentModeButtonY && mouseY <= this.persistentModeButtonY + PERSISTENT_BUTTON_SIZE;
         
         // Draw button background (normal or highlighted)
         int textureY = isHovered ? 16 : 0; // Highlighted version is below the normal one
-        guiGraphics.blit(MEDIUM_BUTTONS, this.persistentModeButtonX, this.persistentModeButtonY, 
-                        0, textureY, PERSISTENT_BUTTON_SIZE, PERSISTENT_BUTTON_SIZE, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, this.persistentModeButtonX, this.persistentModeButtonY,
+                        0.0F, (float)textureY, PERSISTENT_BUTTON_SIZE, PERSISTENT_BUTTON_SIZE,
                         96, 96); // Correct texture size: 96x96
         
         // Get current persistent mode from menu
@@ -399,15 +390,15 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         }
     }
     
-    private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderRedstoneModeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the button
         boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                            mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
         
         // Draw button background (normal or highlighted)
         int textureY = isHovered ? 16 : 0; // Highlighted version is below the normal one
-        guiGraphics.blit(MEDIUM_BUTTONS, this.redstoneModeButtonX, this.redstoneModeButtonY, 
-                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, this.redstoneModeButtonX, this.redstoneModeButtonY,
+                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
                         96, 96); // Correct texture size: 96x96
         
         // Get current redstone mode from menu
@@ -449,32 +440,32 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     /**
      * Renders an item scaled to the specified size
      */
-    private void renderScaledItem(GuiGraphics guiGraphics, net.minecraft.world.item.ItemStack itemStack, int x, int y, int size) {
-        guiGraphics.pose().pushPose();
+    private void renderScaledItem(GuiGraphicsExtractor guiGraphics, net.minecraft.world.item.ItemStack itemStack, int x, int y, int size) {
+        guiGraphics.pose().pushMatrix();
         float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y, 0);
-        guiGraphics.pose().scale(scale, scale, 1.0f);
-        guiGraphics.renderItem(itemStack, 0, 0);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().translate(x, y);
+        guiGraphics.pose().scale(scale, scale);
+        guiGraphics.item(itemStack, 0, 0);
+        guiGraphics.pose().popMatrix();
     }
     
     /**
      * Renders a texture scaled to the specified size (like an item)
      */
-    private void renderScaledTexture(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int size) {
-        guiGraphics.pose().pushPose();
+    private void renderScaledTexture(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y, int size) {
+        guiGraphics.pose().pushMatrix();
         float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y, 0);
-        guiGraphics.pose().scale(scale, scale, 1.0f);
-        guiGraphics.blit(texture, 0, 0, 0, 0, 16, 16, 16, 16);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().translate(x, y);
+        guiGraphics.pose().scale(scale, scale);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16, 16, 16);
+        guiGraphics.pose().popMatrix();
     }
     
     
     /**
      * Renderizza la scrollbar
      */
-    private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Only show scrollbar if there are more entries than visible
         if (linkedBlocks.size() <= VISIBLE_ENTRIES) return;
         
@@ -484,22 +475,22 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         int buttonDownY = this.topPos + BUTTON_DOWN_Y;
         
         // Disegna la scrollbar completa
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0, 0, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0.0F, 0.0F,
                         SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
         
         // Pulsante SU
         boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
                            mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
         int upTextureY = upHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, 
-                        SCROLLBAR_WIDTH * 2, upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonUpY,
+                        (float)(SCROLLBAR_WIDTH * 2), (float)upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // DOWN button
         boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
                              mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
         int downTextureY = downHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, 
-                        SCROLLBAR_WIDTH * 3, downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonDownY,
+                        (float)(SCROLLBAR_WIDTH * 3), (float)downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // Handle
         float scrollRatio = 0;
@@ -511,17 +502,34 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
                                mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
         int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, handleY, 
-                        SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, handleY,
+                        (float)SCROLLBAR_WIDTH, (float)handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+    }
+
+    private boolean isShiftDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+    }
+
+    private boolean isCtrlDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+    }
+
+    private boolean isAltDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
     }
     
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
         // Handle acceleration button click FIRST (for all button types and modifiers)
         if (this.accelerationButton != null && this.accelerationButton.isMouseOver(mouseX, mouseY)) {
-            boolean shift = hasShiftDown();
-            boolean ctrl = hasControlDown();
-            boolean alt = hasAltDown();
+            boolean shift = isShiftDownNow();
+            boolean ctrl = isCtrlDownNow();
+            boolean alt = isAltDownNow();
             
             if (button == 2) {
                 // Middle click: set to default
@@ -588,8 +596,15 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                 return true;
             }
         }
-        
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (handleMouseClicked(event.x(), event.y(), event.button())) {
+            return true;
+        }
+        return super.mouseClicked(event, doubleClick);
     }
     
     private void onAccelerationIncrease() {
@@ -727,18 +742,18 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     // Entry click handling is now done by vanilla Button widgets
     
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0 && isDraggingHandle) {
             isDraggingHandle = false;
             return true;
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
     
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (button == 0 && isDraggingHandle && linkedBlocks.size() > VISIBLE_ENTRIES) {
-            int deltaY = (int) mouseY - dragStartY;
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        if (event.button() == 0 && isDraggingHandle && linkedBlocks.size() > VISIBLE_ENTRIES) {
+            int deltaY = (int) event.y() - dragStartY;
             float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
             
             int newScrollOffset = dragStartScrollOffset + (int)(scrollRatio * (linkedBlocks.size() - VISIBLE_ENTRIES));
@@ -747,7 +762,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
             scrollOffset = newScrollOffset;
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
     }
     
     @Override
@@ -797,15 +812,15 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     }
     
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Draw the title (centered)
         Component titleComponent = Component.translatable("block.iska_utils.temporal_overclocker");
         String title = titleComponent.getString();
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
-        guiGraphics.drawString(this.font, title, titleX, 6, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(title), titleX, 6, 0x404040, false);
     }
     
-    private void renderEnergyTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderEnergyTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int energyBarX = this.leftPos + (ENTRIES_START_X - ENERGY_BAR_WIDTH) / 2;
         int energyBarY = this.topPos + (GUI_HEIGHT / 2) - (ENERGY_BAR_HEIGHT / 2);
         
@@ -816,11 +831,11 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
             int maxEnergy = this.menu.getMaxEnergyStored();
             
             Component tooltip = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy));
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(this.font, java.util.List.of(tooltip.getVisualOrderText()), DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
         }
     }
     
-    private void renderPersistentModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderPersistentModeTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         boolean isHovered = mouseX >= this.persistentModeButtonX && mouseX <= this.persistentModeButtonX + PERSISTENT_BUTTON_SIZE &&
                            mouseY >= this.persistentModeButtonY && mouseY <= this.persistentModeButtonY + PERSISTENT_BUTTON_SIZE;
         
@@ -834,12 +849,13 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                 tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.persistent.off"));
             }
             tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.persistent.description"));
-            
-            guiGraphics.renderComponentTooltip(this.font, tooltipLines, mouseX, mouseY);
+
+            java.util.List<FormattedCharSequence> lines = tooltipLines.stream().map(Component::getVisualOrderText).toList();
+            guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
         }
     }
     
-    private void renderRedstoneModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderRedstoneModeTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                            mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
         
@@ -855,39 +871,29 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                 default -> Component.literal("Unknown mode");
             };
             
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(this.font, java.util.List.of(tooltip.getVisualOrderText()), DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
         }
     }
     
-    private void renderAccelerationTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderAccelerationTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         if (this.accelerationButton != null && this.accelerationButton.isMouseOver(mouseX, mouseY)) {
             java.util.List<Component> tooltipLines = new java.util.ArrayList<>();
             tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.acceleration_tooltip.line1"));
             tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.acceleration_tooltip.line2"));
             int defaultValue = net.unfamily.iskautils.Config.temporalOverclockerAccelerationFactor;
             tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.acceleration_tooltip.line3", defaultValue));
-            guiGraphics.renderComponentTooltip(this.font, tooltipLines, mouseX, mouseY);
+            java.util.List<FormattedCharSequence> lines = tooltipLines.stream().map(Component::getVisualOrderText).toList();
+            guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
         }
     }
     
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        
-        // Render energy bar tooltip
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
         renderEnergyTooltip(guiGraphics, mouseX, mouseY);
-        
-        // Render persistent mode button tooltip
         renderPersistentModeTooltip(guiGraphics, mouseX, mouseY);
-        
-        // Render redstone mode button tooltip
         renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
-        
-        // Render acceleration button tooltip
         renderAccelerationTooltip(guiGraphics, mouseX, mouseY);
-        
-        // Render tooltips
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
 }
 

@@ -71,7 +71,7 @@ public class StructureSelectionMenu extends AbstractContainerMenu {
             return this.blockEntity; // Server side
         } else {
             // Client side
-            if (level.isClientSide) {
+            if (level.isClientSide()) {   
                 // First try the saved block position
                 if (!this.blockPos.equals(BlockPos.ZERO)) {
                     BlockEntity be = level.getBlockEntity(this.blockPos);

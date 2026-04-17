@@ -4,10 +4,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
@@ -16,7 +16,7 @@ import net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity;
 public record SoundMufflerModeToggleC2SPacket(BlockPos pos) implements CustomPacketPayload {
 
     public static final Type<SoundMufflerModeToggleC2SPacket> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "sound_muffler_mode_toggle"));
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "sound_muffler_mode_toggle"));
 
     public static final StreamCodec<FriendlyByteBuf, SoundMufflerModeToggleC2SPacket> STREAM_CODEC =
             StreamCodec.composite(

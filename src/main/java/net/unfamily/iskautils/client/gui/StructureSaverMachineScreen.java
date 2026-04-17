@@ -1,12 +1,17 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.Slot;
@@ -16,16 +21,16 @@ import net.unfamily.iskautils.network.ModMessages;
 
 public class StructureSaverMachineScreen extends AbstractContainerScreen<StructureSaverMachineMenu> {
     
-    private static final ResourceLocation TEXTURE = 
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/block_structure_save.png");
-    private static final ResourceLocation ENTRY_TEXTURE = 
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/entry_wide.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE = 
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
-    private static final ResourceLocation TINY_BUTTONS_TEXTURE = 
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/tiny_buttons.png");
-    private static final ResourceLocation SINGLE_SLOT_TEXTURE = 
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
+    private static final Identifier TEXTURE =
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/block_structure_save.png");
+    private static final Identifier ENTRY_TEXTURE =
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/entry_wide.png");
+    private static final Identifier SCROLLBAR_TEXTURE =
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
+    private static final Identifier TINY_BUTTONS_TEXTURE =
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/tiny_buttons.png");
+    private static final Identifier SINGLE_SLOT_TEXTURE =
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
     
     // Entry dimensions
     private static final int ENTRY_WIDTH = 140;
@@ -101,11 +106,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     private static final int MODE_BUTTON_WIDTH = 50; // Width for "Normal"/"Player" text
     
     public StructureSaverMachineScreen(StructureSaverMachineMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        
-        // Actual texture dimensions (176 x 246 from new texture)
-        this.imageWidth = 176;
-        this.imageHeight = 246;
+        super(menu, playerInventory, title, 176, 246);
     }
     
     @Override
@@ -196,41 +197,30 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     }
     
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics, mouseX, mouseY, partialTick);
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        
-        // Render custom quantities DOPO tutti gli slot (sopra tutto)
-        renderCustomStackCounts(guiGraphics);
-        
-        renderTooltip(guiGraphics, mouseX, mouseY);
-    }
-    
-    @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        // Center the GUI
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
-        
-        // Draw the background specifying explicitly the texture dimensions
-        guiGraphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, 176, 246);
-        
-        // Render components
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, this.leftPos, this.topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, 176, 246);
         renderEntries(guiGraphics, mouseX, mouseY);
         renderScrollbar(guiGraphics, mouseX, mouseY);
         renderNewComponents(guiGraphics, mouseX, mouseY, partialTick);
     }
-    
+
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Only the translatable title
-        guiGraphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 4210752, false);
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        guiGraphics.text(this.font, this.title, this.titleLabelX, this.titleLabelY, 4210752, false);
+    }
+
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+        renderCustomStackCounts(guiGraphics);
+        queueModeTooltip(guiGraphics, mouseX, mouseY);
     }
     
     /**
      * Renders the 3 visible entries with client structures
      */
-    private void renderEntries(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderEntries(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         for (int i = 0; i < VISIBLE_ENTRIES; i++) {
             int entryIndex = scrollOffset + i;
             
@@ -238,7 +228,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             int entryY = this.topPos + ENTRIES_START_Y + (i * ENTRY_HEIGHT);
             
             // Draw entry background
-            guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, 140, 24);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENTRY_TEXTURE, entryX, entryY, 0.0F, 0.0F, ENTRY_WIDTH, ENTRY_HEIGHT, 140, 24);
             
             // If the entry has a client structure, show name, ID, slot and button
             if (entryIndex < clientStructures.size()) {
@@ -246,8 +236,8 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 
                 // Smaller text: scale to 0.7
                 float textScale = 0.7f;
-                guiGraphics.pose().pushPose();
-                guiGraphics.pose().scale(textScale, textScale, 1.0f);
+                guiGraphics.pose().pushMatrix();
+                guiGraphics.pose().scale(textScale, textScale);
                 
                 // Calculate positions with scaling - slot and button space
                 int scaledTextX = (int)((entryX + 4) / textScale);
@@ -258,7 +248,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 if (structureName.length() > 25) { // Increased from 20 to 25 characters
                     structureName = structureName.substring(0, 22) + "...";
                 }
-                guiGraphics.drawString(this.font, structureName, scaledTextX, scaledNameY, 0x404040, false);
+                guiGraphics.text(this.font, Component.literal(structureName), scaledTextX, scaledNameY, 0x404040, false);
                 
                 // Lower text: Structure ID
                 String structureId = structure.getId();
@@ -266,9 +256,9 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                     structureId = structureId.substring(0, 25) + "...";
                 }
                 int scaledIdY = (int)((entryY + ENTRY_HEIGHT - (this.font.lineHeight * textScale) - 2) / textScale);
-                guiGraphics.drawString(this.font, structureId, scaledTextX, scaledIdY, 0x666666, false);
+                guiGraphics.text(this.font, Component.literal(structureId), scaledTextX, scaledIdY, 0x666666, false);
                 
-                guiGraphics.pose().popPose();
+                guiGraphics.pose().popMatrix();
                 
                 // Render slot and button
                 renderSlotAndButton(guiGraphics, entryX, entryY, entryIndex, mouseX, mouseY);
@@ -279,7 +269,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     /**
      * Renders slot and buttons for an entry (selection + X, but buttons temporarily disabled via comment)
      */
-    private void renderSlotAndButton(GuiGraphics guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
+    private void renderSlotAndButton(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
         // Slot position: moved more to the left for space for two buttons
         int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - (BUTTON_SIZE * 2) - 8; // 8 pixel total margin for two buttons
         int slotY = entryY + (ENTRY_HEIGHT - SLOT_SIZE) / 2; // Centered vertically
@@ -336,16 +326,16 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     /**
      * Renders the icon of a structure in the slot (identical to StructureSelectionScreen)
      */
-    private void renderStructureIcon(GuiGraphics guiGraphics, net.unfamily.iskautils.structure.StructureDefinition structure, int x, int y) {
+    private void renderStructureIcon(GuiGraphicsExtractor guiGraphics, net.unfamily.iskautils.structure.StructureDefinition structure, int x, int y) {
         if (structure.getIcon() != null && structure.getIcon().getItem() != null) {
             // Try to get the item from the specified ID in the script
             try {
-                net.minecraft.resources.ResourceLocation itemId = net.minecraft.resources.ResourceLocation.parse(structure.getIcon().getItem());
-                net.minecraft.world.item.Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(itemId);
+                Identifier itemId = Identifier.tryParse(structure.getIcon().getItem());
+                var item = itemId != null ? net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(itemId).orElse(null) : null;
                 
                 if (item != null && item != net.minecraft.world.item.Items.AIR) {
                     net.minecraft.world.item.ItemStack itemStack = new net.minecraft.world.item.ItemStack(item);
-                    guiGraphics.renderItem(itemStack, x, y);
+                    guiGraphics.item(itemStack, x, y);
                     return;
                 }
             } catch (Exception e) {
@@ -355,7 +345,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         
         // Default item if not specified or not found: stone block
         net.minecraft.world.item.ItemStack defaultItem = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE);
-        guiGraphics.renderItem(defaultItem, x, y);
+        guiGraphics.item(defaultItem, x, y);
     }
     
 
@@ -363,29 +353,29 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     /**
      * Renders the scrollbar with handle and buttons (IDENTICAL to StructureSelectionScreen)
      */
-    private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int scrollbarX = this.leftPos + SCROLLBAR_X;
         int scrollbarY = this.topPos + SCROLLBAR_Y;
         int buttonUpY = this.topPos + BUTTON_UP_Y;
         int buttonDownY = this.topPos + BUTTON_DOWN_Y;
         
         // Draw the complete scrollbar (8 pixel wide, 34 pixel height)
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0, 0, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0.0F, 0.0F,
                         SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
         
         // Up button (8x8 pixel) - above the scrollbar
         boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
                            mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
         int upTextureY = upHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, 
-                        SCROLLBAR_WIDTH * 2, upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonUpY,
+                        (float)(SCROLLBAR_WIDTH * 2), (float)upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // Down button (8x8 pixel) - below the scrollbar  
         boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
                              mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
         int downTextureY = downHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, 
-                        SCROLLBAR_WIDTH * 3, downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonDownY,
+                        (float)(SCROLLBAR_WIDTH * 3), (float)downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // Handle (8x8 pixel) - always visible, but mobile only if necessary
         float scrollRatio = 0;
@@ -397,29 +387,26 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
                                mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
         int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, handleY, 
-                        SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, handleY,
+                        (float)SCROLLBAR_WIDTH, (float)handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
     }
     
-    @Override
-    protected void renderTooltip(GuiGraphics guiGraphics, int x, int y) {
-        super.renderTooltip(guiGraphics, x, y);
-        
-        // Tooltip for the mode button
+    private void queueModeTooltip(GuiGraphicsExtractor guiGraphics, int x, int y) {
         if (modeButton != null && x >= modeButton.getX() && x < modeButton.getX() + modeButton.getWidth() &&
             y >= modeButton.getY() && y < modeButton.getY() + modeButton.getHeight()) {
-            
+
             java.util.List<Component> tooltipLines = new java.util.ArrayList<>();
             tooltipLines.add(Component.translatable("gui.iska_utils.structure_saver.mode_tooltip.line1"));
-            
+
             if (isPlayerMode) {
                 tooltipLines.add(Component.translatable("gui.iska_utils.structure_saver.mode_tooltip.line2.player"));
                 tooltipLines.add(Component.translatable("gui.iska_utils.structure_saver.mode_tooltip.line3.player"));
             } else {
                 tooltipLines.add(Component.translatable("gui.iska_utils.structure_saver.mode_tooltip.line2.normal"));
             }
-            
-            guiGraphics.renderComponentTooltip(this.font, tooltipLines, x, y);
+
+            java.util.List<FormattedCharSequence> lines = tooltipLines.stream().map(Component::getVisualOrderText).toList();
+            guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, x, y, true);
         }
     }
     
@@ -476,19 +463,19 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     }
     
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0 && isDraggingHandle) {
             isDraggingHandle = false;
             return true;
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
     
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (button == 0 && isDraggingHandle && clientStructures.size() > VISIBLE_ENTRIES) {
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        if (event.button() == 0 && isDraggingHandle && clientStructures.size() > VISIBLE_ENTRIES) {
             int scrollbarY = this.topPos + SCROLLBAR_Y;
-            int deltaY = (int) mouseY - dragStartY;
+            int deltaY = (int) event.y() - dragStartY;
             int maxScroll = clientStructures.size() - VISIBLE_ENTRIES;
             
             // Calculate new offset based on movement
@@ -497,16 +484,16 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
     }
     
     /**
      * Renders new UI components (Area: info)
      */
-    private void renderNewComponents(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    private void renderNewComponents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         // Text "Area:" - below buttons, aligned with the start of entries (moved 18px higher)
         int areaTextX = this.leftPos + ENTRIES_START_X;
-        guiGraphics.drawString(this.font, Component.translatable("gui.iska_utils.area"), 
+        guiGraphics.text(this.font, Component.translatable("gui.iska_utils.area"),
                                areaTextX, this.topPos + SAVE_BUTTON_Y + 25, 0x404040, false);
         
         // Area information from synchronized data
@@ -530,14 +517,14 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 // Neutral color (same as normal text color)
                 int color = 0x404040;
                 
-                guiGraphics.drawString(this.font, areaText, textX, textY, color, false);
+                guiGraphics.text(this.font, Component.literal(areaText), textX, textY, color, false);
                 
                 // If not valid, shows error message below the EditBox (also moved higher)
                 if (!isValid) {
                     String errorText = Component.translatable("gui.iska_utils.area_too_large").getString();
                     int errorX = this.leftPos + ENTRIES_START_X;
                     int errorY = this.topPos + ID_EDIT_BOX_Y + 25;
-                    guiGraphics.drawString(this.font, errorText, errorX, errorY, 0xFF0000, false);
+                    guiGraphics.text(this.font, Component.literal(errorText), errorX, errorY, 0xFF0000, false);
                 }
         }
     }
@@ -554,18 +541,14 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         // Validation: both fields are required
         if (structureName.isEmpty()) {
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.displayClientMessage(
-                    Component.translatable("gui.iska_utils.save_error_empty_name"), 
-                    true);
+                this.minecraft.player.sendSystemMessage(Component.translatable("gui.iska_utils.save_error_empty_name"));
             }
             return;
         }
         
         if (structureId.isEmpty()) {
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.displayClientMessage(
-                    Component.translatable("gui.iska_utils.save_error_empty_id"), 
-                    true);
+                this.minecraft.player.sendSystemMessage(Component.translatable("gui.iska_utils.save_error_empty_id"));
             }
             return;
         }
@@ -577,9 +560,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         
         if (!hasValidArea || vertex1 == null || vertex2 == null) {
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.displayClientMessage(
-                    Component.translatable("gui.iska_utils.save_error_no_coordinates"), 
-                    true);
+                this.minecraft.player.sendSystemMessage(Component.translatable("gui.iska_utils.save_error_no_coordinates"));
             }
             return;
         }
@@ -589,9 +570,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         
         if (dimensions[0] > 64 || dimensions[1] > 64 || dimensions[2] > 64) {
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.displayClientMessage(
-                    Component.translatable("gui.iska_utils.area_too_large"), 
-                    true);
+                this.minecraft.player.sendSystemMessage(Component.translatable("gui.iska_utils.area_too_large"));
             }
             return;
         }
@@ -638,9 +617,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 loadClientStructures();
             } else {
                 if (this.minecraft != null && this.minecraft.player != null) {
-                    this.minecraft.player.displayClientMessage(
-                        Component.translatable("gui.iska_utils.structure_saver.error.machine_not_found"), 
-                        true);
+                    this.minecraft.player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.error.machine_not_found"));
                 }
             }
         }
@@ -735,7 +712,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     /**
      * Renders all custom quantities under items
      */
-    private void renderCustomStackCounts(GuiGraphics guiGraphics) {
+    private void renderCustomStackCounts(GuiGraphicsExtractor guiGraphics) {
         for (var slot : this.menu.slots) {
             if (slot instanceof net.neoforged.neoforge.items.SlotItemHandler) {
                 var stack = slot.getItem();
@@ -752,7 +729,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     /**
      * Renders custom stack count for a single slot
      */
-    private void renderCustomStackCount(GuiGraphics guiGraphics, Slot slot, ItemStack stack) {
+    private void renderCustomStackCount(GuiGraphicsExtractor guiGraphics, Slot slot, ItemStack stack) {
         // Read actual count from NBT
         int actualCount = getActualCount(stack);
         if (actualCount <= 1) return; // Don't show count for 1 item
@@ -780,17 +757,17 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         int finalY = slotY + 20;  // 4 pixels below the slot (16 + 4), moved 2px lower
         
         // Apply scale only for text rendering
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().scale(stackCountScale, stackCountScale, 1.0f);
+        guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().scale(stackCountScale, stackCountScale);
         
         // Convert final position for scaled system
         int scaledX = (int)(finalX / stackCountScale);
         int scaledY = (int)(finalY / stackCountScale);
         
         // Draw dark text without shadow (dark gray)
-        guiGraphics.drawString(this.font, countText, scaledX, scaledY, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(countText), scaledX, scaledY, 0x404040, false);
         
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
     
     /**
@@ -800,7 +777,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         var customData = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
         if (customData != null) {
             var tag = customData.copyTag();
-            return tag.getInt("ActualCount");
+            return tag.getInt("ActualCount").orElse(0);
         }
         return stack.getCount(); // Fallback to normal count
     }
@@ -813,8 +790,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
          modeButton.setMessage(Component.translatable("gui.iska_utils.structure_saver.mode." + (isPlayerMode ? "player" : "normal")));
      }
      
-     @Override
-     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+     private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
          // Handle right click on textboxes (clear content)
          if (button == 1) { // Right click
              if (nameEditBox != null) {
@@ -860,7 +836,15 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
              }
          }
          
-         return super.mouseClicked(mouseX, mouseY, button);
+         return false;
+     }
+
+     @Override
+     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+         if (handleMouseClicked(event.x(), event.y(), event.button())) {
+             return true;
+         }
+         return super.mouseClicked(event, doubleClick);
      }
      
      /**
@@ -990,7 +974,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
       * Prevents closing the GUI with inventory key when an EditBox is focused
       */
      @Override
-     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+     public boolean keyPressed(KeyEvent event) {
          // Check if an EditBox is focused (either name or id)
          boolean isEditBoxFocused = (nameEditBox != null && nameEditBox.isFocused()) || 
                                     (idEditBox != null && idEditBox.isFocused());
@@ -998,23 +982,23 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
          if (isEditBoxFocused) {
              // Let the focused EditBox handle the key first
              if (nameEditBox != null && nameEditBox.isFocused()) {
-                 if (nameEditBox.keyPressed(keyCode, scanCode, modifiers)) {
+                 if (nameEditBox.keyPressed(event)) {
                      return true;
                  }
              }
              if (idEditBox != null && idEditBox.isFocused()) {
-                 if (idEditBox.keyPressed(keyCode, scanCode, modifiers)) {
+                 if (idEditBox.keyPressed(event)) {
                      return true;
                  }
              }
              
              // If inventory key is pressed while EditBox is focused, prevent closing
              // This works even if the user has changed the inventory key binding
-             if (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+             if (this.minecraft != null && this.minecraft.options.keyInventory.matches(event)) {
                  return true; // Prevent closing
              }
          }
          
-         return super.keyPressed(keyCode, scanCode, modifiers);
+         return super.keyPressed(event);
      }
 } 

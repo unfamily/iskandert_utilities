@@ -3,7 +3,7 @@ package net.unfamily.iskautils.structure;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
@@ -75,7 +75,7 @@ public class StructurePlacementHistory {
     public static boolean undoLastPlacement(ServerPlayer player) {
         LinkedList<StructurePlacementEntry> history = PLAYER_HISTORY.get(player.getUUID());
         if (history == null || history.isEmpty()) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.structure_undo.no_history"), true);
+            player.sendSystemMessage(Component.translatable("message.iska_utils.structure_undo.no_history"));
             return false;
         }
 
@@ -105,7 +105,7 @@ public class StructurePlacementHistory {
         // Get the structure definition
         StructureDefinition structure = StructureLoader.getStructure(entry.getStructureId());
         if (structure == null) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.structure_undo.structure_not_found", entry.getStructureId()), true);
+            player.sendSystemMessage(Component.translatable("message.iska_utils.structure_undo.structure_not_found", entry.getStructureId()));
             return false;
         }
 
@@ -115,7 +115,7 @@ public class StructurePlacementHistory {
         );
 
         if (expectedPositions.isEmpty()) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.structure_undo.no_positions"), true);
+            player.sendSystemMessage(Component.translatable("message.iska_utils.structure_undo.no_positions"));
             return false;
         }
 
@@ -167,12 +167,12 @@ public class StructurePlacementHistory {
         // Feedback to player
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();
         if (removedBlocks > 0) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.structure_undo.success", 
-                structureName, removedBlocks, skippedBlocks), true);
+            player.sendSystemMessage(Component.translatable("message.iska_utils.structure_undo.success",
+                structureName, removedBlocks, skippedBlocks));
             return true;
         } else {
-            player.displayClientMessage(Component.translatable("message.iska_utils.structure_undo.no_blocks", 
-                structureName), true);
+            player.sendSystemMessage(Component.translatable("message.iska_utils.structure_undo.no_blocks",
+                structureName));
             return false;
         }
     }
@@ -275,11 +275,11 @@ public class StructurePlacementHistory {
     private static boolean blockMatchesDefinition(BlockState currentState, StructureDefinition.BlockDefinition blockDef) {
         try {
             // Get expected block
-            ResourceLocation blockLocation = ResourceLocation.parse(blockDef.getBlock());
-            Block expectedBlock = BuiltInRegistries.BLOCK.get(blockLocation);
+            Identifier blockLocation = Identifier.tryParse(blockDef.getBlock());
+            Block expectedBlock = blockLocation != null ? BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null) : null;
             
             // Only check block type, ignore all properties for undo
-            return currentState.getBlock() == expectedBlock;
+            return expectedBlock != null && currentState.getBlock() == expectedBlock;
             
         } catch (Exception e) {
             return false;
@@ -302,8 +302,11 @@ public class StructurePlacementHistory {
             StructureDefinition.BlockDefinition blockDef = findBlockDefinitionByMaterialKey(key, materialKey);
             if (blockDef != null) {
                 try {
-                    ResourceLocation blockLocation = ResourceLocation.parse(blockDef.getBlock());
-                    Block block = BuiltInRegistries.BLOCK.get(blockLocation);
+                    Identifier blockLocation = Identifier.tryParse(blockDef.getBlock());
+                    Block block = blockLocation != null ? BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null) : null;
+                    if (block == null) {
+                        continue;
+                    }
                     Item item = block.asItem();
                     
                     if (item != Items.AIR) {

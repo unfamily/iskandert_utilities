@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Items;
 import java.util.Map;
 import java.util.HashMap;
@@ -52,7 +52,7 @@ public class ShopTransactionManager {
         double totalCost = entry.free ? 0 : (entry.buy * quantity);
         
         // Check if player is in a team
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -123,7 +123,7 @@ public class ShopTransactionManager {
         double totalReward = entry.sell * quantity;
         
         // Check if player is in a team
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -162,7 +162,7 @@ public class ShopTransactionManager {
             return true; // No stage requirements
         }
         
-        StageRegistry registry = StageRegistry.getInstance(player.getServer());
+        StageRegistry registry = StageRegistry.getInstance(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
         if (registry == null) {
             LOGGER.warn("StageRegistry not available for player {}", player.getName().getString());
             return false;
@@ -249,7 +249,7 @@ public class ShopTransactionManager {
      * Gets the current team balance for a player
      */
     public static double getPlayerTeamBalance(ServerPlayer player, String valuteId) {
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -270,7 +270,7 @@ public class ShopTransactionManager {
      * Shows the current team balance to a player
      */
     public static void showTeamBalance(ServerPlayer player) {
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -327,10 +327,10 @@ public class ShopTransactionManager {
         try {
             // For selling, use only the base item ID without components
             String baseItemId = extractBaseItemId(entry.item);
-            ResourceLocation itemResource = ResourceLocation.parse(baseItemId);
-            var item = BuiltInRegistries.ITEM.get(itemResource);
+            Identifier itemResource = Identifier.tryParse(baseItemId);
+            var item = itemResource != null ? BuiltInRegistries.ITEM.getOptional(itemResource).orElse(null) : null;
             
-            if (item == Items.AIR) {
+            if (item == null || item == Items.AIR) {
                 LOGGER.warn("Item not found: {}", baseItemId);
                 return false;
             }
@@ -376,7 +376,7 @@ public class ShopTransactionManager {
      * Updates team data in the player's client
      */
     private static void updatePlayerTeamDataInClient(ServerPlayer player) {
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName != null) {

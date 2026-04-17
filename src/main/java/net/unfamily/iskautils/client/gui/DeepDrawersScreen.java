@@ -1,10 +1,12 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.network.ModMessages;
@@ -25,10 +27,10 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DeepDrawersScreen.class);
     
-    private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
+    private static final Identifier TEXTURE =
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer.png");
+    private static final Identifier SCROLLBAR_TEXTURE =
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
     
     // GUI dimensions (measured from actual texture file: 197x235 pixels)
     private static final int TEXTURE_WIDTH = 197;
@@ -62,9 +64,7 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5; // 5px from right edge
     
     public DeepDrawersScreen(DeepDrawersMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
         this.inventoryLabelY = 10000; // Hide "Inventory" label
     }
     
@@ -101,12 +101,13 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     }
     
     @Override
-    protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         int guiX = this.leftPos;
         int guiY = this.topPos;
         
         // Render main background (texture is 176x230 pixels)
-        guiGraphics.blit(TEXTURE, guiX, guiY, 0, 0, this.imageWidth, this.imageHeight, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiX, guiY, 0.0F, 0.0F, this.imageWidth, this.imageHeight, TEXTURE_WIDTH, TEXTURE_HEIGHT);
         
         // Render scrollbar
         renderScrollbar(guiGraphics, mouseX, mouseY);
@@ -116,7 +117,7 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
      * Renders the scrollbar with UP/DOWN buttons and draggable handle
      * Identical to ShopScreen implementation
      */
-    private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int totalSlots = menu.getTotalSlots();
         int visibleSlots = DeepDrawersMenu.VISIBLE_SLOTS;
         
@@ -127,19 +128,19 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         int guiY = this.topPos;
         
         // Draw scrollbar background (8 pixels wide, height as defined)
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
         
         // UP button (8x8 pixels) - above scrollbar
         boolean upButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
                                   mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE);
         int upButtonV = upButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_UP_Y, SCROLLBAR_WIDTH * 2, upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_UP_Y, (float)(SCROLLBAR_WIDTH * 2), (float)upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // DOWN button (8x8 pixels) - below scrollbar
         boolean downButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
                                     mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE);
         int downButtonV = downButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y, (float)(SCROLLBAR_WIDTH * 3), (float)downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // Handle (8x8 pixels) - position based on scroll offset
         int maxScrollOffset = menu.getMaxScrollOffset();
@@ -150,23 +151,23 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
             boolean handleHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
                                     mouseY >= handleY && mouseY < handleY + HANDLE_SIZE);
             int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-            guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, (float)SCROLLBAR_WIDTH, (float)handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         }
     }
     
     @Override
-    protected void renderLabels(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Render title centered
         Component titleComponent = this.title;
         int titleWidth = this.font.width(titleComponent);
         int titleX = (this.imageWidth - titleWidth) / 2;
-        guiGraphics.drawString(this.font, titleComponent, titleX, 7, 0x404040, false);
+        guiGraphics.text(this.font, titleComponent, titleX, 7, 0x404040, false);
         
         // Don't render "Inventory" label (already hidden via inventoryLabelY)
     }
     
     @Override
-    public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         // Sync scroll offset from menu (in case it was updated by server via ContainerData)
         // This ensures the scrollbar position is always up-to-date
         int menuOffset = menu.getScrollOffset();
@@ -175,12 +176,10 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
             this.scrollOffset = menuOffset;
         }
         
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
     
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) { // Left click
             // Handle scrollbar clicks first
             if (handleScrollButtonClick(mouseX, mouseY)) {
@@ -198,7 +197,15 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
             }
         }
         
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (handleMouseClicked(event.x(), event.y(), event.button())) {
+            return true;
+        }
+        return super.mouseClicked(event, doubleClick);
     }
     
     /**
@@ -290,21 +297,21 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     }
     
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0 && isDraggingHandle) {
             isDraggingHandle = false;
             return true;
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
     
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         int totalSlots = menu.getTotalSlots();
         int visibleSlots = DeepDrawersMenu.VISIBLE_SLOTS;
         
-        if (button == 0 && isDraggingHandle && totalSlots > visibleSlots) {
-            int deltaY = (int) mouseY - dragStartY;
+        if (event.button() == 0 && isDraggingHandle && totalSlots > visibleSlots) {
+            int deltaY = (int) event.y() - dragStartY;
             int maxScrollOffset = menu.getMaxScrollOffset();
             
             if (maxScrollOffset > 0) {
@@ -317,7 +324,7 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
             }
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
     }
     
     @Override

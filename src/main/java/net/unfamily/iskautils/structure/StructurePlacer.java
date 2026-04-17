@@ -3,7 +3,7 @@ package net.unfamily.iskautils.structure;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
@@ -186,15 +186,15 @@ public class StructurePlacer {
         try {
             // Handle blocks defined by name
             if (blockDef.getBlock() != null && !blockDef.getBlock().isEmpty()) {
-                ResourceLocation blockId = ResourceLocation.parse(blockDef.getBlock());
-                Block block = BuiltInRegistries.BLOCK.get(blockId);
+                Identifier blockId = Identifier.tryParse(blockDef.getBlock());
+                Block block = blockId != null ? BuiltInRegistries.BLOCK.getOptional(blockId).orElse(null) : null;
                 
-                if (block == Blocks.AIR && !blockDef.getBlock().equals("minecraft:air")) {
+                if ((block == null || block == Blocks.AIR) && !blockDef.getBlock().equals("minecraft:air")) {
                     LOGGER.warn("Block not found: {}", blockDef.getBlock());
                     return null;
                 }
                 
-                BlockState blockState = block.defaultBlockState();
+                BlockState blockState = (block == null ? Blocks.AIR : block).defaultBlockState();
                 
                 // Apply properties if specified
                 if (blockDef.getProperties() != null && !blockDef.getProperties().isEmpty()) {
@@ -314,9 +314,8 @@ public class StructurePlacer {
             case "$air" -> existingState.isAir();
             case "$water" -> existingState.is(net.minecraft.world.level.block.Blocks.WATER);
             case "$lava" -> existingState.is(net.minecraft.world.level.block.Blocks.LAVA);
-            case "$plants", "$plant" -> existingState.is(net.minecraft.tags.BlockTags.REPLACEABLE_BY_TREES) || 
+            case "$plants", "$plant" -> existingState.is(net.minecraft.tags.BlockTags.REPLACEABLE_BY_TREES) ||
                                       existingState.is(net.minecraft.tags.BlockTags.SMALL_FLOWERS) ||
-                                      existingState.is(net.minecraft.tags.BlockTags.TALL_FLOWERS) ||
                                       existingState.is(net.minecraft.tags.BlockTags.SAPLINGS);
             case "$dirt" -> existingState.is(net.minecraft.tags.BlockTags.DIRT);
             case "$logs", "$log" -> existingState.is(net.minecraft.tags.BlockTags.LOGS);
@@ -343,8 +342,11 @@ public class StructurePlacer {
             // Remove # prefix
             String cleanTagId = tagId.substring(1);
             
-            // Parse as ResourceLocation
-            net.minecraft.resources.ResourceLocation tagLocation = net.minecraft.resources.ResourceLocation.parse(cleanTagId);
+            Identifier tagLocation = Identifier.tryParse(cleanTagId);
+            if (tagLocation == null) {
+                LOGGER.warn("Invalid tag format: '{}'", tagId);
+                return false;
+            }
             
             // Get tag from registry
             net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> blockTag = 

@@ -1,19 +1,23 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.network.ModMessages;
 
 public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
-    private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/redstone_machine.png");
+    private static final Identifier TEXTURE =
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/redstone_machine.png");
     private static final int GUI_WIDTH = 280;
     private static final int GUI_HEIGHT = 200;
     
@@ -24,8 +28,8 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
     
     // Redstone mode button
-    private static final ResourceLocation MEDIUM_BUTTONS = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
-    private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
+    private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
+    private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
     private static final int REDSTONE_BUTTON_SIZE = 16;
     private static final int REDSTONE_BUTTON_X = CLOSE_BUTTON_X - REDSTONE_BUTTON_SIZE - 5; // Left of close button
     private static final int REDSTONE_BUTTON_Y = 40; // Above "redstone off for" label (which is at 50)
@@ -56,9 +60,7 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     private static final int MIN_TICKS = 5;
 
     public SmartTimerScreen(SmartTimerMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
     }
     
     @Override
@@ -206,16 +208,14 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
-        guiGraphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
-        
-        // Render redstone mode button
-        renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
     }
     
-    private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderRedstoneModeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int buttonX = this.leftPos + REDSTONE_BUTTON_X;
         int buttonY = this.topPos + REDSTONE_BUTTON_Y;
         
@@ -225,8 +225,8 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         
         // Draw button background (normal or highlighted)
         int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(MEDIUM_BUTTONS, buttonX, buttonY, 
-                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, buttonX, buttonY,
+                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
                         96, 96);
         
         // Get current redstone mode from menu
@@ -268,65 +268,54 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     /**
      * Renders an item scaled to the specified size
      */
-    private void renderScaledItem(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y, int size) {
-        guiGraphics.pose().pushPose();
+    private void renderScaledItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y, int size) {
+        guiGraphics.pose().pushMatrix();
         float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y, 0);
-        guiGraphics.pose().scale(scale, scale, 1.0f);
-        guiGraphics.renderItem(itemStack, 0, 0);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().translate(x, y);
+        guiGraphics.pose().scale(scale, scale);
+        guiGraphics.item(itemStack, 0, 0);
+        guiGraphics.pose().popMatrix();
     }
     
     /**
      * Renders a texture scaled to the specified size (like an item)
      */
-    private void renderScaledTexture(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int size) {
-        guiGraphics.pose().pushPose();
+    private void renderScaledTexture(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y, int size) {
+        guiGraphics.pose().pushMatrix();
         float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y, 0);
-        guiGraphics.pose().scale(scale, scale, 1.0f);
-        guiGraphics.blit(texture, 0, 0, 0, 0, 16, 16, 16, 16);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().translate(x, y);
+        guiGraphics.pose().scale(scale, scale);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16, 16, 16);
+        guiGraphics.pose().popMatrix();
     }
     
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Main screen
         Component title = Component.translatable("block.iska_utils.smart_timer");
         int titleWidth = this.font.width(title);
-        guiGraphics.drawString(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
+        guiGraphics.text(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
         
         // Label and value for cooldown (Redstone off for)
         Component cooldownLabel = Component.translatable("gui.iska_utils.smart_timer.cooldown");
         String cooldownTime = formatTimePart(currentCooldownTicks);
         String cooldownLabelText = cooldownLabel.getString() + " " + cooldownTime;
-        guiGraphics.drawString(this.font, cooldownLabelText, TEXT_START_X, COOLDOWN_LABEL_Y, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(cooldownLabelText), TEXT_START_X, COOLDOWN_LABEL_Y, 0x404040, false);
         
         String cooldownTicks = formatTicksPart(currentCooldownTicks);
-        guiGraphics.drawString(this.font, cooldownTicks, TEXT_START_X, COOLDOWN_TICKS_Y, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(cooldownTicks), TEXT_START_X, COOLDOWN_TICKS_Y, 0x404040, false);
         
         // Label and value for signal duration (Redstone on for)
         Component signalDurationLabel = Component.translatable("gui.iska_utils.smart_timer.signal_duration");
         String signalDurationTime = formatTimePart(currentSignalDurationTicks);
         String signalDurationLabelText = signalDurationLabel.getString() + " " + signalDurationTime;
-        guiGraphics.drawString(this.font, signalDurationLabelText, TEXT_START_X, SIGNAL_DURATION_LABEL_Y, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(signalDurationLabelText), TEXT_START_X, SIGNAL_DURATION_LABEL_Y, 0x404040, false);
         
         String signalDurationTicks = formatTicksPart(currentSignalDurationTicks);
-        guiGraphics.drawString(this.font, signalDurationTicks, TEXT_START_X, SIGNAL_DURATION_TICKS_Y, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(signalDurationTicks), TEXT_START_X, SIGNAL_DURATION_TICKS_Y, 0x404040, false);
     }
     
-    @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        
-        // Render tooltips
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
-        
-        // Render redstone mode button tooltip
-        renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
-    }
-    
-    private void renderRedstoneModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderRedstoneModeTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int buttonX = this.leftPos + REDSTONE_BUTTON_X;
         int buttonY = this.topPos + REDSTONE_BUTTON_Y;
         if (mouseX >= buttonX && mouseX <= buttonX + REDSTONE_BUTTON_SIZE &&
@@ -342,25 +331,23 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
                 case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
                 default -> Component.literal("Unknown mode");
             };
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+            java.util.List<FormattedCharSequence> lines = java.util.List.of(tooltip.getVisualOrderText());
+            guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
         }
     }
     
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) { // Left click
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0) {
             int buttonX = this.leftPos + REDSTONE_BUTTON_X;
             int buttonY = this.topPos + REDSTONE_BUTTON_Y;
-            
-            // Check redstone mode button
-            if (mouseX >= buttonX && mouseX <= buttonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= buttonY && mouseY <= buttonY + REDSTONE_BUTTON_SIZE) {
+            if (event.x() >= buttonX && event.x() <= buttonX + REDSTONE_BUTTON_SIZE &&
+                event.y() >= buttonY && event.y() <= buttonY + REDSTONE_BUTTON_SIZE) {
                 onRedstoneModePressed();
                 return true;
             }
         }
-        
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
     
     private void onRedstoneModePressed() {
@@ -369,6 +356,13 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         if (!pos.equals(net.minecraft.core.BlockPos.ZERO)) {
             ModMessages.sendSmartTimerRedstoneModePacket(pos);
         }
+    }
+
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+        renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
+        renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
     }
     
     

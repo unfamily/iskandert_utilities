@@ -40,19 +40,19 @@ public class StructurePlacerMachineSaveC2SPacket {
         }
         
         if (structureId == null || structureId.isEmpty()) {
-            player.displayClientMessage(Component.literal("§cInvalid structure ID!"), true);
+            player.sendSystemMessage(Component.literal("§cInvalid structure ID!"));
             return;
         }
         
         if (machinePos == null) {
-            player.displayClientMessage(Component.literal("§cInvalid machine position!"), true);
+            player.sendSystemMessage(Component.literal("§cInvalid machine position!"));
             return;
         }
         
         // Verifica che la struttura esista
         StructureDefinition structure = StructureLoader.getStructure(structureId);
         if (structure == null) {
-            player.displayClientMessage(Component.literal("§cStructure not found: " + structureId), true);
+            player.sendSystemMessage(Component.literal("§cStructure not found: " + structureId));
             return;
         }
         
@@ -65,7 +65,7 @@ public class StructurePlacerMachineSaveC2SPacket {
         }
         
         if (!(blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity)) {
-            player.displayClientMessage(Component.literal("§cStructure Placer Machine not found at position: " + machinePos + " (found: " + (blockEntity != null ? blockEntity.getClass().getSimpleName() : "null") + ")"), true);
+            player.sendSystemMessage(Component.literal("§cStructure Placer Machine not found at position: " + machinePos + " (found: " + (blockEntity != null ? blockEntity.getClass().getSimpleName() : "null") + ")"));
             return;
         }
         
@@ -79,7 +79,7 @@ public class StructurePlacerMachineSaveC2SPacket {
         
         // Informa il giocatore del successo
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-        player.displayClientMessage(
+        player.sendSystemMessage(
             Component.literal("§aMachine structure set to: §f" + structureName + " §7(" + structure.getId() + ")"), 
             true);
         

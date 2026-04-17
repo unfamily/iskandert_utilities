@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -19,7 +19,7 @@ import java.util.List;
 public record SoundMufflerFilterUpdateC2SPacket(BlockPos pos, List<String> filterSoundIds) implements CustomPacketPayload {
 
     public static final Type<SoundMufflerFilterUpdateC2SPacket> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "sound_muffler_filter_update"));
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "sound_muffler_filter_update"));
 
     public static final StreamCodec<FriendlyByteBuf, SoundMufflerFilterUpdateC2SPacket> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {

@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -30,11 +29,11 @@ public class AngelBlockItem extends BlockItem {
      * Gestisce l'uso dell'item nel vuoto (click destro in aria)
      */
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack itemStack = player.getItemInHand(hand);
         
-        if (level.isClientSide) {
-            return InteractionResultHolder.success(itemStack);
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
         }
         
         // Ottiene la posizione davanti al giocatore
@@ -44,7 +43,7 @@ public class AngelBlockItem extends BlockItem {
         
         // Verifica se la posizione è libera
         if (!level.getBlockState(blockPos).isAir()) {
-            return InteractionResultHolder.fail(itemStack);
+            return InteractionResult.FAIL;
         }
         
         // Crea un contesto di piazzamento per il blocco
@@ -58,10 +57,10 @@ public class AngelBlockItem extends BlockItem {
             if (!player.getAbilities().instabuild) {
                 itemStack.shrink(1);
             }
-            return InteractionResultHolder.consume(itemStack);
+            return InteractionResult.CONSUME;
         }
         
-        return InteractionResultHolder.fail(itemStack);
+        return InteractionResult.FAIL;
     }
     
     /**

@@ -9,15 +9,15 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
@@ -36,7 +36,6 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.client.KeyBindings;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
-import net.minecraft.world.item.UseAnim;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -128,7 +127,7 @@ public class ScannerItem extends Item {
         ItemStack itemStack = context.getItemInHand();
         BlockPos blockPos = context.getClickedPos();
         
-        if (level.isClientSide || player == null) {
+        if (level.isClientSide() || player == null) {
             return InteractionResult.SUCCESS;
         }
         
@@ -140,7 +139,7 @@ public class ScannerItem extends Item {
             if (block != Blocks.AIR) {
                 // Register the target block
                 setTargetBlock(itemStack, block);
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner.target_set", block.getName()), true);
+                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.target_set", block.getName()));
                 return InteractionResult.SUCCESS;
             }
         }
@@ -149,11 +148,11 @@ public class ScannerItem extends Item {
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack itemStack = player.getItemInHand(hand);
         
-        if (level.isClientSide) {
-            return InteractionResultHolder.success(itemStack);
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
         }
         
         // If player is crouching (shift), allow using for chip transfer
@@ -169,12 +168,12 @@ public class ScannerItem extends Item {
                 
                 if (hasTarget) {
                     // Start using the item for the transfer
-                    player.displayClientMessage(Component.translatable("item.iska_utils.scanner.transferring_from_chip"), true);
+                    player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.transferring_from_chip"));
                     player.startUsingItem(hand);
-                    return InteractionResultHolder.consume(itemStack);
+                    return InteractionResult.CONSUME;
                 } else {
-                    player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"), true);
-                    return InteractionResultHolder.fail(itemStack);
+                    player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"));
+                    return InteractionResult.FAIL;
                 }
             }
         }
@@ -185,14 +184,14 @@ public class ScannerItem extends Item {
         String genericTarget = getGenericTarget(itemStack);
         
         if (targetBlock == null && targetMob == null && genericTarget == null) {
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_target"), true);
-            return InteractionResultHolder.fail(itemStack);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.no_target"));
+            return InteractionResult.FAIL;
         }
         
         // Check if we have enough energy for scanning (energy check only for scanning, not for clearing)
         if (requiresEnergyToFunction() && !hasEnoughEnergy(itemStack)) {
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_energy"), true);
-            return InteractionResultHolder.fail(itemStack);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.no_energy"));
+            return InteractionResult.FAIL;
         }
         
         // Cancella sempre tutti i marker esistenti ad ogni click
@@ -201,14 +200,14 @@ public class ScannerItem extends Item {
         // Set use duration
         player.startUsingItem(hand);
         
-        return InteractionResultHolder.consume(itemStack);
+        return InteractionResult.CONSUME;
     }
     
-    public InteractionResultHolder<ItemStack> resetTarget(Level level, Player player, InteractionHand hand) {
+    public InteractionResult resetTarget(Level level, Player player, InteractionHand hand) {
         ItemStack itemStack = player.getItemInHand(hand);
         
-        if (level.isClientSide) {
-            return InteractionResultHolder.success(itemStack);
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
         }
         
         // Check for target block or mob
@@ -216,22 +215,22 @@ public class ScannerItem extends Item {
         String targetMob = getTargetMob(itemStack);
         
         if (targetBlock == null && targetMob == null) {
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_target"), true);
-            return InteractionResultHolder.fail(itemStack);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.no_target"));
+            return InteractionResult.FAIL;
         }
         
         // Remove existing markers and reset targets
         clearMarkersAndResetTarget(player instanceof ServerPlayer ? (ServerPlayer) player : null, itemStack);
         
-        player.displayClientMessage(Component.translatable("item.iska_utils.scanner.target_reset"), true);
+        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.target_reset"));
         
-        return InteractionResultHolder.consume(itemStack);
+        return InteractionResult.CONSUME;
     }
     
 
     @Override
-	public UseAnim getUseAnimation(ItemStack itemstack) {
-		return UseAnim.BOW;
+	public ItemUseAnimation getUseAnimation(ItemStack itemstack) {
+		return ItemUseAnimation.BOW;
 	}
 
 	@Override
@@ -240,19 +239,20 @@ public class ScannerItem extends Item {
 	}
 
     @Override
-    public void releaseUsing(ItemStack itemstack, Level world, LivingEntity entity, int time) {
+    public boolean releaseUsing(ItemStack itemstack, Level world, LivingEntity entity, int time) {
         // Remove loading data
-        if (world.isClientSide || !(entity instanceof ServerPlayer serverPlayer)) {
-            return;
+        if (world.isClientSide() || !(entity instanceof ServerPlayer serverPlayer)) {
+            return false;
         }
         if (entity instanceof Player player) {
             if(player.isCrouching()) {
                 LOADING_DATA.remove(player.getUUID());
                 
                 // Check if there's a chip in the offhand and transfer the target
-                if (!world.isClientSide) {
+                if (!world.isClientSide()) {
                     checkAndTransferFromChip(player);
                 }
+                return true;
             }
             else {
                 // Check if item was held for enough time
@@ -261,8 +261,8 @@ public class ScannerItem extends Item {
                 String genericTarget = getGenericTarget(itemstack);
                 
                 if (targetBlock == null && targetMob == null && genericTarget == null) {
-                    serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_target"), true);
-                    return;
+                    serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.no_target"));
+                    return false;
                 }
                 
                 // The time parameter represents remaining time, so we need to check if it's LESS than a certain value
@@ -274,31 +274,31 @@ public class ScannerItem extends Item {
                 if (timeUsed >= requiredDuration) {
                     // Double-check energy before scanning
                     if (requiresEnergyToFunction() && !hasEnoughEnergy(itemstack)) {
-                        serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_energy"), true);
-                        return;
+                        serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.no_energy"));
+                        return false;
                     }
                     
                     boolean scanSuccess = false;
                     
                     if (targetBlock != null) {
                         // Scan for blocks
-                        serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started", targetBlock.getName()), true);
+                        serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.scan_started", targetBlock.getName()));
                         scanArea(serverPlayer, itemstack);
                         scanSuccess = true;
                     } else if (targetMob != null) {
                         // Scan for mobs
-                        serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob", 
-                                getLocalizedMobName(targetMob)), true);
+                        serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob", 
+                                getLocalizedMobName(targetMob)));
                         scanForMobs(serverPlayer, itemstack);
                         scanSuccess = true;
                     } else if (genericTarget != null) {
                         // Scan based on generic target
                         if (genericTarget.startsWith("ores")) {
-                            serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_ores"), true);
+                            serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.scan_started_ores"));
                             scanForAllOres(serverPlayer, itemstack);
                             scanSuccess = true;
                         } else if ("mobs".equals(genericTarget)) {
-                            serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_all_mobs"), true);
+                            serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.scan_started_all_mobs"));
                             scanForAllMobs(serverPlayer, itemstack);
                             scanSuccess = true;
                         }
@@ -309,20 +309,23 @@ public class ScannerItem extends Item {
                         consumeEnergyForOperation(itemstack);
                         
                         // Show completed loading bar
-                        if (!world.isClientSide) {
+                        if (!world.isClientSide()) {
                             displayLoadingBar(serverPlayer, requiredDuration, requiredDuration);
                         }
                     }
+                    return scanSuccess;
                 } else {
                     // If player released before required time, clear existing markers
                     clearMarkers(player, itemstack);
-                    serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.markers_cleared"), true);
+                    serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.markers_cleared"));
                     
                     // Remove loading data
                     LOADING_DATA.remove(player.getUUID());
+                    return true;
                 }
             }
         }
+        return false;
     }
     
     /**
@@ -339,7 +342,7 @@ public class ScannerItem extends Item {
         
         // Make sure the scanner has a unique ID
         if (!tag.contains(SCANNER_ID_TAG)) {
-            tag.putUUID(SCANNER_ID_TAG, UUID.randomUUID());
+            tag.putString(SCANNER_ID_TAG, UUID.randomUUID().toString());
         }
         
         // Set clear_markers state
@@ -360,13 +363,14 @@ public class ScannerItem extends Item {
         
         // Read clear_markers state
         if (tag.contains(CLEAR_MARKERS_TAG)) {
-            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
+            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG).orElse(false);
         } else {
             clear_markers = false;
         }
         
-        String blockId = tag.getString(TARGET_BLOCK_TAG);
-        return BuiltInRegistries.BLOCK.get(ResourceLocation.parse(blockId));
+        String blockId = tag.getString(TARGET_BLOCK_TAG).orElse("");
+        Identifier id = Identifier.tryParse(blockId);
+        return id == null ? null : BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
     }
     
     /**
@@ -377,7 +381,7 @@ public class ScannerItem extends Item {
         
         // Read clear_markers state if present
         if (tag.contains(CLEAR_MARKERS_TAG)) {
-            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
+            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG).orElse(false);
         }
         
         if (!tag.contains(TARGET_MOB_TAG)) {
@@ -385,10 +389,10 @@ public class ScannerItem extends Item {
             return null;
         }
         
-        String mobId = tag.getString(TARGET_MOB_TAG);
+        String mobId = tag.getString(TARGET_MOB_TAG).orElse("");
         LOGGER.debug("Found target mob in item: {}", mobId);
         
-        return mobId;
+        return mobId.isEmpty() ? null : mobId;
     }
     
     /**
@@ -400,17 +404,17 @@ public class ScannerItem extends Item {
         
         // Read clear_markers state if present
         if (tag.contains(CLEAR_MARKERS_TAG)) {
-            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
+            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG).orElse(false);
         }
         
         if (!tag.contains(TARGET_GEN_TAG)) {
             return null;
         }
         
-        String genericTarget = tag.getString(TARGET_GEN_TAG);
+        String genericTarget = tag.getString(TARGET_GEN_TAG).orElse("");
         LOGGER.debug("Found generic target in item: {}", genericTarget);
         
-        return genericTarget;
+        return genericTarget.isEmpty() ? null : genericTarget;
     }
     
     /**
@@ -428,7 +432,7 @@ public class ScannerItem extends Item {
         
         // Make sure the scanner has a unique ID
         if (!tag.contains(SCANNER_ID_TAG)) {
-            tag.putUUID(SCANNER_ID_TAG, UUID.randomUUID());
+            tag.putString(SCANNER_ID_TAG, UUID.randomUUID().toString());
         }
         
         // Initialize scan range if not set
@@ -455,7 +459,7 @@ public class ScannerItem extends Item {
             itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
             return defaultRange;
         }
-        int range = tag.getInt(SCAN_RANGE_TAG);
+        int range = tag.getInt(SCAN_RANGE_TAG).orElse(Config.scannerDefaultRange);
         // Ensure range is valid (exists in options array)
         java.util.List<Integer> options = Config.scannerRangeOptions;
         if (options != null && !options.isEmpty()) {
@@ -523,7 +527,7 @@ public class ScannerItem extends Item {
         setScanRange(itemStack, nextRange);
         
         // Display message to player
-        player.displayClientMessage(Component.translatable("item.iska_utils.scanner.range_set", nextRange), true);
+        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.range_set", nextRange));
     }
     
     /**
@@ -534,19 +538,8 @@ public class ScannerItem extends Item {
             return;
         }
         
-        // Execute the clear command to ensure all markers are cleared
-        try {
-            net.minecraft.commands.CommandSourceStack commandSource = serverPlayer.createCommandSourceStack()
-                    .withPermission(4) // Ensure we have permission
-                    .withSuppressedOutput(); // Suppress command output to avoid spam
-            
-            // Execute the clear command
-            serverPlayer.getServer().getCommands().performPrefixedCommand(commandSource, "iska_utils_marker clear");
-        } catch (Exception e) {
-            LOGGER.warn("Failed to execute clear markers command: {}", e.getMessage());
-            // Fallback to old method if command fails
-            clearMarkersFallback(serverPlayer, itemStack);
-        }
+        // NeoForge 26+: CommandSourceStack permission API changed. Keep behavior by clearing via internal tracking.
+        clearMarkersFallback(serverPlayer, itemStack);
     }
     
     /**
@@ -555,7 +548,10 @@ public class ScannerItem extends Item {
     private void clearMarkersFallback(ServerPlayer serverPlayer, ItemStack itemStack) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (tag.contains(SCANNER_ID_TAG)) {
-            UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
+            UUID scannerId = tag.getString(SCANNER_ID_TAG).map(UUID::fromString).orElse(null);
+            if (scannerId == null) {
+                return;
+            }
             
             // Clear from our tracking maps
             if (ACTIVE_MARKERS.containsKey(scannerId)) {
@@ -605,7 +601,7 @@ public class ScannerItem extends Item {
         
         // Set clear_markers from NBT
         if (tag.contains(CLEAR_MARKERS_TAG)) {
-            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
+            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG).orElse(false);
         } else {
             clear_markers = false;
         }
@@ -624,14 +620,17 @@ public class ScannerItem extends Item {
         }
         
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
+        UUID scannerId = tag.getString(SCANNER_ID_TAG).map(UUID::fromString).orElse(null);
+        if (scannerId == null) {
+            return;
+        }
         
         // Get or create a list for this scanner's markers
         List<BlockPos> scannerMarkers = ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>());
         
         // Get player position
         BlockPos playerPos = player.blockPosition();
-        ChunkPos playerChunkPos = new ChunkPos(playerPos);
+        ChunkPos playerChunkPos = new ChunkPos(playerPos.getX() >> 4, playerPos.getZ() >> 4);
         
         // Get scan range from scanner (or use default)
         int scanRange = getScanRange(itemStack);
@@ -651,7 +650,7 @@ public class ScannerItem extends Item {
         
         if (!infiniteBlocks && remainingCapacity <= 0) {
             // Already at maximum capacity
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan), true);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan));
             return;
         }
         
@@ -663,9 +662,11 @@ public class ScannerItem extends Item {
         int newMarkersFound = 0;
         boolean limitReached = false;
         
+        int playerChunkX = playerPos.getX() >> 4;
+        int playerChunkZ = playerPos.getZ() >> 4;
         scanLoop:
-        for (int chunkX = playerChunkPos.x - chunkRadius; chunkX <= playerChunkPos.x + chunkRadius; chunkX++) {
-            for (int chunkZ = playerChunkPos.z - chunkRadius; chunkZ <= playerChunkPos.z + chunkRadius; chunkZ++) {
+        for (int chunkX = playerChunkX - chunkRadius; chunkX <= playerChunkX + chunkRadius; chunkX++) {
+            for (int chunkZ = playerChunkZ - chunkRadius; chunkZ <= playerChunkZ + chunkRadius; chunkZ++) {
                 ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
                 
                 // Check if chunk is loaded
@@ -685,13 +686,13 @@ public class ScannerItem extends Item {
                         int playerY = playerPos.getY();
                         
                         // Scan from player Y outward in both directions
-                        for (int yOffset = 0; yOffset < level.getMaxBuildHeight() - level.getMinBuildHeight(); yOffset++) {
+                        for (int yOffset = 0; yOffset < level.getMaxY() - level.getMinY(); yOffset++) {
                             // Try above player first, then below
                             for (int yDir = 0; yDir <= 1; yDir++) {
                                 int y = playerY + (yDir == 0 ? yOffset : -yOffset);
                                 
                                 // Skip if out of world bounds
-                                if (y < level.getMinBuildHeight() || y > level.getMaxBuildHeight()) {
+                                if (y < level.getMinY() || y > level.getMaxY()) {
                                     continue;
                                 }
                                 
@@ -808,7 +809,7 @@ public class ScannerItem extends Item {
                     newMarkersFound, targetBlock.getName());
         }
         
-        player.displayClientMessage(message, true);
+        player.sendSystemMessage(message);
         
         // Make sure to show the completed bar at the end
         displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
@@ -858,7 +859,10 @@ public class ScannerItem extends Item {
         }
         
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
+        UUID scannerId = tag.getString(SCANNER_ID_TAG).map(UUID::fromString).orElse(null);
+        if (scannerId == null) {
+            return;
+        }
         
         // Get player position
         BlockPos playerPos = player.blockPosition();
@@ -902,18 +906,18 @@ public class ScannerItem extends Item {
                 displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
                 
                 // Search for entities in the current chunk
-                List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(
-                    LivingEntity.class, 
-                    new net.minecraft.world.phys.AABB(
-                        currentChunkPos.getMinBlockX(), level.getMinBuildHeight(), currentChunkPos.getMinBlockZ(),
-                        currentChunkPos.getMaxBlockX(), level.getMaxBuildHeight(), currentChunkPos.getMaxBlockZ()
-                    ),
-                    entity -> {
-                        double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
-                        return distanceSq <= scanRangeSquared && 
-                               BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString().equals(targetMobId);
-                    }
+                net.minecraft.world.phys.AABB chunkBox = new net.minecraft.world.phys.AABB(
+                        currentChunkPos.getMinBlockX(), level.getMinY(), currentChunkPos.getMinBlockZ(),
+                        currentChunkPos.getMaxBlockX(), level.getMaxY(), currentChunkPos.getMaxBlockZ()
                 );
+                List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(LivingEntity.class, chunkBox)
+                        .stream()
+                        .filter(entity -> {
+                            double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
+                            return distanceSq <= scanRangeSquared &&
+                                   BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString().equals(targetMobId);
+                        })
+                        .toList();
                 
                 // Process the found entities
                 for (LivingEntity entity : nearbyEntities) {
@@ -948,8 +952,8 @@ public class ScannerItem extends Item {
             }
         }
         
-        player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_mobs", 
-                markersFound, getLocalizedMobName(targetMobId)), true);
+        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.found_mobs", 
+                markersFound, getLocalizedMobName(targetMobId)));
         
         // Make sure to show the completed bar at the end
         displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
@@ -986,7 +990,7 @@ public class ScannerItem extends Item {
         }
         
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.getInt(ENERGY_TAG);
+        return tag.getInt(ENERGY_TAG).orElse(0);
     }
     
     /**
@@ -1105,8 +1109,8 @@ public class ScannerItem extends Item {
      */
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> tooltipAdder, TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, display, tooltipAdder, tooltipFlag);
         
         // Energy information - only show if energy is enabled
         if (canStoreEnergy() && requiresEnergyToFunction()) {
@@ -1119,7 +1123,7 @@ public class ScannerItem extends Item {
                 .withStyle(style -> style.withColor(ChatFormatting.RED))
                 .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
             
-            tooltipComponents.add(energyText);
+            tooltipAdder.accept(energyText);
         }
         
         // Scan range information
@@ -1130,13 +1134,13 @@ public class ScannerItem extends Item {
             .append(Component.literal(String.valueOf(scanRange)).withStyle(ChatFormatting.WHITE))
             .append(Component.literal(" ").withStyle(ChatFormatting.GRAY))
             .append(Component.translatable("item.iska_utils.scanner.tooltip.range_units").withStyle(ChatFormatting.WHITE));
-        tooltipComponents.add(rangeText);
+        tooltipAdder.accept(rangeText);
         
         // Keybind information for range cycling
         String keybindName = KeyBindings.SCANNER_RANGE_KEY.getTranslatedKeyMessage().getString();
         Component keybindText = Component.translatable("item.iska_utils.scanner.tooltip.range_keybind", keybindName)
             .withStyle(style -> style.withColor(ChatFormatting.GRAY));
-        tooltipComponents.add(keybindText);
+        tooltipAdder.accept(keybindText);
         
         // Target information
         Block targetBlock = getTargetBlock(stack);
@@ -1149,14 +1153,14 @@ public class ScannerItem extends Item {
                 .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
                 .append(targetBlock.getName().copy().withStyle(ChatFormatting.WHITE));
             
-            tooltipComponents.add(targetText);
+            tooltipAdder.accept(targetText);
         } else if (targetMob != null) {
             Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_mob")
                 .withStyle(style -> style.withColor(ChatFormatting.AQUA))
                 .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
                 .append(getLocalizedMobName(targetMob).copy().withStyle(ChatFormatting.WHITE));
             
-            tooltipComponents.add(targetText);
+            tooltipAdder.accept(targetText);
         } else if (genericTarget != null) {
             if (genericTarget.startsWith("ores")) {
                 Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_ores_prefix")
@@ -1198,29 +1202,29 @@ public class ScannerItem extends Item {
                     targetText = mutableTargetText;
                 }
                 
-                tooltipComponents.add(targetText);
+                tooltipAdder.accept(targetText);
             } else if ("mobs".equals(genericTarget)) {
                 Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_prefix")
                     .withStyle(style -> style.withColor(ChatFormatting.AQUA))
                     .append(Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_value")
                     .withStyle(ChatFormatting.WHITE));
-                tooltipComponents.add(targetText);
+                tooltipAdder.accept(targetText);
             }
         } else {
             Component noTargetText = Component.translatable("item.iska_utils.scanner.tooltip.no_target")
                 .withStyle(style -> style.withColor(ChatFormatting.GRAY));
             
-            tooltipComponents.add(noTargetText);
+            tooltipAdder.accept(noTargetText);
         }
         
         // Instructions
         Component instruction0Text = Component.translatable("item.iska_utils.scanner.tooltip.instruction0")
             .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-        tooltipComponents.add(instruction0Text);
+        tooltipAdder.accept(instruction0Text);
 
         Component instruction1Text = Component.translatable("item.iska_utils.scanner.tooltip.instruction1")
             .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-        tooltipComponents.add(instruction1Text);
+        tooltipAdder.accept(instruction1Text);
 
         // Chip integration info
         Component chipInfoText = Component.translatable("item.iska_utils.scanner.tooltip.chip_info0")
@@ -1229,14 +1233,14 @@ public class ScannerItem extends Item {
         if(Config.scannerEnergyConsume > 0) {
             Component chipInfoText1 = Component.translatable("item.iska_utils.scanner.tooltip.chip_info1")
                 .withStyle(style -> style.withColor(ChatFormatting.AQUA));
-            tooltipComponents.add(chipInfoText1);
+            tooltipAdder.accept(chipInfoText1);
         } else {
             Component chipInfoText2 = Component.translatable("item.iska_utils.scanner.tooltip.chip_info2")
                 .withStyle(style -> style.withColor(ChatFormatting.AQUA));
-            tooltipComponents.add(chipInfoText2);
+            tooltipAdder.accept(chipInfoText2);
         }
         
-        tooltipComponents.add(chipInfoText);
+        tooltipAdder.accept(chipInfoText);
     }
     
     /**
@@ -1266,7 +1270,7 @@ public class ScannerItem extends Item {
 
     @Override
     public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int remainingUseDuration) {
-        if (level.isClientSide && entity instanceof Player player) {
+        if (level.isClientSide() && entity instanceof Player player) {
             // Calculate the completion percentage
             int totalDuration = getUseDuration(stack, entity);
             int ticksUsed = totalDuration - remainingUseDuration;
@@ -1323,7 +1327,7 @@ public class ScannerItem extends Item {
             ChatFormatting.GREEN : ChatFormatting.RED));
         
         // Show the message to the player
-        player.displayClientMessage(message, true);
+        player.sendSystemMessage(message);
     }
 
     /**
@@ -1354,20 +1358,21 @@ public class ScannerItem extends Item {
             scannerTag.remove("TargetGeneric");
             
             // Copy the block target
-            String blockId = chipTag.getString("TargetBlock");
+            String blockId = chipTag.getString("TargetBlock").orElse("");
             scannerTag.putString("TargetBlock", blockId);
             
             // Make sure the scanner has a unique ID
             if (!scannerTag.contains("ScannerId")) {
-                scannerTag.putUUID("ScannerId", UUID.randomUUID());
+                scannerTag.putString("ScannerId", UUID.randomUUID().toString());
             }
             
             // Save the data to the scanner
             mainHandItem.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
             
             // Notify the player
-            Block block = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(blockId));
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success", block.getName()), true);
+            Identifier id = Identifier.tryParse(blockId);
+            Block block = id == null ? null : BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success", block == null ? Component.literal(blockId) : block.getName()));
         } 
         // Check if the chip has a mob target
         else if (chipTag.contains("TargetMob")) {
@@ -1376,20 +1381,20 @@ public class ScannerItem extends Item {
             scannerTag.remove("TargetGeneric");
             
             // Copy the mob target
-            String mobId = chipTag.getString("TargetMob");
+            String mobId = chipTag.getString("TargetMob").orElse("");
             scannerTag.putString("TargetMob", mobId);
             
             // Make sure the scanner has a unique ID
             if (!scannerTag.contains("ScannerId")) {
-                scannerTag.putUUID("ScannerId", UUID.randomUUID());
+                scannerTag.putString("ScannerId", UUID.randomUUID().toString());
             }
             
             // Save the data to the scanner
             mainHandItem.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
             
             // Notify the player
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
-                    getLocalizedMobName(mobId)), true);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
+                    getLocalizedMobName(mobId)));
         }
         // Check if the chip has a generic target
         else if (chipTag.contains("TargetGeneric")) {
@@ -1398,7 +1403,7 @@ public class ScannerItem extends Item {
             scannerTag.remove("TargetMob");
             
             // Copy the generic target
-            String genericTarget = chipTag.getString("TargetGeneric");
+            String genericTarget = chipTag.getString("TargetGeneric").orElse("");
             
             // If it's ores, append mining level (ores -> ores0, ores1, ores100, etc.)
             String targetToSet = genericTarget;
@@ -1411,7 +1416,7 @@ public class ScannerItem extends Item {
             
             // Make sure the scanner has a unique ID
             if (!scannerTag.contains("ScannerId")) {
-                scannerTag.putUUID("ScannerId", UUID.randomUUID());
+                scannerTag.putString("ScannerId", UUID.randomUUID().toString());
             }
             
             // Save the data to the scanner
@@ -1419,9 +1424,9 @@ public class ScannerItem extends Item {
             
             // Notify the player
             if (genericTarget != null && genericTarget.startsWith("ores")) {
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"), true);
+                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"));
             } else if ("mobs".equals(genericTarget)) {
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"), true);
+                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"));
             }
         }
     }
@@ -1489,10 +1494,13 @@ public class ScannerItem extends Item {
         }
         
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
+        UUID scannerId = tag.getString(SCANNER_ID_TAG).map(UUID::fromString).orElse(null);
+        if (scannerId == null) {
+            return;
+        }
         
         // Extract mining level from target (ores0, ores1, ores100, etc.)
-        String genericTarget = tag.getString(TARGET_GEN_TAG);
+        String genericTarget = tag.getString(TARGET_GEN_TAG).orElse(null);
         int requiredMiningLevel = 0; // Default: no filter
         if (genericTarget != null && genericTarget.startsWith("ores")) {
             String levelStr = genericTarget.substring(4); // Get everything after "ores"
@@ -1511,7 +1519,8 @@ public class ScannerItem extends Item {
         
         // Get player position
         BlockPos playerPos = player.blockPosition();
-        ChunkPos playerChunkPos = new ChunkPos(playerPos);
+        int playerChunkX = playerPos.getX() >> 4;
+        int playerChunkZ = playerPos.getZ() >> 4;
         
         // Get scan range from scanner (or use default)
         int scanRange = getScanRange(itemStack);
@@ -1535,7 +1544,7 @@ public class ScannerItem extends Item {
         
         if (!infiniteBlocks && remainingCapacity <= 0) {
             // Already at maximum capacity
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan), true);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan));
             return;
         }
         
@@ -1566,8 +1575,8 @@ public class ScannerItem extends Item {
         int defaultOreColor = Config.scannerDefaultOreColor; // Default ore color without alpha
         
         scanLoop:
-        for (int chunkX = playerChunkPos.x - chunkRadius; chunkX <= playerChunkPos.x + chunkRadius; chunkX++) {
-            for (int chunkZ = playerChunkPos.z - chunkRadius; chunkZ <= playerChunkPos.z + chunkRadius; chunkZ++) {
+        for (int chunkX = playerChunkX - chunkRadius; chunkX <= playerChunkX + chunkRadius; chunkX++) {
+            for (int chunkZ = playerChunkZ - chunkRadius; chunkZ <= playerChunkZ + chunkRadius; chunkZ++) {
                 ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
                 
                 // Check if chunk is loaded
@@ -1587,13 +1596,13 @@ public class ScannerItem extends Item {
                         int playerY = playerPos.getY();
                         
                         // Scan from player Y outward in both directions
-                        for (int yOffset = 0; yOffset < level.getMaxBuildHeight() - level.getMinBuildHeight(); yOffset++) {
+                        for (int yOffset = 0; yOffset < level.getMaxY() - level.getMinY(); yOffset++) {
                             // Try above player first, then below
                             for (int yDir = 0; yDir <= 1; yDir++) {
                                 int y = playerY + (yDir == 0 ? yOffset : -yOffset);
                                 
                                 // Skip if out of world bounds
-                                if (y < level.getMinBuildHeight() || y > level.getMaxBuildHeight()) {
+                                if (y < level.getMinY() || y > level.getMaxY()) {
                                     continue;
                                 }
                                 
@@ -1640,8 +1649,8 @@ public class ScannerItem extends Item {
                                         String path = parts.length > 1 ? parts[1] : tagName;
                                         
                                         // Check if the block has this tag
-                                        net.minecraft.resources.ResourceLocation tagId = ResourceLocation.parse(namespace + ":" + path);
-                                        if (block.builtInRegistryHolder().is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, tagId))) {
+                                        Identifier tagId = Identifier.tryParse(namespace + ":" + path);
+                                        if (tagId != null && block.builtInRegistryHolder().is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, tagId))) {
                                             isOre = true;
                                             break;
                                         }
@@ -1776,7 +1785,7 @@ public class ScannerItem extends Item {
                     newMarkersFound);
         }
         
-        player.displayClientMessage(message, true);
+        player.sendSystemMessage(message);
         
         // Make sure to show the completed bar at the end
         displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
@@ -1791,7 +1800,10 @@ public class ScannerItem extends Item {
         }
         
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
+        UUID scannerId = tag.getString(SCANNER_ID_TAG).map(UUID::fromString).orElse(null);
+        if (scannerId == null) {
+            return;
+        }
         
         // Get player position
         BlockPos playerPos = player.blockPosition();
@@ -1857,17 +1869,17 @@ public class ScannerItem extends Item {
                 displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
                 
                 // Search for all entities in the current chunk
-                List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(
-                    LivingEntity.class, 
-                    new net.minecraft.world.phys.AABB(
-                        currentChunkPos.getMinBlockX(), level.getMinBuildHeight(), currentChunkPos.getMinBlockZ(),
-                        currentChunkPos.getMaxBlockX(), level.getMaxBuildHeight(), currentChunkPos.getMaxBlockZ()
-                    ),
-                    entity -> {
-                        double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
-                        return distanceSq <= scanRangeSquared && !(entity instanceof Player);
-                    }
+                net.minecraft.world.phys.AABB chunkBox = new net.minecraft.world.phys.AABB(
+                        currentChunkPos.getMinBlockX(), level.getMinY(), currentChunkPos.getMinBlockZ(),
+                        currentChunkPos.getMaxBlockX(), level.getMaxY(), currentChunkPos.getMaxBlockZ()
                 );
+                List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(LivingEntity.class, chunkBox)
+                        .stream()
+                        .filter(entity -> {
+                            double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
+                            return distanceSq <= scanRangeSquared && !(entity instanceof Player);
+                        })
+                        .toList();
                 
                 // Process the found entities
                 for (LivingEntity entity : nearbyEntities) {
@@ -1927,7 +1939,7 @@ public class ScannerItem extends Item {
             }
         }
         
-        player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_all_mobs", markersFound), true);
+        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.found_all_mobs", markersFound));
         
         // Make sure to show the completed bar at the end
         displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);

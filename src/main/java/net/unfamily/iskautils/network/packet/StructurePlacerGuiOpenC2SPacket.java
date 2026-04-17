@@ -33,7 +33,7 @@ public class StructurePlacerGuiOpenC2SPacket {
         }
         
                     // Send a temporary message - GUI will be opened client-side
-        player.displayClientMessage(Component.literal("§6Opening Structure Selector GUI..."), true);
+        player.sendSystemMessage(Component.literal("§6Opening Structure Selector GUI..."));
         
         // Packet functionality implemented
         // Per ora usiamo il sistema di lista testuale come fallback
@@ -47,11 +47,11 @@ public class StructurePlacerGuiOpenC2SPacket {
         Map<String, StructureDefinition> structures = StructureLoader.getAllStructures();
         
         if (structures.isEmpty()) {
-            player.displayClientMessage(Component.literal("§cNo structures available!"), false);
+            player.sendSystemMessage(Component.literal("§cNo structures available!"));
             return;
         }
         
-        player.displayClientMessage(Component.literal("§6===== Available Structures ====="), false);
+        player.sendSystemMessage(Component.literal("§6===== Available Structures ====="));
         
         for (StructureDefinition structure : structures.values()) {
             String name = structure.getName() != null ? structure.getName() : structure.getId();
@@ -65,11 +65,11 @@ public class StructurePlacerGuiOpenC2SPacket {
                 message = message.copy().append(Component.literal(" §8- " + desc));
             }
             
-            player.displayClientMessage(message, false);
+            player.sendSystemMessage(message);
         }
         
-        player.displayClientMessage(Component.literal("§7Use /iska_utils_structure info <id> for details"), false);
-        player.displayClientMessage(Component.literal("§7Structure Selector GUI"), false);
+        player.sendSystemMessage(Component.literal("§7Use /iska_utils_structure info <id> for details"));
+        player.sendSystemMessage(Component.literal("§7Structure Selector GUI"));
     }
     
     /**

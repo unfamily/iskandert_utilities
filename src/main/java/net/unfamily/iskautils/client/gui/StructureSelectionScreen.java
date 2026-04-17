@@ -1,18 +1,18 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.core.BlockPos;
 import net.unfamily.iskautils.Config;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
 
 /**
  * Screen per la GUI di selezione strutture della Structure Placer Machine (identica alla StructurePlacerScreen)
@@ -20,11 +20,11 @@ import net.unfamily.iskautils.Config;
 public class StructureSelectionScreen extends AbstractContainerScreen<StructureSelectionMenu> {
     
     // Background texture
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/structure_selector.png");
-    private static final ResourceLocation ENTRY_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
-    private static final ResourceLocation TINY_BUTTONS_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/tiny_buttons.png");
-    private static final ResourceLocation SINGLE_SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
+    private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/structure_selector.png");
+    private static final Identifier ENTRY_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
+    private static final Identifier SCROLLBAR_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
+    private static final Identifier TINY_BUTTONS_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/tiny_buttons.png");
+    private static final Identifier SINGLE_SLOT_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
     
     // Dimensioni della texture (basate sul file PNG reale: 200x164)
     private static final int GUI_WIDTH = 200;
@@ -91,11 +91,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5; // 5px from right edge
     
     public StructureSelectionScreen(StructureSelectionMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        
-        // Imposta le dimensioni della GUI
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
         
         // Non chiamare loadAvailableStructures() qui perché this.minecraft è ancora null
         // Sarà chiamato in init() dove this.minecraft è disponibile
@@ -171,9 +167,9 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     }
     
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        // Disegna il background
-        guiGraphics.blit(BACKGROUND, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, this.leftPos, this.topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
         // Disegna le 3 entry centrali
         renderEntries(guiGraphics, mouseX, mouseY);
@@ -183,16 +179,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     }
     
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Renderizza il background della GUI
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        
-        // Renderizza gli item tooltips
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
-    }
-    
-    @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Titolo della GUI (centrato) - usa la traduzione per selezione strutture
         Component titleComponent = Component.translatable("gui.iska_utils.structure_selection.title");
         String title = titleComponent.getString();
@@ -205,13 +192,13 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         // Rimozione del conteggio strutture client dal titolo
         
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
-        guiGraphics.drawString(this.font, title, titleX, 8, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(title), titleX, 8, 0x404040, false);
     }
     
     /**
      * Renderizza le 3 entry centrali delle strutture
      */
-    private void renderEntries(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderEntries(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         for (int i = 0; i < visibleEntries; i++) {
             int entryIndex = scrollOffset + i;
             
@@ -219,8 +206,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
             int entryY = this.topPos + ENTRIES_START_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
             
             // Disegna l'entry usando l'intera texture entry.png (140x24)
-            guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, 
-                           ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENTRY_TEXTURE, entryX, entryY, 0.0F, 0.0F, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
             
             // Se l'entry ha una struttura, mostra nome, ID e pulsante
             if (entryIndex < availableStructures.size()) {
@@ -228,8 +214,8 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
                 
                 // Testo più piccolo: scala a 0.7
                 float textScale = 0.7f;
-                guiGraphics.pose().pushPose();
-                guiGraphics.pose().scale(textScale, textScale, 1.0f);
+                guiGraphics.pose().pushMatrix();
+                guiGraphics.pose().scale(textScale, textScale);
                 
                 // Calcola posizioni con scaling - SPAZIO PIÙ AMPIO PER IL TESTO
                 int scaledTextX = (int)((entryX + 4) / textScale);
@@ -240,7 +226,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
                 if (structureName.length() > 35) { // Incrementato da 25 a 35 caratteri
                     structureName = structureName.substring(0, 32) + "...";
                 }
-                guiGraphics.drawString(this.font, structureName, scaledTextX, scaledNameY, 0x404040, false);
+                guiGraphics.text(this.font, Component.literal(structureName), scaledTextX, scaledNameY, 0x404040, false);
                 
                 // Testo inferiore: ID della struttura - LIMITI PIÙ GENEROSI
                 String structureId = structure.getId();
@@ -248,9 +234,9 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
                     structureId = structureId.substring(0, 35) + "...";
                 }
                 int scaledIdY = (int)((entryY + ENTRY_HEIGHT - (this.font.lineHeight * textScale) - 2) / textScale);
-                guiGraphics.drawString(this.font, structureId, scaledTextX, scaledIdY, 0x666666, false);
+                guiGraphics.text(this.font, Component.literal(structureId), scaledTextX, scaledIdY, 0x666666, false);
                 
-                guiGraphics.pose().popPose();
+                guiGraphics.pose().popMatrix();
                 
                 // Renderizza il pulsante di selezione (che include slot e icona)
                 renderSelectionButton(guiGraphics, entryX, entryY, entryIndex, mouseX, mouseY);
@@ -263,29 +249,26 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     /**
      * Renderizza la scrollbar con handle e pulsanti (IDENTICA alla StructurePlacerScreen)
      */
-    private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int scrollbarX = this.leftPos + SCROLLBAR_X;
         int scrollbarY = this.topPos + SCROLLBAR_Y;
         int buttonUpY = this.topPos + BUTTON_UP_Y;
         int buttonDownY = this.topPos + BUTTON_DOWN_Y;
         
         // Disegna la scrollbar completa (8 pixel larghe, altezza 34)
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0, 0, 
-                        SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
         
         // Pulsante SU (8x8 pixel) - sopra la scrollbar
         boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
                            mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
         int upTextureY = upHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, 
-                        SCROLLBAR_WIDTH * 2, upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, (float)(SCROLLBAR_WIDTH * 2), (float)upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // Pulsante GIÙ (8x8 pixel) - sotto la scrollbar  
         boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
                              mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
         int downTextureY = downHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, 
-                        SCROLLBAR_WIDTH * 3, downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, (float)(SCROLLBAR_WIDTH * 3), (float)downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // Handle (8x8 pixel) - sempre visibile, ma mobile solo se necessario
         float scrollRatio = 0;
@@ -297,21 +280,19 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
                                mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
         int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, handleY, 
-                        SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, handleY, (float)SCROLLBAR_WIDTH, (float)handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
     }
     
     /**
      * Renderizza lo slot dell'icona e il pulsante di selezione per un'entry (IDENTICA alla StructurePlacerScreen)
      */
-    private void renderSelectionButton(GuiGraphics guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
+    private void renderSelectionButton(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
         // Posizione dello slot: più a sinistra, centrato verticalmente
         int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - BUTTON_SIZE - 6; // 6 pixel di margine totale
         int slotY = entryY + (ENTRY_HEIGHT - SLOT_SIZE) / 2; // Centrato verticalmente
         
         // Disegna lo slot (18x18)
-        guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 
-                        SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
         
         // Disegna l'icona della struttura nello slot se disponibile
         if (entryIndex < availableStructures.size()) {
@@ -333,24 +314,23 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         int buttonV = isHovered ? BUTTON_HOVERED_V : BUTTON_NORMAL_V;
         
         // Disegna il pulsante
-        guiGraphics.blit(TINY_BUTTONS_TEXTURE, buttonX, buttonY, buttonU, buttonV, 
-                        BUTTON_SIZE, BUTTON_SIZE, 64, 96);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TINY_BUTTONS_TEXTURE, buttonX, buttonY, (float)buttonU, (float)buttonV, BUTTON_SIZE, BUTTON_SIZE, 64, 96);
     }
     
     /**
      * Renderizza l'icona di una struttura nello slot (IDENTICA alla StructurePlacerScreen)
      */
-    private void renderStructureIcon(GuiGraphics guiGraphics, net.unfamily.iskautils.structure.StructureDefinition structure, int x, int y) {
+    private void renderStructureIcon(GuiGraphicsExtractor guiGraphics, net.unfamily.iskautils.structure.StructureDefinition structure, int x, int y) {
         if (structure.getIcon() != null && structure.getIcon().getItem() != null) {
             // Cerca di ottenere l'item dall'ID specificato nello script
             try {
-                net.minecraft.resources.ResourceLocation itemId = net.minecraft.resources.ResourceLocation.parse(structure.getIcon().getItem());
-                net.minecraft.world.item.Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(itemId);
-                
-                if (item != null && item != net.minecraft.world.item.Items.AIR) {
-                    net.minecraft.world.item.ItemStack itemStack = new net.minecraft.world.item.ItemStack(item);
-                    guiGraphics.renderItem(itemStack, x, y);
-                    return;
+                Identifier itemId = Identifier.tryParse(structure.getIcon().getItem());
+                if (itemId != null) {
+                    var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(itemId).orElse(null);
+                    if (item != null && item != net.minecraft.world.item.Items.AIR) {
+                        guiGraphics.item(new net.minecraft.world.item.ItemStack(item), x, y);
+                        return;
+                    }
                 }
             } catch (Exception e) {
                 // Se fallisce, usa l'item di default
@@ -359,7 +339,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         
         // Item di default se non specificato o non trovato: blocco di pietra
         net.minecraft.world.item.ItemStack defaultItem = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE);
-        guiGraphics.renderItem(defaultItem, x, y);
+        guiGraphics.item(defaultItem, x, y);
     }
     
     /**
@@ -369,9 +349,9 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         // Debug: verifica se c'è una struttura selezionata
         if (selectedStructureIndex < 0 || selectedStructureIndex >= availableStructures.size()) {
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("§cNo structure selected! Index: " + selectedStructureIndex + ", Available: " + availableStructures.size()), 
-                    true);
+                this.minecraft.player.sendSystemMessage(
+                    net.minecraft.network.chat.Component.literal("§cNo structure selected! Index: " + selectedStructureIndex + ", Available: " + availableStructures.size())
+                );
             }
             return;
         }
@@ -381,9 +361,9 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         if (blockEntity == null) {
             if (this.minecraft != null && this.minecraft.player != null) {
                 BlockPos menuPos = this.menu.getBlockPos();
-                this.minecraft.player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("§cStructure Placer Machine not found! Menu pos: " + menuPos), 
-                    true);
+                this.minecraft.player.sendSystemMessage(
+                    net.minecraft.network.chat.Component.literal("§cStructure Placer Machine not found! Menu pos: " + menuPos)
+                );
             }
             return;
         }
@@ -401,9 +381,9 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         
         // Debug: conferma che stiamo inviando
         if (this.minecraft != null && this.minecraft.player != null) {
-            this.minecraft.player.displayClientMessage(
-                net.minecraft.network.chat.Component.literal("§aSending structure save packet: " + selectedId + " to position " + machinePos), 
-                true);
+            this.minecraft.player.sendSystemMessage(
+                net.minecraft.network.chat.Component.literal("§aSending structure save packet: " + selectedId + " to position " + machinePos)
+            );
         }
         
         // Invia pacchetto al server per salvare la struttura nella macchina
@@ -430,8 +410,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         }
     }
     
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) { // Left click
             // Gestisci i vari click nell'ordine di priorità (IDENTICO alla StructurePlacerScreen)
             if (handleScrollButtonClick(mouseX, mouseY) ||
@@ -444,7 +423,15 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
             }
         }
         
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (handleMouseClicked(event.x(), event.y(), event.button())) {
+            return true;
+        }
+        return super.mouseClicked(event, doubleClick);
     }
     
     /**
@@ -648,20 +635,20 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     }
     
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0 && isDraggingHandle) {
             isDraggingHandle = false;
             return true;
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
     
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         // IDENTICO alla StructurePlacerScreen
-        if (button == 0 && isDraggingHandle && availableStructures.size() > visibleEntries) {
+        if (event.button() == 0 && isDraggingHandle && availableStructures.size() > visibleEntries) {
             // Calcola il nuovo scroll offset basato sul movimento del mouse
-            int deltaY = (int) mouseY - dragStartY;
+            int deltaY = (int) event.y() - dragStartY;
             float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
             
             int newScrollOffset = dragStartScrollOffset + (int)(scrollRatio * (availableStructures.size() - visibleEntries));
@@ -672,6 +659,6 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
             }
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
     }
 }

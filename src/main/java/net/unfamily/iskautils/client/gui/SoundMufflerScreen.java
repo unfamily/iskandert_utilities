@@ -1,11 +1,14 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.RenderPipelines;
+import com.mojang.blaze3d.platform.InputConstants;
+import org.lwjgl.glfw.GLFW;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
@@ -14,8 +17,8 @@ import net.unfamily.iskautils.network.ModMessages;
 
 public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu> {
 
-    private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/sound_muffler.png");
+    private static final Identifier TEXTURE =
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/sound_muffler.png");
 
     // Nuove dimensioni dello sfondo (texture allargata)
     private static final int GUI_WIDTH = 230;
@@ -62,9 +65,7 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
     };
 
     public SoundMufflerScreen(SoundMufflerMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
         this.inventoryLabelY = -10000;
     }
 
@@ -138,8 +139,8 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
     /** Range step: click 1, ctrl/alt 5, shift 10 (like volume but for range value). */
     private int getRangeStep() {
         if (minecraft == null || minecraft.player == null) return 1;
-        if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) return 10;
-        if (net.minecraft.client.gui.screens.Screen.hasControlDown() || net.minecraft.client.gui.screens.Screen.hasAltDown()) return 5;
+        if (isShiftDownNow()) return 10;
+        if (isCtrlDownNow() || isAltDownNow()) return 5;
         return 1;
     }
 
@@ -177,8 +178,8 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
     /** Click 10%, Ctrl 5%, Shift 1% */
     private int getStep() {
         if (minecraft == null || minecraft.player == null) return 10;
-        if (net.minecraft.client.gui.screens.Screen.hasControlDown() || net.minecraft.client.gui.screens.Screen.hasAltDown()) return 5;
-        if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) return 1;
+        if (isCtrlDownNow() || isAltDownNow()) return 5;
+        if (isShiftDownNow()) return 1;
         return 10;
     }
 
@@ -189,18 +190,17 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
-        guiGraphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, this.leftPos, this.topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
     }
 
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Titolo standard centrato in alto
         Component title = Component.translatable("block.iska_utils.sound_muffler");
         int titleWidth = this.font.width(title);
-        guiGraphics.drawString(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
+        guiGraphics.text(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
 
         // All centered on row 0; then 9 categories in 3x3 grid. Volume by BE index (DISPLAY_TO_CATEGORY).
         for (int i = 0; i < SoundMufflerBlockEntity.CATEGORY_COUNT; i++) {
@@ -222,13 +222,13 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
                 text = font.plainSubstrByWidth(text, labelMaxWidth - 4) + "..";
             }
             int labelX = cellX + (ROW_CONTENT_W - font.width(text)) / 2;
-            guiGraphics.drawString(this.font, text, labelX, cellY + LABEL_VERTICAL_OFFSET, 0x404040, false);
+            guiGraphics.text(this.font, Component.literal(text), labelX, cellY + LABEL_VERTICAL_OFFSET, 0x404040, false);
 
             int percent = menu.getVolume(DISPLAY_TO_CATEGORY[i]);
             int lineY = (i == 0) ? TOP + ROW_Y_OFFSET : TOP + ((i - 1) / COLS + 1) * ROW_H + ROW_Y_OFFSET;
             int percentX = cellX + BUTTON_W + (ROW_CONTENT_W - 2 * BUTTON_W - font.width(percent + "%")) / 2;
             int percentY = lineY + (BUTTON_H - this.font.lineHeight) / 2;
-            guiGraphics.drawString(this.font, percent + "%", percentX, percentY, 0x404040, false);
+            guiGraphics.text(this.font, Component.literal(percent + "%"), percentX, percentY, 0x404040, false);
         }
         // Range row: same layout as category rows — label at (rangeRowCellY), buttons at (rangeRowCellY + ROW_Y_OFFSET)
         int totalBottomW = ROW_CONTENT_W + BOTTOM_BUTTON_GAP + BOTTOM_BUTTON_W;
@@ -239,7 +239,7 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
         int rangeLineY = BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - BUTTON_H) / 2;
         int rangeCellY = rangeLineY - ROW_Y_OFFSET;
         int rangeLabelY = rangeCellY + LABEL_VERTICAL_OFFSET;
-        guiGraphics.drawString(this.font, rangeLabel, rangeLabelX, rangeLabelY, 0x404040, false);
+        guiGraphics.text(this.font, rangeLabel, rangeLabelX, rangeLabelY, 0x404040, false);
         int currentRange = menu.getRange();
         if (minecraft != null && minecraft.level != null) {
             var be = menu.getBlockEntityFromLevel(minecraft.level);
@@ -248,7 +248,25 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
         String valueStr = String.valueOf(currentRange);
         int valueX = rangeRowX + BUTTON_W + (ROW_CONTENT_W - 2 * BUTTON_W - font.width(valueStr)) / 2;
         int valueY = BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - font.lineHeight) / 2;
-        guiGraphics.drawString(this.font, valueStr, valueX, valueY, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(valueStr), valueX, valueY, 0x404040, false);
+    }
+
+    private boolean isShiftDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+    }
+
+    private boolean isCtrlDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+    }
+
+    private boolean isAltDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
     }
 
     @Override

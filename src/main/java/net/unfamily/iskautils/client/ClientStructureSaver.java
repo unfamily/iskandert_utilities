@@ -7,7 +7,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.Config;
@@ -283,7 +283,7 @@ public class ClientStructureSaver {
      */
     private static String generateBlockKey(BlockState state) {
         Block block = state.getBlock();
-        ResourceLocation blockLocation = BuiltInRegistries.BLOCK.getKey(block);
+        Identifier blockLocation = BuiltInRegistries.BLOCK.getKey(block);
         
         if (state.getProperties().isEmpty()) {
             return blockLocation.toString();

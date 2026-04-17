@@ -7,7 +7,7 @@ import net.minecraft.commands.arguments.item.ItemInput;
 import net.minecraft.commands.arguments.item.ItemParser;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -77,8 +77,8 @@ public class ItemConverter {
             // Remove any components to get only the item ID
             String itemId = extractItemId(itemString);
             
-            ResourceLocation itemResource = ResourceLocation.parse(itemId);
-            var item = BuiltInRegistries.ITEM.get(itemResource);
+            Identifier itemResource = Identifier.tryParse(itemId);
+            var item = BuiltInRegistries.ITEM.getOptional(itemResource).orElse(null);
             
             if (item != Items.AIR) {
                 ItemStack stack = new ItemStack(item, count);

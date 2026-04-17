@@ -7,7 +7,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent.Stage;
 import net.unfamily.iskautils.IskaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,15 +89,9 @@ public class ClientEvents {
      */
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        if (event.getStage() == Stage.AFTER_TRANSLUCENT_BLOCKS) {
-            PoseStack poseStack = event.getPoseStack();
-            
-            // Convert the DeltaTracker in float (the exact value is not important for this rendering)
-            float partialTick = 0.0f;
-            
-            // Render the marks
-            MarkRenderer.getInstance().render(poseStack, partialTick);
-        }
+        PoseStack poseStack = event.getPoseStack();
+        float partialTick = 0.0f;
+        MarkRenderer.getInstance().render(poseStack, partialTick);
     }
     
     /**

@@ -8,7 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -81,10 +80,9 @@ public class BlueprintItem extends Item {
                     
                     // Verifica che nessuna dimensione superi 64 blocchi
                     if (dimensions[0] > 64 || dimensions[1] > 64 || dimensions[2] > 64) {
-                        serverPlayer.displayClientMessage(
+                        serverPlayer.sendSystemMessage(
                             Component.translatable("gui.iska_utils.blueprint_invalid_size", 
-                                dimensions[0], dimensions[1], dimensions[2]), 
-                            true
+                                dimensions[0], dimensions[1], dimensions[2])
                         );
                         return InteractionResult.SUCCESS;
                     }
@@ -106,10 +104,9 @@ public class BlueprintItem extends Item {
                         System.out.println("DEBUG BLUEPRINT: stored vertex2 = " + structureSaverEntity.getBlueprintVertex2());
                         
                         // Mostra messaggio di successo
-                        serverPlayer.displayClientMessage(
+                        serverPlayer.sendSystemMessage(
                             Component.translatable("gui.iska_utils.blueprint_imported_to_machine", 
-                                formatPosition(vertex1), formatPosition(vertex2), formatPosition(center)), 
-                            true
+                                formatPosition(vertex1), formatPosition(vertex2), formatPosition(center))
                         );
                         
                         return InteractionResult.SUCCESS;
@@ -127,9 +124,8 @@ public class BlueprintItem extends Item {
             // Mostra marker verde per il primo vertice
             MarkRenderer.getInstance().addBillboardMarker(clickedPos, VERTEX1_COLOR, 300); // 15 secondi
             
-            serverPlayer.displayClientMessage(
-                Component.translatable("item.iska_utils.blueprint.vertex1_saved", formatPosition(clickedPos)), 
-                true
+            serverPlayer.sendSystemMessage(
+                Component.translatable("item.iska_utils.blueprint.vertex1_saved", formatPosition(clickedPos))
             );
             
             return InteractionResult.SUCCESS;
@@ -146,9 +142,8 @@ public class BlueprintItem extends Item {
             BlockPos vertex1 = getVertex1(tag);
             showAreaPreview(vertex1, clickedPos);
             
-            serverPlayer.displayClientMessage(
-                Component.translatable("item.iska_utils.blueprint.vertex2_saved", formatPosition(clickedPos)), 
-                true
+            serverPlayer.sendSystemMessage(
+                Component.translatable("item.iska_utils.blueprint.vertex2_saved", formatPosition(clickedPos))
             );
             
             // Mostra informazioni sull'area
@@ -169,9 +164,8 @@ public class BlueprintItem extends Item {
                 // Mostra marker giallo per il centro
                 MarkRenderer.getInstance().addBillboardMarker(clickedPos, CENTER_COLOR, 300); // 15 secondi
                 
-                serverPlayer.displayClientMessage(
-                    Component.translatable("item.iska_utils.blueprint.center_saved", formatPosition(clickedPos)), 
-                    true
+                serverPlayer.sendSystemMessage(
+                    Component.translatable("item.iska_utils.blueprint.center_saved", formatPosition(clickedPos))
                 );
                 
                 return InteractionResult.SUCCESS;
@@ -184,9 +178,8 @@ public class BlueprintItem extends Item {
                 BlockPos center = getCenter(tag);
                 MarkRenderer.getInstance().addBillboardMarker(center, CENTER_COLOR, 300);
                 
-                serverPlayer.displayClientMessage(
-                    Component.translatable("item.iska_utils.blueprint.preview_complete"), 
-                    true
+                serverPlayer.sendSystemMessage(
+                    Component.translatable("item.iska_utils.blueprint.preview_complete")
                 );
                 
                 return InteractionResult.SUCCESS;
@@ -195,11 +188,11 @@ public class BlueprintItem extends Item {
     }
     
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         
         if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
-            return InteractionResultHolder.success(stack);
+            return InteractionResult.SUCCESS;
         }
         
         // Shift+destro nel vuoto per resettare i vertici
@@ -210,35 +203,34 @@ public class BlueprintItem extends Item {
             CompoundTag tag = new CompoundTag();
             stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
             
-            serverPlayer.displayClientMessage(
-                Component.translatable("item.iska_utils.blueprint.reset"), 
-                true
+            serverPlayer.sendSystemMessage(
+                Component.translatable("item.iska_utils.blueprint.reset")
             );
             
-            return InteractionResultHolder.success(stack);
+            return InteractionResult.SUCCESS;
         }
         
-        return InteractionResultHolder.pass(stack);
+        return InteractionResult.PASS;
     }
     
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> tooltipAdder, TooltipFlag flag) {
+        super.appendHoverText(stack, context, display, tooltipAdder, flag);
         
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         
         if (hasVertex1(tag)) {
             BlockPos vertex1 = getVertex1(tag);
-            tooltip.add(Component.translatable("item.iska_utils.blueprint.tooltip.vertex1", formatPosition(vertex1))
+            tooltipAdder.accept(Component.translatable("item.iska_utils.blueprint.tooltip.vertex1", formatPosition(vertex1))
                     .withStyle(ChatFormatting.GREEN));
         } else {
-            tooltip.add(Component.translatable("item.iska_utils.blueprint.tooltip.click_first")
+            tooltipAdder.accept(Component.translatable("item.iska_utils.blueprint.tooltip.click_first")
                     .withStyle(ChatFormatting.GRAY));
         }
         
         if (hasVertex2(tag)) {
             BlockPos vertex2 = getVertex2(tag);
-            tooltip.add(Component.translatable("item.iska_utils.blueprint.tooltip.vertex2", formatPosition(vertex2))
+            tooltipAdder.accept(Component.translatable("item.iska_utils.blueprint.tooltip.vertex2", formatPosition(vertex2))
                     .withStyle(ChatFormatting.RED));
             
             if (hasVertex1(tag)) {
@@ -246,27 +238,27 @@ public class BlueprintItem extends Item {
                 int[] dimensions = calculateDimensions(vertex1, vertex2);
                 int volume = dimensions[0] * dimensions[1] * dimensions[2];
                 
-                tooltip.add(Component.translatable("item.iska_utils.blueprint.tooltip.dimensions", 
+                tooltipAdder.accept(Component.translatable("item.iska_utils.blueprint.tooltip.dimensions", 
                         dimensions[0], dimensions[1], dimensions[2])
                         .withStyle(ChatFormatting.AQUA));
-                tooltip.add(Component.translatable("item.iska_utils.blueprint.tooltip.volume", volume)
+                tooltipAdder.accept(Component.translatable("item.iska_utils.blueprint.tooltip.volume", volume)
                         .withStyle(ChatFormatting.AQUA));
             }
         } else if (hasVertex1(tag)) {
-            tooltip.add(Component.translatable("item.iska_utils.blueprint.tooltip.click_second")
+            tooltipAdder.accept(Component.translatable("item.iska_utils.blueprint.tooltip.click_second")
                     .withStyle(ChatFormatting.GRAY));
         }
         
         if (hasCenter(tag)) {
             BlockPos center = getCenter(tag);
-            tooltip.add(Component.translatable("item.iska_utils.blueprint.tooltip.center", formatPosition(center))
+            tooltipAdder.accept(Component.translatable("item.iska_utils.blueprint.tooltip.center", formatPosition(center))
                     .withStyle(ChatFormatting.YELLOW));
         } else if (hasVertex1(tag) && hasVertex2(tag)) {
-            tooltip.add(Component.translatable("item.iska_utils.blueprint.tooltip.click_center")
+            tooltipAdder.accept(Component.translatable("item.iska_utils.blueprint.tooltip.click_center")
                     .withStyle(ChatFormatting.GRAY));
         }
         
-        tooltip.add(Component.translatable("item.iska_utils.blueprint.tooltip.reset_hint")
+        tooltipAdder.accept(Component.translatable("item.iska_utils.blueprint.tooltip.reset_hint")
                 .withStyle(ChatFormatting.YELLOW, ChatFormatting.ITALIC));
     }
     
@@ -294,17 +286,17 @@ public class BlueprintItem extends Item {
     
     private BlockPos getVertex1(CompoundTag tag) {
         return new BlockPos(
-            tag.getInt(VERTEX1_X),
-            tag.getInt(VERTEX1_Y),
-            tag.getInt(VERTEX1_Z)
+            tag.getInt(VERTEX1_X).orElse(0),
+            tag.getInt(VERTEX1_Y).orElse(0),
+            tag.getInt(VERTEX1_Z).orElse(0)
         );
     }
     
     private BlockPos getVertex2(CompoundTag tag) {
         return new BlockPos(
-            tag.getInt(VERTEX2_X),
-            tag.getInt(VERTEX2_Y),
-            tag.getInt(VERTEX2_Z)
+            tag.getInt(VERTEX2_X).orElse(0),
+            tag.getInt(VERTEX2_Y).orElse(0),
+            tag.getInt(VERTEX2_Z).orElse(0)
         );
     }
     
@@ -313,9 +305,9 @@ public class BlueprintItem extends Item {
         if (!tag.contains(VERTEX1_X)) return null;
         
         return new BlockPos(
-            tag.getInt(VERTEX1_X),
-            tag.getInt(VERTEX1_Y),
-            tag.getInt(VERTEX1_Z)
+            tag.getInt(VERTEX1_X).orElse(0),
+            tag.getInt(VERTEX1_Y).orElse(0),
+            tag.getInt(VERTEX1_Z).orElse(0)
         );
     }
     
@@ -325,9 +317,9 @@ public class BlueprintItem extends Item {
             return null;
         }
         return new BlockPos(
-            tag.getInt(VERTEX2_X),
-            tag.getInt(VERTEX2_Y),
-            tag.getInt(VERTEX2_Z)
+            tag.getInt(VERTEX2_X).orElse(0),
+            tag.getInt(VERTEX2_Y).orElse(0),
+            tag.getInt(VERTEX2_Z).orElse(0)
         );
     }
     
@@ -337,9 +329,9 @@ public class BlueprintItem extends Item {
             return null;
         }
         return new BlockPos(
-            tag.getInt(CENTER_X),
-            tag.getInt(CENTER_Y),
-            tag.getInt(CENTER_Z)
+            tag.getInt(CENTER_X).orElse(0),
+            tag.getInt(CENTER_Y).orElse(0),
+            tag.getInt(CENTER_Z).orElse(0)
         );
     }
     
@@ -399,10 +391,9 @@ public class BlueprintItem extends Item {
         int[] dimensions = calculateDimensions(vertex1, vertex2);
         int volume = dimensions[0] * dimensions[1] * dimensions[2];
         
-        player.displayClientMessage(
+        player.sendSystemMessage(
             Component.translatable("item.iska_utils.blueprint.area_info", 
-                    dimensions[0], dimensions[1], dimensions[2], volume), 
-            true
+                    dimensions[0], dimensions[1], dimensions[2], volume)
         );
     }
     
@@ -418,9 +409,9 @@ public class BlueprintItem extends Item {
     
     private BlockPos getCenter(CompoundTag tag) {
         return new BlockPos(
-            tag.getInt(CENTER_X),
-            tag.getInt(CENTER_Y),
-            tag.getInt(CENTER_Z)
+            tag.getInt(CENTER_X).orElse(0),
+            tag.getInt(CENTER_Y).orElse(0),
+            tag.getInt(CENTER_Z).orElse(0)
         );
     }
 } 

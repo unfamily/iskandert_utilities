@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -53,15 +52,15 @@ public class StructurePlacerItem extends Item {
     }
     
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         
-        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
+        if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             // Use text system for structure selection
             openStructureSelectionGui(serverPlayer, stack);
         }
         
-        return InteractionResultHolder.success(stack);
+        return InteractionResult.SUCCESS;
     }
     
     @Override
@@ -77,19 +76,19 @@ public class StructurePlacerItem extends Item {
         ItemStack stack = context.getItemInHand();
         BlockPos pos = context.getClickedPos().above(); // Place one block above the clicked block
         
-        if (level.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
+        if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.SUCCESS;
         }
         
         String structureId = getSelectedStructure(stack);
         if (structureId == null || structureId.isEmpty()) {
-            player.displayClientMessage(Component.translatable("item.iska_utils.structure_placer.no_structure_selected"), true);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.structure_placer.no_structure_selected"));
             return InteractionResult.FAIL;
         }
         
         StructureDefinition structure = StructureLoader.getStructure(structureId);
         if (structure == null) {
-            player.displayClientMessage(Component.literal("§cStructure not found: " + structureId), true);
+            player.sendSystemMessage(Component.literal("§cStructure not found: " + structureId));
             return InteractionResult.FAIL;
         }
         
@@ -146,7 +145,7 @@ public class StructurePlacerItem extends Item {
         Map<BlockPos, String> blockPositions = calculateStructurePositions(centerPos, structure, stack);
         
         if (blockPositions.isEmpty()) {
-            player.displayClientMessage(Component.literal("§cError: No blocks to place in structure!"), true);
+            player.sendSystemMessage(Component.literal("§cError: No blocks to place in structure!"));
             return;
         }
         
@@ -174,12 +173,12 @@ public class StructurePlacerItem extends Item {
         
         // Inform the player
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-        player.displayClientMessage(Component.literal("§bPreview: §f" + structureName), true);
-        player.displayClientMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, §c" + redMarkers + " §7occupied spaces"), true);
-        player.displayClientMessage(Component.literal("§7Click again within 5 seconds to place"), true);
+        player.sendSystemMessage(Component.literal("§bPreview: §f" + structureName));
+        player.sendSystemMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, §c" + redMarkers + " §7occupied spaces"));
+        player.sendSystemMessage(Component.literal("§7Click again within 5 seconds to place"));
         
         if (redMarkers > 0 && structure.isCanForce()) {
-            player.displayClientMessage(Component.literal("§7Hold shift to force placement over occupied spaces"), true);
+            player.sendSystemMessage(Component.literal("§7Hold shift to force placement over occupied spaces"));
         }
     }
     
@@ -245,14 +244,14 @@ public class StructurePlacerItem extends Item {
             if (!structure.isCanForce()) {
                 showConflictMarkers(player, blockPositions, structure);
                 restoreAllocatedBlocks(player, blockAllocation.values());
-                player.displayClientMessage(Component.literal("§cSpace is occupied! Structure cannot be placed."), true);
+                player.sendSystemMessage(Component.literal("§cSpace is occupied! Structure cannot be placed."));
                 return InteractionResult.FAIL;
             } else {
                 // If can force, ask for confirmation
                 if (!player.isShiftKeyDown()) {
                     showConflictMarkers(player, blockPositions, structure);
                     restoreAllocatedBlocks(player, blockAllocation.values());
-                    player.displayClientMessage(Component.literal("§cSpace is occupied! Use shift+right-click to force placement."), true);
+                    player.sendSystemMessage(Component.literal("§cSpace is occupied! Use shift+right-click to force placement."));
                     return InteractionResult.FAIL;
                 }
             }
@@ -271,15 +270,15 @@ public class StructurePlacerItem extends Item {
             
             String structureName = structure.getName() != null ? structure.getName() : structure.getId();
             if (isForced) {
-                player.displayClientMessage(Component.literal("§aStructure §f" + structureName + " §apartially placed! (Some blocks skipped)"), true);
+                player.sendSystemMessage(Component.literal("§aStructure §f" + structureName + " §apartially placed! (Some blocks skipped)"));
             } else {
-                player.displayClientMessage(Component.literal("§aStructure §f" + structureName + " §aplaced successfully!"), true);
+                player.sendSystemMessage(Component.literal("§aStructure §f" + structureName + " §aplaced successfully!"));
             }
             return InteractionResult.SUCCESS;
         } else {
             // If placement fails, restore blocks
             restoreAllocatedBlocks(player, blockAllocation.values());
-            player.displayClientMessage(Component.literal("§cFailed to place structure!"), true);
+            player.sendSystemMessage(Component.literal("§cFailed to place structure!"));
             return InteractionResult.FAIL;
         }
     }

@@ -3,8 +3,8 @@ package net.unfamily.iskautils.network.packet;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskalib.team.ShopTeamManager;
@@ -20,7 +20,7 @@ import java.util.Map;
 public record ShopTeamDataRequestC2SPacket() implements CustomPacketPayload {
     
     public static final Type<ShopTeamDataRequestC2SPacket> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "shop_team_data_request")
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "shop_team_data_request")
     );
     
     public static final StreamCodec<FriendlyByteBuf, ShopTeamDataRequestC2SPacket> STREAM_CODEC = 
@@ -37,7 +37,7 @@ public record ShopTeamDataRequestC2SPacket() implements CustomPacketPayload {
     public void handle(ServerPlayer player) {
         if (player == null) return;
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         // Prepara i dati del team

@@ -269,7 +269,7 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
             return this.blockEntity; // Server side
         } else {
             // Client side - find the block entity by searching near player
-            if (level.isClientSide && net.minecraft.client.Minecraft.getInstance().player != null) {
+            if (level.isClientSide() && net.minecraft.client.Minecraft.getInstance().player != null) {
                 BlockPos playerPos = net.minecraft.client.Minecraft.getInstance().player.blockPosition();
                 
                 // Search in a 16x16x16 area around player for the machine

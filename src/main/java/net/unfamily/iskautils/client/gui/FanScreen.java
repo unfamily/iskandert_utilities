@@ -1,11 +1,15 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.Config;
@@ -16,7 +20,7 @@ import net.unfamily.iskautils.network.packet.FanRangeUpdateC2SPacket;
 
 public class FanScreen extends AbstractContainerScreen<FanMenu> {
     
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/backgrounds/fan.png");
     
     // GUI dimensions (based on fan.png: 176x200)
@@ -56,8 +60,8 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     private static final int GRID_BUTTON_OFFSET = 8; // Offset from grid center to bring buttons closer together
     
     // Right side buttons (redstone mode, push/pull, push type)
-    private static final ResourceLocation MEDIUM_BUTTONS = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
-    private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
+    private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
+    private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
     private static final int REDSTONE_BUTTON_SIZE = 16;
     private static final int BUTTON_SPACING_Y = 4; // Vertical spacing between buttons on right side
     private static final int RIGHT_BUTTON_MARGIN = 10; // Margin from right edge
@@ -68,10 +72,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
     
     public FanScreen(FanMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
     }
     
     // Store button references
@@ -215,12 +216,13 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     }
     
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         int guiX = this.leftPos;
         int guiY = this.topPos;
         
         // Render main background
-        guiGraphics.blit(BACKGROUND, guiX, guiY, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, guiX, guiY, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
         // Render range grid visualization
         renderRangeGrid(guiGraphics);
@@ -231,7 +233,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         renderPushTypeButton(guiGraphics, mouseX, mouseY);
     }
     
-    private void renderRangeGrid(GuiGraphics guiGraphics) {
+    private void renderRangeGrid(GuiGraphicsExtractor guiGraphics) {
         int gridX = this.leftPos + GRID_START_X;
         int gridY = this.topPos + GRID_START_Y;
         
@@ -264,11 +266,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
                     // Render fan position: black if rangeFront is 0, darker green otherwise
                     int centerColor = (rangeFront == 0) ? 0xFF000000 : 0xFF008800;
                     guiGraphics.fill(squareX, squareY, squareX + SQUARE_SIZE, squareY + SQUARE_SIZE, centerColor);
-                    // Draw thin border around center cell (lighter gray, thinner)
-                    guiGraphics.hLine(squareX, squareX + SQUARE_SIZE - 1, squareY, CELL_BORDER_COLOR); // Top
-                    guiGraphics.hLine(squareX, squareX + SQUARE_SIZE - 1, squareY + SQUARE_SIZE - 1, CELL_BORDER_COLOR); // Bottom
-                    guiGraphics.vLine(squareX, squareY, squareY + SQUARE_SIZE - 1, CELL_BORDER_COLOR); // Left
-                    guiGraphics.vLine(squareX + SQUARE_SIZE - 1, squareY, squareY + SQUARE_SIZE - 1, CELL_BORDER_COLOR); // Right
+                    guiGraphics.outline(squareX, squareY, SQUARE_SIZE, SQUARE_SIZE, CELL_BORDER_COLOR);
                     continue;
                 }
                 
@@ -413,12 +411,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
                 
                 // Render square with thin border to make cells visibly separated
                 guiGraphics.fill(squareX, squareY, squareX + SQUARE_SIZE, squareY + SQUARE_SIZE, color);
-                // Draw thin borders (light gray lines) to separate cells
-                // Always draw borders, including outer edges of the grid
-                guiGraphics.hLine(squareX, squareX + SQUARE_SIZE - 1, squareY, CELL_BORDER_COLOR); // Top border
-                guiGraphics.hLine(squareX, squareX + SQUARE_SIZE - 1, squareY + SQUARE_SIZE - 1, CELL_BORDER_COLOR); // Bottom border
-                guiGraphics.vLine(squareX, squareY, squareY + SQUARE_SIZE - 1, CELL_BORDER_COLOR); // Left border
-                guiGraphics.vLine(squareX + SQUARE_SIZE - 1, squareY, squareY + SQUARE_SIZE - 1, CELL_BORDER_COLOR); // Right border
+                guiGraphics.outline(squareX, squareY, SQUARE_SIZE, SQUARE_SIZE, CELL_BORDER_COLOR);
             }
         }
         
@@ -434,7 +427,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         // Render "forward" label (translatable, between bottom buttons and bar, centered)
         Component forwardLabel = Component.translatable("gui.iska_utils.fan.forward");
         int labelX = this.leftPos + (GUI_WIDTH - this.font.width(forwardLabel)) / 2; // Center label relative to GUI
-        guiGraphics.drawString(this.font, forwardLabel, labelX, labelY, 0x404040, false);
+        guiGraphics.text(this.font, forwardLabel, labelX, labelY, 0x404040, false);
         
         // Render bar squares with borders (between the buttons)
         for (int i = 0; i < BAR_SQUARE_COUNT; i++) {
@@ -454,54 +447,38 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             }
             
             guiGraphics.fill(squareX, barY, squareX + SQUARE_SIZE, barY + BAR_HEIGHT, color);
-            // Draw thin borders to separate bar squares (light gray, thinner)
-            // Left border (always draw, including first square)
-            guiGraphics.vLine(squareX, barY, barY + BAR_HEIGHT - 1, CELL_BORDER_COLOR);
-            // Right border (always draw, including last square)
-            guiGraphics.vLine(squareX + SQUARE_SIZE - 1, barY, barY + BAR_HEIGHT - 1, CELL_BORDER_COLOR);
-            // Top border
-            guiGraphics.hLine(squareX, squareX + SQUARE_SIZE - 1, barY, CELL_BORDER_COLOR);
-            // Bottom border
-            guiGraphics.hLine(squareX, squareX + SQUARE_SIZE - 1, barY + BAR_HEIGHT - 1, CELL_BORDER_COLOR);
+            guiGraphics.outline(squareX, barY, SQUARE_SIZE, BAR_HEIGHT, CELL_BORDER_COLOR);
         }
     }
     
     /**
      * Renders a single ghost item (semi-transparent) at the specified position
      */
-    private void renderGhostItem(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y) {
+    private void renderGhostItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y) {
         // Save current matrix state
-        guiGraphics.pose().pushPose();
+        guiGraphics.pose().pushMatrix();
         
         // Translate to the slot position (relative to GUI)
-        guiGraphics.pose().translate(this.leftPos + x, this.topPos + y, 0);
+        guiGraphics.pose().translate(this.leftPos + x, this.topPos + y);
         
         // Render the item first
-        guiGraphics.renderItem(itemStack, 0, 0);
+        guiGraphics.item(itemStack, 0, 0);
         
         // Then apply a semi-transparent dark overlay to create ghost effect
         guiGraphics.fill(0, 0, 16, 16, 0x80000000); // 50% transparent black overlay
         
         // Restore matrix state
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
     
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Render the background (includes grid)
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        
-        // Render ghost items on top of empty module slots
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
         renderGhostItems(guiGraphics);
-        
-        // Render tooltips
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
-        
-        // Render tooltips for right side buttons
         renderButtonTooltips(guiGraphics, mouseX, mouseY);
     }
     
-    private void renderButtonTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderButtonTooltips(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Redstone mode button tooltip
         if (mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
             mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
@@ -516,7 +493,14 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
                 case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
                 default -> Component.literal("Unknown mode");
             };
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(
+                this.font,
+                java.util.List.of(tooltip.getVisualOrderText()),
+                DefaultTooltipPositioner.INSTANCE,
+                mouseX,
+                mouseY,
+                true
+            );
         }
         
         // Push/Pull button tooltip
@@ -525,7 +509,14 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             // Show current state (Push or Pull)
             boolean isPull = menu.isPull();
             Component tooltip = Component.translatable(isPull ? "gui.iska_utils.fan.push_pull.pull" : "gui.iska_utils.fan.push_pull.push");
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(
+                this.font,
+                java.util.List.of(tooltip.getVisualOrderText()),
+                DefaultTooltipPositioner.INSTANCE,
+                mouseX,
+                mouseY,
+                true
+            );
         }
         
         // Push type button tooltip
@@ -535,14 +526,21 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             net.unfamily.iskautils.block.entity.FanBlockEntity.PushType pushType = 
                 net.unfamily.iskautils.block.entity.FanBlockEntity.PushType.fromId(pushTypeId);
             Component tooltip = Component.translatable("gui.iska_utils.fan.push_type." + pushType.getName());
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(
+                this.font,
+                java.util.List.of(tooltip.getVisualOrderText()),
+                DefaultTooltipPositioner.INSTANCE,
+                mouseX,
+                mouseY,
+                true
+            );
         }
         
         // Range adjustment buttons tooltips
         renderRangeButtonTooltips(guiGraphics, mouseX, mouseY);
     }
     
-    private void renderRangeButtonTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderRangeButtonTooltips(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Helper method to check if mouse is over a button and render tooltip
         if (topLeftButton != null && isMouseOverButton(mouseX, mouseY, topLeftButton)) {
             renderRangeButtonTooltip(guiGraphics, mouseX, mouseY, FanRangeUpdateC2SPacket.RangeType.UP, -1);
@@ -572,7 +570,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
                mouseY >= button.getY() && mouseY <= button.getY() + button.getHeight();
     }
     
-    private void renderRangeButtonTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY, 
+    private void renderRangeButtonTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY,
                                          FanRangeUpdateC2SPacket.RangeType rangeType, int delta) {
         // Get current range value
         int currentValue = switch (rangeType) {
@@ -600,18 +598,17 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             Component.translatable("gui.iska_utils.fan.range_button.direction." + directionKey));
         Component line2 = Component.translatable("gui.iska_utils.fan.range_button.blocks", currentValue);
         
-        // Convert Components to FormattedCharSequence for multi-line tooltip
-        java.util.List<net.minecraft.util.FormattedCharSequence> tooltipLines = java.util.List.of(
+        java.util.List<FormattedCharSequence> tooltipLines = java.util.List.of(
             line1.getVisualOrderText(),
             line2.getVisualOrderText()
         );
-        guiGraphics.renderTooltip(this.font, tooltipLines, mouseX, mouseY);
+        guiGraphics.setTooltipForNextFrame(this.font, tooltipLines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
     }
     
     /**
      * Renders ghost items (semi-transparent) in module slots that are empty
      */
-    private void renderGhostItems(GuiGraphics guiGraphics) {
+    private void renderGhostItems(GuiGraphicsExtractor guiGraphics) {
         // Slot 1: range_module ghost
         net.minecraft.world.inventory.Slot slot0 = this.menu.getSlot(0);
         if (slot0.getItem().isEmpty()) {
@@ -639,15 +636,15 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         }
     }
     
-    private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderRedstoneModeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the button
         boolean isHovered = mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                            mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
         
         // Draw button background (normal or highlighted)
         int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(MEDIUM_BUTTONS, redstoneModeButtonX, redstoneModeButtonY, 
-                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, redstoneModeButtonX, redstoneModeButtonY,
+                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
                         96, 96);
         
         // Get current redstone mode from menu
@@ -681,15 +678,15 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         }
     }
     
-    private void renderPushPullButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderPushPullButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the button
         boolean isHovered = mouseX >= pushPullButtonX && mouseX <= pushPullButtonX + REDSTONE_BUTTON_SIZE &&
                            mouseY >= pushPullButtonY && mouseY <= pushPullButtonY + REDSTONE_BUTTON_SIZE;
         
         // Draw button background
         int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(MEDIUM_BUTTONS, pushPullButtonX, pushPullButtonY, 
-                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, pushPullButtonX, pushPullButtonY,
+                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
                         96, 96);
         
         // Get current push/pull state
@@ -711,15 +708,15 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         }
     }
     
-    private void renderPushTypeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderPushTypeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the button
         boolean isHovered = mouseX >= pushTypeButtonX && mouseX <= pushTypeButtonX + REDSTONE_BUTTON_SIZE &&
                            mouseY >= pushTypeButtonY && mouseY <= pushTypeButtonY + REDSTONE_BUTTON_SIZE;
         
         // Draw button background
         int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(MEDIUM_BUTTONS, pushTypeButtonX, pushTypeButtonY, 
-                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, pushTypeButtonX, pushTypeButtonY,
+                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
                         96, 96);
         
         // Get current push type
@@ -754,29 +751,28 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     /**
      * Renders an item scaled to the specified size
      */
-    private void renderScaledItem(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y, int size) {
-        guiGraphics.pose().pushPose();
+    private void renderScaledItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y, int size) {
+        guiGraphics.pose().pushMatrix();
         float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y, 0);
-        guiGraphics.pose().scale(scale, scale, 1.0f);
-        guiGraphics.renderItem(itemStack, 0, 0);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().translate(x, y);
+        guiGraphics.pose().scale(scale, scale);
+        guiGraphics.item(itemStack, 0, 0);
+        guiGraphics.pose().popMatrix();
     }
     
     /**
      * Renders a texture scaled to the specified size (like an item)
      */
-    private void renderScaledTexture(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int size) {
-        guiGraphics.pose().pushPose();
+    private void renderScaledTexture(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y, int size) {
+        guiGraphics.pose().pushMatrix();
         float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y, 0);
-        guiGraphics.pose().scale(scale, scale, 1.0f);
-        guiGraphics.blit(texture, 0, 0, 0, 0, 16, 16, 16, 16);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().translate(x, y);
+        guiGraphics.pose().scale(scale, scale);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16, 16, 16);
+        guiGraphics.pose().popMatrix();
     }
     
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) { // Left click
             // Check redstone mode button
             if (mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
@@ -802,7 +798,15 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             // Show button is handled by vanilla Button widget
         }
         
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (handleMouseClicked(event.x(), event.y(), event.button())) {
+            return true;
+        }
+        return super.mouseClicked(event, doubleClick);
     }
     
     private void onRedstoneModePressed() {
@@ -838,12 +842,12 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     }
     
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Render title centered (title is already translatable via FanBlockEntity.getDisplayName())
         Component titleComponent = this.title;
         int titleWidth = this.font.width(titleComponent);
         int titleX = (this.imageWidth - titleWidth) / 2;
-        guiGraphics.drawString(this.font, titleComponent, titleX, 8, 0x404040, false);
+        guiGraphics.text(this.font, titleComponent, titleX, 8, 0x404040, false);
     }
 }
 

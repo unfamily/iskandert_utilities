@@ -4,9 +4,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
@@ -20,7 +20,7 @@ import net.unfamily.iskautils.network.ModMessages;
 public record FanShowAreaC2SPacket(BlockPos pos) implements CustomPacketPayload {
     
     public static final Type<FanShowAreaC2SPacket> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "fan_show_area")
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "fan_show_area")
     );
     
     public static final StreamCodec<FriendlyByteBuf, FanShowAreaC2SPacket> STREAM_CODEC = StreamCodec.composite(
@@ -37,7 +37,7 @@ public record FanShowAreaC2SPacket(BlockPos pos) implements CustomPacketPayload 
     public static void handle(FanShowAreaC2SPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             ServerPlayer player = (ServerPlayer) context.player();
-            ServerLevel level = player.serverLevel();
+            ServerLevel level = (ServerLevel) player.level();
             
             BlockEntity blockEntity = level.getBlockEntity(packet.pos());
             if (blockEntity instanceof FanBlockEntity fan) {

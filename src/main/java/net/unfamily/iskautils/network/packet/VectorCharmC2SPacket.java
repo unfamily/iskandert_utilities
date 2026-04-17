@@ -38,7 +38,7 @@ public class VectorCharmC2SPacket {
             return;
         }
         
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = (ServerLevel) player.level();
 
         // Get the Vector Charm data instance
         VectorCharmData data = VectorCharmData.get(level);

@@ -347,7 +347,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             
             // Pre-compute item metadata once per item (used by multiple filter checks)
             Item item = drawerStack.getItem();
-            net.minecraft.resources.ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
+            net.minecraft.resources.Identifier itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
             String itemIdStr = itemId.toString();
             String itemModId = itemId.getNamespace();
             
@@ -548,7 +548,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      * @param itemIdStr Pre-computed item ID string (to avoid repeated toString() calls)
      * @param itemModId Pre-computed mod ID (to avoid repeated getNamespace() calls)
      */
-    private boolean matchesInvertedFilter(ItemStack stack, Item item, net.minecraft.resources.ResourceLocation itemId, 
+    private boolean matchesInvertedFilter(ItemStack stack, Item item, net.minecraft.resources.Identifier itemId,
                                          String itemIdStr, String itemModId) {
         if (stack == null || stack.isEmpty()) {
             return false;
@@ -584,7 +584,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      * @param itemIdStr Pre-computed item ID string (to avoid repeated toString() calls)
      * @param itemModId Pre-computed mod ID (to avoid repeated getNamespace() calls)
      */
-    private boolean matchesFilter(ItemStack stack, Item item, net.minecraft.resources.ResourceLocation itemId, 
+    private boolean matchesFilter(ItemStack stack, Item item, net.minecraft.resources.Identifier itemId,
                                   String itemIdStr, String itemModId) {
         if (stack == null || stack.isEmpty()) {
             return false;
@@ -633,7 +633,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      * @param itemModId Pre-computed mod ID (to avoid repeated getNamespace() calls)
      * @param filter The filter string to match against (already trimmed)
      */
-    private boolean matchesFilterEntry(ItemStack stack, Item item, net.minecraft.resources.ResourceLocation itemId, 
+    private boolean matchesFilterEntry(ItemStack stack, Item item, net.minecraft.resources.Identifier itemId,
                                       String itemIdStr, String itemModId, String filter) {
         if (filter == null || filter.isEmpty()) {
             return false;
@@ -667,7 +667,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         if (filter.startsWith("#")) {
             String tagFilter = filter.substring(1);
             try {
-                net.minecraft.resources.ResourceLocation tagId = net.minecraft.resources.ResourceLocation.parse(tagFilter);
+                net.minecraft.resources.Identifier tagId = net.minecraft.resources.Identifier.parse(tagFilter);
                 net.minecraft.tags.TagKey<Item> itemTag = net.minecraft.tags.ItemTags.create(tagId);
                 return item.builtInRegistryHolder().is(itemTag);
             } catch (Exception e) {

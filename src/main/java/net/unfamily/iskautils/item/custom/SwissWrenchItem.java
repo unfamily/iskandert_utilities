@@ -3,7 +3,7 @@ package net.unfamily.iskautils.item.custom;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
@@ -27,7 +27,7 @@ import java.util.List;
 public class SwissWrenchItem extends Item {
     // tag for blocks that should not be rotated
     private static final TagKey<Block> WRENCH_NOT_ROTATE = BlockTags.create(
-            ResourceLocation.tryParse("c:wrench_not_rotate"));
+            Identifier.tryParse("c:wrench_not_rotate"));
 
     public SwissWrenchItem(Properties properties) {
         super(properties);
@@ -80,7 +80,7 @@ public class SwissWrenchItem extends Item {
             }
             
             // do nothing on the client, only on the server
-            if (level.isClientSide) {
+            if (level.isClientSide()) {
                 return InteractionResult.SUCCESS;
             }
             
@@ -166,12 +166,12 @@ public class SwissWrenchItem extends Item {
             // if the block was changed, play a sound and send a message to the player
             if (changed) {
                 level.playSound(null, blockPos, SoundEvents.LANTERN_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                player.displayClientMessage(
-                    Component.translatable("item.iska_utils.swiss_wrench.message.block_rotated"), true);
+                player.sendSystemMessage(
+                    Component.translatable("item.iska_utils.swiss_wrench.message.block_rotated"));
                 return InteractionResult.SUCCESS;
             } else {
-                player.displayClientMessage(
-                    Component.translatable("item.iska_utils.swiss_wrench.message.cannot_rotate"), true);
+                player.sendSystemMessage(
+                    Component.translatable("item.iska_utils.swiss_wrench.message.cannot_rotate"));
                 return InteractionResult.FAIL;
             }
         }
@@ -180,8 +180,8 @@ public class SwissWrenchItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> tooltipAdder, TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, display, tooltipAdder, tooltipFlag);
         
         // Show current mode
         SetWrenchDirectionBlock.RotationMode currentMode = SetWrenchDirectionBlock.getSelectedRotationMode(stack);
@@ -189,8 +189,8 @@ public class SwissWrenchItem extends Item {
         Component modeText = Component.translatable("item.iska_utils.swiss_wrench.tooltip.current_mode", 
                 currentMode.getDisplayName());
         
-        tooltipComponents.add(modeText);
-        tooltipComponents.add(Component.translatable("item.iska_utils.swiss_wrench.tooltip.desc0"));
-        tooltipComponents.add(Component.translatable("item.iska_utils.swiss_wrench.tooltip.desc1"));
+        tooltipAdder.accept(modeText);
+        tooltipAdder.accept(Component.translatable("item.iska_utils.swiss_wrench.tooltip.desc0"));
+        tooltipAdder.accept(Component.translatable("item.iska_utils.swiss_wrench.tooltip.desc1"));
     }
 }

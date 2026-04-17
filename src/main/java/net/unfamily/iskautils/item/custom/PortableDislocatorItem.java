@@ -4,15 +4,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
-import net.minecraft.util.Unit;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -53,7 +54,9 @@ public class PortableDislocatorItem extends Item {
     private static final String ENERGY_TAG = "Energy";
     
     // Custom ticket type for chunk loading
-    private static final TicketType<Unit> DISLOCATOR_TICKET = TicketType.create("portable_dislocator", (a, b) -> 0, 100);
+    // NeoForge/Minecraft 26+: TicketType is not generic and custom creation is not available here.
+    // Use a builtin temporary loading ticket to preserve behavior.
+    private static final TicketType DISLOCATOR_TICKET = TicketType.PORTAL;
     
     // Static variables to track teleportation state per player
     private static final Map<UUID, TeleportationData> activeTeleportations = new HashMap<>();
@@ -128,17 +131,17 @@ public class PortableDislocatorItem extends Item {
      */
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, TooltipContext context, java.util.List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> tooltipAdder, TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, display, tooltipAdder, tooltipFlag);
         
         // Get the keybind name
         String keybindName = KeyBindings.PORTABLE_DISLOCATOR_KEY.getTranslatedKeyMessage().getString();
         
         // Add main tooltip
-        tooltipComponents.add(Component.translatable("item.iska_utils.portable_dislocator.tooltip.main", keybindName));
+        tooltipAdder.accept(Component.translatable("item.iska_utils.portable_dislocator.tooltip.main", keybindName));
         
         // Add compass info
-        tooltipComponents.add(Component.translatable("item.iska_utils.portable_dislocator.tooltip.compasses"));
+        tooltipAdder.accept(Component.translatable("item.iska_utils.portable_dislocator.tooltip.compasses"));
         
         // Energy information
         if (canStoreEnergy()) {
@@ -151,7 +154,7 @@ public class PortableDislocatorItem extends Item {
                 .withStyle(style -> style.withColor(ChatFormatting.RED))
                 .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
             
-            tooltipComponents.add(energyText);
+            tooltipAdder.accept(energyText);
             
             // If energy is enabled but we also have XP consumption as backup
             if (Config.portableDislocatorXpConsume > 0) {
@@ -159,7 +162,7 @@ public class PortableDislocatorItem extends Item {
                     "item.iska_utils.portable_dislocator.tooltip.xp_backup", 
                     Config.portableDislocatorXpConsume)
                     .withStyle(style -> style.withColor(ChatFormatting.GREEN));
-                tooltipComponents.add(xpBackupText);
+                tooltipAdder.accept(xpBackupText);
             }
         } else if (Config.portableDislocatorXpConsume > 0) {
             // Energy is disabled but XP consumption is enabled
@@ -167,7 +170,7 @@ public class PortableDislocatorItem extends Item {
                 "item.iska_utils.portable_dislocator.tooltip.consumes_xp", 
                 Config.portableDislocatorXpConsume)
                 .withStyle(style -> style.withColor(ChatFormatting.GREEN));
-            tooltipComponents.add(xpText);
+            tooltipAdder.accept(xpText);
         }
     }
     
@@ -175,21 +178,13 @@ public class PortableDislocatorItem extends Item {
      * Called every tick for every item in the inventory
      */
     @Override
-    public void inventoryTick(ItemStack stack, net.minecraft.world.level.Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-        
-        // Execute only for players
+    public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, EquipmentSlot slot) {
+        super.inventoryTick(stack, level, entity, slot);
+
+        // Execute only for players (server-side only with the new signature)
         if (entity instanceof Player player) {
-            // Handle keybind on client side
-            if (level.isClientSide) {
-                tickInInventory(stack, level, player, slotId, isSelected);
-            }
-            
-            // Handle pending teleportation on server side
-            if (!level.isClientSide) {
-                handlePendingTeleportation(player, level);
-                checkForTeleportRequest(player, stack, level);
-            }
+            handlePendingTeleportation(player, level);
+            checkForTeleportRequest(player, stack, level);
         }
     }
     
@@ -209,12 +204,12 @@ public class PortableDislocatorItem extends Item {
      */
     public static void tickInCurios(ItemStack stack, net.minecraft.world.level.Level level, Player player) {
         // Check if the portable dislocator keybind was pressed (client side)
-        if (level.isClientSide && KeyBindings.PORTABLE_DISLOCATOR_KEY.consumeClick()) {
+        if (level.isClientSide() && KeyBindings.PORTABLE_DISLOCATOR_KEY.consumeClick()) {
             handleDislocatorActivation(player, stack, "curios");
         }
         
         // Handle pending teleportation (server side)
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             handlePendingTeleportation(player, level);
             checkForTeleportRequest(player, stack, level);
         }
@@ -275,17 +270,15 @@ public class PortableDislocatorItem extends Item {
         
         // Notifica il player
         if (request.usingAngelBlock) {
-            player.displayClientMessage(
+            player.sendSystemMessage(
                 Component.translatable("item.iska_utils.portable_dislocator.message.angel_retry", 
                                      request.attemptNumber - NORMAL_ATTEMPTS)
-                    .withStyle(ChatFormatting.YELLOW), 
-                true);
+                    .withStyle(ChatFormatting.YELLOW));
         } else {
-            player.displayClientMessage(
+            player.sendSystemMessage(
                 Component.translatable("item.iska_utils.portable_dislocator.message.retry", 
                                      request.attemptNumber)
-                    .withStyle(ChatFormatting.YELLOW), 
-                true);
+                    .withStyle(ChatFormatting.YELLOW));
         }
     }
     
@@ -326,12 +319,11 @@ public class PortableDislocatorItem extends Item {
 
                 
                 if (energyConsumed && xpConsumed) {
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                         Component.translatable("item.iska_utils.portable_dislocator.message.used_both", 
                                              dislocator.getEffectiveEnergyConsumption(),
                                              Config.portableDislocatorXpConsume)
-                                .withStyle(ChatFormatting.GOLD), 
-                        true);
+                                .withStyle(ChatFormatting.GOLD));
                 }
                 
                 // Can teleport only if both resources were consumed
@@ -353,11 +345,10 @@ public class PortableDislocatorItem extends Item {
 
                 
                 if (canTeleport) {
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                         Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
                                              Config.portableDislocatorXpConsume)
-                                .withStyle(ChatFormatting.GOLD), 
-                        true);
+                                .withStyle(ChatFormatting.GOLD));
                 }
             }
         }
@@ -368,11 +359,10 @@ public class PortableDislocatorItem extends Item {
 
                 
                 if (canTeleport) {
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                         Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
                                              Config.portableDislocatorXpConsume)
-                                .withStyle(ChatFormatting.GOLD), 
-                        true);
+                                .withStyle(ChatFormatting.GOLD));
                 }
             } 
             // If XP priority but no XP, try energy
@@ -392,11 +382,10 @@ public class PortableDislocatorItem extends Item {
 
                     
                     if (canTeleport) {
-                        player.displayClientMessage(
+                        player.sendSystemMessage(
                             Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
                                                  Config.portableDislocatorXpConsume)
-                                    .withStyle(ChatFormatting.GOLD), 
-                            true);
+                                    .withStyle(ChatFormatting.GOLD));
                     }
                 }
             } else if (xpEnabled && hasEnoughXp) {
@@ -404,11 +393,10 @@ public class PortableDislocatorItem extends Item {
 
                 
                 if (canTeleport) {
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                         Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
                                              Config.portableDislocatorXpConsume)
-                                .withStyle(ChatFormatting.GOLD), 
-                        true);
+                                .withStyle(ChatFormatting.GOLD));
                 }
             } else if (!energyEnabled && !xpEnabled) {
                 // Both systems disabled, teleport is free
@@ -420,16 +408,14 @@ public class PortableDislocatorItem extends Item {
         if (!canTeleport) {
             // Check which resource is depleted and notify player
             if (energyEnabled && !hasEnoughEnergy) {
-                player.displayClientMessage(
+                player.sendSystemMessage(
                     Component.translatable("item.iska_utils.portable_dislocator.message.no_energy")
-                            .withStyle(ChatFormatting.RED), 
-                    true);
+                            .withStyle(ChatFormatting.RED));
             } 
             if (xpEnabled && !hasEnoughXp) {
-                player.displayClientMessage(
+                player.sendSystemMessage(
                     Component.translatable("item.iska_utils.portable_dislocator.message.no_xp")
-                            .withStyle(ChatFormatting.RED), 
-                    true);
+                            .withStyle(ChatFormatting.RED));
             }
             if (!energyEnabled && !xpEnabled) {
 
@@ -480,9 +466,8 @@ public class PortableDislocatorItem extends Item {
         activeTeleportations.put(playerId, teleportData);
         
         // Notify player
-        player.displayClientMessage(
-            Component.translatable("item.iska_utils.portable_dislocator.message.teleporting"), 
-            true);
+        player.sendSystemMessage(
+            Component.translatable("item.iska_utils.portable_dislocator.message.teleporting"));
     }
     
     /**
@@ -525,10 +510,9 @@ public class PortableDislocatorItem extends Item {
                 resetTeleportationState(playerId);
                 
                 // Notify player about the failure
-                player.displayClientMessage(
+                player.sendSystemMessage(
                     Component.translatable("item.iska_utils.portable_dislocator.message.failed")
-                        .withStyle(ChatFormatting.RED), 
-                    true);
+                        .withStyle(ChatFormatting.RED));
             }
             return;
         }
@@ -540,7 +524,7 @@ public class PortableDislocatorItem extends Item {
             ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
             
             // Add ticket to force chunk loading with higher priority
-            serverLevel.getChunkSource().addRegionTicket(DISLOCATOR_TICKET, chunkPos, 2, Unit.INSTANCE);
+            serverLevel.getChunkSource().addTicketWithRadius(DISLOCATOR_TICKET, chunkPos, 2);
             
             // Force chunk generation synchronously
             try {
@@ -581,7 +565,7 @@ public class PortableDislocatorItem extends Item {
                             // If we couldn't find a safe position, try another location
                             if (safeY == -1) {
                                 // Remove the ticket since we're not using the chunk
-                                serverLevel.getChunkSource().removeRegionTicket(DISLOCATOR_TICKET, chunkPos, 2, Unit.INSTANCE);
+                                serverLevel.getChunkSource().removeTicketWithRadius(DISLOCATOR_TICKET, chunkPos, 2);
                                 
                                 // Try another attempt if we haven't exceeded max attempts
                                 if (data.attemptCount < MAX_ATTEMPTS) {
@@ -600,10 +584,9 @@ public class PortableDislocatorItem extends Item {
                                     resetTeleportationState(playerId);
                                     
                                     // Notify player about the failure
-                                    player.displayClientMessage(
+                                    player.sendSystemMessage(
                                         Component.translatable("item.iska_utils.portable_dislocator.message.failed")
-                                            .withStyle(ChatFormatting.RED), 
-                                        true);
+                                            .withStyle(ChatFormatting.RED));
                                 }
                                 return;
                             }
@@ -631,7 +614,7 @@ public class PortableDislocatorItem extends Item {
                             // If we couldn't find a safe position, try another location
                             if (safeY == -1) {
                                 // Remove the ticket since we're not using the chunk
-                                serverLevel.getChunkSource().removeRegionTicket(DISLOCATOR_TICKET, chunkPos, 2, Unit.INSTANCE);
+                                serverLevel.getChunkSource().removeTicketWithRadius(DISLOCATOR_TICKET, chunkPos, 2);
                                 
                                 // Try another attempt if we haven't exceeded max attempts
                                 if (data.attemptCount < MAX_ATTEMPTS) {
@@ -653,10 +636,9 @@ public class PortableDislocatorItem extends Item {
                                     resetTeleportationState(playerId);
                                     
                                     // Notify player about the failure
-                                    player.displayClientMessage(
+                                    player.sendSystemMessage(
                                         Component.translatable("item.iska_utils.portable_dislocator.message.failed")
-                                            .withStyle(ChatFormatting.RED), 
-                                        true);
+                                            .withStyle(ChatFormatting.RED));
                                 }
                                 return;
                             }
@@ -726,7 +708,7 @@ public class PortableDislocatorItem extends Item {
                 try {
                     Thread.sleep(delayTicks * 50); // Convert ticks to milliseconds
                     serverLevel.getServer().execute(() -> {
-                        serverLevel.getChunkSource().removeRegionTicket(DISLOCATOR_TICKET, chunkPos, 2, Unit.INSTANCE);
+                        serverLevel.getChunkSource().removeTicketWithRadius(DISLOCATOR_TICKET, chunkPos, 2);
 
                     });
                 } catch (InterruptedException e) {
@@ -804,10 +786,9 @@ public class PortableDislocatorItem extends Item {
         // No need to check energy again for retry attempts - it was already consumed in the first attempt
         
         // Notify player about the retry
-        player.displayClientMessage(
+        player.sendSystemMessage(
             Component.translatable("item.iska_utils.portable_dislocator.message.retry", attemptNumber)
-                .withStyle(ChatFormatting.YELLOW), 
-            true);
+                .withStyle(ChatFormatting.YELLOW));
     }
     
     /**
@@ -816,8 +797,8 @@ public class PortableDislocatorItem extends Item {
     private static int findSafeY(Level level, int x, int z) {
         
         // Get dimension limits with safety margins
-        int absoluteMinY = level.getMinBuildHeight();
-        int absoluteMaxY = level.getMaxBuildHeight();
+        int absoluteMinY = level.getMinY();
+        int absoluteMaxY = level.getMaxY();
         
         // Apply safety margins and dimension-specific limits
         int minY = Math.max(absoluteMinY + 5, getSafeDimensionMinY(level));
@@ -900,7 +881,7 @@ public class PortableDislocatorItem extends Item {
      * Gets the safe minimum Y for a specific dimension
      */
     private static int getSafeDimensionMinY(Level level) {
-        String dimensionKey = level.dimension().location().toString();
+        String dimensionKey = level.dimension().identifier().toString();
         
         switch (dimensionKey) {
             case "minecraft:the_nether":
@@ -912,7 +893,7 @@ public class PortableDislocatorItem extends Item {
             case "minecraft:overworld":
             default:
                 // Overworld and other dimensions: use standard minimum
-                return level.getMinBuildHeight() + 5;
+                return level.getMinY() + 5;
         }
     }
     
@@ -920,7 +901,7 @@ public class PortableDislocatorItem extends Item {
      * Gets the safe maximum Y for a specific dimension
      */
     private static int getSafeDimensionMaxY(Level level) {
-        String dimensionKey = level.dimension().location().toString();
+        String dimensionKey = level.dimension().identifier().toString();
         
         switch (dimensionKey) {
             case "minecraft:the_nether":
@@ -928,11 +909,11 @@ public class PortableDislocatorItem extends Item {
                 return 122;
             case "minecraft:the_end":
                 // End: no height limit issues, use standard
-                return level.getMaxBuildHeight() - 5;
+                return level.getMaxY() - 5;
             case "minecraft:overworld":
             default:
                 // Overworld and other dimensions: use standard maximum
-                return level.getMaxBuildHeight() - 5;
+                return level.getMaxY() - 5;
         }
     }
     
@@ -940,17 +921,17 @@ public class PortableDislocatorItem extends Item {
      * Gets the Y level of the bedrock floor for the dimension
      */
     private static int getBedrockFloorY(Level level) {
-        String dimensionKey = level.dimension().location().toString();
+        String dimensionKey = level.dimension().identifier().toString();
         
         switch (dimensionKey) {
             case "minecraft:the_nether":
                 return 0; // Nether bedrock floor at Y=0
             case "minecraft:overworld":
-                return level.getMinBuildHeight(); // Overworld bedrock at bottom
+                return level.getMinY(); // Overworld bedrock at bottom
             case "minecraft:the_end":
                 return 0; // End has void below, treat as Y=0
             default:
-                return level.getMinBuildHeight();
+                return level.getMinY();
         }
     }
     
@@ -958,17 +939,17 @@ public class PortableDislocatorItem extends Item {
      * Gets the Y level of the bedrock ceiling for the dimension
      */
     private static int getBedrockCeilingY(Level level) {
-        String dimensionKey = level.dimension().location().toString();
+        String dimensionKey = level.dimension().identifier().toString();
         
         switch (dimensionKey) {
             case "minecraft:the_nether":
                 return 127; // Nether bedrock ceiling at Y=127
             case "minecraft:overworld":
-                return level.getMaxBuildHeight(); // Overworld has no bedrock ceiling
+                return level.getMaxY(); // Overworld has no bedrock ceiling
             case "minecraft:the_end":
-                return level.getMaxBuildHeight(); // End has no bedrock ceiling
+                return level.getMaxY(); // End has no bedrock ceiling
             default:
-                return level.getMaxBuildHeight();
+                return level.getMaxY();
         }
     }
     
@@ -976,8 +957,8 @@ public class PortableDislocatorItem extends Item {
      * Checks if a Y coordinate is within safe dimension limits
      */
     private static boolean isWithinDimensionLimits(Level level, int y) {
-        int safeMinY = Math.max(level.getMinBuildHeight() + 5, getSafeDimensionMinY(level));
-        int safeMaxY = Math.min(level.getMaxBuildHeight() - 5, getSafeDimensionMaxY(level));
+        int safeMinY = Math.max(level.getMinY() + 5, getSafeDimensionMinY(level));
+        int safeMaxY = Math.min(level.getMaxY() - 5, getSafeDimensionMaxY(level));
         
         // Additional bedrock checks
         int bedrockFloor = getBedrockFloorY(level) + 1;
@@ -1034,7 +1015,7 @@ public class PortableDislocatorItem extends Item {
         // CRITICAL: Never place player on bedrock in dangerous positions
         if (groundState.is(net.minecraft.world.level.block.Blocks.BEDROCK)) {
             // Check if this is safe bedrock (like Nether floor) or dangerous (like Nether ceiling)
-            String dimensionKey = level.dimension().location().toString();
+            String dimensionKey = level.dimension().identifier().toString();
             if ("minecraft:the_nether".equals(dimensionKey)) {
                 // In Nether, bedrock at Y=0-4 is floor (safe), bedrock at Y=123-127 is ceiling (unsafe)
                 if (groundPos.getY() >= 123) {
@@ -1178,7 +1159,7 @@ public class PortableDislocatorItem extends Item {
         LOGGER.debug("Successfully extracted coordinates: x={}, z={}", coordinates.getLeft(), coordinates.getRight());
 
         // If we're on the client side, create a request for the server
-        if (player.level().isClientSide) {
+        if (player.level().isClientSide()) {
             TeleportRequest request = new TeleportRequest(player, coordinates.getLeft(), coordinates.getRight());
             pendingRequests.put(player.getUUID(), request);
             // Silent request - no feedback
@@ -1196,7 +1177,7 @@ public class PortableDislocatorItem extends Item {
     @Deprecated
     public static void startTeleportation(Player player, int targetX, int targetZ) {
         
-        if (player.level().isClientSide) {
+        if (player.level().isClientSide()) {
             // Client side - create request
             TeleportRequest request = new TeleportRequest(player, targetX, targetZ);
             pendingRequests.put(player.getUUID(), request);
@@ -1218,7 +1199,7 @@ public class PortableDislocatorItem extends Item {
     @Deprecated
     public static void startTeleportation(Player player, ItemStack dislocatorStack, int targetX, int targetZ) {
         
-        if (player.level().isClientSide) {
+        if (player.level().isClientSide()) {
             // Client side - create request
             TeleportRequest request = new TeleportRequest(player, targetX, targetZ);
             pendingRequests.put(player.getUUID(), request);
@@ -1234,7 +1215,7 @@ public class PortableDislocatorItem extends Item {
     private static boolean isValidCompass(ItemStack stack) {
         if (stack.isEmpty()) return false;
         
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         String itemIdString = itemId.toString();
         
         LOGGER.debug("Checking if item is valid compass: itemId={}", itemIdString);
@@ -1255,7 +1236,7 @@ public class PortableDislocatorItem extends Item {
     private static String getCompassType(ItemStack stack) {
         if (stack.isEmpty()) return null;
         
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         String itemIdString = itemId.toString();
         
         LOGGER.debug("Getting compass type for itemId: {}", itemIdString);
@@ -1323,7 +1304,7 @@ public class PortableDislocatorItem extends Item {
                             CompoundTag structureInfo = (CompoundTag) componentValue;
                             LOGGER.debug("Found structure_info CompoundTag: {}", structureInfo);
                             if (structureInfo.contains("pos")) {
-                                int[] pos = structureInfo.getIntArray("pos");
+                                int[] pos = structureInfo.getIntArray("pos").orElse(new int[0]);
                                 if (pos.length >= 3) {
                                     int x = pos[0];
                                     int z = pos[2];
@@ -1345,21 +1326,21 @@ public class PortableDislocatorItem extends Item {
                 
                 if ("naturescompass".equals(compassTypeFromId)) {
                     if (nbt.contains("naturescompass:found_x") && nbt.contains("naturescompass:found_z")) {
-                        int x = nbt.getInt("naturescompass:found_x");
-                        int z = nbt.getInt("naturescompass:found_z");
+                        int x = nbt.getInt("naturescompass:found_x").orElse(0);
+                        int z = nbt.getInt("naturescompass:found_z").orElse(0);
                         return Pair.of(x, z);
                     }
                 } else if ("explorerscompass".equals(compassTypeFromId)) {
                     if (nbt.contains("explorerscompass:found_x") && nbt.contains("explorerscompass:found_z")) {
-                        int x = nbt.getInt("explorerscompass:found_x");
-                        int z = nbt.getInt("explorerscompass:found_z");
+                        int x = nbt.getInt("explorerscompass:found_x").orElse(0);
+                        int z = nbt.getInt("explorerscompass:found_z").orElse(0);
                         return Pair.of(x, z);
                     }
                 } else if ("structurecompass".equals(compassTypeFromId)) {
                     if (nbt.contains("structurecompass:structure_info")) {
-                        CompoundTag structureInfo = nbt.getCompound("structurecompass:structure_info");
+                        CompoundTag structureInfo = nbt.getCompound("structurecompass:structure_info").orElse(new CompoundTag());
                         if (structureInfo.contains("pos")) {
-                            int[] pos = structureInfo.getIntArray("pos");
+                            int[] pos = structureInfo.getIntArray("pos").orElse(new int[0]);
                             if (pos.length >= 3) {
                                 int x = pos[0];
                                 int z = pos[2];
@@ -1447,7 +1428,7 @@ public class PortableDislocatorItem extends Item {
                         else if (componentValue instanceof CompoundTag) {
                             CompoundTag structureInfo = (CompoundTag) componentValue;
                             if (structureInfo.contains("pos")) {
-                                int[] pos = structureInfo.getIntArray("pos");
+                                int[] pos = structureInfo.getIntArray("pos").orElse(new int[0]);
                                 if (pos.length >= 3) {
                                     foundX = pos[0];
                                     foundZ = pos[2];
@@ -1587,7 +1568,7 @@ public class PortableDislocatorItem extends Item {
         }
         
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.getInt(ENERGY_TAG);
+        return tag.getInt(ENERGY_TAG).orElse(0);
     }
     
     /**
@@ -1816,10 +1797,9 @@ public class PortableDislocatorItem extends Item {
         activeTeleportations.put(playerId, newData);
         
         // Notify player about the Angel Block retry
-        player.displayClientMessage(
+        player.sendSystemMessage(
             Component.translatable("item.iska_utils.portable_dislocator.message.angel_retry", attemptNumber - NORMAL_ATTEMPTS)
-                .withStyle(ChatFormatting.YELLOW), 
-            true);
+                .withStyle(ChatFormatting.YELLOW));
     }
     
     /**
@@ -1827,8 +1807,8 @@ public class PortableDislocatorItem extends Item {
      */
     private static int findYForAngelBlock(Level level, int x, int z) {
         // Get dimension limits with safety margins
-        int absoluteMinY = level.getMinBuildHeight();
-        int absoluteMaxY = level.getMaxBuildHeight();
+        int absoluteMinY = level.getMinY();
+        int absoluteMaxY = level.getMaxY();
         
         // Apply safety margins and dimension-specific limits
         int minY = Math.max(absoluteMinY + 5, getSafeDimensionMinY(level));
@@ -1839,7 +1819,7 @@ public class PortableDislocatorItem extends Item {
         maxY = Math.min(maxY, getBedrockCeilingY(level) - 3); // -3 for player height + safety
         
         // find a reasonable Y for the specific world
-        String dimensionKey = level.dimension().location().toString();
+        String dimensionKey = level.dimension().identifier().toString();
         int targetY;
         
         switch (dimensionKey) {
@@ -1971,7 +1951,7 @@ public class PortableDislocatorItem extends Item {
      * Check if the position is near a bedrock ceiling
      */
     private static boolean isNearBedrockCeiling(Level level, int y) {
-        String dimensionKey = level.dimension().location().toString();
+        String dimensionKey = level.dimension().identifier().toString();
         
         // In the Nether, check if we're near the bedrock ceiling (Y=127-128)
         if ("minecraft:the_nether".equals(dimensionKey)) {
@@ -2037,7 +2017,7 @@ public class PortableDislocatorItem extends Item {
                     }
                     
                     // check if the tag was set correctly
-                    boolean tagSet = blockEntity.getPersistentData().getBoolean("no_drop");
+                    boolean tagSet = blockEntity.getPersistentData().getBoolean("no_drop").orElse(false);
                 } catch (Exception e) {
                     // Error setting tag
                 }

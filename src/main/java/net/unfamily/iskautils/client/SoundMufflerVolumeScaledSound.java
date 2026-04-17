@@ -3,7 +3,7 @@ package net.unfamily.iskautils.client;
 import net.minecraft.client.resources.sounds.Sound;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.SoundManager;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
 
 /**
@@ -57,8 +57,8 @@ public record SoundMufflerVolumeScaledSound(SoundInstance inner, float volumeSca
     }
 
     @Override
-    public ResourceLocation getLocation() {
-        return inner.getLocation();
+    public Identifier getIdentifier() {
+        return inner.getIdentifier();
     }
 
     @Override
