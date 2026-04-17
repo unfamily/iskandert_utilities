@@ -5,11 +5,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-
-// An example config class. This is not required, but it's a good idea to have one to keep your config organized.
-// Demonstrates how to use Neo's config APIs
-public class Config
-{
+@EventBusSubscriber(modid = IskaUtils.MOD_ID)
+public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
     // Category for Vector Plates
@@ -814,13 +811,13 @@ public class Config
     public static boolean portableDislocatorPrioritizeEnergy;
     public static boolean portableDislocatorPrioritizeXp;
     public static String externalScriptsPath;
-    public static java.util.List<String> stickyFluids;
+    public static java.util.List<String> stickyFluids = new java.util.ArrayList<>();
     public static int electricTreetapEnergyConsume;
     public static int electricTreetapEnergyBuffer;
     public static int rubberSapExtractorEnergyConsume;
     public static int rubberSapExtractorEnergyBuffer;
     public static int rubberSapExtractorSpeed;
-    public static java.util.List<String> crudeOils;
+    public static java.util.List<String> crudeOils = new java.util.ArrayList<>();
     public static int scannerScanRange;
     public static java.util.List<Integer> scannerRangeOptions;
     public static int scannerDefaultRange;
@@ -903,8 +900,14 @@ public class Config
     public static int creativeDollyInfoLines;
 
     @SubscribeEvent
-    static void onLoad(final ModConfigEvent event)
-    {
+    static void onLoad(final ModConfigEvent event) {
+        if (event instanceof ModConfigEvent.Unloading) {
+            return;
+        }
+        if (event.getConfig().getSpec() != SPEC) {
+            return;
+        }
+
         slowVectorSpeed = SLOW_VECTOR_SPEED.get();
         moderateVectorSpeed = MODERATE_VECTOR_SPEED.get();
         fastVectorSpeed = FAST_VECTOR_SPEED.get();
