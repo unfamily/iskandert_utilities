@@ -5,9 +5,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.Config;
@@ -17,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Special item for the Vector Charm that can be worn as a Curio when available.
@@ -149,8 +152,8 @@ public class VectorCharmItem extends Item {
     }
     
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltipComponents, tooltipFlag);
         
         // Energy information - only show if energy is enabled
         if (canStoreEnergy() && requiresEnergyToFunction()) {
@@ -163,17 +166,17 @@ public class VectorCharmItem extends Item {
                 .withStyle(style -> style.withColor(ChatFormatting.RED))
                 .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
             
-            tooltipComponents.add(energyText);
+            tooltipComponents.accept(energyText);
             
             // Show consumption per speed level
             List<Integer> consumption = getEffectiveEnergyConsume();
-            tooltipComponents.add(Component.literal("§7Energy consumption per tick:"));
+            tooltipComponents.accept(Component.literal("§7Energy consumption per tick:"));
             
             // Safe access to array elements with fallback to 0
             String[] speedNames = {"None", "Slow", "Moderate", "Fast", "Extreme", "Ultra", "Hover"};
             for (int i = 0; i < speedNames.length; i++) {
                 int energyConsumption = (i < consumption.size()) ? consumption.get(i) : 0;
-                tooltipComponents.add(Component.literal("§8  " + speedNames[i] + ": " + energyConsumption + " RF"));
+                tooltipComponents.accept(Component.literal("§8  " + speedNames[i] + ": " + energyConsumption + " RF"));
             }
         } else if (canStoreEnergy()) {
             // Energy storage enabled but no consumption required
@@ -186,9 +189,9 @@ public class VectorCharmItem extends Item {
                 .withStyle(style -> style.withColor(ChatFormatting.RED))
                 .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
             
-            tooltipComponents.add(energyText);
+            tooltipComponents.accept(energyText);
         } else {
-            tooltipComponents.add(Component.literal("§7No energy required"));
+            tooltipComponents.accept(Component.literal("§7No energy required"));
         }
     }
     
@@ -196,11 +199,9 @@ public class VectorCharmItem extends Item {
      * This method is called every tick for every item in the inventory
      */
     @Override
-    public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-        
+    public void inventoryTick(ItemStack stack, net.minecraft.server.level.ServerLevel level, net.minecraft.world.entity.Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
+        super.inventoryTick(stack, level, entity, slot);
         if (entity instanceof Player player) {
-            // Apply movement (includes energy consumption)
             net.unfamily.iskautils.client.VectorCharmMovement.applyMovement(player, stack);
         }
     }
@@ -266,7 +267,7 @@ public class VectorCharmItem extends Item {
         }
         
         CompoundTag tag = stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
-        return tag.getInt(ENERGY_TAG);
+        return tag.getInt(ENERGY_TAG).orElse(0);
     }
     
     /**
@@ -321,7 +322,7 @@ public class VectorCharmItem extends Item {
         }
         
         // Check player inventory (lowest priority)
-        for (ItemStack stack : player.getInventory().items) {
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
             if (stack.getItem() instanceof VectorCharmItem charm) {
                 if (charm.hasEnoughEnergy(stack, speedLevel)) {
                     return stack;
@@ -497,8 +498,9 @@ public class VectorCharmItem extends Item {
         }
         
         // Check inventory
-        for (int i = 0; i < player.getInventory().items.size(); i++) {
-            if (player.getInventory().items.get(i) == stack) {
+        var inv = player.getInventory().getNonEquipmentItems();
+        for (int i = 0; i < inv.size(); i++) {
+            if (inv.get(i) == stack) {
                 return "Inventory Slot " + i;
             }
         }

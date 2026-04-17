@@ -6,9 +6,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskalib.stage.StageRegistry;
 import org.slf4j.Logger;
@@ -19,6 +23,7 @@ import java.lang.reflect.Method;
 
 import java.util.List;
 import java.lang.Class;
+import java.util.function.Consumer;
 
 /**
  * The Necrotic Crystal Heart is an item that, when worn as a curio,
@@ -36,19 +41,19 @@ public class NecroticCrystalHeartItem extends Item {
     }
     
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltipComponents, tooltipFlag);
         
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc0").getString()));
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc1").getString()));
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc2").getString()));
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc3").getString()));
+        tooltipComponents.accept(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc0").getString()));
+        tooltipComponents.accept(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc1").getString()));
+        tooltipComponents.accept(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc2").getString()));
+        tooltipComponents.accept(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc3").getString()));
         
         if (Config.artifactsInfo) {
             if (!isArtifactsLoaded()) {
-                tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_required").getString()));
+                tooltipComponents.accept(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_required").getString()));
             } else {
-                tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded").getString()));
+                tooltipComponents.accept(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded").getString()));
             }
         }
     }
@@ -69,11 +74,8 @@ public class NecroticCrystalHeartItem extends Item {
             float reducedDamage = damageAmount * DAMAGE_REDUCTION;
             
             // Display protection message
-            if (player.level().isClientSide) {
-                player.displayClientMessage(
-                    Component.literal("§5The Necrotic Crystal Heart protected you!"), 
-                    true // actionbar
-                );
+            if (player instanceof ServerPlayer serverPlayer) {
+                serverPlayer.connection.send(new ClientboundSystemChatPacket(Component.literal("§5The Necrotic Crystal Heart protected you!"), true));
             }
             
             return reducedDamage;
@@ -84,9 +86,8 @@ public class NecroticCrystalHeartItem extends Item {
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-        
+    public void inventoryTick(ItemStack stack, ServerLevel level, net.minecraft.world.entity.Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
+        super.inventoryTick(stack, level, entity, slot);
         if (entity instanceof Player player) {
             // verify if the item is in the vanilla inventory
             boolean isInVanillaInventory = false;
@@ -99,14 +100,14 @@ public class NecroticCrystalHeartItem extends Item {
             
             // if the item is not in the vanilla inventory, add the stage
             if (!isInVanillaInventory) {
-                StageRegistry.addPlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip", true);
+                StageRegistry.addPlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
             }
         }
     }
 
     @Override
 	public boolean onDroppedByPlayer(ItemStack itemstack, Player entity) {
-		StageRegistry.removePlayerStage(entity, "iska_utils_internal-necro_crystal_heart_equip", true);
+		StageRegistry.removePlayerStage(entity, "iska_utils_internal-necro_crystal_heart_equip");
 		return true;
 	}
 

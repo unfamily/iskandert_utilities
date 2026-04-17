@@ -6,9 +6,12 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.block.Block;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Custom BlockItem for Deep Drawers to add tooltip descriptions
@@ -20,15 +23,15 @@ public class DeepDrawersBlockItem extends BlockItem {
     }
     
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         
         // Add description from lang file in light gray
-        tooltip.add(Component.translatable("tooltip.iska_utils.deep_drawers.desc0")
+        tooltip.accept(Component.translatable("tooltip.iska_utils.deep_drawers.desc0")
                 .withStyle(ChatFormatting.GRAY));
         
         // Add warning in red about not being able to pick up if it contains items
-        tooltip.add(Component.translatable("tooltip.iska_utils.deep_drawers.desc1")
+        tooltip.accept(Component.translatable("tooltip.iska_utils.deep_drawers.desc1")
                 .withStyle(ChatFormatting.RED));
     }
 }

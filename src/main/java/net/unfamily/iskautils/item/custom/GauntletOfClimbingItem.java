@@ -1,14 +1,14 @@
 package net.unfamily.iskautils.item.custom;
 
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.chat.Component;
@@ -16,8 +16,10 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.data.GauntletClimbingData;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Gauntlet of Climbing - Allows player to climb walls when held in inventory
@@ -25,37 +27,12 @@ import java.util.List;
 public class GauntletOfClimbingItem extends Item {
     // Default climbing speed (fallback if config not loaded)
     private static final double DEFAULT_CLIMB_SPEED = 0.15D;
-    // NBT key for toggle state (0 = ON, 1 = OFF, default ON)
-    private static final String NBT_STATUS = "onoff";
-
     public GauntletOfClimbingItem(Properties properties) {
         super(properties);
     }
     
-    /**
-     * Checks if climbing is enabled (default: true/ON)
-     * Uses DataComponents like NeoForge 1.21 requires
-     */
-    private boolean isOn(ItemStack stack) {
-        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
-        if (customData == null) {
-            return true; // Default: ON (no data means enabled)
-        }
-        CompoundTag tag = customData.copyTag();
-        if (!tag.contains(NBT_STATUS)) {
-            return true; // Default: ON
-        }
-        return tag.getInt(NBT_STATUS) == 0; // 0 = ON, 1 = OFF
-    }
-    
-    /**
-     * Toggles the climbing state
-     */
-    private void toggle(Player player, ItemStack stack) {
-        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
-        CompoundTag tag = customData != null ? customData.copyTag() : new CompoundTag();
-        tag.putInt(NBT_STATUS, (tag.getInt(NBT_STATUS) + 1) % 2);
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    private boolean isOn(Player player) {
+        return GauntletClimbingData.isClimbingEnabled(player);
     }
     
     /**
@@ -69,31 +46,17 @@ public class GauntletOfClimbingItem extends Item {
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
+    public void inventoryTick(ItemStack stack, net.minecraft.server.level.ServerLevel level, Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
+        super.inventoryTick(stack, level, entity, slot);
         
         // Only work for players
         if (!(entity instanceof Player player)) {
             return;
         }
         
-        // Handle keybind - toggle on both client and server (like Cyclic)
-        if (KeyBindings.consumeGauntletClimbingToggleKeyClick()) {
-            // Toggle the state
-            toggle(player, stack);
-            boolean nowEnabled = isOn(stack);
-            
-            // Show feedback on server side (like Burning Brazier) for real-time updates
-            if (!level.isClientSide && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
-                Component message = Component.translatable(nowEnabled ? "message.iska_utils.gauntlet_climbing.enabled" : "message.iska_utils.gauntlet_climbing.disabled")
-                    .withStyle(nowEnabled ? ChatFormatting.GREEN : ChatFormatting.RED);
-                serverPlayer.displayClientMessage(message, true);
-            }
-        }
-        
         // Check if climbing is enabled and player is colliding horizontally with a wall
         // Works on both client and server (like Cyclic)
-        if (!isOn(stack)) {
+        if (!isOn(player)) {
             return; // Climbing is disabled
         }
         
@@ -132,23 +95,19 @@ public class GauntletOfClimbingItem extends Item {
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         
         // Get the keybind name
         String keybindName = KeyBindings.GAUNTLET_CLIMBING_TOGGLE_KEY.getTranslatedKeyMessage().getString();
         
         // Show description
-        tooltip.add(Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.desc"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.toggle", keybindName));
+        tooltip.accept(Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.desc"));
+        tooltip.accept(Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.toggle", keybindName));
         
         // Show current status (like Cyclic)
-        Component status = Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.status." + (isOn(stack) ? "enabled" : "disabled"));
-        tooltip.add(status);
+        Component status = Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.status." + (isOn(net.minecraft.client.Minecraft.getInstance().player) ? "enabled" : "disabled"));
+        tooltip.accept(status);
     }
 
-    @Override
-    public boolean isEnchantable(ItemStack stack) {
-        return false;
-    }
 }

@@ -11,6 +11,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -18,6 +19,7 @@ import net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Item to link blocks to the Temporal Overclocker
@@ -29,13 +31,13 @@ public class TemporalOverclockerChipsetItem extends Item {
     }
     
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         
         // Add description from lang file
-        tooltip.add(Component.translatable("tooltip.iska_utils.temporal_overclocker_chip.desc0")
+        tooltip.accept(Component.translatable("tooltip.iska_utils.temporal_overclocker_chip.desc0")
                 .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.iska_utils.temporal_overclocker_chip.desc1")
+        tooltip.accept(Component.translatable("tooltip.iska_utils.temporal_overclocker_chip.desc1")
                 .withStyle(ChatFormatting.GRAY));
     }
     
@@ -47,7 +49,7 @@ public class TemporalOverclockerChipsetItem extends Item {
         Player player = context.getPlayer();
         ItemStack stack = context.getItemInHand();
         
-        if (level.isClientSide || player == null) {
+        if (level.isClientSide() || player == null) {
             return InteractionResult.SUCCESS;
         }
         
@@ -76,7 +78,7 @@ public class TemporalOverclockerChipsetItem extends Item {
         CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         CompoundTag tag = customData.copyTag();
         if (tag.contains("LinkingOverclocker")) {
-            long overclockerPosLong = tag.getLong("LinkingOverclocker");
+            long overclockerPosLong = tag.getLong("LinkingOverclocker").orElse(0L);
             BlockPos overclockerPos = BlockPos.of(overclockerPosLong);
             
             BlockEntity overclockerBE = level.getBlockEntity(overclockerPos);

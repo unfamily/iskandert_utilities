@@ -251,8 +251,15 @@ public class KeyBindings {
                 ModMessages.sendScannerRangeCyclePacket();
             }
 
-            // Ghost Brazier keybind is handled in the item's inventoryTick method
-            // The item checks if the keybind was pressed when it ticks
+            // Key for Gauntlet of Climbing toggle
+            if (GAUNTLET_CLIMBING_TOGGLE_KEY.consumeClick()) {
+                ModMessages.sendGauntletClimbingTogglePacket();
+            }
+
+            // Key for Ghost Brazier toggle
+            if (GHOST_BRAZIER_TOGGLE_KEY.consumeClick()) {
+                ModMessages.sendGhostBrazierTogglePacket();
+            }
         }
     }
     

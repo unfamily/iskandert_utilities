@@ -12,6 +12,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Item for placing structures in the world with selection GUI
@@ -460,8 +462,9 @@ public class StructurePlacerItem extends Item {
         if (player.isCreative()) {
             return createCreativeAllocation(blockDefinitions);
         }
-        for (int i = 0; i < player.getInventory().items.size(); i++) {
-            ItemStack stack = player.getInventory().items.get(i);
+        var invItems = player.getInventory().getNonEquipmentItems();
+        for (int i = 0; i < invItems.size(); i++) {
+            ItemStack stack = invItems.get(i);
             
             if (!stack.isEmpty()) {
                 // Get block from item if possible
@@ -473,13 +476,10 @@ public class StructurePlacerItem extends Item {
                 } else {
                     // Try to find a matching block for item that are not BlockItem
                     try {
-                        net.minecraft.resources.ResourceLocation itemLocation = net.minecraft.resources.ResourceLocation.parse(itemId);
-                        net.minecraft.resources.ResourceLocation blockLocation = 
-                            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
-                        
-                        if (net.minecraft.core.registries.BuiltInRegistries.BLOCK.containsKey(blockLocation)) {
-                            block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
-                        }
+                        net.minecraft.resources.Identifier itemLocation = net.minecraft.resources.Identifier.tryParse(itemId);
+                        net.minecraft.resources.Identifier blockLocation =
+                            itemLocation == null ? null : net.minecraft.resources.Identifier.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
+                        block = blockLocation == null ? null : net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
                     } catch (Exception e) {
                         // Ignore if unable to find matching block
                     }
@@ -497,7 +497,7 @@ public class StructurePlacerItem extends Item {
                             
                             stack.shrink(1);
                             if (stack.isEmpty()) {
-                                player.getInventory().items.set(i, ItemStack.EMPTY);
+                                invItems.set(i, ItemStack.EMPTY);
                             }
                             
                             player.getInventory().setChanged();
@@ -536,9 +536,10 @@ public class StructurePlacerItem extends Item {
             ItemStack consumedStack = allocated.getConsumedStack();
             
             // Try to put item back in original slot
-            ItemStack currentStack = player.getInventory().items.get(allocated.getInventorySlot());
+            var invItems = player.getInventory().getNonEquipmentItems();
+            ItemStack currentStack = invItems.get(allocated.getInventorySlot());
             if (currentStack.isEmpty()) {
-                player.getInventory().items.set(allocated.getInventorySlot(), consumedStack.copy());
+                invItems.set(allocated.getInventorySlot(), consumedStack.copy());
             } else if (ItemStack.isSameItemSameComponents(currentStack, consumedStack)) {
                 currentStack.grow(consumedStack.getCount());
             } else {
@@ -635,9 +636,8 @@ public class StructurePlacerItem extends Item {
                 }
                 
                 // Get block from registry
-                net.minecraft.resources.ResourceLocation blockLocation = 
-                    net.minecraft.resources.ResourceLocation.parse(blockDef.getBlock());
-                Block block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
+                net.minecraft.resources.Identifier blockLocation = net.minecraft.resources.Identifier.tryParse(blockDef.getBlock());
+                Block block = blockLocation == null ? null : net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
                 
                 if (block != null && block != Blocks.AIR) {
                     BlockState blockState = block.defaultBlockState();
@@ -795,9 +795,8 @@ public class StructurePlacerItem extends Item {
             }
             
             // Get block from registry
-            net.minecraft.resources.ResourceLocation blockLocation = 
-                net.minecraft.resources.ResourceLocation.parse(blockDef.getBlock());
-            Block block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
+            net.minecraft.resources.Identifier blockLocation = net.minecraft.resources.Identifier.tryParse(blockDef.getBlock());
+            Block block = blockLocation == null ? null : net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
             
             if (block != null && block != Blocks.AIR) {
                 BlockState blockState = block.defaultBlockState();
@@ -906,7 +905,7 @@ public class StructurePlacerItem extends Item {
         Map<String, Integer> available = new HashMap<>();
         
         // Scan main inventory + hotbar
-        for (ItemStack stack : player.getInventory().items) {
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
             if (!stack.isEmpty()) {
                 // Get block from item if possible
                 Block block = null;
@@ -918,13 +917,10 @@ public class StructurePlacerItem extends Item {
                     // Try to find a matching block for item that are not BlockItem
                     // but that still correspond to a block (like lever, button, etc.)
                     try {
-                        net.minecraft.resources.ResourceLocation itemLocation = net.minecraft.resources.ResourceLocation.parse(itemId);
-                        net.minecraft.resources.ResourceLocation blockLocation = 
-                            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
-                        
-                        if (net.minecraft.core.registries.BuiltInRegistries.BLOCK.containsKey(blockLocation)) {
-                            block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
-                        }
+                        net.minecraft.resources.Identifier itemLocation = net.minecraft.resources.Identifier.tryParse(itemId);
+                        net.minecraft.resources.Identifier blockLocation =
+                            itemLocation == null ? null : net.minecraft.resources.Identifier.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
+                        block = blockLocation == null ? null : net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
                     } catch (Exception e) {
                         // Ignore if unable to find matching block
                     }
@@ -960,8 +956,9 @@ public class StructurePlacerItem extends Item {
             int remaining = needed;
             
             // Search inventory slots
-            for (int i = 0; i < player.getInventory().items.size() && remaining > 0; i++) {
-                ItemStack stack = player.getInventory().items.get(i);
+            var invItems = player.getInventory().getNonEquipmentItems();
+            for (int i = 0; i < invItems.size() && remaining > 0; i++) {
+                ItemStack stack = invItems.get(i);
                 
                 if (!stack.isEmpty()) {
                     // Get block from item if possible
@@ -973,13 +970,10 @@ public class StructurePlacerItem extends Item {
                     } else {
                         // Try to find a matching block for item that are not BlockItem
                         try {
-                            net.minecraft.resources.ResourceLocation itemLocation = net.minecraft.resources.ResourceLocation.parse(itemId);
-                            net.minecraft.resources.ResourceLocation blockLocation = 
-                                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
-                            
-                            if (net.minecraft.core.registries.BuiltInRegistries.BLOCK.containsKey(blockLocation)) {
-                                block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
-                            }
+                            net.minecraft.resources.Identifier itemLocation = net.minecraft.resources.Identifier.tryParse(itemId);
+                            net.minecraft.resources.Identifier blockLocation =
+                                itemLocation == null ? null : net.minecraft.resources.Identifier.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
+                            block = blockLocation == null ? null : net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
                         } catch (Exception e) {
                             // Ignore if unable to find matching block
                         }
@@ -996,7 +990,7 @@ public class StructurePlacerItem extends Item {
                                 remaining -= toConsume;
                                 
                                 if (stack.isEmpty()) {
-                                    player.getInventory().items.set(i, ItemStack.EMPTY);
+                                    invItems.set(i, ItemStack.EMPTY);
                                 }
                                 break; // Exit inner loop of alternatives
                             }
@@ -1056,7 +1050,7 @@ public class StructurePlacerItem extends Item {
             case "$lava" -> existingState.is(net.minecraft.world.level.block.Blocks.LAVA);
             case "$plants", "$plant" -> existingState.is(net.minecraft.tags.BlockTags.REPLACEABLE_BY_TREES) || 
                                       existingState.is(net.minecraft.tags.BlockTags.SMALL_FLOWERS) ||
-                                      existingState.is(net.minecraft.tags.BlockTags.TALL_FLOWERS) ||
+                                      existingState.is(net.minecraft.tags.BlockTags.FLOWERS) ||
                                       existingState.is(net.minecraft.tags.BlockTags.SAPLINGS);
             case "$dirt" -> existingState.is(net.minecraft.tags.BlockTags.DIRT);
             case "$logs", "$log" -> existingState.is(net.minecraft.tags.BlockTags.LOGS);
@@ -1083,8 +1077,11 @@ public class StructurePlacerItem extends Item {
             // Remove # prefix
             String cleanTagId = tagId.substring(1);
             
-            // Parse as ResourceLocation
-            net.minecraft.resources.ResourceLocation tagLocation = net.minecraft.resources.ResourceLocation.parse(cleanTagId);
+            // Parse as Identifier
+            net.minecraft.resources.Identifier tagLocation = net.minecraft.resources.Identifier.tryParse(cleanTagId);
+            if (tagLocation == null) {
+                return false;
+            }
             
             // Get tag from registry
             net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> blockTag = 
@@ -1130,9 +1127,9 @@ public class StructurePlacerItem extends Item {
                 // or if there is the block we were supposed to place (placed)
                 AllocatedBlock allocated = entry.getValue();
                 try {
-                    net.minecraft.resources.ResourceLocation blockLocation = 
-                        net.minecraft.resources.ResourceLocation.parse(allocated.getBlockDefinition().getBlock());
-                    Block expectedBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockLocation);
+                    net.minecraft.resources.Identifier blockLocation =
+                        net.minecraft.resources.Identifier.tryParse(allocated.getBlockDefinition().getBlock());
+                    Block expectedBlock = blockLocation == null ? null : net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
                     
                     // If current block is not the one we were supposed to place, it means it was skipped
                     wasPlaced = currentState.getBlock() == expectedBlock;
@@ -1152,7 +1149,7 @@ public class StructurePlacerItem extends Item {
      * Shows a simplified message of missing materials with specific alternatives
      */
     private void showMissingMaterialsMessageSimple(ServerPlayer player, Map<String, Integer> missingMaterials, int totalBlocks) {
-        player.displayClientMessage(Component.literal("§cMissing materials:"), false);
+        player.sendSystemMessage(Component.literal("§cMissing materials:"));
         
         // For each missing material, find alternatives from allocation system
         // We no longer use calculateStructurePositions here as it's only needed for display names
@@ -1171,7 +1168,7 @@ public class StructurePlacerItem extends Item {
             Component message = Component.literal("§c- " + missing + " §f")
                 .append(Component.literal(translatedDisplayName));
             
-            player.displayClientMessage(message, false);
+            player.sendSystemMessage(message);
         }
     }
     
@@ -1180,7 +1177,7 @@ public class StructurePlacerItem extends Item {
      */
     private void showMissingMaterialsWithAlternatives(ServerPlayer player, Map<String, Integer> missingMaterials, 
                                                      Map<String, List<StructureDefinition.BlockDefinition>> alternativesMap) {
-        player.displayClientMessage(Component.literal("§cMissing materials:"), false);
+        player.sendSystemMessage(Component.literal("§cMissing materials:"));
         
         for (Map.Entry<String, Integer> entry : missingMaterials.entrySet()) {
             String displayName = entry.getKey();
@@ -1189,7 +1186,7 @@ public class StructurePlacerItem extends Item {
             // Show main name of group
             String translatedDisplayName = getFormattedDisplayName(displayName);
             Component message = Component.literal("§c- " + missing + " §f" + translatedDisplayName + ":");
-            player.displayClientMessage(message, false);
+            player.sendSystemMessage(message);
             
             // Show all available alternatives
             List<StructureDefinition.BlockDefinition> alternatives = alternativesMap.get(displayName);
@@ -1197,7 +1194,7 @@ public class StructurePlacerItem extends Item {
                 for (StructureDefinition.BlockDefinition blockDef : alternatives) {
                     if (blockDef.getBlock() != null && blockExists(blockDef.getBlock())) {
                         String formattedBlockName = getFormattedBlockName(blockDef.getBlock());
-                        player.displayClientMessage(Component.literal("  §a- " + formattedBlockName), false);
+                        player.sendSystemMessage(Component.literal("  §a- " + formattedBlockName));
                     }
                 }
             }
@@ -1232,7 +1229,7 @@ public class StructurePlacerItem extends Item {
             Component message = Component.literal("§c" + missing + " §f")
                 .append(Component.literal(translatedDisplayName));
             
-            player.displayClientMessage(message, false);
+            player.sendSystemMessage(message);
         }
         
         // Remove "total blocks needed" - now each group has its own specific name
@@ -1246,15 +1243,15 @@ public class StructurePlacerItem extends Item {
                     translatedDisplayName = getTranslatedBlockName(requirement.getDisplayName());
                 }
                 
-                player.displayClientMessage(Component.literal("  §7- alternatives for §f" + translatedDisplayName + "§7:"), false);
+                player.sendSystemMessage(Component.literal("  §7- alternatives for §f" + translatedDisplayName + "§7:"));
                 for (StructureDefinition.BlockDefinition blockDef : requirement.getAlternatives()) {
                     if (blockDef.getBlock() != null) {
                         String translatedName = getTranslatedBlockName(blockDef.getBlock());
                         // Check if block exists in game
                         if (blockExists(blockDef.getBlock())) {
-                            player.displayClientMessage(Component.literal("    §a- " + translatedName), false);
+                            player.sendSystemMessage(Component.literal("    §a- " + translatedName));
                         } else {
-                            player.displayClientMessage(Component.literal("    §8- " + translatedName + " §7(not available)"), false);
+                            player.sendSystemMessage(Component.literal("    §8- " + translatedName + " §7(not available)"));
                         }
                     }
                 }
@@ -1267,8 +1264,8 @@ public class StructurePlacerItem extends Item {
      */
     private boolean blockExists(String blockId) {
         try {
-            net.minecraft.resources.ResourceLocation resourceLocation = net.minecraft.resources.ResourceLocation.parse(blockId);
-            return net.minecraft.core.registries.BuiltInRegistries.BLOCK.containsKey(resourceLocation);
+            net.minecraft.resources.Identifier id = net.minecraft.resources.Identifier.tryParse(blockId);
+            return id != null && net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(id).isPresent();
         } catch (Exception e) {
             return false;
         }
@@ -1380,7 +1377,7 @@ public class StructurePlacerItem extends Item {
     
     public static String getSelectedStructure(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
-        return tag.getString(SELECTED_STRUCTURE_KEY);
+        return tag.getString(SELECTED_STRUCTURE_KEY).orElse("");
     }
     
     public static void setSelectedStructure(ItemStack stack, String structureId) {
@@ -1391,7 +1388,7 @@ public class StructurePlacerItem extends Item {
     
     public static boolean isPreviewMode(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
-        return tag.getBoolean(PREVIEW_MODE_KEY);
+        return tag.getBoolean(PREVIEW_MODE_KEY).orElse(false);
     }
     
     public static void setPreviewMode(ItemStack stack, boolean previewMode) {
@@ -1408,12 +1405,12 @@ public class StructurePlacerItem extends Item {
     
     private long getLastClickTime(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
-        return tag.getLong(LAST_CLICK_TIME_KEY);
+        return tag.getLong(LAST_CLICK_TIME_KEY).orElse(0L);
     }
     
     private BlockPos getLastClickPos(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
-        long posLong = tag.getLong(LAST_CLICK_POS_KEY);
+        long posLong = tag.getLong(LAST_CLICK_POS_KEY).orElse(0L);
         if (posLong == 0) return null;
         return BlockPos.of(posLong);
     }
@@ -1427,7 +1424,7 @@ public class StructurePlacerItem extends Item {
     
     public static int getRotation(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
-        return tag.getInt(ROTATION_KEY);
+        return tag.getInt(ROTATION_KEY).orElse(0);
     }
     
     public static void setRotation(ItemStack stack, int rotation) {
@@ -1437,20 +1434,21 @@ public class StructurePlacerItem extends Item {
     }
     
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
-        
-        // Add shift placement hint as first line
-        tooltip.add(1, Component.translatable("tooltip.iska_utils.shift_place_reverse")
-                .withStyle(net.minecraft.ChatFormatting.GRAY));
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        List<Component> lines = new ArrayList<>();
+        super.appendHoverText(stack, context, tooltipDisplay, lines::add, flag);
+
+        // Add shift placement hint as first line (after the title line if present)
+        lines.add(Math.min(1, lines.size()), Component.translatable("tooltip.iska_utils.shift_place_reverse")
+            .withStyle(net.minecraft.ChatFormatting.GRAY));
         
         String structureId = getSelectedStructure(stack);
         
-        if (structureId != null && !structureId.isEmpty()) {
+        if (!structureId.isEmpty()) {
             StructureDefinition structure = StructureLoader.getStructure(structureId);
             if (structure != null) {
                 // Selected structure
-                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.selected_structure", structure.getName()));
+                lines.add(Component.translatable("item.iska_utils.structure_placer.tooltip.selected_structure", structure.getName()));
                 
                 // Set direction
                 int rotation = getRotation(stack);
@@ -1461,22 +1459,24 @@ public class StructurePlacerItem extends Item {
                     case 270 -> Component.translatable("direction.iska_utils.west").getString();
                     default -> String.valueOf(rotation) + "°";
                 };
-                tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.rotation", rotationText));
+                lines.add(Component.translatable("item.iska_utils.structure_placer.tooltip.rotation", rotationText));
                 
-                tooltip.add(Component.literal(""));
+                lines.add(Component.literal(""));
             } else {
-                tooltip.add(Component.literal("§cInvalid structure: " + structureId));
-                tooltip.add(Component.literal(""));
+                lines.add(Component.literal("§cInvalid structure: " + structureId));
+                lines.add(Component.literal(""));
             }
         } else {
-            tooltip.add(Component.literal(""));
+            lines.add(Component.literal(""));
         }
         
         // Usage instructions (sempre visibili)
-        tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_air"));
-        tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_block"));
-        tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.double_click"));
-        tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.shift_force"));
-        tooltip.add(Component.translatable("item.iska_utils.structure_placer.tooltip.left_click_rotate"));
+        lines.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_air"));
+        lines.add(Component.translatable("item.iska_utils.structure_placer.tooltip.right_click_block"));
+        lines.add(Component.translatable("item.iska_utils.structure_placer.tooltip.double_click"));
+        lines.add(Component.translatable("item.iska_utils.structure_placer.tooltip.shift_force"));
+        lines.add(Component.translatable("item.iska_utils.structure_placer.tooltip.left_click_rotate"));
+
+        lines.forEach(tooltip);
     }
 } 

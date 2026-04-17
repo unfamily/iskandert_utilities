@@ -13,6 +13,7 @@ import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -73,7 +74,7 @@ public class FanpackCurioHandler {
                         Method entityMethod = slotContextClass.getMethod("entity");
                         LivingEntity entity = (LivingEntity) entityMethod.invoke(slotContext);
                         
-                        if (entity.level().isClientSide) {
+                        if (entity.level().isClientSide()) {
                             return null;
                         }
                         
@@ -102,10 +103,12 @@ public class FanpackCurioHandler {
                                         int energyPercent = (int) Math.round((currentEnergy * 100.0) / maxEnergy);
                                         
                                         // Show warning message in action bar with current percentage
-                                        serverPlayer.displayClientMessage(
-                                            Component.translatable("message.iska_utils.fanpack.low_energy", energyPercent)
-                                                .withStyle(net.minecraft.ChatFormatting.RED),
-                                            true // action bar
+                                        serverPlayer.connection.send(
+                                            new ClientboundSystemChatPacket(
+                                                Component.translatable("message.iska_utils.fanpack.low_energy", energyPercent)
+                                                    .withStyle(net.minecraft.ChatFormatting.RED),
+                                                true
+                                            )
                                         );
                                         
                                         // Play breeze sound
@@ -136,17 +139,17 @@ public class FanpackCurioHandler {
                             // Only add stage if we have enough energy for flight (or energy is not required)
                             // This works for items in Curios slots
                             if (hasEnoughEnergyForFlight) {
-                                StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
+                                StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0");
                             } else {
                                 // Not enough energy - remove stage if present
                                 if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight0")) {
-                                    StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
+                                    StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0");
                                 }
                             }
                             
                             // Auto-remove flight1 stage if present (indicates handler detected it)
                             if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight1")) {
-                                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1", true);
+                                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1");
                             }
                         }
                         
@@ -158,9 +161,9 @@ public class FanpackCurioHandler {
                         ItemStack stack = (ItemStack) args[2];
                         
                         Method entityMethod = slotContextClass.getMethod("entity");
-                        LivingEntity entity = (LivingEntity) entityMethod.invoke(entityMethod);
+                        LivingEntity entity = (LivingEntity) entityMethod.invoke(slotContext);
                         
-                        if (entity.level().isClientSide) {
+                        if (entity.level().isClientSide()) {
                             return null;
                         }
                         
@@ -178,7 +181,7 @@ public class FanpackCurioHandler {
                         Method entityMethod = slotContextClass.getMethod("entity");
                         LivingEntity entity = (LivingEntity) entityMethod.invoke(slotContext);
                         
-                        if (entity.level().isClientSide) {
+                        if (entity.level().isClientSide()) {
                             return null;
                         }
                         

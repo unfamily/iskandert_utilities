@@ -5,10 +5,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.block.Block;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Custom BlockItem for Sacred Rubber Sapling with glowing/enchant effect and tooltip
@@ -26,15 +28,15 @@ public class SacredRubberSaplingBlockItem extends BlockItem {
     }
     
     @Override
-    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltip, @NotNull TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull TooltipDisplay tooltipDisplay, @NotNull Consumer<Component> tooltip, @NotNull TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         
         // Add tooltip lines in gray
-        tooltip.add(Component.translatable("tooltip.iska_utils.sacred_rubber_sapling.desc0")
+        tooltip.accept(Component.translatable("tooltip.iska_utils.sacred_rubber_sapling.desc0")
                 .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.iska_utils.sacred_rubber_sapling.desc1")
+        tooltip.accept(Component.translatable("tooltip.iska_utils.sacred_rubber_sapling.desc1")
                 .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.iska_utils.sacred_rubber_sapling.desc2")
+        tooltip.accept(Component.translatable("tooltip.iska_utils.sacred_rubber_sapling.desc2")
                 .withStyle(ChatFormatting.GRAY));
     }
 }

@@ -42,7 +42,7 @@ public class TreeTapItem extends Item {
                     return ((RubberLogFilledBlock) state.getBlock()).onTapWithTreeTap(state, level, pos, player, hand);
                 }
                 
-                return InteractionResult.sidedSuccess(level.isClientSide);
+                return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
             }
         } 
         // Check if the block is an empty rubber log
@@ -54,7 +54,7 @@ public class TreeTapItem extends Item {
                     return ((RubberLogEmptyBlock) state.getBlock()).onTapWithTreeTap(state, level, pos, player, hand);
                 }
                 
-                return InteractionResult.sidedSuccess(level.isClientSide);
+                return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
             }
         }
         

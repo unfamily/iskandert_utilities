@@ -17,6 +17,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -27,6 +28,7 @@ import net.unfamily.iskautils.Config;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Hard Dolly Item - Tool for picking up and moving blocks with their contents
@@ -118,13 +120,13 @@ public class HardDollyItem extends Item {
         
         // Check whitelist/blacklist (skip for allowed unbreakable blocks)
         if (!isUnbreakableAllowed && !isBlockAllowed(state)) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.not_allowed"), true);
+            player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.not_allowed"));
             return InteractionResult.FAIL;
         }
         
         // Check mining level (max iron) - skip for allowed unbreakable blocks
         if (!isUnbreakableAllowed && !canHarvest(state)) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.too_hard"), true);
+            player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.too_hard"));
             return InteractionResult.FAIL;
         }
         
@@ -167,8 +169,8 @@ public class HardDollyItem extends Item {
         level.playSound(null, pos, SoundEvents.SCAFFOLDING_BREAK, SoundSource.BLOCKS, 1.0F, 1.0F);
         
         // Send feedback
-        player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.picked_up", 
-                Component.translatable(block.getDescriptionId())), true);
+        player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.picked_up",
+                Component.translatable(block.getDescriptionId())));
         
         return InteractionResult.SUCCESS;
     }
@@ -191,8 +193,8 @@ public class HardDollyItem extends Item {
         }
         
         // Read complete BlockState with all properties from NBT
-        CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE);
-        BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), blockStateTag);
+        CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE).orElse(new CompoundTag());
+        BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK, blockStateTag);
         
         if (savedState.isAir()) {
             return InteractionResult.FAIL;
@@ -204,7 +206,7 @@ public class HardDollyItem extends Item {
         
         // Restore BlockEntity data if present
         if (nbt.contains(NBT_BLOCK_ENTITY)) {
-            CompoundTag blockEntityTag = nbt.getCompound(NBT_BLOCK_ENTITY);
+            CompoundTag blockEntityTag = nbt.getCompound(NBT_BLOCK_ENTITY).orElse(new CompoundTag());
             
             // Create a copy and update the position to the new location
             CompoundTag loadTag = blockEntityTag.copy();
@@ -431,26 +433,26 @@ public class HardDollyItem extends Item {
     private boolean hasStoredBlock(ItemStack stack) {
         CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         CompoundTag nbt = customData.copyTag();
-        return nbt.getBoolean(NBT_HAS_BLOCK);
+        return nbt.getBoolean(NBT_HAS_BLOCK).orElse(false);
     }
     
     @Override
-    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltipComponents, tooltipFlag);
         
         // Show if dolly has a block stored
         if (hasStoredBlock(stack)) {
             CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
             CompoundTag nbt = customData.copyTag();
             if (nbt.contains(NBT_BLOCK_STATE)) {
-                CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE);
-                BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), blockStateTag);
+                CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE).orElse(new CompoundTag());
+                BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK, blockStateTag);
                 Block block = savedState.getBlock();
-                tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly_hard.contains", 
+                tooltipComponents.accept(Component.translatable("tooltip.iska_utils.dolly_hard.contains",
                         Component.translatable(block.getDescriptionId())));
             }
         } else {
-            tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly_hard.empty"));
+            tooltipComponents.accept(Component.translatable("tooltip.iska_utils.dolly_hard.empty"));
         }
         
         // Add info lines based on config
@@ -459,7 +461,7 @@ public class HardDollyItem extends Item {
             Component infoLine = Component.translatable(key);
             // Only add if translation exists (not equal to the key itself)
             if (!infoLine.getString().equals(key)) {
-                tooltipComponents.add(infoLine);
+                tooltipComponents.accept(infoLine);
             }
         }
     }

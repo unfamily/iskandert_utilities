@@ -6,9 +6,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -24,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Burning Brazier Item - Places burning flame blocks when light level is low
@@ -54,7 +57,7 @@ public class BurningBrazierItem extends Item {
         BlockPos clickedPos = context.getClickedPos();
 
         // Only work on server side
-        if (level.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
+        if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.SUCCESS;
         }
 
@@ -107,13 +110,10 @@ public class BurningBrazierItem extends Item {
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
+    public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
+        super.inventoryTick(stack, level, entity, slot);
 
-        // Only work on server side and only if entity is a player
-        if (level.isClientSide || !(entity instanceof ServerPlayer player)) {
-            return;
-        }
+        if (!(entity instanceof ServerPlayer player)) return;
 
         // Check if auto-placement is enabled for this player
         if (!BurningBrazierData.getAutoPlacementEnabledFromPlayer(player)) {
@@ -161,21 +161,15 @@ public class BurningBrazierItem extends Item {
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
 
         // Get the keybind name
         String keybindName = KeyBindings.BURNING_BRAZIER_TOGGLE_KEY.getTranslatedKeyMessage().getString();
 
         // Show description
-        tooltip.add(Component.translatable("tooltip.iska_utils.burning_brazier.desc0"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.burning_brazier.desc1", keybindName));
-        tooltip.add(Component.translatable("tooltip.iska_utils.burning_brazier.desc2"));
-    }
-
-
-    @Override
-    public boolean isEnchantable(ItemStack stack) {
-        return false;
+        tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc0"));
+        tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc1", keybindName));
+        tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc2"));
     }
 }

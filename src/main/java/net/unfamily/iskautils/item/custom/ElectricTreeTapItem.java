@@ -10,6 +10,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -19,6 +20,7 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Electric Tree Tap - Electric variant of the TreeTap that consumes energy
@@ -36,8 +38,8 @@ public class ElectricTreeTapItem extends TreeTapItem {
      */
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltipComponents, tooltipFlag);
         
         // Energy information - only show if energy is enabled
         if (canStoreEnergy() && requiresEnergyToFunction()) {
@@ -50,7 +52,7 @@ public class ElectricTreeTapItem extends TreeTapItem {
                 .withStyle(style -> style.withColor(ChatFormatting.RED))
                 .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
             
-            tooltipComponents.add(energyText);
+            tooltipComponents.accept(energyText);
         }
     }
 
@@ -68,9 +70,7 @@ public class ElectricTreeTapItem extends TreeTapItem {
             if (!level.isClientSide() && requiresEnergyToFunction() && !hasEnoughEnergy(itemStack)) {
                 // Not enough energy, can't use the treetap
                 if (player != null) {
-                    player.displayClientMessage(
-                        Component.translatable("item.iska_utils.electric_treetap.message.no_energy"),
-                        true);
+                    player.sendSystemMessage(Component.translatable("item.iska_utils.electric_treetap.message.no_energy"));
                 }
                 return InteractionResult.FAIL;
             }
@@ -119,7 +119,7 @@ public class ElectricTreeTapItem extends TreeTapItem {
         }
         
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.getInt(ENERGY_TAG);
+        return tag.getInt(ENERGY_TAG).orElse(0);
     }
     
     /**

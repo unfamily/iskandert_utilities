@@ -2,15 +2,18 @@ package net.unfamily.iskautils.item.custom;
 
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ModUtils;
@@ -22,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Fanpack - An extension of Vector Charm that also provides creative flight
@@ -157,7 +161,7 @@ public class FanpackItem extends VectorCharmItem {
         }
         
         net.minecraft.nbt.CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.getInt(ENERGY_TAG);
+        return tag.getInt(ENERGY_TAG).orElse(0);
     }
     
     
@@ -165,10 +169,9 @@ public class FanpackItem extends VectorCharmItem {
      * This method is called every tick for every item in the inventory
      */
     @Override
-    public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-        
-        if (entity instanceof Player player && !level.isClientSide && player instanceof ServerPlayer serverPlayer) {
+    public void inventoryTick(ItemStack stack, ServerLevel level, net.minecraft.world.entity.Entity entity, @Nullable EquipmentSlot slot) {
+        super.inventoryTick(stack, level, entity, slot);
+        if (entity instanceof ServerPlayer serverPlayer) {
             // Apply Vector Charm movement (parent class handles this)
             // Flight is handled by FanpackFlightHandler event
             
@@ -188,7 +191,7 @@ public class FanpackItem extends VectorCharmItem {
                 // Check if energy is at 10% or below and show warning
                 if (maxEnergy > 0 && currentEnergy <= maxEnergy * 0.1) {
                     long currentTick = level.getGameTime();
-                    UUID playerId = player.getUUID();
+                    UUID playerId = serverPlayer.getUUID();
                     Long lastWarning = lastWarningTime.get(playerId);
                     
                     // Show warning every 2 seconds (40 ticks)
@@ -197,10 +200,12 @@ public class FanpackItem extends VectorCharmItem {
                         int energyPercent = (int) Math.round((currentEnergy * 100.0) / maxEnergy);
                         
                         // Show warning message in action bar with current percentage
-                        serverPlayer.displayClientMessage(
-                            Component.translatable("message.iska_utils.fanpack.low_energy", energyPercent)
-                                .withStyle(net.minecraft.ChatFormatting.RED),
-                            true // action bar
+                        serverPlayer.connection.send(
+                            new ClientboundSystemChatPacket(
+                                Component.translatable("message.iska_utils.fanpack.low_energy", energyPercent)
+                                    .withStyle(net.minecraft.ChatFormatting.RED),
+                                true
+                            )
                         );
                         
                         // Play breeze sound
@@ -220,8 +225,8 @@ public class FanpackItem extends VectorCharmItem {
                 }
                 
                 // If player is flying, consume energy (but not if in spectator or creative mode)
-                if (player.getAbilities().flying && currentEnergy >= requiredEnergy 
-                        && !player.getAbilities().instabuild && !player.isSpectator()) {
+                if (serverPlayer.getAbilities().flying && currentEnergy >= requiredEnergy 
+                        && !serverPlayer.getAbilities().instabuild && !serverPlayer.isSpectator()) {
                     int newEnergy = currentEnergy - requiredEnergy;
                     this.setEnergyStored(stack, newEnergy);
                 }
@@ -231,17 +236,17 @@ public class FanpackItem extends VectorCharmItem {
             // Only add stage if we have enough energy for flight (or energy is not required)
             // This works for items in inventory or hands
             if (hasEnoughEnergyForFlight) {
-                StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
+                StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0");
             } else {
                 // Not enough energy - remove stage if present
                 if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight0")) {
-                    StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
+                    StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0");
                 }
             }
             
             // Auto-remove flight1 stage if present (indicates handler detected it)
             if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight1")) {
-                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1", true);
+                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1");
             }
         }
     }
@@ -251,20 +256,20 @@ public class FanpackItem extends VectorCharmItem {
      * Add tooltip information
      */
     @Override
-    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull TooltipDisplay tooltipDisplay, @NotNull Consumer<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltipComponents, tooltipFlag);
         
         // Add info about creative flight
         if (Config.fanpackFlightEnergyConsume > 0 && canStoreEnergy()) {
             // Show flight info with energy consumption
-            tooltipComponents.add(Component.translatable("tooltip.iska_utils.fanpack.flight", Config.fanpackFlightEnergyConsume));
+            tooltipComponents.accept(Component.translatable("tooltip.iska_utils.fanpack.flight", Config.fanpackFlightEnergyConsume));
         } else {
             // Show flight info without consumption (energy disabled or not required)
-            tooltipComponents.add(Component.translatable("tooltip.iska_utils.fanpack.flight_no_energy"));
+            tooltipComponents.accept(Component.translatable("tooltip.iska_utils.fanpack.flight_no_energy"));
         }
 
         // Add descriptive tooltip
-        tooltipComponents.add(Component.translatable("tooltip.iska_utils.fanpack.desc"));
+        tooltipComponents.accept(Component.translatable("tooltip.iska_utils.fanpack.desc"));
     }
     
     /**
@@ -295,7 +300,7 @@ public class FanpackItem extends VectorCharmItem {
         }
         
         // Check player inventory (lowest priority)
-        for (ItemStack stack : player.getInventory().items) {
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
             if (stack.getItem() instanceof FanpackItem pack) {
                 if (pack.hasEnoughEnergy(stack, speedLevel)) {
                     return stack;
@@ -376,7 +381,7 @@ public class FanpackItem extends VectorCharmItem {
         }
         
         // Check player inventory (lowest priority)
-        for (ItemStack stack : player.getInventory().items) {
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
             if (stack.getItem() instanceof FanpackItem) {
                 return stack;
             }

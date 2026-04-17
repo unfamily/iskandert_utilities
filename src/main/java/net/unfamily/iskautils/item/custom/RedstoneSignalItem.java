@@ -7,6 +7,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
@@ -16,6 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.block.ModBlocks;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Redstone Signal Item - Places an invisible block that emits a temporary redstone signal
@@ -38,7 +40,7 @@ public class RedstoneSignalItem extends Item {
         BlockPos clickedPos = context.getClickedPos();
 
         // Only work on server side
-        if (level.isClientSide || !(player instanceof ServerPlayer)) {
+        if (level.isClientSide() || !(player instanceof ServerPlayer)) {
             return InteractionResult.SUCCESS;
         }
 
@@ -86,10 +88,10 @@ public class RedstoneSignalItem extends Item {
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         
         // Add description tooltip
-        tooltip.add(Component.translatable("tooltip.iska_utils.redstone_activator.desc"));
+        tooltip.accept(Component.translatable("tooltip.iska_utils.redstone_activator.desc"));
     }
 }

@@ -151,9 +151,11 @@ public class CreativeDollyItem extends Item {
         // Play sound (scaffold break sound)
         level.playSound(null, pos, SoundEvents.SCAFFOLDING_BREAK, SoundSource.BLOCKS, 1.0F, 1.0F);
         
-        // Send feedback
-        player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.picked_up", 
-                Component.translatable(block.getDescriptionId())), true);
+        // Send feedback (action bar)
+        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSystemChatPacket(
+            Component.translatable("message.iska_utils.dolly_creative.picked_up", Component.translatable(block.getDescriptionId())),
+            true
+        ));
         
         return InteractionResult.SUCCESS;
     }
@@ -164,7 +166,10 @@ public class CreativeDollyItem extends Item {
     private InteractionResult placeBlock(Level level, ServerPlayer player, ItemStack stack, BlockPos pos) {
         // Check if target position is valid
         if (!level.getBlockState(pos).canBeReplaced()) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.cannot_place"), true);
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundSystemChatPacket(
+                Component.translatable("message.iska_utils.dolly_creative.cannot_place"),
+                true
+            ));
             return InteractionResult.FAIL;
         }
         
@@ -173,13 +178,16 @@ public class CreativeDollyItem extends Item {
         CompoundTag nbt = customData.copyTag();
         
         if (!nbt.contains(NBT_BLOCK_STATE)) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.no_block"), true);
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundSystemChatPacket(
+                Component.translatable("message.iska_utils.dolly_creative.no_block"),
+                true
+            ));
             return InteractionResult.FAIL;
         }
         
         // Read saved BlockState
-        CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE);
-        BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), blockStateTag);
+        CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE).orElse(new CompoundTag());
+        BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK, blockStateTag);
         
         // Place block with all its properties (facing, powered, waterlogged, etc.)
         // Flag 2 = send update to clients but don't cause block update (no neighbor updates)
@@ -187,7 +195,7 @@ public class CreativeDollyItem extends Item {
         
         // Restore BlockEntity data if present
         if (nbt.contains(NBT_BLOCK_ENTITY)) {
-            CompoundTag blockEntityTag = nbt.getCompound(NBT_BLOCK_ENTITY);
+            CompoundTag blockEntityTag = nbt.getCompound(NBT_BLOCK_ENTITY).orElse(new CompoundTag());
             
             // Create a copy and update the position to the new location
             CompoundTag loadTag = blockEntityTag.copy();
@@ -233,8 +241,10 @@ public class CreativeDollyItem extends Item {
         level.playSound(null, pos, SoundEvents.SCAFFOLDING_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
         
         // Send feedback
-        player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.placed", 
-                Component.translatable(savedState.getBlock().getDescriptionId())), true);
+        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSystemChatPacket(
+            Component.translatable("message.iska_utils.dolly_creative.placed", Component.translatable(savedState.getBlock().getDescriptionId())),
+            true
+        ));
         
         return InteractionResult.SUCCESS;
     }
@@ -301,26 +311,26 @@ public class CreativeDollyItem extends Item {
     private boolean hasStoredBlock(ItemStack stack) {
         CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         CompoundTag nbt = customData.copyTag();
-        return nbt.getBoolean(NBT_HAS_BLOCK);
+        return nbt.getBoolean(NBT_HAS_BLOCK).orElse(false);
     }
     
     @Override
-    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull net.minecraft.world.item.component.TooltipDisplay tooltipDisplay, @NotNull java.util.function.Consumer<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltipComponents, tooltipFlag);
         
         // Show if dolly has a block stored
         if (hasStoredBlock(stack)) {
             CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
             CompoundTag nbt = customData.copyTag();
             if (nbt.contains(NBT_BLOCK_STATE)) {
-                CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE);
-                BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), blockStateTag);
+                CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE).orElse(new CompoundTag());
+                BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK, blockStateTag);
                 Block block = savedState.getBlock();
-                tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly_creative.contains", 
+                tooltipComponents.accept(Component.translatable("tooltip.iska_utils.dolly_creative.contains", 
                         Component.translatable(block.getDescriptionId())));
             }
         } else {
-            tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly_creative.empty"));
+            tooltipComponents.accept(Component.translatable("tooltip.iska_utils.dolly_creative.empty"));
         }
         
         // Add info lines based on config
@@ -329,7 +339,7 @@ public class CreativeDollyItem extends Item {
             Component infoLine = Component.translatable(key);
             // Only add if translation exists (not equal to the key itself)
             if (!infoLine.getString().equals(key)) {
-                tooltipComponents.add(infoLine);
+                tooltipComponents.accept(infoLine);
             }
         }
     }

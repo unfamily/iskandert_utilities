@@ -814,8 +814,8 @@ public class CommandItem extends Item {
     private void executeCommand(ServerPlayer player, String command) {
         try {
             // Execute the command on the server
-            player.getServer().getCommands().performPrefixedCommand(
-                    player.getServer().createCommandSourceStack().withEntity(player), command);
+            player.level().getServer().getCommands().performPrefixedCommand(
+                    player.level().getServer().createCommandSourceStack().withEntity(player), command);
         } catch (Exception e) {
             LOGGER.error("Error executing command '{}' for player {}: {}", 
                     command, player.getName().getString(), e.getMessage());

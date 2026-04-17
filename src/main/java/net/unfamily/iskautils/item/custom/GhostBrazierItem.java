@@ -7,7 +7,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.server.level.ServerLevel;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.client.KeyBindings;
@@ -17,9 +18,11 @@ import net.unfamily.iskautils.util.ModUtils;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.minecraft.world.item.component.TooltipDisplay;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Ghost Brazier Item - Allows player to toggle between Survival and Spectator mode
@@ -99,43 +102,23 @@ public class GhostBrazierItem extends Item {
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-
-        // Execute only for players
-        if (entity instanceof Player player) {
-            // Handle keybind on client side
-            if (level.isClientSide) {
-                // Check if the ghost brazier keybind was pressed
-                if (KeyBindings.consumeGhostBrazierToggleKeyClick()) {
-                    // Send toggle request to server
-                    ModMessages.sendGhostBrazierTogglePacket();
-                }
-            }
-
-            // Mark that this player has a Ghost Brazier (server side)
-            // Works for both normal inventory and Curios (Curios calls inventoryTick automatically)
-            if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-                GhostBrazierData.setHasGhostBrazier(serverPlayer, true);
-            }
+    public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
+        super.inventoryTick(stack, level, entity, slot);
+        if (entity instanceof ServerPlayer serverPlayer) {
+            GhostBrazierData.setHasGhostBrazier(serverPlayer, true);
         }
     }
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
 
         // Get the keybind name
         String keybindName = KeyBindings.GHOST_BRAZIER_TOGGLE_KEY.getTranslatedKeyMessage().getString();
 
         // Show description
-        tooltip.add(Component.translatable("tooltip.iska_utils.ghost_brazier.desc0"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.ghost_brazier.desc1", keybindName));
-    }
-
-    @Override
-    public boolean isEnchantable(ItemStack stack) {
-        return false;
+        tooltip.accept(Component.translatable("tooltip.iska_utils.ghost_brazier.desc0"));
+        tooltip.accept(Component.translatable("tooltip.iska_utils.ghost_brazier.desc1", keybindName));
     }
 }
