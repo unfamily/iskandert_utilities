@@ -19,7 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -31,7 +31,7 @@ import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import javax.annotation.Nullable;
 
 public class HellfireIgniterBlock extends DirectionalBlock implements EntityBlock {
-    public static final DirectionProperty FACING = DirectionalBlock.FACING;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final MapCodec<HellfireIgniterBlock> CODEC = simpleCodec(HellfireIgniterBlock::new);
 
@@ -79,7 +79,7 @@ public class HellfireIgniterBlock extends DirectionalBlock implements EntityBloc
 
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             boolean isPowered = level.hasNeighborSignal(pos);
             
             if (isPowered != state.getValue(POWERED)) {

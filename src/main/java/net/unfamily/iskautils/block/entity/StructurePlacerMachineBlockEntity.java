@@ -6,7 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
@@ -702,9 +702,9 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 } else {
                     // Try to find a matching block for items that are not BlockItem
                     try {
-                        ResourceLocation itemLocation = ResourceLocation.parse(itemId);
-                        ResourceLocation blockLocation = 
-                            ResourceLocation.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
+                        Identifier itemLocation = Identifier.tryParse(itemId);
+                        Identifier blockLocation =
+                            itemLocation == null ? null : Identifier.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
                         
                         if (BuiltInRegistries.BLOCK.containsKey(blockLocation)) {
                             block = BuiltInRegistries.BLOCK.get(blockLocation);
@@ -751,9 +751,9 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 } else {
                     // Try to find a matching block for items that are not BlockItem
                     try {
-                        ResourceLocation itemLocation = ResourceLocation.parse(itemId);
-                        ResourceLocation blockLocation = 
-                            ResourceLocation.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
+                        Identifier itemLocation = Identifier.tryParse(itemId);
+                        Identifier blockLocation =
+                            itemLocation == null ? null : Identifier.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
                         
                         if (BuiltInRegistries.BLOCK.containsKey(blockLocation)) {
                             block = BuiltInRegistries.BLOCK.get(blockLocation);
@@ -816,7 +816,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         StructureDefinition.BlockDefinition blockDef = allocated.getBlockDefinition();
         
         // Get block from registry
-        ResourceLocation blockLocation = ResourceLocation.parse(blockDef.getBlock());
+        Identifier blockLocation = Identifier.tryParse(blockDef.getBlock());
         Block block = BuiltInRegistries.BLOCK.get(blockLocation);
         
         if (block != null && block != Blocks.AIR) {
@@ -974,8 +974,8 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             // Remove # prefix
             String cleanTagId = tagId.substring(1);
             
-            // Parse as ResourceLocation
-            net.minecraft.resources.ResourceLocation tagLocation = net.minecraft.resources.ResourceLocation.parse(cleanTagId);
+            // Parse as Identifier
+            net.minecraft.resources.Identifier tagLocation = net.minecraft.resources.Identifier.tryParse(cleanTagId);
             
             // Get tag from registry
             net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> blockTag = 

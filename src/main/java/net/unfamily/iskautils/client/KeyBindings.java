@@ -8,7 +8,6 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.unfamily.iskautils.IskaUtils;
@@ -23,7 +22,6 @@ import org.slf4j.LoggerFactory;
  * Manages keybindings for the mod
  */
 @OnlyIn(Dist.CLIENT)
-@EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class KeyBindings {
     private static final Logger LOGGER = LoggerFactory.getLogger(KeyBindings.class);
 

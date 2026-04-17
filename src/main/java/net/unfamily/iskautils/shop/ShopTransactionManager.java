@@ -4,7 +4,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskalib.stage.StageRegistry;
-import net.unfamily.iskautils.shop.ItemConverter;
+import net.unfamily.iskalib.item.ItemConverter;
 import net.unfamily.iskalib.team.ShopTeamManager;
 import org.slf4j.Logger;
 import net.minecraft.world.item.ItemStack;

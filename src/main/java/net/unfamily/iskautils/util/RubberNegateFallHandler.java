@@ -64,7 +64,7 @@ public class RubberNegateFallHandler {
             double horizontalSlowdown = 0.935D;
             Vec3 motion = player.getDeltaMovement();
             player.setDeltaMovement(motion.x / horizontalSlowdown, motion.y, motion.z / horizontalSlowdown);
-            player.hasImpulse = true;
+            player.hurtMarked = true;
             
             negateFallData.lastMoveX = player.getDeltaMovement().x;
             negateFallData.lastMoveZ = player.getDeltaMovement().z;

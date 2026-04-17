@@ -9,7 +9,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -73,7 +72,19 @@ public class IskaUtils {
 
             // Register GUI MenuTypes (client-only)
             net.unfamily.iskautils.client.gui.ModMenuTypes.MENUS.register(modEventBus);
+
+            // Register key mappings (client-only, MOD bus)
+            modEventBus.register(net.unfamily.iskautils.client.KeyBindings.class);
+
+            // Register menu screens (client-only, MOD bus)
+            modEventBus.addListener(ClientModEvents::registerMenuScreens);
+
+            // Register client-only NeoForge bus events
+            NeoForge.EVENT_BUS.register(net.unfamily.iskautils.client.ClientEvents.class);
         }
+
+        // Register game events on the NeoForge bus
+        NeoForge.EVENT_BUS.register(GameEventBusEvents.class);
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
@@ -214,17 +225,7 @@ public class IskaUtils {
         // No need to add anything here as we already defined the content of our tab
     }
 
-    // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
-    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.MOD)
-    public static class ModEventBusEvents {
-        @SubscribeEvent
-        public static void commonSetup(FMLCommonSetupEvent event) {
-            // Register network messages
-            ModMessages.register();
-        }
-    }
-
-    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    // Registered explicitly on the MOD bus from the constructor (client-only)
     public static class ClientModEvents {
         
         @SubscribeEvent
@@ -264,7 +265,6 @@ public class IskaUtils {
         }
     }
 
-    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.GAME)
     public static class GameEventBusEvents {
         
         @SubscribeEvent
@@ -401,7 +401,6 @@ public class IskaUtils {
         }
     }
     
-    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
     public static class ClientGameEvents {
 
         @SubscribeEvent

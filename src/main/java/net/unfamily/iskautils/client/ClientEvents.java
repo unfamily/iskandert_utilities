@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.unfamily.iskautils.IskaUtils;
 import org.slf4j.Logger;
@@ -16,7 +15,6 @@ import net.unfamily.iskautils.client.MarkRenderer;
 /**
  * Class that manages client-specific events
  */
-@EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT)
 public class ClientEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientEvents.class);
     

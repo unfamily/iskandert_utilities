@@ -20,7 +20,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.RubberLogEmptyBlockEntity;
@@ -37,7 +37,7 @@ import java.util.List;
 public class RubberLogEmptyBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<RubberLogEmptyBlock> CODEC = simpleCodec(RubberLogEmptyBlock::new);
     
-    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 
     public RubberLogEmptyBlock(Properties properties) {
         super(properties);

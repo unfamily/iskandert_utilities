@@ -16,7 +16,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TemporalOverclockerBlock extends Block implements EntityBlock {
     public static final BooleanProperty POWERED = net.minecraft.world.level.block.state.properties.BlockStateProperties.POWERED;
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<net.minecraft.core.Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final MapCodec<TemporalOverclockerBlock> CODEC = simpleCodec(TemporalOverclockerBlock::new);
     
     public TemporalOverclockerBlock(Properties properties) {

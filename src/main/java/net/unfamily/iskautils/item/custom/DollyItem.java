@@ -6,7 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.Config;
 import org.jetbrains.annotations.NotNull;
+import net.minecraft.core.registries.Registries;
 
 import java.util.List;
 
@@ -60,7 +61,7 @@ public class DollyItem extends Item {
         BlockPos pos = context.getClickedPos();
         
         // Only work on server side
-        if (level.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
+        if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.SUCCESS;
         }
         
@@ -102,13 +103,13 @@ public class DollyItem extends Item {
             boolean canCheckWhitelist = Config.dollyCanMoveAllUnbreakable || !Config.dollyUnbreakableWhitelist.isEmpty();
             
             if (!canCheckWhitelist) {
-                player.displayClientMessage(Component.translatable("message.iska_utils.dolly.indestructible"), true);
+                player.sendSystemMessage(Component.translatable("message.iska_utils.dolly.indestructible"));
                 return InteractionResult.FAIL;
             }
             
             // Check unbreakable whitelist/blacklist
             if (!isUnbreakableBlockAllowed(block)) {
-                player.displayClientMessage(Component.translatable("message.iska_utils.dolly.indestructible"), true);
+                player.sendSystemMessage(Component.translatable("message.iska_utils.dolly.indestructible"));
                 return InteractionResult.FAIL;
             }
             
@@ -118,13 +119,13 @@ public class DollyItem extends Item {
         
         // Check whitelist/blacklist (skip for allowed unbreakable blocks)
         if (!isUnbreakableAllowed && !isBlockAllowed(state)) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.dolly.not_allowed"), true);
+            player.sendSystemMessage(Component.translatable("message.iska_utils.dolly.not_allowed"));
             return InteractionResult.FAIL;
         }
         
         // Check mining level (max iron) - skip for allowed unbreakable blocks
         if (!isUnbreakableAllowed && !canHarvest(state)) {
-            player.displayClientMessage(Component.translatable("message.iska_utils.dolly.too_hard"), true);
+            player.sendSystemMessage(Component.translatable("message.iska_utils.dolly.too_hard"));
             return InteractionResult.FAIL;
         }
         
@@ -167,8 +168,8 @@ public class DollyItem extends Item {
         level.playSound(null, pos, SoundEvents.SCAFFOLDING_BREAK, SoundSource.BLOCKS, 1.0F, 1.0F);
         
         // Send feedback
-        player.displayClientMessage(Component.translatable("message.iska_utils.dolly.picked_up", 
-                Component.translatable(block.getDescriptionId())), true);
+        player.sendSystemMessage(Component.translatable("message.iska_utils.dolly.picked_up", 
+                Component.translatable(block.getDescriptionId())));
         
         return InteractionResult.SUCCESS;
     }
@@ -191,8 +192,8 @@ public class DollyItem extends Item {
         }
         
         // Read complete BlockState with all properties from NBT
-        CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE);
-        BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), blockStateTag);
+        CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE).orElse(new CompoundTag());
+        BlockState savedState = NbtUtils.readBlockState(level.registryAccess().lookupOrThrow(Registries.BLOCK), blockStateTag);
         
         if (savedState.isAir()) {
             return InteractionResult.FAIL;
@@ -204,7 +205,7 @@ public class DollyItem extends Item {
         
         // Restore BlockEntity data if present
         if (nbt.contains(NBT_BLOCK_ENTITY)) {
-            CompoundTag blockEntityTag = nbt.getCompound(NBT_BLOCK_ENTITY);
+            CompoundTag blockEntityTag = nbt.getCompound(NBT_BLOCK_ENTITY).orElse(new CompoundTag());
             
             // Create a copy and update the position to the new location
             CompoundTag loadTag = blockEntityTag.copy();
@@ -251,8 +252,8 @@ public class DollyItem extends Item {
         level.playSound(null, pos, SoundEvents.SCAFFOLDING_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
         
         // Send feedback
-        player.displayClientMessage(Component.translatable("message.iska_utils.dolly.placed", 
-                Component.translatable(savedState.getBlock().getDescriptionId())), true);
+        player.sendSystemMessage(Component.translatable("message.iska_utils.dolly.placed", 
+                Component.translatable(savedState.getBlock().getDescriptionId())));
         
         return InteractionResult.SUCCESS;
     }
@@ -274,7 +275,10 @@ public class DollyItem extends Item {
             if (tagStr.startsWith("#")) {
                 String tagName = tagStr.substring(1); // Remove #
                 try {
-                    ResourceLocation tagLocation = ResourceLocation.parse(tagName);
+                    Identifier tagLocation = Identifier.tryParse(tagName);
+                    if (tagLocation == null) {
+                        continue;
+                    }
                     TagKey<Block> blockTag = TagKey.create(BuiltInRegistries.BLOCK.key(), tagLocation);
                     if (block.builtInRegistryHolder().is(blockTag)) {
                         return true; // Block matches an allowed mining level
@@ -373,8 +377,11 @@ public class DollyItem extends Item {
      */
     private boolean matchesBlockId(Block block, String blockId) {
         try {
-            ResourceLocation blockIdLocation = ResourceLocation.parse(blockId);
-            ResourceLocation actualId = BuiltInRegistries.BLOCK.getKey(block);
+            Identifier blockIdLocation = Identifier.tryParse(blockId);
+            if (blockIdLocation == null) {
+                return false;
+            }
+            Identifier actualId = BuiltInRegistries.BLOCK.getKey(block);
             return blockIdLocation.equals(actualId);
         } catch (Exception e) {
             // Invalid block ID format
@@ -393,7 +400,10 @@ public class DollyItem extends Item {
             // It's a tag
             String tagName = tagOrId.substring(1); // Remove #
             try {
-                ResourceLocation tagLocation = ResourceLocation.parse(tagName);
+                Identifier tagLocation = Identifier.tryParse(tagName);
+                if (tagLocation == null) {
+                    return false;
+                }
                 TagKey<Block> blockTag = TagKey.create(BuiltInRegistries.BLOCK.key(), tagLocation);
                 return block.builtInRegistryHolder().is(blockTag);
             } catch (Exception e) {
@@ -403,8 +413,11 @@ public class DollyItem extends Item {
         } else {
             // It's a block ID
             try {
-                ResourceLocation blockId = ResourceLocation.parse(tagOrId);
-                ResourceLocation actualId = BuiltInRegistries.BLOCK.getKey(block);
+                Identifier blockId = Identifier.tryParse(tagOrId);
+                if (blockId == null) {
+                    return false;
+                }
+                Identifier actualId = BuiltInRegistries.BLOCK.getKey(block);
                 return blockId.equals(actualId);
             } catch (Exception e) {
                 // Invalid block ID format
@@ -419,26 +432,26 @@ public class DollyItem extends Item {
     private boolean hasStoredBlock(ItemStack stack) {
         CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         CompoundTag nbt = customData.copyTag();
-        return nbt.getBoolean(NBT_HAS_BLOCK);
+        return nbt.getBoolean(NBT_HAS_BLOCK).orElse(false);
     }
     
     @Override
-    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> tooltipAdder, @NotNull TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, display, tooltipAdder, tooltipFlag);
         
         // Show if dolly has a block stored
         if (hasStoredBlock(stack)) {
             CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
             CompoundTag nbt = customData.copyTag();
             if (nbt.contains(NBT_BLOCK_STATE)) {
-                CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE);
-                BlockState savedState = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), blockStateTag);
+                CompoundTag blockStateTag = nbt.getCompound(NBT_BLOCK_STATE).orElse(new CompoundTag());
+                BlockState savedState = NbtUtils.readBlockState(context.registries().lookupOrThrow(Registries.BLOCK), blockStateTag);
                 Block block = savedState.getBlock();
-                tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly.contains", 
+                tooltipAdder.accept(Component.translatable("tooltip.iska_utils.dolly.contains", 
                         Component.translatable(block.getDescriptionId())));
             }
         } else {
-            tooltipComponents.add(Component.translatable("tooltip.iska_utils.dolly.empty"));
+            tooltipAdder.accept(Component.translatable("tooltip.iska_utils.dolly.empty"));
         }
         
         // Add info lines based on config
@@ -447,7 +460,7 @@ public class DollyItem extends Item {
             Component infoLine = Component.translatable(key);
             // Only add if translation exists (not equal to the key itself)
             if (!infoLine.getString().equals(key)) {
-                tooltipComponents.add(infoLine);
+                tooltipAdder.accept(infoLine);
             }
         }
     }

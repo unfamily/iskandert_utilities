@@ -3,57 +3,57 @@ package net.unfamily.iskautils.item.custom;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.util.RubberNegateFallHandler;
-import net.minecraft.core.Holder;
-import net.neoforged.neoforge.registries.RegisterEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.unfamily.iskautils.item.ModItems;
-import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.Util;
 
-import java.util.List;
-import java.util.EnumMap;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.equipment.ArmorMaterial;
+import net.minecraft.world.item.equipment.ArmorType;
+import net.minecraft.world.item.equipment.EquipmentAsset;
+import net.minecraft.world.item.equipment.EquipmentAssets;
+import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.core.component.DataComponents;
+
+import java.util.Map;
 
 /**
  * Rubber boots that negate fall damage and make the player bounce
  */
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-public class RubberBootsItem extends ArmorItem {
-    
-    public static Holder<ArmorMaterial> ARMOR_MATERIAL = null;
+public class RubberBootsItem extends Item {
 
+    private static final ResourceKey<EquipmentAsset> RUBBER_ASSET = ResourceKey.create(
+            EquipmentAssets.ROOT_ID,
+            Identifier.fromNamespaceAndPath("iska_utils", "rubber")
+    );
 
-    @SubscribeEvent
-	public static void registerArmorMaterial(RegisterEvent event) {
-		event.register(Registries.ARMOR_MATERIAL, registerHelper -> {
-			ArmorMaterial armorMaterial = new ArmorMaterial(Util.make(new EnumMap<>(ArmorItem.Type.class), map -> {
-				map.put(ArmorItem.Type.BOOTS, 1);
-			}), 9, BuiltInRegistries.SOUND_EVENT.wrapAsHolder(SoundEvents.EMPTY), () -> Ingredient.of(new ItemStack(ModItems.RUBBER.get())), List.of(new ArmorMaterial.Layer(ResourceLocation.parse("iska_utils:rubber"))), 0f, 0f);
-			registerHelper.register(ResourceLocation.parse("iska_utils:rubber_boots"), armorMaterial);
-			ARMOR_MATERIAL = BuiltInRegistries.ARMOR_MATERIAL.wrapAsHolder(armorMaterial);
-		});
-	}
+    private static final TagKey<Item> REPAIRS_RUBBER = TagKey.create(
+            net.minecraft.core.registries.Registries.ITEM,
+            Identifier.fromNamespaceAndPath("iska_utils", "rubber")
+    );
+
+    private static final ArmorMaterial RUBBER_MATERIAL = new ArmorMaterial(
+            9,
+            Map.of(ArmorType.BOOTS, 1),
+            2,
+            SoundEvents.ARMOR_EQUIP_GENERIC,
+            0.0F,
+            0.0F,
+            REPAIRS_RUBBER,
+            RUBBER_ASSET
+    );
 
     public RubberBootsItem(Item.Properties properties) {
-        super(ARMOR_MATERIAL, ArmorItem.Type.BOOTS, properties);
-    }
-    
-    /**
-     * Returns the enchantment value for this item (same as leather/iron boots)
-     */
-    @Override
-    public int getEnchantmentValue() {
-        return 2;
+        super(properties
+                .enchantable(2)
+                .component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.FEET).setAsset(RUBBER_ASSET).build())
+                .component(DataComponents.ATTRIBUTE_MODIFIERS, RUBBER_MATERIAL.createAttributes(ArmorType.BOOTS)));
     }
     
     /**
@@ -85,7 +85,7 @@ public class RubberBootsItem extends ArmorItem {
             double bounce = -0.9F;
             
             player.setDeltaMovement(motion.x, motion.y * bounce, motion.z);
-            player.hasImpulse = true;
+            player.hurtMarked = true;
             player.setOnGround(false);
             
             // Slightly slow down the horizontal movement
