@@ -35,10 +35,7 @@ public class StructureMonouseRegistry {
      * Initializes monouse items based on loaded definitions
      */
     public static void initializeItems() {
-        // Load item definitions from JSON files
-        StructureMonouseLoader.scanConfigDirectory();
-        
-        // Register items for each definition
+        // Definitions are loaded via StructureMonouseLoader.loadAll(...) before this runs
         for (StructureMonouseDefinition definition : StructureMonouseLoader.getAllMonouseItems().values()) {
             registerMonouseItem(definition);
         }

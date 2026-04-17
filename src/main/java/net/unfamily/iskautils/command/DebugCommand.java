@@ -26,7 +26,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.shop.ShopLoader;
+import net.unfamily.iskautils.data.load.IskaUtilsDataReload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,9 +46,6 @@ public class DebugCommand {
                 .then(Commands.literal("reload")
                         .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2))))
                         .executes(DebugCommand::executeReload))
-                .then(Commands.literal("dump_default")
-                        .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2))))
-                        .executes(DebugCommand::executeDumpDefault))
                 .then(Commands.argument("action", StringArgumentType.word())
                         .suggests((context, builder) ->
                             SharedSuggestionProvider.suggest(new String[]{"hand"}, builder))
@@ -59,128 +56,28 @@ public class DebugCommand {
     
     private static int executeReload(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        source.sendSuccess(() -> Component.literal("§7Reloading IskaUtils JSON Scripting Eninge"), false);
-
-        int ok = 0;
-        int err = 0;
+        source.sendSuccess(() -> Component.literal("Reloading IskaUtils load JSON (data/*/load/)")
+                .withStyle(ChatFormatting.GRAY), false);
 
         try {
-            net.unfamily.iskautils.item.CommandItemRegistry.reloadDefinitions();
-            source.sendSuccess(() -> Component.literal("§a  Command items reloaded"), false);
-            ok++;
-        } catch (Exception e) {
-            LOGGER.error("Error reloading command items: {}", e.getMessage());
-            source.sendFailure(Component.literal("§c  Command items: " + e.getMessage()));
-            err++;
-        }
-
-        try {
-            StageActionsLoader.reloadAllActions();
-            source.sendSuccess(() -> Component.literal("§a  Stage actions reloaded"), false);
-            ok++;
-        } catch (Exception e) {
-            LOGGER.error("Error reloading stage actions: {}", e.getMessage());
-            source.sendFailure(Component.literal("§c  Stage actions: " + e.getMessage()));
-            err++;
-        }
-
-        try {
-            net.unfamily.iskautils.iska_utils_stages.StageItemManager.reloadItemRestrictions();
-            source.sendSuccess(() -> Component.literal("§a  Stage items reloaded"), false);
-            ok++;
-        } catch (Exception e) {
-            LOGGER.error("Error reloading stage items: {}", e.getMessage());
-            source.sendFailure(Component.literal("§c  Stage items: " + e.getMessage()));
-            err++;
-        }
-
-        try {
-            ShopLoader.reloadAllConfigurations();
+            IskaUtilsDataReload.reloadAllFromServer();
             ShopCommand.notifyClientGUIReload();
-            source.sendSuccess(() -> Component.literal("§a  Shop reloaded"), false);
-            ok++;
-        } catch (Exception e) {
-            LOGGER.error("Error reloading shop: {}", e.getMessage());
-            source.sendFailure(Component.literal("§c  Shop: " + e.getMessage()));
-            err++;
-        }
-
-        try {
-            net.unfamily.iskalib.structure.StructureLoader.reloadAllDefinitions(true);
             var server = source.getServer();
             if (server != null && !server.isSingleplayer()) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
                 }
-                source.sendSuccess(() -> Component.literal("§a  Structures reloaded (synced to clients)"), false);
+                source.sendSuccess(() -> Component.literal("Reload complete (structures synced to clients)")
+                        .withStyle(ChatFormatting.GREEN), false);
             } else {
-                source.sendSuccess(() -> Component.literal("§a  Structures reloaded"), false);
+                source.sendSuccess(() -> Component.literal("Reload complete").withStyle(ChatFormatting.GREEN), false);
             }
-            ok++;
+            return 1;
         } catch (Exception e) {
-            LOGGER.error("Error reloading structures: {}", e.getMessage());
-            source.sendFailure(Component.literal("§c  Structures: " + e.getMessage()));
-            err++;
+            LOGGER.error("Error during IskaUtils reload: {}", e.getMessage());
+            source.sendFailure(Component.literal("Reload failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
+            return 0;
         }
-
-        final int okCount = ok;
-        final int errCount = err;
-        source.sendSuccess(() -> Component.literal("§7Reload complete: §a" + okCount + " §7ok" + (errCount > 0 ? ", §c" + errCount + " §7failed" : "")), false);
-        return errCount > 0 ? 0 : 1;
-    }
-
-    private static int executeDumpDefault(CommandContext<CommandSourceStack> context) {
-        CommandSourceStack source = context.getSource();
-        source.sendSuccess(() -> Component.literal("§7Dumping default configuration files..."), false);
-
-        String configuredPath = net.unfamily.iskautils.Config.externalScriptsPath;
-        final String basePath = (configuredPath == null || configuredPath.trim().isEmpty())
-                ? "kubejs/external_scripts" : configuredPath;
-
-        int ok = 0;
-        int err = 0;
-
-        try {
-            java.nio.file.Path cmdPath = java.nio.file.Paths.get(basePath, "iska_utils_command_items");
-            java.nio.file.Files.createDirectories(cmdPath);
-            CommandItemLoader.dumpDefaultFile(cmdPath);
-            source.sendSuccess(() -> Component.literal("§a  Command items default dumped"), false);
-            ok++;
-        } catch (Exception e) {
-            LOGGER.error("Error dumping command items default: {}", e.getMessage());
-            source.sendFailure(Component.literal("§c  Command items: " + e.getMessage()));
-            err++;
-        }
-
-        try {
-            java.nio.file.Path platesPath = java.nio.file.Paths.get(basePath, "iska_utils_plates");
-            java.nio.file.Files.createDirectories(platesPath);
-            net.unfamily.iskautils.data.DynamicPotionPlateScanner.dumpDefaultFile(platesPath);
-            source.sendSuccess(() -> Component.literal("§a  Potion plates default dumped"), false);
-            ok++;
-        } catch (Exception e) {
-            LOGGER.error("Error dumping potion plates default: {}", e.getMessage());
-            source.sendFailure(Component.literal("§c  Potion plates: " + e.getMessage()));
-            err++;
-        }
-
-        try {
-            java.nio.file.Path structPath = java.nio.file.Paths.get(basePath, "iska_utils_structures");
-            java.nio.file.Files.createDirectories(structPath);
-            net.unfamily.iskautils.structure.StructureMonouseLoader.dumpDefaultFile(structPath);
-            source.sendSuccess(() -> Component.literal("§a  Structure monouse default dumped"), false);
-            ok++;
-        } catch (Exception e) {
-            LOGGER.error("Error dumping structure monouse default: {}", e.getMessage());
-            source.sendFailure(Component.literal("§c  Structure monouse: " + e.getMessage()));
-            err++;
-        }
-
-        final int okCount = ok;
-        final int errCount = err;
-        source.sendSuccess(() -> Component.literal("§7Dump complete: §a" + okCount + " §7ok" + (errCount > 0 ? ", §c" + errCount + " §7failed" : "")), false);
-        source.sendSuccess(() -> Component.literal("§7Files written to: §e" + basePath), false);
-        return errCount > 0 ? 0 : 1;
     }
 
     private static int executeDebug(CommandContext<CommandSourceStack> context) {

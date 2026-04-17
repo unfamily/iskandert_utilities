@@ -6,16 +6,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import org.slf4j.Logger;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
 /**
  * Loads Structure Monouse item definitions from external JSON files
@@ -31,86 +30,27 @@ public class StructureMonouseLoader {
     private static final Map<String, Boolean> PROTECTED_DEFINITIONS = new HashMap<>();
     
     /**
-     * Scans the configuration directory for monouse item definitions.
-     * Internal defaults are registered first, then external scripts can override them.
+     * Loads monouse definitions from {@code data/<namespace>/load/iska_utils_structures_monouse/}.
      */
+    public static void loadAll(ResourceManager resourceManagerOrNull) {
+        PROTECTED_DEFINITIONS.clear();
+        MONOUSE_ITEMS.clear();
+        Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
+                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
+                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.STRUCTURE_MONOUSE))
+                : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STRUCTURE_MONOUSE);
+        for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
+            if (!e.getValue().isJsonObject()) {
+                continue;
+            }
+            String definitionId = IskaUtilsLoadJson.definitionIdFromLocation(e.getKey());
+            parseConfigJson(definitionId, e.getKey().toString(), e.getValue().getAsJsonObject());
+        }
+        LOGGER.info("Structure monouse definitions loaded: {}", MONOUSE_ITEMS.size());
+    }
+
     public static void scanConfigDirectory() {
-        try {
-            // Clear previous definitions
-            PROTECTED_DEFINITIONS.clear();
-            MONOUSE_ITEMS.clear();
-            
-            // Register internal defaults first (scripts can override these)
-            registerInternalDefaults();
-            
-            String configPathStr = net.unfamily.iskautils.Config.externalScriptsPath;
-            if (configPathStr == null || configPathStr.trim().isEmpty()) {
-                configPathStr = "kubejs/external_scripts";
-            }
-            
-            Path configPath = Paths.get(configPathStr, "iska_utils_structures");
-            
-            if (!Files.exists(configPath)) {
-                return;
-            }
-            
-            // Scan all JSON files in the directory (scripts can override internal defaults)
-            try (Stream<Path> files = Files.walk(configPath)) {
-                files.filter(Files::isRegularFile)
-                     .filter(path -> path.toString().endsWith(".json"))
-                     .filter(path -> !path.getFileName().toString().startsWith("."))
-                     .sorted() // Process in alphabetical order
-                     .forEach(StructureMonouseLoader::scanConfigFile);
-            }
-            
-        } catch (Exception e) {
-            LOGGER.error("Error scanning structure monouse item definitions directory: {}", e.getMessage());
-        }
-    }
-    
-    /**
-     * Registers internal default monouse item definitions.
-     * These are always available as fallback; external scripts can override them.
-     */
-    private static void registerInternalDefaults() {
-        String itemId = "iska_utils_wither_grinder";
-        StructureMonouseDefinition witherGrinder = new StructureMonouseDefinition(itemId);
-        witherGrinder.setStructureId("iska_utils-wither_grinder");
-        witherGrinder.setPlaceName("iska_utils-wither_grinder");
-        witherGrinder.setAggressive(false);
-        witherGrinder.addGiveItem(new StructureMonouseDefinition.GiveItem("minecraft:wither_skeleton_skull", 3));
-        witherGrinder.addGiveItem(new StructureMonouseDefinition.GiveItem("minecraft:soul_sand", 4));
-        
-        MONOUSE_ITEMS.put(itemId, witherGrinder);
-        LOGGER.debug("Registered internal default monouse item: {}", itemId);
-    }
-    
-    /**
-     * Scans a single configuration file for monouse item definitions
-     */
-    private static void scanConfigFile(Path configFile) {
-        String definitionId = configFile.getFileName().toString().replace(".json", "");
-        
-        try (InputStream inputStream = Files.newInputStream(configFile)) {
-            parseConfigFromStream(definitionId, configFile.toString(), inputStream);
-        } catch (Exception e) {
-            LOGGER.error("Error reading structure monouse item definition file {}: {}", configFile, e.getMessage());
-        }
-    }
-    
-    /**
-     * Parses configuration from an input stream
-     */
-    private static void parseConfigFromStream(String definitionId, String filePath, InputStream inputStream) {
-        try (InputStreamReader reader = new InputStreamReader(inputStream)) {
-            JsonElement jsonElement = GSON.fromJson(reader, JsonElement.class);
-            if (jsonElement != null && jsonElement.isJsonObject()) {
-                JsonObject json = jsonElement.getAsJsonObject();
-                parseConfigJson(definitionId, filePath, json);
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error parsing structure monouse item definition file {}: {}", filePath, e.getMessage());
-        }
+        loadAll(null);
     }
     
     /**
@@ -230,46 +170,11 @@ public class StructureMonouseLoader {
     public static Map<String, StructureMonouseDefinition> getAllMonouseItems() {
         return new HashMap<>(MONOUSE_ITEMS);
     }
-    
-    
-    /**
-     * Dumps the internal default monouse item definitions to a JSON file.
-     * Called by /iska_utils_debug dump_default to let users see and override defaults.
-     */
-    public static void dumpDefaultFile(Path configPath) throws java.io.IOException {
-        Path defaultMonousePath = configPath.resolve("default_monouse.json");
-        
-        String content =
-            "{\n" +
-            "    \"type\": \"iska_utils:structure_monouse_item\",\n" +
-            "    \"overwritable\": true,\n" +
-            "    \"structure\": [\n" +
-            "        {\n" +
-            "            \"id\": \"iska_utils-wither_grinder\",\n" +
-            "            \"place\": \"iska_utils-wither_grinder\",\n" +
-            "            \"aggressive\": false,\n" +
-            "            \"give\": [\n" +
-            "                {\n" +
-            "                    \"item\": \"minecraft:wither_skeleton_skull\",\n" +
-            "                    \"count\": 3\n" +
-            "                },\n" +
-            "                {\n" +
-            "                    \"item\": \"minecraft:soul_sand\",\n" +
-            "                    \"count\": 4\n" +
-            "                }\n" +
-            "            ]\n" +
-            "        }\n" +
-            "    ]\n" +
-            "}";
-        
-        Files.write(defaultMonousePath, content.getBytes());
-        LOGGER.info("Dumped default monouse items to {}", defaultMonousePath);
-    }
-    
     /**
      * Reloads all monouse item definitions
      */
     public static void reloadAllDefinitions() {
-        scanConfigDirectory();
+        var server = ServerLifecycleHooks.getCurrentServer();
+        loadAll(server != null ? server.getResourceManager() : null);
     }
 } 

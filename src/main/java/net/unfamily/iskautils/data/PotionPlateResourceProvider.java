@@ -50,7 +50,7 @@ public class PotionPlateResourceProvider {
      * Generates and caches models for all loaded configurations
      */
     public static void generateResources() {
-        Map<String, PotionPlateConfig> configs = PotionPlateLoader.getLoadedConfigs();
+        Map<String, PotionPlateConfig> configs = DynamicPotionPlateScanner.getDiscoveredConfigs();
         
         if (configs.isEmpty()) {
             LOGGER.info("No potion plate configurations found, skipping resource generation");

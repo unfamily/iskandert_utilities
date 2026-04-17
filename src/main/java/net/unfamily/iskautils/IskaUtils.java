@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -42,17 +41,21 @@ import net.unfamily.iskautils.block.PotionPlateBlock;
 import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
 import net.unfamily.iskautils.command.MacroLoader;
 import net.unfamily.iskautils.command.MacroCommand;
-import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.profiling.ProfilerFiller;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+
+import java.util.Map;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.resources.Identifier;
 import net.unfamily.iskalib.structure.StructureIOHooks;
 import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.shop.ShopLoader;
+import net.unfamily.iskautils.structure.StructureMonouseLoader;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
+import net.unfamily.iskautils.data.load.IskaUtilsDataReload;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(IskaUtils.MOD_ID)
@@ -101,8 +104,7 @@ public class IskaUtils {
         // IMPORTANT: This must happen BEFORE registering the DeferredRegisters
         // to ensure blocks are available when registries are built
         
-        // Scan for external configurations in config directory (before registry freeze)
-        DynamicPotionPlateScanner.scanConfigDirectory();
+        DynamicPotionPlateScanner.loadAll(null);
         
         // Register discovered dynamic potion plates from external configurations
         PotionPlateRegistry.registerDiscoveredBlocks();
@@ -110,11 +112,10 @@ public class IskaUtils {
         // ===== COMMAND ITEM SYSTEM =====
         // Carica e inizializza gli item di comando prima della registrazione
         // per evitare errori "Cannot register new entries to DeferredRegister after RegisterEvent has been fired"
-        CommandItemLoader.scanConfigDirectory();
+        CommandItemLoader.loadAll(null);
         CommandItemRegistry.initializeItems();
         
-        // ===== STRUCTURE MONOUSE ITEM SYSTEM =====
-        // Carica e inizializza gli item Structure Monouse dinamici
+        StructureMonouseLoader.loadAll(null);
         net.unfamily.iskautils.structure.StructureMonouseRegistry.initializeItems();
         
         // ===== STRUCTURE SYSTEM =====
@@ -124,7 +125,7 @@ public class IskaUtils {
         
         // ===== SHOP SYSTEM =====
         // Carica e inizializza il sistema shop custom
-        ShopLoader.scanConfigDirectory();
+        ShopLoader.loadAll(null);
         
         // Register blocks and items
         ModBlocks.register(modEventBus);
@@ -207,20 +208,20 @@ public class IskaUtils {
             }
         });
 
-        // Wire structure IO/config into the library structure system
         StructureIOHooks.setListener(new StructureIOHooks.Listener() {
             @Override
-            public java.nio.file.Path externalScriptsBasePath() {
-                String configPath = Config.externalScriptsPath;
-                if (configPath == null || configPath.trim().isEmpty()) {
-                    configPath = "kubejs/external_scripts";
+            public void loadServerStructureDefinitions(ResourceManager resourceManagerOrNull, StructureIOHooks.StructureDefinitionSink sink) {
+                Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
+                        ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
+                        id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS))
+                        : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS);
+                for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
+                    if (!e.getValue().isJsonObject()) {
+                        continue;
+                    }
+                    String defId = IskaUtilsLoadJson.definitionIdFromLocation(e.getKey());
+                    sink.accept(defId, e.getKey().toString(), e.getValue().getAsJsonObject());
                 }
-                return java.nio.file.Paths.get(configPath);
-            }
-
-            @Override
-            public String structuresFolderName() {
-                return "iska_utils_structures";
             }
 
             @Override
@@ -236,12 +237,6 @@ public class IskaUtils {
             @Override
             public boolean allowClientStructurePlaceLikePlayer() {
                 return Config.allowClientStructurePlayerLike;
-            }
-
-            @Override
-            public void generateDocumentationIfEnabled() {
-                // Keep legacy behavior
-                net.unfamily.iskautils.structure.StructureDocumentationGenerator.generateDocumentation();
             }
         });
         
@@ -419,25 +414,10 @@ public class IskaUtils {
                 LOGGER.error("Error cleaning up scanner markers: {}", e.getMessage());
             }
             
-            // Reload macros to ensure all commands are registered
             try {
-                MacroLoader.reloadAllMacros();
+                IskaUtilsDataReload.reloadAllFromServer();
             } catch (Exception e) {
-                LOGGER.error("Error loading macros at server startup: {}", e.getMessage());
-            }
-
-            // Reload stage actions
-            try {
-                net.unfamily.iskautils.command.StageActionsLoader.reloadAllActions();
-            } catch (Exception e) {
-                LOGGER.error("Error loading stage actions at server startup: {}", e.getMessage());
-            }
-
-            // Reload command item definitions
-            try {
-                CommandItemRegistry.reloadDefinitions();
-            } catch (Exception e) {
-                LOGGER.error("Error loading command item definitions at server startup: {}", e.getMessage());
+                LOGGER.error("Error applying IskaUtils datapack load JSON at server startup: {}", e.getMessage());
             }
             
             // Sincronizza le strutture con tutti i client connessi

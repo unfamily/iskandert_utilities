@@ -71,8 +71,7 @@ public class CommandItemRegistry {
      * Inizializza gli item di comando basati sulle definizioni caricate
      */
     public static void initializeItems() {
-        // Carica le definizioni degli item da file JSON
-        CommandItemLoader.scanConfigDirectory();
+        // Definitions are loaded by IskaUtils before this runs (see CommandItemLoader.loadAll).
         
         // Registra gli item per ogni definizione
         for (CommandItemDefinition definition : CommandItemLoader.getAllCommandItems().values()) {

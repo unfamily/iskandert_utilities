@@ -15,15 +15,19 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskalib.stage.StageRegistry;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import net.unfamily.iskautils.util.ResourceUtil;
 import org.slf4j.Logger;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -38,33 +42,33 @@ public class StageItemHandler {
     private static final Map<String, StageItemRestriction> ITEM_RESTRICTIONS = new HashMap<>();
     
     /**
-     * Loads all item restrictions from JSON files
+     * Loads all item restrictions from {@code data/<namespace>/load/iska_utils_stage_items/}.
      */
-    public static void loadItemRestrictions(Path configPath) {
+    public static void loadAll(ResourceManager resourceManagerOrNull) {
         ITEM_RESTRICTIONS.clear();
-        
         try {
-            Files.list(configPath)
-                .filter(path -> path.toString().endsWith(".json") && !path.getFileName().toString().equals("example.json"))
-                .forEach(path -> {
-                    try {
-                        JsonObject json = GSON.fromJson(new FileReader(path.toFile()), JsonObject.class);
-                        if (json.has("type") && json.get("type").getAsString().equals("iska_utils:stage_item")) {
-                            StageItemRestriction restriction = parseRestriction(json);
-                            String id = path.getFileName().toString().replace(".json", "");
-                            ITEM_RESTRICTIONS.put(id, restriction);
-                            LOGGER.info("Loaded item restriction: {}", id);
-                        }
-                    } catch (Exception e) {
-                        LOGGER.error("Error loading item restriction from {}: {}", path, e.getMessage());
-                    }
-                });
-                
+            Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
+                    ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
+                    id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.STAGE_ITEMS))
+                    : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STAGE_ITEMS);
+            for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
+                if (!e.getValue().isJsonObject()) {
+                    continue;
+                }
+                JsonObject json = e.getValue().getAsJsonObject();
+                if (json.has("type") && json.get("type").getAsString().equals("iska_utils:stage_item")) {
+                    StageItemRestriction restriction = parseRestriction(json);
+                    String id = IskaUtilsLoadJson.definitionIdFromLocation(e.getKey());
+                    ITEM_RESTRICTIONS.put(id, restriction);
+                    LOGGER.info("Loaded item restriction: {}", id);
+                }
+            }
             LOGGER.info("Loaded {} item restrictions", ITEM_RESTRICTIONS.size());
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOGGER.error("Error loading item restrictions: {}", e.getMessage());
         }
     }
+
 
     
     /**

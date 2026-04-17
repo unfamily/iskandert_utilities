@@ -1,0 +1,16 @@
+{
+  "type": "shop_entry",
+  "overwritable": true,
+  "entries": [
+    {
+      "id": "bread_default",
+      "in_category": "000_default",
+      "item": "minecraft:bread",
+      "item_count": 1,
+      "currency": "null_coin",
+      "buy": 1.0,
+      "sell": 0.5,
+      "priority": 0
+    }
+  ]
+}
