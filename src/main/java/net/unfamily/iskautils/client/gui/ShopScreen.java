@@ -1,9 +1,12 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -26,14 +29,14 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     /** Result of a stage check: required = stage was required but missing, !required = stage must not be present but player has it */
     private record StageFailure(String stageType, String stageId, boolean required) {}
 
-    private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
-    private static final ResourceLocation ENTRY_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/enrty_wide_wide_wide.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
-    private static final ResourceLocation SINGLE_SLOT_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
+    private static final Identifier TEXTURE =
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
+    private static final Identifier ENTRY_TEXTURE =
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/enrty_wide_wide_wide.png");
+    private static final Identifier SCROLLBAR_TEXTURE =
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
+    private static final Identifier SINGLE_SLOT_TEXTURE =
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
 
     // Background widened only to the right (shop.png 300x240)
     private static final int GUI_WIDTH = 300;
@@ -168,12 +171,13 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         int guiX = this.leftPos;
         int guiY = this.topPos;
         
         // Main background
-        guiGraphics.blit(TEXTURE, guiX, guiY, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiX, guiY, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
         // Shop entries - always render 5 entries, even if some are empty
         for (int i = 0; i < ENTRIES; i++) {
@@ -182,7 +186,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             int entryY = guiY + ENTRY_START_Y + i * ENTRY_HEIGHT;
             
             // Render entry background (enrty_wide_wide_wide.png 220x24)
-            guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, 220, 24);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENTRY_TEXTURE, entryX, entryY, 0.0F, 0.0F, ENTRY_WIDTH, ENTRY_HEIGHT, 220, 24);
             
             // Render entry content only if there's data to show
             if (showingCategories) {
@@ -208,7 +212,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         updateAndRenderFeedback(guiGraphics, guiX, guiY);
     }
     
-    private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Only show scrollbar if there are more entries than can fit
         if (totalShopEntries <= ENTRIES) return;
         
@@ -216,7 +220,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int guiY = this.topPos;
         
         // Draw scrollbar background (8 pixels wide, height 34)
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
         
         // UP button (8x8 pixels) - above scrollbar
         boolean upButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
@@ -472,7 +476,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     /**
      * Renderizza il contenuto di una entry (slot + testo)
      */
-    private void renderEntryContent(GuiGraphics guiGraphics, int entryX, int entryY, int entryIndex) {
+    private void renderEntryContent(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, int entryIndex) {
         int actualIndex = scrollOffset + entryIndex;
         
         if (showingCategories) {
@@ -493,7 +497,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     /**
      * Renderizza una entry di categoria
      */
-    private void renderCategoryEntry(GuiGraphics guiGraphics, int entryX, int entryY, ShopCategory category) {
+    private void renderCategoryEntry(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, ShopCategory category) {
         // Posizioni
         int slotX = entryX + 3; // 3 pixel dal bordo sinistro
         int slotY = entryY + 3; // 3 pixel dal bordo superiore
@@ -501,12 +505,12 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int textY = entryY + (ENTRY_HEIGHT - 8) / 2; // Centrato verticalmente
         
         // Disegna lo slot (18x18)
-        guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
         
         // Ottieni l'ItemStack per l'icona della categoria
         ItemStack categoryIcon = getItemStackFromString(category.item);
         if (!categoryIcon.isEmpty()) {
-            guiGraphics.renderItem(categoryIcon, slotX + 1, slotY + 1);
+            guiGraphics.item(categoryIcon, slotX + 1, slotY + 1);
         }
         
         // Disegna il nome della categoria (scalato)
@@ -519,14 +523,14 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     /**
      * Renderizza una entry di item
      */
-    private void renderItemEntry(GuiGraphics guiGraphics, int entryX, int entryY, ShopEntry item) {
+    private void renderItemEntry(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, ShopEntry item) {
         // Controlla se l'item è bloccato
         boolean isBlocked = isItemBlocked(item);
         
         // Se bloccato, applica overlay rosso
         if (isBlocked) {
             // Overlay rosso semi-trasparente
-            guiGraphics.fill(entryX, entryY, entryX + ENTRY_WIDTH, entryY + ENTRY_HEIGHT, 
+            guiGraphics.fill(entryX, entryY, entryX + ENTRY_WIDTH, entryY + ENTRY_HEIGHT,
                             0x80FF0000); // Rosso con alpha
         }
         
@@ -537,14 +541,14 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int textY = entryY + (ENTRY_HEIGHT - 8) / 2; // Centrato verticalmente
         
         // Disegna lo slot (18x18)
-        guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
         
         // Ottieni l'ItemStack per l'item (supporta data components inline)
         ItemStack itemStack = getItemStackFromString(item.item);
         if (!itemStack.isEmpty()) {
             itemStack.setCount(item.itemCount);
-            guiGraphics.renderItem(itemStack, slotX + 1, slotY + 1);
-            guiGraphics.renderItemDecorations(this.font, itemStack, slotX + 1, slotY + 1);
+            guiGraphics.item(itemStack, slotX + 1, slotY + 1);
+            guiGraphics.itemDecorations(this.font, itemStack, slotX + 1, slotY + 1);
         }
         
         // Disegna il nome dell'item (nome display scalato)
@@ -679,100 +683,86 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Titolo centrato - usa il nome della categoria corrente
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        // Keep base behavior (inventory label) but override title.
         Component titleComponent = Component.literal(currentCategoryName);
         int titleWidth = this.font.width(titleComponent);
-        // Centra il titolo nell'area delle entry (da ENTRY_START_X a ENTRY_START_X + ENTRY_WIDTH)
-        int entryAreaStart = ENTRY_START_X;
-        int entryAreaWidth = ENTRY_WIDTH;
-        int titleX = entryAreaStart + (entryAreaWidth - titleWidth) / 2;
-        guiGraphics.drawString(this.font, titleComponent, titleX, 9, 0x404040, false); // Spostato da Y=7 a Y=9
-        
-        // Non renderizzare "Inventory" - rimosso
+        int titleX = ENTRY_START_X + (ENTRY_WIDTH - titleWidth) / 2;
+        guiGraphics.text(this.font, titleComponent, titleX, 9, 0x404040, false);
+        // Intentionally do not draw the "Inventory" label (vanilla would).
     }
-    
+
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
-        
-        // Controlla se il mouse è su un'entry bloccata
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+
+        List<Component> tooltip = null;
+
+        // Tooltip for blocked entries (missing stages)
         if (!showingCategories) {
             int entryIndex = getEntryUnderMouse(mouseX, mouseY);
             if (entryIndex >= 0 && entryIndex < availableItems.size()) {
                 ShopEntry item = availableItems.get(entryIndex);
                 if (isItemBlocked(item)) {
-                    List<Component> tooltip = createMissingStagesTooltip(item);
-                    guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
-                    return;
+                    tooltip = createMissingStagesTooltip(item);
                 }
             }
         }
-        
-        // Tooltip per le categorie
-        if (showingCategories) {
+
+        // Tooltip for category descriptions
+        if (tooltip == null && showingCategories) {
             int entryIndex = getEntryUnderMouse(mouseX, mouseY);
             if (entryIndex >= 0 && entryIndex < availableCategories.size()) {
                 ShopCategory category = availableCategories.get(entryIndex);
                 if (category.description != null && !category.description.trim().isEmpty()) {
-                    List<Component> tooltip = new ArrayList<>();
-                    tooltip.add(Component.translatable(category.description));
-                    guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
-                    return;
+                    tooltip = List.of(Component.translatable(category.description));
                 }
             }
         }
-        
-        // Renderizza i tooltip per i pulsanti Buy/Sell
-        renderButtonTooltips(guiGraphics, mouseX, mouseY);
+
+        // Tooltip for Buy/Sell buttons
+        if (tooltip == null) {
+            tooltip = getButtonTooltip(mouseX, mouseY);
+        }
+
+        if (tooltip != null && !tooltip.isEmpty()) {
+            List<FormattedCharSequence> lines = tooltip.stream().map(Component::getVisualOrderText).toList();
+            guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
+        }
     }
     
     /**
      * Renderizza i tooltip per i pulsanti Buy/Sell
      */
-    private void renderButtonTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        if (!showingCategories) { // Solo nella modalità item
-            int x = (this.width - this.imageWidth) / 2;
-            int y = (this.height - this.imageHeight) / 2;
-            
-            for (int i = 0; i < ENTRIES; i++) {
-                int actualIndex = scrollOffset + i;
-                if (actualIndex >= availableItems.size()) continue;
-                
-                ShopEntry item = availableItems.get(actualIndex);
-                int entryY = y + ENTRY_START_Y + i * ENTRY_HEIGHT;
-                
-                // Posizioni dei pulsanti
-                int buyButtonX = x + ENTRY_START_X + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
-                int sellButtonX = x + ENTRY_START_X + ENTRY_WIDTH - BUTTON_WIDTH - 3;
-                int buttonsY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
-                
-                // Calcola posizioni corrette per i tooltip (stesse del rendering)
-                int entryX = x + ENTRY_START_X; // Posizione X dell'entry
-                int correctBuyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
-                int correctSellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
-                int correctButtonsY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2; // Centrati verticalmente
-                
-                // Tooltip for Buy button
-                if ((item.buy > 0 || item.free) && mouseX >= correctBuyButtonX && mouseX < correctBuyButtonX + BUTTON_WIDTH &&
-                    mouseY >= correctButtonsY && mouseY < correctButtonsY + BUTTON_HEIGHT) {
-                    
-                    List<Component> buyTooltip = createBuyTooltip(item);
-                    guiGraphics.renderComponentTooltip(this.font, buyTooltip, mouseX, mouseY);
-                    return;
-                }
-                
-                // Tooltip per pulsante Sell
-                if (item.sell > 0 && mouseX >= correctSellButtonX && mouseX < correctSellButtonX + BUTTON_WIDTH &&
-                    mouseY >= correctButtonsY && mouseY < correctButtonsY + BUTTON_HEIGHT) {
-                    
-                    List<Component> sellTooltip = createSellTooltip(item);
-                    guiGraphics.renderComponentTooltip(this.font, sellTooltip, mouseX, mouseY);
-                    return;
-                }
+    private List<Component> getButtonTooltip(int mouseX, int mouseY) {
+        if (showingCategories) return null;
+
+        int x = (this.width - this.imageWidth) / 2;
+        int y = (this.height - this.imageHeight) / 2;
+
+        for (int i = 0; i < ENTRIES; i++) {
+            int actualIndex = scrollOffset + i;
+            if (actualIndex >= availableItems.size()) continue;
+
+            ShopEntry item = availableItems.get(actualIndex);
+            int entryY = y + ENTRY_START_Y + i * ENTRY_HEIGHT;
+            int entryX = x + ENTRY_START_X;
+            int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
+            int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
+            int buttonsY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
+
+            if ((item.buy > 0 || item.free) && mouseX >= buyButtonX && mouseX < buyButtonX + BUTTON_WIDTH
+                && mouseY >= buttonsY && mouseY < buttonsY + BUTTON_HEIGHT) {
+                return createBuyTooltip(item);
+            }
+
+            if (item.sell > 0 && mouseX >= sellButtonX && mouseX < sellButtonX + BUTTON_WIDTH
+                && mouseY >= buttonsY && mouseY < buttonsY + BUTTON_HEIGHT) {
+                return createSellTooltip(item);
             }
         }
+
+        return null;
     }
     
     /**
@@ -817,7 +807,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     /**
      * Renderizza l'area informazioni a destra (solo valute, il pulsante Back è vanilla)
      */
-    private void renderInfoArea(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderInfoArea(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
         
@@ -828,7 +818,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     /**
      * Renderizza le valute disponibili con i balance reali del team
      */
-    private void renderAvailableCurrencies(GuiGraphics guiGraphics, int guiX, int guiY) {
+    private void renderAvailableCurrencies(GuiGraphicsExtractor guiGraphics, int guiX, int guiY) {
         int startY = guiY + CURRENCIES_START_Y;
         int textX = guiX + BACK_BUTTON_X; // Allineato con il pulsante Back
         
@@ -837,13 +827,11 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             Component noTeamText = Component.translatable("gui.iska_utils.shop.no_team");
             
             // Applica scaling 0.77 per rimpicciolire il testo
-            guiGraphics.pose().pushPose();
-            guiGraphics.pose().translate(textX, startY, 0);
-            guiGraphics.pose().scale(0.77f, 0.77f, 1.0f);
-            
-            guiGraphics.drawString(this.font, noTeamText, 0, 0, 0x808080, false);
-            
-            guiGraphics.pose().popPose();
+            guiGraphics.pose().pushMatrix();
+            guiGraphics.pose().translate(textX, startY);
+            guiGraphics.pose().scale(0.77f, 0.77f);
+            guiGraphics.text(this.font, noTeamText, 0, 0, 0x808080, false);
+            guiGraphics.pose().popMatrix();
             return;
         }
         
@@ -863,7 +851,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             
             // Colore: rosso se balance è 0, normale altrimenti
             int color = balance > 0 ? 0x404040 : 0x804040;
-            guiGraphics.drawString(this.font, currencyText, textX, textY, color, false);
+            guiGraphics.text(this.font, currencyText, textX, textY, color, false);
             
             lineIndex++;
         }
@@ -871,7 +859,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Se non ci sono valute configurate, mostra un messaggio
         if (availableCurrencies.isEmpty()) {
             Component noValutesText = Component.translatable("gui.iska_utils.shop.no_valutes");
-            guiGraphics.drawString(this.font, noValutesText, textX, startY, 0x808080, false);
+            guiGraphics.text(this.font, noValutesText, textX, startY, 0x808080, false);
         }
     }
     
@@ -977,7 +965,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     /**
      * Update and render the feedback area
      */
-    private void updateAndRenderFeedback(GuiGraphics guiGraphics, int guiX, int guiY) {
+    private void updateAndRenderFeedback(GuiGraphicsExtractor guiGraphics, int guiX, int guiY) {
         // Check if it's time to hide the message
         if (feedbackMessage != null && System.currentTimeMillis() >= feedbackClearTime) {
             hideFeedback();
@@ -988,7 +976,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             
             int textX = guiX + 20;
             int textY = guiY + 143;
-            guiGraphics.drawString(this.font, feedbackMessage, textX, textY, feedbackColor, false);
+            guiGraphics.text(this.font, Component.literal(feedbackMessage), textX, textY, feedbackColor, false);
         }
     }
     
@@ -1172,13 +1160,13 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Renderizza testo scalato per adattarsi alla larghezza disponibile.
      * Se anche alla scala minima sfora, tronca e aggiunge "..."
      */
-    private void renderScaledText(GuiGraphics guiGraphics, String text, int x, int y, int maxWidth, int color) {
+    private void renderScaledText(GuiGraphicsExtractor guiGraphics, String text, int x, int y, int maxWidth, int color) {
         Component textComponent = Component.literal(text);
         int textWidth = this.font.width(textComponent);
         
         if (textWidth <= maxWidth) {
             // Il testo sta già nella larghezza disponibile
-            guiGraphics.drawString(this.font, textComponent, x, y, color, false);
+            guiGraphics.text(this.font, textComponent, x, y, color, false);
         } else {
             // Il testo è troppo lungo, dobbiamo scalarlo (min scale to reduce narrowing)
             float scale = (float) maxWidth / textWidth;
@@ -1205,15 +1193,15 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             }
             
             // Applica la trasformazione di scaling
-            guiGraphics.pose().pushPose();
-            guiGraphics.pose().translate(x, y, 0);
-            guiGraphics.pose().scale(scale, scale, 1.0f);
+            guiGraphics.pose().pushMatrix();
+            guiGraphics.pose().translate(x, y);
+            guiGraphics.pose().scale(scale, scale);
             
             // Renderizza il testo scalato (eventualmente troncato) alla posizione (0,0)
-            guiGraphics.drawString(this.font, textComponent, 0, 0, color, false);
+            guiGraphics.text(this.font, textComponent, 0, 0, color, false);
             
             // Ripristina la matrice
-            guiGraphics.pose().popPose();
+            guiGraphics.pose().popMatrix();
         }
     }
 

@@ -4,19 +4,19 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.MeshData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -400,7 +400,9 @@ public class MarkRenderer {
         
         // Complete the rendering only if we have vertices
         if (hasVertices) {
-            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+            try (MeshData mesh = bufferBuilder.buildOrThrow()) {
+                RenderTypes.debugFilledBox().draw(mesh);
+            }
         }
         
         RenderSystem.enableDepthTest();
@@ -442,7 +444,9 @@ public class MarkRenderer {
         
         // Complete the rendering only if we have vertices
         if (hasVertices) {
-            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+            try (MeshData mesh = bufferBuilder.buildOrThrow()) {
+                RenderTypes.debugFilledBox().draw(mesh);
+            }
         }
         
         RenderSystem.enableDepthTest();

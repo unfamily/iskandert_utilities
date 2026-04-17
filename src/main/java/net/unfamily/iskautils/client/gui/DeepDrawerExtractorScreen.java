@@ -1,15 +1,16 @@
 package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
@@ -26,21 +27,21 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DeepDrawerExtractorScreen.class);
     
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer_extractor.png");
-    private static final ResourceLocation BACKGROUND_EMPTY = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier BACKGROUND_EMPTY = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer_extractor_empty.png");
     
     // Medium buttons texture (16x32 - normal and highlighted)
-    private static final ResourceLocation MEDIUM_BUTTONS = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
+    private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
     // Redstone GUI icon
-    private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
+    private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
     // Scrollbar texture (identica a DeepDrawersScreen)
-    private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
+    private static final Identifier SCROLLBAR_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
     // Wide entry texture for filter entries
-    private static final ResourceLocation ENTRY_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
+    private static final Identifier ENTRY_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
     // Single slot texture for item display
-    private static final ResourceLocation SINGLE_SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
+    private static final Identifier SINGLE_SLOT_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
     
     // GUI dimensions (based on image: 400x250)
     private static final int GUI_WIDTH = 400;
@@ -599,12 +600,14 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     }
     
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    @Override
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
         // Use different background for "how to use" mode
-        ResourceLocation backgroundTexture = isHowToUseMode ? BACKGROUND_EMPTY : BACKGROUND;
-        guiGraphics.blit(backgroundTexture, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
+        Identifier backgroundTexture = isHowToUseMode ? BACKGROUND_EMPTY : BACKGROUND;
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, backgroundTexture, x, y, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
         // Render filter list label (only in main mode, not in how to use)
         // Label changes based on mode: "Allow Filter List" or "Deny Filter List"
@@ -620,7 +623,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             int labelWidth = this.font.width(filtersLabel);
             // Center the label with the entries
             int labelX = this.leftPos + ENTRY_X + (ENTRY_WIDTH - labelWidth) / 2;
-            guiGraphics.drawString(this.font, filtersLabel, labelX, this.topPos + FILTERS_LABEL_Y, 0x404040, false);
+            guiGraphics.text(this.font, filtersLabel, labelX, this.topPos + FILTERS_LABEL_Y, 0x404040, false);
             
             // Render filter entries (wide entries with single slot)
             renderFilterEntries(guiGraphics, mouseX, mouseY);
@@ -644,7 +647,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     /**
      * Renders filter entries as wide entries with single slot
      */
-    private void renderFilterEntries(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderFilterEntries(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Ensure cachedFilterFields has all slots
         while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
             cachedFilterFields.add("");
@@ -661,7 +664,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             int entryY = this.topPos + FIRST_ROW_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
             
             // Draw entry background
-            guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENTRY_TEXTURE, entryX, entryY, 0.0F, 0.0F, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
             
             // Get filter value
             String filter = cachedFilterFields.get(filterIndex);
@@ -677,7 +680,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     /**
      * Renders a single filter entry with slot and text
      */
-    private void renderFilterEntry(GuiGraphics guiGraphics, int entryX, int entryY, String filter, int filterIndex, int mouseX, int mouseY) {
+    private void renderFilterEntry(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, String filter, int filterIndex, int mouseX, int mouseY) {
         // Check if this entry is in edit mode
         boolean isEditMode = (editModeFilterIndex == filterIndex);
         
@@ -689,13 +692,13 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         int slotY = entryY + 3;
         
         // Draw single slot
-        guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
         
         // Get item to display based on filter type
         ItemStack displayItem = getDisplayItemForFilter(filter);
         if (!displayItem.isEmpty()) {
-            guiGraphics.renderItem(displayItem, slotX + 1, slotY + 1);
-            guiGraphics.renderItemDecorations(this.font, displayItem, slotX + 1, slotY + 1);
+            guiGraphics.item(displayItem, slotX + 1, slotY + 1);
+            guiGraphics.itemDecorations(this.font, displayItem, slotX + 1, slotY + 1);
         }
         
         // Text position (after slot + 6px margin)
