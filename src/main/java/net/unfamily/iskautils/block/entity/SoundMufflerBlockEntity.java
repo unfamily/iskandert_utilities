@@ -5,11 +5,12 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
+import com.mojang.serialization.Codec;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.unfamily.iskautils.block.ModBlocks;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -56,10 +57,10 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         if (categoryIndex < 0 || categoryIndex >= CATEGORY_COUNT) return;
         this.volumes[categoryIndex] = Math.max(0, Math.min(100, percent));
         setChanged();
-        if (level != null && !level.isClientSide && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+        if (level != null && !level.isClientSide() && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
             var pkt = net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
-            var chunkPos = new net.minecraft.world.level.ChunkPos(worldPosition);
+            var chunkPos = net.minecraft.world.level.ChunkPos.containing(worldPosition);
             serverLevel.getChunkSource().chunkMap.getPlayers(chunkPos, false).forEach(p -> p.connection.send(pkt));
         }
     }
@@ -122,10 +123,10 @@ public class SoundMufflerBlockEntity extends BlockEntity {
     }
 
     private void sendUpdateToClients() {
-        if (level != null && !level.isClientSide && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+        if (level != null && !level.isClientSide() && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
             var pkt = net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
-            var chunkPos = new net.minecraft.world.level.ChunkPos(worldPosition);
+            var chunkPos = net.minecraft.world.level.ChunkPos.containing(worldPosition);
             serverLevel.getChunkSource().chunkMap.getPlayers(chunkPos, false).forEach(p -> p.connection.send(pkt));
         }
     }
@@ -164,37 +165,32 @@ public class SoundMufflerBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.putIntArray("Volumes", volumes);
-        tag.putBoolean("AllowList", allowList);
-        tag.putInt("Range", range);
-        ListTag list = new ListTag();
-        for (String id : filterSoundIds) list.add(StringTag.valueOf(id));
-        tag.put("FilterSounds", list);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        output.putIntArray("Volumes", volumes);
+        output.putBoolean("AllowList", allowList);
+        output.putInt("Range", range);
+        ValueOutput.TypedOutputList<String> list = output.list("FilterSounds", Codec.STRING);
+        for (String id : filterSoundIds) list.add(id);
+        if (list.isEmpty()) output.discard("FilterSounds");
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("Volumes", net.minecraft.nbt.Tag.TAG_INT_ARRAY)) {
-            int[] loaded = tag.getIntArray("Volumes");
-            if (loaded.length == 11) {
-                volumes[0] = clamp(loaded[0]);
-                volumes[1] = clamp(loaded[1]);
-                for (int i = 2; i < CATEGORY_COUNT; i++) volumes[i] = clamp(loaded[i + 1]);
-            } else {
-                for (int i = 0; i < Math.min(loaded.length, CATEGORY_COUNT); i++) {
-                    volumes[i] = clamp(loaded[i]);
-                }
-            }
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        int[] loaded = input.getIntArray("Volumes").orElse(new int[0]);
+        if (loaded.length == 11) {
+            volumes[0] = clamp(loaded[0]);
+            volumes[1] = clamp(loaded[1]);
+            for (int i = 2; i < CATEGORY_COUNT; i++) volumes[i] = clamp(loaded[i + 1]);
+        } else if (loaded.length > 0) {
+            for (int i = 0; i < Math.min(loaded.length, CATEGORY_COUNT); i++) volumes[i] = clamp(loaded[i]);
         }
-        if (tag.contains("AllowList", Tag.TAG_ANY_NUMERIC)) allowList = tag.getBoolean("AllowList");
-        if (tag.contains("Range", Tag.TAG_ANY_NUMERIC)) range = Math.max(RANGE_MIN, Math.min(net.unfamily.iskautils.Config.soundMufflerRangeMax, tag.getInt("Range")));
-        if (tag.contains("FilterSounds", Tag.TAG_LIST)) {
-            filterSoundIds.clear();
-            ListTag list = tag.getList("FilterSounds", Tag.TAG_STRING);
-            for (int i = 0; i < list.size(); i++) filterSoundIds.add(list.getString(i));
+        allowList = input.getBooleanOr("AllowList", allowList);
+        range = Math.max(RANGE_MIN, Math.min(net.unfamily.iskautils.Config.soundMufflerRangeMax, input.getIntOr("Range", range)));
+        filterSoundIds.clear();
+        for (String id : input.listOrEmpty("FilterSounds", Codec.STRING)) {
+            filterSoundIds.add(id);
         }
     }
 
@@ -220,23 +216,5 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         return tag;
     }
 
-    @Override
-    public void onDataPacket(net.minecraft.network.Connection connection,
-                             net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt,
-                             HolderLookup.Provider registries) {
-        super.onDataPacket(connection, pkt, registries);
-        CompoundTag t = pkt.getTag();
-        if (t == null) return;
-        if (t.contains("Volumes", net.minecraft.nbt.Tag.TAG_INT_ARRAY)) {
-            int[] loaded = t.getIntArray("Volumes");
-            for (int i = 0; i < Math.min(loaded.length, CATEGORY_COUNT); i++) volumes[i] = clamp(loaded[i]);
-        }
-        if (t.contains("AllowList", Tag.TAG_ANY_NUMERIC)) allowList = t.getBoolean("AllowList");
-        if (t.contains("Range", Tag.TAG_ANY_NUMERIC)) range = Math.max(RANGE_MIN, Math.min(net.unfamily.iskautils.Config.soundMufflerRangeMax, t.getInt("Range")));
-        if (t.contains("FilterSounds", Tag.TAG_LIST)) {
-            filterSoundIds.clear();
-            ListTag list = t.getList("FilterSounds", Tag.TAG_STRING);
-            for (int i = 0; i < list.size(); i++) filterSoundIds.add(list.getString(i));
-        }
-    }
+    // onDataPacket is handled by the current BlockEntity serialization system.
 }

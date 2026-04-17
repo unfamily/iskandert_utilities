@@ -58,7 +58,7 @@ public class ModConfiguredFeatures {
                 BlockStateProvider.simple(leavesState),
                 new BlobFoliagePlacer(ConstantInt.of(2), ConstantInt.of(0), 3),
                 new TwoLayersFeatureSize(1, 0, 1)
-        ).ignoreVines().forceDirt();
+        ).ignoreVines();
         
         context.register(RUBBER_KEY, new ConfiguredFeature<>(Feature.TREE, rubberTree.build()));
         

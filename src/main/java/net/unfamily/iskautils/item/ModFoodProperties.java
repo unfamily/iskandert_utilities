@@ -15,6 +15,5 @@ public class ModFoodProperties {
             .nutrition(0)
             .saturationModifier(0.0f)
             .alwaysEdible()
-            .effect(() -> new MobEffectInstance(MobEffects.WEAKNESS, 100, 2), 1.0f)
             .build();
 }

@@ -72,7 +72,7 @@ public class LivingIncomingDamageEventHandler {
             // If player doesn't have the heart but has hex counter, reset it on death
             float hexCounter = getCurrentUsageCounter(player);
             if (hexCounter > 0) {
-                player.level().getServer().tell(new net.minecraft.server.TickTask(1, () -> {
+                player.level().getServer().execute(() -> {
                     if (player.isDeadOrDying() && hexCounter > 0) {
                         // Reset hex counter
                         setUsageCounter(player, 0.0f);
@@ -83,7 +83,7 @@ public class LivingIncomingDamageEventHandler {
                             playerHealthAttr.setBaseValue(20.0);
                         }
                     }
-                }));
+                });
             }
             return;
         }
@@ -114,7 +114,7 @@ public class LivingIncomingDamageEventHandler {
             // Don't zero out damage, allowing player to die
             
             // Schedule reset after death
-            player.level().getServer().tell(new net.minecraft.server.TickTask(1, () -> {
+            player.level().getServer().execute(() -> {
                 // Reset hex counter and max health
                 setUsageCounter(player, 0.0f);
                 
@@ -122,7 +122,7 @@ public class LivingIncomingDamageEventHandler {
                 if (playerHealthAttr != null) {
                     playerHealthAttr.setBaseValue(baseHealth);
                 }
-            }));
+            });
         } else {
             // Zero out damage, player survives
             event.setAmount(0.0f);
@@ -131,7 +131,7 @@ public class LivingIncomingDamageEventHandler {
             maxHealthAttr.setBaseValue(newMaxHealth);
             
             // Remove stage after use
-            StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip", true);
+            StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
             
             // Adjust current health to new maximum if necessary
             if (player.getHealth() > player.getMaxHealth()) {
@@ -166,11 +166,8 @@ public class LivingIncomingDamageEventHandler {
         if (random.nextDouble() < Config.greedyShieldBlockChance) {
             // Completely block the damage
             event.setAmount(0.0f);
-            if (player.level().isClientSide) {
-                player.displayClientMessage(
-                    net.minecraft.network.chat.Component.translatable("message.iska_utils.greedy_shield.blocked"),
-                    true // actionbar
-                );
+            if (player.level().isClientSide()) {
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.greedy_shield.blocked"));
             }
             return true; // Damage completely blocked
         }
@@ -182,11 +179,8 @@ public class LivingIncomingDamageEventHandler {
             // Reduce damage by the configured amount (multiply by reduceAmount to get remaining damage)
             float reducedDamage = originalDamage * (float)Config.greedyShieldReduceAmount;
             event.setAmount(reducedDamage);
-            if (player.level().isClientSide) {
-                player.displayClientMessage(
-                    net.minecraft.network.chat.Component.translatable("message.iska_utils.greedy_shield.reduced"),
-                    true // actionbar
-                );
+            if (player.level().isClientSide()) {
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.greedy_shield.reduced"));
             }
         }
         
@@ -206,14 +200,14 @@ public class LivingIncomingDamageEventHandler {
                 return 0.0f;
             }
             
-            CompoundTag iskaData = persistentData.getCompound("iskautils");
+            CompoundTag iskaData = persistentData.getCompound("iskautils").orElse(new CompoundTag());
             if (!iskaData.contains("floatValues")) {
                 return 0.0f;
             }
             
-            CompoundTag floatValues = iskaData.getCompound("floatValues");
-            return floatValues.contains(NECRO_CRYSTAL_HEART_COUNTER) 
-                ? floatValues.getFloat(NECRO_CRYSTAL_HEART_COUNTER) 
+            CompoundTag floatValues = iskaData.getCompound("floatValues").orElse(new CompoundTag());
+            return floatValues.contains(NECRO_CRYSTAL_HEART_COUNTER)
+                ? floatValues.getFloat(NECRO_CRYSTAL_HEART_COUNTER).orElse(0.0f)
                 : 0.0f;
         } catch (Exception e) {
             return 0.0f;
@@ -233,12 +227,12 @@ public class LivingIncomingDamageEventHandler {
                 persistentData.put("iskautils", new CompoundTag());
             }
             
-            CompoundTag iskaData = persistentData.getCompound("iskautils");
+            CompoundTag iskaData = persistentData.getCompound("iskautils").orElse(new CompoundTag());
             if (!iskaData.contains("floatValues")) {
                 iskaData.put("floatValues", new CompoundTag());
             }
             
-            CompoundTag floatValues = iskaData.getCompound("floatValues");
+            CompoundTag floatValues = iskaData.getCompound("floatValues").orElse(new CompoundTag());
             floatValues.putFloat(NECRO_CRYSTAL_HEART_COUNTER, value);
             iskaData.put("floatValues", floatValues);
             persistentData.put("iskautils", iskaData);
@@ -248,7 +242,7 @@ public class LivingIncomingDamageEventHandler {
     }
 
     private static void clearStages(Player player) {
-        StageRegistry.removePlayerStage(player, "iska_utils_internal-greedy_shield_equip", true);
-        StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip", true);
+        StageRegistry.removePlayerStage(player, "iska_utils_internal-greedy_shield_equip");
+        StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
     }
 }

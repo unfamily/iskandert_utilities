@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
 import net.unfamily.iskautils.item.custom.StructureMonouseItem;
@@ -14,7 +13,6 @@ import net.unfamily.iskautils.item.custom.StructureMonouseItem;
 /**
  * Event handler for the Structure Placer
  */
-@EventBusSubscriber
 public class StructurePlacerEvents {
     
     /**
@@ -34,7 +32,7 @@ public class StructurePlacerEvents {
         }
         
         // Server side only
-        if (player.level().isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
+        if (player.level().isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
         
@@ -86,7 +84,7 @@ public class StructurePlacerEvents {
         };
         
         // Show message to player
-        player.displayClientMessage(Component.translatable("item.iska_utils.structure_placer.rotated", rotationText), true);
+        player.sendSystemMessage(Component.translatable("item.iska_utils.structure_placer.rotated", rotationText));
     }
     
     /**
@@ -111,7 +109,7 @@ public class StructurePlacerEvents {
         };
         
         // Show message to player
-        player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.rotated", rotationText), true);
+        player.sendSystemMessage(Component.translatable("item.iska_utils.structure_monouse.rotated", rotationText));
     }
     
     /**

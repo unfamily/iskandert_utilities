@@ -108,7 +108,7 @@ public class StageActionDefinition {
     public boolean checkStages(ServerPlayer player) {
         if (stages.isEmpty()) return true;
 
-        StageRegistry registry = StageRegistry.getInstance(player.getServer());
+        StageRegistry registry = StageRegistry.getInstance(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
         boolean defLogic = "DEF_AND".equalsIgnoreCase(stagesLogic) || "DEF_OR".equalsIgnoreCase(stagesLogic);
 
         if ("AND".equalsIgnoreCase(stagesLogic)) {
@@ -145,7 +145,7 @@ public class StageActionDefinition {
     public boolean checkConditionsByIndices(ServerPlayer player, List<Integer> conditionIndices) {
         if (conditionIndices == null || conditionIndices.isEmpty()) return true;
 
-        StageRegistry registry = StageRegistry.getInstance(player.getServer());
+        StageRegistry registry = StageRegistry.getInstance(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
         boolean defAnd = "DEF_AND".equalsIgnoreCase(stagesLogic);
 
         if (defAnd) {

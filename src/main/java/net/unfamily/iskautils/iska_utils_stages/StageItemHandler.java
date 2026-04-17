@@ -110,18 +110,18 @@ public class StageItemHandler {
                     // Notify player about the restriction
                     switch (rule.consequence.toLowerCase()) {
                         case "drop":
-                            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                                "message.iska_utils.item_restriction.dropped"), true);
+                            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                                "message.iska_utils.item_restriction.dropped"));
                             break;
                         case "delete":
-                            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                                "message.iska_utils.item_restriction.deleted"), true);
+                            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                                "message.iska_utils.item_restriction.deleted"));
                             break;
                         case "block":
                         case "block_drop":
                         case "block_delete":
-                            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                                "message.iska_utils.item_restriction.blocked"), true);
+                            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                                "message.iska_utils.item_restriction.blocked"));
                             break;
                     }
                 }
@@ -509,8 +509,8 @@ public class StageItemHandler {
         // If we should block, provide visual feedback to the player
         if (shouldBlock) {
             // Display a message to the player
-            serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                "message.iska_utils.item_restriction.blocked"), true);
+            serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                "message.iska_utils.item_restriction.blocked"));
                 
             // Invia un pacchetto al client per bloccare l'interazione
             serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket(
@@ -540,8 +540,8 @@ public class StageItemHandler {
         // If we should block, ensure the item attack damage is set to 0
         if (shouldBlock) {
             // Display a message to the player
-            serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                "message.iska_utils.item_restriction.blocked"), true);
+            serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                "message.iska_utils.item_restriction.blocked"));
                 
             // Set attack damage to 0 to prevent damage
             // This is a temporary effect for this specific interaction
@@ -556,7 +556,7 @@ public class StageItemHandler {
             serverPlayer.inventoryMenu.broadcastChanges();
             
             // Schedule task to reset damage after this tick
-            serverPlayer.level().getServer().tell(new net.minecraft.server.TickTask(0, () -> {
+            serverPlayer.level().getServer().execute(() -> {
                 // Reset attack damage to default (1.0)
                 serverPlayer.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
                     .setBaseValue(1.0);
@@ -564,7 +564,7 @@ public class StageItemHandler {
                 // Risincronizzo con il client dopo il reset
                 serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket(
                     serverPlayer.getId(), serverPlayer.getEntityData().getNonDefaultValues()));
-            }));
+            });
         }
         
         return shouldBlock;
@@ -676,20 +676,20 @@ public class StageItemHandler {
             case "block_drop":
                 player.drop(stack, false);
                 player.setItemInHand(hand, ItemStack.EMPTY);
-                player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                    "message.iska_utils.item_restriction.dropped"), true);
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.iska_utils.item_restriction.dropped"));
                 return true;
                 
             case "delete":
             case "block_delete":
                 player.setItemInHand(hand, ItemStack.EMPTY);
-                player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                    "message.iska_utils.item_restriction.deleted"), true);
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.iska_utils.item_restriction.deleted"));
                 return true;
                 
             case "block":
-                player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                    "message.iska_utils.item_restriction.blocked"), true);
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.iska_utils.item_restriction.blocked"));
                 return true;
                 
             default:

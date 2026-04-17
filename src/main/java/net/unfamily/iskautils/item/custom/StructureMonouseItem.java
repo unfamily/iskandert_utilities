@@ -4,10 +4,10 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -15,14 +15,15 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.client.MarkRenderer;
-import net.unfamily.iskautils.structure.StructureDefinition;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructureDefinition;
+import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.structure.StructureMonouseDefinition;
 import org.slf4j.Logger;
 
@@ -76,7 +77,7 @@ public class StructureMonouseItem extends Item {
     public static int getRotation(ItemStack stack) {
         return stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, 
                                  net.minecraft.world.item.component.CustomData.EMPTY)
-                   .copyTag().getInt("Rotation");
+                   .copyTag().getInt("Rotation").orElse(0);
     }
     
     /**
@@ -96,7 +97,7 @@ public class StructureMonouseItem extends Item {
     private static long getLastClickTime(ItemStack stack) {
         return stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, 
                                  net.minecraft.world.item.component.CustomData.EMPTY)
-                   .copyTag().getLong(LAST_CLICK_TIME_KEY);
+                   .copyTag().getLong(LAST_CLICK_TIME_KEY).orElse(0L);
     }
     
     /**
@@ -116,7 +117,7 @@ public class StructureMonouseItem extends Item {
     private static long getLastClickPos(ItemStack stack) {
         return stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, 
                                  net.minecraft.world.item.component.CustomData.EMPTY)
-                   .copyTag().getLong(LAST_CLICK_POS_KEY);
+                   .copyTag().getLong(LAST_CLICK_POS_KEY).orElse(0L);
     }
     
     /**
@@ -155,14 +156,14 @@ public class StructureMonouseItem extends Item {
         ItemStack stack = context.getItemInHand();
         BlockPos pos = context.getClickedPos().above(); // Place one block above the clicked block
         
-        if (level.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
+        if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.SUCCESS;
         }
         
         // Get the structure to place
         StructureDefinition structure = StructureLoader.getStructure(definition.getPlaceName());
         if (structure == null) {
-            player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.structure_not_found", definition.getPlaceName()), true);
+            player.sendSystemMessage(Component.translatable("item.iska_utils.structure_monouse.message.structure_not_found", definition.getPlaceName()));
             return InteractionResult.FAIL;
         }
         
@@ -190,10 +191,10 @@ public class StructureMonouseItem extends Item {
                 giveItemsToPlayer(serverPlayer);
                 
                 // Add to placement history for undo functionality
-                net.unfamily.iskautils.structure.StructurePlacementHistory.addPlacement(serverPlayer, pos, structure.getId(), rotation);
+                net.unfamily.iskalib.structure.StructurePlacementHistory.addPlacement(serverPlayer, pos, structure.getId(), rotation);
                 
                 String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-                player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.placed_successfully", structureName), true);
+                player.sendSystemMessage(Component.translatable("item.iska_utils.structure_monouse.message.placed_successfully", structureName));
                 
                 // Show green success markers
                 showSuccessMarkers(serverPlayer, pos, structure, rotation);
@@ -203,7 +204,7 @@ public class StructureMonouseItem extends Item {
                 
                 return InteractionResult.SUCCESS;
             } else {
-                player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.placement_failed"), true);
+                player.sendSystemMessage(Component.translatable("item.iska_utils.structure_monouse.message.placement_failed"));
                 return InteractionResult.FAIL;
             }
         } else {
@@ -245,12 +246,12 @@ public class StructureMonouseItem extends Item {
         
         // Inform the player about conflicts and empty spaces
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-        player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.preview", structureName), true);
+        player.sendSystemMessage(Component.translatable("item.iska_utils.structure_monouse.message.preview", structureName));
         
         if (redMarkers > 0) {
-            player.displayClientMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, §c" + redMarkers + " §7occupied spaces"), true);
+            player.sendSystemMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, §c" + redMarkers + " §7occupied spaces"));
         } else {
-            player.displayClientMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, all clear!"), true);
+            player.sendSystemMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, all clear!"));
         }
     }
     
@@ -401,8 +402,8 @@ public class StructureMonouseItem extends Item {
             StructureDefinition.BlockDefinition blockDef = blockDefs.get(0);
             
             // Get block from registry
-            ResourceLocation blockLocation = ResourceLocation.parse(blockDef.getBlock());
-            Block block = BuiltInRegistries.BLOCK.get(blockLocation);
+            Identifier blockLocation = Identifier.tryParse(blockDef.getBlock());
+            Block block = blockLocation == null ? null : BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
             
             if (block != null && block != Blocks.AIR) {
                 BlockState blockState = block.defaultBlockState();
@@ -575,8 +576,8 @@ public class StructureMonouseItem extends Item {
         }
         for (StructureMonouseDefinition.GiveItem giveItem : definition.getGiveItems()) {
             try {
-                ResourceLocation itemLocation = ResourceLocation.parse(giveItem.getItem());
-                Item item = BuiltInRegistries.ITEM.get(itemLocation);
+                Identifier itemLocation = Identifier.tryParse(giveItem.getItem());
+                Item item = itemLocation == null ? null : BuiltInRegistries.ITEM.getOptional(itemLocation).orElse(null);
                 
                 if (item != null) {
                     ItemStack stack = new ItemStack(item, giveItem.getCount());
@@ -605,8 +606,8 @@ public class StructureMonouseItem extends Item {
     }
     
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, java.util.function.Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         
         // Struttura
         StructureDefinition structure = StructureLoader.getStructure(definition.getPlaceName());
@@ -614,7 +615,7 @@ public class StructureMonouseItem extends Item {
         if (structure != null && structure.getName() != null && !structure.getName().isEmpty()) {
             displayName = structure.getName();
         }
-        tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.structure", displayName));
+        tooltip.accept(Component.translatable("item.iska_utils.structure_monouse.tooltip.structure", displayName));
         
         // Direzione impostata
         int rotation = getRotation(stack);
@@ -625,27 +626,27 @@ public class StructureMonouseItem extends Item {
             case 270 -> Component.translatable("direction.iska_utils.west").getString();
             default -> rotation + "°";
         };
-        tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.rotation", rotationText));
+        tooltip.accept(Component.translatable("item.iska_utils.structure_monouse.tooltip.rotation", rotationText));
         
         // Fatto che è monouso
-        tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.single_use"));
+        tooltip.accept(Component.translatable("item.iska_utils.structure_monouse.tooltip.single_use"));
         
         // Lista degli oggetti che otterrai
         if (!definition.getGiveItems().isEmpty()) {
-            tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.will_give"));
+            tooltip.accept(Component.translatable("item.iska_utils.structure_monouse.tooltip.will_give"));
             for (StructureMonouseDefinition.GiveItem giveItem : definition.getGiveItems()) {
                 String itemId = giveItem.getItem();
                 String itemDisplayName = getItemDisplayName(itemId);
-                tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.give_item", giveItem.getCount(), itemDisplayName));
+                tooltip.accept(Component.translatable("item.iska_utils.structure_monouse.tooltip.give_item", giveItem.getCount(), itemDisplayName));
             }
         }
         
-        tooltip.add(Component.literal(""));
+        tooltip.accept(Component.literal(""));
         
         // Istruzioni d'uso (tutte tranne shift+right click per forzare)
-        tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.right_click"));
-        tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.double_click"));
-        tooltip.add(Component.translatable("item.iska_utils.structure_monouse.tooltip.left_click_rotate"));
+        tooltip.accept(Component.translatable("item.iska_utils.structure_monouse.tooltip.right_click"));
+        tooltip.accept(Component.translatable("item.iska_utils.structure_monouse.tooltip.double_click"));
+        tooltip.accept(Component.translatable("item.iska_utils.structure_monouse.tooltip.left_click_rotate"));
     }
     
     @Override
@@ -700,7 +701,7 @@ public class StructureMonouseItem extends Item {
             case "$lava" -> existingState.is(net.minecraft.world.level.block.Blocks.LAVA);
             case "$plants", "$plant" -> existingState.is(net.minecraft.tags.BlockTags.REPLACEABLE_BY_TREES) || 
                                       existingState.is(net.minecraft.tags.BlockTags.SMALL_FLOWERS) ||
-                                      existingState.is(net.minecraft.tags.BlockTags.TALL_FLOWERS) ||
+                                      existingState.is(net.minecraft.tags.BlockTags.FLOWERS) ||
                                       existingState.is(net.minecraft.tags.BlockTags.SAPLINGS);
             case "$dirt" -> existingState.is(net.minecraft.tags.BlockTags.DIRT);
             case "$logs", "$log" -> existingState.is(net.minecraft.tags.BlockTags.LOGS);
@@ -727,8 +728,8 @@ public class StructureMonouseItem extends Item {
             // Remove # prefix
             String cleanTagId = tagId.substring(1);
             
-            // Parse as ResourceLocation
-            net.minecraft.resources.ResourceLocation tagLocation = net.minecraft.resources.ResourceLocation.parse(cleanTagId);
+            Identifier tagLocation = Identifier.tryParse(cleanTagId);
+            if (tagLocation == null) return false;
             
             // Get tag from registry
             net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> blockTag = 
@@ -763,8 +764,8 @@ public class StructureMonouseItem extends Item {
         
         // Try to get the item from registry
         try {
-            ResourceLocation resourceLocation = ResourceLocation.fromNamespaceAndPath(modid, path);
-            Item item = BuiltInRegistries.ITEM.get(resourceLocation);
+            Identifier resourceLocation = Identifier.fromNamespaceAndPath(modid, path);
+            Item item = BuiltInRegistries.ITEM.getOptional(resourceLocation).orElse(null);
             
             if (item != null && item != Items.AIR) {
                 // Get the localized name

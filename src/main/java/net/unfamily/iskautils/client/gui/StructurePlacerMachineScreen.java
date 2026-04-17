@@ -66,7 +66,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         super.init();
         
         // Ricarica le strutture all'apertura della GUI usando il flag del config
-        net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(net.unfamily.iskautils.Config.acceptClientStructure);
+        net.unfamily.iskalib.structure.StructureLoader.reloadAllDefinitions(net.unfamily.iskautils.Config.acceptClientStructure);
         
         // Center the GUI on screen
         this.leftPos = (this.width - this.imageWidth) / 2;
@@ -576,7 +576,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // If we have a structure ID, try to get the display name
         String displayName = "";
         if (!selectedStructure.isEmpty()) {
-            var structure = net.unfamily.iskautils.structure.StructureLoader.getStructure(selectedStructure);
+            var structure = net.unfamily.iskalib.structure.StructureLoader.getStructure(selectedStructure);
             if (structure != null) {
                 displayName = structure.getName() != null ? structure.getName() : structure.getId();
             } else {

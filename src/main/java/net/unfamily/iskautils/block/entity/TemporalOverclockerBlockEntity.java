@@ -11,6 +11,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.Config;
@@ -70,7 +72,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
             linkedBlocks.add(pos);
             setChanged();
             // Force sync to client
-            if (level != null && !level.isClientSide) {
+            if (level != null && !level.isClientSide()) {
                 level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
             }
             return true;
@@ -86,7 +88,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         if (removed) {
             setChanged();
             // Force sync to client
-            if (level != null && !level.isClientSide) {
+            if (level != null && !level.isClientSide()) {
                 level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
             }
         }
@@ -141,7 +143,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
      * Main tick method
      */
     public static void tick(Level level, BlockPos pos, BlockState state, TemporalOverclockerBlockEntity blockEntity) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
         
@@ -184,7 +186,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
             if (blockEntity.linkedBlocks.size() < sizeBefore) {
                 blockEntity.setChanged();
                 // Force sync to client
-                if (level != null && !level.isClientSide) {
+                if (level != null && !level.isClientSide()) {
                     level.sendBlockUpdated(pos, state, state, 3);
                 }
             }
@@ -355,40 +357,26 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     }
     
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
-        tag.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
-        tag.putInt("redstoneMode", redstoneMode);
-        tag.putInt("accelerationFactor", accelerationFactor);
-        tag.putBoolean("persistentMode", persistentMode);
-        
-        // Save linked blocks
-        ListTag linkedBlocksTag = new ListTag();
-        for (BlockPos linkedPos : linkedBlocks) {
-            CompoundTag posTag = new CompoundTag();
-            posTag.putInt("X", linkedPos.getX());
-            posTag.putInt("Y", linkedPos.getY());
-            posTag.putInt("Z", linkedPos.getZ());
-            linkedBlocksTag.add(posTag);
-        }
-        tag.put(LINKED_BLOCKS_TAG, linkedBlocksTag);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        output.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
+        output.putInt("redstoneMode", redstoneMode);
+        output.putInt("accelerationFactor", accelerationFactor);
+        output.putBoolean("persistentMode", persistentMode);
+        ValueOutput.TypedOutputList<BlockPos> linked = output.list(LINKED_BLOCKS_TAG, BlockPos.CODEC);
+        for (BlockPos linkedPos : linkedBlocks) linked.add(linkedPos);
+        if (linked.isEmpty()) output.discard(LINKED_BLOCKS_TAG);
     }
     
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
-        if (tag.contains(ENERGY_TAG)) {
-            this.energyStorage.setEnergy(tag.getInt(ENERGY_TAG));
-        }
-        
-        // Load redstone mode
-        if (tag.contains("redstoneMode")) {
-            this.redstoneMode = tag.getInt("redstoneMode");
-        }
-        
-        // Load acceleration factor
-        if (tag.contains("accelerationFactor")) {
-            this.accelerationFactor = tag.getInt("accelerationFactor");
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        input.getInt(ENERGY_TAG).ifPresent(this.energyStorage::setEnergy);
+
+        this.redstoneMode = input.getIntOr("redstoneMode", this.redstoneMode);
+
+        if (input.getInt("accelerationFactor").isPresent()) {
+            this.accelerationFactor = input.getIntOr("accelerationFactor", Config.temporalOverclockerAccelerationFactor);
             // Ensure it's in the valid range from config
             int min = Config.temporalOverclockerAccelerationFactorMin;
             int max = Config.temporalOverclockerAccelerationFactorMax;
@@ -404,25 +392,11 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         }
         
         // Load persistent mode
-        if (tag.contains("persistentMode")) {
-            this.persistentMode = tag.getBoolean("persistentMode");
-        }
+        this.persistentMode = input.getBooleanOr("persistentMode", this.persistentMode);
         
         // Load linked blocks
         linkedBlocks.clear();
-        if (tag.contains(LINKED_BLOCKS_TAG)) {
-            ListTag linkedBlocksTag = tag.getList(LINKED_BLOCKS_TAG, 10); // 10 = CompoundTag type
-            for (int i = 0; i < linkedBlocksTag.size(); i++) {
-                CompoundTag posTag = linkedBlocksTag.getCompound(i);
-                // Read manually saved coordinates (X, Y, Z)
-                if (posTag.contains("X") && posTag.contains("Y") && posTag.contains("Z")) {
-                    int x = posTag.getInt("X");
-                    int y = posTag.getInt("Y");
-                    int z = posTag.getInt("Z");
-                    linkedBlocks.add(new BlockPos(x, y, z));
-                }
-            }
-        }
+        for (BlockPos linkedPos : input.listOrEmpty(LINKED_BLOCKS_TAG, BlockPos.CODEC)) linkedBlocks.add(linkedPos);
     }
     
     /**
@@ -454,7 +428,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         this.persistentMode = persistentMode;
         setChanged();
         // Force sync to client
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
     }
@@ -489,18 +463,22 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
         CompoundTag tag = super.getUpdateTag(provider);
-        saveAdditional(tag, provider);
+        tag.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
+        tag.putInt("redstoneMode", redstoneMode);
+        tag.putInt("accelerationFactor", accelerationFactor);
+        tag.putBoolean("persistentMode", persistentMode);
+        ListTag linked = new ListTag();
+        for (BlockPos linkedPos : linkedBlocks) {
+            CompoundTag posTag = new CompoundTag();
+            posTag.putInt("X", linkedPos.getX());
+            posTag.putInt("Y", linkedPos.getY());
+            posTag.putInt("Z", linkedPos.getZ());
+            linked.add(posTag);
+        }
+        tag.put(LINKED_BLOCKS_TAG, linked);
         return tag;
     }
     
-    @Override
-    public void onDataPacket(net.minecraft.network.Connection net, 
-                            net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, 
-                            HolderLookup.Provider lookupProvider) {
-        super.onDataPacket(net, pkt, lookupProvider);
-        if (pkt.getTag() != null) {
-            loadAdditional(pkt.getTag(), lookupProvider);
-        }
-    }
+    // onDataPacket is handled by the current BlockEntity serialization system.
 }
 

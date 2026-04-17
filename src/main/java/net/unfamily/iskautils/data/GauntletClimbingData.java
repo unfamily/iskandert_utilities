@@ -1,10 +1,13 @@
 package net.unfamily.iskautils.data;
 
+import com.mojang.serialization.Codec;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 import net.unfamily.iskautils.IskaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +23,11 @@ import java.util.UUID;
 public class GauntletClimbingData extends SavedData {
     private static final Logger LOGGER = LoggerFactory.getLogger(GauntletClimbingData.class);
     private static final String DATA_NAME = IskaUtils.MOD_ID + "_gauntlet_climbing_data";
+    private static final SavedDataType<GauntletClimbingData> TYPE = new SavedDataType<>(
+            Identifier.tryBuild(IskaUtils.MOD_ID, "gauntlet_climbing_data"),
+            GauntletClimbingData::new,
+            CompoundTag.CODEC.xmap(GauntletClimbingData::fromTag, GauntletClimbingData::toTag)
+    );
 
     // Map to store climbing enabled state for each player (default: true)
     private final Map<UUID, Boolean> climbingEnabled = new HashMap<>();
@@ -37,10 +45,7 @@ public class GauntletClimbingData extends SavedData {
      * @return the Gauntlet Climbing data
      */
     public static GauntletClimbingData get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-            new Factory<>(GauntletClimbingData::new, GauntletClimbingData::load),
-            DATA_NAME
-        );
+        return level.getDataStorage().computeIfAbsent(TYPE);
     }
 
     /**
@@ -49,7 +54,7 @@ public class GauntletClimbingData extends SavedData {
      * @param enabled true if climbing should be enabled, false otherwise
      */
     public static void setClimbingEnabled(Player player, boolean enabled) {
-        if (player.getServer() != null && player.getServer().overworld() instanceof ServerLevel level) {
+        if (player.level() instanceof ServerLevel level) {
             GauntletClimbingData data = get(level);
             UUID playerId = player.getUUID();
             data.climbingEnabled.put(playerId, enabled);
@@ -63,7 +68,7 @@ public class GauntletClimbingData extends SavedData {
      * @return true if climbing is enabled (default: true)
      */
     public static boolean isClimbingEnabled(Player player) {
-        if (player.getServer() != null && player.getServer().overworld() instanceof ServerLevel level) {
+        if (player.level() instanceof ServerLevel level) {
             UUID playerId = player.getUUID();
             return get(level).climbingEnabled.getOrDefault(playerId, true); // Default: enabled
         }
@@ -88,14 +93,18 @@ public class GauntletClimbingData extends SavedData {
      * @return the loaded GauntletClimbingData
      */
     public static GauntletClimbingData load(CompoundTag tag, HolderLookup.Provider provider) {
+        return fromTag(tag);
+    }
+
+    private static GauntletClimbingData fromTag(CompoundTag tag) {
         GauntletClimbingData data = new GauntletClimbingData();
 
         // Load climbing enabled states
-        CompoundTag enabledTag = tag.getCompound("climbingEnabled");
-        for (String key : enabledTag.getAllKeys()) {
+        CompoundTag enabledTag = tag.getCompound("climbingEnabled").orElse(new CompoundTag());
+        for (String key : enabledTag.keySet()) {
             try {
                 UUID playerId = UUID.fromString(key);
-                boolean enabled = enabledTag.getBoolean(key);
+                boolean enabled = enabledTag.getBoolean(key).orElse(false);
                 data.climbingEnabled.put(playerId, enabled);
             } catch (Exception e) {
                 LOGGER.warn("Failed to parse player UUID: {}", key, e);
@@ -112,11 +121,15 @@ public class GauntletClimbingData extends SavedData {
      * @param provider the holder lookup provider
      * @return the compound tag with the data
      */
-    @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
+        return toTag(this);
+    }
+
+    private static CompoundTag toTag(GauntletClimbingData data) {
+        CompoundTag tag = new CompoundTag();
         // Save climbing enabled states
         CompoundTag enabledTag = new CompoundTag();
-        for (Map.Entry<UUID, Boolean> entry : climbingEnabled.entrySet()) {
+        for (Map.Entry<UUID, Boolean> entry : data.climbingEnabled.entrySet()) {
             enabledTag.putBoolean(entry.getKey().toString(), entry.getValue());
         }
         tag.put("climbingEnabled", enabledTag);

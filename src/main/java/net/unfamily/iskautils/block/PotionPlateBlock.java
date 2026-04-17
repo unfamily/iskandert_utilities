@@ -64,7 +64,7 @@ public class PotionPlateBlock extends VectorBlock {
     
     @Override
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if (!level.isClientSide && config != null && config.isValid()) {
+        if (!level.isClientSide() && config != null && config.isValid()) {
             // Only affect living entities
             if (!(entity instanceof LivingEntity livingEntity)) {
                 return;
@@ -192,7 +192,8 @@ public class PotionPlateBlock extends VectorBlock {
             }
             
             // Apply damage
-            boolean success = livingEntity.hurt(damageSource, config.getDamageAmount());
+            livingEntity.hurt(damageSource, config.getDamageAmount());
+            boolean success = true;
             
             if (success && LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Applied {} damage (type: {}) to entity {} at position {}", 
@@ -263,7 +264,7 @@ public class PotionPlateBlock extends VectorBlock {
      * Called periodically by the game
      */
     public static void cleanupCooldowns(Level level) {
-        if (level.isClientSide) return;
+        if (level.isClientSide()) return;
         
         long currentTime = level.getGameTime();
         // Remove entries older than 10 minutes (12000 ticks)

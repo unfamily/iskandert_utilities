@@ -15,13 +15,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.structure.StructureDefinition;
-import net.unfamily.iskautils.structure.StructureLoader;
-import net.unfamily.iskautils.structure.StructurePlacer;
+import net.unfamily.iskalib.structure.StructureDefinition;
+import net.unfamily.iskalib.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructurePlacer;
 import org.slf4j.Logger;
 
 /**
@@ -62,7 +64,7 @@ public class StructureCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
             Commands.literal("iska_utils_structure")
-                .requires(source -> source.hasPermission(2)) // Requires OP level 2
+                .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Requires OP level 2
                 .then(Commands.literal("list")
                     .executes(StructureCommand::listStructures))
                 .then(Commands.literal("reload")
@@ -293,7 +295,7 @@ public class StructureCommand {
             if (success) {
                 // Add to placement history for undo functionality if player exists
                 if (player != null) {
-                    net.unfamily.iskautils.structure.StructurePlacementHistory.addPlacement(player, pos, structureId, 0);
+                    net.unfamily.iskalib.structure.StructurePlacementHistory.addPlacement(player, pos, structureId, 0);
                 }
                 
                 source.sendSuccess(() -> Component.literal("§aStructure §f" + structureId + " §aplaced successfully at §f" + 

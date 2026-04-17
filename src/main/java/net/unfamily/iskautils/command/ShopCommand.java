@@ -6,10 +6,9 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
@@ -23,23 +22,12 @@ import java.util.Map;
 /**
  * Command to test the shop system
  */
-@EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class ShopCommand {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    @SubscribeEvent
-    public static void onRegisterCommands(RegisterCommandsEvent event) {
-
-        register(event.getDispatcher());
-        
-        // Register team commands
-
-        ShopTeamCommand.register(event.getDispatcher());
-    }
-    
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("iska_utils_shop")
-            .requires(source -> source.hasPermission(2))
+            .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2))))
             .then(Commands.literal("reload")
                 .executes(context -> {
                     CommandSourceStack source = context.getSource();

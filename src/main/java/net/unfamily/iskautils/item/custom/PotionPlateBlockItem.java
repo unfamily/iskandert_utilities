@@ -4,11 +4,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.block.Block;
 import net.unfamily.iskautils.block.PotionPlateBlock;
 import net.unfamily.iskautils.data.PotionPlateConfig;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Custom BlockItem for Potion Plates to add tooltip descriptions
@@ -20,8 +22,8 @@ public class PotionPlateBlockItem extends BlockItem {
     }
     
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         
         // Get the config from the block
         if (this.getBlock() instanceof PotionPlateBlock potionPlateBlock) {
@@ -34,7 +36,7 @@ public class PotionPlateBlockItem extends BlockItem {
                     Component tooltipLine = Component.translatable(key);
                     // Only add if translation exists (not equal to the key itself)
                     if (!tooltipLine.getString().equals(key)) {
-                        tooltip.add(tooltipLine);
+                        tooltip.accept(tooltipLine);
                     }
                 }
             }

@@ -205,7 +205,7 @@ public class CommandItemAction {
         
         // Otteniamo direttamente il registro degli stage per verifiche dirette
         net.unfamily.iskalib.stage.StageRegistry registry =
-            net.unfamily.iskalib.stage.StageRegistry.getInstance(player.getServer());
+            net.unfamily.iskalib.stage.StageRegistry.getInstance(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
         
         List<CommandItemDefinition.StageCondition> allStages = definition.getStages();
         

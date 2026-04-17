@@ -20,8 +20,8 @@ import net.unfamily.iskautils.client.MarkRenderer;
 import net.unfamily.iskautils.network.packet.VectorCharmC2SPacket;
 import net.unfamily.iskautils.network.packet.PortableDislocatorC2SPacket;
 import net.unfamily.iskautils.network.packet.TemporalOverclockerHighlightBlockC2SPacket;
-import net.unfamily.iskautils.structure.StructureDefinition;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructureDefinition;
+import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.minecraft.network.FriendlyByteBuf;
@@ -189,7 +189,7 @@ public class ModMessages {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         // Directly call the undo functionality
-                        boolean success = net.unfamily.iskautils.structure.StructurePlacementHistory.undoLastPlacement(player);
+                        boolean success = net.unfamily.iskalib.structure.StructurePlacementHistory.undoLastPlacement(player);
                         
                         // Success/failure messages are already handled in StructurePlacementHistory.undoLastPlacement()
                     }
@@ -436,8 +436,8 @@ public class ModMessages {
                     }
                     
                     // Load structure definition
-                    net.unfamily.iskautils.structure.StructureDefinition structure = 
-                        net.unfamily.iskautils.structure.StructureLoader.getStructure(selectedStructure);
+                    net.unfamily.iskalib.structure.StructureDefinition structure =
+                        net.unfamily.iskalib.structure.StructureLoader.getStructure(selectedStructure);
                     if (structure == null) {
                         player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cStructure not found: " + selectedStructure));
                         return;
@@ -813,7 +813,7 @@ public class ModMessages {
     /**
      * Calculates positions of all structure blocks with rotation around center @
      */
-    private static java.util.Map<net.minecraft.core.BlockPos, String> calculateStructurePositions(net.minecraft.core.BlockPos centerPos, net.unfamily.iskautils.structure.StructureDefinition structure, int rotation) {
+    private static java.util.Map<net.minecraft.core.BlockPos, String> calculateStructurePositions(net.minecraft.core.BlockPos centerPos, net.unfamily.iskalib.structure.StructureDefinition structure, int rotation) {
         java.util.Map<net.minecraft.core.BlockPos, String> positions = new java.util.HashMap<>();
         
         String[][][][] pattern = structure.getPattern();
@@ -837,7 +837,7 @@ public class ModMessages {
                             
                             // If it's @, check if it's defined in the key
                             if (character.equals("@")) {
-                                java.util.Map<String, java.util.List<net.unfamily.iskautils.structure.StructureDefinition.BlockDefinition>> key = structure.getKey();
+                                java.util.Map<String, java.util.List<net.unfamily.iskalib.structure.StructureDefinition.BlockDefinition>> key = structure.getKey();
                                 if (key == null || !key.containsKey("@")) {
                                     // @ is not defined in key, treat as empty space
                                     continue;
@@ -889,7 +889,7 @@ public class ModMessages {
     /**
      * Checks if a block can be replaced based on structure settings
      */
-    private static boolean canReplaceBlock(net.minecraft.world.level.block.state.BlockState state, net.unfamily.iskautils.structure.StructureDefinition structure) {
+    private static boolean canReplaceBlock(net.minecraft.world.level.block.state.BlockState state, net.unfamily.iskalib.structure.StructureDefinition structure) {
         net.minecraft.world.level.block.Block block = state.getBlock();
         
         // Always allow air and replaceable blocks

@@ -19,6 +19,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 import net.unfamily.iskalib.stage.StageRegistry;
 import org.slf4j.Logger;
 
@@ -104,7 +106,7 @@ public class MacroCommand {
         } else {
             // Macro without parameters (simple)
             dispatcher.register(Commands.literal(macroId)
-                .requires(source -> source.hasPermission(0))
+                .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(0))))
                 .executes(context -> executeMacro(context, macroId, new Object[0])));
             
             if (LOGGER.isDebugEnabled()) {
@@ -118,7 +120,7 @@ public class MacroCommand {
      */
     private static void registerParameterizedCommand(CommandDispatcher<CommandSourceStack> dispatcher, String macroId, MacroDefinition macro) {
         LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal(macroId)
-            .requires(source -> source.hasPermission(0));
+            .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(0))));
         
         // Build the argument structure
         ArgumentBuilder<CommandSourceStack, ?> argumentBuilder = buildArgumentTree(command, macro.parameters, 0, args -> {
@@ -319,7 +321,7 @@ public class MacroCommand {
         }
         
         // Check permission level
-        if (!source.hasPermission(macro.getLevel())) {
+        if (!source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(macro.getLevel())))) {
             if (player != null) {
                 source.sendFailure(Component.literal("§cYou don't have permission to use this command"));
             } else {
@@ -486,7 +488,7 @@ public class MacroCommand {
         MacroDefinition macro = MACRO_REGISTRY.get(macroId);
         
         // Check if player has required permission level
-        if (macro.level > 0 && player.getServer() != null && !player.hasPermissions(macro.level)) {
+        if (macro.level > 0 && !player.createCommandSourceStack().permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(macro.level)))) {
             LOGGER.debug("Player {} does not have required permission level {} for macro {}", 
                 player.getName().getString(), macro.level, macroId);
             return false;
@@ -816,13 +818,11 @@ public class MacroCommand {
      */
     private static void executeCommand(ServerPlayer player, ServerLevel level, String command) {
         try {
-            if (player.getServer() != null) {
-                // Create the CommandSourceStack from the player
-                CommandSourceStack source = player.createCommandSourceStack();
-                
-                // Use the new method to execute the command
-                executeCommandWithSource(source, player, player.getServer(), command);
-            }
+            // Create the CommandSourceStack from the player
+            CommandSourceStack source = player.createCommandSourceStack();
+
+            // Use the new method to execute the command
+            executeCommandWithSource(source, player, level.getServer(), command);
         } catch (Exception e) {
             LOGGER.error("Error executing command '{}': {}", command, e.getMessage());
             if (LOGGER.isDebugEnabled()) {

@@ -6,7 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -58,7 +58,7 @@ public class CreativeDollyItem extends Item {
         BlockPos pos = context.getClickedPos();
         
         // Only work on server side
-        if (level.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
+        if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.SUCCESS;
         }
         
@@ -100,13 +100,13 @@ public class CreativeDollyItem extends Item {
             boolean canCheckWhitelist = Config.creativeDollyCanMoveAllUnbreakable || !Config.creativeDollyUnbreakableWhitelist.isEmpty();
             
             if (!canCheckWhitelist) {
-                player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"), true);
+                player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"));
                 return InteractionResult.FAIL;
             }
             
             // Check unbreakable whitelist/blacklist
             if (!isUnbreakableBlockAllowed(block)) {
-                player.displayClientMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"), true);
+                player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"));
                 return InteractionResult.FAIL;
             }
         }
@@ -283,8 +283,11 @@ public class CreativeDollyItem extends Item {
      */
     private boolean matchesBlockId(Block block, String blockId) {
         try {
-            ResourceLocation blockIdLocation = ResourceLocation.parse(blockId);
-            ResourceLocation actualId = BuiltInRegistries.BLOCK.getKey(block);
+            Identifier blockIdLocation = Identifier.tryParse(blockId);
+            if (blockIdLocation == null) {
+                return false;
+            }
+            Identifier actualId = BuiltInRegistries.BLOCK.getKey(block);
             return blockIdLocation.equals(actualId);
         } catch (Exception e) {
             // Invalid block ID format

@@ -6,7 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -60,7 +60,7 @@ public class HardDollyItem extends Item {
         BlockPos pos = context.getClickedPos();
         
         // Only work on server side
-        if (level.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
+        if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.SUCCESS;
         }
         
@@ -102,13 +102,13 @@ public class HardDollyItem extends Item {
             boolean canCheckWhitelist = Config.hardDollyCanMoveAllUnbreakable || !Config.hardDollyUnbreakableWhitelist.isEmpty();
             
             if (!canCheckWhitelist) {
-                player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"), true);
+                player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"));
                 return InteractionResult.FAIL;
             }
             
             // Check unbreakable whitelist/blacklist
             if (!isUnbreakableBlockAllowed(block)) {
-                player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"), true);
+                player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"));
                 return InteractionResult.FAIL;
             }
             
@@ -251,8 +251,8 @@ public class HardDollyItem extends Item {
         level.playSound(null, pos, SoundEvents.SCAFFOLDING_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
         
         // Send feedback
-        player.displayClientMessage(Component.translatable("message.iska_utils.dolly_hard.placed", 
-                Component.translatable(savedState.getBlock().getDescriptionId())), true);
+        player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.placed",
+                Component.translatable(savedState.getBlock().getDescriptionId())));
         
         return InteractionResult.SUCCESS;
     }
@@ -274,7 +274,10 @@ public class HardDollyItem extends Item {
             if (tagStr.startsWith("#")) {
                 String tagName = tagStr.substring(1); // Remove #
                 try {
-                    ResourceLocation tagLocation = ResourceLocation.parse(tagName);
+                    Identifier tagLocation = Identifier.tryParse(tagName);
+                    if (tagLocation == null) {
+                        continue;
+                    }
                     TagKey<Block> blockTag = TagKey.create(BuiltInRegistries.BLOCK.key(), tagLocation);
                     if (block.builtInRegistryHolder().is(blockTag)) {
                         return true; // Block matches an allowed mining level
@@ -373,8 +376,11 @@ public class HardDollyItem extends Item {
      */
     private boolean matchesBlockId(Block block, String blockId) {
         try {
-            ResourceLocation blockIdLocation = ResourceLocation.parse(blockId);
-            ResourceLocation actualId = BuiltInRegistries.BLOCK.getKey(block);
+            Identifier blockIdLocation = Identifier.tryParse(blockId);
+            if (blockIdLocation == null) {
+                return false;
+            }
+            Identifier actualId = BuiltInRegistries.BLOCK.getKey(block);
             return blockIdLocation.equals(actualId);
         } catch (Exception e) {
             // Invalid block ID format
@@ -393,7 +399,10 @@ public class HardDollyItem extends Item {
             // It's a tag
             String tagName = tagOrId.substring(1); // Remove #
             try {
-                ResourceLocation tagLocation = ResourceLocation.parse(tagName);
+                Identifier tagLocation = Identifier.tryParse(tagName);
+                if (tagLocation == null) {
+                    return false;
+                }
                 TagKey<Block> blockTag = TagKey.create(BuiltInRegistries.BLOCK.key(), tagLocation);
                 return block.builtInRegistryHolder().is(blockTag);
             } catch (Exception e) {
@@ -403,8 +412,11 @@ public class HardDollyItem extends Item {
         } else {
             // It's a block ID
             try {
-                ResourceLocation blockId = ResourceLocation.parse(tagOrId);
-                ResourceLocation actualId = BuiltInRegistries.BLOCK.getKey(block);
+                Identifier blockId = Identifier.tryParse(tagOrId);
+                if (blockId == null) {
+                    return false;
+                }
+                Identifier actualId = BuiltInRegistries.BLOCK.getKey(block);
                 return blockId.equals(actualId);
             } catch (Exception e) {
                 // Invalid block ID format

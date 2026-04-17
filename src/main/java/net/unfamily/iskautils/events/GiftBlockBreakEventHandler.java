@@ -96,10 +96,7 @@ public class GiftBlockBreakEventHandler {
                 PENDING_CONFIRMATIONS.remove(confirmationKey);
             }
             PENDING_CONFIRMATIONS.put(confirmationKey, currentTick);
-            player.displayClientMessage(
-                Component.translatable("message.iska_utils.gift.confirmation"),
-                true // actionbar
-            );
+            player.sendSystemMessage(Component.translatable("message.iska_utils.gift.confirmation"));
         }
     }
     
@@ -107,11 +104,8 @@ public class GiftBlockBreakEventHandler {
      * Opens the gift: drops greedy shield, removes block, schedules hard ice placement
      */
     private static void openGift(ServerLevel level, Player player, BlockPos pos) {
-        // Show message on actionbar
-        player.displayClientMessage(
-            Component.translatable("message.iska_utils.gift.break_message"),
-            true // actionbar
-        );
+        // Show message
+        player.sendSystemMessage(Component.translatable("message.iska_utils.gift.break_message"));
         
         // Drop greedy shield
         ItemStack greedyShieldStack = new ItemStack(ModItems.GREEDY_SHIELD.get(), 1);

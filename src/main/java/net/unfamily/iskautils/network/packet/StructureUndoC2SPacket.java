@@ -4,7 +4,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import net.unfamily.iskautils.structure.StructurePlacementHistory;
+import net.unfamily.iskalib.structure.StructurePlacementHistory;
 
 /**
  * Packet sent from client to server to request structure undo

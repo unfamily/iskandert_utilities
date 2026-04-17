@@ -162,7 +162,6 @@ public class ModBlockEntities {
         BLOCK_ENTITIES.register(eventBus);
     }
 
-    @EventBusSubscriber(modid = IskaUtils.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
     public static class ModBlockEntityEvents {
         @SubscribeEvent
         public static void registerCapabilities(RegisterCapabilitiesEvent event) {

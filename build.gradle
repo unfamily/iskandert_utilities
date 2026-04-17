@@ -126,7 +126,7 @@ dependencies {
     }
 
     // Iskandert Library (built jar in ./libs during development)
-    implementation files('libs/iska_lib-1.0.0.jar')
+    implementation files('libs/iska_lib-1.0.0.0.0.jar')
 
     // MixinExtras for advanced mixin features
     // NeoForge 20.2+ includes MixinExtras by default, but we can override with a specific version if needed

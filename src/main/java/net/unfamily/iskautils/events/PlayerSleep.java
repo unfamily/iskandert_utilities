@@ -54,7 +54,7 @@ public class PlayerSleep {
 						player.getName().getString());
 				}
 
-				StageRegistry.removePlayerStage(player, "iska_utils_internal-necrotic_crystal_heart", true);
+				StageRegistry.removePlayerStage(player, "iska_utils_internal-necrotic_crystal_heart");
 			}
 		}
 	}
@@ -68,14 +68,14 @@ public class PlayerSleep {
 			return 0.0f;
 		}
 		
-		CompoundTag iskaData = persistentData.getCompound("iskautils");
+		CompoundTag iskaData = persistentData.getCompound("iskautils").orElse(new CompoundTag());
 		if (!iskaData.contains("floatValues")) {
 			return 0.0f;
 		}
 		
-		CompoundTag floatValues = iskaData.getCompound("floatValues");
+		CompoundTag floatValues = iskaData.getCompound("floatValues").orElse(new CompoundTag());
 		return floatValues.contains(NECRO_CRYSTAL_HEART_COUNTER) 
-			? floatValues.getFloat(NECRO_CRYSTAL_HEART_COUNTER) 
+			? floatValues.getFloat(NECRO_CRYSTAL_HEART_COUNTER).orElse(0.0f) 
 			: 0.0f;
 	}
 	
@@ -88,12 +88,12 @@ public class PlayerSleep {
 			return;
 		}
 		
-		CompoundTag iskaData = persistentData.getCompound("iskautils");
+		CompoundTag iskaData = persistentData.getCompound("iskautils").orElse(new CompoundTag());
 		if (!iskaData.contains("floatValues")) {
 			return;
 		}
 		
-		CompoundTag floatValues = iskaData.getCompound("floatValues");
+		CompoundTag floatValues = iskaData.getCompound("floatValues").orElse(new CompoundTag());
 		if (floatValues.contains(NECRO_CRYSTAL_HEART_COUNTER)) {
 			floatValues.putFloat(NECRO_CRYSTAL_HEART_COUNTER, 0.0f);
 			iskaData.put("floatValues", floatValues);

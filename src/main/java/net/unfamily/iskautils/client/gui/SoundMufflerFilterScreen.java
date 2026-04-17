@@ -5,14 +5,13 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.unfamily.iskautils.IskaUtils;
@@ -172,19 +171,19 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
      * ESC and inventory key (E) return to parent (like Cancel); search box gets other keys when focused.
      */
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) { // GLFW_KEY_ESCAPE
+    public boolean keyPressed(KeyEvent event) {
+        if (event.key() == 256) { // GLFW_KEY_ESCAPE
             handleCancel();
             return true;
         }
-        if (minecraft != null && minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+        if (minecraft != null && minecraft.options.keyInventory.matches(event)) {
             handleCancel();
             return true;
         }
         if (searchBox != null && searchBox.isFocused()) {
-            return searchBox.keyPressed(keyCode, scanCode, modifiers);
+            return searchBox.keyPressed(event);
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     private void handleApply() {

@@ -3,7 +3,6 @@ package net.unfamily.iskautils.events;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskalib.stage.StageRegistry;
@@ -15,7 +14,6 @@ import java.util.UUID;
 /**
  * Event handler for Fanpack flight management
  */
-@EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class FlightHandler {
     
     // Track stage check timing for each player
@@ -34,7 +32,7 @@ public class FlightHandler {
         Player player = event.getEntity();
         
         // Only handle on server side
-        if (player.level().isClientSide) {
+        if (player.level().isClientSide()) {
             return;
         }
         
@@ -70,7 +68,7 @@ public class FlightHandler {
             
             if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight0")) {
                 // Mark with flight1 stage
-                StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1", true);
+                StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1");
                 flight1StageTime.put(playerId, currentTick);
             }
         }
@@ -80,8 +78,8 @@ public class FlightHandler {
         if (flight1Time != null && currentTick - flight1Time >= FLIGHT1_CHECK_DELAY) {
             if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight1")) {
                 // Flight1 still present after delay - remove both stages and disable flight
-                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
-                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1", true);
+                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0");
+                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1");
                 flight1StageTime.remove(playerId);
                 
                 // Disable flight (stage system ensures we only disable if we enabled it)

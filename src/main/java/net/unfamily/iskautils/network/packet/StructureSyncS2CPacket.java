@@ -6,8 +6,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 // import net.neoforged.neoforge.network.handling.PlayPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.structure.StructureDefinition;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructureDefinition;
+import net.unfamily.iskalib.structure.StructureLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

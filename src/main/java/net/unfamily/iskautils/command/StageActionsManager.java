@@ -21,11 +21,15 @@ public class StageActionsManager {
 
     private static boolean executingActions = false;
 
+    public static java.util.List<String> listActionIds() {
+        return StageActionsLoader.getActionIds();
+    }
+
     /**
      * Called when a player stage is added or removed.
      */
     public static void onPlayerStageChanged(ServerPlayer player, String stageId, boolean wasAdded) {
-        if (player == null || player.getServer() == null) return;
+        if (player == null || !(player.level() instanceof ServerLevel)) return;
         onStageChanged("player", stageId, wasAdded, player, null);
     }
 
@@ -111,7 +115,7 @@ public class StageActionsManager {
             return;
         }
 
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = (ServerLevel) player.level();
         StageActionDefinition.StageAction action = actions.get(index);
 
         if (action.execute != null && !action.execute.isEmpty()) {
@@ -119,7 +123,7 @@ public class StageActionsManager {
             scheduleNext(player, level, actions, index + 1);
         } else if (action.delay > 0) {
             long delayMs = (long) action.delay * 50 + 5;
-            MinecraftServer server = player.getServer();
+            MinecraftServer server = level.getServer();
             EXECUTOR.schedule(() -> {
                 if (server != null && !player.isRemoved() && player.isAlive()) {
                     server.execute(() -> executeActionSequence(player, actions, index + 1));
@@ -133,7 +137,7 @@ public class StageActionsManager {
     private static void scheduleNext(ServerPlayer player, ServerLevel level,
                                      List<StageActionDefinition.StageAction> actions, int nextIndex) {
         if (nextIndex >= actions.size()) return;
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = level.getServer();
         if (server != null) {
             server.execute(() -> {
                 if (!player.isRemoved() && player.isAlive()) {
@@ -196,7 +200,7 @@ public class StageActionsManager {
 
     private static void executeCommand(ServerPlayer player, String command) {
         try {
-            MinecraftServer server = player.getServer();
+            MinecraftServer server = ((ServerLevel) player.level()).getServer();
             if (server == null) return;
 
             CommandSourceStack source = player.createCommandSourceStack()

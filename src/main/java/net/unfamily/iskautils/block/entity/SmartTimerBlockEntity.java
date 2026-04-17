@@ -1,11 +1,12 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.unfamily.iskautils.block.SmartTimerBlock;
 
 /**
@@ -30,7 +31,7 @@ public class SmartTimerBlockEntity extends BlockEntity {
     }
     
     public static void tick(Level level, BlockPos pos, BlockState state, SmartTimerBlockEntity blockEntity) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
 
@@ -92,7 +93,7 @@ public class SmartTimerBlockEntity extends BlockEntity {
         this.cooldownTicks = seconds * 20;
         this.currentTick = 0;
         this.setChanged();
-        if (this.level != null && !this.level.isClientSide) {
+        if (this.level != null && !this.level.isClientSide()) {
             this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
         }
     }
@@ -101,7 +102,7 @@ public class SmartTimerBlockEntity extends BlockEntity {
         this.cooldownTicks = Math.max(5, ticks);
         this.currentTick = 0;
         this.setChanged();
-        if (this.level != null && !this.level.isClientSide) {
+        if (this.level != null && !this.level.isClientSide()) {
             this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
         }
     }
@@ -109,7 +110,7 @@ public class SmartTimerBlockEntity extends BlockEntity {
     public void setSignalDurationSeconds(int seconds) {
         this.signalDurationTicks = seconds * 20;
         this.setChanged();
-        if (this.level != null && !this.level.isClientSide) {
+        if (this.level != null && !this.level.isClientSide()) {
             this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
         }
     }
@@ -117,7 +118,7 @@ public class SmartTimerBlockEntity extends BlockEntity {
     public void setSignalDurationTicks(int ticks) {
         this.signalDurationTicks = Math.max(5, ticks);
         this.setChanged();
-        if (this.level != null && !this.level.isClientSide) {
+        if (this.level != null && !this.level.isClientSide()) {
             this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
         }
     }
@@ -162,31 +163,23 @@ public class SmartTimerBlockEntity extends BlockEntity {
     }
     
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.putInt("CooldownTicks", cooldownTicks);
-        tag.putInt("SignalDurationTicks", signalDurationTicks);
-        tag.putInt("CurrentTick", currentTick);
-        tag.putBoolean("IsSignalActive", isSignalActive);
-        tag.putInt("RedstoneMode", redstoneMode);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        output.putInt("CooldownTicks", cooldownTicks);
+        output.putInt("SignalDurationTicks", signalDurationTicks);
+        output.putInt("CurrentTick", currentTick);
+        output.putBoolean("IsSignalActive", isSignalActive);
+        output.putInt("RedstoneMode", redstoneMode);
     }
     
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("CooldownTicks")) {
-            cooldownTicks = tag.getInt("CooldownTicks");
-        }
-        if (tag.contains("SignalDurationTicks")) {
-            signalDurationTicks = tag.getInt("SignalDurationTicks");
-        }
-        if (tag.contains("CurrentTick")) {
-            currentTick = tag.getInt("CurrentTick");
-        }
-        if (tag.contains("IsSignalActive")) {
-            isSignalActive = tag.getBoolean("IsSignalActive");
-        }
-        redstoneMode = tag.contains("RedstoneMode") ? tag.getInt("RedstoneMode") : 1; // Default: LOW
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        cooldownTicks = input.getIntOr("CooldownTicks", cooldownTicks);
+        signalDurationTicks = input.getIntOr("SignalDurationTicks", signalDurationTicks);
+        currentTick = input.getIntOr("CurrentTick", currentTick);
+        isSignalActive = input.getBooleanOr("IsSignalActive", isSignalActive);
+        redstoneMode = input.getIntOr("RedstoneMode", 1); // Default: LOW
         // Ensure redstoneMode is valid (skip PULSE mode 3)
         if (redstoneMode == 3) {
             redstoneMode = 4; // Convert old PULSE mode to DISABLED
@@ -206,19 +199,5 @@ public class SmartTimerBlockEntity extends BlockEntity {
         return tag;
     }
     
-    @Override
-    public void onDataPacket(net.minecraft.network.Connection net, 
-                            net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt,
-                            net.minecraft.core.HolderLookup.Provider registries) {
-        super.onDataPacket(net, pkt, registries);
-        if (pkt.getTag() != null) {
-            CompoundTag tag = pkt.getTag();
-            if (tag.contains("CooldownTicks")) {
-                cooldownTicks = tag.getInt("CooldownTicks");
-            }
-            if (tag.contains("SignalDurationTicks")) {
-                signalDurationTicks = tag.getInt("SignalDurationTicks");
-            }
-        }
-    }
+    // onDataPacket is handled by the current BlockEntity serialization system.
 }

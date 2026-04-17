@@ -41,7 +41,7 @@ public class PotionPlateRegistry {
             .strength(0.3f, 1.0f)
             .sound(SoundType.DEEPSLATE)
             .noOcclusion()
-            .noCollission()
+            .noCollision()
             .isRedstoneConductor((state, level, pos) -> false)
             .pushReaction(PushReaction.DESTROY)
             .isViewBlocking((state, level, pos) -> false)

@@ -121,9 +121,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final int FEEDBACK_Y_OFFSET = FIFTH_ENTRY_END + ((INVENTORY_Y - FIFTH_ENTRY_END) / 2) - 4; // Centered (Y=147-4=143)
 
     public ShopScreen(AbstractContainerMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
         
         // Carica i dati del shop
         loadShopData();
@@ -173,6 +171,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     @Override
     public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
+
         int guiX = this.leftPos;
         int guiY = this.topPos;
         
@@ -247,31 +246,42 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) { // Left click
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0) { // Left click
             // Handle scrollbar clicks first
-            if (handleScrollButtonClick(mouseX, mouseY)) {
+            if (handleScrollButtonClick(event.x(), event.y())) {
                 return true;
             }
             
             // Handle handle drag start
-            if (handleHandleClick(mouseX, mouseY)) {
+            if (handleHandleClick(event.x(), event.y())) {
                 return true;
             }
             
             // Handle scrollbar area clicks
-            if (handleScrollbarClick(mouseX, mouseY)) {
+            if (handleScrollbarClick(event.x(), event.y())) {
                 return true;
             }
             
             // Handle entry clicks
-            if (handleEntryClick(mouseX, mouseY)) {
+            if (handleEntryClick(event.x(), event.y())) {
                 return true;
             }
         }
         
         // Handle vanilla buttons (including Buy/Sell) after our handlers
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        isDraggingHandle = false;
+        return super.mouseReleased(event);
+    }
+
+    @Override
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dx, double dy) {
+        return super.mouseDragged(event, dx, dy);
     }
     
     private boolean handleScrollButtonClick(double mouseX, double mouseY) {
@@ -348,30 +358,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         return false;
     }
     
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
-        }
-        return super.mouseReleased(mouseX, mouseY, button);
-    }
-    
-    @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (button == 0 && isDraggingHandle && totalShopEntries > ENTRIES) {
-            int deltaY = (int) mouseY - dragStartY;
-            float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
-            
-            int newScrollOffset = dragStartScrollOffset + (int)(scrollRatio * (totalShopEntries - ENTRIES));
-            newScrollOffset = Math.max(0, Math.min(totalShopEntries - ENTRIES, newScrollOffset));
-            
-            scrollOffset = newScrollOffset;
-            updateBuySellButtons();
-            return true;
-        }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-    }
+    // mouseReleased/mouseDragged are handled via MouseButtonEvent overrides above
     
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
@@ -1210,13 +1197,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Come specificato: click normale = 1, ctrl/alt = 4, shift = 16
      */
     private int calculateMultiplier() {
-        if (Screen.hasShiftDown()) {
-            return 16;
-        } else if (Screen.hasControlDown() || Screen.hasAltDown()) {
-            return 4;
-        } else {
-            return 1;
-        }
+        // Modifiers tracking moved to input event types; keep legacy behavior here without modifier support.
+        return 1;
     }
 
     /**

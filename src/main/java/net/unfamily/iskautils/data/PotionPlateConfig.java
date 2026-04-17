@@ -383,7 +383,8 @@ public class PotionPlateConfig {
         if (cachedEffect == null) {
             try {
                 Identifier effectLocation = Identifier.parse(effectId);
-                cachedEffect = BuiltInRegistries.MOB_EFFECT.getHolder(effectLocation).orElse(null);
+                MobEffect effect = BuiltInRegistries.MOB_EFFECT.getOptional(effectLocation).orElse(null);
+                cachedEffect = effect != null ? BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect) : null;
             } catch (Exception e) {
                 // Invalid effect ID format
                 return null;

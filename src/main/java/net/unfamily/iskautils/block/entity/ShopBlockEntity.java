@@ -1,8 +1,6 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -11,6 +9,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.slf4j.Logger;
@@ -58,21 +58,21 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
     }
     
     @Override
-    protected void saveAdditional(CompoundTag nbt, HolderLookup.Provider provider) {
-        super.saveAdditional(nbt, provider);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
         
         // Save only essential data
-        nbt.putBoolean("isActive", this.isActive);
-        nbt.putString("currentCategory", this.currentCategory);
+        output.putBoolean("isActive", this.isActive);
+        output.putString("currentCategory", this.currentCategory);
     }
     
     @Override
-    protected void loadAdditional(CompoundTag nbt, HolderLookup.Provider provider) {
-        super.loadAdditional(nbt, provider);
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
         
         // Load only essential data
-        this.isActive = nbt.getBoolean("isActive");
-        this.currentCategory = nbt.getString("currentCategory");
+        this.isActive = input.getBooleanOr("isActive", false);
+        this.currentCategory = input.getStringOr("currentCategory", "000_default");
     }
     
     @Override

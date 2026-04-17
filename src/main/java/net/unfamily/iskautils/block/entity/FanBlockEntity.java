@@ -2,9 +2,8 @@ package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.ItemStackWithSlot;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,6 +14,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -334,7 +335,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
             this.redstoneMode = newMode;
             setChanged();
             // Force save to ensure value is persisted
-            if (level != null && !level.isClientSide) {
+            if (level != null && !level.isClientSide()) {
                 level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
             }
         }
@@ -390,56 +391,64 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        rangeUp = tag.getInt("RangeUp");
-        rangeDown = tag.getInt("RangeDown");
-        rangeRight = tag.getInt("RangeRight");
-        rangeLeft = tag.getInt("RangeLeft");
-        rangeFront = tag.contains("RangeFront") ? tag.getInt("RangeFront") : 5; // Default 5 (inspired by vanilla water)
-        fanPower = tag.contains("FanPower") ? tag.getDouble("FanPower") : 0.3; // Default 0.3
-        pushType = tag.contains("PushType") ? PushType.fromId(tag.getInt("PushType")) : PushType.MOBS_ONLY; // Default: only mobs
-        redstoneMode = tag.contains("RedstoneMode") ? tag.getInt("RedstoneMode") : 0; // Default: NONE
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        rangeUp = input.getIntOr("RangeUp", 0);
+        rangeDown = input.getIntOr("RangeDown", 0);
+        rangeRight = input.getIntOr("RangeRight", 0);
+        rangeLeft = input.getIntOr("RangeLeft", 0);
+        rangeFront = input.getIntOr("RangeFront", 5); // Default 5 (inspired by vanilla water)
+        fanPower = input.getDoubleOr("FanPower", 0.3); // Default 0.3
+        pushType = PushType.fromId(input.getIntOr("PushType", PushType.MOBS_ONLY.getId())); // Default: only mobs
+        redstoneMode = input.getIntOr("RedstoneMode", 0); // Default: NONE
         // Ensure redstoneMode is valid (skip PULSE mode 3)
         if (redstoneMode == 3) {
             redstoneMode = 4; // Convert old PULSE mode to DISABLED
         }
-        isPull = tag.contains("IsPull") ? tag.getBoolean("IsPull") : false; // Default: push
-        previousRedstoneState = tag.contains("PreviousRedstoneState") ? tag.getBoolean("PreviousRedstoneState") : false;
-        pulseIgnoreTimer = tag.contains("PulseIgnoreTimer") ? tag.getInt("PulseIgnoreTimer") : 0;
-        hasShownBackMessage = tag.contains("HasShownBackMessage") ? tag.getBoolean("HasShownBackMessage") : false;
-        backMessageTimer = tag.contains("BackMessageTimer") ? tag.getInt("BackMessageTimer") : 0;
+        isPull = input.getBooleanOr("IsPull", false); // Default: push
+        previousRedstoneState = input.getBooleanOr("PreviousRedstoneState", false);
+        pulseIgnoreTimer = input.getIntOr("PulseIgnoreTimer", 0);
+        hasShownBackMessage = input.getBooleanOr("HasShownBackMessage", false);
+        backMessageTimer = input.getIntOr("BackMessageTimer", 0);
         
         // Load module handler
-        if (tag.contains("Modules")) {
-            moduleHandler.deserializeNBT(registries, tag.getCompound("Modules"));
+        for (ItemStackWithSlot item : input.listOrEmpty("Modules", ItemStackWithSlot.CODEC)) {
+            int slot = item.slot();
+            if (slot >= 0 && slot < moduleHandler.getSlots()) {
+                moduleHandler.setStackInSlot(slot, item.stack());
+            }
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.putInt("RangeUp", rangeUp);
-        tag.putInt("RangeDown", rangeDown);
-        tag.putInt("RangeRight", rangeRight);
-        tag.putInt("RangeLeft", rangeLeft);
-        tag.putInt("RangeFront", rangeFront);
-        tag.putDouble("FanPower", fanPower);
-        tag.putInt("PushType", pushType.getId());
-        tag.putInt("RedstoneMode", redstoneMode);
-        tag.putBoolean("IsPull", isPull);
-        tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
-        tag.putInt("PulseIgnoreTimer", pulseIgnoreTimer);
-        tag.putBoolean("HasShownBackMessage", hasShownBackMessage);
-        tag.putInt("BackMessageTimer", backMessageTimer);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        output.putInt("RangeUp", rangeUp);
+        output.putInt("RangeDown", rangeDown);
+        output.putInt("RangeRight", rangeRight);
+        output.putInt("RangeLeft", rangeLeft);
+        output.putInt("RangeFront", rangeFront);
+        output.putDouble("FanPower", fanPower);
+        output.putInt("PushType", pushType.getId());
+        output.putInt("RedstoneMode", redstoneMode);
+        output.putBoolean("IsPull", isPull);
+        output.putBoolean("PreviousRedstoneState", previousRedstoneState);
+        output.putInt("PulseIgnoreTimer", pulseIgnoreTimer);
+        output.putBoolean("HasShownBackMessage", hasShownBackMessage);
+        output.putInt("BackMessageTimer", backMessageTimer);
         
         // Save module handler
-        tag.put("Modules", moduleHandler.serializeNBT(registries));
+        ValueOutput.TypedOutputList<ItemStackWithSlot> modules = output.list("Modules", ItemStackWithSlot.CODEC);
+        for (int slot = 0; slot < moduleHandler.getSlots(); slot++) {
+            ItemStack stack = moduleHandler.getStackInSlot(slot);
+            if (!stack.isEmpty()) modules.add(new ItemStackWithSlot(slot, stack));
+        }
+        if (modules.isEmpty()) output.discard("Modules");
     }
 
     // Tick method to push entities
     public static void tick(Level level, BlockPos pos, BlockState state, FanBlockEntity blockEntity) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
 

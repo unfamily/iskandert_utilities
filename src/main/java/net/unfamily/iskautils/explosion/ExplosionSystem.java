@@ -173,9 +173,8 @@ public class ExplosionSystem {
                     for (Entity entity : entities) {
                         if (entity instanceof LivingEntity livingEntity) {
                             DamageSource explosionDamageSource = explosion.level.damageSources().explosion(null, null);
-                            if (livingEntity.hurt(explosionDamageSource, explosion.explosionDamage)) {
-                                entitiesKilled++;
-                            }
+                            livingEntity.hurt(explosionDamageSource, explosion.explosionDamage);
+                            entitiesKilled++;
                         }
                     }
                 }

@@ -83,8 +83,8 @@ public class ModPlacedFeatures {
         
         // Ottieni la PlacedFeature dell'albero di gomma dal registro
         Optional<Holder.Reference<PlacedFeature>> optionalFeature = level.registryAccess()
-                .registryOrThrow(Registries.PLACED_FEATURE)
-                .getHolder(RUBBER_PLACED_KEY);
+                .lookupOrThrow(Registries.PLACED_FEATURE)
+                .get(RUBBER_PLACED_KEY);
                 
         if (optionalFeature.isEmpty()) {
             //LOGGER.error("Failed to find rubber tree placed feature: {}", RUBBER_PLACED_KEY.location());

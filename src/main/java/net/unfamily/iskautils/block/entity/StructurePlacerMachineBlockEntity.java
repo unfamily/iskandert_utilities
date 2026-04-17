@@ -10,6 +10,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemStackWithSlot;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -25,6 +26,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.IItemHandler;
@@ -32,8 +35,8 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.client.gui.StructurePlacerMachineMenu;
-import net.unfamily.iskautils.structure.StructureDefinition;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructureDefinition;
+import net.unfamily.iskalib.structure.StructureLoader;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -167,105 +170,75 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         return saveWithoutMetadata(registries);
     }
     
-    @Override
-    public void onDataPacket(net.minecraft.network.Connection net, net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, net.minecraft.core.HolderLookup.Provider lookupProvider) {
-        super.onDataPacket(net, pkt, lookupProvider);
-        if (pkt.getTag() != null) {
-            loadAdditional(pkt.getTag(), lookupProvider);
-        }
-    }
+    // onDataPacket is handled by the current BlockEntity serialization system.
     
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.put("inventory", itemHandler.serializeNBT(registries));
-        int currentEnergy = energyStorage.getEnergyStored();
-        tag.putInt("energy", currentEnergy);
-        LOGGER.debug("Structure Placer Machine saving energy: {}", currentEnergy);
-        tag.putInt("autoPulseTimer", autoPulseTimer);
-        if (placedByPlayer != null) {
-            tag.putUUID("placedByPlayer", placedByPlayer);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+
+        ValueOutput.TypedOutputList<ItemStackWithSlot> inv = output.list("inventory", ItemStackWithSlot.CODEC);
+        for (int slot = 0; slot < itemHandler.getSlots(); slot++) {
+            ItemStack stack = itemHandler.getStackInSlot(slot);
+            if (!stack.isEmpty()) inv.add(new ItemStackWithSlot(slot, stack));
         }
-        
-        // Save redstone state tracking
-        tag.putBoolean("previousRedstoneState", previousRedstoneState);
-        tag.putInt("pulseIgnoreTimer", pulseIgnoreTimer);
-        
-        // Save structure data fields directly
-        tag.putString("selectedStructure", selectedStructure);
-        tag.putBoolean("showPreview", showPreview);
-        tag.putInt("rotation", rotation);
-        tag.putInt("redstoneMode", redstoneMode);
-        
-        // Save ghost filters manually to NBT using the same format as inventory
-        CompoundTag ghostTag = new CompoundTag();
-        int savedFilters = 0;
+        if (inv.isEmpty()) output.discard("inventory");
+
+        int currentEnergy = energyStorage.getEnergyStored();
+        output.putInt("energy", currentEnergy);
+        LOGGER.debug("Structure Placer Machine saving energy: {}", currentEnergy);
+
+        output.putInt("autoPulseTimer", autoPulseTimer);
+        output.storeNullable("placedByPlayer", net.minecraft.core.UUIDUtil.CODEC, placedByPlayer);
+
+        output.putBoolean("previousRedstoneState", previousRedstoneState);
+        output.putInt("pulseIgnoreTimer", pulseIgnoreTimer);
+
+        output.putString("selectedStructure", selectedStructure);
+        output.putBoolean("showPreview", showPreview);
+        output.putInt("rotation", rotation);
+        output.putInt("redstoneMode", redstoneMode);
+
+        ValueOutput.TypedOutputList<ItemStackWithSlot> ghost = output.list("ghostFilters", ItemStackWithSlot.CODEC);
         for (int i = 0; i < ghostFilters.size(); i++) {
             ItemStack filter = ghostFilters.get(i);
-            if (!filter.isEmpty()) {
-                CompoundTag itemTag = new CompoundTag();
-                // Use ItemStack.saveOptional for proper serialization
-                ItemStack.OPTIONAL_CODEC.encodeStart(registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE), filter)
-                    .result().ifPresent(nbt -> itemTag.merge((CompoundTag) nbt));
-                ghostTag.put("slot" + i, itemTag);
-                savedFilters++;
-            }
+            if (!filter.isEmpty()) ghost.add(new ItemStackWithSlot(i, filter));
         }
-        tag.put("ghostFilters", ghostTag);
+        if (ghost.isEmpty()) output.discard("ghostFilters");
     }
     
 
     
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("inventory")) {
-            itemHandler.deserializeNBT(registries, tag.getCompound("inventory"));
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+
+        for (ItemStackWithSlot item : input.listOrEmpty("inventory", ItemStackWithSlot.CODEC)) {
+            int slot = item.slot();
+            if (slot >= 0 && slot < itemHandler.getSlots()) itemHandler.setStackInSlot(slot, item.stack());
         }
-        if (tag.contains("energy")) {
-            // Load energy directly from the saved int value
-            int savedEnergy = tag.getInt("energy");
-            // Set energy by extracting all and then receiving the saved amount
+
+        input.getInt("energy").ifPresent(savedEnergy -> {
             energyStorage.extractEnergy(energyStorage.getEnergyStored(), false);
             energyStorage.receiveEnergy(savedEnergy, false);
             LOGGER.debug("Structure Placer Machine loaded energy: {}", savedEnergy);
-        }
-        autoPulseTimer = tag.getInt("autoPulseTimer");
-        if (tag.hasUUID("placedByPlayer")) {
-            placedByPlayer = tag.getUUID("placedByPlayer");
-        }
-        
-        // Load redstone state tracking
-        previousRedstoneState = tag.getBoolean("previousRedstoneState");
-        pulseIgnoreTimer = tag.getInt("pulseIgnoreTimer");
-        
-        // Load structure data directly to fields
-        this.selectedStructure = tag.getString("selectedStructure");
-        this.showPreview = tag.getBoolean("showPreview");
-        this.rotation = tag.getInt("rotation");
-        this.redstoneMode = tag.getInt("redstoneMode");
-        
-        // Load ghost filters from NBT
-        this.ghostFilters.clear();
-        for (int i = 0; i < 27; i++) {
-            this.ghostFilters.add(ItemStack.EMPTY);
-        }
-        
-        if (tag.contains("ghostFilters")) {
-            CompoundTag ghostTag = tag.getCompound("ghostFilters");
-            int loadedFilters = 0;
-            for (int i = 0; i < 27; i++) {
-                String slotKey = "slot" + i;
-                if (ghostTag.contains(slotKey)) {
-                    CompoundTag itemTag = ghostTag.getCompound(slotKey);
-                    // Use ItemStack.OPTIONAL_CODEC for proper deserialization
-                    ItemStack filter = ItemStack.OPTIONAL_CODEC.parse(registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE), itemTag)
-                        .result().orElse(ItemStack.EMPTY);
-                    this.ghostFilters.set(i, filter);
-                    loadedFilters++;
-                }
-            }
+        });
 
+        autoPulseTimer = input.getIntOr("autoPulseTimer", 0);
+        placedByPlayer = input.read("placedByPlayer", net.minecraft.core.UUIDUtil.CODEC).orElse(null);
+
+        previousRedstoneState = input.getBooleanOr("previousRedstoneState", false);
+        pulseIgnoreTimer = input.getIntOr("pulseIgnoreTimer", 0);
+
+        this.selectedStructure = input.getStringOr("selectedStructure", "");
+        this.showPreview = input.getBooleanOr("showPreview", false);
+        this.rotation = input.getIntOr("rotation", 0);
+        this.redstoneMode = input.getIntOr("redstoneMode", 0);
+
+        this.ghostFilters.clear();
+        for (int i = 0; i < 27; i++) this.ghostFilters.add(ItemStack.EMPTY);
+        for (ItemStackWithSlot item : input.listOrEmpty("ghostFilters", ItemStackWithSlot.CODEC)) {
+            int slot = item.slot();
+            if (slot >= 0 && slot < this.ghostFilters.size()) this.ghostFilters.set(slot, item.stack());
         }
     }
     
@@ -706,9 +679,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                         Identifier blockLocation =
                             itemLocation == null ? null : Identifier.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
                         
-                        if (BuiltInRegistries.BLOCK.containsKey(blockLocation)) {
-                            block = BuiltInRegistries.BLOCK.get(blockLocation);
-                        }
+                        block = blockLocation == null ? null : BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
                     } catch (Exception e) {
                         // Ignore if unable to find matching block
                     }
@@ -755,9 +726,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                         Identifier blockLocation =
                             itemLocation == null ? null : Identifier.fromNamespaceAndPath(itemLocation.getNamespace(), itemLocation.getPath());
                         
-                        if (BuiltInRegistries.BLOCK.containsKey(blockLocation)) {
-                            block = BuiltInRegistries.BLOCK.get(blockLocation);
-                        }
+                        block = blockLocation == null ? null : BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
                     } catch (Exception e) {
                         // Ignore if unable to find matching block
                     }
@@ -817,7 +786,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         
         // Get block from registry
         Identifier blockLocation = Identifier.tryParse(blockDef.getBlock());
-        Block block = BuiltInRegistries.BLOCK.get(blockLocation);
+        Block block = blockLocation == null ? null : BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
         
         if (block != null && block != Blocks.AIR) {
             BlockState blockState = block.defaultBlockState();
@@ -947,7 +916,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             case "$lava" -> existingState.is(net.minecraft.world.level.block.Blocks.LAVA);
             case "$plants", "$plant" -> existingState.is(net.minecraft.tags.BlockTags.REPLACEABLE_BY_TREES) || 
                                       existingState.is(net.minecraft.tags.BlockTags.SMALL_FLOWERS) ||
-                                      existingState.is(net.minecraft.tags.BlockTags.TALL_FLOWERS) ||
+                                      existingState.is(net.minecraft.tags.BlockTags.FLOWERS) ||
                                       existingState.is(net.minecraft.tags.BlockTags.SAPLINGS);
             case "$dirt" -> existingState.is(net.minecraft.tags.BlockTags.DIRT);
             case "$logs", "$log" -> existingState.is(net.minecraft.tags.BlockTags.LOGS);

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -13,7 +14,6 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
@@ -51,7 +51,8 @@ import java.util.concurrent.Executor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.resources.Identifier;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructureIOHooks;
+import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.shop.ShopLoader;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
@@ -65,9 +66,13 @@ public class IskaUtils {
     public IskaUtils(IEventBus modEventBus, ModContainer modContainer) {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
+
+        // Register capability providers (MOD bus)
+        modEventBus.addListener(net.unfamily.iskautils.item.ModItemCapabilities::registerCapabilities);
+        modEventBus.addListener(net.unfamily.iskautils.block.entity.ModBlockEntities.ModBlockEntityEvents::registerCapabilities);
         
-        // If we are on the client, also register client setup
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        // Client-only setup/registrations (keep server-safe via reflection gate)
+        if (isClientEnvironment()) {
             modEventBus.addListener(this::clientSetup);
 
             // Register GUI MenuTypes (client-only)
@@ -85,6 +90,9 @@ public class IskaUtils {
 
         // Register game events on the NeoForge bus
         NeoForge.EVENT_BUS.register(GameEventBusEvents.class);
+        NeoForge.EVENT_BUS.register(net.unfamily.iskautils.command.CommandEvents.class);
+        NeoForge.EVENT_BUS.register(net.unfamily.iskautils.events.FlightHandler.class);
+        NeoForge.EVENT_BUS.register(net.unfamily.iskautils.events.StructurePlacerEvents.class);
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
@@ -186,6 +194,57 @@ public class IskaUtils {
                 net.unfamily.iskautils.command.StageActionsManager.onTeamStageChanged(server, teamName, stage, value);
             }
         });
+
+        // Wire stage "action" command callbacks into mod implementation
+        net.unfamily.iskalib.stage.StageActionHooks.setListener(new net.unfamily.iskalib.stage.StageActionHooks.Listener() {
+            @Override
+            public java.util.List<String> listActionIds() {
+                return net.unfamily.iskautils.command.StageActionsManager.listActionIds();
+            }
+
+            @Override
+            public int executeActionById(String actionId, java.util.List<ServerPlayer> players, boolean force) {
+                return net.unfamily.iskautils.command.StageActionsManager.executeActionById(actionId, players, force);
+            }
+        });
+
+        // Wire structure IO/config into the library structure system
+        StructureIOHooks.setListener(new StructureIOHooks.Listener() {
+            @Override
+            public java.nio.file.Path externalScriptsBasePath() {
+                String configPath = Config.externalScriptsPath;
+                if (configPath == null || configPath.trim().isEmpty()) {
+                    configPath = "kubejs/external_scripts";
+                }
+                return java.nio.file.Paths.get(configPath);
+            }
+
+            @Override
+            public String structuresFolderName() {
+                return "iska_utils_structures";
+            }
+
+            @Override
+            public boolean acceptClientStructures() {
+                return Config.acceptClientStructure;
+            }
+
+            @Override
+            public String clientStructurePath() {
+                return Config.clientStructurePath;
+            }
+
+            @Override
+            public boolean allowClientStructurePlaceLikePlayer() {
+                return Config.allowClientStructurePlayerLike;
+            }
+
+            @Override
+            public void generateDocumentationIfEnabled() {
+                // Keep legacy behavior
+                net.unfamily.iskautils.structure.StructureDocumentationGenerator.generateDocumentation();
+            }
+        });
         
         // Register wood types
         ModWoodTypes.register();
@@ -208,6 +267,15 @@ public class IskaUtils {
         // Registro l'handler degli eventi dei loot table
         LOGGER.info("Registrando l'handler degli eventi dei loot table...");
         NeoForge.EVENT_BUS.register(LootEvents.class);
+    }
+
+    private static boolean isClientEnvironment() {
+        try {
+            Class.forName("net.minecraft.client.Minecraft");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
     
     /**
@@ -303,7 +371,7 @@ public class IskaUtils {
                     StructureLoader.reloadAllDefinitions(true, serverPlayer);
                     
                     // Aggiungi un piccolo delay per assicurarsi che il client sia pronto per la sincronizzazione
-                    serverPlayer.getServer().execute(() -> {
+                    ((net.minecraft.server.level.ServerLevel) serverPlayer.level()).getServer().execute(() -> {
                         try {
                             net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(serverPlayer);
                         } catch (Exception e) {
@@ -338,8 +406,8 @@ public class IskaUtils {
             LOGGER.info("Server fully started, all external datapacks should be available");
             
             // Initialize a new session ID for markers
-            net.unfamily.iskautils.util.SessionVariables.resetScannerSessionId();
-            LOGGER.info("Initialized new scanner session ID: {}", net.unfamily.iskautils.util.SessionVariables.getScannerSessionId());
+            net.unfamily.iskalib.marker.MarkerSession.resetScannerSessionId();
+            LOGGER.info("Initialized new scanner session ID: {}", net.unfamily.iskalib.marker.MarkerSession.getScannerSessionId());
             
             // Clean up any scanner markers that might be leftover from previous session
             try {
@@ -415,7 +483,7 @@ public class IskaUtils {
                 return;
             }
             net.minecraft.core.BlockPos soundPos = net.minecraft.core.BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
-            String soundId = sound.getLocation().toString();
+            String soundId = sound.getIdentifier().toString();
             int maxRadius = net.unfamily.iskautils.Config.soundMufflerRangeMax;
             int effectivePercent = 100;
             for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(

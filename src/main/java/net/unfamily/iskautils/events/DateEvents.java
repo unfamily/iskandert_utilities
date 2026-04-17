@@ -36,7 +36,7 @@ public class DateEvents {
 
         // Check if player already has the stage for this year
         String stageName = "iska_utils_internal-CH:" + year;
-        StageRegistry registry = StageRegistry.getInstance(player.getServer());
+        StageRegistry registry = StageRegistry.getInstance(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
         
         if (registry.hasPlayerStage(player, stageName)) {
             // Player already received gift this year

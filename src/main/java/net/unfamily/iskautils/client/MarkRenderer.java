@@ -147,7 +147,7 @@ public class MarkRenderer {
             if (data != null && data.text != null) {
                 // Calcola la distanza per mostrarla nel messaggio
                 double distance = mc.player.position().distanceTo(new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5));
-                mc.player.displayClientMessage(Component.literal(data.text + " (" + String.format("%.1f", distance) + "m)"), true);
+                mc.player.sendSystemMessage(Component.literal(data.text + " (" + String.format("%.1f", distance) + "m)"));
                 return;
             }
             
@@ -156,7 +156,7 @@ public class MarkRenderer {
             if (data != null && data.text != null) {
                 // Calcola la distanza per mostrarla nel messaggio
                 double distance = mc.player.position().distanceTo(new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5));
-                mc.player.displayClientMessage(Component.literal(data.text + " (" + String.format("%.1f", distance) + "m)"), true);
+                mc.player.sendSystemMessage(Component.literal(data.text + " (" + String.format("%.1f", distance) + "m)"));
                 return;
             }
         }
@@ -172,7 +172,7 @@ public class MarkRenderer {
      */
     private void checkDistantMarkers(Minecraft mc, double maxDistance) {
         // Posizione della camera
-        Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
+        Vec3 cameraPos = mc.gameRenderer.getMainCamera().position();
         // Direzione in cui sta guardando il giocatore
         Vec3 lookVec = mc.player.getViewVector(1.0F);
         
@@ -276,13 +276,12 @@ public class MarkRenderer {
             // Per i blocchi evidenziati, verifichiamo ancora una volta che non siano aria
             if (!isNearestBillboard && mc.level.getBlockState(nearestBlockPos).isAir()) {
                 // Se il blocco è aria, mostra solo il testo senza distanza
-                mc.player.displayClientMessage(Component.literal(nearestText), true);
+                mc.player.sendSystemMessage(Component.literal(nearestText));
             } else {
                 // Altrimenti mostra il testo completo con distanza
                 String distanceText = String.format("%.1f", actualDistance) + "m";
-                mc.player.displayClientMessage(
-                    Component.literal(nearestText + " (" + distanceText + ")"),
-                    true);
+                mc.player.sendSystemMessage(
+                    Component.literal(nearestText + " (" + distanceText + ")"));
             }
         }
     }
@@ -338,7 +337,7 @@ public class MarkRenderer {
         checkPlayerLookingAtMarker();
         
         // Get the camera position
-        Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
+        Vec3 cameraPos = mc.gameRenderer.getMainCamera().position();
         
         // Render cube highlights
         if (!highlightedBlocks.isEmpty()) {
@@ -370,10 +369,7 @@ public class MarkRenderer {
         }
         
         // Prepare the rendering
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        // Rendering state is handled by RenderTypes in newer versions
         
         // Start rendering
         Tesselator tesselator = Tesselator.getInstance();
@@ -405,8 +401,7 @@ public class MarkRenderer {
             }
         }
         
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
+        // Rendering state is handled by RenderTypes in newer versions
     }
     
     /**
@@ -419,10 +414,7 @@ public class MarkRenderer {
         }
         
         // Prepare the rendering for small cubes
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        // Rendering state is handled by RenderTypes in newer versions
         
         // Start rendering
         Tesselator tesselator = Tesselator.getInstance();
@@ -449,8 +441,7 @@ public class MarkRenderer {
             }
         }
         
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
+        // Rendering state is handled by RenderTypes in newer versions
     }
     
     /**

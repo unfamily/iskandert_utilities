@@ -11,6 +11,8 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -63,7 +65,7 @@ public class MacroCommandArgument {
                 try {
                     boolean hasPermission = true;
                     try {
-                        hasPermission = sourceStack.hasPermission(macro.getLevel());
+                        hasPermission = sourceStack.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(macro.getLevel())));
                     } catch (Exception e) {
                         // In caso di errore, mostra comunque il comando
                         hasPermission = true;

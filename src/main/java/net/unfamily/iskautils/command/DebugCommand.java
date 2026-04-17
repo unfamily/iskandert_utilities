@@ -16,6 +16,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -40,12 +42,12 @@ public class DebugCommand {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
         
         dispatcher.register(Commands.literal("iska_utils_debug")
-                .requires(source -> source.hasPermission(0))
+                .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(0))))
                 .then(Commands.literal("reload")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2))))
                         .executes(DebugCommand::executeReload))
                 .then(Commands.literal("dump_default")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2))))
                         .executes(DebugCommand::executeDumpDefault))
                 .then(Commands.argument("action", StringArgumentType.word())
                         .suggests((context, builder) ->
@@ -104,7 +106,7 @@ public class DebugCommand {
         }
 
         try {
-            net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(true);
+            net.unfamily.iskalib.structure.StructureLoader.reloadAllDefinitions(true);
             var server = source.getServer();
             if (server != null && !server.isSingleplayer()) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -210,25 +212,9 @@ public class DebugCommand {
         // Complete item dump
         String itemId = itemInHand.getItem().toString();
         
-        // Serialize complete ItemStack to get full CompoundTag
+        // Serialize ItemStack data for debugging output
         CompoundTag nbtTag = new CompoundTag();
-        try {
-            if (player.level() != null) {
-                var tag = itemInHand.save(player.level().registryAccess());
-                // itemInHand.save() returns a Tag, which for ItemStack should be a CompoundTag
-                if (tag instanceof CompoundTag compoundTag) {
-                    nbtTag = compoundTag;
-                } else {
-                    // If it's not a CompoundTag, create one and put the Tag inside
-                    nbtTag = new CompoundTag();
-                    nbtTag.put("data", tag);
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error serializing CompoundTag", e);
-            source.sendFailure(Component.translatable("command.iska_utils.debug.serialization_error", e.getMessage()));
-            return 0;
-        }
+        nbtTag.putString("components", itemInHand.getComponentsPatch().toString());
         
         // Check if item is a block
         boolean isBlock = itemInHand.getItem() instanceof BlockItem;
@@ -241,8 +227,8 @@ public class DebugCommand {
         Component itemIdComponent = Component.literal(itemId)
                 .withStyle(Style.EMPTY
                         .withColor(ChatFormatting.GREEN)
-                        .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, itemId))
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, 
+                        .withClickEvent(new ClickEvent.CopyToClipboard(itemId))
+                        .withHoverEvent(new HoverEvent.ShowText(
                                 Component.translatable("command.iska_utils.debug.click_to_copy"))));
         Component itemIdFull = itemIdLabel.copy().append(itemIdComponent);
         source.sendSuccess(() -> itemIdFull, false);
@@ -251,7 +237,7 @@ public class DebugCommand {
         CompoundTag blocksTag = new CompoundTag();
         CompoundTag itemsTag = new CompoundTag();
         
-        for (String key : nbtTag.getAllKeys()) {
+        for (String key : nbtTag.keySet()) {
             Tag value = nbtTag.get(key);
             if (value != null) {
                 // Common block-related keys
@@ -285,11 +271,7 @@ public class DebugCommand {
         // Show item tags (like #c:ingots)
         if (player.level() != null) {
             Item item = itemInHand.getItem();
-            var itemTags = BuiltInRegistries.ITEM.getTagNames()
-                    .filter(tagKey -> {
-                        var tag = BuiltInRegistries.ITEM.getTag(tagKey);
-                        return tag.isPresent() && tag.get().contains(BuiltInRegistries.ITEM.wrapAsHolder(item));
-                    })
+            var itemTags = item.builtInRegistryHolder().tags()
                     .map(TagKey::location)
                     .map(Identifier::toString)
                     .sorted()
@@ -338,8 +320,8 @@ public class DebugCommand {
                 Component chunkComponent = Component.literal(chunk)
                         .withStyle(Style.EMPTY
                                 .withColor(color)
-                                .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, chunk))
-                                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, copyFeedback)));
+                                .withClickEvent(new ClickEvent.CopyToClipboard(chunk))
+                                .withHoverEvent(new HoverEvent.ShowText(copyFeedback)));
                 Component chunkFull = chunkLabel.copy().append(chunkComponent);
                 source.sendSuccess(() -> chunkFull, false);
             }
@@ -347,8 +329,8 @@ public class DebugCommand {
             Component nbtComponent = Component.literal(nbtString)
                     .withStyle(Style.EMPTY
                             .withColor(color)
-                            .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, nbtString))
-                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, copyFeedback)));
+                            .withClickEvent(new ClickEvent.CopyToClipboard(nbtString))
+                            .withHoverEvent(new HoverEvent.ShowText(copyFeedback)));
             source.sendSuccess(() -> nbtComponent, false);
         }
     }

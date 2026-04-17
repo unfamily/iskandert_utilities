@@ -138,9 +138,8 @@ public class VectorCharmMovement {
         if (!charm.hasEnoughEnergy(activeCharm, energyLevel)) {
             // Insufficient energy - show message occasionally
             if (player.level().getGameTime() % 60 == 0) { // Every 3 seconds
-                player.displayClientMessage(
-                    Component.literal("§cVector Charm out of energy!"), 
-                    true // actionbar
+                player.sendSystemMessage(
+                    Component.literal("§cVector Charm out of energy!")
                 );
             }
             return;
@@ -231,9 +230,8 @@ public class VectorCharmMovement {
         if (!charm.hasEnoughEnergy(activeCharm, energyLevel)) {
             // Insufficient energy - show message occasionally
             if (player.level().getGameTime() % 60 == 0) { // Every 3 seconds
-                player.displayClientMessage(
-                    Component.literal("§cVector Charm out of energy!"), 
-                    true // actionbar
+                player.sendSystemMessage(
+                    Component.literal("§cVector Charm out of energy!")
                 );
             }
             return;

@@ -52,15 +52,15 @@ public class SetScannerOrScannerChip {
 			
 			// ensure the scanner has a unique ID
 			if (!tag.contains("ScannerId")) {
-				tag.putUUID("ScannerId", UUID.randomUUID());
+				tag.putString("ScannerId", UUID.randomUUID().toString());
 			}
 			
 			// save the data in the scanner
 			itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
 			
 			// notify the player
-			if (!player.level().isClientSide) {
-				player.displayClientMessage(Component.translatable("item.iska_utils.scanner.mob_target_set", entity.getName()), true);
+			if (!player.level().isClientSide()) {
+				player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.mob_target_set", entity.getName()));
 			}
 			
 			// cancel the event to prevent the normal interaction
@@ -91,16 +91,16 @@ public class SetScannerOrScannerChip {
 				itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
 				
 				// notify the player
-				if (!player.level().isClientSide) {
-					player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.mob_target_set", entity.getName()), true);
+				if (!player.level().isClientSide()) {
+					player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.mob_target_set", entity.getName()));
 				}
 				
 				// cancel the event to prevent the normal interaction
 				event.setCanceled(true);
 			} else {
 				// Notify the player that specialized chips cannot be overwritten
-				if (!player.level().isClientSide) {
-					player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.specialized_cannot_overwrite"), true);
+				if (!player.level().isClientSide()) {
+					player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.specialized_cannot_overwrite"));
 				}
 				
 				// cancel the event to prevent the normal interaction

@@ -325,7 +325,7 @@ public class CommandItemDefinition {
         
         // Get the stage registry from the server
         net.unfamily.iskalib.stage.StageRegistry registry =
-            net.unfamily.iskalib.stage.StageRegistry.getInstance(player.getServer());
+            net.unfamily.iskalib.stage.StageRegistry.getInstance(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
         
         switch (condition.getStageType().toLowerCase()) {
             case "player":

@@ -16,7 +16,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructureLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +103,7 @@ public class StructureSaverMachineSaveC2SPacket {
 
         
         // Get all loaded client structures to check for duplicates/existence
-        var allClientStructures = net.unfamily.iskautils.structure.StructureLoader.getClientStructures();
+        var allClientStructures = net.unfamily.iskalib.structure.StructureLoader.getClientStructures();
         
         if (isModifyOperation) {
             // Verify that the structure to modify exists

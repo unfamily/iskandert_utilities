@@ -67,7 +67,8 @@ public class StickyOil {
 						matched = currentFluidState.toString().contains(stickyFluid);
 					}
 					if (entity instanceof ServerPlayer _player) {
-						AdvancementHolder _adv = _player.server.getAdvancements().get(Identifier.parse("iska_utils:sticky_oil"));
+						AdvancementHolder _adv = ((net.minecraft.server.level.ServerLevel) _player.level()).getServer()
+								.getAdvancements().get(Identifier.parse("iska_utils:sticky_oil"));
 						if (_adv != null) {
 							AdvancementProgress _ap = _player.getAdvancements().getOrStartProgress(_adv);
 							if (!_ap.isDone()) {

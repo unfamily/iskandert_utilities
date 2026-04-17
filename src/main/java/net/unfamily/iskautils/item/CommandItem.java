@@ -14,6 +14,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.command.CommandItemAction;
 import net.unfamily.iskautils.command.CommandItemDefinition;
@@ -82,12 +83,11 @@ public class CommandItem extends Item {
     }
     
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         
         // Add text to the tooltip
-        tooltip.add(Component.literal("Command Item: " + getDefinitionId())
-                .withStyle(ChatFormatting.GRAY));
+        tooltip.accept(Component.literal("Command Item: " + getDefinitionId()).withStyle(ChatFormatting.GRAY));
     }
     
     @Override
@@ -126,11 +126,11 @@ public class CommandItem extends Item {
     }
     
     @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
-        super.inventoryTick(stack, level, entity, slot, selected);
+    public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
+        super.inventoryTick(stack, level, entity, slot);
         
         // Process only on server side and for players
-        if (level.isClientSide || !(entity instanceof ServerPlayer player)) {
+        if (!(entity instanceof ServerPlayer player)) {
             return;
         }
         
@@ -144,6 +144,8 @@ public class CommandItem extends Item {
         
         UUID playerUuid = player.getUUID();
         
+        int inventorySlot = findPlayerInventorySlot(player, stack);
+
         // Check if first tick actions have been processed for this specific itemstack
         boolean processedFirstTick = isItemStackProcessed(playerUuid, stack);
         
@@ -154,7 +156,7 @@ public class CommandItem extends Item {
                         getDefinitionId(), player.getName().getString());
                 
                 // Execute first tick actions
-                executeFirstTickActions(player, getDefinition().getFirstTickActions(), stack, slot);
+                executeFirstTickActions(player, getDefinition().getFirstTickActions(), stack, inventorySlot);
                 
                 // If the item was consumed, do not continue
                 if (stack.isEmpty()) {
@@ -195,11 +197,24 @@ public class CommandItem extends Item {
         if (!getDefinition().getTickActions().isEmpty()) {
             LOGGER.debug("Executing tick actions for command item {} for player {}", 
                     getDefinitionId(), player.getName().getString());
-            executeActions(player, getDefinition().getTickActions(), stack, slot);
+            executeActions(player, getDefinition().getTickActions(), stack, inventorySlot);
             
             // Update cooldown
             updateCooldown(playerUuid, getDefinitionId());
         }
+    }
+
+    private static int findPlayerInventorySlot(ServerPlayer player, ItemStack stack) {
+        // Hotbar selected item is ticked with EquipmentSlot.MAINHAND; prefer that slot.
+        if (stack == player.getMainHandItem()) {
+            return player.getInventory().getSelectedSlot();
+        }
+        // Fallback: find a matching stack reference in the main inventory.
+        var items = player.getInventory().getNonEquipmentItems();
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i) == stack) return i;
+        }
+        return -1;
     }
     
     /**
@@ -416,7 +431,7 @@ public class CommandItem extends Item {
             LOGGER.debug("Executing use actions for command item {} for player {}", 
                     getDefinitionId(), player.getName().getString());
             executeActions(serverPlayer, getDefinition().getUseActions(), stack, 
-                    hand == InteractionHand.MAIN_HAND ? player.getInventory().selected : -1);
+                    hand == InteractionHand.MAIN_HAND ? player.getInventory().getSelectedSlot() : -1);
             
             // Update cooldown
             updateCooldown(serverPlayer.getUUID(), getDefinitionId());

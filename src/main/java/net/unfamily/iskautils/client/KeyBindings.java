@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class KeyBindings {
     private static final Logger LOGGER = LoggerFactory.getLogger(KeyBindings.class);
 
-    private static final String KEY_CATEGORY_ISKA_UTILS = "key.categories.iska_utils";
+    private static final KeyMapping.Category KEY_CATEGORY_ISKA_UTILS = new KeyMapping.Category(Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "iska_utils"));
     private static final String KEY_VECTOR_VERTICAL = "key.iska_utils.vector_vertical";
     private static final String KEY_VECTOR_HORIZONTAL = "key.iska_utils.vector_horizontal";
     private static final String KEY_VECTOR_HOVER = "key.iska_utils.vector_hover";
@@ -138,6 +139,7 @@ public class KeyBindings {
      */
     @SubscribeEvent
     public static void registerKeys(RegisterKeyMappingsEvent event) {
+        event.registerCategory(KEY_CATEGORY_ISKA_UTILS);
         event.register(VECTOR_VERTICAL_KEY);
         event.register(VECTOR_HORIZONTAL_KEY);
         event.register(VECTOR_HOVER_KEY);
@@ -170,8 +172,8 @@ public class KeyBindings {
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
                 // Send message to player
-                player.displayClientMessage(Component.translatable("message.iska_utils.vector_vertical_factor", 
-                                     Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
+                player.sendSystemMessage(Component.translatable("message.iska_utils.vector_vertical_factor",
+                                     Component.translatable("vectorcharm.factor." + newFactor.getName())));
             }
 
             // Key for horizontal adjustment
@@ -183,8 +185,8 @@ public class KeyBindings {
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
                 // Send message to player
-                player.displayClientMessage(Component.translatable("message.iska_utils.vector_horizontal_factor", 
-                                     Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
+                player.sendSystemMessage(Component.translatable("message.iska_utils.vector_horizontal_factor",
+                                     Component.translatable("vectorcharm.factor." + newFactor.getName())));
             }
 
             // Key for hover mode toggle
@@ -201,13 +203,13 @@ public class KeyBindings {
                     byte restoredFactor = VectorCharmData.disableHoverModeFromPlayer(player);
                     
                     // Send message to player
-                    player.displayClientMessage(Component.translatable("message.iska_utils.vector_hover_mode.off"), true);
+                    player.sendSystemMessage(Component.translatable("message.iska_utils.vector_hover_mode.off"));
                 } else {
                     // Otherwise, activate hover mode
                     VectorCharmData.setVerticalFactorToPlayer(player, hoverFactor);
                     
                     // Send message to player
-                    player.displayClientMessage(Component.translatable("message.iska_utils.vector_hover_mode.hover"), true);
+                    player.sendSystemMessage(Component.translatable("message.iska_utils.vector_hover_mode.hover"));
                 }
             }
             
@@ -220,8 +222,8 @@ public class KeyBindings {
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
                 // Send message to player
-                player.displayClientMessage(Component.translatable("message.iska_utils.vector_vertical_factor", 
-                                     Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
+                player.sendSystemMessage(Component.translatable("message.iska_utils.vector_vertical_factor",
+                                     Component.translatable("vectorcharm.factor." + newFactor.getName())));
             }
 
             // Key for horizontal adjustment decrease
@@ -233,8 +235,8 @@ public class KeyBindings {
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
                 // Send message to player
-                player.displayClientMessage(Component.translatable("message.iska_utils.vector_horizontal_factor",
-                                     Component.translatable("vectorcharm.factor." + newFactor.getName())), true);
+                player.sendSystemMessage(Component.translatable("message.iska_utils.vector_horizontal_factor",
+                                     Component.translatable("vectorcharm.factor." + newFactor.getName())));
             }
 
             // Key for Burning Brazier auto-placement toggle

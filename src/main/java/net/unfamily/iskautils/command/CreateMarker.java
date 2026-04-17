@@ -11,6 +11,8 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -59,7 +61,7 @@ public class CreateMarker {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
             Commands.literal("iska_utils_marker")
-                .requires(source -> source.hasPermission(0)) //No permission required
+                .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(0)))) //No permission required
                 .then(Commands.literal("create")
                     .then(Commands.argument("pos", BlockPosArgument.blockPos())
                         .executes(context -> createMarker(context, DEFAULT_COLOR, DEFAULT_DURATION, null))

@@ -66,9 +66,9 @@ public class SetWrenchDirectionBlock {
 				RotationMode newMode = cycleRotationMode(stack);
 				
 				// send a message to the player
-				player.displayClientMessage(
-					Component.translatable("item.iska_utils.swiss_wrench.message.mode_set", 
-					newMode.getDisplayName()), true);
+				player.sendSystemMessage(
+					Component.translatable("item.iska_utils.swiss_wrench.message.mode_set",
+					newMode.getDisplayName()));
 				
 				// feedback sound
 				player.level().playSound(null, player.blockPosition(), 
@@ -86,7 +86,7 @@ public class SetWrenchDirectionBlock {
 	public static RotationMode getSelectedRotationMode(ItemStack stack) {
 		CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
 		if (tag.contains(DIRECTION_KEY)) {
-			int index = tag.getInt(DIRECTION_KEY);
+			int index = tag.getInt(DIRECTION_KEY).orElse(0);
 			if (index >= 0 && index < RotationMode.values().length) {
 				return RotationMode.values()[index];
 			}

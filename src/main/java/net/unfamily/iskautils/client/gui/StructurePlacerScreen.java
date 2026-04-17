@@ -4,7 +4,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructureLoader;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -66,7 +66,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     // Variabili per lo scrolling e strutture
     private int scrollOffset = 0;
     private final int visibleEntries = 3;
-    private java.util.List<net.unfamily.iskautils.structure.StructureDefinition> availableStructures;
+    private java.util.List<net.unfamily.iskalib.structure.StructureDefinition> availableStructures;
     private int totalEntries;
     
     // Variabili per il drag dell'handle
@@ -110,7 +110,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
         super.init();
         
         // Ricarica le strutture all'apertura della GUI usando il flag del config
-        net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(net.unfamily.iskautils.Config.acceptClientStructure);
+        net.unfamily.iskalib.structure.StructureLoader.reloadAllDefinitions(net.unfamily.iskautils.Config.acceptClientStructure);
         
         // Crea i pulsanti vanilla Save e Cancel
         int saveX = this.leftPos + SAVE_BUTTON_X;
@@ -179,7 +179,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
             
             // Se l'entry ha una struttura, mostra nome, ID e pulsante
             if (entryIndex < availableStructures.size()) {
-                net.unfamily.iskautils.structure.StructureDefinition structure = availableStructures.get(entryIndex);
+                net.unfamily.iskalib.structure.StructureDefinition structure = availableStructures.get(entryIndex);
                 
                 // Testo più piccolo: scala a 0.7
                 float textScale = 0.7f;
@@ -264,7 +264,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
         
         // Disegna l'icona della struttura nello slot se disponibile
         if (entryIndex < availableStructures.size()) {
-            net.unfamily.iskautils.structure.StructureDefinition structure = availableStructures.get(entryIndex);
+            net.unfamily.iskalib.structure.StructureDefinition structure = availableStructures.get(entryIndex);
             renderStructureIcon(guiGraphics, structure, slotX + 1, slotY + 1); // +1 pixel per centrare nell'slot
         }
         
@@ -288,7 +288,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     /**
      * Renderizza l'icona di una struttura nello slot
      */
-    private void renderStructureIcon(GuiGraphicsExtractor guiGraphics, net.unfamily.iskautils.structure.StructureDefinition structure, int x, int y) {
+    private void renderStructureIcon(GuiGraphicsExtractor guiGraphics, net.unfamily.iskalib.structure.StructureDefinition structure, int x, int y) {
         if (structure.getIcon() != null && structure.getIcon().getItem() != null) {
             // Cerca di ottenere l'item dall'ID specificato nello script
             try {
@@ -312,7 +312,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
      */
     private void handleSaveClick() {
         if (selectedStructureIndex >= 0 && selectedStructureIndex < availableStructures.size()) {
-            net.unfamily.iskautils.structure.StructureDefinition structure = availableStructures.get(selectedStructureIndex);
+            net.unfamily.iskalib.structure.StructureDefinition structure = availableStructures.get(selectedStructureIndex);
             
             // Invia il packet al server per salvare la struttura
             net.unfamily.iskautils.network.ModMessages.sendStructurePlacerSavePacket(structure.getId());

@@ -7,6 +7,8 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -44,7 +46,7 @@ public class ExecuteMacroCommand {
         // Keep the admin command for administration functionality
         dispatcher.register(
             Commands.literal("iska_utils_macro")
-                .requires(source -> source.hasPermission(2)) // Require permission level 2 (OP)
+                .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Require permission level 2 (OP)
                 .then(Commands.literal("list")
                     .executes(ExecuteMacroCommand::listMacros))
                 .then(Commands.literal("test")

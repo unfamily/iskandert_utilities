@@ -90,7 +90,7 @@ public class VectorBlock extends HorizontalDirectionalBlock {
                 return InteractionResult.PASS;
             }
             
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 // Get current direction and calculate next direction (rotate clockwise)
                 Direction currentDirection = state.getValue(FACING);
                 Direction newDirection = currentDirection.getClockWise();
@@ -101,7 +101,7 @@ public class VectorBlock extends HorizontalDirectionalBlock {
                 // Play a stone click sound
                 level.playSound(null, pos, SoundEvents.STONE_PRESSURE_PLATE_CLICK_ON, SoundSource.BLOCKS, 0.3F, 0.6F);
             }
-            return InteractionResult.sidedSuccess(level.isClientSide);
+            return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         }
         
         return InteractionResult.PASS;
@@ -147,8 +147,7 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     }
     
     @Override
-    public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
-        // Allow light to pass through the block
+    public boolean propagatesSkylightDown(BlockState state) {
         return true;
     }
     
@@ -241,12 +240,12 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     }
     
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, net.minecraft.world.level.redstone.@org.jspecify.annotations.Nullable Orientation orientation, boolean isMoving) {
         boolean vertical = state.getValue(VERTICAL);
         
         // Check if the block can still survive
         if (!this.canSurvive(state, level, pos)) {
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 level.destroyBlock(pos, true); // Break the block and drop its item
             }
             return;
@@ -255,26 +254,27 @@ public class VectorBlock extends HorizontalDirectionalBlock {
         if (!vertical) {
             // Horizontal placement logic
             // Check if the changed block is above our vector block
-            if (fromPos.equals(pos.above())) {
-                BlockState aboveState = level.getBlockState(fromPos);
+            BlockPos abovePos = pos.above();
+            BlockState aboveState = level.getBlockState(abovePos);
+            if (aboveState != null) {
                 
                 // Check if the block above has a non-full or ethereal shape (no collision shape)
                 boolean shouldBreak = false;
                 
                 // Check if the block above has an empty or non-full collision shape (like vector plates)
-                VoxelShape collisionShape = aboveState.getCollisionShape(level, fromPos);
+                VoxelShape collisionShape = aboveState.getCollisionShape(level, abovePos);
                 if (collisionShape.isEmpty() || !isFullBlock(collisionShape)) {
                     shouldBreak = true;
                 }
                 
                 // If the block should break, break the vector block and drop the item
-                if (shouldBreak && !level.isClientSide) {
+                if (shouldBreak && !level.isClientSide()) {
                     level.destroyBlock(pos, true); // The second parameter 'true' makes the block drop its item
                 }
             }
         }
         
-        super.neighborChanged(state, level, pos, block, fromPos, isMoving);
+        super.neighborChanged(state, level, pos, block, orientation, isMoving);
     }
     
     /**
@@ -286,9 +286,8 @@ public class VectorBlock extends HorizontalDirectionalBlock {
                shape.min(Direction.Axis.Z) <= 0.01 && shape.max(Direction.Axis.Z) >= 0.99;
     }
     
-    @Override
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             // if affectsPlayers is true, push only players
             // if affectsPlayers is false, push only non-player entities
             boolean isPlayer = entity instanceof Player;

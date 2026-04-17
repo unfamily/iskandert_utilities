@@ -13,6 +13,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.block.DeepDrawerExtractorBlock;
@@ -681,13 +683,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             String nbtFilter = filter.substring(1);
             try {
                 if (level != null) {
-                    var tag = stack.save(level.registryAccess());
-                    if (tag instanceof CompoundTag compoundTag) {
-                        // Serialize CompoundTag to string and search for exact string (like original example)
-                        String nbtString = compoundTag.toString();
-                        // Search for exact string with quotes (same as original: "apotheosis:rarity":"apotheosis:mythic")
-                        return nbtString.contains(nbtFilter);
-                    }
+                    String nbtString = stack.getComponentsPatch().toString();
+                    return nbtString.contains(nbtFilter);
                 }
             } catch (Exception e) {
                 // Error reading NBT, consider not matching
@@ -702,65 +699,62 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     // ===== NBT Save/Load =====
     
     @Override
-    protected void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
-        ContainerHelper.saveAllItems(tag, items, provider);
+    protected void saveAdditional(@NotNull ValueOutput output) {
+        super.saveAdditional(output);
+        ContainerHelper.saveAllItems(output, items);
         
         // Save filter fields as index-value pairs (version 5 - added inverted filters)
-        CompoundTag filterTag = new CompoundTag();
-        net.minecraft.nbt.ListTag filterList = new net.minecraft.nbt.ListTag();
-        net.minecraft.nbt.ListTag invertedFilterList = new net.minecraft.nbt.ListTag();
+        ValueOutput filterTag = output.child("filter_config");
+        ValueOutput.ValueOutputList filterList = filterTag.childrenList("filters");
+        ValueOutput.ValueOutputList invertedFilterList = filterTag.childrenList("inverted_filters");
         int maxSlots = getMaxFilterSlots();
         for (int i = 0; i < maxSlots; i++) {
             String filter = filterFields[i];
             // Only save non-empty filters to reduce NBT size
             if (filter != null && !filter.trim().isEmpty()) {
-                CompoundTag filterEntry = new CompoundTag();
+                ValueOutput filterEntry = filterList.addChild();
                 filterEntry.putInt("index", i);
-                // Debug: log filter length before saving
-                // LOGGER.debug("Saving filter at index {}: length={}, value={}", i, filter != null ? filter.length() : 0, filter);
                 filterEntry.putString("value", filter);
-                filterList.add(filterEntry);
             }
             // Save inverted filters
             String invertedFilter = invertedFilterFields[i];
             if (invertedFilter != null && !invertedFilter.trim().isEmpty()) {
-                CompoundTag invertedFilterEntry = new CompoundTag();
+                ValueOutput invertedFilterEntry = invertedFilterList.addChild();
                 invertedFilterEntry.putInt("index", i);
                 invertedFilterEntry.putString("value", invertedFilter);
-                invertedFilterList.add(invertedFilterEntry);
             }
         }
-        filterTag.put("filters", filterList);
-        filterTag.put("inverted_filters", invertedFilterList);
+        if (filterList.isEmpty()) filterTag.discard("filters");
+        if (invertedFilterList.isEmpty()) filterTag.discard("inverted_filters");
         filterTag.putBoolean("whitelist_mode", isWhitelistMode);
         filterTag.putInt("filter_version", 5); // Version 5 = index-value pairs + inverted filters
         filterTag.putInt("filter_slot_count", maxSlots); // Save slot count for migration
-        tag.put("filter_config", filterTag);
+        if (filterTag.isEmpty()) output.discard("filter_config");
         
         // Save redstone mode
-        tag.putInt("redstoneMode", redstoneMode);
-        tag.putBoolean("previousRedstoneState", previousRedstoneState);
-        tag.putInt("pulseIgnoreTimer", pulseIgnoreTimer);
+        output.putInt("redstoneMode", redstoneMode);
+        output.putBoolean("previousRedstoneState", previousRedstoneState);
+        output.putInt("pulseIgnoreTimer", pulseIgnoreTimer);
         
         // Always persist so chunk reload / sync packets do not trigger a false "legacy" wipe in loadAdditional
-        tag.putString("dataVersion", dataVersion != null ? dataVersion : "V2");
+        output.putString("dataVersion", dataVersion != null ? dataVersion : "V2");
     }
     
     @Override
-    protected void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
-        ContainerHelper.loadAllItems(tag, items, provider);
+    protected void loadAdditional(@NotNull ValueInput input) {
+        super.loadAdditional(input);
+        ContainerHelper.loadAllItems(input, items);
         
         // filterFields is already initialized in constructor with size from config
         int maxSlots = getMaxFilterSlots();
         
         // Load filter fields (with automatic conversion from old format)
-        if (tag.contains("filter_config", CompoundTag.TAG_COMPOUND)) {
-            CompoundTag filterTag = tag.getCompound("filter_config");
+        java.util.Optional<ValueInput> filterTagOpt = input.child("filter_config");
+        if (filterTagOpt.isPresent()) {
+            ValueInput filterTag = filterTagOpt.get();
             
             // Check version: version 4 = index-value pairs, version 3 = fixed array, version 2 = dynamic list, version 1 or no version = old array format
-            int version = filterTag.contains("filter_version") ? filterTag.getInt("filter_version") : 1;
+            int version = filterTag.getIntOr("filter_version", 1);
             
             // Initialize all slots to empty first
             for (int i = 0; i < maxSlots; i++) {
@@ -769,95 +763,27 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             }
             
             // Load inverted filters (version 5+)
-            if (version >= 5 && filterTag.contains("inverted_filters", CompoundTag.TAG_LIST)) {
-                net.minecraft.nbt.ListTag invertedFilterList = filterTag.getList("inverted_filters", CompoundTag.TAG_COMPOUND);
-                for (int i = 0; i < invertedFilterList.size(); i++) {
-                    CompoundTag invertedFilterEntry = invertedFilterList.getCompound(i);
-                    if (invertedFilterEntry.contains("index", CompoundTag.TAG_INT) && invertedFilterEntry.contains("value", CompoundTag.TAG_STRING)) {
-                        int index = invertedFilterEntry.getInt("index");
-                        String value = invertedFilterEntry.getString("value");
-                        if (index >= 0 && index < maxSlots) {
-                            invertedFilterFields[index] = value != null ? value : "";
-                        }
+            if (version >= 5) {
+                for (ValueInput invertedFilterEntry : filterTag.childrenListOrEmpty("inverted_filters")) {
+                    int index = invertedFilterEntry.getIntOr("index", -1);
+                    String value = invertedFilterEntry.getStringOr("value", "");
+                    if (index >= 0 && index < maxSlots) {
+                        invertedFilterFields[index] = value;
                     }
                 }
             }
             
             if (version >= 4) {
-                // New format: index-value pairs
-                if (filterTag.contains("filters", CompoundTag.TAG_LIST)) {
-                    net.minecraft.nbt.ListTag filterList = filterTag.getList("filters", CompoundTag.TAG_COMPOUND);
-                    for (int i = 0; i < filterList.size(); i++) {
-                        CompoundTag filterEntry = filterList.getCompound(i);
-                        if (filterEntry.contains("index", CompoundTag.TAG_INT) && filterEntry.contains("value", CompoundTag.TAG_STRING)) {
-                            int index = filterEntry.getInt("index");
-                            String value = filterEntry.getString("value");
-                            // Debug: log filter length after loading
-                            // LOGGER.debug("Loading filter at index {}: length={}, value={}", index, value != null ? value.length() : 0, value);
-                            // Ignore indices outside valid range (0 to maxSlots-1)
-                            if (index >= 0 && index < maxSlots) {
-                                filterFields[index] = value != null ? value : "";
-                            }
-                            // If index is out of range, simply ignore it (as requested)
-                        }
+                for (ValueInput filterEntry : filterTag.childrenListOrEmpty("filters")) {
+                    int index = filterEntry.getIntOr("index", -1);
+                    String value = filterEntry.getStringOr("value", "");
+                    if (index >= 0 && index < maxSlots) {
+                        filterFields[index] = value;
                     }
-                }
-            } else if (version >= 3) {
-                // Old format: fixed array (size from config)
-                if (filterTag.contains("filters", CompoundTag.TAG_LIST)) {
-                    net.minecraft.nbt.ListTag filterList = filterTag.getList("filters", CompoundTag.TAG_STRING);
-                    int savedSlotCount = filterTag.contains("filter_slot_count") ? filterTag.getInt("filter_slot_count") : maxSlots;
-                    // Load up to the minimum of saved count and current config
-                    int loadCount = Math.min(maxSlots, Math.min(savedSlotCount, filterList.size()));
-                    for (int i = 0; i < loadCount; i++) {
-                        String filter = filterList.getString(i);
-                        filterFields[i] = filter != null ? filter : "";
-                    }
-                    // Remaining slots already initialized to empty above
-                }
-            } else if (version >= 2) {
-                // Old format: dynamic list - convert to fixed array
-                if (filterTag.contains("filters", CompoundTag.TAG_LIST)) {
-                    net.minecraft.nbt.ListTag filterList = filterTag.getList("filters", CompoundTag.TAG_STRING);
-                    int loadCount = Math.min(maxSlots, filterList.size());
-                    for (int i = 0; i < loadCount; i++) {
-                        String filter = filterList.getString(i);
-                        if (filter != null && !filter.isEmpty()) {
-                            filterFields[i] = filter;
-                        } else {
-                            filterFields[i] = "";
-                        }
-                    }
-                    // Initialize remaining slots to empty
-                    for (int i = loadCount; i < maxSlots; i++) {
-                        filterFields[i] = "";
-                        invertedFilterFields[i] = "";
-                    }
-                }
-            } else {
-                // Old format: convert from array (field_0, field_1, ..., field_10)
-                int loadCount = Math.min(11, maxSlots);
-                for (int i = 0; i < loadCount; i++) {
-                    String key = "field_" + i;
-                    if (filterTag.contains(key, CompoundTag.TAG_STRING)) {
-                        String value = filterTag.getString(key);
-                        if (value != null && !value.isEmpty()) {
-                            filterFields[i] = value;
-                        } else {
-                            filterFields[i] = "";
-                        }
-                    } else {
-                        filterFields[i] = "";
-                    }
-                }
-                // Initialize remaining slots to empty
-                for (int i = loadCount; i < maxSlots; i++) {
-                    filterFields[i] = "";
-                    invertedFilterFields[i] = "";
                 }
             }
             
-            isWhitelistMode = filterTag.getBoolean("whitelist_mode");
+            isWhitelistMode = filterTag.getBooleanOr("whitelist_mode", true);
         } else {
             // No filter_config tag: initialize all to empty
             for (int i = 0; i < maxSlots; i++) {
@@ -867,23 +793,12 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         }
         
         // Load redstone mode
-        if (tag.contains("redstoneMode")) {
-            redstoneMode = tag.getInt("redstoneMode");
-        }
-        if (tag.contains("previousRedstoneState")) {
-            previousRedstoneState = tag.getBoolean("previousRedstoneState");
-        }
-        if (tag.contains("pulseIgnoreTimer")) {
-            pulseIgnoreTimer = tag.getInt("pulseIgnoreTimer");
-        }
+        redstoneMode = input.getIntOr("redstoneMode", redstoneMode);
+        previousRedstoneState = input.getBooleanOr("previousRedstoneState", previousRedstoneState);
+        pulseIgnoreTimer = input.getIntOr("pulseIgnoreTimer", pulseIgnoreTimer);
         
         // Load data version; missing key means "never had migration marker" — do not wipe loaded filters (see saveAdditional)
-        if (tag.contains("dataVersion", CompoundTag.TAG_STRING)) {
-            dataVersion = tag.getString("dataVersion");
-        } else {
-            dataVersion = "V2";
-            setChanged();
-        }
+        dataVersion = input.getStringOr("dataVersion", "V2");
         
         // Explicit non-V2 tag: legacy reset (blocks that stored an older marker)
         if (!dataVersion.equals("V2")) {
@@ -1126,20 +1041,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     
     @Override
     public CompoundTag getUpdateTag(@NotNull HolderLookup.Provider provider) {
-        CompoundTag tag = super.getUpdateTag(provider);
-        saveAdditional(tag, provider);
-        return tag;
+        return super.getUpdateTag(provider);
     }
     
-    @Override
-    public void onDataPacket(net.minecraft.network.Connection net, 
-                            net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, 
-                            @NotNull HolderLookup.Provider lookupProvider) {
-        super.onDataPacket(net, pkt, lookupProvider);
-        if (pkt.getTag() != null) {
-            loadAdditional(pkt.getTag(), lookupProvider);
-        }
-    }
+    // Packet/tag sync is handled via the new ValueInput/ValueOutput serialization
     
     // ===== WorldlyContainer Implementation =====
     

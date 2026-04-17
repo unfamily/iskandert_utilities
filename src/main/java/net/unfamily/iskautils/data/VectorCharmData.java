@@ -191,11 +191,11 @@ public class VectorCharmData {
     public void load(CompoundTag tag) {
         // Load vertical factors
         if (tag.contains("vertical_factors")) {
-            CompoundTag verticalTag = tag.getCompound("vertical_factors");
-            for (String key : verticalTag.getAllKeys()) {
+            CompoundTag verticalTag = tag.getCompound("vertical_factors").orElse(new CompoundTag());
+            for (String key : verticalTag.keySet()) {
                 try {
                     UUID playerId = UUID.fromString(key);
-                    verticalFactors.put(playerId, verticalTag.getByte(key));
+                    verticalFactors.put(playerId, verticalTag.getByte(key).orElse((byte) 0));
                 } catch (IllegalArgumentException e) {
                     LOGGER.error("Invalid UUID in vertical_factors: {}", key);
                 }
@@ -204,11 +204,11 @@ public class VectorCharmData {
         
         // Load horizontal factors
         if (tag.contains("horizontal_factors")) {
-            CompoundTag horizontalTag = tag.getCompound("horizontal_factors");
-            for (String key : horizontalTag.getAllKeys()) {
+            CompoundTag horizontalTag = tag.getCompound("horizontal_factors").orElse(new CompoundTag());
+            for (String key : horizontalTag.keySet()) {
                 try {
                     UUID playerId = UUID.fromString(key);
-                    horizontalFactors.put(playerId, horizontalTag.getByte(key));
+                    horizontalFactors.put(playerId, horizontalTag.getByte(key).orElse((byte) 0));
                 } catch (IllegalArgumentException e) {
                     LOGGER.error("Invalid UUID in horizontal_factors: {}", key);
                 }
@@ -217,11 +217,11 @@ public class VectorCharmData {
         
         // Load previous vertical factors
         if (tag.contains("previous_vertical_factors")) {
-            CompoundTag previousVerticalTag = tag.getCompound("previous_vertical_factors");
-            for (String key : previousVerticalTag.getAllKeys()) {
+            CompoundTag previousVerticalTag = tag.getCompound("previous_vertical_factors").orElse(new CompoundTag());
+            for (String key : previousVerticalTag.keySet()) {
                 try {
                     UUID playerId = UUID.fromString(key);
-                    previousVerticalFactors.put(playerId, previousVerticalTag.getByte(key));
+                    previousVerticalFactors.put(playerId, previousVerticalTag.getByte(key).orElse((byte) 0));
                 } catch (IllegalArgumentException e) {
                     LOGGER.error("Invalid UUID in previous_vertical_factors: {}", key);
                 }
@@ -230,11 +230,11 @@ public class VectorCharmData {
         
         // Load parachute counters
         if (tag.contains("parachute_ticks")) {
-            CompoundTag parachuteTicksTag = tag.getCompound("parachute_ticks");
-            for (String key : parachuteTicksTag.getAllKeys()) {
+            CompoundTag parachuteTicksTag = tag.getCompound("parachute_ticks").orElse(new CompoundTag());
+            for (String key : parachuteTicksTag.keySet()) {
                 try {
                     UUID playerId = UUID.fromString(key);
-                    parachuteTicksLeft.put(playerId, parachuteTicksTag.getInt(key));
+                    parachuteTicksLeft.put(playerId, parachuteTicksTag.getInt(key).orElse(0));
                 } catch (IllegalArgumentException e) {
                     LOGGER.error("Invalid UUID in parachute_ticks: {}", key);
                 }
@@ -340,7 +340,7 @@ public class VectorCharmData {
      */
     public static byte getVerticalFactorFromPlayer(Player player) {
         if (player.getPersistentData().contains("VectorCharmVertical")) {
-            return player.getPersistentData().getByte("VectorCharmVertical");
+            return player.getPersistentData().getByte("VectorCharmVertical").orElse((byte) 0);
         }
         return 0; // Default value
     }
@@ -369,7 +369,7 @@ public class VectorCharmData {
      */
     public static byte getHorizontalFactorFromPlayer(Player player) {
         if (player.getPersistentData().contains("VectorCharmHorizontal")) {
-            return player.getPersistentData().getByte("VectorCharmHorizontal");
+            return player.getPersistentData().getByte("VectorCharmHorizontal").orElse((byte) 0);
         }
         return 0; // Default value
     }
@@ -391,7 +391,7 @@ public class VectorCharmData {
     public static byte disableHoverModeFromPlayer(Player player) {
         byte previousFactor = 0;
         if (player.getPersistentData().contains("VectorCharmPreviousVertical")) {
-            previousFactor = player.getPersistentData().getByte("VectorCharmPreviousVertical");
+            previousFactor = player.getPersistentData().getByte("VectorCharmPreviousVertical").orElse((byte) 0);
             player.getPersistentData().remove("VectorCharmPreviousVertical");
         }
         

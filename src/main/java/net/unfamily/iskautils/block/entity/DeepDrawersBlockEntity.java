@@ -12,8 +12,11 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.ItemStackWithSlot;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.Config;
@@ -378,39 +381,35 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     }
     
     @Override
-    protected void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
+    protected void saveAdditional(@NotNull ValueOutput output) {
+        super.saveAdditional(output);
         
         // Note: maxSlots is no longer saved - it's read from config in real-time
         
         // Save scroll offset
-        tag.putInt("ScrollOffset", this.scrollOffset);
+        output.putInt("ScrollOffset", this.scrollOffset);
         
         
         // Save storage using ListTag format (like ItemStackHandler does internally)
-        ListTag itemsList = new ListTag();
+        ValueOutput.TypedOutputList<ItemStackWithSlot> itemsList = output.list("Items", ItemStackWithSlot.CODEC);
         for (Map.Entry<Integer, ItemStack> entry : storage.entrySet()) {
             ItemStack stack = entry.getValue();
             if (!stack.isEmpty()) {
-                CompoundTag itemTag = new CompoundTag();
-                itemTag.putInt("Slot", entry.getKey());
-                itemTag.put("Item", stack.saveOptional(provider));
-                itemsList.add(itemTag);
+                itemsList.add(new ItemStackWithSlot(entry.getKey(), stack));
             }
         }
-        
-        tag.put("Items", itemsList);
+        if (itemsList.isEmpty()) output.discard("Items");
     }
     
     @Override
-    protected void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
+    protected void loadAdditional(@NotNull ValueInput input) {
+        super.loadAdditional(input);
         
         // Note: maxSlots is no longer loaded - it's read from config in real-time
         // Old saves may have MaxSlots in NBT, but we ignore it now
         
         // Load scroll offset
-        this.scrollOffset = tag.getInt("ScrollOffset");
+        this.scrollOffset = input.getIntOr("ScrollOffset", 0);
         if (this.scrollOffset < 0) {
             this.scrollOffset = 0;
         }
@@ -425,21 +424,12 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         physicalToLogical.clear();
         insertionCursor = 0;
         
-        // Load storage using ListTag format (like ItemStackHandler does internally)
-        if (tag.contains("Items", Tag.TAG_LIST)) {
-            ListTag itemsList = tag.getList("Items", Tag.TAG_COMPOUND);
-            for (int i = 0; i < itemsList.size(); i++) {
-                CompoundTag itemTag = itemsList.getCompound(i);
-                int physicalSlot = itemTag.getInt("Slot");
-                
-                // Allow loading items even if slot is beyond current maxSlots (for existing items)
-                // This preserves items when config is reduced
-                if (physicalSlot >= 0) {
-                    ItemStack stack = ItemStack.parseOptional(provider, itemTag.getCompound("Item"));
-                    if (!stack.isEmpty()) {
-                        // Rebuild all indices
-                        addItemToStorage(physicalSlot, stack);
-                    }
+        for (ItemStackWithSlot item : input.listOrEmpty("Items", ItemStackWithSlot.CODEC)) {
+            int physicalSlot = item.slot();
+            if (physicalSlot >= 0) {
+                ItemStack stack = item.stack();
+                if (!stack.isEmpty()) {
+                    addItemToStorage(physicalSlot, stack);
                 }
             }
         }
@@ -464,25 +454,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
     }
     
-    @Override
-    public void onDataPacket(@NotNull net.minecraft.network.Connection net, 
-                            @NotNull net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, 
-                            @NotNull HolderLookup.Provider lookupProvider) {
-        super.onDataPacket(net, pkt, lookupProvider);
-        // Handle data packet from server on client
-        // Only load metadata, not items (items are synced via GUI packets)
-        if (pkt.getTag() != null) {
-            CompoundTag tag = pkt.getTag();
-            // Only update metadata, not storage
-            // Note: maxSlots is no longer loaded from NBT - it's read from config in real-time
-            if (tag.contains("ScrollOffset", Tag.TAG_INT)) {
-                this.scrollOffset = tag.getInt("ScrollOffset");
-                if (this.scrollOffset < 0) {
-                    this.scrollOffset = 0;
-                }
-            }
-        }
-    }
+    // Packet/tag sync is handled via ValueInput/ValueOutput serialization.
     
     @Override
     public void onLoad() {

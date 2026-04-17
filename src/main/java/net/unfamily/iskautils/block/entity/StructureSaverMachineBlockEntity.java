@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.ItemStackWithSlot;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -11,6 +12,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.slf4j.Logger;
@@ -107,98 +110,74 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
         return tag;
     }
     
-    @Override
-    public void onDataPacket(net.minecraft.network.Connection net, net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider lookupProvider) {
-        super.onDataPacket(net, pkt, lookupProvider);
-        if (pkt.getTag() != null) {
-            System.out.println("DEBUG BE: Received data packet on client");
-            loadAdditional(pkt.getTag(), lookupProvider);
-            System.out.println("DEBUG BE: After packet load - hasValidArea = " + hasValidArea());
-        }
-    }
+    // onDataPacket is handled by the current BlockEntity serialization system.
     
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        
-        // Salva item handler
-        tag.put("inventory", itemHandler.serializeNBT(registries));
-        
-        // Salva compound tags struttura
-        tag.put("structureData", structureData.copy());
-        
-        // Salva stato operativo
-        tag.putBoolean("isWorking", isWorking);
-        tag.putInt("workProgress", workProgress);
-        
-        // Salva flag ricalcolo area
-        tag.putBoolean("shouldRecalculateArea", shouldRecalculateArea);
-        
-        // Salva dati blueprint
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+
+        ValueOutput.TypedOutputList<ItemStackWithSlot> inv = output.list("inventory", ItemStackWithSlot.CODEC);
+        for (int slot = 0; slot < itemHandler.getSlots(); slot++) {
+            ItemStack stack = itemHandler.getStackInSlot(slot);
+            if (!stack.isEmpty()) inv.add(new ItemStackWithSlot(slot, stack));
+        }
+        if (inv.isEmpty()) output.discard("inventory");
+
+        output.store("structureData", net.minecraft.nbt.CompoundTag.CODEC, structureData.copy());
+
+        output.putBoolean("isWorking", isWorking);
+        output.putInt("workProgress", workProgress);
+        output.putBoolean("shouldRecalculateArea", shouldRecalculateArea);
+
         if (blueprintVertex1 != null) {
-            tag.putInt("blueprintVertex1X", blueprintVertex1.getX());
-            tag.putInt("blueprintVertex1Y", blueprintVertex1.getY());
-            tag.putInt("blueprintVertex1Z", blueprintVertex1.getZ());
+            output.putInt("blueprintVertex1X", blueprintVertex1.getX());
+            output.putInt("blueprintVertex1Y", blueprintVertex1.getY());
+            output.putInt("blueprintVertex1Z", blueprintVertex1.getZ());
         }
         if (blueprintVertex2 != null) {
-            tag.putInt("blueprintVertex2X", blueprintVertex2.getX());
-            tag.putInt("blueprintVertex2Y", blueprintVertex2.getY());
-            tag.putInt("blueprintVertex2Z", blueprintVertex2.getZ());
+            output.putInt("blueprintVertex2X", blueprintVertex2.getX());
+            output.putInt("blueprintVertex2Y", blueprintVertex2.getY());
+            output.putInt("blueprintVertex2Z", blueprintVertex2.getZ());
         }
         if (blueprintCenter != null) {
-            tag.putInt("blueprintCenterX", blueprintCenter.getX());
-            tag.putInt("blueprintCenterY", blueprintCenter.getY());
-            tag.putInt("blueprintCenterZ", blueprintCenter.getZ());
+            output.putInt("blueprintCenterX", blueprintCenter.getX());
+            output.putInt("blueprintCenterY", blueprintCenter.getY());
+            output.putInt("blueprintCenterZ", blueprintCenter.getZ());
         }
     }
     
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        
-        // Carica item handler
-        if (tag.contains("inventory")) {
-            itemHandler.deserializeNBT(registries, tag.getCompound("inventory"));
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+
+        for (ItemStackWithSlot item : input.listOrEmpty("inventory", ItemStackWithSlot.CODEC)) {
+            int slot = item.slot();
+            if (slot >= 0 && slot < itemHandler.getSlots()) {
+                itemHandler.setStackInSlot(slot, item.stack());
+            }
         }
-        
-        // Carica compound tags struttura
-        if (tag.contains("structureData")) {
-            structureData = tag.getCompound("structureData").copy();
-        } else {
-            structureData = new CompoundTag();
-        }
-        
-        // Carica stato operativo
-        isWorking = tag.getBoolean("isWorking");
-        workProgress = tag.getInt("workProgress");
-        
-        // Carica flag ricalcolo area
-        shouldRecalculateArea = tag.getBoolean("shouldRecalculateArea");
-        
-        // Carica dati blueprint
-        if (tag.contains("blueprintVertex1X")) {
-            int x1 = tag.getInt("blueprintVertex1X");
-            int y1 = tag.getInt("blueprintVertex1Y");
-            int z1 = tag.getInt("blueprintVertex1Z");
-            blueprintVertex1 = new BlockPos(x1, y1, z1);
-            System.out.println("DEBUG BE LOAD: vertex1 loaded = " + blueprintVertex1);
-        }
-        if (tag.contains("blueprintVertex2X")) {
-            int x2 = tag.getInt("blueprintVertex2X");
-            int y2 = tag.getInt("blueprintVertex2Y");
-            int z2 = tag.getInt("blueprintVertex2Z");
-            blueprintVertex2 = new BlockPos(x2, y2, z2);
-            System.out.println("DEBUG BE LOAD: vertex2 loaded = " + blueprintVertex2);
-        }
-        if (tag.contains("blueprintCenterX")) {
-            int x3 = tag.getInt("blueprintCenterX");
-            int y3 = tag.getInt("blueprintCenterY");
-            int z3 = tag.getInt("blueprintCenterZ");
-            blueprintCenter = new BlockPos(x3, y3, z3);
-            System.out.println("DEBUG BE LOAD: center loaded = " + blueprintCenter);
-        }
-        
-        System.out.println("DEBUG BE LOAD: After loading - hasValidArea = " + hasValidArea());
+
+        structureData = input.read("structureData", net.minecraft.nbt.CompoundTag.CODEC).orElseGet(CompoundTag::new).copy();
+
+        isWorking = input.getBooleanOr("isWorking", false);
+        workProgress = input.getIntOr("workProgress", 0);
+        shouldRecalculateArea = input.getBooleanOr("shouldRecalculateArea", false);
+
+        input.getInt("blueprintVertex1X").ifPresent(x1 -> blueprintVertex1 = new BlockPos(
+                x1,
+                input.getIntOr("blueprintVertex1Y", 0),
+                input.getIntOr("blueprintVertex1Z", 0)
+        ));
+        input.getInt("blueprintVertex2X").ifPresent(x2 -> blueprintVertex2 = new BlockPos(
+                x2,
+                input.getIntOr("blueprintVertex2Y", 0),
+                input.getIntOr("blueprintVertex2Z", 0)
+        ));
+        input.getInt("blueprintCenterX").ifPresent(x3 -> blueprintCenter = new BlockPos(
+                x3,
+                input.getIntOr("blueprintCenterY", 0),
+                input.getIntOr("blueprintCenterZ", 0)
+        ));
     }
     
     /**

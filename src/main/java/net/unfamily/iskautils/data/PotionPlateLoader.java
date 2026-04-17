@@ -10,7 +10,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.profiling.ProfilerFiller;
 import net.unfamily.iskautils.IskaUtils;
 import org.slf4j.Logger;
 
@@ -32,9 +31,11 @@ public class PotionPlateLoader implements PreparableReloadListener {
     private static final Map<String, PotionPlateConfig> LOADED_CONFIGS = new HashMap<>();
     
     @Override
-    public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, 
-                                         ProfilerFiller preparationProfiler, ProfilerFiller reloadProfiler, 
-                                         Executor backgroundExecutor, Executor gameExecutor) {
+    public CompletableFuture<Void> reload(SharedState state,
+                                         Executor backgroundExecutor,
+                                         PreparationBarrier preparationBarrier,
+                                         Executor gameExecutor) {
+        ResourceManager resourceManager = state.resourceManager();
         
         return CompletableFuture.supplyAsync(() -> {
             Map<Identifier, JsonElement> foundConfigs = new HashMap<>();

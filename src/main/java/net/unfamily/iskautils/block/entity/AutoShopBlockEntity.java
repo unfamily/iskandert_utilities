@@ -1,11 +1,11 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
@@ -118,148 +118,39 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
     
     @Override
-    public void onDataPacket(net.minecraft.network.Connection net, net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider lookupProvider) {
-        super.onDataPacket(net, pkt, lookupProvider);
-        if (pkt.getTag() != null) {
-            loadAdditional(pkt.getTag(), lookupProvider);
-        }
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+
+        output.putBoolean("isActive", isActive);
+        output.putString("currentCategory", currentCategory);
+        output.putString("selectedValute", selectedValute);
+        output.putBoolean("autoBuyMode", autoBuyMode);
+        output.putString("ownerTeamId", ownerTeamId != null ? ownerTeamId.toString() : "");
+        output.putString("placedByPlayer", placedByPlayer != null ? placedByPlayer.toString() : "");
+        output.putInt("redstoneMode", redstoneMode);
+        output.putBoolean("previousRedstoneState", previousRedstoneState);
     }
     
     @Override
-    public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
-        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
-    }
-    
-    @Override
-    public net.minecraft.nbt.CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
-        return saveWithoutMetadata(registries);
-    }
-    
-    @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        
-        // Save encapsulated slot
-        tag.put("encapsulatedSlot", encapsulatedSlot.serializeNBT(registries));
-        
-        // Save shop state (filter/selected item is in shopData.selectedItem)
-        CompoundTag shopData = new CompoundTag();
-        shopData.putBoolean("isActive", isActive);
-        shopData.putString("currentCategory", currentCategory);
-        
-        // Always save the currency (even if it's "unset")
-        shopData.putString("selectedValute", selectedValute);
-        
-        // Always save the mode (buy/sell)
-        shopData.putBoolean("autoBuyMode", autoBuyMode);
-        
-        // Save owner team ID if present
-        if (ownerTeamId != null) {
-            shopData.putUUID("ownerTeamId", ownerTeamId);
-        }
-        
-        // Save placedByPlayer only if not empty
-        if (placedByPlayer != null) {
-            shopData.putUUID("placedByPlayer", placedByPlayer);
-        }
-        
-        // Save selectedItem only if not empty and valid
-        if (!selectedItem.isEmpty() && selectedItem.getItem() != null) {
-            CompoundTag selectedTag = new CompoundTag();
-            selectedItem.save(registries, selectedTag);
-            // Always save the item if valid, even if tag is empty (can happen for simple items)
-            shopData.put("selectedItem", selectedTag);
-        }
-        shopData.putInt("redstoneMode", redstoneMode);
-        shopData.putBoolean("previousRedstoneState", previousRedstoneState);
-        
-        tag.put("shopData", shopData);
-    }
-    
-    @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        
-        // Load encapsulated slot
-        if (tag.contains("encapsulatedSlot")) {
-            encapsulatedSlot.deserializeNBT(registries, tag.getCompound("encapsulatedSlot"));
-        }
-        
-        // Load shop state (filter slot is logical only, stored in shopData.selectedItem)
-        if (tag.contains("shopData")) {
-            CompoundTag shopData = tag.getCompound("shopData");
-            this.isActive = shopData.getBoolean("isActive");
-            this.currentCategory = shopData.getString("currentCategory");
-            
-            // Load currency if present, otherwise use "unset"
-            if (shopData.contains("selectedValute")) {
-                this.selectedValute = shopData.getString("selectedValute");
-                if (this.selectedValute.isEmpty()) {
-                    this.selectedValute = "unset"; // Fallback if empty
-                }
-            } else {
-                this.selectedValute = "unset"; // Default if not present
-            }
-            
-            // Load mode if present
-            if (shopData.contains("autoBuyMode")) {
-                this.autoBuyMode = shopData.getBoolean("autoBuyMode");
-            } else {
-                this.autoBuyMode = true; // Default if not present
-            }
-            
-            // Load owner team ID if present
-            if (shopData.contains("ownerTeamId")) {
-                this.ownerTeamId = shopData.getUUID("ownerTeamId");
-            } else {
-                this.ownerTeamId = null; // Default if not present
-            }
-            
-            // Load placedByPlayer if present
-            if (shopData.contains("placedByPlayer")) {
-                this.placedByPlayer = shopData.getUUID("placedByPlayer");
-            } else {
-                this.placedByPlayer = null; // Default if not present
-            }
-            
-            // Load selectedItem if present
-            if (shopData.contains("selectedItem")) {
-                try {
-                    CompoundTag selectedTag = shopData.getCompound("selectedItem");
-                    // Try to load the item even if tag is empty (can happen for simple items)
-                    this.selectedItem = ItemStack.parse(registries, selectedTag).orElse(ItemStack.EMPTY);
-                    // Verify that loaded item is valid
-                    if (this.selectedItem.isEmpty() || this.selectedItem.getItem() == null) {
-                        this.selectedItem = ItemStack.EMPTY;
-                        LOGGER.warn("AutoShopBlockEntity: Invalid selectedItem loaded, resetting to EMPTY");
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("AutoShopBlockEntity: Error loading selectedItem", e);
-                    this.selectedItem = ItemStack.EMPTY;
-                }
-            } else {
-                this.selectedItem = ItemStack.EMPTY; // Default if not present
-            }
-            if (shopData.contains("redstoneMode")) {
-                this.redstoneMode = shopData.getInt("redstoneMode");
-            }
-            if (shopData.contains("previousRedstoneState")) {
-                this.previousRedstoneState = shopData.getBoolean("previousRedstoneState");
-            }
-        }
-        // Migration: if old save had physical selectedSlot NBT, copy first slot to logical selectedItem
-        if (tag.contains("selectedSlot")) {
-            try {
-                var itemsList = tag.getCompound("selectedSlot").getList("Items", 10);
-                if (itemsList.size() > 0) {
-                    var oldSelected = ItemStack.parse(registries, itemsList.getCompound(0)).orElse(ItemStack.EMPTY);
-                    if (!oldSelected.isEmpty() && this.selectedItem.isEmpty()) {
-                        this.selectedItem = oldSelected.copy();
-                        this.selectedItem.setCount(1);
-                    }
-                }
-            } catch (Exception ignored) {}
-        }
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+
+        this.isActive = input.getBooleanOr("isActive", false);
+        this.currentCategory = input.getStringOr("currentCategory", "000_default");
+
+        this.selectedValute = input.getStringOr("selectedValute", "unset");
+        if (this.selectedValute.isEmpty()) this.selectedValute = "unset";
+
+        this.autoBuyMode = input.getBooleanOr("autoBuyMode", true);
+
+        String ownerTeamStr = input.getStringOr("ownerTeamId", "");
+        this.ownerTeamId = ownerTeamStr.isEmpty() ? null : UUID.fromString(ownerTeamStr);
+
+        String placedByStr = input.getStringOr("placedByPlayer", "");
+        this.placedByPlayer = placedByStr.isEmpty() ? null : UUID.fromString(placedByStr);
+
+        this.redstoneMode = input.getIntOr("redstoneMode", 0);
+        this.previousRedstoneState = input.getBooleanOr("previousRedstoneState", false);
     }
     
     @Override
@@ -404,7 +295,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         // If there's a saved team, check that the player still belongs to that team
         if (level != null && !level.isClientSide()) {
             net.unfamily.iskalib.team.ShopTeamManager teamManager =
-                net.unfamily.iskalib.team.ShopTeamManager.getInstance(player.serverLevel());
+                net.unfamily.iskalib.team.ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
             
             // Get player's team
             String playerTeamName = teamManager.getPlayerTeam(player);

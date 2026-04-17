@@ -15,6 +15,8 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.world.entity.Entity;
 import net.unfamily.iskalib.team.ShopTeamManager;
 import net.unfamily.iskautils.shop.ShopLoader;
@@ -62,39 +64,39 @@ public class ShopTeamCommand {
      */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("iska_utils_team")
-            .requires(source -> source.hasPermission(0)) // All players can use
+            .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(0)))) // All players can use
             .then(Commands.literal("create")
                 .then(Commands.argument("teamName", StringArgumentType.word())
                     .executes(ShopTeamCommand::createTeam)))
             .then(Commands.literal("delete")
                 .executes(ShopTeamCommand::deleteOwnTeam)
                 .then(Commands.argument("teamName", StringArgumentType.word())
-                    .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                    .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only for other teams
                     .executes(ShopTeamCommand::deleteTeam)))
             .then(Commands.literal("rename")
                 .then(Commands.argument("newName", StringArgumentType.word())
                     .executes(ShopTeamCommand::renameOwnTeam)
                     .then(Commands.argument("teamName", StringArgumentType.word())
-                        .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                        .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only for other teams
                         .executes(ShopTeamCommand::renameTeam))))
             .then(Commands.literal("leader")
                 .then(Commands.argument("newLeader", EntityArgument.entities())
                     .executes(ShopTeamCommand::transferOwnTeamLeadership)
                     .then(Commands.argument("teamName", StringArgumentType.word())
-                        .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                        .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only for other teams
                         .executes(ShopTeamCommand::transferTeamLeadership))))
             .then(Commands.literal("assistant")
                 .then(Commands.literal("add")
                     .then(Commands.argument("player", EntityArgument.entities())
                         .executes(ShopTeamCommand::addAssistantToOwnTeam)
                         .then(Commands.argument("teamName", StringArgumentType.word())
-                            .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                            .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only for other teams
                             .executes(ShopTeamCommand::addTeamAssistant))))
                 .then(Commands.literal("remove")
                     .then(Commands.argument("player", EntityArgument.entities())
                         .executes(ShopTeamCommand::removeAssistantFromOwnTeam)
                         .then(Commands.argument("teamName", StringArgumentType.word())
-                            .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                            .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only for other teams
                             .executes(ShopTeamCommand::removeTeamAssistant))))
                 .then(Commands.literal("list")
                     .executes(ShopTeamCommand::listOwnTeamAssistants)
@@ -104,13 +106,13 @@ public class ShopTeamCommand {
                 .then(Commands.argument("player", EntityArgument.entities())
                     .executes(ShopTeamCommand::inviteToOwnTeam)
                     .then(Commands.argument("teamName", StringArgumentType.word())
-                        .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                        .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only for other teams
                         .executes(ShopTeamCommand::inviteToTeam))))
             .then(Commands.literal("cancelInvite")
                 .then(Commands.argument("player", EntityArgument.entities())
                     .executes(ShopTeamCommand::cancelInviteFromOwnTeam)
                     .then(Commands.argument("teamName", StringArgumentType.word())
-                        .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                        .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only for other teams
                         .executes(ShopTeamCommand::cancelInviteFromTeam))))
             .then(Commands.literal("accept")
                 .then(Commands.argument("teamName", StringArgumentType.word())
@@ -119,16 +121,16 @@ public class ShopTeamCommand {
                 .executes(ShopTeamCommand::leaveTeam))
             .then(Commands.literal("add")
                 .then(Commands.argument("player", EntityArgument.entities())
-                    .requires(source -> source.hasPermission(2)) // Admin only - add is special
+                    .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only - add is special
                     .executes(ShopTeamCommand::addToOwnTeam)
                     .then(Commands.argument("teamName", StringArgumentType.word())
-                        .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                        .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only for other teams
                         .executes(ShopTeamCommand::addPlayer))))
             .then(Commands.literal("remove")
                 .then(Commands.argument("player", EntityArgument.entities())
                     .executes(ShopTeamCommand::removeFromOwnTeam)
                     .then(Commands.argument("teamName", StringArgumentType.word())
-                        .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                        .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only for other teams
                         .executes(ShopTeamCommand::removePlayer))))
             .then(Commands.literal("info")
                 .executes(ShopTeamCommand::ownTeamInfo)
@@ -148,7 +150,7 @@ public class ShopTeamCommand {
                     .then(Commands.argument("currencyId", StringArgumentType.word())
                         .executes(ShopTeamCommand::getCurrencyBalance))))
             .then(Commands.literal("addCurrency")
-                .requires(source -> source.hasPermission(2)) // Admin only
+                .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only
                 .then(Commands.argument("currencyId", StringArgumentType.word())
                     .suggests(ShopTeamCommand::suggestCurrencies)
                     .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
@@ -161,7 +163,7 @@ public class ShopTeamCommand {
                             .then(Commands.argument("player", EntityArgument.entities())
                                 .executes(ShopTeamCommand::addCurrencyToPlayerTeam))))))
             .then(Commands.literal("removeCurrency")
-                .requires(source -> source.hasPermission(2)) // Admin only
+                .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only
                 .then(Commands.argument("currencyId", StringArgumentType.word())
                     .suggests(ShopTeamCommand::suggestCurrencies)
                     .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
@@ -174,7 +176,7 @@ public class ShopTeamCommand {
                             .then(Commands.argument("player", EntityArgument.entities())
                                 .executes(ShopTeamCommand::removeCurrencyFromPlayerTeam))))))
             .then(Commands.literal("setCurrency")
-                .requires(source -> source.hasPermission(2)) // Admin only
+                .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only
                 .then(Commands.argument("currencyId", StringArgumentType.word())
                     .suggests(ShopTeamCommand::suggestCurrencies)
                     .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
@@ -194,7 +196,7 @@ public class ShopTeamCommand {
                             .suggests(ShopTeamCommand::suggestTeams)
                             .executes(ShopTeamCommand::moveCurrencyFromOwnTeam)
                             .then(Commands.argument("fromTeam", StringArgumentType.word())
-                                .requires(source -> source.hasPermission(2)) // Admin only for other teams
+                                                        .requires(source -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) // Admin only for other teams
                                 .suggests(ShopTeamCommand::suggestTeams)
                                 .executes(ShopTeamCommand::moveCurrencyBetweenTeams))))))
             .then(Commands.literal("invitations")
@@ -219,7 +221,7 @@ public class ShopTeamCommand {
         }
         
         String teamName = StringArgumentType.getString(context, "teamName");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         
         if (teamManager.createTeam(teamName, player)) {
             source.sendSuccess(() -> Component.literal("Team '" + teamName + "' created successfully!"), false);
@@ -239,7 +241,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -266,7 +268,7 @@ public class ShopTeamCommand {
         }
         
         String teamName = StringArgumentType.getString(context, "teamName");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         
         if (teamManager.deleteTeam(teamName, player)) {
             source.sendSuccess(() -> Component.literal("Team '" + teamName + "' deleted successfully!"), false);
@@ -287,7 +289,7 @@ public class ShopTeamCommand {
         }
         
         String newName = StringArgumentType.getString(context, "newName");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -315,7 +317,7 @@ public class ShopTeamCommand {
         
         String teamName = StringArgumentType.getString(context, "teamName");
         String newName = StringArgumentType.getString(context, "newName");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         
         if (teamManager.renameTeam(teamName, newName, player)) {
             source.sendSuccess(() -> Component.literal("Team '" + teamName + "' renamed to '" + newName + "' successfully!"), false);
@@ -336,7 +338,7 @@ public class ShopTeamCommand {
         }
         
         ServerPlayer newLeader = getSingleTargetPlayer(context, "newLeader");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -365,7 +367,7 @@ public class ShopTeamCommand {
         
         String teamName = StringArgumentType.getString(context, "teamName");
         ServerPlayer newLeader = getSingleTargetPlayer(context, "newLeader");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         
         if (teamManager.transferLeadership(teamName, player, newLeader)) {
             source.sendSuccess(() -> Component.literal("Leadership of team '" + teamName + "' transferred to " + newLeader.getName().getString() + "!"), false);
@@ -387,7 +389,7 @@ public class ShopTeamCommand {
         }
         
         List<ServerPlayer> assistants = getTargetPlayers(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -427,7 +429,7 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         int count = 0;
         for (ServerPlayer assistant : assistants) {
             if (teamManager.addTeamAssistant(teamName, player, assistant)) {
@@ -452,7 +454,7 @@ public class ShopTeamCommand {
         }
         
         List<ServerPlayer> assistants = getTargetPlayers(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -492,7 +494,7 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         int count = 0;
         for (ServerPlayer assistant : assistants) {
             if (teamManager.removeTeamAssistant(teamName, player, assistant)) {
@@ -515,7 +517,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         String teamName = teamManager.getPlayerTeam(source.getPlayer());
         
         if (teamName == null) {
@@ -539,7 +541,7 @@ public class ShopTeamCommand {
     }
     
     private static int showTeamAssistants(CommandSourceStack source, String teamName) {
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         List<UUID> assistants = teamManager.getTeamAssistants(teamName);
         
         if (assistants.isEmpty()) {
@@ -566,7 +568,7 @@ public class ShopTeamCommand {
         }
         
         List<ServerPlayer> targets = getTargetPlayers(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -606,7 +608,7 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         int count = 0;
         for (ServerPlayer targetPlayer : targets) {
             if (teamManager.invitePlayerToTeam(teamName, player, targetPlayer)) {
@@ -631,7 +633,7 @@ public class ShopTeamCommand {
         }
         
         String teamName = StringArgumentType.getString(context, "teamName");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         
         if (teamManager.acceptTeamInvitation(player, teamName)) {
             source.sendSuccess(() -> Component.literal("Successfully joined team '" + teamName + "'!"), false);
@@ -651,7 +653,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         
         if (teamManager.leaveTeam(player)) {
             source.sendSuccess(() -> Component.literal("Successfully left your team!"), false);
@@ -672,7 +674,7 @@ public class ShopTeamCommand {
         }
         
         List<ServerPlayer> targets = getTargetPlayers(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -712,7 +714,7 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         int count = 0;
         for (ServerPlayer targetPlayer : targets) {
             if (teamManager.addPlayerToTeam(teamName, targetPlayer)) {
@@ -737,7 +739,7 @@ public class ShopTeamCommand {
         }
         
         List<ServerPlayer> targets = getTargetPlayers(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
         
         if (teamName == null) {
@@ -777,7 +779,7 @@ public class ShopTeamCommand {
             source.sendFailure(Component.literal("No player found from selector"));
             return 0;
         }
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         int count = 0;
         for (ServerPlayer targetPlayer : targets) {
             if (teamManager.removePlayerFromTeam(teamName, targetPlayer)) {
@@ -800,7 +802,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         String teamName = teamManager.getPlayerTeam(source.getPlayer());
         
         if (teamName == null) {
@@ -824,7 +826,7 @@ public class ShopTeamCommand {
     }
     
     private static int showTeamInfo(CommandSourceStack source, String teamName) {
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         List<UUID> members = teamManager.getTeamMembers(teamName);
         List<UUID> assistants = teamManager.getTeamAssistants(teamName);
         UUID leader = teamManager.getTeamLeader(teamName);
@@ -886,7 +888,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         var teams = teamManager.getAllTeams();
         
         if (teams.isEmpty()) {
@@ -911,7 +913,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         String teamName = teamManager.getPlayerTeam(source.getPlayer());
         
         if (teamName == null) {
@@ -940,7 +942,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         double balance = teamManager.getTeamCurrencyBalance(teamName, "null_coin");
         
         ShopCurrency nullCoin = ShopLoader.getCurrencies().get("null_coin");
@@ -964,7 +966,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         double balance = teamManager.getTeamCurrencyBalance(teamName, currencyId);
         
         ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
@@ -990,7 +992,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         String teamName = teamManager.getPlayerTeam(source.getPlayer());
         
         if (teamName == null) {
@@ -1026,7 +1028,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         
         if (teamManager.addTeamCurrency(teamName, currencyId, amount)) {
             ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
@@ -1058,7 +1060,7 @@ public class ShopTeamCommand {
             }
             int count = 0;
             for (ServerPlayer targetPlayer : targets) {
-                ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
+                ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) targetPlayer.level());
                 String teamName = teamManager.getPlayerTeam(targetPlayer);
                 if (teamName == null) {
                     source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
@@ -1090,7 +1092,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         String teamName = teamManager.getPlayerTeam(source.getPlayer());
         
         if (teamName == null) {
@@ -1126,7 +1128,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         
         if (teamManager.removeTeamCurrency(teamName, currencyId, amount)) {
             ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
@@ -1158,7 +1160,7 @@ public class ShopTeamCommand {
             }
             int count = 0;
             for (ServerPlayer targetPlayer : targets) {
-                ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
+                ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) targetPlayer.level());
                 String teamName = teamManager.getPlayerTeam(targetPlayer);
                 if (teamName == null) {
                     source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
@@ -1190,7 +1192,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         String teamName = teamManager.getPlayerTeam(source.getPlayer());
         
         if (teamName == null) {
@@ -1212,7 +1214,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         return setTeamCurrency(source, teamManager, teamName, currencyId, amount);
     }
     
@@ -1229,7 +1231,7 @@ public class ShopTeamCommand {
             }
             int total = 0;
             for (ServerPlayer targetPlayer : targets) {
-                ShopTeamManager teamManager = ShopTeamManager.getInstance(targetPlayer.serverLevel());
+                ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) targetPlayer.level());
                 String teamName = teamManager.getPlayerTeam(targetPlayer);
                 if (teamName == null) {
                     source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
@@ -1286,7 +1288,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         List<String> invitations = teamManager.getPlayerInvitations(source.getPlayer());
         
         if (invitations.isEmpty()) {
@@ -1325,7 +1327,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         String teamName = teamManager.getPlayerTeam(source.getPlayer());
         
         if (teamName == null) {
@@ -1348,7 +1350,7 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         return showTeamMembers(source, teamManager, teamName);
     }
     
@@ -1409,7 +1411,7 @@ public class ShopTeamCommand {
         }
 
         List<ServerPlayer> invitees = getTargetPlayers(context, "player");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamName = teamManager.getPlayerTeam(player);
 
         if (teamName == null) {
@@ -1444,7 +1446,7 @@ public class ShopTeamCommand {
 
         List<ServerPlayer> invitees = getTargetPlayers(context, "player");
         String teamName = StringArgumentType.getString(context, "teamName");
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         if (invitees.isEmpty()) {
             source.sendFailure(Component.literal("No player found from selector"));
             return 0;
@@ -1480,7 +1482,7 @@ public class ShopTeamCommand {
             return Suggestions.empty();
         }
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         List<String> teamNames = teamManager.getAllTeamNames();
         return SharedSuggestionProvider.suggest(teamNames, builder);
     }
@@ -1490,7 +1492,7 @@ public class ShopTeamCommand {
      */
     private static int showHelp(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        boolean isAdmin = source.hasPermission(2);
+        boolean isAdmin = source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)));
         return showHelp(context, true, isAdmin);
     }
     
@@ -1499,7 +1501,7 @@ public class ShopTeamCommand {
      */
     private static int showHelp(CommandContext<CommandSourceStack> context, boolean showUser, boolean showAdmin) {
         CommandSourceStack source = context.getSource();
-        boolean isAdmin = source.hasPermission(2);
+        boolean isAdmin = source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)));
         
         // Check if user is trying to see admin commands without permission
         if (showAdmin && !isAdmin) {
@@ -1661,7 +1663,7 @@ public class ShopTeamCommand {
         double amount = DoubleArgumentType.getDouble(context, "amount");
         String toTeam = StringArgumentType.getString(context, "toTeam");
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String fromTeam = teamManager.getPlayerTeam(player);
         
         if (fromTeam == null) {
@@ -1699,7 +1701,7 @@ public class ShopTeamCommand {
         String toTeam = StringArgumentType.getString(context, "toTeam");
         String fromTeam = StringArgumentType.getString(context, "fromTeam");
         
-        ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         
         // Use the common move logic
         return moveCurrencyLogic(source, teamManager, fromTeam, toTeam, currencyId, amount);
