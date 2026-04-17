@@ -3,8 +3,6 @@ package net.unfamily.iskautils.network;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
@@ -174,7 +172,6 @@ public class ModMessages {
     /**
      * Sends a Structure Undo packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructureUndoPacket() {
         LOGGER.debug("Sending Structure Undo packet to server");
         // Simplified implementation for single player compatibility
@@ -289,7 +286,6 @@ public class ModMessages {
     /**
      * Sends a shop team data request to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendShopTeamDataRequest() {
         // Simplified implementation - directly handle on the server side
         try {
@@ -350,7 +346,6 @@ public class ModMessages {
      * Sends a Structure Placer save packet to the server
      * This simulates a client-to-server packet for saving the selected structure
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerSavePacket(String structureId) {
 
         // Simplified implementation - directly handle on the server side
@@ -402,7 +397,6 @@ public class ModMessages {
     /**
      * Sends a Structure Placer Machine show packet to toggle preview mode
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineShowPacket(BlockPos machinePos) {
         try {
             // Get the server from single player or dedicated server
@@ -466,7 +460,6 @@ public class ModMessages {
      * Sends a Structure Placer Machine Rotate packet to the server
      * This simulates a client-to-server packet for rotating the structure
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineRotatePacket(BlockPos machinePos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -522,7 +515,6 @@ public class ModMessages {
     /**
      * Sends an Auto Shop Redstone Mode packet to the server (cycle mode on button click)
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopRedstoneModePacket(BlockPos machinePos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -556,7 +548,6 @@ public class ModMessages {
     /**
      * Sends a Structure Placer Machine Redstone Mode packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineRedstoneModePacket(BlockPos machinePos) {
 
         
@@ -610,7 +601,6 @@ public class ModMessages {
     /**
      * Sends a Deep Drawer Extractor Redstone Mode packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorRedstoneModePacket(BlockPos machinePos) {
         // Use simplified approach like other machine buttons
         try {
@@ -671,7 +661,6 @@ public class ModMessages {
      * Sends a Structure Placer Machine Set Inventory packet to the server
      * Mode: 0 = normal, 1 = shift+click, 2 = ctrl/alt+click
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineSetInventoryPacket(BlockPos machinePos, int mode) {
         // Simplified implementation - directly handle on the server side
         try {
@@ -922,7 +911,6 @@ public class ModMessages {
      * Sends a Structure Placer Machine save packet to the server
      * This simulates a client-to-server packet for saving the selected structure in the machine
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineSavePacket(String structureId, BlockPos machinePos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -1028,7 +1016,6 @@ public class ModMessages {
     /**
      * Sends a Structure Saver Machine recalculate packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineRecalculatePacket(BlockPos machinePos) {
 
         // Simplified implementation for single player compatibility
@@ -1052,7 +1039,6 @@ public class ModMessages {
      * Sends a Structure Saver Machine save packet to the server
      * This simulates a client-to-server packet for saving a structure from the machine
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer) {
         sendStructureSaverMachineSavePacket(structureName, structureId, machinePos, slower, placeAsPlayer, null);
     }
@@ -1061,7 +1047,6 @@ public class ModMessages {
      * Sends a Structure Saver Machine save/modify packet to the server
      * This simulates a client-to-server packet for saving or modifying a structure from the machine
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer, String oldStructureId) {
 
 
@@ -1116,7 +1101,6 @@ public class ModMessages {
     /**
      * Sends a shop buy item packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendShopBuyItemPacket(String entryId, int quantity) {
         // Simplified implementation for single player compatibility
         try {
@@ -1144,7 +1128,6 @@ public class ModMessages {
     /**
      * Sends a shop sell item packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendShopSellItemPacket(String entryId, int quantity) {
         // Simplified implementation for single player compatibility
         try {
@@ -1172,7 +1155,6 @@ public class ModMessages {
     /**
      * Invia il packet per settare lo slot encapsulato dell'Auto Shop
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopSetEncapsulatedPacket(BlockPos pos) {
         // Simplified implementation for single player compatibility
         try {
@@ -1200,7 +1182,6 @@ public class ModMessages {
     /**
      * Invia il packet per settare lo slot selectedItem dell'Auto Shop
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopSelectedItemPacket(BlockPos pos, ItemStack stack) {
         // Simplified implementation for single player compatibility
         try {
@@ -1229,7 +1210,6 @@ public class ModMessages {
      * Sends a Deep Drawers scroll packet to the server
      * Updates the scroll offset for the Deep Drawers GUI
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawersScrollPacket(BlockPos pos, int scrollOffset) {
         LOGGER.info("Client: Sending DeepDrawersScrollPacket: pos={}, offset={}", pos, scrollOffset);
         // Simplified implementation for single player compatibility
@@ -1279,7 +1259,6 @@ public class ModMessages {
      * Sends a Burning Brazier toggle packet to the server
      * This toggles the auto-placement state for the Burning Brazier item
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendBurningBrazierTogglePacket() {
         // Simplified implementation for single player compatibility
         try {
@@ -1315,7 +1294,6 @@ public class ModMessages {
      * Sends a Scanner range cycle packet to the server
      * This cycles through the available scan range options
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendScannerRangeCyclePacket() {
         // Simplified implementation for single player compatibility
         try {
@@ -1353,7 +1331,6 @@ public class ModMessages {
      * Sends a Gauntlet of Climbing toggle packet to the server
      * This toggles the climbing ability on/off
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendGauntletClimbingTogglePacket() {
         // Simplified implementation for single player compatibility
         try {
@@ -1391,7 +1368,6 @@ public class ModMessages {
      * Sends a Ghost Brazier toggle packet to the server
      * This toggles the game mode between Survival and Spectator
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendGhostBrazierTogglePacket() {
         // Simplified implementation for single player compatibility
         try {
@@ -1433,7 +1409,6 @@ public class ModMessages {
     /**
      * Invia il packet per aggiornare i parametri del timer
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerUpdatePacket(BlockPos pos, boolean isCooldown, int deltaTicks) {
         // Simplified implementation for single player compatibility
         try {
@@ -1461,7 +1436,6 @@ public class ModMessages {
     /**
      * Sends packet to update fan range parameters
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanRangeUpdatePacket(BlockPos pos, net.unfamily.iskautils.network.packet.FanRangeUpdateC2SPacket.RangeType rangeType, int delta) {
         // Simplified implementation for single player compatibility
         try {
@@ -1489,7 +1463,6 @@ public class ModMessages {
     /**
      * Sends filter update packet to server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorFilterUpdatePacket(BlockPos pos, java.util.Map<Integer, String> filterMap, boolean isWhitelistMode) {
         // Simplified implementation - directly handle on the server side (like rotation in Structure Placer)
         try {
@@ -1540,7 +1513,6 @@ public class ModMessages {
     /**
      * Sends inverted filter update packet to server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorInvertedFilterUpdatePacket(BlockPos pos, java.util.Map<Integer, String> invertedFilterMap) {
         // Simplified implementation - directly handle on the server side (like rotation in Structure Placer)
         try {
@@ -1589,7 +1561,6 @@ public class ModMessages {
      * Sends a Deep Drawer Extractor Mode Toggle packet to the server
      * Toggles between whitelist and blacklist mode (like rotation in Structure Placer)
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorModeTogglePacket(BlockPos machinePos) {
         // Use simplified approach like rotation in Structure Placer
         try {
@@ -1632,7 +1603,6 @@ public class ModMessages {
     /**
      * Invia il packet per ciclare il tipo I/O di una faccia del timer
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerIoConfigCyclePacket(BlockPos machinePos, net.minecraft.core.Direction direction) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -1678,7 +1648,6 @@ public class ModMessages {
     /**
      * Invia il packet per resettare tutte le facce I/O del timer
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerIoConfigResetPacket(BlockPos machinePos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -1726,7 +1695,6 @@ public class ModMessages {
      * @param machinePos Posizione del blocco
      * @param action Tipo di azione: 0=increase, 1=decrease, 2=increaseBy5, 3=decreaseBy5, 4=max, 5=min, 6=default
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerAccelerationChangePacket(BlockPos machinePos, int action) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -1780,7 +1748,6 @@ public class ModMessages {
     /**
      * Invia il packet per cambiare il redstone mode del Temporal Overclocker
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerRedstoneModePacket(BlockPos machinePos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -1829,7 +1796,6 @@ public class ModMessages {
     /**
      * Invia il packet per fare toggle della modalità persistente del Temporal Overclocker
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerTogglePersistentPacket(BlockPos overclockerPos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -1867,7 +1833,6 @@ public class ModMessages {
     /**
      * Invia il packet per evidenziare un blocco collegato nel mondo (crea un marker di 5 secondi)
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerHighlightBlockPacket(BlockPos blockPos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -1905,7 +1870,6 @@ public class ModMessages {
     /**
      * Invia il packet per rimuovere un blocco collegato dal Temporal Overclocker
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerRemoveLinkPacket(BlockPos overclockerPos, BlockPos linkedPos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -1946,7 +1910,6 @@ public class ModMessages {
     /**
      * Sends Fan Redstone Mode packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanRedstoneModePacket(BlockPos pos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -1987,7 +1950,6 @@ public class ModMessages {
     /**
      * Sends Smart Timer Redstone Mode packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerRedstoneModePacket(BlockPos pos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -2026,7 +1988,6 @@ public class ModMessages {
     /**
      * Sends Sound Muffler volume change to the server (client-only).
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerVolumePacket(BlockPos pos, int categoryIndex, int delta) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerVolumeC2SPacket(pos, categoryIndex, delta);
         try {
@@ -2051,7 +2012,6 @@ public class ModMessages {
         // TODO(neoforge-26): replace with new client->server sender API
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerRangePacket(BlockPos pos, int range) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket(pos, range);
         try {
@@ -2073,7 +2033,6 @@ public class ModMessages {
         // TODO(neoforge-26): replace with new client->server sender API
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerModeTogglePacket(BlockPos pos) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerModeToggleC2SPacket(pos);
         try {
@@ -2095,7 +2054,6 @@ public class ModMessages {
         // TODO(neoforge-26): replace with new client->server sender API
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerFilterUpdatePacket(BlockPos pos, java.util.List<String> filterSoundIds) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerFilterUpdateC2SPacket(pos, filterSoundIds != null ? new java.util.ArrayList<>(filterSoundIds) : new java.util.ArrayList<>());
         try {
@@ -2120,7 +2078,6 @@ public class ModMessages {
     /**
      * Sends Fan Push/Pull packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanPushPullPacket(BlockPos pos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -2159,7 +2116,6 @@ public class ModMessages {
     /**
      * Sends Fan Push Type packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanPushTypePacket(BlockPos pos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
@@ -2204,7 +2160,6 @@ public class ModMessages {
     /**
      * Sends Fan Show Area packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanShowAreaPacket(BlockPos pos) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();

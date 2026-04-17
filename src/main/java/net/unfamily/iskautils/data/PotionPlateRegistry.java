@@ -5,6 +5,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.unfamily.iskautils.block.ModBlocks;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.level.block.SoundType;
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /**
  * Registry for dynamically created potion plate blocks and items
@@ -35,8 +37,7 @@ public class PotionPlateRegistry {
     // Maps for virtual blocks (loaded from external datapacks like KubeJS)
     private static final Map<String, PotionPlateConfig> VIRTUAL_BLOCKS = new HashMap<>();
     
-    // Common properties for all potion plate blocks
-    private static final BlockBehaviour.Properties POTION_PLATE_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> POTION_PLATE_PROPERTIES = p -> p
             .mapColor(MapColor.COLOR_BLACK)
             .strength(0.3f, 1.0f)
             .sound(SoundType.DEEPSLATE)
@@ -46,9 +47,6 @@ public class PotionPlateRegistry {
             .pushReaction(PushReaction.DESTROY)
             .isViewBlocking((state, level, pos) -> false)
             .lightLevel((state) -> 0);
-    
-    // Common properties for all potion plate items
-    private static final Item.Properties POTION_PLATE_ITEM_PROPERTIES = new Item.Properties();
     
     /**
      * Registers dynamic blocks and items based on discovered configurations
@@ -92,22 +90,12 @@ public class PotionPlateRegistry {
         }
         
         // Register the block
-        DeferredHolder<Block, PotionPlateBlock> blockHolder = POTION_PLATES.register(blockName, 
-            () -> new PotionPlateBlock(POTION_PLATE_PROPERTIES, config));
-        
-        // Decide whether to register the item in the creative tabs
-        Item.Properties itemProperties;
-        if (config.isCreativeTabVisible()) {
-            // Use default properties (visible in creative tabs)
-            itemProperties = POTION_PLATE_ITEM_PROPERTIES;
-        } else {
-            // Create new properties instance without any creative tab registration
-            itemProperties = new Item.Properties();
-        }
-        
-        // Register the item with appropriate properties
-        DeferredHolder<Item, BlockItem> itemHolder = POTION_PLATE_ITEMS.register(blockName,
-            () -> new net.unfamily.iskautils.item.custom.PotionPlateBlockItem(blockHolder.get(), itemProperties));
+        DeferredHolder<Block, PotionPlateBlock> blockHolder = POTION_PLATES.register(blockName,
+                key -> new PotionPlateBlock(ModBlocks.assignBlockId(key, POTION_PLATE_PROPERTIES), config));
+
+        DeferredHolder<Item, BlockItem> itemHolder = POTION_PLATE_ITEMS.registerItem(blockName,
+                props -> new net.unfamily.iskautils.item.custom.PotionPlateBlockItem(blockHolder.get(), props),
+                UnaryOperator.identity());
         
         REGISTERED_BLOCKS.put(plateId, blockHolder);
         REGISTERED_ITEMS.put(plateId, itemHolder);

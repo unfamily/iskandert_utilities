@@ -3,21 +3,14 @@ package net.unfamily.iskautils.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.unfamily.iskautils.IskaUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.unfamily.iskautils.client.MarkRenderer;
 
 /**
  * Class that manages client-specific events
  */
 public class ClientEvents {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClientEvents.class);
-    
+
     /**
      * Flag to check if the thread is active
      */
@@ -83,10 +76,10 @@ public class ClientEvents {
     }
     
     /**
-     * Render the marks during the world rendering
+     * Render the marks during the world rendering (NeoForge 26+ requires a concrete {@link RenderLevelStageEvent} subclass).
      */
     @SubscribeEvent
-    public static void onRenderLevel(RenderLevelStageEvent event) {
+    public static void onRenderLevel(RenderLevelStageEvent.AfterLevel event) {
         PoseStack poseStack = event.getPoseStack();
         float partialTick = 0.0f;
         MarkRenderer.getInstance().render(poseStack, partialTick);

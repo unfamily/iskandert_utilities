@@ -14,6 +14,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -31,8 +32,8 @@ import java.util.Random;
 public class ChaoticTntBlock extends Block {
     public static final BooleanProperty UNSTABLE = BooleanProperty.create("unstable");
 
-    public ChaoticTntBlock() {
-        super(Properties.of().strength(0.0F).sound(net.minecraft.world.level.block.SoundType.GRASS).ignitedByLava());
+    public ChaoticTntBlock(BlockBehaviour.Properties properties) {
+        super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(UNSTABLE, Boolean.FALSE));
     }
 

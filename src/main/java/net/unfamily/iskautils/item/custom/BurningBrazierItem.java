@@ -20,8 +20,6 @@ import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.data.BurningBrazierData;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskalib.stage.StageRegistry;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,7 +158,6 @@ public class BurningBrazierItem extends Item {
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
 

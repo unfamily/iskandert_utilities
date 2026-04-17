@@ -25,9 +25,7 @@ import java.util.Map;
 public class CommandItemRegistry {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    // Registro differito per gli item
-    private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(
-            Registries.ITEM, IskaUtils.MOD_ID);
+    private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(IskaUtils.MOD_ID);
     
     // Registro differito per i tab creativi
     private static final DeferredRegister<CreativeModeTab> CREATIVE_TABS = DeferredRegister.create(
@@ -91,13 +89,10 @@ public class CommandItemRegistry {
         String id = definition.getId();
         String registryName = id.replace("-", "_").toLowerCase();
         
-        // Crea le proprietà dell'item
-        Item.Properties properties = new Item.Properties()
-                .stacksTo(definition.getMaxStackSize());
-        
-        // Registra l'item
-        DeferredHolder<Item, CommandItem> registeredItem = ITEMS.register(
-                registryName, () -> new CommandItem(properties, definition));
+        DeferredHolder<Item, CommandItem> registeredItem = ITEMS.registerItem(
+                registryName,
+                props -> new CommandItem(props, definition),
+                p -> p.stacksTo(definition.getMaxStackSize()));
         
         // Memorizza nel registry
         REGISTERED_ITEMS.put(id, registeredItem);

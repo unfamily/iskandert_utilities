@@ -29,8 +29,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.client.KeyBindings;
@@ -91,11 +89,8 @@ public class ScannerItem extends Item {
         }
     }
 
-    public ScannerItem() {
-        super(new Item.Properties()
-                .stacksTo(1)
-                .rarity(Rarity.UNCOMMON)
-                .fireResistant());
+    public ScannerItem(Item.Properties properties) {
+        super(properties);
     }
 
     /**
@@ -1108,7 +1103,6 @@ public class ScannerItem extends Item {
      * Aggiunge informazioni tooltip all'item
      */
     @Override
-    @OnlyIn(Dist.CLIENT)
     public void appendHoverText(ItemStack stack, TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> tooltipAdder, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, display, tooltipAdder, tooltipFlag);
         

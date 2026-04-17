@@ -44,10 +44,8 @@ public class ScannerChipItem extends Item {
     private static final String INITIALIZED_TAG = "Initialized";
     private static final String MINING_LEVEL_TAG = "MiningLevel";
     
-    public ScannerChipItem() {
-        super(new Item.Properties()
-                .stacksTo(1)
-                .rarity(Rarity.UNCOMMON));
+    public ScannerChipItem(Item.Properties properties) {
+        super(properties);
     }
     
     @Override

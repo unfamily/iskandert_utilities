@@ -1,7 +1,6 @@
 package net.unfamily.iskautils.structure;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -12,6 +11,7 @@ import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /**
  * Registry for dynamically registered Structure Monouse items
@@ -19,9 +19,7 @@ import java.util.Map;
 public class StructureMonouseRegistry {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    // Deferred register for items
-    private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(
-            Registries.ITEM, IskaUtils.MOD_ID);
+    private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(IskaUtils.MOD_ID);
     
     // Map to store registered monouse items
     private static final Map<String, DeferredHolder<Item, StructureMonouseItem>> REGISTERED_ITEMS = new HashMap<>();
@@ -53,13 +51,10 @@ public class StructureMonouseRegistry {
         String id = definition.getId();
         String registryName = id.toLowerCase(); // ID is already converted from - to _
         
-        // Create item properties (stack size 1 for monouse)
-        Item.Properties properties = new Item.Properties()
-                .stacksTo(1);
-        
-        // Register the item
-        DeferredHolder<Item, StructureMonouseItem> registeredItem = ITEMS.register(
-                registryName, () -> new StructureMonouseItem(properties, definition));
+        DeferredHolder<Item, StructureMonouseItem> registeredItem = ITEMS.registerItem(
+                registryName,
+                props -> new StructureMonouseItem(props, definition),
+                p -> p.stacksTo(1));
         
         // Store in registry
         REGISTERED_ITEMS.put(id, registeredItem);
