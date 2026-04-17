@@ -6,26 +6,16 @@
     "DAC"
   ],
   "key": {
-    "A": {
-      "tag": "c:storage_blocks/rubber"
-    },
+    "A": "#c:storage_blocks/rubber",
     "B": [
-      {
-        "tag": "c:plastics"
-      },
-      {
-        "tag": "c:ingots/plastic"
-      }
+      "#c:plastics",
+      "#c:ingots/plastic"
     ],
-    "C": {
-      "tag": "c:bars/netherite"
-    },
-    "D": {
-      "tag": "c:ingots/netherite"  
-    }
+    "C": "#c:bars/netherite",
+    "D": "#c:ingots/netherite"
   },
   "result": {
     "id": "iska_utils:dolly_hard",
     "count": 1
   }
-} 
+}

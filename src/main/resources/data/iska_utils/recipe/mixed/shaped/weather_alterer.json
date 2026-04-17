@@ -6,24 +6,14 @@
     "ABA"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/copper"
-    },
-    "B": {
-      "tag": "c:ingots/netherite"
-    },
-    "C": {
-      "item": "minecraft:glowstone"
-    },
-    "D": {
-      "tag": "c:glass_blocks"
-    },
-    "E": {
-      "item": "minecraft:copper_grate"
-    }
+    "A": "#c:ingots/copper",
+    "B": "#c:ingots/netherite",
+    "C": "minecraft:glowstone",
+    "D": "#c:glass_blocks",
+    "E": "minecraft:copper_grate"
   },
   "result": {
     "id": "iska_utils:weather_alterer",
     "count": 1
   }
-} 
+}

@@ -1,7 +1,7 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    { "item": "iska_utils:green_sludge" }
+    "iska_utils:green_sludge"
   ],
   "result": {
     "id": "minecraft:lime_dye",

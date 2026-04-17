@@ -1,18 +1,12 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {
-      "item": "iska_utils:shop"
-    },
-    {
-      "item": "minecraft:hopper"
-    },
-    {
-      "tag": "c:ingots/copper"
-    }
+    "iska_utils:shop",
+    "minecraft:hopper",
+    "#c:ingots/copper"
   ],
   "result": {
     "id": "iska_utils:auto_shop",
     "count": 1
   }
-} 
+}

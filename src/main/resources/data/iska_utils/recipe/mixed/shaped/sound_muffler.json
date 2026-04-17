@@ -6,20 +6,14 @@
     " A "
   ],
   "key": {
-    "A": {
-      "tag": "minecraft:wool"
-    },
+    "A": "#minecraft:wool",
     "B": [
-      {
-        "tag": "c:plastic_or_rubber"  
-      },
-      {
-        "tag": "c:storage_blocks/dried_kelp"
-      }
+      "#c:plastic_or_rubber",
+      "#c:storage_blocks/dried_kelp"
     ]
   },
   "result": {
     "id": "iska_utils:sound_muffler",
     "count": 1
   }
-} 
+}

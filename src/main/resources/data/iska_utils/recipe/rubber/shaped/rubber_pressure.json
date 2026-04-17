@@ -4,12 +4,10 @@
     "AA"
   ],
   "key": {
-    "A": {
-      "item": "iska_utils:rubber_planks"  
-    }
+    "A": "iska_utils:rubber_planks"
   },
   "result": {
     "id": "iska_utils:rubber_pressure_plate",
     "count": 1
   }
-} 
+}

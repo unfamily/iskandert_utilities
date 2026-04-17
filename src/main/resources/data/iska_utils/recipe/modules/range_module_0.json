@@ -7,22 +7,14 @@
   ],
   "key": {
     "A": [
-      {
-        "tag": "c:ingots/iron"
-      },{
-        "tag": "c:ingots/copper"
-      }
+      "#c:ingots/iron",
+      "#c:ingots/copper"
     ],
-    "B": {
-      "item": "iska_utils:base_module"
-    },
-    "C": {
-      "tag": "c:dusts/redstone"
-    }
-
+    "B": "iska_utils:base_module",
+    "C": "#c:dusts/redstone"
   },
   "result": {
     "id": "iska_utils:range_module",
     "count": 1
   }
-} 
+}

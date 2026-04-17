@@ -6,18 +6,12 @@
     "BAB"
   ],
   "key": {
-    "A": {
-      "tag": "c:nuggets/gold"
-    },
-    "B": {
-      "tag": "c:feathers"
-    },
-    "C": {
-      "tag": "c:obsidians"
-    }
+    "A": "#c:nuggets/gold",
+    "B": "#c:feathers",
+    "C": "#c:obsidians"
   },
   "result": {
     "id": "iska_utils:angel_block",
     "count": 1
   }
-} 
+}

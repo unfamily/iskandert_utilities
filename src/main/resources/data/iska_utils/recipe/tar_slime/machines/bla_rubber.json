@@ -1,12 +1,10 @@
 {
-    "type": "minecraft:blasting",
-    "ingredient": {
-        "tag": "c:tar_slimeballs"
-    },
-    "result": {
-        "id": "iska_utils:rubber",
-        "count": 5
-    },
-    "experience": 0.3,
-    "cookingtime": 100
+  "type": "minecraft:blasting",
+  "ingredient": "#c:tar_slimeballs",
+  "result": {
+    "id": "iska_utils:rubber",
+    "count": 5
+  },
+  "experience": 0.3,
+  "cookingtime": 100
 }

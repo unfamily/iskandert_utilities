@@ -6,12 +6,10 @@
     "AAA"
   ],
   "key": {
-    "A": {
-      "tag": "c:tar_slimeballs"
-    }
+    "A": "#c:tar_slimeballs"
   },
   "result": {
     "id": "iska_utils:tar_slime_block",
     "count": 1
   }
-} 
+}

@@ -294,25 +294,25 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         // Main screen
         Component title = Component.translatable("block.iska_utils.smart_timer");
         int titleWidth = this.font.width(title);
-        guiGraphics.text(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
+        guiGraphics.text(this.font, title, (this.imageWidth - titleWidth) / 2, 8, GuiTextColors.TITLE, false);
         
         // Label and value for cooldown (Redstone off for)
         Component cooldownLabel = Component.translatable("gui.iska_utils.smart_timer.cooldown");
         String cooldownTime = formatTimePart(currentCooldownTicks);
         String cooldownLabelText = cooldownLabel.getString() + " " + cooldownTime;
-        guiGraphics.text(this.font, Component.literal(cooldownLabelText), TEXT_START_X, COOLDOWN_LABEL_Y, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(cooldownLabelText), TEXT_START_X, COOLDOWN_LABEL_Y, GuiTextColors.TITLE, false);
         
         String cooldownTicks = formatTicksPart(currentCooldownTicks);
-        guiGraphics.text(this.font, Component.literal(cooldownTicks), TEXT_START_X, COOLDOWN_TICKS_Y, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(cooldownTicks), TEXT_START_X, COOLDOWN_TICKS_Y, GuiTextColors.TITLE, false);
         
         // Label and value for signal duration (Redstone on for)
         Component signalDurationLabel = Component.translatable("gui.iska_utils.smart_timer.signal_duration");
         String signalDurationTime = formatTimePart(currentSignalDurationTicks);
         String signalDurationLabelText = signalDurationLabel.getString() + " " + signalDurationTime;
-        guiGraphics.text(this.font, Component.literal(signalDurationLabelText), TEXT_START_X, SIGNAL_DURATION_LABEL_Y, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(signalDurationLabelText), TEXT_START_X, SIGNAL_DURATION_LABEL_Y, GuiTextColors.TITLE, false);
         
         String signalDurationTicks = formatTicksPart(currentSignalDurationTicks);
-        guiGraphics.text(this.font, Component.literal(signalDurationTicks), TEXT_START_X, SIGNAL_DURATION_TICKS_Y, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(signalDurationTicks), TEXT_START_X, SIGNAL_DURATION_TICKS_Y, GuiTextColors.TITLE, false);
     }
     
     private void renderRedstoneModeTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {

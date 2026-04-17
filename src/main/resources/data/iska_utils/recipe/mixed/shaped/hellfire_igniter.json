@@ -6,18 +6,12 @@
     "CRC"
   ],
   "key": {
-    "C": {
-      "tag": "c:cobblestones"
-    },
-    "M": {
-      "item": "minecraft:magma_cream"
-    },
-    "R": {
-      "tag": "c:dusts/redstone"
-    }
+    "C": "#c:cobblestones",
+    "M": "minecraft:magma_cream",
+    "R": "#c:dusts/redstone"
   },
   "result": {
     "id": "iska_utils:hellfire_igniter",
     "count": 1
   }
-} 
+}

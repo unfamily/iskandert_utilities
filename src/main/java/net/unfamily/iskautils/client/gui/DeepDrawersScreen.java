@@ -161,7 +161,7 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         Component titleComponent = this.title;
         int titleWidth = this.font.width(titleComponent);
         int titleX = (this.imageWidth - titleWidth) / 2;
-        guiGraphics.text(this.font, titleComponent, titleX, 7, 0x404040, false);
+        guiGraphics.text(this.font, titleComponent, titleX, 7, GuiTextColors.TITLE, false);
         
         // Don't render "Inventory" label (already hidden via inventoryLabelY)
     }

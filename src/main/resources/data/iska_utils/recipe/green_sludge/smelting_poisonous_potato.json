@@ -1,8 +1,6 @@
 {
   "type": "minecraft:smelting",
-  "ingredient": {
-    "item": "minecraft:poisonous_potato"
-  },
+  "ingredient": "minecraft:poisonous_potato",
   "result": {
     "id": "iska_utils:green_sludge",
     "count": 1

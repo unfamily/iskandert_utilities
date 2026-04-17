@@ -6,18 +6,12 @@
     "ABA"
   ],
   "key": {
-    "A": {
-      "item": "minecraft:pointed_dripstone"
-    },
-    "B": {
-      "tag": "c:ingots/gold"
-    },
-    "C": {
-      "tag": "c:gems/emerald"
-    }
+    "A": "minecraft:pointed_dripstone",
+    "B": "#c:ingots/gold",
+    "C": "#c:gems/emerald"
   },
   "result": {
     "id": "iska_utils:mining_equitizer",
     "count": 1
   }
-} 
+}

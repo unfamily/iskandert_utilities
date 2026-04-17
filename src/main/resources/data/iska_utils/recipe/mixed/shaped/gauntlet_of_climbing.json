@@ -6,23 +6,17 @@
     "AAA"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/copper"
-    },
+    "A": "#c:ingots/copper",
     "B": [
-      {"tag": "c:slime_balls"},
-      {"tag": "c:slimeballs"},
-      {"tag": "c:storage_blocks/sap"}
+      "#c:slime_balls",
+      "#c:slimeballs",
+      "#c:storage_blocks/sap"
     ],
-    "C": {
-      "tag": "c:leathers"
-    },
-    "D": {
-      "tag": "c:dyes/black"
-    }
+    "C": "#c:leathers",
+    "D": "#c:dyes/black"
   },
   "result": {
     "id": "iska_utils:gauntlet_of_climbing",
     "count": 1
   }
-} 
+}

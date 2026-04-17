@@ -6,15 +6,11 @@
     "NON"
   ],
   "key": {
-    "N": {
-      "tag": "c:stones"
-    },
-    "O": {
-      "tag": "minecraft:coals"
-    }
+    "N": "#c:stones",
+    "O": "#minecraft:coals"
   },
   "result": {
     "id": "iska_utils:wither_proof_block",
     "count": 4
   }
-} 
+}

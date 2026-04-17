@@ -6,18 +6,12 @@
     "ACA"
   ],
   "key": {
-    "C": {
-      "tag": "c:storage_blocks/diamond"
-    },
-    "B": {
-      "item": "iska_utils:ultra_module"
-    },
-    "A": {
-      "tag": "c:storage_blocks/emerald"
-    }
+    "C": "#c:storage_blocks/diamond",
+    "B": "iska_utils:ultra_module",
+    "A": "#c:storage_blocks/emerald"
   },
   "result": {
     "id": "iska_utils:vector_charm",
     "count": 1
   }
-} 
+}

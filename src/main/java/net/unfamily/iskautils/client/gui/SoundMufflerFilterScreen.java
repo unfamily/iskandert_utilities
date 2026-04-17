@@ -249,7 +249,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         Component titleComponent = Component.translatable("gui.iska_utils.sound_muffler.filter_title");
         int titleX = (imageWidth - font.width(titleComponent)) / 2;
-        guiGraphics.text(font, titleComponent, titleX, 8, 0x404040, false);
+        guiGraphics.text(font, titleComponent, titleX, 8, GuiTextColors.TITLE, false);
     }
 
     private void renderEntries(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
@@ -263,7 +263,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
                 int maxW = ENTRY_WIDTH - 8 - BUTTON_SIZE - 6;
                 String display = font.plainSubstrByWidth(soundId, maxW);
                 if (display.length() < soundId.length()) display = display + "..";
-                guiGraphics.text(font, Component.literal(display), entryX + 4, entryY + (ENTRY_HEIGHT - font.lineHeight) / 2, 0x404040, false);
+                guiGraphics.text(font, Component.literal(display), entryX + 4, entryY + (ENTRY_HEIGHT - font.lineHeight) / 2, GuiTextColors.TITLE, false);
                 renderSelectionButton(guiGraphics, entryX, entryY, entryIndex, mouseX, mouseY);
             }
         }

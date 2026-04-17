@@ -6,24 +6,14 @@
     "ABA"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/iron"
-    },
-    "B": {
-      "tag": "c:ingots/netherite"
-    },
-    "C": {
-      "item": "minecraft:glowstone"
-    },
-    "D": {
-      "tag": "c:glass_blocks"
-    },
-    "E": {
-      "tag": "c:glass_blocks/tinted"
-    }
+    "A": "#c:ingots/iron",
+    "B": "#c:ingots/netherite",
+    "C": "minecraft:glowstone",
+    "D": "#c:glass_blocks",
+    "E": "#c:glass_blocks/tinted"
   },
   "result": {
     "id": "iska_utils:time_alterer",
     "count": 1
   }
-} 
+}

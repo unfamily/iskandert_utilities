@@ -5,12 +5,10 @@
     "AAA"
   ],
   "key": {
-    "A": {
-      "item": "iska_utils:rubber_planks"  
-    }
+    "A": "iska_utils:rubber_planks"
   },
   "result": {
     "id": "iska_utils:rubber_trapdoor",
     "count": 2
   }
-} 
+}

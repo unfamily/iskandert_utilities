@@ -5,12 +5,10 @@
     "A A"
   ],
   "key": {
-    "A": {
-      "tag": "c:rubber"
-    }
+    "A": "#c:rubber"
   },
   "result": {
     "id": "iska_utils:rubber_boots",
     "count": 1
   }
-} 
+}

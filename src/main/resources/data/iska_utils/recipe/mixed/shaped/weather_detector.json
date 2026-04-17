@@ -6,18 +6,12 @@
     "CCC"
   ],
   "key": {
-    "A": {
-      "tag": "c:glass_blocks"
-    },
-    "B": {
-      "tag": "c:gems/quartz"
-    },
-    "C": {
-      "tag": "c:ingots/copper"
-    }
+    "A": "#c:glass_blocks",
+    "B": "#c:gems/quartz",
+    "C": "#c:ingots/copper"
   },
   "result": {
     "id": "iska_utils:weather_detector",
     "count": 1
   }
-} 
+}

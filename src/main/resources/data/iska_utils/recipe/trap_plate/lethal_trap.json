@@ -12,22 +12,18 @@
     " B "
   ],
   "key": {
-   "A": [
-    { "tag": "c:nether_stars" },
-    { "item": "minecraft:heart_of_the_sea" },
-    { "item": "minecraft:heavy_core" },
-    { "item": "minecraft:echo_shard" },
-    { "item": "minecraft:dragon_breath" }
-   ],
-   "B": {
-    "item": "iska_utils:iska_utils_improved_damage"
-   },  
-   "C": {
-    "tag": "c:gems/amethyst"
-   }
+    "A": [
+      "#c:nether_stars",
+      "minecraft:heart_of_the_sea",
+      "minecraft:heavy_core",
+      "minecraft:echo_shard",
+      "minecraft:dragon_breath"
+    ],
+    "B": "iska_utils:iska_utils_improved_damage",
+    "C": "#c:gems/amethyst"
   },
   "result": {
     "id": "iska_utils:iska_utils_lethal_damage",
     "count": 1
   }
-} 
+}

@@ -563,7 +563,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         Component titleComponent = Component.translatable("block.iska_utils.structure_placer_machine");
         String title = titleComponent.getString();
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
-        guiGraphics.text(this.font, Component.literal(title), titleX, 6, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(title), titleX, 6, GuiTextColors.TITLE, false);
         
         // Draw selected structure text (centered between button rows)
         renderSelectedStructureText(guiGraphics);
@@ -614,12 +614,12 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // Draw first line: "Selected Structure:" (centered, dark color)
         int scaledLabelWidth = this.font.width(labelText);
         int scaledLabelX = Math.round((this.imageWidth / scale - scaledLabelWidth) / 2);
-        guiGraphics.text(this.font, Component.literal(labelText), scaledLabelX, scaledFirstLineY, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(labelText), scaledLabelX, scaledFirstLineY, GuiTextColors.TITLE, false);
         
         // Draw second line: structure name or "None" (centered, colored)
         int scaledStructureWidth = this.font.width(structureText);
         int scaledStructureX = Math.round((this.imageWidth / scale - scaledStructureWidth) / 2);
-        int structureColor = displayName.isEmpty() ? 0xFF4040 : 0x4040FF;
+        int structureColor = displayName.isEmpty() ? GuiTextColors.STRUCTURE_MISSING : GuiTextColors.STRUCTURE_OK;
         guiGraphics.text(this.font, Component.literal(structureText), scaledStructureX, scaledSecondLineY, structureColor, false);
         
         guiGraphics.pose().popMatrix();

@@ -6,21 +6,13 @@
     "AAA"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/gold"
-    },
-    "B": {
-      "tag": "c:nether_stars"
-    },
-    "C": {
-      "item": "minecraft:sculk"
-    },
-    "D": {
-      "tag": "minecraft:soul_fire_base_blocks"
-    }
+    "A": "#c:ingots/gold",
+    "B": "#c:nether_stars",
+    "C": "minecraft:sculk",
+    "D": "#minecraft:soul_fire_base_blocks"
   },
   "result": {
     "id": "iska_utils:ghost_brazier",
     "count": 1
   }
-} 
+}

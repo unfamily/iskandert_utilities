@@ -1,9 +1,21 @@
 {
   "replace": false,
   "values": [
-    "iska_utils:wither_proof_block",
-    "iska_utils:wither_proof_stairs",
-    "iska_utils:wither_proof_slab",
-    "iska_utils:wither_proof_wall"
+    "iska_utils:smooth_blackstone",
+    "iska_utils:smooth_blackstone_slab",
+    "iska_utils:smooth_blackstone_stairs",
+    "iska_utils:smooth_blackstone_wall",
+    "iska_utils:hellfire_igniter",
+    "iska_utils:fan",
+    "iska_utils:rubber_sap_extractor",
+    "iska_utils:structure_placer_machine",
+    "iska_utils:structure_saver_machine",
+    "iska_utils:shop",
+    "iska_utils:auto_shop",
+    "iska_utils:smart_timer",
+    "iska_utils:deep_drawers",
+    "iska_utils:deep_drawer_extractor",
+    "iska_utils:deep_drawer_interface",
+    "iska_utils:deep_drawer_extender"
   ]
-} 
+}

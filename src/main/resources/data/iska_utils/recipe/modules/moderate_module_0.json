@@ -1,18 +1,10 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {
-      "item": "iska_utils:slow_module"
-    },
-    {
-      "item": "minecraft:sugar"
-    },
-    {
-      "item": "minecraft:sugar"
-    },
-    {
-      "tag": "c:gems/lapis"
-    }
+    "iska_utils:slow_module",
+    "minecraft:sugar",
+    "minecraft:sugar",
+    "#c:gems/lapis"
   ],
   "result": {
     "id": "iska_utils:moderate_module",

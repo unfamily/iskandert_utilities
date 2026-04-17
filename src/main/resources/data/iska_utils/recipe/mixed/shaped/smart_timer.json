@@ -6,18 +6,12 @@
     "ABA"
   ],
   "key": {
-    "A": {
-      "item": "minecraft:smooth_stone"
-    },
-    "B": {
-      "item": "minecraft:repeater"
-    },
-    "C": {
-      "item": "minecraft:clock"
-    }
+    "A": "minecraft:smooth_stone",
+    "B": "minecraft:repeater",
+    "C": "minecraft:clock"
   },
   "result": {
     "id": "iska_utils:smart_timer",
     "count": 1
   }
-} 
+}

@@ -6,19 +6,15 @@
     "VVV"
   ],
   "key": {
-    "S": {
-      "item": "minecraft:sugar"
-    },
+    "S": "minecraft:sugar",
     "V": [
-      {"item": "iska_utils:fast_vect"},
-      {"item": "iska_utils:player_fast_vect"}
+      "iska_utils:fast_vect",
+      "iska_utils:player_fast_vect"
     ],
-    "A": {
-      "tag": "c:ingots/gold"
-    }
+    "A": "#c:ingots/gold"
   },
   "result": {
     "id": "iska_utils:extreme_vect",
     "count": 6
   }
-} 
+}

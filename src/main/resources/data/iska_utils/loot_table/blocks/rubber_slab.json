@@ -1,6 +1,6 @@
 {
     "type": "minecraft:block",
-    "random_sequence": "iska_utils:blocks/smooth_blackstone_slab",
+    "random_sequence": "iska_utils:blocks/rubber_slab",
     "pools": [
       {
         "rolls": 1.0,

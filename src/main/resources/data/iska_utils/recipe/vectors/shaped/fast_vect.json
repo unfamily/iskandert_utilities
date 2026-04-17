@@ -6,19 +6,15 @@
     "VVV"
   ],
   "key": {
-    "S": {
-      "item": "minecraft:sugar"
-    },
+    "S": "minecraft:sugar",
     "V": [
-      {"item": "iska_utils:moderate_vect"},
-      {"item": "iska_utils:player_moderate_vect"}
+      "iska_utils:moderate_vect",
+      "iska_utils:player_moderate_vect"
     ],
-    "A": {
-      "tag": "c:dusts/redstone"
-    }
+    "A": "#c:dusts/redstone"
   },
   "result": {
     "id": "iska_utils:fast_vect",
     "count": 6
   }
-} 
+}

@@ -95,7 +95,7 @@ public class PotionPlateRegistry {
 
         DeferredHolder<Item, BlockItem> itemHolder = POTION_PLATE_ITEMS.registerItem(blockName,
                 props -> new net.unfamily.iskautils.item.custom.PotionPlateBlockItem(blockHolder.get(), props),
-                UnaryOperator.identity());
+                Item.Properties::useBlockDescriptionPrefix);
         
         REGISTERED_BLOCKS.put(plateId, blockHolder);
         REGISTERED_ITEMS.put(plateId, itemHolder);

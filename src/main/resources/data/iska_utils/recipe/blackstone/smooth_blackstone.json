@@ -1,11 +1,9 @@
 {
   "type": "minecraft:smelting",
-  "ingredient": {
-    "item": "minecraft:blackstone"
-  },
+  "ingredient": "minecraft:blackstone",
   "result": {
     "id": "iska_utils:smooth_blackstone"
   },
   "experience": 0.1,
   "cookingtime": 200
-} 
+}

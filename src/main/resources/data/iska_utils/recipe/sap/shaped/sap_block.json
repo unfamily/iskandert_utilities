@@ -6,9 +6,7 @@
     "AAA"
   ],
   "key": {
-    "A": {
-      "tag": "c:rubber_sap"
-    }
+    "A": "#c:rubber_sap"
   },
   "result": {
     "id": "iska_utils:sap_block",

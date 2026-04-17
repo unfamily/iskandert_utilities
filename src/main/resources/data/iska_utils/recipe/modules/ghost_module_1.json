@@ -7,15 +7,13 @@
   ],
   "key": {
     "A": [
-      {"item": "minecraft:glow_ink_sac"},
-      {"tag": "c:gems/lapis"}
+      "minecraft:glow_ink_sac",
+      "#c:gems/lapis"
     ],
-    "B": {
-      "item": "iska_utils:base_module"
-    }
+    "B": "iska_utils:base_module"
   },
   "result": {
     "id": "iska_utils:ghost_module",
     "count": 1
   }
-} 
+}

@@ -12,18 +12,12 @@
     " B "
   ],
   "key": {
-   "A": {
-    "item": "minecraft:oxidized_copper_grate"
-   },
-   "B": {
-    "item": "iska_utils:plate_base_block"
-   },  
-   "C": {
-    "item": "minecraft:fermented_spider_eye"
-   }
+    "A": "minecraft:oxidized_copper_grate",
+    "B": "iska_utils:plate_base_block",
+    "C": "minecraft:fermented_spider_eye"
   },
   "result": {
     "id": "iska_utils:iska_utils_weakness",
     "count": 1
   }
-} 
+}

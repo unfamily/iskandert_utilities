@@ -12,15 +12,9 @@
     " B "
   ],
   "key": {
-   "A": {
-    "item": "minecraft:blue_ice"
-   },
-   "B": {
-    "item": "iska_utils:plate_base_block"
-   },
-   "C": {
-    "item": "minecraft:packed_ice"
-   }
+    "A": "minecraft:blue_ice",
+    "B": "iska_utils:plate_base_block",
+    "C": "minecraft:packed_ice"
   },
   "result": {
     "id": "iska_utils:iska_utils_freeze",

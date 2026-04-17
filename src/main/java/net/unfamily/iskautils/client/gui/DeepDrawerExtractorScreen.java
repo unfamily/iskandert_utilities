@@ -629,7 +629,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             int labelWidth = this.font.width(filtersLabel);
             // Center the label with the entries
             int labelX = this.leftPos + ENTRY_X + (ENTRY_WIDTH - labelWidth) / 2;
-            guiGraphics.text(this.font, filtersLabel, labelX, this.topPos + FILTERS_LABEL_Y, 0x404040, false);
+            guiGraphics.text(this.font, filtersLabel, labelX, this.topPos + FILTERS_LABEL_Y, GuiTextColors.TITLE, false);
             
             // Render filter entries (wide entries with single slot)
             renderFilterEntries(guiGraphics, mouseX, mouseY);
@@ -729,7 +729,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             displayText = this.font.plainSubstrByWidth(displayText, maxTextWidth - this.font.width("...")) + "...";
         }
         
-        guiGraphics.text(this.font, Component.literal(displayText), textX, textY, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(displayText), textX, textY, GuiTextColors.TITLE, false);
         
         // Edit button is rendered as a widget (created in updateEditButtons)
     }
@@ -1637,7 +1637,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         Component titleComponent = Component.translatable("gui.iska_utils.deep_drawer_extractor.how_to_use");
         int titleWidth = this.font.width(titleComponent);
         int titleX = this.leftPos + (this.imageWidth - titleWidth) / 2;
-        guiGraphics.text(this.font, titleComponent, titleX, this.topPos + TITLE_Y, 0x404040, false);
+        guiGraphics.text(this.font, titleComponent, titleX, this.topPos + TITLE_Y, GuiTextColors.TITLE, false);
 
         int helpY = HELP_TEXT_START_Y;
         renderHelpLineWithExample(guiGraphics, "gui.iska_utils.general_filter_text.id",
@@ -1659,7 +1659,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         helpY += HELP_TEXT_LINE_HEIGHT;
 
         guiGraphics.text(this.font, Component.translatable("gui.iska_utils.general_filter_text.nbt"),
-            this.leftPos + HELP_TEXT_X, this.topPos + helpY, 0x404040, false);
+            this.leftPos + HELP_TEXT_X, this.topPos + helpY, GuiTextColors.TITLE, false);
         helpY += HELP_TEXT_LINE_HEIGHT;
 
         renderHelpLineWithExample(guiGraphics, "gui.iska_utils.general_filter_text.nbt.example",
@@ -1678,10 +1678,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
 
         helpY += HELP_TEXT_LINE_HEIGHT;
         guiGraphics.text(this.font, Component.translatable("gui.iska_utils.general_filter_text.usage"),
-            this.leftPos + HELP_TEXT_X, this.topPos + helpY, 0x404040, false);
+            this.leftPos + HELP_TEXT_X, this.topPos + helpY, GuiTextColors.TITLE, false);
         helpY += HELP_TEXT_LINE_HEIGHT;
         guiGraphics.text(this.font, Component.translatable("gui.iska_utils.general_filter_text.usage.what"),
-            this.leftPos + HELP_TEXT_X, this.topPos + helpY, 0x404040, false);
+            this.leftPos + HELP_TEXT_X, this.topPos + helpY, GuiTextColors.TITLE, false);
     }
 
     @Override
@@ -1719,7 +1719,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Render before text
         int beforeWidth = this.font.width(beforeText);
-        guiGraphics.text(this.font, beforeComponent, absX, absY, 0x404040, false);
+        guiGraphics.text(this.font, beforeComponent, absX, absY, GuiTextColors.TITLE, false);
         
         // Render example text (clickable, with blue color)
         int exampleX = absX + beforeWidth;
@@ -1730,7 +1730,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                            mouseY >= absY && mouseY <= absY + HELP_TEXT_LINE_HEIGHT;
         
         // Use blue color for clickable example, darker blue when hovered
-        int exampleColor = isHovered ? 0x0066FF : 0x0066CC;
+        int exampleColor = isHovered ? GuiTextColors.LINK_HOVER : GuiTextColors.LINK;
         
         // Render example text in blue
         guiGraphics.text(this.font, Component.literal(exampleText), exampleX, absY, exampleColor, false);
@@ -1745,7 +1745,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Render after text (parentheses, commas, etc.)
         if (!afterText.isEmpty()) {
             int afterX = exampleX + exampleWidth;
-            guiGraphics.text(this.font, afterComponent, afterX, absY, 0x404040, false);
+            guiGraphics.text(this.font, afterComponent, afterX, absY, GuiTextColors.TITLE, false);
         }
         
         // Store example data for click handling (store relative coordinates for later use)
@@ -1777,14 +1777,14 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Render before text
         int beforeWidth = this.font.width(beforeText);
-        guiGraphics.text(this.font, beforeComponent, absX, absY, 0x404040, false);
+        guiGraphics.text(this.font, beforeComponent, absX, absY, GuiTextColors.TITLE, false);
         
         // Render first example
         int example1X = absX + beforeWidth;
         int example1Width = this.font.width(example1Text);
         boolean isHovered1 = mouseX >= example1X && mouseX <= example1X + example1Width &&
                             mouseY >= absY && mouseY <= absY + HELP_TEXT_LINE_HEIGHT;
-        int example1Color = isHovered1 ? 0x0066FF : 0x0066CC;
+        int example1Color = isHovered1 ? GuiTextColors.LINK_HOVER : GuiTextColors.LINK;
         guiGraphics.text(this.font, Component.literal(example1Text), example1X, absY, example1Color, false);
         if (isHovered1) {
             int underlineY = absY + this.font.lineHeight;
@@ -1794,7 +1794,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Render middle text (comma and space)
         int middleX = example1X + example1Width;
-        guiGraphics.text(this.font, middleComponent, middleX, absY, 0x404040, false);
+        guiGraphics.text(this.font, middleComponent, middleX, absY, GuiTextColors.TITLE, false);
         
         // Render second example
         int middleWidth = this.font.width(middleText);
@@ -1802,7 +1802,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         int example2Width = this.font.width(example2Text);
         boolean isHovered2 = mouseX >= example2X && mouseX <= example2X + example2Width &&
                             mouseY >= absY && mouseY <= absY + HELP_TEXT_LINE_HEIGHT;
-        int example2Color = isHovered2 ? 0x0066FF : 0x0066CC;
+        int example2Color = isHovered2 ? GuiTextColors.LINK_HOVER : GuiTextColors.LINK;
         guiGraphics.text(this.font, Component.literal(example2Text), example2X, absY, example2Color, false);
         if (isHovered2) {
             int underlineY = absY + this.font.lineHeight;
@@ -1813,7 +1813,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Render after text
         if (!afterText.isEmpty()) {
             int afterX = example2X + example2Width;
-            guiGraphics.text(this.font, afterComponent, afterX, absY, 0x404040, false);
+            guiGraphics.text(this.font, afterComponent, afterX, absY, GuiTextColors.TITLE, false);
         }
     }
     

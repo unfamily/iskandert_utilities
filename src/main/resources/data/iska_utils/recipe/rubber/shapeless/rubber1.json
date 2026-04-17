@@ -1,12 +1,10 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {
-      "tag": "c:rubber_chunk"
-    }
+    "#c:rubber_chunk"
   ],
   "result": {
     "id": "iska_utils:rubber",
     "count": 4
   }
-} 
+}

@@ -7,18 +7,12 @@
     "AAA"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/iron"
-    },
-    "B": {
-      "tag": "c:glass_blocks/colorless" 
-    },
-    "C": {
-      "tag": "c:gems/lapis"
-    }
+    "A": "#c:ingots/iron",
+    "B": "#c:glass_blocks/colorless",
+    "C": "#c:gems/lapis"
   },
   "result": {
     "id": "iska_utils:shop",
     "count": 1
   }
-} 
+}

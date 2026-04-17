@@ -161,7 +161,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
         // Titolo della GUI (centrato) - ora usa la traduzione
         Component titleComponent = Component.translatable("gui.iska_utils.structure_placer.title");
         int titleX = (this.imageWidth - this.font.width(titleComponent)) / 2;
-        guiGraphics.text(this.font, titleComponent, titleX, 8, 0x404040, false);
+        guiGraphics.text(this.font, titleComponent, titleX, 8, GuiTextColors.TITLE, false);
     }
     
     /**
@@ -195,7 +195,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
                 if (structureName.length() > 35) { // Incrementato da 25 a 35 caratteri
                     structureName = structureName.substring(0, 32) + "...";
                 }
-                guiGraphics.text(this.font, Component.literal(structureName), scaledTextX, scaledNameY, 0x404040, false);
+                guiGraphics.text(this.font, Component.literal(structureName), scaledTextX, scaledNameY, GuiTextColors.TITLE, false);
                 
                 // Testo inferiore: ID della struttura - LIMITI PIÙ GENEROSI
                 String structureId = structure.getId();
@@ -203,7 +203,7 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
                     structureId = structureId.substring(0, 35) + "...";
                 }
                 int scaledIdY = (int)((entryY + ENTRY_HEIGHT - (this.font.lineHeight * textScale) - 2) / textScale);
-                guiGraphics.text(this.font, Component.literal(structureId), scaledTextX, scaledIdY, 0x666666, false);
+                guiGraphics.text(this.font, Component.literal(structureId), scaledTextX, scaledIdY, GuiTextColors.SECONDARY, false);
                 
                 guiGraphics.pose().popMatrix();
                 

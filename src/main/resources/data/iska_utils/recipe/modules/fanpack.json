@@ -6,29 +6,19 @@
     "EFE"
   ],
   "key": {
-    "A": {
-      "item": "iska_utils:logic_module"
-    },
-    "B": {
-      "tag": "c:nether_stars"  
-    },
-    "C": {
-      "item": "iska_utils:fan"
-    },
-    "D": {
-      "item": "iska_utils:vector_charm"
-    },
-    "E": {
-      "item": "iska_utils:capacitor_module"
-    },
+    "A": "iska_utils:logic_module",
+    "B": "#c:nether_stars",
+    "C": "iska_utils:fan",
+    "D": "iska_utils:vector_charm",
+    "E": "iska_utils:capacitor_module",
     "F": [
-      {"tag": "c:storage_blocks/rubber"},
-      {"tag": "c:storage_blocks/slime"},
-      {"tag": "c:storage_blocks/tar_slime"}
+      "#c:storage_blocks/rubber",
+      "#c:storage_blocks/slime",
+      "#c:storage_blocks/tar_slime"
     ]
   },
   "result": {
     "id": "iska_utils:fanpack",
     "count": 1
   }
-} 
+}

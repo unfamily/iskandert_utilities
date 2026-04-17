@@ -178,7 +178,7 @@ public class ModItems {
     public static final DeferredItem<BlockItem> RUBBER_SAPLING = ITEMS.registerSimpleBlockItem(ModBlocks.RUBBER_SAPLING);
 
     public static final DeferredItem<Item> SACRED_RUBBER_SAPLING = ITEMS.registerItem("sacred_rubber_sapling",
-            props -> new SacredRubberSaplingBlockItem(ModBlocks.SACRED_RUBBER_SAPLING.get(), props), UnaryOperator.identity());
+            props -> new SacredRubberSaplingBlockItem(ModBlocks.SACRED_RUBBER_SAPLING.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> SACRED_RUBBER_ROOT = ITEMS.registerSimpleBlockItem(ModBlocks.SACRED_RUBBER_ROOT);
 
@@ -225,10 +225,10 @@ public class ModItems {
     // ===== UTILITY ITEMS =====
     
     public static final DeferredItem<Item> HELLFIRE_IGNITER = ITEMS.registerItem("hellfire_igniter",
-            props -> new HellfireIgniterBlockItem(ModBlocks.HELLFIRE_IGNITER.get(), props), UnaryOperator.identity());
+            props -> new HellfireIgniterBlockItem(ModBlocks.HELLFIRE_IGNITER.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<Item> FAN = ITEMS.registerItem("fan",
-            props -> new FanBlockItem(ModBlocks.FAN.get(), props), UnaryOperator.identity());
+            props -> new FanBlockItem(ModBlocks.FAN.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<Item> RANGE_MODULE = ITEMS.registerItem("range_module", RangeModuleItem::new, UnaryOperator.identity());
 
@@ -255,7 +255,7 @@ public class ModItems {
     public static final DeferredItem<Item> RUBBER_BOOTS = ITEMS.registerItem("rubber_boots", RubberBootsItem::new, p -> p.durability(256));
 
     public static final DeferredItem<Item> RUBBER_SAP_EXTRACTOR = ITEMS.registerItem("rubber_sap_extractor",
-            props -> new RubberSapExtractorBlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), props), UnaryOperator.identity());
+            props -> new RubberSapExtractorBlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> WEATHER_DETECTOR = ITEMS.registerSimpleBlockItem(ModBlocks.WEATHER_DETECTOR);
 
@@ -266,13 +266,13 @@ public class ModItems {
     public static final DeferredItem<BlockItem> TIME_ALTERER = ITEMS.registerSimpleBlockItem(ModBlocks.TIME_ALTERER);
 
     public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER = ITEMS.registerItem("temporal_overclocker",
-            props -> new TemporalOverclockerBlockItem(ModBlocks.TEMPORAL_OVERCLOCKER.get(), props), UnaryOperator.identity());
+            props -> new TemporalOverclockerBlockItem(ModBlocks.TEMPORAL_OVERCLOCKER.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER_CHIPSET = ITEMS.registerItem("temporal_overclocker_chip",
             TemporalOverclockerChipsetItem::new, UnaryOperator.identity());
 
     public static final DeferredItem<Item> ANGEL_BLOCK = ITEMS.registerItem("angel_block",
-            props -> new AngelBlockItem(ModBlocks.ANGEL_BLOCK.get(), props), p -> p.stacksTo(64));
+            props -> new AngelBlockItem(ModBlocks.ANGEL_BLOCK.get(), props), p -> p.useBlockDescriptionPrefix().stacksTo(64));
 
     public static final DeferredItem<Item> STRUCTURE_PLACER_MACHINE = ITEMS.registerItem("structure_placer_machine",
             props -> new StructurePlacerMachineBlockItem(ModBlocks.STRUCTURE_PLACER_MACHINE.get(), props), UnaryOperator.identity());
@@ -281,10 +281,10 @@ public class ModItems {
             props -> new StructureSaverMachineBlockItem(ModBlocks.STRUCTURE_SAVER_MACHINE.get(), props), UnaryOperator.identity());
 
     public static final DeferredItem<Item> SHOP = ITEMS.registerItem("shop",
-            props -> new ShopBlockItem(ModBlocks.SHOP.get(), props), UnaryOperator.identity());
+            props -> new ShopBlockItem(ModBlocks.SHOP.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<Item> AUTO_SHOP = ITEMS.registerItem("auto_shop",
-            props -> new AutoShopItem(ModBlocks.AUTO_SHOP.get(), props), UnaryOperator.identity());
+            props -> new AutoShopItem(ModBlocks.AUTO_SHOP.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> SMART_TIMER = ITEMS.registerSimpleBlockItem(ModBlocks.SMART_TIMER);
 
@@ -310,7 +310,7 @@ public class ModItems {
     public static final DeferredItem<Item> GREEDY_SHIELD = ITEMS.registerItem("greedy_shield", GreedyShieldItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<Item> DEEP_DRAWERS = ITEMS.registerItem("deep_drawers",
-            props -> new net.unfamily.iskautils.item.custom.DeepDrawersBlockItem(ModBlocks.DEEP_DRAWERS.get(), props), UnaryOperator.identity());
+            props -> new net.unfamily.iskautils.item.custom.DeepDrawersBlockItem(ModBlocks.DEEP_DRAWERS.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> DEEP_DRAWER_EXTRACTOR = ITEMS.registerSimpleBlockItem(ModBlocks.DEEP_DRAWER_EXTRACTOR);
 
@@ -319,7 +319,7 @@ public class ModItems {
     public static final DeferredItem<BlockItem> DEEP_DRAWER_EXTENDER = ITEMS.registerSimpleBlockItem(ModBlocks.DEEP_DRAWER_EXTENDER);
 
     public static final DeferredItem<Item> GIFT = ITEMS.registerItem("gift",
-            props -> new GiftItem(ModBlocks.GIFT.get(), props), UnaryOperator.identity());
+            props -> new GiftItem(ModBlocks.GIFT.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> HARD_ICE = ITEMS.registerSimpleBlockItem(ModBlocks.HARD_ICE);
 

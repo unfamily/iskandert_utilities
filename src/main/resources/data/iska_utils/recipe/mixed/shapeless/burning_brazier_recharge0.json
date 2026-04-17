@@ -1,11 +1,11 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {"item": "iska_utils:burning_brazier"},
-    {"item": "minecraft:magma_block"},
-    {"item": "minecraft:coal"},
-    {"tag": "c:dusts/redstone"},
-    {"tag": "c:dusts/redstone"}
+    "iska_utils:burning_brazier",
+    "minecraft:magma_block",
+    "minecraft:coal",
+    "#c:dusts/redstone",
+    "#c:dusts/redstone"
   ],
   "result": {
     "id": "iska_utils:burning_brazier",

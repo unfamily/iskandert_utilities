@@ -111,7 +111,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     
     // Feedback area for error/success messages
     private String feedbackMessage = null;
-    private int feedbackColor = 0xFFFFFF;
+    private int feedbackColor = GuiTextColors.FEEDBACK_DEFAULT;
     private long feedbackClearTime = 0;
     private static final long FEEDBACK_DISPLAY_TIME = 3000; // 3 seconds
     
@@ -504,7 +504,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Per le categorie, il testo può andare fino alla fine dell'entry (no pulsanti)
         int maxTextWidth = entryX + ENTRY_WIDTH - textX - 5; // 5px di margine dal bordo destro
         
-        renderScaledText(guiGraphics, Component.translatable(category.name).getString(), textX, textY, maxTextWidth, 0x404040);
+        renderScaledText(guiGraphics, Component.translatable(category.name).getString(), textX, textY, maxTextWidth, GuiTextColors.TITLE);
     }
     
     /**
@@ -547,7 +547,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int maxTextWidth = buyButtonStartX - textX - 5; // 5px di margine dai pulsanti
         
         // Renderizza il testo scalato
-        renderScaledText(guiGraphics, displayName, textX, textY, maxTextWidth, 0x404040);
+        renderScaledText(guiGraphics, displayName, textX, textY, maxTextWidth, GuiTextColors.TITLE);
         
         // Calcola posizioni per i pulsanti Buy/Sell (alla fine dell'entry e centrati verticalmente)
         int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3; // 3 pixel dal bordo destro
@@ -675,7 +675,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         Component titleComponent = Component.literal(currentCategoryName);
         int titleWidth = this.font.width(titleComponent);
         int titleX = ENTRY_START_X + (ENTRY_WIDTH - titleWidth) / 2;
-        guiGraphics.text(this.font, titleComponent, titleX, 9, 0x404040, false);
+        guiGraphics.text(this.font, titleComponent, titleX, 9, GuiTextColors.TITLE, false);
         // Intentionally do not draw the "Inventory" label (vanilla would).
     }
 
@@ -817,7 +817,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             guiGraphics.pose().pushMatrix();
             guiGraphics.pose().translate(textX, startY);
             guiGraphics.pose().scale(0.77f, 0.77f);
-            guiGraphics.text(this.font, noTeamText, 0, 0, 0x808080, false);
+            guiGraphics.text(this.font, noTeamText, 0, 0, GuiTextColors.MUTED, false);
             guiGraphics.pose().popMatrix();
             return;
         }
@@ -837,7 +837,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             Component currencyText = Component.literal(balanceText);
             
             // Colore: rosso se balance è 0, normale altrimenti
-            int color = balance > 0 ? 0x404040 : 0x804040;
+            int color = balance > 0 ? GuiTextColors.TITLE : GuiTextColors.NEGATIVE;
             guiGraphics.text(this.font, currencyText, textX, textY, color, false);
             
             lineIndex++;
@@ -846,7 +846,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Se non ci sono valute configurate, mostra un messaggio
         if (availableCurrencies.isEmpty()) {
             Component noValutesText = Component.translatable("gui.iska_utils.shop.no_valutes");
-            guiGraphics.text(this.font, noValutesText, textX, startY, 0x808080, false);
+            guiGraphics.text(this.font, noValutesText, textX, startY, GuiTextColors.MUTED, false);
         }
     }
     

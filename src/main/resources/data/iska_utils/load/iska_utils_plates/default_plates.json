@@ -1,5 +1,65 @@
 {
   "type": "iska_utils:plates",
   "overwritable": true,
-  "plates": []
+  "plates": [
+    {
+      "plate_type": "effect",
+      "id": "iska_utils-slowness",
+      "effect": "minecraft:slowness",
+      "amplifier": 0,
+      "duration": 200,
+      "delay": 40
+    },
+    {
+      "plate_type": "effect",
+      "id": "iska_utils-poison",
+      "effect": "minecraft:poison",
+      "amplifier": 0,
+      "duration": 200,
+      "delay": 40
+    },
+    {
+      "plate_type": "effect",
+      "id": "iska_utils-weakness",
+      "effect": "minecraft:weakness",
+      "amplifier": 0,
+      "duration": 200,
+      "delay": 40
+    },
+    {
+      "plate_type": "damage",
+      "id": "iska_utils-damage",
+      "damage_type": "minecraft:magic",
+      "damage": 2,
+      "delay": 20
+    },
+    {
+      "plate_type": "damage",
+      "id": "iska_utils-improved_damage",
+      "damage_type": "minecraft:magic",
+      "damage": 4,
+      "delay": 20
+    },
+    {
+      "plate_type": "damage",
+      "id": "iska_utils-lethal_damage",
+      "damage_type": "minecraft:magic",
+      "damage": 500,
+      "delay": 20
+    },
+    {
+      "plate_type": "special",
+      "id": "iska_utils-fire",
+      "apply": "fire",
+      "duration": 100,
+      "delay": 40
+    },
+    {
+      "plate_type": "special",
+      "id": "iska_utils-freeze",
+      "apply": "freeze",
+      "duration": 200,
+      "delay": 40
+    }
+  ]
 }

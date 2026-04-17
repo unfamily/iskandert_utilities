@@ -6,18 +6,12 @@
     "ABA"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/iron"
-    },
-    "B": {
-      "tag": "c:gems/diamond"
-    },
-    "C": {
-      "item": "minecraft:ender_eye"
-    }
+    "A": "#c:ingots/iron",
+    "B": "#c:gems/diamond",
+    "C": "minecraft:ender_eye"
   },
   "result": {
     "id": "iska_utils:portable_dislocator",
     "count": 1
   }
-} 
+}

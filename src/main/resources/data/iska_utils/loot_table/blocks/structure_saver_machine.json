@@ -16,5 +16,6 @@
       ],
       "rolls": 1.0
     }
-  ]
-} 
+  ],
+  "random_sequence": "iska_utils:blocks/structure_saver_machine"
+}

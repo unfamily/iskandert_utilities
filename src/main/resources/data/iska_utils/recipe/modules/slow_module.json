@@ -7,15 +7,13 @@
   ],
   "key": {
     "A": [
-      {"item": "iska_utils:slow_vect"},
-      {"item": "iska_utils:player_slow_vect"}
+      "iska_utils:slow_vect",
+      "iska_utils:player_slow_vect"
     ],
-    "B": {
-      "item": "iska_utils:base_module"
-    }
+    "B": "iska_utils:base_module"
   },
   "result": {
     "id": "iska_utils:slow_module",
     "count": 1
   }
-} 
+}

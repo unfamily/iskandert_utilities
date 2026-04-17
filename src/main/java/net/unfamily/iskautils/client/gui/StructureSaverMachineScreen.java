@@ -207,7 +207,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
 
     @Override
     protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        guiGraphics.text(this.font, this.title, this.titleLabelX, this.titleLabelY, 4210752, false);
+        guiGraphics.text(this.font, this.title, this.titleLabelX, this.titleLabelY, GuiTextColors.TITLE, false);
     }
 
     @Override
@@ -248,7 +248,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 if (structureName.length() > 25) { // Increased from 20 to 25 characters
                     structureName = structureName.substring(0, 22) + "...";
                 }
-                guiGraphics.text(this.font, Component.literal(structureName), scaledTextX, scaledNameY, 0x404040, false);
+                guiGraphics.text(this.font, Component.literal(structureName), scaledTextX, scaledNameY, GuiTextColors.TITLE, false);
                 
                 // Lower text: Structure ID
                 String structureId = structure.getId();
@@ -256,7 +256,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                     structureId = structureId.substring(0, 25) + "...";
                 }
                 int scaledIdY = (int)((entryY + ENTRY_HEIGHT - (this.font.lineHeight * textScale) - 2) / textScale);
-                guiGraphics.text(this.font, Component.literal(structureId), scaledTextX, scaledIdY, 0x666666, false);
+                guiGraphics.text(this.font, Component.literal(structureId), scaledTextX, scaledIdY, GuiTextColors.SECONDARY, false);
                 
                 guiGraphics.pose().popMatrix();
                 
@@ -494,7 +494,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         // Text "Area:" - below buttons, aligned with the start of entries (moved 18px higher)
         int areaTextX = this.leftPos + ENTRIES_START_X;
         guiGraphics.text(this.font, Component.translatable("gui.iska_utils.area"),
-                               areaTextX, this.topPos + SAVE_BUTTON_Y + 25, 0x404040, false);
+                               areaTextX, this.topPos + SAVE_BUTTON_Y + 25, GuiTextColors.TITLE, false);
         
         // Area information from synchronized data
         boolean hasValidArea = this.menu.getSyncedHasValidArea();
@@ -515,7 +515,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 int textY = this.topPos + SAVE_BUTTON_Y + 25; // Same height as "Area:" text
                 
                 // Neutral color (same as normal text color)
-                int color = 0x404040;
+                int color = GuiTextColors.BODY;
                 
                 guiGraphics.text(this.font, Component.literal(areaText), textX, textY, color, false);
                 
@@ -524,7 +524,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                     String errorText = Component.translatable("gui.iska_utils.area_too_large").getString();
                     int errorX = this.leftPos + ENTRIES_START_X;
                     int errorY = this.topPos + ID_EDIT_BOX_Y + 25;
-                    guiGraphics.text(this.font, Component.literal(errorText), errorX, errorY, 0xFF0000, false);
+                    guiGraphics.text(this.font, Component.literal(errorText), errorX, errorY, GuiTextColors.ERROR, false);
                 }
         }
     }
@@ -765,7 +765,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         int scaledY = (int)(finalY / stackCountScale);
         
         // Draw dark text without shadow (dark gray)
-        guiGraphics.text(this.font, Component.literal(countText), scaledX, scaledY, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(countText), scaledX, scaledY, GuiTextColors.TITLE, false);
         
         guiGraphics.pose().popMatrix();
     }

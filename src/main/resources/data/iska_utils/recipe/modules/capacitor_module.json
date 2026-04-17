@@ -6,21 +6,13 @@
     "ADA"
   ],
   "key": {
-    "C": {
-      "item": "minecraft:redstone_lamp"
-    },
-    "B": {
-      "item": "iska_utils:base_module"  
-    },
-    "A": {
-      "tag": "c:dusts/redstone"  
-    },
-    "D": {
-      "tag": "c:ingots/gold"  
-    }
+    "C": "minecraft:redstone_lamp",
+    "B": "iska_utils:base_module",
+    "A": "#c:dusts/redstone",
+    "D": "#c:ingots/gold"
   },
   "result": {
     "id": "iska_utils:capacitor_module",
     "count": 1
   }
-} 
+}

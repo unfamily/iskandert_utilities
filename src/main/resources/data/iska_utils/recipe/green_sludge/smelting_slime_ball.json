@@ -1,8 +1,6 @@
 {
   "type": "minecraft:smelting",
-  "ingredient": {
-    "item": "minecraft:slime_ball"
-  },
+  "ingredient": "minecraft:slime_ball",
   "result": {
     "id": "iska_utils:green_sludge",
     "count": 3

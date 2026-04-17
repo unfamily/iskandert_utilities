@@ -350,7 +350,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                     blockNameString = truncated + "...";
                 }
                 
-                guiGraphics.text(this.font, Component.literal(blockNameString), textX, textY, 0x404040, false);
+                guiGraphics.text(this.font, Component.literal(blockNameString), textX, textY, GuiTextColors.TITLE, false);
             }
         }
         
@@ -817,7 +817,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         Component titleComponent = Component.translatable("block.iska_utils.temporal_overclocker");
         String title = titleComponent.getString();
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
-        guiGraphics.text(this.font, Component.literal(title), titleX, 6, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(title), titleX, 6, GuiTextColors.TITLE, false);
     }
     
     private void renderEnergyTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {

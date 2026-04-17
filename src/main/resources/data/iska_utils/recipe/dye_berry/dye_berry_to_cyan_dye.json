@@ -1,8 +1,15 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["A  ", "AA ", "   "],
+  "pattern": [
+    "A  ",
+    "AA ",
+    "   "
+  ],
   "key": {
-    "A": { "item": "iska_utils:dye_berry" }
+    "A": "iska_utils:dye_berry"
   },
-  "result": { "id": "minecraft:cyan_dye", "count": 4 }
+  "result": {
+    "id": "minecraft:cyan_dye",
+    "count": 4
+  }
 }

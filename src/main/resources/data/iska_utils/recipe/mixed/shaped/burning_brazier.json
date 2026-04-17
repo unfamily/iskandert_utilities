@@ -6,21 +6,13 @@
     "AAA"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/iron"
-    },
-    "B": {
-      "item": "minecraft:magma_block"
-    },
-    "C": {
-      "tag": "c:storage_blocks/coal"
-    },
-    "D": {
-      "tag": "c:dusts/redstone"
-    }
+    "A": "#c:ingots/iron",
+    "B": "minecraft:magma_block",
+    "C": "#c:storage_blocks/coal",
+    "D": "#c:dusts/redstone"
   },
   "result": {
     "id": "iska_utils:burning_brazier",
     "count": 1
   }
-} 
+}

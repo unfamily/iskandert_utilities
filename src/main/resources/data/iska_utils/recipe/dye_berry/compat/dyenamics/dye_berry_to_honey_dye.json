@@ -1,11 +1,21 @@
 {
   "neoforge:conditions": [
-    { "type": "neoforge:mod_loaded", "modid": "dyenamics" }
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "dyenamics"
+    }
   ],
   "type": "minecraft:crafting_shaped",
-  "pattern": ["A  ", "  A", "  A"],
+  "pattern": [
+    "A  ",
+    "  A",
+    "  A"
+  ],
   "key": {
-    "A": { "item": "iska_utils:dye_berry" }
+    "A": "iska_utils:dye_berry"
   },
-  "result": { "id": "dyenamics:honey_dye", "count": 4 }
+  "result": {
+    "id": "dyenamics:honey_dye",
+    "count": 4
+  }
 }

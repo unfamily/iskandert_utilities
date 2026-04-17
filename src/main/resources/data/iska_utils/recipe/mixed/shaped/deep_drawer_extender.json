@@ -6,15 +6,11 @@
     "ABA"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/copper"
-    },
-    "B": {
-      "tag": "minecraft:planks"
-    }
+    "A": "#c:ingots/copper",
+    "B": "#minecraft:planks"
   },
   "result": {
     "id": "iska_utils:deep_drawer_extender",
     "count": 8
   }
-} 
+}

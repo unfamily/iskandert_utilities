@@ -6,18 +6,12 @@
     "ACA"
   ],
   "key": {
-    "C": {
-      "item": "minecraft:ender_eye"
-    },
-    "B": {
-      "item": "iska_utils:base_module"  
-    },
-    "A": {
-      "item": "minecraft:comparator"
-    }
+    "C": "minecraft:ender_eye",
+    "B": "iska_utils:base_module",
+    "A": "minecraft:comparator"
   },
   "result": {
     "id": "iska_utils:logic_module",
     "count": 1
   }
-} 
+}

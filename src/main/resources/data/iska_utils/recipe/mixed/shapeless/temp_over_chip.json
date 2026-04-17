@@ -1,21 +1,13 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {
-      "tag": "c:ingots/gold"
-    },
-    {
-      "tag": "c:ingots/copper"
-    },
-    {
-      "tag": "c:ingots/netherite"
-    },
-    {
-      "tag": "c:gems/emerald"
-    }
+    "#c:ingots/gold",
+    "#c:ingots/copper",
+    "#c:ingots/netherite",
+    "#c:gems/emerald"
   ],
   "result": {
     "id": "iska_utils:temporal_overclocker_chip",
     "count": 1
   }
-} 
+}

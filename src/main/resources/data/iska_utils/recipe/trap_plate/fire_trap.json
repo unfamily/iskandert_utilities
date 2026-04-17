@@ -12,18 +12,12 @@
     " B "
   ],
   "key": {
-   "A": {
-    "item": "minecraft:magma_block"
-   },
-   "B": {
-    "item": "iska_utils:plate_base_block"
-   },  
-   "C": {
-    "item": "minecraft:blaze_powder"
-   }
+    "A": "minecraft:magma_block",
+    "B": "iska_utils:plate_base_block",
+    "C": "minecraft:blaze_powder"
   },
   "result": {
     "id": "iska_utils:iska_utils_fire",
     "count": 1
   }
-} 
+}

@@ -15,5 +15,6 @@
         }
       ]
     }
-  ]
-} 
+  ],
+  "random_sequence": "iska_utils:blocks/chaotic_tnt"
+}

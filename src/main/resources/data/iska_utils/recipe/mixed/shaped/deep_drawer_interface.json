@@ -6,18 +6,12 @@
     "CAC"
   ],
   "key": {
-    "A": {
-      "tag": "c:gems/lapis"
-    },
-    "B": {
-      "tag": "c:ingots/gold"
-    },
-    "C": {
-      "item": "iska_utils:deep_drawer_extender"
-    }
+    "A": "#c:gems/lapis",
+    "B": "#c:ingots/gold",
+    "C": "iska_utils:deep_drawer_extender"
   },
   "result": {
     "id": "iska_utils:deep_drawer_interface",
     "count": 1
   }
-} 
+}

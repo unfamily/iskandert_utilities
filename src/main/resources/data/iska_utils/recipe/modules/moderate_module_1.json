@@ -7,15 +7,13 @@
   ],
   "key": {
     "A": [
-      {"item": "iska_utils:moderate_vect"},
-      {"item": "iska_utils:player_moderate_vect"}
+      "iska_utils:moderate_vect",
+      "iska_utils:player_moderate_vect"
     ],
-    "B": {
-      "item": "iska_utils:base_module"
-    }
+    "B": "iska_utils:base_module"
   },
   "result": {
     "id": "iska_utils:moderate_module",
     "count": 1
   }
-} 
+}

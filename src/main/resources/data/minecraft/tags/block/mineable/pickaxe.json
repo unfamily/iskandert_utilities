@@ -44,7 +44,13 @@
     "iska_utils:iska_utils_damage",
     "iska_utils:iska_utils_improved_damage",
     "iska_utils:iska_utils_fire",
-    "iska_utils:iska_utils_freeze"
-    , "iska_utils:temporal_overclocker"
+    "iska_utils:iska_utils_freeze",
+    "iska_utils:temporal_overclocker",
+    "iska_utils:iska_utils_lethal_damage",
+    "iska_utils:angel_block",
+    "iska_utils:chaotic_tnt",
+    "iska_utils:gift",
+    "iska_utils:burning_flame",
+    "iska_utils:redstone_activator_signal"
   ]
 } 

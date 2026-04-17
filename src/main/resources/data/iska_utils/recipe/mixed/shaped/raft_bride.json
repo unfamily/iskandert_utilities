@@ -6,15 +6,11 @@
     "   "
   ],
   "key": {
-    "A": {
-      "item": "minecraft:scaffolding"
-    },
-    "B": {
-      "tag": "minecraft:wooden_trapdoors"
-    }
+    "A": "minecraft:scaffolding",
+    "B": "#minecraft:wooden_trapdoors"
   },
   "result": {
     "id": "iska_utils:raft",
     "count": 16
   }
-} 
+}

@@ -6,19 +6,15 @@
     "BBB"
   ],
   "key": {
-    "B": {
-      "item": "iska_utils:plate_base_block"
-    },
-    "S": {
-      "item": "minecraft:sugar"
-    },
+    "B": "iska_utils:plate_base_block",
+    "S": "minecraft:sugar",
     "L": [
-      {"tag": "c:slimeballs"},
-      {"tag": "c:slime_balls"}
+      "#c:slimeballs",
+      "#c:slime_balls"
     ]
   },
   "result": {
     "id": "iska_utils:slow_vect",
     "count": 6
   }
-} 
+}

@@ -6,18 +6,12 @@
     "CAC"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/iron"
-    },
-    "B": {
-      "item": "minecraft:hopper"
-    },
-    "C": {
-      "item": "iska_utils:deep_drawer_extender"
-    }
+    "A": "#c:ingots/iron",
+    "B": "minecraft:hopper",
+    "C": "iska_utils:deep_drawer_extender"
   },
   "result": {
     "id": "iska_utils:deep_drawer_extractor",
     "count": 1
   }
-} 
+}

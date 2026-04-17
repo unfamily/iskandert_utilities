@@ -6,21 +6,13 @@
     "BDB"
   ],
   "key": {
-    "A": {
-      "tag": "minecraft:planks"
-    },
-    "B": {
-      "tag": "c:ingots/iron"
-    },
-    "C": {
-      "item": "minecraft:redstone_lamp"
-    },
-    "D": {
-      "tag": "c:dusts/redstone"
-    }
+    "A": "#minecraft:planks",
+    "B": "#c:ingots/iron",
+    "C": "minecraft:redstone_lamp",
+    "D": "#c:dusts/redstone"
   },
   "result": {
     "id": "iska_utils:structure_placer_machine",
     "count": 1
   }
-} 
+}

@@ -12,18 +12,12 @@
     " B "
   ],
   "key": {
-   "A": {
-    "item": "minecraft:honey_bottle"
-   },
-   "B": {
-    "item": "iska_utils:plate_base_block"
-   },  
-   "C": {
-    "item": "minecraft:clay_ball"
-   }
+    "A": "minecraft:honey_bottle",
+    "B": "iska_utils:plate_base_block",
+    "C": "minecraft:clay_ball"
   },
   "result": {
     "id": "iska_utils:iska_utils_slowness",
     "count": 1
   }
-} 
+}

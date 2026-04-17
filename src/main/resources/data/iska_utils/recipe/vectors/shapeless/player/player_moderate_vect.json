@@ -1,12 +1,10 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {
-      "item": "iska_utils:moderate_vect"
-    }
+    "iska_utils:moderate_vect"
   ],
   "result": {
     "id": "iska_utils:player_moderate_vect",
     "count": 1
   }
-} 
+}

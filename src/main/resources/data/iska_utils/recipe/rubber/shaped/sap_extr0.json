@@ -6,21 +6,13 @@
     "ACA"
   ],
   "key": {
-    "A": {
-      "tag": "c:storage_blocks/copper"
-    },
-    "B": {
-      "item": "iska_utils:electric_treetap"
-    },
-    "C": {
-      "tag": "c:dusts/redstone"
-    },
-    "D": {
-      "tag": "c:gems"
-    }
+    "A": "#c:storage_blocks/copper",
+    "B": "iska_utils:electric_treetap",
+    "C": "#c:dusts/redstone",
+    "D": "#c:gems"
   },
   "result": {
     "id": "iska_utils:rubber_sap_extractor",
     "count": 1
   }
-} 
+}

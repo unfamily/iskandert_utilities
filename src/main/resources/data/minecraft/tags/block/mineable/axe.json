@@ -20,6 +20,11 @@
     "iska_utils:weather_alterer",
     "iska_utils:weather_detector",
     "iska_utils:structure_saver_machine",
-    "iska_utils:structure_placer_machine"
+    "iska_utils:structure_placer_machine",
+    "iska_utils:rubber_sapling",
+    "iska_utils:sacred_rubber_sapling",
+    "iska_utils:rubber_log_sacred",
+    "iska_utils:raft",
+    "iska_utils:raft_no_drop"
   ]
 } 

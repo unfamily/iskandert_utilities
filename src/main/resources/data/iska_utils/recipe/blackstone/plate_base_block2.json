@@ -4,12 +4,10 @@
     "AAA"
   ],
   "key": {
-    "A": {
-      "tag": "c:plastic_or_rubber"
-    }
+    "A": "#c:plastic_or_rubber"
   },
   "result": {
     "id": "iska_utils:plate_base_block",
     "count": 6
   }
-} 
+}

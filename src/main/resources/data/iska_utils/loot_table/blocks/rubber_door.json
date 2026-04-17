@@ -1,23 +1,24 @@
 {
-    "type": "minecraft:block",
-    "pools": [
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "conditions": [
         {
-            "rolls": 1,
-            "conditions": [
-                {
-                    "condition": "minecraft:block_state_property",
-                    "block": "iska_utils:rubber_door",
-                    "properties": {
-                        "half": "lower"
-                    }
-                }
-            ],
-            "entries": [
-                {
-                    "type": "minecraft:item",
-                    "name": "iska_utils:rubber_door"
-                }
-            ]
+          "condition": "minecraft:block_state_property",
+          "block": "iska_utils:rubber_door",
+          "properties": {
+            "half": "lower"
+          }
         }
-    ]
-} 
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "iska_utils:rubber_door"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "iska_utils:blocks/rubber_door"
+}

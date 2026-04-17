@@ -6,15 +6,11 @@
     " B "
   ],
   "key": {
-    "A": {
-      "item": "iska_utils:rubber_sapling"
-    },
-    "B": {
-      "item": "minecraft:ghast_tear"
-    }
+    "A": "iska_utils:rubber_sapling",
+    "B": "minecraft:ghast_tear"
   },
   "result": {
     "id": "iska_utils:sacred_rubber_sapling",
     "count": 1
   }
-} 
+}

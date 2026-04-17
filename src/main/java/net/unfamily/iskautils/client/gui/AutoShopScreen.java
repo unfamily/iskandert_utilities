@@ -77,13 +77,13 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu> {
     protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         Component title = Component.translatable("block.iska_utils.auto_shop");
         int titleWidth = this.font.width(title);
-        guiGraphics.text(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
+        guiGraphics.text(this.font, title, (this.imageWidth - titleWidth) / 2, 8, GuiTextColors.TITLE, false);
 
         Component selectText = Component.translatable("gui.iska_utils.auto_shop.select_item");
-        guiGraphics.text(this.font, selectText, 75, 27, 0x404040, false);
+        guiGraphics.text(this.font, selectText, 75, 27, GuiTextColors.TITLE, false);
 
         Component encapsulatedText = Component.translatable("gui.iska_utils.auto_shop.encapsulated_item");
-        guiGraphics.text(this.font, encapsulatedText, 75, 52, 0x404040, false);
+        guiGraphics.text(this.font, encapsulatedText, 75, 52, GuiTextColors.TITLE, false);
     }
 
     @Override

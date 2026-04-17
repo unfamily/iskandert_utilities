@@ -5,15 +5,11 @@
     " BA"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/iron"
-    },
-    "B": {
-      "tag": "c:plastic_or_rubber"
-    }
+    "A": "#c:ingots/iron",
+    "B": "#c:plastic_or_rubber"
   },
   "result": {
     "id": "iska_utils:electric_treetap",
     "count": 1
   }
-} 
+}

@@ -6,18 +6,12 @@
     "BAB"
   ],
   "key": {
-    "A": {
-      "tag": "c:ingots/gold"
-    },
-    "B": {
-      "item": "iska_utils:deep_drawer_extender"
-    },
-    "C": {
-      "tag": "c:ingots/iron"
-    }
+    "A": "#c:ingots/gold",
+    "B": "iska_utils:deep_drawer_extender",
+    "C": "#c:ingots/iron"
   },
   "result": {
     "id": "iska_utils:deep_drawers",
     "count": 1
   }
-} 
+}

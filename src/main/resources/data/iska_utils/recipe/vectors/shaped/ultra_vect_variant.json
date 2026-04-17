@@ -6,19 +6,15 @@
     "VVV"
   ],
   "key": {
-    "S": {
-      "item": "minecraft:sugar"
-    },
+    "S": "minecraft:sugar",
     "V": [
-      {"item": "iska_utils:extreme_vect"},
-      {"item": "iska_utils:player_extreme_vect"}
+      "iska_utils:extreme_vect",
+      "iska_utils:player_extreme_vect"
     ],
-    "A": {
-      "tag": "c:gems/diamond"
-    }
+    "A": "#c:gems/diamond"
   },
   "result": {
     "id": "iska_utils:ultra_vect",
     "count": 6
   }
-} 
+}

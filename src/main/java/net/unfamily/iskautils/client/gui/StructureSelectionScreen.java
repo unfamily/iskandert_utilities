@@ -192,7 +192,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         // Rimozione del conteggio strutture client dal titolo
         
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
-        guiGraphics.text(this.font, Component.literal(title), titleX, 8, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(title), titleX, 8, GuiTextColors.TITLE, false);
     }
     
     /**
@@ -226,7 +226,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
                 if (structureName.length() > 35) { // Incrementato da 25 a 35 caratteri
                     structureName = structureName.substring(0, 32) + "...";
                 }
-                guiGraphics.text(this.font, Component.literal(structureName), scaledTextX, scaledNameY, 0x404040, false);
+                guiGraphics.text(this.font, Component.literal(structureName), scaledTextX, scaledNameY, GuiTextColors.TITLE, false);
                 
                 // Testo inferiore: ID della struttura - LIMITI PIÙ GENEROSI
                 String structureId = structure.getId();
@@ -234,7 +234,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
                     structureId = structureId.substring(0, 35) + "...";
                 }
                 int scaledIdY = (int)((entryY + ENTRY_HEIGHT - (this.font.lineHeight * textScale) - 2) / textScale);
-                guiGraphics.text(this.font, Component.literal(structureId), scaledTextX, scaledIdY, 0x666666, false);
+                guiGraphics.text(this.font, Component.literal(structureId), scaledTextX, scaledIdY, GuiTextColors.SECONDARY, false);
                 
                 guiGraphics.pose().popMatrix();
                 

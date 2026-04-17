@@ -4,12 +4,10 @@
     "AAA"
   ],
   "key": {
-    "A": {
-      "item": "iska_utils:wither_proof_block"
-    }
+    "A": "iska_utils:wither_proof_block"
   },
   "result": {
     "id": "iska_utils:wither_proof_slab",
     "count": 6
   }
-} 
+}

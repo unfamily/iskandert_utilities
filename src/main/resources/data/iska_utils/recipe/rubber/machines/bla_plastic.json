@@ -1,11 +1,9 @@
 {
-    "type": "minecraft:blasting",
-    "ingredient": {
-        "tag": "c:rubber_chunk"
-    },
-    "result": {
-        "id": "iska_utils:plastic_ingot"
-    },
-    "experience": 0.5,
-    "cookingtime": 800
+  "type": "minecraft:blasting",
+  "ingredient": "#c:rubber_chunk",
+  "result": {
+    "id": "iska_utils:plastic_ingot"
+  },
+  "experience": 0.5,
+  "cookingtime": 800
 }

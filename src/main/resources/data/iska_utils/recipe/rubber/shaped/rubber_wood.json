@@ -5,12 +5,10 @@
     "AA"
   ],
   "key": {
-    "A": {
-      "item": "iska_utils:rubber_log"
-    }
+    "A": "iska_utils:rubber_log"
   },
   "result": {
     "id": "iska_utils:rubber_wood",
     "count": 3
   }
-} 
+}

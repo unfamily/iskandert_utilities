@@ -6,21 +6,13 @@
     "DAC"
   ],
   "key": {
-    "A": {
-      "tag": "minecraft:planks"
-    },
-    "B": {
-      "tag": "c:ingots/copper"
-    },
-    "C": {
-      "tag": "c:bars/iron"
-    },
-    "D": {
-      "tag": "c:ingots/iron"
-    }
+    "A": "#minecraft:planks",
+    "B": "#c:ingots/copper",
+    "C": "#c:bars/iron",
+    "D": "#c:ingots/iron"
   },
   "result": {
     "id": "iska_utils:dolly",
     "count": 1
   }
-} 
+}

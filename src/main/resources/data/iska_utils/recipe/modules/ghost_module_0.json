@@ -1,12 +1,11 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {"item": "iska_utils:base_module"},
-    {"item": "minecraft:phantom_membrane"}
-    
+    "iska_utils:base_module",
+    "minecraft:phantom_membrane"
   ],
   "result": {
     "id": "iska_utils:ghost_module",
     "count": 1
   }
-} 
+}

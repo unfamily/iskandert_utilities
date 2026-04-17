@@ -6,19 +6,15 @@
     "VVV"
   ],
   "key": {
-    "S": {
-      "item": "minecraft:sugar"
-    },
+    "S": "minecraft:sugar",
     "V": [
-      {"item": "iska_utils:slow_vect"},
-      {"item": "iska_utils:player_slow_vect"}
+      "iska_utils:slow_vect",
+      "iska_utils:player_slow_vect"
     ],
-    "A": {
-      "tag": "c:gems/lapis"
-    }
+    "A": "#c:gems/lapis"
   },
   "result": {
     "id": "iska_utils:moderate_vect",
     "count": 6
   }
-} 
+}

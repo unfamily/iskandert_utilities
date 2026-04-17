@@ -200,7 +200,7 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
         // Titolo standard centrato in alto
         Component title = Component.translatable("block.iska_utils.sound_muffler");
         int titleWidth = this.font.width(title);
-        guiGraphics.text(this.font, title, (this.imageWidth - titleWidth) / 2, 8, 0x404040, false);
+        guiGraphics.text(this.font, title, (this.imageWidth - titleWidth) / 2, 8, GuiTextColors.TITLE, false);
 
         // All centered on row 0; then 9 categories in 3x3 grid. Volume by BE index (DISPLAY_TO_CATEGORY).
         for (int i = 0; i < SoundMufflerBlockEntity.CATEGORY_COUNT; i++) {
@@ -222,13 +222,13 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
                 text = font.plainSubstrByWidth(text, labelMaxWidth - 4) + "..";
             }
             int labelX = cellX + (ROW_CONTENT_W - font.width(text)) / 2;
-            guiGraphics.text(this.font, Component.literal(text), labelX, cellY + LABEL_VERTICAL_OFFSET, 0x404040, false);
+            guiGraphics.text(this.font, Component.literal(text), labelX, cellY + LABEL_VERTICAL_OFFSET, GuiTextColors.TITLE, false);
 
             int percent = menu.getVolume(DISPLAY_TO_CATEGORY[i]);
             int lineY = (i == 0) ? TOP + ROW_Y_OFFSET : TOP + ((i - 1) / COLS + 1) * ROW_H + ROW_Y_OFFSET;
             int percentX = cellX + BUTTON_W + (ROW_CONTENT_W - 2 * BUTTON_W - font.width(percent + "%")) / 2;
             int percentY = lineY + (BUTTON_H - this.font.lineHeight) / 2;
-            guiGraphics.text(this.font, Component.literal(percent + "%"), percentX, percentY, 0x404040, false);
+            guiGraphics.text(this.font, Component.literal(percent + "%"), percentX, percentY, GuiTextColors.TITLE, false);
         }
         // Range row: same layout as category rows — label at (rangeRowCellY), buttons at (rangeRowCellY + ROW_Y_OFFSET)
         int totalBottomW = ROW_CONTENT_W + BOTTOM_BUTTON_GAP + BOTTOM_BUTTON_W;
@@ -239,7 +239,7 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
         int rangeLineY = BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - BUTTON_H) / 2;
         int rangeCellY = rangeLineY - ROW_Y_OFFSET;
         int rangeLabelY = rangeCellY + LABEL_VERTICAL_OFFSET;
-        guiGraphics.text(this.font, rangeLabel, rangeLabelX, rangeLabelY, 0x404040, false);
+        guiGraphics.text(this.font, rangeLabel, rangeLabelX, rangeLabelY, GuiTextColors.TITLE, false);
         int currentRange = menu.getRange();
         if (minecraft != null && minecraft.level != null) {
             var be = menu.getBlockEntityFromLevel(minecraft.level);
@@ -248,7 +248,7 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
         String valueStr = String.valueOf(currentRange);
         int valueX = rangeRowX + BUTTON_W + (ROW_CONTENT_W - 2 * BUTTON_W - font.width(valueStr)) / 2;
         int valueY = BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - font.lineHeight) / 2;
-        guiGraphics.text(this.font, Component.literal(valueStr), valueX, valueY, 0x404040, false);
+        guiGraphics.text(this.font, Component.literal(valueStr), valueX, valueY, GuiTextColors.TITLE, false);
     }
 
     private boolean isShiftDownNow() {

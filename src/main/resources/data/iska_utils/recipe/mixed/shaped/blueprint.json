@@ -6,18 +6,12 @@
     "ABA"
   ],
   "key": {
-    "A": {
-      "item": "minecraft:paper"
-    },
-    "B": {
-      "tag": "c:dyes/blue"
-    },
-    "C": {
-      "tag": "c:dyes/white"  
-    }
+    "A": "minecraft:paper",
+    "B": "#c:dyes/blue",
+    "C": "#c:dyes/white"
   },
   "result": {
     "id": "iska_utils:blueprint",
     "count": 1
   }
-} 
+}

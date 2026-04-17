@@ -427,7 +427,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         // Render "forward" label (translatable, between bottom buttons and bar, centered)
         Component forwardLabel = Component.translatable("gui.iska_utils.fan.forward");
         int labelX = this.leftPos + (GUI_WIDTH - this.font.width(forwardLabel)) / 2; // Center label relative to GUI
-        guiGraphics.text(this.font, forwardLabel, labelX, labelY, 0x404040, false);
+        guiGraphics.text(this.font, forwardLabel, labelX, labelY, GuiTextColors.TITLE, false);
         
         // Render bar squares with borders (between the buttons)
         for (int i = 0; i < BAR_SQUARE_COUNT; i++) {
@@ -847,7 +847,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         Component titleComponent = this.title;
         int titleWidth = this.font.width(titleComponent);
         int titleX = (this.imageWidth - titleWidth) / 2;
-        guiGraphics.text(this.font, titleComponent, titleX, 8, 0x404040, false);
+        guiGraphics.text(this.font, titleComponent, titleX, 8, GuiTextColors.TITLE, false);
     }
 }
 

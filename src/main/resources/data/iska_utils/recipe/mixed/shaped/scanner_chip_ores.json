@@ -1,20 +1,16 @@
 {
-    "type": "minecraft:crafting_shaped",
-    "pattern": [
-      " B ",
-      "BAB",
-      " B "
-    ],
-    "key": {
-      "A": {
-        "item": "iska_utils:scanner_chip"
-      },
-      "B": {
-        "tag": "c:gems/amethyst"   
-      }
-    },
-    "result": {
-        "id": "iska_utils:scanner_chip_ores",
-        "count": 1
-    }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " B ",
+    "BAB",
+    " B "
+  ],
+  "key": {
+    "A": "iska_utils:scanner_chip",
+    "B": "#c:gems/amethyst"
+  },
+  "result": {
+    "id": "iska_utils:scanner_chip_ores",
+    "count": 1
+  }
 }

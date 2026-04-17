@@ -12,18 +12,12 @@
     " B "
   ],
   "key": {
-   "A": {
-    "item": "minecraft:poisonous_potato"
-   },
-   "B": {
-    "item": "iska_utils:plate_base_block"
-   },  
-   "C": {
-    "item": "minecraft:spider_eye"
-   }
+    "A": "minecraft:poisonous_potato",
+    "B": "iska_utils:plate_base_block",
+    "C": "minecraft:spider_eye"
   },
   "result": {
     "id": "iska_utils:iska_utils_poison",
     "count": 1
   }
-} 
+}

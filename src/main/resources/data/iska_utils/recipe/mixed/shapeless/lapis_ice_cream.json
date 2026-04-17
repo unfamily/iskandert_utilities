@@ -1,17 +1,17 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {"tag": "c:crops/wheat"},
+    "#c:crops/wheat",
     [
-      {"item": "minecraft:snow_block"},
-      {"tag": "c:buckets/powder_snow"}
+      "minecraft:snow_block",
+      "#c:buckets/powder_snow"
     ],
     [
-      {"tag": "c:drinks/milk"},
-      {"tag": "c:buckets/milk"}
+      "#c:drinks/milk",
+      "#c:buckets/milk"
     ],
-    {"tag": "c:gems/lapis"},
-    {"item": "minecraft:sugar"}
+    "#c:gems/lapis",
+    "minecraft:sugar"
   ],
   "result": {
     "id": "iska_utils:lapis_ice_cream",
