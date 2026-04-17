@@ -6,7 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.logging.LogUtils;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -37,17 +37,17 @@ public class PotionPlateLoader implements PreparableReloadListener {
                                          Executor backgroundExecutor, Executor gameExecutor) {
         
         return CompletableFuture.supplyAsync(() -> {
-            Map<ResourceLocation, JsonElement> foundConfigs = new HashMap<>();
+            Map<Identifier, JsonElement> foundConfigs = new HashMap<>();
             
             // Search for potion_plates in ALL namespaces
             for (String namespace : resourceManager.getNamespaces()) {
-                Map<ResourceLocation, Resource> resources = resourceManager.listResources(
+                Map<Identifier, Resource> resources = resourceManager.listResources(
                     "potion_plates", 
                     location -> location.getPath().endsWith(".json")
                 );
                 
-                for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
-                    ResourceLocation location = entry.getKey();
+                for (Map.Entry<Identifier, Resource> entry : resources.entrySet()) {
+                    Identifier location = entry.getKey();
                     
                     // Only process if it's in the current namespace
                     if (!location.getNamespace().equals(namespace)) {
@@ -77,8 +77,8 @@ public class PotionPlateLoader implements PreparableReloadListener {
             
             LOGGER.info("Loading potion plate configurations...");
             
-            for (Map.Entry<ResourceLocation, JsonElement> entry : foundConfigs.entrySet()) {
-                ResourceLocation resourceLocation = entry.getKey();
+            for (Map.Entry<Identifier, JsonElement> entry : foundConfigs.entrySet()) {
+                Identifier resourceLocation = entry.getKey();
                 JsonElement jsonElement = entry.getValue();
                 
                 try {

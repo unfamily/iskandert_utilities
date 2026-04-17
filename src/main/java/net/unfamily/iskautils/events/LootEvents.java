@@ -1,6 +1,6 @@
 package net.unfamily.iskautils.events;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.entries.TagEntry;
@@ -10,6 +10,7 @@ import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.LootTableLoadEvent;
+import net.neoforged.fml.ModList;
 import net.unfamily.iskautils.IskaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,19 +26,24 @@ public class LootEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(LootEvents.class);
 
     /** Tag containing curio items that can drop from Artifacts' Mimic. See data/iska_utils/tags/item/curio_compat/mimic.json */
-    private static final ResourceLocation MIMIC_CURIO_TAG = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "curio_compat/mimic");
+    private static final Identifier MIMIC_CURIO_TAG = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "curio_compat/mimic");
 
     // Possible paths for the mimic loot table of Artifacts
     // Since the paths can vary between versions, we check all possible variants
-    private static final List<ResourceLocation> MIMIC_LOOT_TABLES = Arrays.asList(
-        ResourceLocation.fromNamespaceAndPath("artifacts", "entities/mimic"),
-        ResourceLocation.fromNamespaceAndPath("artifacts", "entity/mimic"),
-        ResourceLocation.fromNamespaceAndPath("artifacts", "mimic")
+    private static final List<Identifier> MIMIC_LOOT_TABLES = Arrays.asList(
+        Identifier.fromNamespaceAndPath("artifacts", "entities/mimic"),
+        Identifier.fromNamespaceAndPath("artifacts", "entity/mimic"),
+        Identifier.fromNamespaceAndPath("artifacts", "mimic")
     );
 
     @SubscribeEvent
     public static void onLootTableLoad(LootTableLoadEvent event) {
-        ResourceLocation table = event.getName();
+        // Artifacts is not currently updated in the pack; keep this logic dormant unless the mod is loaded.
+        if (!ModList.get().isLoaded("artifacts")) {
+            return;
+        }
+
+        Identifier table = event.getName();
 
         LOGGER.debug("Loot table loaded: {}", table.toString());
 

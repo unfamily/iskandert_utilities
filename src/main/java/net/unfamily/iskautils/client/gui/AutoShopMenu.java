@@ -3,7 +3,7 @@ package net.unfamily.iskautils.client.gui;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.SimpleContainerData;
@@ -80,7 +80,7 @@ public class AutoShopMenu extends AbstractContainerMenu {
      * No item movement, no sound. We do not call super so the cursor is not modified.
      */
     @Override
-    public void clicked(int slotId, int button, ClickType clickType, Player player) {
+    public void clicked(int slotId, int button, ContainerInput containerInput, Player player) {
         if (slotId == 0 && blockEntity != null) {
             ItemStack carried = getCarried();
             ItemStack toSet = carried.isEmpty() ? ItemStack.EMPTY : carried.copy();
@@ -91,7 +91,7 @@ public class AutoShopMenu extends AbstractContainerMenu {
             broadcastFullState();
             return;
         }
-        super.clicked(slotId, button, clickType, player);
+        super.clicked(slotId, button, containerInput, player);
     }
 
     @Override

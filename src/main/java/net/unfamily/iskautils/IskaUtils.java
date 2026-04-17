@@ -4,10 +4,7 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.item.ItemProperties;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -37,14 +34,14 @@ import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
 import net.unfamily.iskautils.network.ModMessages;
-import net.unfamily.iskautils.shop.ShopTeamManager;
+import net.unfamily.iskalib.team.ShopTeamManager;
+import net.unfamily.iskalib.stage.StageHooks;
 import net.unfamily.iskautils.data.BurningBrazierData;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ModWoodTypes;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.unfamily.iskautils.block.PotionPlateBlock;
 import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
-import net.unfamily.iskautils.data.DynamicPotionPlateModelLoader;
 import net.unfamily.iskautils.command.MacroLoader;
 import net.unfamily.iskautils.command.MacroCommand;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
@@ -54,7 +51,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.shop.ShopLoader;
 
@@ -146,7 +143,7 @@ public class IskaUtils {
         // Initialize GuideME guide if available
         if (ModList.get().isLoaded("guideme")) {
             try {
-                Guide.builder(ResourceLocation.fromNamespaceAndPath(MOD_ID, "guide")).build();
+                Guide.builder(Identifier.fromNamespaceAndPath(MOD_ID, "guide")).build();
                 LOGGER.info("GuideME guide registered");
             } catch (Exception e) {
                 LOGGER.warn("Failed to register GuideME guide: {}", e.getMessage());
@@ -160,6 +157,24 @@ public class IskaUtils {
         
         // Register network messages
         ModMessages.register();
+
+        // Wire stage side-effects (actions) into the library stage system
+        StageHooks.setListener(new StageHooks.Listener() {
+            @Override
+            public void onPlayerStageChanged(ServerPlayer player, String stage, boolean value) {
+                net.unfamily.iskautils.command.StageActionsManager.onPlayerStageChanged(player, stage, value);
+            }
+
+            @Override
+            public void onWorldStageChanged(MinecraftServer server, String stage, boolean value) {
+                net.unfamily.iskautils.command.StageActionsManager.onWorldStageChanged(server, stage, value);
+            }
+
+            @Override
+            public void onTeamStageChanged(MinecraftServer server, String teamName, String stage, boolean value) {
+                net.unfamily.iskautils.command.StageActionsManager.onTeamStageChanged(server, teamName, stage, value);
+            }
+        });
         
         // Register wood types
         ModWoodTypes.register();
@@ -214,63 +229,10 @@ public class IskaUtils {
         
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            // Register CUTOUT rendering for the slow_vect block
-            event.enqueueWork(() -> {
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.SLOW_VECT.get(), RenderType.cutout());
-                // Aggiungi RenderType cutout per il rubber_sapling
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.RUBBER_SAPLING.get(), RenderType.cutout());
-                // Aggiungi RenderType cutout per il sacred_rubber_sapling
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.SACRED_RUBBER_SAPLING.get(), RenderType.cutout());
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_EMPTY.get(), RenderType.cutout());
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_FILLED.get(), RenderType.cutout());
-                // Aggiungi RenderType cutout_mipped per le netherite_bars
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.NETHERITE_BARS.get(), RenderType.cutoutMipped());
-                // Aggiungi RenderType cutout per il redstone_activator_signal
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get(), RenderType.cutout());
-                
-                // Register item property functions for dolly filled state
-                ItemProperties.register(
-                    ModItems.DOLLY.get(),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "filled"),
-                    (stack, level, entity, seed) -> {
-                        net.minecraft.world.item.component.CustomData customData = stack.getOrDefault(
-                            net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                            net.minecraft.world.item.component.CustomData.EMPTY);
-                        net.minecraft.nbt.CompoundTag nbt = customData.copyTag();
-                        return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
-                    }
-                );
-                
-                ItemProperties.register(
-                    ModItems.DOLLY_HARD.get(),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "filled"),
-                    (stack, level, entity, seed) -> {
-                        net.minecraft.world.item.component.CustomData customData = stack.getOrDefault(
-                            net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                            net.minecraft.world.item.component.CustomData.EMPTY);
-                        net.minecraft.nbt.CompoundTag nbt = customData.copyTag();
-                        return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
-                    }
-                );
-                
-                ItemProperties.register(
-                    ModItems.DOLLY_CREATIVE.get(),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "filled"),
-                    (stack, level, entity, seed) -> {
-                        net.minecraft.world.item.component.CustomData customData = stack.getOrDefault(
-                            net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                            net.minecraft.world.item.component.CustomData.EMPTY);
-                        net.minecraft.nbt.CompoundTag nbt = customData.copyTag();
-                        return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
-                    }
-                );
-            });
+            // Client render layers and item model properties need 26.x-specific APIs.
         }
         
-        @SubscribeEvent
-        public static void registerGeometryLoaders(net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders event) {
-            event.register(DynamicPotionPlateModelLoader.ID, DynamicPotionPlateModelLoader.INSTANCE);
-        }
+        // Custom geometry loaders removed for 26.x baseline.
         
         
         @SubscribeEvent
@@ -421,65 +383,7 @@ public class IskaUtils {
             }
         }
         
-        @SubscribeEvent
-        public static void onAddReloadListener(net.neoforged.neoforge.event.AddReloadListenerEvent event) {
-            LOGGER.info("Registering reload listeners for macros and command items...");
-            
-            // Add a ReloadListener that reloads macros and command item definitions when /reload command is executed
-            event.addListener(new PreparableReloadListener() {
-                @Override
-                public CompletableFuture<Void> reload(
-                        PreparableReloadListener.PreparationBarrier preparationBarrier,
-                        ResourceManager resourceManager,
-                        ProfilerFiller preparationsProfiler,
-                        ProfilerFiller reloadProfiler,
-                        Executor backgroundExecutor,
-                        Executor gameExecutor) {
-                    
-                    return CompletableFuture.runAsync(() -> {
-                        LOGGER.info("Server reload detected, reloading macros and command item definitions...");
-                        
-                        // Clean up any scanner markers
-                        try {
-                            MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
-                            if (server != null && server.overworld() != null) {
-                                // La funzionalità cleanupAllMarkers è stata rimossa
-                                // net.unfamily.iskautils.item.custom.ScannerItem.cleanupAllMarkers(server.overworld());
-                                LOGGER.info("Cleaned up all scanner markers during reload");
-                            }
-                        } catch (Exception e) {
-                            LOGGER.error("Error cleaning up scanner markers during reload: {}", e.getMessage());
-                        }
-                        
-                        // Reload command macros
-                        MacroLoader.reloadAllMacros();
-                        // Reload command item definitions
-                        CommandItemRegistry.reloadDefinitions();
-                        // Reload stage actions
-                        net.unfamily.iskautils.command.StageActionsLoader.reloadAllActions();
-                        // Reload stage item restrictions
-                        net.unfamily.iskautils.iska_utils_stages.StageItemManager.reloadItemRestrictions();
-                        // Reload shop system
-                        ShopLoader.reloadAllConfigurations();
-                        net.unfamily.iskautils.command.ShopCommand.notifyClientGUIReload();
-                        // Reload structures
-                        net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(true);
-                        // Sync structures to connected clients
-                        MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
-                        if (server != null) {
-                            for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
-                                net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
-                            }
-                        }
-                    }, gameExecutor).thenCompose(preparationBarrier::wait);
-                }
-                
-                @Override
-                public String getName() {
-                    return "IskaUtils Commands and Items";
-                }
-            });
-        }
+        // Reload listener event type changed in 26.x; wiring will be reintroduced after API update.
         
         @SubscribeEvent
         public static void onServerTick(ServerTickEvent.Post event) {

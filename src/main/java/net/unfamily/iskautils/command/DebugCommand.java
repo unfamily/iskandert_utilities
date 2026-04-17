@@ -14,7 +14,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
@@ -291,7 +291,7 @@ public class DebugCommand {
                         return tag.isPresent() && tag.get().contains(BuiltInRegistries.ITEM.wrapAsHolder(item));
                     })
                     .map(TagKey::location)
-                    .map(ResourceLocation::toString)
+                    .map(Identifier::toString)
                     .sorted()
                     .toList();
             

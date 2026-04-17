@@ -90,8 +90,8 @@ public class AutoShopBlock extends BaseEntityBlock {
                 autoShopEntity.setPlacedByPlayer(serverPlayer.getUUID());
                 
                 // Save also the team ID of the player if they belong to a team
-                net.unfamily.iskautils.shop.ShopTeamManager teamManager = 
-                    net.unfamily.iskautils.shop.ShopTeamManager.getInstance(serverPlayer.serverLevel());
+                net.unfamily.iskalib.team.ShopTeamManager teamManager =
+                    net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverPlayer.serverLevel());
                 String teamName = teamManager.getPlayerTeam(serverPlayer);
                 if (teamName != null) {
                     UUID teamId = teamManager.getTeamIdByName(teamName);

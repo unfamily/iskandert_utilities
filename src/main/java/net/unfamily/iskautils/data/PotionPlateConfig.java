@@ -1,7 +1,7 @@
 package net.unfamily.iskautils.data;
 
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffect;
@@ -382,7 +382,7 @@ public class PotionPlateConfig {
         
         if (cachedEffect == null) {
             try {
-                ResourceLocation effectLocation = ResourceLocation.parse(effectId);
+                Identifier effectLocation = Identifier.parse(effectId);
                 cachedEffect = BuiltInRegistries.MOB_EFFECT.getHolder(effectLocation).orElse(null);
             } catch (Exception e) {
                 // Invalid effect ID format

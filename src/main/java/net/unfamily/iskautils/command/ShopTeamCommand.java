@@ -16,7 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.Entity;
-import net.unfamily.iskautils.shop.ShopTeamManager;
+import net.unfamily.iskalib.team.ShopTeamManager;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCurrency;
 

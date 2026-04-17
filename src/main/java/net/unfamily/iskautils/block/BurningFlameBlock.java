@@ -1,7 +1,7 @@
 package net.unfamily.iskautils.block;
 
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;

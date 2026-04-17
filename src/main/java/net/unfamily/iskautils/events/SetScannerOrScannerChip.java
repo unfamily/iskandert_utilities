@@ -3,7 +3,7 @@ package net.unfamily.iskautils.events;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -69,7 +69,7 @@ public class SetScannerOrScannerChip {
 		// handle ScannerChip
 		else if (itemStack.getItem() instanceof ScannerChipItem) {
 			// Check if this is a specialized chip (ores or mobs) - these cannot be overwritten
-			ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
+			Identifier itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
 			String itemPath = itemId.getPath();
 			boolean isSpecializedChip = itemPath.contains("scanner_chip_ores") || itemPath.contains("scanner_chip_mobs");
 			

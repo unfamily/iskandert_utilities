@@ -1,7 +1,8 @@
 plugins {
     id 'java-library'
+    id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '1.0.21'
+    id 'net.neoforged.moddev' version '2.0.141'
 }
 
 
@@ -31,17 +32,14 @@ base {
     archivesName = mod_id
 }
 
-// Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+// Mojang ships Java 25 to end users in 26.1.2, so mods should target Java 25.
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
     // Specify the version of NeoForge to use.
     version = project.neo_version
 
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
-    }
+    // Parchment mappings are optional; disabled for 26.x baseline.
 
     // This line is optional. Access Transformers are automatically detected
     // accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
@@ -121,61 +119,26 @@ configurations {
 
 dependencies {
     // Optional local library: Pattern Crafter (NeoForge 1.21.1)
-    compileOnly files('libs/pattern_crafter-1.0.0.0.0-neoforge-1.21.1.jar')
+    // NOTE: Pattern Crafter is currently not updated; keep it dormant until we upgrade it.
+    if (file('libs/pattern_crafter-1.0.0.0.0-neoforge-1.21.1.jar').exists()) {
+        compileOnly files('libs/pattern_crafter-1.0.0.0.0-neoforge-1.21.1.jar')
+    }
+
+    // Iskandert Library (built jar in ./libs during development)
+    implementation files('libs/iska_lib-1.0.0.jar')
 
     // MixinExtras for advanced mixin features
     // NeoForge 20.2+ includes MixinExtras by default, but we can override with a specific version if needed
     // Using the version that should be compatible with NeoForge 21.1.215
     implementation("io.github.llamalad7:mixinextras-neoforge:0.5.0")
 
-    // Curios optional dependency
-    if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "curios") {
-        implementation "curse.maven:curios-309927:6529130"
-    } else {
-        compileOnly "curse.maven:curios-309927:6529130"
-    }
-    
-    if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "guideme") {
-        implementation "curse.maven:guide-me-1173950:7127444"
-    } else {
-        compileOnly "curse.maven:guide-me-1173950:7127444"
-    }
+    // Curios optional dependency (keep as compileOnly unless explicitly needed at runtime)
+    compileOnly "curse.maven:curios-309927:6529130"
 
-    // Optional dependencies for JEI/REI/EMI
+    // GuideME (only external mod we actively keep updated)
+    implementation "curse.maven:guideme-1173950:7929350"
     
-    // JEI dependency (Curseforge)
-    if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "jei") {
-        localRuntime "curse.maven:jei-238222:6516057"
-    } else {
-        compileOnly "curse.maven:jei-238222:6516057"
-    }
-    
-    // REI dependencies (Curseforge)
-    if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "rei") {
-        localRuntime "curse.maven:roughly-enough-items-310111:6199140"
-        localRuntime "curse.maven:architectury-api-419699:5786327"
-        localRuntime "curse.maven:cloth-config-348521:5729127"
-    } else {
-        compileOnly "curse.maven:roughly-enough-items-310111:6199140"
-        compileOnly "curse.maven:architectury-api-419699:5786327"
-        compileOnly "curse.maven:cloth-config-348521:5729127"
-    }
-    
-    // EMI dependency (Curseforge)
-    if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "emi") {
-        localRuntime "curse.maven:emi-580555:6420931"
-        // Adds JEI at runtime for the JEI compatibility built into EMI
-        localRuntime "curse.maven:jei-238222:6516057"
-    } else {
-        compileOnly "curse.maven:emi-580555:6420931"
-    }
-    
-    // Verify that the value of runtime_itemlist_mod is valid
-    if (project.hasProperty('runtime_itemlist_mod') && 
-        !(project.runtime_itemlist_mod in ["jei", "rei", "emi", "curios", "none"])) {
-        throw new GradleException("Invalid value for runtime_itemlist_mod: " + project.runtime_itemlist_mod + 
-                                  ". Allowed values: jei, rei, emi, curios, none")
-    }
+    // runtime_itemlist_mod support has been removed (JEI/REI/EMI not used).
     
     // Verify that the value of include_compass_mods is valid
     if (project.hasProperty('include_compass_mods') && 

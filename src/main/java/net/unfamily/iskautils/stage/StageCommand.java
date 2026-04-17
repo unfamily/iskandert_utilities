@@ -21,6 +21,7 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.IskaUtils;
 import org.slf4j.Logger;
 

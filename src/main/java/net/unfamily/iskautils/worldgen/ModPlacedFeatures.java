@@ -9,7 +9,7 @@ import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.data.worldgen.placement.PlacementUtils;
 import net.minecraft.data.worldgen.placement.VegetationPlacements;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Blocks;
@@ -31,7 +31,7 @@ public class ModPlacedFeatures {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModPlacedFeatures.class);
     public static final ResourceKey<PlacedFeature> RUBBER_PLACED_KEY = ResourceKey.create(
             Registries.PLACED_FEATURE, 
-            ResourceLocation.tryParse(IskaUtils.MOD_ID + ":" + "rubber_placed"));
+            Identifier.tryParse(IskaUtils.MOD_ID + ":" + "rubber_placed"));
 
     public static void bootstrap(BootstrapContext<PlacedFeature> context) {
         HolderGetter<ConfiguredFeature<?, ?>> configuredFeatures = context.lookup(Registries.CONFIGURED_FEATURE);

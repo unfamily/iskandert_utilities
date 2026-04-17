@@ -204,8 +204,8 @@ public class CommandItemAction {
         }
         
         // Otteniamo direttamente il registro degli stage per verifiche dirette
-        net.unfamily.iskautils.stage.StageRegistry registry = 
-            net.unfamily.iskautils.stage.StageRegistry.getInstance(player.getServer());
+        net.unfamily.iskalib.stage.StageRegistry registry =
+            net.unfamily.iskalib.stage.StageRegistry.getInstance(player.getServer());
         
         List<CommandItemDefinition.StageCondition> allStages = definition.getStages();
         

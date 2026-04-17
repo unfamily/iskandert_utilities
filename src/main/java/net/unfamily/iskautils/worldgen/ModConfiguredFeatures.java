@@ -3,7 +3,7 @@ package net.unfamily.iskautils.worldgen;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.ConstantInt;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,7 +21,7 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.RubberLogFilledBlock;
 import net.minecraft.core.Direction;
-import net.minecraft.util.random.SimpleWeightedRandomList;
+import net.minecraft.util.random.WeightedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ public class ModConfiguredFeatures {
      */
     public static final ResourceKey<ConfiguredFeature<?, ?>> RUBBER_KEY = ResourceKey.create(
             Registries.CONFIGURED_FEATURE,
-            ResourceLocation.tryBuild(IskaUtils.MOD_ID, "rubber"));
+            Identifier.tryBuild(IskaUtils.MOD_ID, "rubber"));
     
     /**
      * Executes the bootstrap of the feature configurations.
@@ -69,7 +69,7 @@ public class ModConfiguredFeatures {
      * Create a block provider that can generate normal trunks or with sap
      */
     private static BlockStateProvider createRubberLogProvider() {
-        SimpleWeightedRandomList.Builder<BlockState> builder = SimpleWeightedRandomList.builder();
+        WeightedList.Builder<BlockState> builder = WeightedList.builder();
         
         // Normal block (75% chance) with Y axis (vertical)
         BlockState normalLog = ModBlocks.RUBBER_LOG.get().defaultBlockState()

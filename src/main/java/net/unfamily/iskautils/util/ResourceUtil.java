@@ -1,20 +1,20 @@
 package net.unfamily.iskautils.util;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 
 /**
- * Utilità per gestire le ResourceLocation
+ * Utilities for handling identifiers.
  */
 public class ResourceUtil {
     
     /**
-     * Ottiene la ResourceLocation di un item
-     * @param item L'item di cui ottenere la ResourceLocation
-     * @return La ResourceLocation dell'item
+     * Gets the identifier of an item.
+     * @param item The item
+     * @return The item identifier
      */
-    public static ResourceLocation getKey(Item item) {
+    public static Identifier getKey(Item item) {
         return BuiltInRegistries.ITEM.getKey(item);
     }
     
@@ -24,15 +24,15 @@ public class ResourceUtil {
      * @return true se la stringa è un ID valido
      */
     public static boolean isValidId(String id) {
-        return ResourceLocation.tryParse(id) != null;
+        return Identifier.tryParse(id) != null;
     }
     
     /**
-     * Converte un ID nel formato namespace:path in una ResourceLocation
-     * @param id L'ID da convertire
-     * @return La ResourceLocation corrispondente, o null se l'ID non è valido
+     * Converts a string id into an identifier.
+     * @param id The id
+     * @return The identifier, or null if invalid
      */
-    public static ResourceLocation fromString(String id) {
-        return ResourceLocation.tryParse(id);
+    public static Identifier fromString(String id) {
+        return Identifier.tryParse(id);
     }
 } 

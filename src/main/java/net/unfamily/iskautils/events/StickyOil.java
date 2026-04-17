@@ -12,7 +12,7 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.advancements.Advancement;
@@ -47,7 +47,7 @@ public class StickyOil {
 			if (stickyFluid.startsWith("#")) {
 				// It's a tag
 				String tagName = stickyFluid.substring(1);
-				matched = currentFluidState.is(FluidTags.create(ResourceLocation.parse(tagName)));
+				matched = currentFluidState.is(FluidTags.create(Identifier.parse(tagName)));
 			} else {
 				// It's a fluid ID
 				matched = currentFluidState.toString().contains(stickyFluid);
@@ -61,13 +61,13 @@ public class StickyOil {
 					if (crudeOil.startsWith("#")) {
 						// It's a tag
 						String tagName = crudeOil.substring(1);
-						matched = currentFluidState.is(FluidTags.create(ResourceLocation.parse(tagName)));
+					matched = currentFluidState.is(FluidTags.create(Identifier.parse(tagName)));
 					} else {
 						// It's a fluid ID
 						matched = currentFluidState.toString().contains(stickyFluid);
 					}
 					if (entity instanceof ServerPlayer _player) {
-						AdvancementHolder _adv = _player.server.getAdvancements().get(ResourceLocation.parse("iska_utils:sticky_oil"));
+						AdvancementHolder _adv = _player.server.getAdvancements().get(Identifier.parse("iska_utils:sticky_oil"));
 						if (_adv != null) {
 							AdvancementProgress _ap = _player.getAdvancements().getOrStartProgress(_adv);
 							if (!_ap.isDone()) {

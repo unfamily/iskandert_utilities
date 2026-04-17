@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
@@ -14,7 +14,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ResourceUtil;
 import org.slf4j.Logger;
 
@@ -307,12 +307,12 @@ public class StageItemHandler {
      */
     private static boolean itemMatchesList(Item item, List<String> list) {
         if (list == null || list.isEmpty()) return false;
-        ResourceLocation itemId = ResourceUtil.getKey(item);
+        Identifier itemId = ResourceUtil.getKey(item);
         String itemIdStr = itemId.toString();
         String modId = itemId.getNamespace();
         for (String entry : list) {
             if (entry.startsWith("#")) {
-                ResourceLocation tagId = ResourceLocation.tryParse(entry.substring(1));
+                Identifier tagId = Identifier.tryParse(entry.substring(1));
                 if (tagId != null && item.builtInRegistryHolder().is(ItemTags.create(tagId))) return true;
             } else if (entry.startsWith("@")) {
                 String entryModId = entry.substring(1).trim();

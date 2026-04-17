@@ -17,7 +17,7 @@ import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.data.BurningBrazierData;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.slf4j.Logger;

@@ -1250,8 +1250,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                     }
                     
                     if (serverPlayer != null) {
-                        net.unfamily.iskautils.stage.StageRegistry registry =
-                            net.unfamily.iskautils.stage.StageRegistry.getInstance(server);
+                        net.unfamily.iskalib.stage.StageRegistry registry =
+                            net.unfamily.iskalib.stage.StageRegistry.getInstance(server);
                         
                         for (net.unfamily.iskautils.shop.ShopStage stage : item.stages) {
                             boolean hasStage = false;

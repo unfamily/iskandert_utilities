@@ -3,7 +3,7 @@ package net.unfamily.iskautils.data;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
@@ -23,8 +23,8 @@ public class PotionPlateResourceProvider {
     private static final Logger LOGGER = LogUtils.getLogger();
     
     // Cache for generated models
-    private static final Map<ResourceLocation, JsonObject> GENERATED_MODELS = new HashMap<>();
-    private static final Map<ResourceLocation, JsonObject> GENERATED_BLOCKSTATES = new HashMap<>();
+    private static final Map<Identifier, JsonObject> GENERATED_MODELS = new HashMap<>();
+    private static final Map<Identifier, JsonObject> GENERATED_BLOCKSTATES = new HashMap<>();
     
     // Template cache
     private static JsonObject blockModelTemplate;
@@ -84,17 +84,17 @@ public class PotionPlateResourceProvider {
         // Generate block model
         JsonObject blockModel = blockModelTemplate.deepCopy();
         replaceInJson(blockModel, "TEXTURE_PLACEHOLDER", textureName);
-        GENERATED_MODELS.put(ResourceLocation.fromNamespaceAndPath("iska_utils", "models/block/" + blockName + ".json"), blockModel);
+        GENERATED_MODELS.put(Identifier.fromNamespaceAndPath("iska_utils", "models/block/" + blockName + ".json"), blockModel);
         
         // Generate blockstate
         JsonObject blockstate = blockstateTemplate.deepCopy();
         replaceInJson(blockstate, "MODEL_PLACEHOLDER", blockName);
-        GENERATED_BLOCKSTATES.put(ResourceLocation.fromNamespaceAndPath("iska_utils", "blockstates/" + blockName + ".json"), blockstate);
+        GENERATED_BLOCKSTATES.put(Identifier.fromNamespaceAndPath("iska_utils", "blockstates/" + blockName + ".json"), blockstate);
         
         // Generate item model (references the block model)
         JsonObject itemModel = itemModelTemplate.deepCopy();
         replaceInJson(itemModel, "MODEL_PLACEHOLDER", blockName);
-        GENERATED_MODELS.put(ResourceLocation.fromNamespaceAndPath("iska_utils", "models/item/" + blockName + ".json"), itemModel);
+        GENERATED_MODELS.put(Identifier.fromNamespaceAndPath("iska_utils", "models/item/" + blockName + ".json"), itemModel);
         
         LOGGER.debug("Generated resources for potion plate: {} (block: {}, item: {}, texture: {})", 
                     plateId, blockName, blockName, textureName);
@@ -103,21 +103,21 @@ public class PotionPlateResourceProvider {
     /**
      * Gets a generated model by resource location
      */
-    public static Optional<JsonObject> getGeneratedModel(ResourceLocation location) {
+    public static Optional<JsonObject> getGeneratedModel(Identifier location) {
         return Optional.ofNullable(GENERATED_MODELS.get(location));
     }
     
     /**
      * Gets a generated blockstate by resource location
      */
-    public static Optional<JsonObject> getGeneratedBlockstate(ResourceLocation location) {
+    public static Optional<JsonObject> getGeneratedBlockstate(Identifier location) {
         return Optional.ofNullable(GENERATED_BLOCKSTATES.get(location));
     }
     
     /**
      * Checks if a resource is a generated potion plate resource
      */
-    public static boolean isGeneratedResource(ResourceLocation location) {
+    public static boolean isGeneratedResource(Identifier location) {
         return GENERATED_MODELS.containsKey(location) || GENERATED_BLOCKSTATES.containsKey(location);
     }
     
@@ -134,7 +134,7 @@ public class PotionPlateResourceProvider {
      * Loads a template JSON from resources
      */
     private static JsonObject loadTemplate(ResourceManager resourceManager, String path) throws IOException {
-        ResourceLocation location = ResourceLocation.parse(path);
+        Identifier location = Identifier.parse(path);
         Optional<Resource> resource = resourceManager.getResource(location);
         
         if (resource.isEmpty()) {

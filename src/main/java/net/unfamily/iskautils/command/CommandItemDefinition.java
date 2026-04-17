@@ -324,8 +324,8 @@ public class CommandItemDefinition {
         boolean shouldBeSet = condition.shouldBeSet();
         
         // Get the stage registry from the server
-        net.unfamily.iskautils.stage.StageRegistry registry = 
-            net.unfamily.iskautils.stage.StageRegistry.getInstance(player.getServer());
+        net.unfamily.iskalib.stage.StageRegistry registry =
+            net.unfamily.iskalib.stage.StageRegistry.getInstance(player.getServer());
         
         switch (condition.getStageType().toLowerCase()) {
             case "player":
