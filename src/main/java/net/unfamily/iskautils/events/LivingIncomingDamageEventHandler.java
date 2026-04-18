@@ -6,6 +6,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.util.RandomSource;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -21,9 +22,9 @@ import net.unfamily.iskalib.stage.StageRegistry;
  */
 @EventBusSubscriber
 public class LivingIncomingDamageEventHandler {
-    // Key for the Necrotic Crystal Heart counter
-    private static final String NECRO_CRYSTAL_HEART_COUNTER = "necro_crystal_heart_hex";
-    
+    public static final String NECRO_CRYSTAL_HEART_COUNTER = "necro_crystal_heart_hex";
+    public static final String NECRO_CRYSTAL_HEART_EQUIP_STAGE = "iska_utils_internal-necro_crystal_heart_equip";
+
     // Minimum health threshold before it becomes lethal
     private static final float MIN_HEALTH_THRESHOLD = 2.0f;
 
@@ -52,8 +53,30 @@ public class LivingIncomingDamageEventHandler {
             processNecroticCrystalHeart(event, player);
         }
         
-        clearNecroticCrystalHeartStage(player);
-        GreedyShieldItem.syncEquipStage(player);
+        clearStagesAfterDamage(player);
+    }
+
+    /**
+     * Removes internal equip stages used during damage resolution (no log, no stage actions for internal ids).
+     */
+    /**
+     * Same as legacy {@code iskandert_utilities}: strip internal equip stages after damage resolution (silent).
+     */
+    public static void clearStagesAfterDamage(Player player) {
+        StageRegistry.removePlayerStage(player, GreedyShieldItem.EQUIP_STAGE, true);
+        StageRegistry.removePlayerStage(player, NECRO_CRYSTAL_HEART_EQUIP_STAGE, true);
+    }
+
+    /**
+     * Resets Necrotic Crystal Heart hex, max health base, and internal equip stage (silent).
+     */
+    public static void resetNecroticCrystalHeartProgress(ServerPlayer player) {
+        setUsageCounter(player, 0.0f);
+        AttributeInstance maxHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            maxHealthAttr.setBaseValue(20.0);
+        }
+        StageRegistry.removePlayerStage(player, NECRO_CRYSTAL_HEART_EQUIP_STAGE, true);
     }
 
     /**
@@ -69,7 +92,7 @@ public class LivingIncomingDamageEventHandler {
         }
 
         // Check if player has the Necrotic Crystal Heart equipped
-        if (!StageRegistry.playerHasStage(player, "iska_utils_internal-necro_crystal_heart_equip")) {
+        if (!StageRegistry.playerHasStage(player, NECRO_CRYSTAL_HEART_EQUIP_STAGE)) {
             // If player doesn't have the heart but has hex counter, reset it on death
             float hexCounter = getCurrentUsageCounter(player);
             if (hexCounter > 0) {
@@ -132,7 +155,7 @@ public class LivingIncomingDamageEventHandler {
             maxHealthAttr.setBaseValue(newMaxHealth);
             
             // Remove stage after use
-            StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
+            StageRegistry.removePlayerStage(player, NECRO_CRYSTAL_HEART_EQUIP_STAGE, true);
             
             // Adjust current health to new maximum if necessary
             if (player.getHealth() > player.getMaxHealth()) {
@@ -150,8 +173,8 @@ public class LivingIncomingDamageEventHandler {
      * @return true if damage was completely blocked, false otherwise
      */
     private static boolean processGreedyShield(LivingIncomingDamageEvent event, Player player) {
-        // Check if player has the Greedy Shield equipped
-        if (!StageRegistry.playerHasStage(player, "iska_utils_internal-greedy_shield_equip")) {
+        // Match legacy iskandert_utilities: only internal equip stage (set by item tick when stack is outside vanilla inv, e.g. Curio)
+        if (!StageRegistry.playerHasStage(player, GreedyShieldItem.EQUIP_STAGE)) {
             return false;
         }
 
@@ -167,9 +190,6 @@ public class LivingIncomingDamageEventHandler {
         if (random.nextDouble() < Config.greedyShieldBlockChance) {
             // Completely block the damage
             event.setAmount(0.0f);
-            if (player.level().isClientSide()) {
-                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.greedy_shield.blocked"));
-            }
             return true; // Damage completely blocked
         }
 
@@ -180,9 +200,6 @@ public class LivingIncomingDamageEventHandler {
             // Reduce damage by the configured amount (multiply by reduceAmount to get remaining damage)
             float reducedDamage = originalDamage * (float)Config.greedyShieldReduceAmount;
             event.setAmount(reducedDamage);
-            if (player.level().isClientSide()) {
-                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.greedy_shield.reduced"));
-            }
         }
         
         return false; // Damage was not completely blocked (may have been reduced)
@@ -194,7 +211,7 @@ public class LivingIncomingDamageEventHandler {
      * @param player The player
      * @return The current counter value
      */
-    private static float getCurrentUsageCounter(Player player) {
+    public static float getCurrentUsageCounter(Player player) {
         try {
             CompoundTag persistentData = player.getPersistentData();
             if (!persistentData.contains("iskautils")) {
@@ -221,7 +238,7 @@ public class LivingIncomingDamageEventHandler {
      * @param player The player
      * @param value The new counter value
      */
-    private static void setUsageCounter(Player player, float value) {
+    public static void setUsageCounter(Player player, float value) {
         try {
             CompoundTag persistentData = player.getPersistentData();
             if (!persistentData.contains("iskautils")) {
@@ -240,9 +257,5 @@ public class LivingIncomingDamageEventHandler {
         } catch (Exception e) {
             // Silently fail
         }
-    }
-
-    private static void clearNecroticCrystalHeartStage(Player player) {
-        StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
     }
 }

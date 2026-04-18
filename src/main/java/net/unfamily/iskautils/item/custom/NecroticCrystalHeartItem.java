@@ -13,6 +13,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.component.TooltipDisplay;
+import net.unfamily.iskautils.events.LivingIncomingDamageEventHandler;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskalib.stage.StageRegistry;
 import org.slf4j.Logger;
@@ -88,26 +89,20 @@ public class NecroticCrystalHeartItem extends Item {
     @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, net.minecraft.world.entity.Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
         super.inventoryTick(stack, level, entity, slot);
-        if (entity instanceof Player player) {
-            // verify if the item is in the vanilla inventory
-            boolean isInVanillaInventory = false;
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                if (player.getInventory().getItem(i) == stack) {
-                    isInVanillaInventory = true;
-                    break;
-                }
-            }
-            
-            // if the item is not in the vanilla inventory, add the stage
-            if (!isInVanillaInventory) {
-                StageRegistry.addPlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
-            }
+        // Match legacy iskandert_utilities: tick on both sides; StageRegistry mutates only on logical server
+        if (!(entity instanceof Player player)) {
+            return;
+        }
+        if (ModUtils.isStackInVanillaPlayerInventory(player, stack)) {
+            StageRegistry.removePlayerStage(player, LivingIncomingDamageEventHandler.NECRO_CRYSTAL_HEART_EQUIP_STAGE, true);
+        } else {
+            StageRegistry.addPlayerStage(player, LivingIncomingDamageEventHandler.NECRO_CRYSTAL_HEART_EQUIP_STAGE, true);
         }
     }
 
     @Override
 	public boolean onDroppedByPlayer(ItemStack itemstack, Player entity) {
-		StageRegistry.removePlayerStage(entity, "iska_utils_internal-necro_crystal_heart_equip");
+		StageRegistry.removePlayerStage(entity, LivingIncomingDamageEventHandler.NECRO_CRYSTAL_HEART_EQUIP_STAGE, true);
 		return true;
 	}
 

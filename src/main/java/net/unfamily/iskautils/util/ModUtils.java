@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.util;
 
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,4 +80,17 @@ public class ModUtils {
     public static int secondsToTicks(float seconds) {
         return (int) (seconds * 20);
     }
-} 
+
+    /**
+     * True if this stack reference sits in the player's main inventory (hotbar, storage, offhand slot list).
+     * Curio-only stacks are not in this list.
+     */
+    public static boolean isStackInVanillaPlayerInventory(Player player, ItemStack stack) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            if (player.getInventory().getItem(i) == stack) {
+                return true;
+            }
+        }
+        return false;
+    }
+}

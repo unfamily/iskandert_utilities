@@ -6,10 +6,10 @@
     "AAA"
   ],
   "key": {
-    "A": [
-      "minecraft:glow_ink_sac",
-      "#c:gems/lapis"
-    ],
+   "A": [
+    "minecraft:glow_ink_sac",
+    "minecraft:lapis_lazuli"
+   ],
     "B": "iska_utils:base_module"
   },
   "result": {

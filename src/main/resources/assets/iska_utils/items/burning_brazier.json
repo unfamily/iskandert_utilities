@@ -1,6 +1,23 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "iska_utils:item/burning_brazier"
+    "type": "minecraft:range_dispatch",
+    "property": {
+      "type": "minecraft:damage",
+      "normalize": true
+    },
+    "scale": 1.0,
+    "entries": [
+      {
+        "threshold": 1.0,
+        "model": {
+          "type": "minecraft:model",
+          "model": "iska_utils:item/burning_brazier_unlit"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "iska_utils:item/burning_brazier"
+    }
   }
 }

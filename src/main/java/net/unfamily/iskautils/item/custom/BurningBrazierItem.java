@@ -13,30 +13,51 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.client.KeyBindings;
-import net.unfamily.iskautils.data.BurningBrazierData;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskalib.stage.StageRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jspecify.annotations.Nullable;
 
-import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
- * Burning Brazier Item - Places burning flame blocks when light level is low
- * Has 512 durability and consumes 1 durability per successful placement.
+ * Burning Brazier: manual placement with {@link #useOn}; optional auto-placement only while
+ * {@link #isAutoPlacementEnabled(UUID)} is true for that player (default {@code false} until toggled).
+ * Auto runs on this stack's
+ * {@link #inventoryTick} only (no inventory/Curio scanning). Toggle is in-memory per player UUID, not saved.
  */
 public class BurningBrazierItem extends Item {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BurningBrazierItem.class);
-    private static final int MAX_DURABILITY = 512;
+    public static final int MAX_DURABILITY = 512;
     private static final String CURSE_FLAME_STAGE = "iska_utils_internal-curse_flame";
 
-    /** Curse flame is scalable: player (single), team (player's team), world (everyone). */
+    /** In-memory only; not persisted. Absent UUID defaults to {@code false} (manual only until toggled on). */
+    private static final ConcurrentHashMap<UUID, Boolean> AUTO_PLACEMENT_BY_PLAYER = new ConcurrentHashMap<>();
+
+    public static boolean isAutoPlacementEnabled(UUID playerId) {
+        return AUTO_PLACEMENT_BY_PLAYER.getOrDefault(playerId, false);
+    }
+
+    public static void setAutoPlacementEnabled(UUID playerId, boolean enabled) {
+        AUTO_PLACEMENT_BY_PLAYER.put(playerId, enabled);
+    }
+
+    /** Toggles auto-placement and returns the new value. */
+    public static boolean toggleAutoPlacement(ServerPlayer player) {
+        UUID id = player.getUUID();
+        boolean next = !isAutoPlacementEnabled(id);
+        AUTO_PLACEMENT_BY_PLAYER.put(id, next);
+        return next;
+    }
+
+    public static void clearAutoPlacementState(UUID playerId) {
+        AUTO_PLACEMENT_BY_PLAYER.remove(playerId);
+    }
+
     private static boolean hasCurseFlame(ServerPlayer player) {
         return StageRegistry.playerHasStage(player, CURSE_FLAME_STAGE)
                 || StageRegistry.playerTeamHasStage(player, CURSE_FLAME_STAGE)
@@ -47,6 +68,36 @@ public class BurningBrazierItem extends Item {
         super(properties.durability(MAX_DURABILITY));
     }
 
+    /**
+     * Combined block+sky light at {@code pos} without extra {@link Level#getSkyDarken()} dampening, so day/night
+     * cycle does not skew the value the way {@link Level#getMaxLocalRawBrightness(BlockPos)} does.
+     */
+    private static int placementLightAt(Level level, BlockPos pos) {
+        if (!level.isLoaded(pos)) {
+            return 15;
+        }
+        return level.getLightEngine().getRawBrightness(pos, 0);
+    }
+
+    /** Too bright to place a flame (same threshold as legacy: 8+). */
+    private static boolean isTooBrightToPlaceFlame(Level level, BlockPos pos) {
+        return placementLightAt(level, pos) >= 8;
+    }
+
+    /**
+     * Minecraft stores wear as {@code minecraft:damage}; fully depleted is {@code damage == max}
+     * (e.g. 512/512). {@link ItemStack#nextDamageWillBreak()} is true already at {@code max - 1} and wrongly blocks a valid last use.
+     */
+    private static int effectiveMaxDamage(ItemStack stack) {
+        int max = stack.getMaxDamage();
+        return max > 0 ? max : MAX_DURABILITY;
+    }
+
+    /** No placement when the stack is fully worn out ({@code damage >= max}). */
+    private static boolean isDepletedForPlacement(ItemStack stack) {
+        return stack.getDamageValue() >= effectiveMaxDamage(stack);
+    }
+
     @Override
     public InteractionResult useOn(UseOnContext context) {
         Level level = context.getLevel();
@@ -54,122 +105,86 @@ public class BurningBrazierItem extends Item {
         ItemStack stack = context.getItemInHand();
         BlockPos clickedPos = context.getClickedPos();
 
-        // Only work on server side
         if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.SUCCESS;
         }
 
-        // Get the clicked block state
         BlockState clickedState = level.getBlockState(clickedPos);
 
-        // If clicking on a burning flame, remove it and restore durability
         if (clickedState.getBlock() == ModBlocks.BURNING_FLAME.get()) {
             level.destroyBlock(clickedPos, false);
             stack.setDamageValue(Math.max(0, stack.getDamageValue() - 1));
             return InteractionResult.SUCCESS;
         }
 
-        // Check if item has durability left
-        if (stack.getDamageValue() >= MAX_DURABILITY) {
+        if (isDepletedForPlacement(stack)) {
             return InteractionResult.FAIL;
         }
 
-        // Get the position where we want to place the flame (above the clicked block)
         BlockPos placePos = clickedPos.above();
-
-        // Check if the target position is air
         BlockState targetState = level.getBlockState(placePos);
         if (!targetState.isAir()) {
             return InteractionResult.FAIL;
         }
 
-        // Check max local brightness at the clicked position (not the place position)
-        int maxBrightness = level.getMaxLocalRawBrightness(clickedPos);
-        if (maxBrightness >= 8) {
+        if (isTooBrightToPlaceFlame(level, placePos)) {
             return InteractionResult.FAIL;
         }
 
-        // Place the burning flame block
         BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();
         level.setBlock(placePos, flameState, 3);
 
-        // If super hot mode is enabled OR curse_flame on player/team/world, set the player on fire
-        boolean shouldBurn = Config.burningBrazierSuperHot
-                || hasCurseFlame(serverPlayer);
-
+        boolean shouldBurn = Config.burningBrazierSuperHot || hasCurseFlame(serverPlayer);
         if (shouldBurn) {
-            serverPlayer.setRemainingFireTicks(5 * 20); // 5 seconds of fire (5 * 20 ticks)
+            serverPlayer.setRemainingFireTicks(5 * 20);
         }
 
-        // Consume durability
         stack.setDamageValue(stack.getDamageValue() + 1);
-
         return InteractionResult.SUCCESS;
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
+    public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @Nullable EquipmentSlot slot) {
         super.inventoryTick(stack, level, entity, slot);
-
-        if (!(entity instanceof ServerPlayer player)) return;
-
-        // Check if auto-placement is enabled for this player
-        if (!BurningBrazierData.getAutoPlacementEnabledFromPlayer(player)) {
-            return; // Auto-placement is disabled
+        if (!(entity instanceof ServerPlayer player)) {
+            return;
         }
-
-        // Check if item has durability left
-        if (stack.getDamageValue() >= MAX_DURABILITY) {
-            return; // No durability left, don't place flames automatically
+        if (!isAutoPlacementEnabled(player.getUUID())) {
+            return;
         }
-
-        // Only tick occasionally (every 40 ticks = 2 seconds)
+        if (isDepletedForPlacement(stack)) {
+            return;
+        }
         if (level.getGameTime() % 40 != 0) {
             return;
         }
 
-        BlockPos feet = player.blockPosition();
-        BlockPos flamePos = null;
-        for (int dy = 1; dy <= 4; dy++) {
-            BlockPos candidate = feet.above(dy);
-            if (!level.isEmptyBlock(candidate)) {
-                continue;
-            }
-            if (level.getMaxLocalRawBrightness(candidate) > 8) {
-                continue;
-            }
-            flamePos = candidate;
-            break;
-        }
-
-        if (flamePos == null) {
+        BlockPos pos = player.blockPosition();
+        if (isTooBrightToPlaceFlame(level, pos)) {
             return;
         }
 
-        // Place burning flame
-        BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();
-        level.setBlock(flamePos, flameState, 3);
-
-        // If super hot mode is enabled OR curse_flame on player/team/world, set the player on fire
-        boolean shouldBurn = Config.burningBrazierSuperHot
-                || hasCurseFlame(player);
-
-        if (shouldBurn) {
-            player.setRemainingFireTicks(5 * 20); // 5 seconds of fire (5 * 20 ticks)
+        BlockState existing = level.getBlockState(pos);
+        if (!existing.isAir()) {
+            return;
         }
 
-        // Consume durability (reduce by 1)
+        BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();
+        if (!level.setBlock(pos, flameState, 3)) {
+            return;
+        }
+
+        boolean shouldBurn = Config.burningBrazierSuperHot || hasCurseFlame(player);
+        if (shouldBurn) {
+            player.setRemainingFireTicks(5 * 20);
+        }
         stack.setDamageValue(stack.getDamageValue() + 1);
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
-
-        // Get the keybind name
         String keybindName = KeyBindings.BURNING_BRAZIER_TOGGLE_KEY.getTranslatedKeyMessage().getString();
-
-        // Show description
         tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc0"));
         tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc1", keybindName));
         tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc2"));

@@ -1270,13 +1270,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        // Toggle the Burning Brazier auto-placement state
-                        boolean currentState = net.unfamily.iskautils.data.BurningBrazierData.getAutoPlacementEnabledFromPlayer(player);
-                        boolean newState = !currentState;
-
-                        net.unfamily.iskautils.data.BurningBrazierData.setAutoPlacementEnabledToPlayer(player, newState);
-
-                        // Send message to player
+                        boolean newState = net.unfamily.iskautils.item.custom.BurningBrazierItem.toggleAutoPlacement(player);
                         player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.burning_brazier_auto_placement." +
                                                      (newState ? "enabled" : "disabled")));
                     }

@@ -69,6 +69,10 @@ public class StageActionsManager {
             return;
         }
 
+        if (stageId != null && stageId.startsWith("iska_utils_internal-")) {
+            return;
+        }
+
         List<StageActionDefinition> actions = StageActionsLoader.getLoadedActions();
         if (actions.isEmpty()) return;
 

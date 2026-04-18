@@ -5,13 +5,10 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.item.custom.FanpackItem;
-import net.unfamily.iskautils.item.custom.GreedyShieldItem;
 import net.unfamily.iskalib.stage.StageRegistry;
 
 /**
- * Event handler for Fanpack flight management.
- * Heartbeat {@code iska_utils_internal-funpack_flight0} is set by {@link FanpackItem} / curio tick when energy allows;
- * this handler enables or disables {@code mayfly} from that signal and from whether a fanpack is still equipped.
+ * Server player tick: fanpack flight ({@link FanpackItem} / curio heartbeat).
  */
 public class FlightHandler {
 
@@ -26,8 +23,6 @@ public class FlightHandler {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
-
-        GreedyShieldItem.syncEquipStage(serverPlayer);
 
         if (player.isSpectator()) {
             return;

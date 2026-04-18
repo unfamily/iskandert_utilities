@@ -5,6 +5,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.unfamily.iskalib.structure.StructurePlacementHistory;
+import net.unfamily.iskautils.item.custom.BurningBrazierItem;
 
 /**
  * Handles player connection events for cleanup purposes
@@ -19,6 +20,7 @@ public class PlayerConnectionEvents {
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             StructurePlacementHistory.clearPlayerHistory(serverPlayer.getUUID());
+            BurningBrazierItem.clearAutoPlacementState(serverPlayer.getUUID());
         }
     }
 } 

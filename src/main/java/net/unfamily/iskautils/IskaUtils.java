@@ -34,7 +34,6 @@ import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskalib.client.marker.VanillaWorldMarkerClientHooks;
 import net.unfamily.iskalib.team.ShopTeamManager;
 import net.unfamily.iskalib.stage.StageHooks;
-import net.unfamily.iskautils.data.BurningBrazierData;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ModWoodTypes;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
@@ -354,9 +353,6 @@ public class IskaUtils {
         @SubscribeEvent
         public static void onServerStarting(ServerStartingEvent event) {
             VectorCharmData.getInstance();
-
-            // Initialize Burning Brazier data (will be loaded automatically when needed)
-            // BurningBrazierData.get(event.getServer().overworld());
 
             // Commands registration happens via RegisterCommandsEvent
         }

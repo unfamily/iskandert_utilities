@@ -20,10 +20,12 @@ import java.util.function.Consumer;
 /**
  * Greedy Shield Item - When taking damage, has a chance to completely block it,
  * or if that fails, has a chance to reduce it significantly.
+ * Internal equip stage is granted only while the stack is outside vanilla inventory (e.g. Curios).
+ * Holding in main/off hand does not set that stage; damage logic checks hands separately.
  */
 public class GreedyShieldItem extends Item {
 
-    private static final String EQUIP_STAGE = "iska_utils_internal-greedy_shield_equip";
+    public static final String EQUIP_STAGE = "iska_utils_internal-greedy_shield_equip";
 
     public GreedyShieldItem(Properties properties) {
         super(properties);
@@ -55,39 +57,33 @@ public class GreedyShieldItem extends Item {
     @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
         super.inventoryTick(stack, level, entity, slot);
-        if (entity instanceof Player player && !level.isClientSide()) {
-            syncEquipStage(player);
+        // Match legacy iskandert_utilities: tick on both sides; StageRegistry mutates only on logical server
+        if (!(entity instanceof Player player)) {
+            return;
         }
+        if (ModUtils.isStackInVanillaPlayerInventory(player, stack)) {
+            StageRegistry.removePlayerStage(player, EQUIP_STAGE, true);
+        } else {
+            StageRegistry.addPlayerStage(player, EQUIP_STAGE, true);
+        }
+    }
+
+    public static boolean isGreedyShieldInHands(Player player) {
+        return player.getMainHandItem().getItem() instanceof GreedyShieldItem
+            || player.getOffhandItem().getItem() instanceof GreedyShieldItem;
     }
 
     /**
      * True when the player holds a greedy shield in main/off hand or has one in a Curios slot.
      */
     public static boolean isGreedyShieldActive(Player player) {
-        if (player.getMainHandItem().getItem() instanceof GreedyShieldItem) {
-            return true;
-        }
-        if (player.getOffhandItem().getItem() instanceof GreedyShieldItem) {
+        if (isGreedyShieldInHands(player)) {
             return true;
         }
         if (ModUtils.isCuriosLoaded()) {
             return hasGreedyInCurios(player);
         }
         return false;
-    }
-
-    /**
-     * Keeps {@link #EQUIP_STAGE} aligned with whether a greedy shield is actually active.
-     */
-    public static void syncEquipStage(Player player) {
-        if (player.level().isClientSide()) {
-            return;
-        }
-        if (isGreedyShieldActive(player)) {
-            StageRegistry.addPlayerStage(player, EQUIP_STAGE);
-        } else {
-            StageRegistry.removePlayerStage(player, EQUIP_STAGE);
-        }
     }
 
     private static boolean hasGreedyInCurios(Player player) {
@@ -113,7 +109,7 @@ public class GreedyShieldItem extends Item {
 
     @Override
     public boolean onDroppedByPlayer(ItemStack itemstack, Player entity) {
-        StageRegistry.removePlayerStage(entity, EQUIP_STAGE);
+        StageRegistry.removePlayerStage(entity, EQUIP_STAGE, true);
         return true;
     }
 }
