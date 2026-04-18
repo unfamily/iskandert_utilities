@@ -636,14 +636,14 @@
   "message.iska_utils.hard_ice.use_dolly": "§7Se ne hai necessità, spostalo con un dolly!",
   "message.iska_utils.fanpack.low_energy": "§cEnergia Fanpack bassa! (%d%% rimanente)",
 
-  "block.iska_utils.deep_drawers": "Cassettiera Profonda",
-  "item.iska_utils.deep_drawers": "Cassettiera Profonda",
-  "container.iska_utils.deep_drawers": "Cassettiera Profonda",
-  "tooltip.iska_utils.deep_drawers.desc0": "Una cassettiera molto capiente ma accetta solo oggetti normalmente non impilabili",
-  "tooltip.iska_utils.deep_drawers.desc1": "Se contiene oggetti non può essere rotto, usa un dolly o un oggetto similare per spostarlo",
-  "tooltip.iska_utils.deep_drawers.desc2": "È consigliato usare un sistema esterno per vederne il contenuto rispetto al nativo",
-  "tooltip.iska_utils.deep_drawers.desc3": "Dalla GUI integrata non è possibile inserire ed estrarre con shift+click, usare hopper, tubi o similari",
-  "message.iska_utils.deep_drawers.cannot_break": "§cNon puoi rompere la Cassettiera Profonda che contiene oggetti!",
+  "block.iska_utils.deep_drawer": "Cassettiera Profonda",
+  "item.iska_utils.deep_drawer": "Cassettiera Profonda",
+  "container.iska_utils.deep_drawer": "Cassettiera Profonda",
+  "tooltip.iska_utils.deep_drawer.desc0": "Una cassettiera molto capiente ma accetta solo oggetti normalmente non impilabili",
+  "tooltip.iska_utils.deep_drawer.desc1": "Se contiene oggetti non può essere rotto, usa un dolly o un oggetto similare per spostarlo",
+  "tooltip.iska_utils.deep_drawer.desc2": "È consigliato usare un sistema esterno per vederne il contenuto rispetto al nativo",
+  "tooltip.iska_utils.deep_drawer.desc3": "Dalla GUI integrata non è possibile inserire ed estrarre con shift+click, usare hopper, tubi o similari",
+  "message.iska_utils.deep_drawer.cannot_break": "§cNon puoi rompere la Cassettiera Profonda che contiene oggetti!",
  
   "block.iska_utils.deep_drawer_interface": "Interfaccia della Cassettiera Profonda",
   "block.iska_utils.deep_drawer_extender": "Estensore della Cassettiera Profonda",
@@ -741,10 +741,10 @@
   "command.iska_utils.debug.click_to_copy": "Clicca per copiare",
   "command.iska_utils.debug.copied": "Dato copiato!",
   
-  "message.iska_utils.deep_drawers.full": "Deep Drawer pieno",
-  "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slot riempiti",
-  "message.iska_utils.deep_drawers.empty": "Deep Drawer vuoto",
-  "message.iska_utils.deep_drawers.debug_extracted": "§7[DEBUG] Estratto: %s",
+  "message.iska_utils.deep_drawer.full": "Deep Drawer pieno",
+  "message.iska_utils.deep_drawer.status": "Deep Drawer: %d/%d slot riempiti",
+  "message.iska_utils.deep_drawer.empty": "Deep Drawer vuoto",
+  "message.iska_utils.deep_drawer.debug_extracted": "§7[DEBUG] Estratto: %s",
   "message.iska_utils.deep_drawer_extractor.buffer_status": "Buffer Estrattore: %d/%d slot riempiti",
   
   "iska_utils.config.deprecated_scanner_scan_range": "000 [Obsoleto] Scanner Scan Range"

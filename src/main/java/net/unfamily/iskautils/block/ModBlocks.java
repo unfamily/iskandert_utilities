@@ -442,7 +442,7 @@ public class ModBlocks {
             .requiresCorrectToolForDrops()
             .isRedstoneConductor((state, level, pos) -> false);
 
-    public static final DeferredBlock<DeepDrawersBlock> DEEP_DRAWERS = BLOCKS.register("deep_drawers",
+    public static final DeferredBlock<DeepDrawersBlock> DEEP_DRAWERS = BLOCKS.register("deep_drawer",
             key -> new DeepDrawersBlock(assignBlockId(key, DEEP_DRAWERS_PROPERTIES)));
 
     public static final DeferredBlock<DeepDrawerExtractorBlock> DEEP_DRAWER_EXTRACTOR = BLOCKS.register("deep_drawer_extractor",

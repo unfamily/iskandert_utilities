@@ -3,7 +3,6 @@ package net.unfamily.iskautils.block.entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -508,19 +507,8 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
         CompoundTag tag = super.getUpdateTag(provider);
-        tag.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
-        tag.putInt("redstoneMode", redstoneMode);
-        tag.putInt("accelerationFactor", accelerationFactor);
-        tag.putBoolean("persistentMode", persistentMode);
-        ListTag linked = new ListTag();
-        for (BlockPos linkedPos : linkedBlocks) {
-            CompoundTag posTag = new CompoundTag();
-            posTag.putInt("X", linkedPos.getX());
-            posTag.putInt("Y", linkedPos.getY());
-            posTag.putInt("Z", linkedPos.getZ());
-            linked.add(posTag);
-        }
-        tag.put(LINKED_BLOCKS_TAG, linked);
+        // Same shape as disk NBT (ValueInput / BlockPos.CODEC list); client applies via onDataPacket → loadAdditional
+        tag.merge(this.saveCustomOnly(provider));
         return tag;
     }
     

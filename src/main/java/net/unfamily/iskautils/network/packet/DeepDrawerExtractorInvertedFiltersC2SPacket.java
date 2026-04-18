@@ -17,22 +17,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Client-to-server: apply normal filter map and whitelist mode on the Deep Drawer Extractor.
+ * Client-to-server: apply inverted filter map on the Deep Drawer Extractor.
  */
-public record DeepDrawerExtractorFilterUpdateC2SPacket(BlockPos pos, Map<Integer, String> filterMap, boolean whitelistMode)
+public record DeepDrawerExtractorInvertedFiltersC2SPacket(BlockPos pos, Map<Integer, String> invertedFilterMap)
         implements CustomPacketPayload {
 
     private static final int MAX_ENTRIES = 512;
     private static final int MAX_STRING_LEN = 512;
 
-    public static final Type<DeepDrawerExtractorFilterUpdateC2SPacket> TYPE = new Type<>(
-            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "deep_drawer_extractor_filter_update"));
+    public static final Type<DeepDrawerExtractorInvertedFiltersC2SPacket> TYPE = new Type<>(
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "deep_drawer_extractor_inverted_filters"));
 
-    public static final StreamCodec<FriendlyByteBuf, DeepDrawerExtractorFilterUpdateC2SPacket> STREAM_CODEC = StreamCodec.of(
+    public static final StreamCodec<FriendlyByteBuf, DeepDrawerExtractorInvertedFiltersC2SPacket> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {
                 BlockPos.STREAM_CODEC.encode(buf, p.pos());
-                buf.writeBoolean(p.whitelistMode());
-                Map<Integer, String> map = p.filterMap() != null ? p.filterMap() : Map.of();
+                Map<Integer, String> map = p.invertedFilterMap() != null ? p.invertedFilterMap() : Map.of();
                 buf.writeVarInt(map.size());
                 for (Map.Entry<Integer, String> e : map.entrySet()) {
                     buf.writeVarInt(e.getKey());
@@ -41,7 +40,6 @@ public record DeepDrawerExtractorFilterUpdateC2SPacket(BlockPos pos, Map<Integer
             },
             buf -> {
                 BlockPos pos = BlockPos.STREAM_CODEC.decode(buf);
-                boolean whitelist = buf.readBoolean();
                 int n = buf.readVarInt();
                 if (n < 0 || n > MAX_ENTRIES) {
                     n = 0;
@@ -50,7 +48,7 @@ public record DeepDrawerExtractorFilterUpdateC2SPacket(BlockPos pos, Map<Integer
                 for (int i = 0; i < n; i++) {
                     map.put(buf.readVarInt(), buf.readUtf(MAX_STRING_LEN));
                 }
-                return new DeepDrawerExtractorFilterUpdateC2SPacket(pos, map, whitelist);
+                return new DeepDrawerExtractorInvertedFiltersC2SPacket(pos, map);
             }
     );
 
@@ -59,7 +57,7 @@ public record DeepDrawerExtractorFilterUpdateC2SPacket(BlockPos pos, Map<Integer
         return TYPE;
     }
 
-    public static void handle(DeepDrawerExtractorFilterUpdateC2SPacket packet, IPayloadContext context) {
+    public static void handle(DeepDrawerExtractorInvertedFiltersC2SPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return;
@@ -71,8 +69,7 @@ public record DeepDrawerExtractorFilterUpdateC2SPacket(BlockPos pos, Map<Integer
             if (!extractor.stillValid(player)) {
                 return;
             }
-            extractor.setFilterFieldsFromMap(packet.filterMap());
-            extractor.setWhitelistMode(packet.whitelistMode());
+            extractor.setInvertedFilterFieldsFromMap(packet.invertedFilterMap());
             player.level().playSound(null, packet.pos(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.3f, 1.0f);
         });
     }

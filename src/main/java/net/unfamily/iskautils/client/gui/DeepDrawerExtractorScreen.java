@@ -69,7 +69,15 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int FILTERS_LABEL_Y = 30; // Y position for "Filters" label
     private static final int FIRST_ROW_Y = FILTERS_LABEL_Y + 12; // Start entries after "Filters" label (12px for label height + spacing)
     private static final int ENTRY_SPACING = 0; // No spacing between entries (they touch each other)
-    private static final int BUFFER_SLOTS_Y = 134; // Y position of buffer slots (where entries should stop)
+    /** Menu-relative Y of buffer row (must match {@link DeepDrawerExtractorMenu} addBufferSlots). */
+    private static final int BUFFER_SLOTS_Y_MENU = 223;
+    private static final int BUFFER_SLOTS_FIRST_X = 32;
+    private static final int BUFFER_SLOT_COUNT = 5;
+    private static final int BUFFER_SLOT_STEP = 18;
+    /** Player grid in GUI space (must match {@link DeepDrawerExtractorMenu}). Used to place vanilla "Inventory" label. */
+    private static final int PLAYER_INV_GUI_X = 159;
+    private static final int PLAYER_INV_FIRST_ROW_Y = 165;
+    private static final int PLAYER_INV_COLUMNS = 9;
     private static final int MAX_FILTER_SLOTS = net.unfamily.iskautils.Config.deepDrawerExtractorMaxFilters; // Total filter slots in BlockEntity (from config, default 50)
     private static final int VISIBLE_ENTRIES = 7; // Number of entries visible at once (scrollable) - reduced because wide entries are taller
     
@@ -153,6 +161,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     @Override
     protected void init() {
         super.init();
+
+        // Center main title in GUI space (extractLabels draws in translated pose at titleLabelX/Y)
+        this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
+        this.titleLabelY = TITLE_Y;
         
         // Load initial mode from ContainerData (like rotation in StructurePlacerMachineScreen)
         isWhitelistMode = menu.getWhitelistMode();
@@ -251,8 +263,16 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         boolean showMain = !isHowToUseMode;
         boolean isInEditMode = editModeFilterIndex >= 0;
         
-        // Hide inventory label in how to use mode
-        this.inventoryLabelY = isHowToUseMode ? 10000 : 165 - this.font.lineHeight - 2;
+        // Vanilla label uses GUI-relative coords inside translated pose; default inventoryLabelX=8 would paint
+        // "Inventory" on the left over the filter list — center it above the player grid instead.
+        if (isHowToUseMode) {
+            this.inventoryLabelY = 10000;
+        } else {
+            int invPixelWidth = PLAYER_INV_COLUMNS * BUFFER_SLOT_STEP;
+            int invMidX = PLAYER_INV_GUI_X + invPixelWidth / 2;
+            this.inventoryLabelX = invMidX - this.font.width(this.playerInventoryTitle) / 2;
+            this.inventoryLabelY = PLAYER_INV_FIRST_ROW_Y - this.font.lineHeight - 2;
+        }
         
         // Update buttons
         // Valid Keys and Deny Filter List buttons are hidden in edit mode
@@ -609,11 +629,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     @Override
     public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
-        // Use different background for "how to use" mode
+        // Align with leftPos/topPos so slots, widgets, and texture match (AbstractContainerScreen uses leftPos/topPos)
         Identifier backgroundTexture = isHowToUseMode ? BACKGROUND_EMPTY : BACKGROUND;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, backgroundTexture, x, y, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, backgroundTexture, this.leftPos, this.topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
         // Render filter list label (only in main mode, not in how to use)
         // Label changes based on mode: "Allow Filter List" or "Deny Filter List"
@@ -630,6 +648,14 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             // Center the label with the entries
             int labelX = this.leftPos + ENTRY_X + (ENTRY_WIDTH - labelWidth) / 2;
             guiGraphics.text(this.font, filtersLabel, labelX, this.topPos + FILTERS_LABEL_Y, GuiTextColors.TITLE, false);
+
+            Component bufferLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.buffer_label");
+            int bufferLabelWidth = this.font.width(bufferLabel);
+            int bufferRowPixelWidth = BUFFER_SLOT_COUNT * BUFFER_SLOT_STEP;
+            int bufferCenterGuiX = BUFFER_SLOTS_FIRST_X + bufferRowPixelWidth / 2;
+            int bufferLabelX = this.leftPos + bufferCenterGuiX - bufferLabelWidth / 2;
+            int bufferLabelY = this.topPos + BUFFER_SLOTS_Y_MENU - this.font.lineHeight - 3;
+            guiGraphics.text(this.font, bufferLabel, bufferLabelX, bufferLabelY, GuiTextColors.TITLE, false);
             
             // Render filter entries (wide entries with single slot)
             renderFilterEntries(guiGraphics, mouseX, mouseY);

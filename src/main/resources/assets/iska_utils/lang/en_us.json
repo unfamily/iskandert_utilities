@@ -642,14 +642,14 @@
   "message.iska_utils.hard_ice.use_dolly": "§7If you need to move it, use a dolly!",
   "message.iska_utils.fanpack.low_energy": "§cFanpack energy low! (%d%% remaining)",
 
-  "block.iska_utils.deep_drawers": "Deep Drawer",
-  "item.iska_utils.deep_drawers": "Deep Drawer",
-  "container.iska_utils.deep_drawers": "Deep Drawer",
-  "tooltip.iska_utils.deep_drawers.desc0": "A very large storage block that can only contain non-stackable items",
-  "tooltip.iska_utils.deep_drawers.desc1": "If it contains items it cannot be broken, use a dolly or similar to move it",
-  "tooltip.iska_utils.deep_drawers.desc2": "It is recommended to use an external system to view its contents rather than the native one",
-  "tooltip.iska_utils.deep_drawers.desc3": "From the integrated GUI it is not possible to insert and extract with shift+click, use hoppers, pipes or similar",
-  "message.iska_utils.deep_drawers.cannot_break": "§cCannot break Deep Drawer while it contains items!",
+  "block.iska_utils.deep_drawer": "Deep Drawer",
+  "item.iska_utils.deep_drawer": "Deep Drawer",
+  "container.iska_utils.deep_drawer": "Deep Drawer",
+  "tooltip.iska_utils.deep_drawer.desc0": "A very large storage block that can only contain non-stackable items",
+  "tooltip.iska_utils.deep_drawer.desc1": "If it contains items it cannot be broken, use a dolly or similar to move it",
+  "tooltip.iska_utils.deep_drawer.desc2": "It is recommended to use an external system to view its contents rather than the native one",
+  "tooltip.iska_utils.deep_drawer.desc3": "From the integrated GUI it is not possible to insert and extract with shift+click, use hoppers, pipes or similar",
+  "message.iska_utils.deep_drawer.cannot_break": "§cCannot break Deep Drawer while it contains items!",
 
   "block.iska_utils.deep_drawer_interface": "Deep Drawer Interface",
   "item.iska_utils.deep_drawer_interface": "Deep Drawer Interface",
@@ -751,10 +751,10 @@
    "command.iska_utils.debug.click_to_copy": "Click to copy",
   "command.iska_utils.debug.copied": "Copied data!",
   
-  "message.iska_utils.deep_drawers.full": "Deep Drawer is full",
-  "message.iska_utils.deep_drawers.status": "Deep Drawer: %d/%d slots filled",
-  "message.iska_utils.deep_drawers.empty": "Deep Drawer is empty",
-  "message.iska_utils.deep_drawers.debug_extracted": "§7[DEBUG] Extracted: %s",
+  "message.iska_utils.deep_drawer.full": "Deep Drawer is full",
+  "message.iska_utils.deep_drawer.status": "Deep Drawer: %d/%d slots filled",
+  "message.iska_utils.deep_drawer.empty": "Deep Drawer is empty",
+  "message.iska_utils.deep_drawer.debug_extracted": "§7[DEBUG] Extracted: %s",
   "message.iska_utils.deep_drawer_extractor.buffer_status": "Extractor Buffer: %d/%d slots filled",
   
   "iska_utils.config.deprecated_scanner_scan_range": "000 [Deprecated] Scanner Scan Range"

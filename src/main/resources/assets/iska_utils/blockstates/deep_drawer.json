@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "iska_utils:block/deep_drawer" },
+    "facing=south": { "model": "iska_utils:block/deep_drawer", "y": 180 },
+    "facing=west": { "model": "iska_utils:block/deep_drawer", "y": 270 },
+    "facing=east": { "model": "iska_utils:block/deep_drawer", "y": 90 }
+  }
+}

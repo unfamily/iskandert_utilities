@@ -112,7 +112,7 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                 // Display warning message to player
                 if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                     serverPlayer.connection.send(new ClientboundSystemChatPacket(
-                        Component.translatable("message.iska_utils.deep_drawers.cannot_break"),
+                        Component.translatable("message.iska_utils.deep_drawer.cannot_break"),
                         true
                     ));
                 }
@@ -164,13 +164,13 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                                 player.drop(extracted, false);
                             }
                             serverPlayer.connection.send(new ClientboundSystemChatPacket(
-                                net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.debug_extracted", extracted.getDisplayName()),
+                                net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawer.debug_extracted", extracted.getDisplayName()),
                                 true
                             ));
                         }
                     } else {
                         serverPlayer.connection.send(new ClientboundSystemChatPacket(
-                            net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.empty"),
+                            net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawer.empty"),
                             true
                         ));
                     }
@@ -186,14 +186,14 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                     boolean isFull = deepDrawers.isFull();
                     if (isFull) {
                         serverPlayer.connection.send(new ClientboundSystemChatPacket(
-                            net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.full"),
+                            net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawer.full"),
                             true
                         ));
                     } else {
                         int occupiedSlots = deepDrawers.getOccupiedSlotsCount();
                         int totalSlots = deepDrawers.getMaxSlots();
                         serverPlayer.connection.send(new ClientboundSystemChatPacket(
-                            net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.status", occupiedSlots, totalSlots),
+                            net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawer.status", occupiedSlots, totalSlots),
                             true
                         ));
                     }

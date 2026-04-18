@@ -40,7 +40,7 @@ public class ModMenuTypes {
         MENUS.register("auto_shop_menu", () -> new MenuType<>(AutoShopMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<DeepDrawersMenu>> DEEP_DRAWERS_MENU =
-        MENUS.register("deep_drawers_menu", () -> new MenuType<>(DeepDrawersMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+        MENUS.register("deep_drawer_menu", () -> new MenuType<>(DeepDrawersMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<SmartTimerMenu>> SMART_TIMER_MENU =
         MENUS.register("smart_timer_menu", () -> new MenuType<>(SmartTimerMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));

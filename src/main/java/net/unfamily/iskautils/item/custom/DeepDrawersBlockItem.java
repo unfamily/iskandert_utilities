@@ -27,11 +27,11 @@ public class DeepDrawersBlockItem extends BlockItem {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         
         // Add description from lang file in light gray
-        tooltip.accept(Component.translatable("tooltip.iska_utils.deep_drawers.desc0")
+        tooltip.accept(Component.translatable("tooltip.iska_utils.deep_drawer.desc0")
                 .withStyle(ChatFormatting.GRAY));
         
         // Add warning in red about not being able to pick up if it contains items
-        tooltip.accept(Component.translatable("tooltip.iska_utils.deep_drawers.desc1")
+        tooltip.accept(Component.translatable("tooltip.iska_utils.deep_drawer.desc1")
                 .withStyle(ChatFormatting.RED));
     }
 }

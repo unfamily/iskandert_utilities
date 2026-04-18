@@ -222,10 +222,9 @@ public class Config {
             .defineInRange("402_deep_drawers_slot_count_v2", 1024, 1, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_DIRECT_PIPE_ACCESS = BUILDER
-            .comment("Allow hoppers and item pipes to interact directly with the Deep Drawer block (without Extender)",
-                    "Default: false - pipes/hoppers need the Deep Drawer Extender module to insert items",
-                    "When true, the Deep Drawer exposes IItemHandler capability directly to adjacent blocks")
-            .define("404_deep_drawers_direct_pipe_access", false);
+            .comment("Legacy: hoppers and pipes always interact with the main Deep Drawer block (NeoForge item transfer).",
+                    "This option is kept for config file compatibility but is no longer read by the game.")
+            .define("404_deep_drawers_direct_pipe_access", true);
 
     private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_DEBUG_EXTRACTION_ENABLED = BUILDER
             .comment("Enable debug extraction: Shift+Right-click to extract one item directly from the Deep Drawer",

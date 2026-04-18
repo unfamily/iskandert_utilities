@@ -492,7 +492,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
      * @return the translated display name
      */
     public Component getDisplayName() {
-        return Component.translatable("block.iska_utils.deep_drawers");
+        return Component.translatable("block.iska_utils.deep_drawer");
     }
     
     // ===== Item Validation =====

@@ -58,7 +58,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     private final String[] filterFields;
     // Inverted filter configuration (same size as filterFields)
     private final String[] invertedFilterFields;
-    private boolean isWhitelistMode = true; // false = blacklist, true = whitelist (default: true to prevent random extraction)
+    // Blacklist + empty filters = extract everything (usable out of the box). Whitelist + empty = no extraction.
+    private boolean isWhitelistMode = false;
     
     // GUI state flags for filter optimization
     private boolean reloadFilters = false; // Set to true when GUI closes to trigger filter reordering
@@ -791,13 +792,14 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 }
             }
             
-            isWhitelistMode = filterTag.getBooleanOr("whitelist_mode", true);
+            isWhitelistMode = filterTag.getBooleanOr("whitelist_mode", false);
         } else {
             // No filter_config tag: initialize all to empty
             for (int i = 0; i < maxSlots; i++) {
                 filterFields[i] = "";
                 invertedFilterFields[i] = "";
             }
+            isWhitelistMode = false;
         }
         
         // Load redstone mode
@@ -814,7 +816,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 filterFields[i] = "";
                 invertedFilterFields[i] = "";
             }
-            isWhitelistMode = true;
+            isWhitelistMode = false;
             dataVersion = "V2";
             setChanged();
         }
@@ -1049,10 +1051,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     
     @Override
     public CompoundTag getUpdateTag(@NotNull HolderLookup.Provider provider) {
-        return super.getUpdateTag(provider);
+        CompoundTag tag = super.getUpdateTag(provider);
+        tag.merge(this.saveCustomOnly(provider));
+        return tag;
     }
-    
-    // Packet/tag sync is handled via the new ValueInput/ValueOutput serialization
     
     // ===== WorldlyContainer Implementation =====
     

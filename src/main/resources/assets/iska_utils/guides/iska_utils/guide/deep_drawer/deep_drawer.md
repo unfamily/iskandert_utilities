@@ -2,17 +2,17 @@
 navigation:
   parent: deep_drawer/deep_drawer-index.md
   title: Deep Drawer
-  icon: deep_drawers
+  icon: deep_drawer
   position: 10
 categories:
 - storage
 item_ids:
-- iska_utils:deep_drawers
+- iska_utils:deep_drawer
 ---
 
 # Deep Drawer
 
-<BlockImage id="deep_drawers" scale="8" />
+<BlockImage id="deep_drawer" scale="8" />
 
 Deep Drawer is a massive storage system designed to contain items that are normally non-stackable, such as armor, tools, and weapons. Unlike standard chests, this drawer can store enormous quantities of non-stackable items.
 

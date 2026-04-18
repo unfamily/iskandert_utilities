@@ -309,7 +309,7 @@ public class ModItems {
 
     public static final DeferredItem<Item> GREEDY_SHIELD = ITEMS.registerItem("greedy_shield", GreedyShieldItem::new, p -> p.stacksTo(1));
 
-    public static final DeferredItem<Item> DEEP_DRAWERS = ITEMS.registerItem("deep_drawers",
+    public static final DeferredItem<Item> DEEP_DRAWERS = ITEMS.registerItem("deep_drawer",
             props -> new net.unfamily.iskautils.item.custom.DeepDrawersBlockItem(ModBlocks.DEEP_DRAWERS.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> DEEP_DRAWER_EXTRACTOR = ITEMS.registerSimpleBlockItem(ModBlocks.DEEP_DRAWER_EXTRACTOR);

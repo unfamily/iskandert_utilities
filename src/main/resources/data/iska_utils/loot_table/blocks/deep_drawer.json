@@ -11,11 +11,11 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "iska_utils:deep_drawers"
+          "name": "iska_utils:deep_drawer"
         }
       ],
       "rolls": 1.0
     }
   ],
-  "random_sequence": "iska_utils:blocks/deep_drawers"
+  "random_sequence": "iska_utils:blocks/deep_drawer"
 }

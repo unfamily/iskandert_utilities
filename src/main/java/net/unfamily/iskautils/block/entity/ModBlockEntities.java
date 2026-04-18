@@ -8,7 +8,6 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 
@@ -90,7 +89,7 @@ public class ModBlockEntities {
 
     // Deep Drawers Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DeepDrawersBlockEntity>> DEEP_DRAWERS_BE =
-            BLOCK_ENTITIES.register("deep_drawers",
+            BLOCK_ENTITIES.register("deep_drawer",
                     () -> new BlockEntityType<>(DeepDrawersBlockEntity::new, ModBlocks.DEEP_DRAWERS.get()));
 
     // Deep Drawer Extractor Block Entity
@@ -217,15 +216,7 @@ public class ModBlockEntities {
             event.registerBlockEntity(
                     Capabilities.Item.BLOCK,
                     DEEP_DRAWERS_BE.get(),
-                    (blockEntity, ctx) -> {
-                        if (!(blockEntity instanceof DeepDrawersBlockEntity be)) {
-                            return null;
-                        }
-                        if (!Config.deepDrawersDirectPipeAccess) {
-                            return null;
-                        }
-                        return be.getItemTransferHandler();
-                    }
+                    (blockEntity, ctx) -> blockEntity instanceof DeepDrawersBlockEntity be ? be.getItemTransferHandler() : null
             );
             event.registerBlockEntity(
                     Capabilities.Item.BLOCK,
