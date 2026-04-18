@@ -1,6 +1,5 @@
 package net.unfamily.iskautils.item.custom;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -22,6 +21,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.network.ModMessages;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.component.CustomData;
 import org.apache.commons.lang3.tuple.Pair;
@@ -186,26 +186,35 @@ public class PortableDislocatorItem extends Item {
     }
     
     /**
-     * Tick method for the item in normal inventory - handles keybind when item is present
+     * Client-side: dislocator key was pressed ({@link KeyBindings#checkKeys()}).
+     * Resolves the dislocator stack the same way the server does after C2S.
      */
-    private void tickInInventory(ItemStack stack, net.minecraft.world.level.Level level, Player player, int slotId, boolean isSelected) {
-        // Check if the portable dislocator keybind was pressed
-        if (KeyBindings.consumeDislocatorKeyClick()) {
+    public static void handleClientDislocatorKey(Player player) {
+        if (!player.level().isClientSide()) {
+            return;
+        }
+        ItemStack dislocatorStack = findPortableDislocator(player);
+        if (dislocatorStack != null && dislocatorStack.getItem() instanceof PortableDislocatorItem) {
+            handleDislocatorActivation(player, dislocatorStack, "inventory");
+        }
+    }
 
-            handleDislocatorActivation(player, stack, "inventory");
+    /**
+     * Server-side entry from {@link net.unfamily.iskautils.network.packet.PortableDislocatorC2SPacket}.
+     */
+    public static void startTeleportationFromNetwork(ServerPlayer player, int targetX, int targetZ) {
+        ItemStack dislocatorStack = findPortableDislocator(player);
+        if (dislocatorStack != null && dislocatorStack.getItem() instanceof PortableDislocatorItem) {
+            startServerTeleportation(player, dislocatorStack, targetX, targetZ);
+        } else {
+            LOGGER.warn("Portable Dislocator C2S: no dislocator in inventory for {}", player.getName().getString());
         }
     }
     
     /**
-     * Tick method for Curios - called by the Curio handler
+     * Tick method for Curios - server-only processing (key is handled globally on the client).
      */
     public static void tickInCurios(ItemStack stack, net.minecraft.world.level.Level level, Player player) {
-        // Check if the portable dislocator keybind was pressed (client side)
-        if (level.isClientSide() && KeyBindings.PORTABLE_DISLOCATOR_KEY.consumeClick()) {
-            handleDislocatorActivation(player, stack, "curios");
-        }
-        
-        // Handle pending teleportation (server side)
         if (!level.isClientSide()) {
             handlePendingTeleportation(player, level);
             checkForTeleportRequest(player, stack, level);
@@ -1141,6 +1150,9 @@ public class PortableDislocatorItem extends Item {
         
         if (compassStack == null || compassType == null) {
             LOGGER.debug("No valid compass found in hands");
+            if (player.level().isClientSide()) {
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.portable_dislocator.message.no_compass"));
+            }
             return;
         }
 
@@ -1150,16 +1162,17 @@ public class PortableDislocatorItem extends Item {
         
         if (coordinates == null) {
             LOGGER.debug("Failed to extract coordinates from compass");
+            if (player.level().isClientSide()) {
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.portable_dislocator.message.no_coordinates"));
+            }
             return;
         }
         
         LOGGER.debug("Successfully extracted coordinates: x={}, z={}", coordinates.getLeft(), coordinates.getRight());
 
-        // If we're on the client side, create a request for the server
         if (player.level().isClientSide()) {
-            TeleportRequest request = new TeleportRequest(player, coordinates.getLeft(), coordinates.getRight());
-            pendingRequests.put(player.getUUID(), request);
-            // Silent request - no feedback
+            ModMessages.sendPortableDislocatorPacket(coordinates.getLeft(), coordinates.getRight());
+            return;
         } else {
             // Server side - start teleportation with the provided dislocator stack
             startServerTeleportation(player, dislocatorStack, coordinates.getLeft(), coordinates.getRight());
@@ -1175,9 +1188,7 @@ public class PortableDislocatorItem extends Item {
     public static void startTeleportation(Player player, int targetX, int targetZ) {
         
         if (player.level().isClientSide()) {
-            // Client side - create request
-            TeleportRequest request = new TeleportRequest(player, targetX, targetZ);
-            pendingRequests.put(player.getUUID(), request);
+            ModMessages.sendPortableDislocatorPacket(targetX, targetZ);
         } else {
             // Server side - find the dislocator and start directly
             ItemStack dislocatorStack = findPortableDislocator(player);
@@ -1197,9 +1208,7 @@ public class PortableDislocatorItem extends Item {
     public static void startTeleportation(Player player, ItemStack dislocatorStack, int targetX, int targetZ) {
         
         if (player.level().isClientSide()) {
-            // Client side - create request
-            TeleportRequest request = new TeleportRequest(player, targetX, targetZ);
-            pendingRequests.put(player.getUUID(), request);
+            ModMessages.sendPortableDislocatorPacket(targetX, targetZ);
         } else {
             // Server side - start directly with the provided dislocator
             startServerTeleportation(player, dislocatorStack, targetX, targetZ);
@@ -1249,6 +1258,68 @@ public class PortableDislocatorItem extends Item {
         }
         return null;
     }
+
+    /**
+     * Parses BlockPos{x=, y=, z=} anywhere in debug / component dump strings (Structure Compass, previews).
+     */
+    private static Pair<Integer, Integer> tryParseBlockPosFromText(String text) {
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
+        Pattern blockPosPattern = Pattern.compile("BlockPos\\{x=(-?\\d+),\\s*y=(-?\\d+),\\s*z=(-?\\d+)\\}");
+        Matcher matcher = blockPosPattern.matcher(text);
+        if (matcher.find()) {
+            return Pair.of(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(3)));
+        }
+        return null;
+    }
+
+    /**
+     * Resolves X/Z from Structure Compass {@code StructureInfo}-like objects (pos/globalPos/BlockPos in toString).
+     */
+    private static Pair<Integer, Integer> tryExtractXZFromStructureInfoLike(Object componentValue) {
+        if (componentValue == null) {
+            return null;
+        }
+        Pair<Integer, Integer> fromWhole = tryParseBlockPosFromText(componentValue.toString());
+        if (fromWhole != null) {
+            return fromWhole;
+        }
+        Class<?> clazz = componentValue.getClass();
+        for (String accessor : new String[] {"pos", "globalPos"}) {
+            try {
+                java.lang.reflect.Method m = clazz.getMethod(accessor);
+                Object invoked = m.invoke(componentValue);
+                if (invoked == null) {
+                    continue;
+                }
+                Pair<Integer, Integer> fromNested = tryParseBlockPosFromText(invoked.toString());
+                if (fromNested != null) {
+                    return fromNested;
+                }
+                try {
+                    java.lang.reflect.Method getX = invoked.getClass().getMethod("getX");
+                    java.lang.reflect.Method getZ = invoked.getClass().getMethod("getZ");
+                    return Pair.of((Integer) getX.invoke(invoked), (Integer) getZ.invoke(invoked));
+                } catch (ReflectiveOperationException ignored) {
+                    try {
+                        java.lang.reflect.Method innerPos = invoked.getClass().getMethod("pos");
+                        Object bp = innerPos.invoke(invoked);
+                        if (bp != null) {
+                            java.lang.reflect.Method getX = bp.getClass().getMethod("getX");
+                            java.lang.reflect.Method getZ = bp.getClass().getMethod("getZ");
+                            return Pair.of((Integer) getX.invoke(bp), (Integer) getZ.invoke(bp));
+                        }
+                    } catch (ReflectiveOperationException ignored2) {
+                        // try next accessor
+                    }
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // next accessor
+            }
+        }
+        return null;
+    }
     
     /**
      * Extracts coordinates using reflection on DataComponents
@@ -1268,6 +1339,12 @@ public class PortableDislocatorItem extends Item {
         try {
             // Method 0: Special handling for structure compass - try direct component access first
             if ("structurecompass".equals(compassTypeFromId)) {
+                Pair<Integer, Integer> blockPosFromDump = tryParseBlockPosFromText(compassString);
+                if (blockPosFromDump != null) {
+                    LOGGER.debug("Structure compass: BlockPos from item string: x={}, z={}",
+                        blockPosFromDump.getLeft(), blockPosFromDump.getRight());
+                    return blockPosFromDump;
+                }
                 // Try string parsing as the most reliable method for structure compass
                 Pattern structurePattern = Pattern.compile("pos:\\[I;(-?\\d+),\\d+,(-?\\d+)\\]");
                 Matcher structureMatcher = structurePattern.matcher(compassString);
@@ -1308,6 +1385,13 @@ public class PortableDislocatorItem extends Item {
                                     LOGGER.debug("Extracted coordinates from structure_info: x={}, z={}", x, z);
                                     return Pair.of(x, z);
                                 }
+                            }
+                        } else {
+                            Pair<Integer, Integer> fromComponent = tryExtractXZFromStructureInfoLike(componentValue);
+                            if (fromComponent != null) {
+                                LOGGER.debug("Extracted coordinates from structure_info component object: x={}, z={}",
+                                    fromComponent.getLeft(), fromComponent.getRight());
+                                return fromComponent;
                             }
                         }
                     }
@@ -1381,49 +1465,13 @@ public class PortableDislocatorItem extends Item {
                     if (componentKey.contains("structure_info")) {
                         LOGGER.debug("Found structure_info in Method 2: key={}, valueClass={}", 
                                     componentKey, componentValue.getClass().getSimpleName());
-                        
-                        // Try to handle StructureInfo object directly
-                        if (componentValue.getClass().getSimpleName().equals("StructureInfo")) {
-                            try {
-                                // Use reflection to get the BlockPos from StructureInfo
-                                var posField = componentValue.getClass().getMethod("pos");
-                                Object blockPos = posField.invoke(componentValue);
-                                
-                                if (blockPos != null) {
-                                    // Extract X and Z from BlockPos
-                                    var getXMethod = blockPos.getClass().getMethod("getX");
-                                    var getZMethod = blockPos.getClass().getMethod("getZ");
-                                    
-                                    int x = (Integer) getXMethod.invoke(blockPos);
-                                    int z = (Integer) getZMethod.invoke(blockPos);
-                                    
-                                    LOGGER.debug("Method 2: Extracted coordinates from StructureInfo: x={}, z={}", x, z);
-                                    foundX = x;
-                                    foundZ = z;
-                                }
-                            } catch (Exception e) {
-                                LOGGER.debug("Method 2: StructureInfo reflection failed: {}", e.getMessage());
-                                
-                                // Fallback: try string parsing on the StructureInfo object
-                                try {
-                                    String valueString = componentValue.toString();
-                                    LOGGER.debug("Method 2: Trying string parsing on StructureInfo: {}", valueString);
-                                    
-                                    // Pattern for BlockPos{x=3200, y=0, z=6672}
-                                    Pattern blockPosPattern = Pattern.compile("BlockPos\\{x=(-?\\d+),\\s*y=(-?\\d+),\\s*z=(-?\\d+)\\}");
-                                    Matcher matcher = blockPosPattern.matcher(valueString);
-                                    if (matcher.find()) {
-                                        foundX = Integer.parseInt(matcher.group(1));
-                                        foundZ = Integer.parseInt(matcher.group(3));
-                                        LOGGER.debug("Method 2: String parsing found coordinates from StructureInfo x={}, z={}", foundX, foundZ);
-                                    }
-                                } catch (Exception ex) {
-                                    LOGGER.debug("Method 2: StructureInfo string parsing failed: {}", ex.getMessage());
-                                }
-                            }
-                        }
-                        else if (componentValue instanceof CompoundTag) {
-                            CompoundTag structureInfo = (CompoundTag) componentValue;
+
+                        Pair<Integer, Integer> fromStructure = tryExtractXZFromStructureInfoLike(componentValue);
+                        if (fromStructure != null) {
+                            foundX = fromStructure.getLeft();
+                            foundZ = fromStructure.getRight();
+                            LOGGER.debug("Method 2: Extracted from structure_info-like value x={}, z={}", foundX, foundZ);
+                        } else if (componentValue instanceof CompoundTag structureInfo) {
                             if (structureInfo.contains("pos")) {
                                 int[] pos = structureInfo.getIntArray("pos").orElse(new int[0]);
                                 if (pos.length >= 3) {
@@ -1432,13 +1480,10 @@ public class PortableDislocatorItem extends Item {
                                     LOGGER.debug("Method 2: Found coordinates x={}, z={}", foundX, foundZ);
                                 }
                             }
-                        }
-                        // Also try to handle if the component is stored differently
-                        else {
+                        } else {
                             try {
                                 String valueString = componentValue.toString();
-                                LOGGER.debug("Method 2: Trying string parsing on: {}", valueString);
-                                // Try to extract from string representation
+                                LOGGER.debug("Method 2: Trying pos array string parsing on: {}", valueString);
                                 Pattern posPattern = Pattern.compile("pos:\\[I;(-?\\d+),\\d+,(-?\\d+)\\]");
                                 Matcher matcher = posPattern.matcher(valueString);
                                 if (matcher.find()) {
@@ -1478,13 +1523,16 @@ public class PortableDislocatorItem extends Item {
                 // Pattern for Z before X
                 patternZX = Pattern.compile("explorerscompass:found_z=(-?\\d+).*?explorerscompass:found_x=(-?\\d+)");
             } else if ("structurecompass".equals(compassTypeFromId)) {
-                // Pattern for structure_info with pos array
                 Pattern structurePattern = Pattern.compile("pos:\\[I;(-?\\d+),\\d+,(-?\\d+)\\]");
                 Matcher structureMatcher = structurePattern.matcher(compassString);
                 if (structureMatcher.find()) {
                     int x = Integer.parseInt(structureMatcher.group(1));
                     int z = Integer.parseInt(structureMatcher.group(2));
                     return Pair.of(x, z);
+                }
+                Pair<Integer, Integer> blockPosFallback = tryParseBlockPosFromText(compassString);
+                if (blockPosFallback != null) {
+                    return blockPosFallback;
                 }
                 return null;
             } else {

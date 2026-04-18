@@ -306,6 +306,8 @@
   "item.iska_utils.portable_dislocator.message.retry": "Destination unsafe, trying another location (attempt %d)",
   "item.iska_utils.portable_dislocator.message.angel_retry": "Using Angel Block for teleportation (attempt %d of 5)",
   "item.iska_utils.portable_dislocator.message.failed": "Failed to find safe teleportation destination after multiple attempts",
+  "item.iska_utils.portable_dislocator.message.no_compass": "No valid compass in hands (Nature's, Explorer's, or Structure Compass).",
+  "item.iska_utils.portable_dislocator.message.no_coordinates": "Could not read target coordinates from the compass.",
   
   "curios.identifier.charm": "Charm",
   "curios.identifier.curio": "Curio",

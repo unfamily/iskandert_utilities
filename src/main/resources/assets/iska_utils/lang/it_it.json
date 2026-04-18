@@ -304,6 +304,8 @@
   "item.iska_utils.portable_dislocator.message.retry": "Destinazione non sicura, provo un'altra posizione (tentativo %d)",
   "item.iska_utils.portable_dislocator.message.angel_retry": "Utilizzo Angel Block per il teletrasporto (tentativo %d di 5)",
   "item.iska_utils.portable_dislocator.message.failed": "Impossibile trovare una destinazione sicura dopo diversi tentativi",
+  "item.iska_utils.portable_dislocator.message.no_compass": "Nessuna bussola valida in mano (Nature's, Explorer's o Structure Compass).",
+  "item.iska_utils.portable_dislocator.message.no_coordinates": "Impossibile leggere le coordinate di destinazione dalla bussola.",
 
   "curios.identifier.charm": "Amuleto",
   "curios.identifier.curio": "Ninnolo",

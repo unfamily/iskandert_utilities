@@ -142,8 +142,14 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket::handle
         );
+
+        registrar.playToServer(
+            PortableDislocatorC2SPacket.TYPE,
+            PortableDislocatorC2SPacket.STREAM_CODEC,
+            PortableDislocatorC2SPacket::handle
+        );
         
-        LOGGER.info("Registered {} networking packets", 8);
+        LOGGER.info("Registered {} networking packets", 9);
     }
     
     /**
@@ -164,8 +170,12 @@ public class ModMessages {
      * Sends a Portable Dislocator packet to the server
      */
     public static void sendPortableDislocatorPacket(int targetX, int targetZ) {
-        LOGGER.info("Sending Portable Dislocator packet to server: {}, {}", targetX, targetZ);
-        // Simplified implementation for single player compatibility
+        try {
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new PortableDislocatorC2SPacket(targetX, targetZ));
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send Portable Dislocator packet: {}", e.getMessage());
+        }
     }
     
     /**

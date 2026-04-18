@@ -257,6 +257,11 @@ public class KeyBindings {
             if (GHOST_BRAZIER_TOGGLE_KEY.consumeClick()) {
                 ModMessages.sendGhostBrazierTogglePacket();
             }
+
+            // Portable Dislocator (inventory + curios: stack resolved server-side after C2S)
+            if (PORTABLE_DISLOCATOR_KEY.consumeClick()) {
+                net.unfamily.iskautils.item.custom.PortableDislocatorItem.handleClientDislocatorKey(player);
+            }
         }
     }
     

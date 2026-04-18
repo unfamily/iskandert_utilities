@@ -1,58 +1,40 @@
 package net.unfamily.iskautils.network.packet;
 
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Packet for Portable Dislocator teleportation from client to server
+ * Client-to-server: player requested Portable Dislocator teleport to target X/Z (from compass).
  */
-public class PortableDislocatorC2SPacket {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PortableDislocatorC2SPacket.class);
-    
-    private final int targetX;
-    private final int targetZ;
-    
-    /**
-     * Creates a new Portable Dislocator packet
-     * @param targetX The target X coordinate
-     * @param targetZ The target Z coordinate
-     */
-    public PortableDislocatorC2SPacket(int targetX, int targetZ) {
-        this.targetX = targetX;
-        this.targetZ = targetZ;
+public record PortableDislocatorC2SPacket(int targetX, int targetZ) implements CustomPacketPayload {
+
+    public static final Type<PortableDislocatorC2SPacket> TYPE = new Type<>(
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "portable_dislocator"));
+
+    public static final StreamCodec<FriendlyByteBuf, PortableDislocatorC2SPacket> STREAM_CODEC = StreamCodec.composite(
+        ByteBufCodecs.VAR_INT,
+        PortableDislocatorC2SPacket::targetX,
+        ByteBufCodecs.VAR_INT,
+        PortableDislocatorC2SPacket::targetZ,
+        PortableDislocatorC2SPacket::new);
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
-    
-    /**
-     * Handles the packet on the server side
-     * @param player The server player who sent the packet
-     */
-    public void handle(ServerPlayer player) {
-        if (player == null) {
-            LOGGER.error("Server player is null while handling PortableDislocatorC2SPacket");
-            return;
-        }
-        
-        LOGGER.info("Received Portable Dislocator packet from player {} for coordinates {}, {}", 
-            player.getName().getString(), targetX, targetZ);
-        
-        // Find the dislocator in player's inventory
-        ItemStack dislocatorStack = PortableDislocatorItem.findPortableDislocator(player);
-        if (dislocatorStack != null) {
-            // Start the teleportation process on the server with the found dislocator
-            PortableDislocatorItem.startTeleportation(player, dislocatorStack, targetX, targetZ);
-        } else {
-            LOGGER.error("Could not find Portable Dislocator for player {} during packet handling", 
-                player.getName().getString());
-        }
+
+    public static void handle(PortableDislocatorC2SPacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                PortableDislocatorItem.startTeleportationFromNetwork(serverPlayer, packet.targetX(), packet.targetZ());
+            }
+        });
     }
-    
-    /**
-     * Compatibility method for packet handling
-     */
-    public static void handlePacket(PortableDislocatorC2SPacket packet, ServerPlayer player) {
-        packet.handle(player);
-    }
-} 
+}
