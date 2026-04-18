@@ -198,8 +198,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Deny Filter List button (now in place of Allow/Deny button, same Y as redstone button)
         int invertedFilterButtonX = this.leftPos + BUTTON_X; // Start from same X as how to use
         int invertedFilterButtonY = this.redstoneModeButtonY; // Same Y as redstone button
-        // Initialize with "Deny Filter List" (will be updated in containerTick)
-        Component invertedFilterButtonText = Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny");
+        Component invertedFilterButtonText = getInvertedFilterSwitchButtonLabel();
         
         invertedFilterButton = Button.builder(invertedFilterButtonText, button -> onInvertedFilterButtonClicked())
                 .bounds(invertedFilterButtonX, invertedFilterButtonY, INVERTED_FILTER_BUTTON_WIDTH, INVERTED_FILTER_BUTTON_HEIGHT)
@@ -489,6 +488,33 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
         }
     }
+
+    /**
+     * Title above the scroll list: must match server {@link DeepDrawerExtractorBlockEntity} semantics.
+     * Primary filters = allow list when whitelist, block list when blacklist. Inverted list is the opposite overlay.
+     */
+    private Component getFilterListHeaderLabel() {
+        boolean whitelist = menu.getWhitelistMode();
+        boolean showAllowLabel = (!isInvertedMode && whitelist) || (isInvertedMode && !whitelist);
+        return Component.translatable(showAllowLabel
+                ? "gui.iska_utils.deep_drawer_extractor.filters.allow"
+                : "gui.iska_utils.deep_drawer_extractor.filters.deny");
+    }
+
+    /**
+     * Switch button: when editing primary, label is the other editor you open; when editing inverted, label is primary you return to.
+     */
+    private Component getInvertedFilterSwitchButtonLabel() {
+        boolean whitelist = menu.getWhitelistMode();
+        if (isInvertedMode) {
+            return Component.translatable(whitelist
+                    ? "gui.iska_utils.deep_drawer_extractor.inverted_filter_button.allow"
+                    : "gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny");
+        }
+        return Component.translatable(whitelist
+                ? "gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny"
+                : "gui.iska_utils.deep_drawer_extractor.inverted_filter_button.allow");
+    }
     
     private void onInvertedFilterButtonClicked() {
         // Block click if in edit mode
@@ -511,12 +537,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Updates UI elements when inverted mode changes
      */
     private void updateInvertedModeUI() {
-        // Update button text
         if (invertedFilterButton != null) {
-            Component buttonText = isInvertedMode
-                    ? Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.allow") // "Allow Filter List"
-                    : Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny"); // "Deny Filter List"
-            invertedFilterButton.setMessage(buttonText);
+            invertedFilterButton.setMessage(getInvertedFilterSwitchButtonLabel());
         }
         
         // Update cached filters to show the correct list
@@ -634,16 +656,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, backgroundTexture, this.leftPos, this.topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
         // Render filter list label (only in main mode, not in how to use)
-        // Label changes based on mode: "Allow Filter List" or "Deny Filter List"
         if (!isHowToUseMode) {
-            Component filtersLabel;
-            if (isInvertedMode) {
-                // In inverted mode, show "Deny Filter List"
-                filtersLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.deny");
-            } else {
-                // In normal mode, show "Allow Filter List"
-                filtersLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.allow");
-            }
+            Component filtersLabel = getFilterListHeaderLabel();
             int labelWidth = this.font.width(filtersLabel);
             // Center the label with the entries
             int labelX = this.leftPos + ENTRY_X + (ENTRY_WIDTH - labelWidth) / 2;
@@ -1897,23 +1911,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // No need to update entries - they are rendered directly from cachedFilterFields
         
-        // Update mode button from synced ContainerData (like rotation in StructurePlacerMachineScreen)
-        // Always read from ContainerData and update button - ContainerData is automatically synced
-        // Update inverted filter button (Deny/Allow Filter List) from synced ContainerData
-        // Button text changes based on inverted mode: "Allow Filter List" when in inverted mode, otherwise "Deny Filter List"
         if (invertedFilterButton != null) {
-            boolean syncedWhitelistMode = menu.getWhitelistMode();
-            Component invertedFilterButtonText;
-            if (isInvertedMode) {
-                // In inverted mode, show "Allow Filter List" to exit
-                invertedFilterButtonText = Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.allow");
-            } else {
-                // Not in inverted mode, show "Deny Filter List"
-                invertedFilterButtonText = Component.translatable("gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny");
-            }
-            invertedFilterButton.setMessage(invertedFilterButtonText);
-            // Update local state to match
-            isWhitelistMode = syncedWhitelistMode;
+            invertedFilterButton.setMessage(getInvertedFilterSwitchButtonLabel());
+            isWhitelistMode = menu.getWhitelistMode();
         }
     }
     
