@@ -267,12 +267,12 @@ public class PortableDislocatorItem extends Item {
         
         // Notifica il player
         if (request.usingAngelBlock) {
-            player.sendSystemMessage(
+            player.sendOverlayMessage(
                 Component.translatable("item.iska_utils.portable_dislocator.message.angel_retry", 
                                      request.attemptNumber - NORMAL_ATTEMPTS)
                     .withStyle(ChatFormatting.YELLOW));
         } else {
-            player.sendSystemMessage(
+            player.sendOverlayMessage(
                 Component.translatable("item.iska_utils.portable_dislocator.message.retry", 
                                      request.attemptNumber)
                     .withStyle(ChatFormatting.YELLOW));
@@ -316,7 +316,7 @@ public class PortableDislocatorItem extends Item {
 
                 
                 if (energyConsumed && xpConsumed) {
-                    player.sendSystemMessage(
+                    player.sendOverlayMessage(
                         Component.translatable("item.iska_utils.portable_dislocator.message.used_both", 
                                              dislocator.getEffectiveEnergyConsumption(),
                                              Config.portableDislocatorXpConsume)
@@ -342,7 +342,7 @@ public class PortableDislocatorItem extends Item {
 
                 
                 if (canTeleport) {
-                    player.sendSystemMessage(
+                    player.sendOverlayMessage(
                         Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
                                              Config.portableDislocatorXpConsume)
                                 .withStyle(ChatFormatting.GOLD));
@@ -356,7 +356,7 @@ public class PortableDislocatorItem extends Item {
 
                 
                 if (canTeleport) {
-                    player.sendSystemMessage(
+                    player.sendOverlayMessage(
                         Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
                                              Config.portableDislocatorXpConsume)
                                 .withStyle(ChatFormatting.GOLD));
@@ -379,7 +379,7 @@ public class PortableDislocatorItem extends Item {
 
                     
                     if (canTeleport) {
-                        player.sendSystemMessage(
+                        player.sendOverlayMessage(
                             Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
                                                  Config.portableDislocatorXpConsume)
                                     .withStyle(ChatFormatting.GOLD));
@@ -390,7 +390,7 @@ public class PortableDislocatorItem extends Item {
 
                 
                 if (canTeleport) {
-                    player.sendSystemMessage(
+                    player.sendOverlayMessage(
                         Component.translatable("item.iska_utils.portable_dislocator.message.used_xp", 
                                              Config.portableDislocatorXpConsume)
                                 .withStyle(ChatFormatting.GOLD));
@@ -405,12 +405,12 @@ public class PortableDislocatorItem extends Item {
         if (!canTeleport) {
             // Check which resource is depleted and notify player
             if (energyEnabled && !hasEnoughEnergy) {
-                player.sendSystemMessage(
+                player.sendOverlayMessage(
                     Component.translatable("item.iska_utils.portable_dislocator.message.no_energy")
                             .withStyle(ChatFormatting.RED));
             } 
             if (xpEnabled && !hasEnoughXp) {
-                player.sendSystemMessage(
+                player.sendOverlayMessage(
                     Component.translatable("item.iska_utils.portable_dislocator.message.no_xp")
                             .withStyle(ChatFormatting.RED));
             }
@@ -463,7 +463,7 @@ public class PortableDislocatorItem extends Item {
         activeTeleportations.put(playerId, teleportData);
         
         // Notify player
-        player.sendSystemMessage(
+        player.sendOverlayMessage(
             Component.translatable("item.iska_utils.portable_dislocator.message.teleporting"));
     }
     
@@ -507,7 +507,7 @@ public class PortableDislocatorItem extends Item {
                 resetTeleportationState(playerId);
                 
                 // Notify player about the failure
-                player.sendSystemMessage(
+                player.sendOverlayMessage(
                     Component.translatable("item.iska_utils.portable_dislocator.message.failed")
                         .withStyle(ChatFormatting.RED));
             }
@@ -581,7 +581,7 @@ public class PortableDislocatorItem extends Item {
                                     resetTeleportationState(playerId);
                                     
                                     // Notify player about the failure
-                                    player.sendSystemMessage(
+                                    player.sendOverlayMessage(
                                         Component.translatable("item.iska_utils.portable_dislocator.message.failed")
                                             .withStyle(ChatFormatting.RED));
                                 }
@@ -633,7 +633,7 @@ public class PortableDislocatorItem extends Item {
                                     resetTeleportationState(playerId);
                                     
                                     // Notify player about the failure
-                                    player.sendSystemMessage(
+                                    player.sendOverlayMessage(
                                         Component.translatable("item.iska_utils.portable_dislocator.message.failed")
                                             .withStyle(ChatFormatting.RED));
                                 }
@@ -783,7 +783,7 @@ public class PortableDislocatorItem extends Item {
         // No need to check energy again for retry attempts - it was already consumed in the first attempt
         
         // Notify player about the retry
-        player.sendSystemMessage(
+        player.sendOverlayMessage(
             Component.translatable("item.iska_utils.portable_dislocator.message.retry", attemptNumber)
                 .withStyle(ChatFormatting.YELLOW));
     }
@@ -1794,7 +1794,7 @@ public class PortableDislocatorItem extends Item {
         activeTeleportations.put(playerId, newData);
         
         // Notify player about the Angel Block retry
-        player.sendSystemMessage(
+        player.sendOverlayMessage(
             Component.translatable("item.iska_utils.portable_dislocator.message.angel_retry", attemptNumber - NORMAL_ATTEMPTS)
                 .withStyle(ChatFormatting.YELLOW));
     }

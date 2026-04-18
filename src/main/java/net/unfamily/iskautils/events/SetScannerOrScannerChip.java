@@ -60,7 +60,7 @@ public class SetScannerOrScannerChip {
 			
 			// notify the player
 			if (!player.level().isClientSide()) {
-				player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.mob_target_set", entity.getName()));
+				player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.mob_target_set", entity.getName()));
 			}
 			
 			// cancel the event to prevent the normal interaction
@@ -92,7 +92,7 @@ public class SetScannerOrScannerChip {
 				
 				// notify the player
 				if (!player.level().isClientSide()) {
-					player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.mob_target_set", entity.getName()));
+					player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.mob_target_set", entity.getName()));
 				}
 				
 				// cancel the event to prevent the normal interaction
@@ -100,7 +100,7 @@ public class SetScannerOrScannerChip {
 			} else {
 				// Notify the player that specialized chips cannot be overwritten
 				if (!player.level().isClientSide()) {
-					player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.specialized_cannot_overwrite"));
+					player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.specialized_cannot_overwrite"));
 				}
 				
 				// cancel the event to prevent the normal interaction

@@ -134,7 +134,7 @@ public class ScannerItem extends Item {
             if (block != Blocks.AIR) {
                 // Register the target block
                 setTargetBlock(itemStack, block);
-                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.target_set", block.getName()));
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.target_set", block.getName()));
                 return InteractionResult.SUCCESS;
             }
         }
@@ -163,11 +163,11 @@ public class ScannerItem extends Item {
                 
                 if (hasTarget) {
                     // Start using the item for the transfer
-                    player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.transferring_from_chip"));
+                    player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.transferring_from_chip"));
                     player.startUsingItem(hand);
                     return InteractionResult.CONSUME;
                 } else {
-                    player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"));
+                    player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"));
                     return InteractionResult.FAIL;
                 }
             }
@@ -179,18 +179,22 @@ public class ScannerItem extends Item {
         String genericTarget = getGenericTarget(itemStack);
         
         if (targetBlock == null && targetMob == null && genericTarget == null) {
-            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.no_target"));
+            // Manual clear: no target still removes all scanner-related client markers and resets server TTL maps
+            if (player instanceof ServerPlayer sp) {
+                clearAllVisualMarkersFor(sp, itemStack);
+            }
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.no_target"));
             return InteractionResult.FAIL;
         }
         
-        // Check if we have enough energy for scanning (energy check only for scanning, not for clearing)
-        if (requiresEnergyToFunction() && !hasEnoughEnergy(itemStack)) {
-            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.no_energy"));
-            return InteractionResult.FAIL;
-        }
-        
-        // Cancella sempre tutti i marker esistenti ad ogni click
+        // Always clear existing markers before a new scan attempt (even if energy is too low to scan)
         clearMarkers(player, itemStack);
+        
+        // Energy is required only for scanning, not for the clear above
+        if (requiresEnergyToFunction() && !hasEnoughEnergy(itemStack)) {
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.no_energy"));
+            return InteractionResult.FAIL;
+        }
         
         // Set use duration
         player.startUsingItem(hand);
@@ -205,20 +209,22 @@ public class ScannerItem extends Item {
             return InteractionResult.SUCCESS;
         }
         
-        // Check for target block or mob
-        Block targetBlock = getTargetBlock(itemStack);
-        String targetMob = getTargetMob(itemStack);
-        
-        if (targetBlock == null && targetMob == null) {
-            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.no_target"));
+        if (!(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.FAIL;
         }
         
-        // Remove existing markers and reset targets
-        clearMarkersAndResetTarget(player instanceof ServerPlayer ? (ServerPlayer) player : null, itemStack);
+        Block targetBlock = getTargetBlock(itemStack);
+        String targetMob = getTargetMob(itemStack);
+        String genericTarget = getGenericTarget(itemStack);
         
-        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.target_reset"));
+        if (targetBlock == null && targetMob == null && genericTarget == null) {
+            clearAllVisualMarkersFor(serverPlayer, itemStack);
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.markers_cleared"));
+            return InteractionResult.CONSUME;
+        }
         
+        clearMarkersAndResetTarget(serverPlayer, itemStack);
+        player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.target_reset"));
         return InteractionResult.CONSUME;
     }
     
@@ -256,7 +262,8 @@ public class ScannerItem extends Item {
                 String genericTarget = getGenericTarget(itemstack);
                 
                 if (targetBlock == null && targetMob == null && genericTarget == null) {
-                    serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.no_target"));
+                    clearAllVisualMarkersFor(serverPlayer, itemstack);
+                    serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.no_target"));
                     return false;
                 }
                 
@@ -269,7 +276,7 @@ public class ScannerItem extends Item {
                 if (timeUsed >= requiredDuration) {
                     // Double-check energy before scanning
                     if (requiresEnergyToFunction() && !hasEnoughEnergy(itemstack)) {
-                        serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.no_energy"));
+                        serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.no_energy"));
                         return false;
                     }
                     
@@ -277,23 +284,23 @@ public class ScannerItem extends Item {
                     
                     if (targetBlock != null) {
                         // Scan for blocks
-                        serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.scan_started", targetBlock.getName()));
+                        serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started", targetBlock.getName()));
                         scanArea(serverPlayer, itemstack);
                         scanSuccess = true;
                     } else if (targetMob != null) {
                         // Scan for mobs
-                        serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob", 
+                        serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob", 
                                 getLocalizedMobName(targetMob)));
                         scanForMobs(serverPlayer, itemstack);
                         scanSuccess = true;
                     } else if (genericTarget != null) {
                         // Scan based on generic target
                         if (genericTarget.startsWith("ores")) {
-                            serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.scan_started_ores"));
+                            serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_ores"));
                             scanForAllOres(serverPlayer, itemstack);
                             scanSuccess = true;
                         } else if ("mobs".equals(genericTarget)) {
-                            serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.scan_started_all_mobs"));
+                            serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_all_mobs"));
                             scanForAllMobs(serverPlayer, itemstack);
                             scanSuccess = true;
                         }
@@ -312,7 +319,7 @@ public class ScannerItem extends Item {
                 } else {
                     // If player released before required time, clear existing markers
                     clearMarkers(player, itemstack);
-                    serverPlayer.sendSystemMessage(Component.translatable("item.iska_utils.scanner.markers_cleared"));
+                    serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.markers_cleared"));
                     
                     // Remove loading data
                     LOADING_DATA.remove(player.getUUID());
@@ -522,7 +529,7 @@ public class ScannerItem extends Item {
         setScanRange(itemStack, nextRange);
         
         // Display message to player
-        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.range_set", nextRange));
+        player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.range_set", nextRange));
     }
     
     /**
@@ -532,51 +539,34 @@ public class ScannerItem extends Item {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
-        
-        // NeoForge 26+: CommandSourceStack permission API changed. Keep behavior by clearing via internal tracking.
-        clearMarkersFallback(serverPlayer, itemStack);
+        clearAllVisualMarkersFor(serverPlayer, itemStack);
     }
-    
+
     /**
-     * Fallback method to clear markers if command execution fails
+     * Full client reset ({@link net.unfamily.iskautils.network.ModMessages#sendClearHighlightsPacket}) plus server TTL
+     * maps, so markers disappear even when the stack has no {@link #SCANNER_ID_TAG} or maps are out of sync after
+     * swapping the item in/out of the hotbar.
      */
-    private void clearMarkersFallback(ServerPlayer serverPlayer, ItemStack itemStack) {
-        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (tag.contains(SCANNER_ID_TAG)) {
-            UUID scannerId = tag.getString(SCANNER_ID_TAG).map(UUID::fromString).orElse(null);
-            if (scannerId == null) {
-                return;
+    private static void clearAllVisualMarkersFor(ServerPlayer player, ItemStack scannerStack) {
+        net.unfamily.iskautils.network.ModMessages.sendClearHighlightsPacket(player);
+
+        UUID scannerId = null;
+        if (scannerStack != null && !scannerStack.isEmpty()) {
+            CompoundTag tag = scannerStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+            if (tag.contains(SCANNER_ID_TAG)) {
+                scannerId = tag.getString(SCANNER_ID_TAG).map(UUID::fromString).orElse(null);
             }
-            
-            // Clear from our tracking maps
-            if (ACTIVE_MARKERS.containsKey(scannerId)) {
-                List<BlockPos> markers = new ArrayList<>(ACTIVE_MARKERS.get(scannerId));
-                
-                // Send clear message to client for each marker
-                for (BlockPos pos : markers) {
-                    // Remove the marker from client side
-                    if (MARKER_TTL.containsKey(pos)) {
-                        // Rimuovi i marker usando handleRemoveHighlight che rimuove sia i blocchi che i billboard
-                        net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(serverPlayer, pos);
-                        
-                        MARKER_TTL.remove(pos);
-                    }
-                }
-                
-                ACTIVE_MARKERS.get(scannerId).clear();
-            } else {
-                // Se non ci sono marker attivi per questo scanner, controlla tutti i marker esistenti
-                // Questo gestisce il caso in cui lo scanner è stato rilasciato e ripreso
-                List<BlockPos> allMarkers = new ArrayList<>(MARKER_TTL.keySet());
-                for (BlockPos pos : allMarkers) {
-                    net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(serverPlayer, pos);
-                    MARKER_TTL.remove(pos);
-                }
-                
-                // Pulisci tutte le liste di marker attivi
-                for (UUID id : ACTIVE_MARKERS.keySet()) {
-                    ACTIVE_MARKERS.get(id).clear();
-                }
+        }
+
+        if (scannerId != null && ACTIVE_MARKERS.containsKey(scannerId)) {
+            for (BlockPos pos : new ArrayList<>(ACTIVE_MARKERS.get(scannerId))) {
+                MARKER_TTL.remove(pos);
+            }
+            ACTIVE_MARKERS.get(scannerId).clear();
+        } else {
+            MARKER_TTL.clear();
+            for (List<BlockPos> markers : ACTIVE_MARKERS.values()) {
+                markers.clear();
             }
         }
     }
@@ -645,7 +635,7 @@ public class ScannerItem extends Item {
         
         if (!infiniteBlocks && remainingCapacity <= 0) {
             // Already at maximum capacity
-            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan));
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan));
             return;
         }
         
@@ -804,7 +794,7 @@ public class ScannerItem extends Item {
                     newMarkersFound, targetBlock.getName());
         }
         
-        player.sendSystemMessage(message);
+        player.sendOverlayMessage(message);
         
         // Make sure to show the completed bar at the end
         displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
@@ -947,7 +937,7 @@ public class ScannerItem extends Item {
             }
         }
         
-        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.found_mobs", 
+        player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.found_mobs", 
                 markersFound, getLocalizedMobName(targetMobId)));
         
         // Make sure to show the completed bar at the end
@@ -1321,7 +1311,7 @@ public class ScannerItem extends Item {
             ChatFormatting.GREEN : ChatFormatting.RED));
         
         // Show the message to the player
-        player.sendSystemMessage(message);
+        player.sendOverlayMessage(message);
     }
 
     /**
@@ -1366,7 +1356,7 @@ public class ScannerItem extends Item {
             // Notify the player
             Identifier id = Identifier.tryParse(blockId);
             Block block = id == null ? null : BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
-            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success", block == null ? Component.literal(blockId) : block.getName()));
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success", block == null ? Component.literal(blockId) : block.getName()));
         } 
         // Check if the chip has a mob target
         else if (chipTag.contains("TargetMob")) {
@@ -1387,7 +1377,7 @@ public class ScannerItem extends Item {
             mainHandItem.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
             
             // Notify the player
-            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
                     getLocalizedMobName(mobId)));
         }
         // Check if the chip has a generic target
@@ -1418,9 +1408,9 @@ public class ScannerItem extends Item {
             
             // Notify the player
             if (genericTarget != null && genericTarget.startsWith("ores")) {
-                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"));
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"));
             } else if ("mobs".equals(genericTarget)) {
-                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"));
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"));
             }
         }
     }
@@ -1538,7 +1528,7 @@ public class ScannerItem extends Item {
         
         if (!infiniteBlocks && remainingCapacity <= 0) {
             // Already at maximum capacity
-            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan));
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan));
             return;
         }
         
@@ -1779,7 +1769,7 @@ public class ScannerItem extends Item {
                     newMarkersFound);
         }
         
-        player.sendSystemMessage(message);
+        player.sendOverlayMessage(message);
         
         // Make sure to show the completed bar at the end
         displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
@@ -1933,7 +1923,7 @@ public class ScannerItem extends Item {
             }
         }
         
-        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner.found_all_mobs", markersFound));
+        player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.found_all_mobs", markersFound));
         
         // Make sure to show the completed bar at the end
         displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);

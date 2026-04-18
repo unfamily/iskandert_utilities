@@ -19,7 +19,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.BlockItem;
-import net.unfamily.iskautils.client.MarkRenderer;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskautils.network.packet.StructurePlacerGuiOpenC2SPacket;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
@@ -84,13 +84,13 @@ public class StructurePlacerItem extends Item {
         
         String structureId = getSelectedStructure(stack);
         if (structureId == null || structureId.isEmpty()) {
-            player.sendSystemMessage(Component.translatable("item.iska_utils.structure_placer.no_structure_selected"));
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.structure_placer.no_structure_selected"));
             return InteractionResult.FAIL;
         }
         
         StructureDefinition structure = StructureLoader.getStructure(structureId);
         if (structure == null) {
-            player.sendSystemMessage(Component.literal("§cStructure not found: " + structureId));
+            player.sendOverlayMessage(Component.literal("§cStructure not found: " + structureId));
             return InteractionResult.FAIL;
         }
         
@@ -147,7 +147,7 @@ public class StructurePlacerItem extends Item {
         Map<BlockPos, String> blockPositions = calculateStructurePositions(centerPos, structure, stack);
         
         if (blockPositions.isEmpty()) {
-            player.sendSystemMessage(Component.literal("§cError: No blocks to place in structure!"));
+            player.sendOverlayMessage(Component.literal("§cError: No blocks to place in structure!"));
             return;
         }
         
@@ -175,12 +175,12 @@ public class StructurePlacerItem extends Item {
         
         // Inform the player
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-        player.sendSystemMessage(Component.literal("§bPreview: §f" + structureName));
-        player.sendSystemMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, §c" + redMarkers + " §7occupied spaces"));
-        player.sendSystemMessage(Component.literal("§7Click again within 5 seconds to place"));
+        player.sendOverlayMessage(Component.literal("§bPreview: §f" + structureName));
+        player.sendOverlayMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, §c" + redMarkers + " §7occupied spaces"));
+        player.sendOverlayMessage(Component.literal("§7Click again within 5 seconds to place"));
         
         if (redMarkers > 0 && structure.isCanForce()) {
-            player.sendSystemMessage(Component.literal("§7Hold shift to force placement over occupied spaces"));
+            player.sendOverlayMessage(Component.literal("§7Hold shift to force placement over occupied spaces"));
         }
     }
     
@@ -246,14 +246,14 @@ public class StructurePlacerItem extends Item {
             if (!structure.isCanForce()) {
                 showConflictMarkers(player, blockPositions, structure);
                 restoreAllocatedBlocks(player, blockAllocation.values());
-                player.sendSystemMessage(Component.literal("§cSpace is occupied! Structure cannot be placed."));
+                player.sendOverlayMessage(Component.literal("§cSpace is occupied! Structure cannot be placed."));
                 return InteractionResult.FAIL;
             } else {
                 // If can force, ask for confirmation
                 if (!player.isShiftKeyDown()) {
                     showConflictMarkers(player, blockPositions, structure);
                     restoreAllocatedBlocks(player, blockAllocation.values());
-                    player.sendSystemMessage(Component.literal("§cSpace is occupied! Use shift+right-click to force placement."));
+                    player.sendOverlayMessage(Component.literal("§cSpace is occupied! Use shift+right-click to force placement."));
                     return InteractionResult.FAIL;
                 }
             }
@@ -272,15 +272,15 @@ public class StructurePlacerItem extends Item {
             
             String structureName = structure.getName() != null ? structure.getName() : structure.getId();
             if (isForced) {
-                player.sendSystemMessage(Component.literal("§aStructure §f" + structureName + " §apartially placed! (Some blocks skipped)"));
+                player.sendOverlayMessage(Component.literal("§aStructure §f" + structureName + " §apartially placed! (Some blocks skipped)"));
             } else {
-                player.sendSystemMessage(Component.literal("§aStructure §f" + structureName + " §aplaced successfully!"));
+                player.sendOverlayMessage(Component.literal("§aStructure §f" + structureName + " §aplaced successfully!"));
             }
             return InteractionResult.SUCCESS;
         } else {
             // If placement fails, restore blocks
             restoreAllocatedBlocks(player, blockAllocation.values());
-            player.sendSystemMessage(Component.literal("§cFailed to place structure!"));
+            player.sendOverlayMessage(Component.literal("§cFailed to place structure!"));
             return InteractionResult.FAIL;
         }
     }
@@ -1149,7 +1149,7 @@ public class StructurePlacerItem extends Item {
      * Shows a simplified message of missing materials with specific alternatives
      */
     private void showMissingMaterialsMessageSimple(ServerPlayer player, Map<String, Integer> missingMaterials, int totalBlocks) {
-        player.sendSystemMessage(Component.literal("§cMissing materials:"));
+        player.sendOverlayMessage(Component.literal("§cMissing materials:"));
         
         // For each missing material, find alternatives from allocation system
         // We no longer use calculateStructurePositions here as it's only needed for display names
@@ -1168,7 +1168,7 @@ public class StructurePlacerItem extends Item {
             Component message = Component.literal("§c- " + missing + " §f")
                 .append(Component.literal(translatedDisplayName));
             
-            player.sendSystemMessage(message);
+            player.sendOverlayMessage(message);
         }
     }
     
@@ -1177,7 +1177,7 @@ public class StructurePlacerItem extends Item {
      */
     private void showMissingMaterialsWithAlternatives(ServerPlayer player, Map<String, Integer> missingMaterials, 
                                                      Map<String, List<StructureDefinition.BlockDefinition>> alternativesMap) {
-        player.sendSystemMessage(Component.literal("§cMissing materials:"));
+        player.sendOverlayMessage(Component.literal("§cMissing materials:"));
         
         for (Map.Entry<String, Integer> entry : missingMaterials.entrySet()) {
             String displayName = entry.getKey();
@@ -1186,7 +1186,7 @@ public class StructurePlacerItem extends Item {
             // Show main name of group
             String translatedDisplayName = getFormattedDisplayName(displayName);
             Component message = Component.literal("§c- " + missing + " §f" + translatedDisplayName + ":");
-            player.sendSystemMessage(message);
+            player.sendOverlayMessage(message);
             
             // Show all available alternatives
             List<StructureDefinition.BlockDefinition> alternatives = alternativesMap.get(displayName);
@@ -1194,7 +1194,7 @@ public class StructurePlacerItem extends Item {
                 for (StructureDefinition.BlockDefinition blockDef : alternatives) {
                     if (blockDef.getBlock() != null && blockExists(blockDef.getBlock())) {
                         String formattedBlockName = getFormattedBlockName(blockDef.getBlock());
-                        player.sendSystemMessage(Component.literal("  §a- " + formattedBlockName));
+                        player.sendOverlayMessage(Component.literal("  §a- " + formattedBlockName));
                     }
                 }
             }
@@ -1229,7 +1229,7 @@ public class StructurePlacerItem extends Item {
             Component message = Component.literal("§c" + missing + " §f")
                 .append(Component.literal(translatedDisplayName));
             
-            player.sendSystemMessage(message);
+            player.sendOverlayMessage(message);
         }
         
         // Remove "total blocks needed" - now each group has its own specific name
@@ -1243,15 +1243,15 @@ public class StructurePlacerItem extends Item {
                     translatedDisplayName = getTranslatedBlockName(requirement.getDisplayName());
                 }
                 
-                player.sendSystemMessage(Component.literal("  §7- alternatives for §f" + translatedDisplayName + "§7:"));
+                player.sendOverlayMessage(Component.literal("  §7- alternatives for §f" + translatedDisplayName + "§7:"));
                 for (StructureDefinition.BlockDefinition blockDef : requirement.getAlternatives()) {
                     if (blockDef.getBlock() != null) {
                         String translatedName = getTranslatedBlockName(blockDef.getBlock());
                         // Check if block exists in game
                         if (blockExists(blockDef.getBlock())) {
-                            player.sendSystemMessage(Component.literal("    §a- " + translatedName));
+                            player.sendOverlayMessage(Component.literal("    §a- " + translatedName));
                         } else {
-                            player.sendSystemMessage(Component.literal("    §8- " + translatedName + " §7(not available)"));
+                            player.sendOverlayMessage(Component.literal("    §8- " + translatedName + " §7(not available)"));
                         }
                     }
                 }

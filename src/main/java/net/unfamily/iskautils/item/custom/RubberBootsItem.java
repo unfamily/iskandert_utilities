@@ -5,10 +5,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.util.RubberNegateFallHandler;
-import net.unfamily.iskautils.item.ModItems;
 
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -68,11 +66,9 @@ public class RubberBootsItem extends Item {
             return false;
         }
         
-        Level level = entity.level();
-        
         // If the player is crouched, reduce the damage but don't bounce
         if (player.isShiftKeyDown()) {
-            // Reduced damage by 80%
+            damageBootsForFallNegation(stack, player);
             return true;
         }
         
@@ -95,22 +91,18 @@ public class RubberBootsItem extends Item {
             // Add the player to the list of bouncers
             RubberNegateFallHandler.addBouncingPlayer(player, player.getDeltaMovement().y);
             
-            // Slightly damage the boots (1 point of durability)
-            if (stack.isDamageableItem() && !player.getAbilities().instabuild) {
-                // Damage the item by 1
-                int newDamage = stack.getDamageValue() + 1;
-                if (newDamage >= stack.getMaxDamage()) {
-                    // If the item would break, remove it
-                    stack.setCount(0);
-                } else {
-                    // Otherwise add damage
-                    stack.setDamageValue(newDamage);
-                }
-            }
+            damageBootsForFallNegation(stack, player);
             
             return true;
         }
         
         return false;
+    }
+
+    private static void damageBootsForFallNegation(ItemStack stack, Player player) {
+        if (!stack.isDamageableItem() || player.getAbilities().instabuild) {
+            return;
+        }
+        stack.hurtAndBreak(1, player, EquipmentSlot.FEET);
     }
 } 

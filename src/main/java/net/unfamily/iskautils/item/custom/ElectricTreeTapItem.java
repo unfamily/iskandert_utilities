@@ -67,7 +67,7 @@ public class ElectricTreeTapItem extends TreeTapItem {
             if (!level.isClientSide() && requiresEnergyToFunction() && !hasEnoughEnergy(itemStack)) {
                 // Not enough energy, can't use the treetap
                 if (player != null) {
-                    player.sendSystemMessage(Component.translatable("item.iska_utils.electric_treetap.message.no_energy"));
+                    player.sendOverlayMessage(Component.translatable("item.iska_utils.electric_treetap.message.no_energy"));
                 }
                 return InteractionResult.FAIL;
             }

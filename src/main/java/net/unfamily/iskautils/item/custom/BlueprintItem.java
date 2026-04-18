@@ -15,7 +15,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.unfamily.iskautils.client.MarkRenderer;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 
 import java.util.List;
 
@@ -80,7 +80,7 @@ public class BlueprintItem extends Item {
                     
                     // Verifica che nessuna dimensione superi 64 blocchi
                     if (dimensions[0] > 64 || dimensions[1] > 64 || dimensions[2] > 64) {
-                        serverPlayer.sendSystemMessage(
+                        serverPlayer.sendOverlayMessage(
                             Component.translatable("gui.iska_utils.blueprint_invalid_size", 
                                 dimensions[0], dimensions[1], dimensions[2])
                         );
@@ -104,7 +104,7 @@ public class BlueprintItem extends Item {
                         System.out.println("DEBUG BLUEPRINT: stored vertex2 = " + structureSaverEntity.getBlueprintVertex2());
                         
                         // Mostra messaggio di successo
-                        serverPlayer.sendSystemMessage(
+                        serverPlayer.sendOverlayMessage(
                             Component.translatable("gui.iska_utils.blueprint_imported_to_machine", 
                                 formatPosition(vertex1), formatPosition(vertex2), formatPosition(center))
                         );
@@ -124,7 +124,7 @@ public class BlueprintItem extends Item {
             // Mostra marker verde per il primo vertice
             MarkRenderer.getInstance().addBillboardMarker(clickedPos, VERTEX1_COLOR, 300); // 15 secondi
             
-            serverPlayer.sendSystemMessage(
+            serverPlayer.sendOverlayMessage(
                 Component.translatable("item.iska_utils.blueprint.vertex1_saved", formatPosition(clickedPos))
             );
             
@@ -142,7 +142,7 @@ public class BlueprintItem extends Item {
             BlockPos vertex1 = getVertex1(tag);
             showAreaPreview(vertex1, clickedPos);
             
-            serverPlayer.sendSystemMessage(
+            serverPlayer.sendOverlayMessage(
                 Component.translatable("item.iska_utils.blueprint.vertex2_saved", formatPosition(clickedPos))
             );
             
@@ -164,7 +164,7 @@ public class BlueprintItem extends Item {
                 // Mostra marker giallo per il centro
                 MarkRenderer.getInstance().addBillboardMarker(clickedPos, CENTER_COLOR, 300); // 15 secondi
                 
-                serverPlayer.sendSystemMessage(
+                serverPlayer.sendOverlayMessage(
                     Component.translatable("item.iska_utils.blueprint.center_saved", formatPosition(clickedPos))
                 );
                 
@@ -178,7 +178,7 @@ public class BlueprintItem extends Item {
                 BlockPos center = getCenter(tag);
                 MarkRenderer.getInstance().addBillboardMarker(center, CENTER_COLOR, 300);
                 
-                serverPlayer.sendSystemMessage(
+                serverPlayer.sendOverlayMessage(
                     Component.translatable("item.iska_utils.blueprint.preview_complete")
                 );
                 
@@ -203,7 +203,7 @@ public class BlueprintItem extends Item {
             CompoundTag tag = new CompoundTag();
             stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
             
-            serverPlayer.sendSystemMessage(
+            serverPlayer.sendOverlayMessage(
                 Component.translatable("item.iska_utils.blueprint.reset")
             );
             
@@ -391,7 +391,7 @@ public class BlueprintItem extends Item {
         int[] dimensions = calculateDimensions(vertex1, vertex2);
         int volume = dimensions[0] * dimensions[1] * dimensions[2];
         
-        player.sendSystemMessage(
+        player.sendOverlayMessage(
             Component.translatable("item.iska_utils.blueprint.area_info", 
                     dimensions[0], dimensions[1], dimensions[2], volume)
         );

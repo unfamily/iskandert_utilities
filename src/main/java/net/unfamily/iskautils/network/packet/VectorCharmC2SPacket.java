@@ -49,7 +49,7 @@ public class VectorCharmC2SPacket {
             
             // Send confirmation message to player
             VectorFactorType newFactorType = VectorFactorType.fromByte(newFactor);
-            player.sendSystemMessage(Component.translatable("message.iska_utils.vector_vertical_factor", 
+            player.sendOverlayMessage(Component.translatable("message.iska_utils.vector_vertical_factor", 
                                    Component.translatable("vectorcharm.factor." + newFactorType.getName())));
             
             // Log the change
@@ -60,7 +60,7 @@ public class VectorCharmC2SPacket {
             
             // Send confirmation message to player
             VectorFactorType newFactorType = VectorFactorType.fromByte(newFactor);
-            player.sendSystemMessage(Component.translatable("message.iska_utils.vector_horizontal_factor", 
+            player.sendOverlayMessage(Component.translatable("message.iska_utils.vector_horizontal_factor", 
                                    Component.translatable("vectorcharm.factor." + newFactorType.getName())));
             
             // Log the change

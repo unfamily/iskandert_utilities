@@ -1,6 +1,11 @@
 {
   "type": "botanypots:block_derived_crop",
-  "block": "iska_utils:dye_bush_empty",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "botanypots"
+    }
+  ],
   "input": [
     {
       "item": "iska_utils:dye_bush_empty"

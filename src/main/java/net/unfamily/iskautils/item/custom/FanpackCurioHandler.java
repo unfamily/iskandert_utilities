@@ -146,11 +146,6 @@ public class FanpackCurioHandler {
                                     StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0");
                                 }
                             }
-                            
-                            // Auto-remove flight1 stage if present (indicates handler detected it)
-                            if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight1")) {
-                                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1");
-                            }
                         }
                         
                         return null;

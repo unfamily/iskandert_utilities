@@ -31,6 +31,7 @@ import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
 import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskalib.client.marker.VanillaWorldMarkerClientHooks;
 import net.unfamily.iskalib.team.ShopTeamManager;
 import net.unfamily.iskalib.stage.StageHooks;
 import net.unfamily.iskautils.data.BurningBrazierData;
@@ -76,6 +77,7 @@ public class IskaUtils {
         // Client-only setup/registrations (keep server-safe via reflection gate)
         if (isClientEnvironment()) {
             modEventBus.addListener(this::clientSetup);
+            VanillaWorldMarkerClientHooks.registerIfNeeded(NeoForge.EVENT_BUS);
 
             // Register GUI MenuTypes (client-only)
             net.unfamily.iskautils.client.gui.ModMenuTypes.MENUS.register(modEventBus);
@@ -86,8 +88,6 @@ public class IskaUtils {
             // Register menu screens (client-only, MOD bus)
             modEventBus.addListener(ClientModEvents::registerMenuScreens);
 
-            // Register client-only NeoForge bus events
-            NeoForge.EVENT_BUS.register(net.unfamily.iskautils.client.ClientEvents.class);
         }
 
         // Register game events on the NeoForge bus
@@ -103,8 +103,9 @@ public class IskaUtils {
         // ===== DYNAMIC POTION PLATE SYSTEM =====
         // IMPORTANT: This must happen BEFORE registering the DeferredRegisters
         // to ensure blocks are available when registries are built
-        
+        LOGGER.info("=== STARTING DYNAMIC POTION PLATE BOOTSTRAP ===");
         DynamicPotionPlateScanner.loadAll(null);
+        LOGGER.info("=== COMPLETED DYNAMIC POTION PLATE BOOTSTRAP ===");
         
         // Register discovered dynamic potion plates from external configurations
         PotionPlateRegistry.registerDiscoveredBlocks();
@@ -112,11 +113,15 @@ public class IskaUtils {
         // ===== COMMAND ITEM SYSTEM =====
         // Carica e inizializza gli item di comando prima della registrazione
         // per evitare errori "Cannot register new entries to DeferredRegister after RegisterEvent has been fired"
+        LOGGER.info("=== STARTING COMMAND ITEMS BOOTSTRAP ===");
         CommandItemLoader.loadAll(null);
         CommandItemRegistry.initializeItems();
+        LOGGER.info("=== COMPLETED COMMAND ITEMS BOOTSTRAP ===");
         
+        LOGGER.info("=== STARTING STRUCTURE MONOUSE BOOTSTRAP ===");
         StructureMonouseLoader.loadAll(null);
         net.unfamily.iskautils.structure.StructureMonouseRegistry.initializeItems();
+        LOGGER.info("=== COMPLETED STRUCTURE MONOUSE BOOTSTRAP ===");
         
         // ===== STRUCTURE SYSTEM =====
         // Carica solo le definizioni delle strutture server/globali all'avvio
@@ -278,6 +283,8 @@ public class IskaUtils {
     private void clientSetup(final FMLClientSetupEvent event) {
         // Initialize client events
         ClientEvents.init();
+
+        NeoForge.EVENT_BUS.register(ClientGameEvents.class);
         
         // Register custom GUI screens - will be done in ClientModEvents
     }
@@ -399,21 +406,6 @@ public class IskaUtils {
             // Server is fully started, all external datapacks should be loaded by now
             LOGGER.info("Server fully started, all external datapacks should be available");
             
-            // Initialize a new session ID for markers
-            net.unfamily.iskalib.marker.MarkerSession.resetScannerSessionId();
-            LOGGER.info("Initialized new scanner session ID: {}", net.unfamily.iskalib.marker.MarkerSession.getScannerSessionId());
-            
-            // Clean up any scanner markers that might be leftover from previous session
-            try {
-                if (event.getServer().overworld() != null) {
-                    // La funzionalità cleanupAllMarkers è stata rimossa
-                    // net.unfamily.iskautils.item.custom.ScannerItem.cleanupAllMarkers(event.getServer().overworld());
-                    LOGGER.info("Cleaned up all scanner markers");
-                }
-            } catch (Exception e) {
-                LOGGER.error("Error cleaning up scanner markers: {}", e.getMessage());
-            }
-            
             try {
                 IskaUtilsDataReload.reloadAllFromServer();
             } catch (Exception e) {
@@ -458,6 +450,9 @@ public class IskaUtils {
                 return;
             }
             net.minecraft.client.resources.sounds.SoundInstance sound = event.getOriginalSound();
+            if (sound == null) {
+                sound = event.getSound();
+            }
             if (sound.getSource() == net.minecraft.sounds.SoundSource.MUSIC) {
                 return;
             }

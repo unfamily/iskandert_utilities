@@ -104,13 +104,13 @@ public class HardDollyItem extends Item {
             boolean canCheckWhitelist = Config.hardDollyCanMoveAllUnbreakable || !Config.hardDollyUnbreakableWhitelist.isEmpty();
             
             if (!canCheckWhitelist) {
-                player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"));
+                player.sendOverlayMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"));
                 return InteractionResult.FAIL;
             }
             
             // Check unbreakable whitelist/blacklist
             if (!isUnbreakableBlockAllowed(block)) {
-                player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"));
+                player.sendOverlayMessage(Component.translatable("message.iska_utils.dolly_hard.indestructible"));
                 return InteractionResult.FAIL;
             }
             
@@ -120,13 +120,13 @@ public class HardDollyItem extends Item {
         
         // Check whitelist/blacklist (skip for allowed unbreakable blocks)
         if (!isUnbreakableAllowed && !isBlockAllowed(state)) {
-            player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.not_allowed"));
+            player.sendOverlayMessage(Component.translatable("message.iska_utils.dolly_hard.not_allowed"));
             return InteractionResult.FAIL;
         }
         
         // Check mining level (max iron) - skip for allowed unbreakable blocks
         if (!isUnbreakableAllowed && !canHarvest(state)) {
-            player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.too_hard"));
+            player.sendOverlayMessage(Component.translatable("message.iska_utils.dolly_hard.too_hard"));
             return InteractionResult.FAIL;
         }
         
@@ -151,10 +151,7 @@ public class HardDollyItem extends Item {
             nbt.put(NBT_BLOCK_ENTITY, blockEntityTag);
         }
         
-        // Set CustomModelData to show filled texture
-        nbt.putInt("CustomModelData", 1);
-        
-        // Update the item stack with new data
+        // Update the item stack with new data (filled texture uses item model has_component:custom_data)
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt));
         
         // Remove block from world WITHOUT dropping items
@@ -169,7 +166,7 @@ public class HardDollyItem extends Item {
         level.playSound(null, pos, SoundEvents.SCAFFOLDING_BREAK, SoundSource.BLOCKS, 1.0F, 1.0F);
         
         // Send feedback
-        player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.picked_up",
+        player.sendOverlayMessage(Component.translatable("message.iska_utils.dolly_hard.picked_up",
                 Component.translatable(block.getDescriptionId())));
         
         return InteractionResult.SUCCESS;
@@ -235,16 +232,15 @@ public class HardDollyItem extends Item {
             level.sendBlockUpdated(pos, savedState, savedState, 3);
         }
         
-        // Clear stored data
         nbt.remove(NBT_BLOCK_STATE);
         nbt.remove(NBT_BLOCK_ENTITY);
-        nbt.putBoolean(NBT_HAS_BLOCK, false);
-        
-        // Remove CustomModelData to show empty texture
+        nbt.remove(NBT_HAS_BLOCK);
         nbt.remove("CustomModelData");
-        
-        // Update the item stack with cleared data
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt));
+        if (nbt.isEmpty()) {
+            stack.remove(DataComponents.CUSTOM_DATA);
+        } else {
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt));
+        }
         
         // Consume durability
         stack.setDamageValue(stack.getDamageValue() + 1);
@@ -253,7 +249,7 @@ public class HardDollyItem extends Item {
         level.playSound(null, pos, SoundEvents.SCAFFOLDING_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
         
         // Send feedback
-        player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_hard.placed",
+        player.sendOverlayMessage(Component.translatable("message.iska_utils.dolly_hard.placed",
                 Component.translatable(savedState.getBlock().getDescriptionId())));
         
         return InteractionResult.SUCCESS;

@@ -128,7 +128,7 @@ public class ScannerChipItem extends Item {
                 // Register the target block in the chip
                 setTargetBlock(itemStack, block);
                 
-                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.target_set", block.getName()));
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.target_set", block.getName()));
                 return InteractionResult.SUCCESS;
             }
         }
@@ -154,7 +154,7 @@ public class ScannerChipItem extends Item {
                 transferGenericTargetToScanner(itemStack, mainHandItem, scanner, player);
                 return InteractionResult.SUCCESS;
             } else {
-                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"));
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"));
                 return InteractionResult.FAIL;
             }
         }
@@ -213,7 +213,7 @@ public class ScannerChipItem extends Item {
                             case 100 -> "item.iska_utils.scanner_chip.mining_level.modded";
                             default -> "item.iska_utils.scanner_chip.mining_level.none";
                         };
-                        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.mining_level.set",
+                        player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.mining_level.set",
                                 Component.translatable(levelText)));
                         return InteractionResult.SUCCESS;
                     }
@@ -257,7 +257,7 @@ public class ScannerChipItem extends Item {
                 transferGenericTargetToScanner(itemStack, mainHandItem, scanner, player);
                 return InteractionResult.SUCCESS;
             } else {
-                player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"));
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.no_target"));
                 return InteractionResult.FAIL;
             }
         }
@@ -416,7 +416,7 @@ public class ScannerChipItem extends Item {
         // Save the data in the scanner
         scannerStack.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
         
-        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success", targetBlock.getName()));
+        player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success", targetBlock.getName()));
     }
     
     /**
@@ -449,7 +449,7 @@ public class ScannerChipItem extends Item {
         // Save the data in the scanner
         scannerStack.set(DataComponents.CUSTOM_DATA, CustomData.of(scannerTag));
         
-        player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
+        player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mob", 
                 getLocalizedMobName(targetMob)));
     }
     
@@ -492,9 +492,9 @@ public class ScannerChipItem extends Item {
         
         // Display appropriate message based on target type
         if ("ores".equals(genericTarget)) {
-            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"));
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"));
         } else if ("mobs".equals(genericTarget)) {
-            player.sendSystemMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"));
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"));
         }
     }
     

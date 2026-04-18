@@ -349,7 +349,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         // Debug: verifica se c'è una struttura selezionata
         if (selectedStructureIndex < 0 || selectedStructureIndex >= availableStructures.size()) {
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.sendSystemMessage(
+                this.minecraft.player.sendOverlayMessage(
                     net.minecraft.network.chat.Component.literal("§cNo structure selected! Index: " + selectedStructureIndex + ", Available: " + availableStructures.size())
                 );
             }
@@ -361,7 +361,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         if (blockEntity == null) {
             if (this.minecraft != null && this.minecraft.player != null) {
                 BlockPos menuPos = this.menu.getBlockPos();
-                this.minecraft.player.sendSystemMessage(
+                this.minecraft.player.sendOverlayMessage(
                     net.minecraft.network.chat.Component.literal("§cStructure Placer Machine not found! Menu pos: " + menuPos)
                 );
             }
@@ -381,7 +381,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         
         // Debug: conferma che stiamo inviando
         if (this.minecraft != null && this.minecraft.player != null) {
-            this.minecraft.player.sendSystemMessage(
+            this.minecraft.player.sendOverlayMessage(
                 net.minecraft.network.chat.Component.literal("§aSending structure save packet: " + selectedId + " to position " + machinePos)
             );
         }

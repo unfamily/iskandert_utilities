@@ -169,7 +169,7 @@ public class KeyBindings {
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
                 // Send message to player
-                player.sendSystemMessage(Component.translatable("message.iska_utils.vector_vertical_factor",
+                player.sendOverlayMessage(Component.translatable("message.iska_utils.vector_vertical_factor",
                                      Component.translatable("vectorcharm.factor." + newFactor.getName())));
             }
 
@@ -182,7 +182,7 @@ public class KeyBindings {
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
                 // Send message to player
-                player.sendSystemMessage(Component.translatable("message.iska_utils.vector_horizontal_factor",
+                player.sendOverlayMessage(Component.translatable("message.iska_utils.vector_horizontal_factor",
                                      Component.translatable("vectorcharm.factor." + newFactor.getName())));
             }
 
@@ -200,13 +200,13 @@ public class KeyBindings {
                     byte restoredFactor = VectorCharmData.disableHoverModeFromPlayer(player);
                     
                     // Send message to player
-                    player.sendSystemMessage(Component.translatable("message.iska_utils.vector_hover_mode.off"));
+                    player.sendOverlayMessage(Component.translatable("message.iska_utils.vector_hover_mode.off"));
                 } else {
                     // Otherwise, activate hover mode
                     VectorCharmData.setVerticalFactorToPlayer(player, hoverFactor);
                     
                     // Send message to player
-                    player.sendSystemMessage(Component.translatable("message.iska_utils.vector_hover_mode.hover"));
+                    player.sendOverlayMessage(Component.translatable("message.iska_utils.vector_hover_mode.hover"));
                 }
             }
             
@@ -219,7 +219,7 @@ public class KeyBindings {
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
                 // Send message to player
-                player.sendSystemMessage(Component.translatable("message.iska_utils.vector_vertical_factor",
+                player.sendOverlayMessage(Component.translatable("message.iska_utils.vector_vertical_factor",
                                      Component.translatable("vectorcharm.factor." + newFactor.getName())));
             }
 
@@ -232,7 +232,7 @@ public class KeyBindings {
                 VectorFactorType newFactor = VectorFactorType.fromByte(nextFactor);
                 
                 // Send message to player
-                player.sendSystemMessage(Component.translatable("message.iska_utils.vector_horizontal_factor",
+                player.sendOverlayMessage(Component.translatable("message.iska_utils.vector_horizontal_factor",
                                      Component.translatable("vectorcharm.factor." + newFactor.getName())));
             }
 

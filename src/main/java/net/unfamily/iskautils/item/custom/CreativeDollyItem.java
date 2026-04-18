@@ -100,13 +100,13 @@ public class CreativeDollyItem extends Item {
             boolean canCheckWhitelist = Config.creativeDollyCanMoveAllUnbreakable || !Config.creativeDollyUnbreakableWhitelist.isEmpty();
             
             if (!canCheckWhitelist) {
-                player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"));
+                player.sendOverlayMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"));
                 return InteractionResult.FAIL;
             }
             
             // Check unbreakable whitelist/blacklist
             if (!isUnbreakableBlockAllowed(block)) {
-                player.sendSystemMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"));
+                player.sendOverlayMessage(Component.translatable("message.iska_utils.dolly_creative.indestructible"));
                 return InteractionResult.FAIL;
             }
         }
@@ -134,10 +134,7 @@ public class CreativeDollyItem extends Item {
             nbt.put(NBT_BLOCK_ENTITY, blockEntityTag);
         }
         
-        // Set CustomModelData to show filled texture
-        nbt.putInt("CustomModelData", 1);
-        
-        // Update the item stack with new data
+        // Update the item stack with new data (filled texture uses item model has_component:custom_data)
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt));
         
         // Remove block from world WITHOUT dropping items
@@ -224,16 +221,15 @@ public class CreativeDollyItem extends Item {
             level.sendBlockUpdated(pos, savedState, savedState, 3);
         }
         
-        // Clear stored data
         nbt.remove(NBT_BLOCK_STATE);
         nbt.remove(NBT_BLOCK_ENTITY);
-        nbt.putBoolean(NBT_HAS_BLOCK, false);
-        
-        // Remove CustomModelData to show empty texture
+        nbt.remove(NBT_HAS_BLOCK);
         nbt.remove("CustomModelData");
-        
-        // Update the item stack with cleared data
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt));
+        if (nbt.isEmpty()) {
+            stack.remove(DataComponents.CUSTOM_DATA);
+        } else {
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt));
+        }
         
         // Creative Dolly: NO durability consumption
         

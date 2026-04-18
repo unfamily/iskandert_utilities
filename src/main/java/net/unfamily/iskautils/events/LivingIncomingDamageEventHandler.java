@@ -10,6 +10,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.item.custom.GreedyShieldItem;
 import net.unfamily.iskalib.stage.StageRegistry;
 
 /**
@@ -51,8 +52,8 @@ public class LivingIncomingDamageEventHandler {
             processNecroticCrystalHeart(event, player);
         }
         
-        // Clear stages after processing
-        clearStages(player);
+        clearNecroticCrystalHeartStage(player);
+        GreedyShieldItem.syncEquipStage(player);
     }
 
     /**
@@ -167,7 +168,7 @@ public class LivingIncomingDamageEventHandler {
             // Completely block the damage
             event.setAmount(0.0f);
             if (player.level().isClientSide()) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.greedy_shield.blocked"));
+                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.greedy_shield.blocked"));
             }
             return true; // Damage completely blocked
         }
@@ -180,7 +181,7 @@ public class LivingIncomingDamageEventHandler {
             float reducedDamage = originalDamage * (float)Config.greedyShieldReduceAmount;
             event.setAmount(reducedDamage);
             if (player.level().isClientSide()) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.greedy_shield.reduced"));
+                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.greedy_shield.reduced"));
             }
         }
         
@@ -241,8 +242,7 @@ public class LivingIncomingDamageEventHandler {
         }
     }
 
-    private static void clearStages(Player player) {
-        StageRegistry.removePlayerStage(player, "iska_utils_internal-greedy_shield_equip");
+    private static void clearNecroticCrystalHeartStage(Player player) {
         StageRegistry.removePlayerStage(player, "iska_utils_internal-necro_crystal_heart_equip");
     }
 }

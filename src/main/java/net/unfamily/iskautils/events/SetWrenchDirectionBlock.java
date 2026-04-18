@@ -66,7 +66,7 @@ public class SetWrenchDirectionBlock {
 				RotationMode newMode = cycleRotationMode(stack);
 				
 				// send a message to the player
-				player.sendSystemMessage(
+				player.sendOverlayMessage(
 					Component.translatable("item.iska_utils.swiss_wrench.message.mode_set",
 					newMode.getDisplayName()));
 				

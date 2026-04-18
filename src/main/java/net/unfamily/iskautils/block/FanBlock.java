@@ -114,7 +114,7 @@ public class FanBlock extends Block implements EntityBlock {
                 // First click: show warning message in yellow action bar
                 net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.translatable("message.iska_utils.fan.use_back_side")
                     .withStyle(net.minecraft.ChatFormatting.YELLOW);
-                serverPlayer.sendSystemMessage(message);
+                serverPlayer.sendOverlayMessage(message);
                 fanEntity.setHasShownBackMessage(true);
                 return InteractionResult.CONSUME;
             }

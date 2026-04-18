@@ -40,19 +40,19 @@ public class StructurePlacerMachineSaveC2SPacket {
         }
         
         if (structureId == null || structureId.isEmpty()) {
-            player.sendSystemMessage(Component.literal("§cInvalid structure ID!"));
+            player.sendOverlayMessage(Component.literal("§cInvalid structure ID!"));
             return;
         }
         
         if (machinePos == null) {
-            player.sendSystemMessage(Component.literal("§cInvalid machine position!"));
+            player.sendOverlayMessage(Component.literal("§cInvalid machine position!"));
             return;
         }
         
         // Verifica che la struttura esista
         StructureDefinition structure = StructureLoader.getStructure(structureId);
         if (structure == null) {
-            player.sendSystemMessage(Component.literal("§cStructure not found: " + structureId));
+            player.sendOverlayMessage(Component.literal("§cStructure not found: " + structureId));
             return;
         }
         
@@ -65,7 +65,7 @@ public class StructurePlacerMachineSaveC2SPacket {
         }
         
         if (!(blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity)) {
-            player.sendSystemMessage(Component.literal("§cStructure Placer Machine not found at position: " + machinePos + " (found: " + (blockEntity != null ? blockEntity.getClass().getSimpleName() : "null") + ")"));
+            player.sendOverlayMessage(Component.literal("§cStructure Placer Machine not found at position: " + machinePos + " (found: " + (blockEntity != null ? blockEntity.getClass().getSimpleName() : "null") + ")"));
             return;
         }
         
@@ -79,9 +79,8 @@ public class StructurePlacerMachineSaveC2SPacket {
         
         // Informa il giocatore del successo
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-        player.sendSystemMessage(
-            Component.literal("§aMachine structure set to: §f" + structureName + " §7(" + structure.getId() + ")"), 
-            true);
+        player.sendOverlayMessage(
+            Component.literal("§aMachine structure set to: §f" + structureName + " §7(" + structure.getId() + ")"));
         
         LOGGER.debug("Player {} saved structure {} to Structure Placer Machine at {}", 
                     player.getName().getString(), structureId, machinePos);

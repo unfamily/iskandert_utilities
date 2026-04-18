@@ -7,6 +7,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
@@ -17,7 +18,6 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.data.PotionPlateConfig;
 import net.unfamily.iskautils.data.PotionPlateType;
@@ -63,7 +63,14 @@ public class PotionPlateBlock extends VectorBlock {
     }
     
     @Override
-    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+    protected void entityInside(
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Entity entity,
+            InsideBlockEffectApplier effectApplier,
+            boolean isPrecise
+    ) {
         if (!level.isClientSide() && config != null && config.isValid()) {
             // Only affect living entities
             if (!(entity instanceof LivingEntity livingEntity)) {
@@ -297,12 +304,5 @@ public class PotionPlateBlock extends VectorBlock {
             // Horizontal placement
             return SHAPE_HORIZONTAL;
         }
-    }
-    
-    @Override
-    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        // Per tutti i tipi di piastre non creiamo collisione fisica
-        // in modo che le entità possano attraversare il blocco e attivare entityInside
-        return Shapes.empty();
     }
 } 

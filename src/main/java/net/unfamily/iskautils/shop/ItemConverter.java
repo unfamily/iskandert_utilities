@@ -25,5 +25,10 @@ public final class ItemConverter {
     public static String getItemDisplayName(String itemString) {
         return net.unfamily.iskalib.item.ItemConverter.getItemDisplayName(itemString);
     }
+
+    /** Same shape as {@code /give} item argument and shop {@code item} fields. */
+    public static String formatAsItemArgument(ItemStack stack) {
+        return net.unfamily.iskalib.item.ItemConverter.formatAsItemArgument(stack);
+    }
 }
 

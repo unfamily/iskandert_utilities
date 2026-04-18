@@ -4,16 +4,17 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
+import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.Config;
-import java.util.List;
+import java.lang.reflect.Method;
 import java.util.function.Consumer;
 
 /**
@@ -21,6 +22,8 @@ import java.util.function.Consumer;
  * or if that fails, has a chance to reduce it significantly.
  */
 public class GreedyShieldItem extends Item {
+
+    private static final String EQUIP_STAGE = "iska_utils_internal-greedy_shield_equip";
 
     public GreedyShieldItem(Properties properties) {
         super(properties);
@@ -52,26 +55,65 @@ public class GreedyShieldItem extends Item {
     @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
         super.inventoryTick(stack, level, entity, slot);
-        if (entity instanceof Player player) {
-            // Verify if the item is in the vanilla inventory
-            boolean isInVanillaInventory = false;
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                if (player.getInventory().getItem(i) == stack) {
-                    isInVanillaInventory = true;
-                    break;
+        if (entity instanceof Player player && !level.isClientSide()) {
+            syncEquipStage(player);
+        }
+    }
+
+    /**
+     * True when the player holds a greedy shield in main/off hand or has one in a Curios slot.
+     */
+    public static boolean isGreedyShieldActive(Player player) {
+        if (player.getMainHandItem().getItem() instanceof GreedyShieldItem) {
+            return true;
+        }
+        if (player.getOffhandItem().getItem() instanceof GreedyShieldItem) {
+            return true;
+        }
+        if (ModUtils.isCuriosLoaded()) {
+            return hasGreedyInCurios(player);
+        }
+        return false;
+    }
+
+    /**
+     * Keeps {@link #EQUIP_STAGE} aligned with whether a greedy shield is actually active.
+     */
+    public static void syncEquipStage(Player player) {
+        if (player.level().isClientSide()) {
+            return;
+        }
+        if (isGreedyShieldActive(player)) {
+            StageRegistry.addPlayerStage(player, EQUIP_STAGE);
+        } else {
+            StageRegistry.removePlayerStage(player, EQUIP_STAGE);
+        }
+    }
+
+    private static boolean hasGreedyInCurios(Player player) {
+        try {
+            Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
+            Method getCuriosHelperMethod = curioApiClass.getMethod("getCuriosHelper");
+            Object curiosHelper = getCuriosHelperMethod.invoke(null);
+            Method getEquippedCurios = curiosHelper.getClass().getMethod("getEquippedCurios", LivingEntity.class);
+            Object equippedCurios = getEquippedCurios.invoke(curiosHelper, player);
+            if (equippedCurios instanceof Iterable<?> items) {
+                for (Object itemPair : items) {
+                    Method getStackMethod = itemPair.getClass().getMethod("getRight");
+                    ItemStack s = (ItemStack) getStackMethod.invoke(itemPair);
+                    if (s.getItem() instanceof GreedyShieldItem) {
+                        return true;
+                    }
                 }
             }
-            
-            // If the item is not in the vanilla inventory (i.e., it's in Curios), add the stage
-            if (!isInVanillaInventory) {
-                StageRegistry.addPlayerStage(player, "iska_utils_internal-greedy_shield_equip");
-            }
+        } catch (Exception ignored) {
         }
+        return false;
     }
 
     @Override
     public boolean onDroppedByPlayer(ItemStack itemstack, Player entity) {
-        StageRegistry.removePlayerStage(entity, "iska_utils_internal-greedy_shield_equip");
+        StageRegistry.removePlayerStage(entity, EQUIP_STAGE);
         return true;
     }
 }

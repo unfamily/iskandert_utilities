@@ -211,6 +211,7 @@
 
   "block.iska_utils.angel_block": "Blocco Angelico",
   "block.iska_utils.structure_saver_machine": "Macchina Salvatrice di Strutture",
+  "item.iska_utils.structure_saver_machine": "Macchina Salvatrice di Strutture",
   "block.iska_utils.structure_marker": "Marcatore di Strutture",
   "block.iska_utils.shop": "Negozio",
   "block.iska_utils.auto_shop": "Negozio Automatico",
@@ -251,6 +252,7 @@
   "block.iska_utils.plate_base_block": "Piastra Base",
   
   "key.categories.iska_utils": "Utilità di Iskandert",
+  "key.categories.iska_utils.iska_utils": "Utilità di Iskandert",
   "key.category.iska_utils": "Utilità di Iskandert",
   "key.iska_utils.vector_vertical": "Impostazione Verticale Amuleto Vettoriale (Aumenta)",
   "key.iska_utils.vector_horizontal": "Impostazione Orizzontale Amuleto Vettoriale (Aumenta)",
@@ -506,6 +508,7 @@
   "item.iska_utils.iska_utils_wither_grinder": "Kit Trituratore di Wither",
   
   "block.iska_utils.structure_placer_machine": "Macchina Piazza-Strutture",
+  "item.iska_utils.structure_placer_machine": "Macchina Piazza-Strutture",
   "gui.iska_utils.structure_placer_machine.select": "Seleziona",
   "gui.iska_utils.structure_placer_machine.rotate": "Ruota",
   "gui.iska_utils.structure_placer_machine.set_inventory": "Segna input",

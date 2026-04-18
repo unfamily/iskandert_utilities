@@ -82,6 +82,7 @@ public final class IskaUtilsLoadJson {
     public static Map<Identifier, JsonElement> collectFromModJarOnly(String subdirUnderLoad) {
         Map<Identifier, JsonElement> out = new LinkedHashMap<>();
         String dirInRoot = "data/" + IskaUtils.MOD_ID + "/" + IskaUtilsLoadPaths.LOAD_FOLDER + "/" + subdirUnderLoad;
+        LOGGER.info("Bootstrap loading from: {}", dirInRoot);
         ModList.get().getModContainerById(IskaUtils.MOD_ID).ifPresentOrElse(
                 container -> {
                     var modFileInfo = container.getModInfo().getOwningFile();
@@ -91,26 +92,51 @@ public final class IskaUtilsLoadJson {
                     }
                     Path root = modFileInfo.getFile().getFilePath();
                     try {
-                        if (Files.isDirectory(root)) {
-                            Path base = root.resolve(dirInRoot);
-                            if (Files.exists(base)) {
-                                try (Stream<Path> walk = Files.walk(base)) {
-                                    walk.filter(Files::isRegularFile)
-                                            .filter(p -> p.toString().endsWith(".json"))
-                                            .sorted()
-                                            .forEach(file -> readOneJsonFile(out, base, file));
+                        if (java.nio.file.Files.isDirectory(root)) {
+                            // DEV mode: classes folder (build/classes/java/main)
+                            // Need to navigate up 3 levels: main -> java -> classes
+                            // Then go to resources/main at the same level as classes
+                            Path buildDir = root.getParent().getParent().getParent(); // build/
+                            Path resourcesFolder = buildDir.resolve("resources").resolve("main");
+                            
+                            if (java.nio.file.Files.exists(resourcesFolder)) {
+                                Path base = resourcesFolder.resolve(dirInRoot);
+                                if (java.nio.file.Files.exists(base)) {
+                                    try (Stream<Path> walk = java.nio.file.Files.walk(base)) {
+                                        walk.filter(java.nio.file.Files::isRegularFile)
+                                                .filter(p -> p.toString().endsWith(".json"))
+                                                .sorted()
+                                                .forEach(file -> readOneJsonFile(out, base, file));
+                                    }
+                                } else {
+                                    LOGGER.warn("DEV resources directory does not exist: {}", base);
+                                }
+                            } else {
+                                // Fallback to standard directory mode (in case resources folder doesn't exist where we expect)
+                                Path base = root.resolve(dirInRoot);
+                                if (java.nio.file.Files.exists(base)) {
+                                    try (Stream<Path> walk = java.nio.file.Files.walk(base)) {
+                                        walk.filter(java.nio.file.Files::isRegularFile)
+                                                .filter(p -> p.toString().endsWith(".json"))
+                                                .sorted()
+                                                .forEach(file -> readOneJsonFile(out, base, file));
+                                    }
+                                } else {
+                                    LOGGER.warn("Directory does not exist: {}", base);
                                 }
                             }
                         } else {
                             try (var fs = FileSystems.newFileSystem(root, Map.of())) {
                                 Path base = fs.getPath(dirInRoot);
-                                if (Files.exists(base)) {
-                                    try (Stream<Path> walk = Files.walk(base)) {
-                                        walk.filter(Files::isRegularFile)
+                                if (java.nio.file.Files.exists(base)) {
+                                    try (Stream<Path> walk = java.nio.file.Files.walk(base)) {
+                                        walk.filter(java.nio.file.Files::isRegularFile)
                                                 .filter(p -> p.toString().endsWith(".json"))
                                                 .sorted()
                                                 .forEach(file -> readOneJsonFile(out, base, file));
                                     }
+                                } else {
+                                    LOGGER.warn("Directory does not exist in JAR: {}", base);
                                 }
                             }
                         }
@@ -118,7 +144,10 @@ public final class IskaUtilsLoadJson {
                         LOGGER.error("Failed walking mod load path {}: {}", dirInRoot, ex.getMessage());
                     }
                 },
-                () -> LOGGER.warn("Mod file not found for {}, cannot bootstrap load/{}", IskaUtils.MOD_ID, subdirUnderLoad));
+                () -> {
+                    LOGGER.error("Mod container not found for {} during bootstrap! ModList: {}", IskaUtils.MOD_ID, ModList.get().getMods().stream().map(m -> m.getModId()).toList());
+                    LOGGER.warn("Mod file not found for {}, cannot bootstrap load/{}", IskaUtils.MOD_ID, subdirUnderLoad);
+                });
         return out;
     }
 
@@ -127,7 +156,9 @@ public final class IskaUtilsLoadJson {
             String subdir = base.getFileName().toString();
             String rel = base.relativize(file).toString().replace('\\', '/');
             String pathPart = IskaUtilsLoadPaths.LOAD_FOLDER + "/" + subdir + "/" + rel;
+            LOGGER.info("Reading JSON: base={}, subdir={}, rel={}, pathPart={}", base, subdir, rel, pathPart);
             Identifier id = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, pathPart);
+            LOGGER.info("Created identifier: {}", id);
             try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                 JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
                 if (parsed != null) {

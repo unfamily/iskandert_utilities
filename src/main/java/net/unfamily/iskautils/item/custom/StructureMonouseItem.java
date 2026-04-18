@@ -21,7 +21,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.unfamily.iskautils.client.MarkRenderer;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.structure.StructureMonouseDefinition;
@@ -163,7 +163,7 @@ public class StructureMonouseItem extends Item {
         // Get the structure to place
         StructureDefinition structure = StructureLoader.getStructure(definition.getPlaceName());
         if (structure == null) {
-            player.sendSystemMessage(Component.translatable("item.iska_utils.structure_monouse.message.structure_not_found", definition.getPlaceName()));
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.structure_monouse.message.structure_not_found", definition.getPlaceName()));
             return InteractionResult.FAIL;
         }
         
@@ -194,7 +194,7 @@ public class StructureMonouseItem extends Item {
                 net.unfamily.iskalib.structure.StructurePlacementHistory.addPlacement(serverPlayer, pos, structure.getId(), rotation);
                 
                 String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-                player.sendSystemMessage(Component.translatable("item.iska_utils.structure_monouse.message.placed_successfully", structureName));
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.structure_monouse.message.placed_successfully", structureName));
                 
                 // Show green success markers
                 showSuccessMarkers(serverPlayer, pos, structure, rotation);
@@ -204,7 +204,7 @@ public class StructureMonouseItem extends Item {
                 
                 return InteractionResult.SUCCESS;
             } else {
-                player.sendSystemMessage(Component.translatable("item.iska_utils.structure_monouse.message.placement_failed"));
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.structure_monouse.message.placement_failed"));
                 return InteractionResult.FAIL;
             }
         } else {
@@ -246,12 +246,12 @@ public class StructureMonouseItem extends Item {
         
         // Inform the player about conflicts and empty spaces
         String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-        player.sendSystemMessage(Component.translatable("item.iska_utils.structure_monouse.message.preview", structureName));
+        player.sendOverlayMessage(Component.translatable("item.iska_utils.structure_monouse.message.preview", structureName));
         
         if (redMarkers > 0) {
-            player.sendSystemMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, §c" + redMarkers + " §7occupied spaces"));
+            player.sendOverlayMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, §c" + redMarkers + " §7occupied spaces"));
         } else {
-            player.sendSystemMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, all clear!"));
+            player.sendOverlayMessage(Component.literal("§a" + blueMarkers + " §7empty spaces, all clear!"));
         }
     }
     

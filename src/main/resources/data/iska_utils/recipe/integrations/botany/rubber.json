@@ -1,5 +1,11 @@
 {
     "type":"botanypots:block_derived_crop",
+    "neoforge:conditions": [
+      {
+        "type": "neoforge:mod_loaded",
+        "modid": "botanypots"
+      }
+    ],
     "block":"iska_utils:rubber_sapling",
     "grow_time":2400,
     "drops": [

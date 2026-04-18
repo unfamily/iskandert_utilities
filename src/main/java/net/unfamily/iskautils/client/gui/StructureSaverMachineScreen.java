@@ -541,14 +541,14 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         // Validation: both fields are required
         if (structureName.isEmpty()) {
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.sendSystemMessage(Component.translatable("gui.iska_utils.save_error_empty_name"));
+                this.minecraft.player.sendOverlayMessage(Component.translatable("gui.iska_utils.save_error_empty_name"));
             }
             return;
         }
         
         if (structureId.isEmpty()) {
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.sendSystemMessage(Component.translatable("gui.iska_utils.save_error_empty_id"));
+                this.minecraft.player.sendOverlayMessage(Component.translatable("gui.iska_utils.save_error_empty_id"));
             }
             return;
         }
@@ -560,7 +560,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         
         if (!hasValidArea || vertex1 == null || vertex2 == null) {
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.sendSystemMessage(Component.translatable("gui.iska_utils.save_error_no_coordinates"));
+                this.minecraft.player.sendOverlayMessage(Component.translatable("gui.iska_utils.save_error_no_coordinates"));
             }
             return;
         }
@@ -570,7 +570,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         
         if (dimensions[0] > 64 || dimensions[1] > 64 || dimensions[2] > 64) {
             if (this.minecraft != null && this.minecraft.player != null) {
-                this.minecraft.player.sendSystemMessage(Component.translatable("gui.iska_utils.area_too_large"));
+                this.minecraft.player.sendOverlayMessage(Component.translatable("gui.iska_utils.area_too_large"));
             }
             return;
         }
@@ -617,7 +617,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 loadClientStructures();
             } else {
                 if (this.minecraft != null && this.minecraft.player != null) {
-                    this.minecraft.player.sendSystemMessage(Component.translatable("gui.iska_utils.structure_saver.error.machine_not_found"));
+                    this.minecraft.player.sendOverlayMessage(Component.translatable("gui.iska_utils.structure_saver.error.machine_not_found"));
                 }
             }
         }

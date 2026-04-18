@@ -166,11 +166,11 @@ public class SwissWrenchItem extends Item {
             // if the block was changed, play a sound and send a message to the player
             if (changed) {
                 level.playSound(null, blockPos, SoundEvents.LANTERN_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                player.sendSystemMessage(
+                player.sendOverlayMessage(
                     Component.translatable("item.iska_utils.swiss_wrench.message.block_rotated"));
                 return InteractionResult.SUCCESS;
             } else {
-                player.sendSystemMessage(
+                player.sendOverlayMessage(
                     Component.translatable("item.iska_utils.swiss_wrench.message.cannot_rotate"));
                 return InteractionResult.FAIL;
             }

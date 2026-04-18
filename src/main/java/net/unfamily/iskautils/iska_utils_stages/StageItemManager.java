@@ -129,7 +129,7 @@ public class StageItemManager {
                 
                 // Notify the player
                 if (player instanceof ServerPlayer serverPlayer) {
-                    serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                    serverPlayer.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
                         "message.iska_utils.item_restriction.blocked"));
                 }
             }

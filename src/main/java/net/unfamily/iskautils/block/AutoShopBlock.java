@@ -113,7 +113,7 @@ public class AutoShopBlock extends BaseEntityBlock {
         // Check if the player can use this AutoShop
         if (player instanceof ServerPlayer serverPlayer) {
             if (!autoShop.canPlayerUse(serverPlayer)) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.team.error"));
+                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.team.error"));
                 return InteractionResult.FAIL;
             }
         }
@@ -224,7 +224,7 @@ public class AutoShopBlock extends BaseEntityBlock {
                 
                 if (entity instanceof ServerPlayer serverPlayer) {
                     if (!autoShop.canPlayerUse(serverPlayer)) {
-                        entity.sendSystemMessage(net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.team.error"));
+                        entity.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.team.error"));
                     }
                 }
                 

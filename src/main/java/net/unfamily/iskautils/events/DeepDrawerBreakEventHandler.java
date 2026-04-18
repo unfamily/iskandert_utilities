@@ -44,7 +44,7 @@ public class DeepDrawerBreakEventHandler {
                 event.setCanceled(true);
                 
                 // Mostra messaggio al giocatore
-                player.sendSystemMessage(Component.translatable("message.iska_utils.deep_drawers.cannot_break"));
+                player.sendOverlayMessage(Component.translatable("message.iska_utils.deep_drawers.cannot_break"));
             }
         }
     }

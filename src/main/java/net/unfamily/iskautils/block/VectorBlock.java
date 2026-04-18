@@ -9,6 +9,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -130,8 +131,16 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        // Return an empty shape to allow entities to pass through the block
+        // Ethereal: no solid collision (pairs with .noCollision() on block properties).
         return Shapes.empty();
+    }
+
+    /**
+     * Used for {@code entityInside} intersection in 26.x while collision shape stays empty.
+     */
+    @Override
+    protected VoxelShape getEntityInsideCollisionShape(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {
+        return getShape(state, level, pos, CollisionContext.of(entity));
     }
     
     @Override
@@ -241,8 +250,6 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, net.minecraft.world.level.redstone.@org.jspecify.annotations.Nullable Orientation orientation, boolean isMoving) {
-        boolean vertical = state.getValue(VERTICAL);
-        
         // Check if the block can still survive
         if (!this.canSurvive(state, level, pos)) {
             if (!level.isClientSide()) {
@@ -251,42 +258,18 @@ public class VectorBlock extends HorizontalDirectionalBlock {
             return;
         }
         
-        if (!vertical) {
-            // Horizontal placement logic
-            // Check if the changed block is above our vector block
-            BlockPos abovePos = pos.above();
-            BlockState aboveState = level.getBlockState(abovePos);
-            if (aboveState != null) {
-                
-                // Check if the block above has a non-full or ethereal shape (no collision shape)
-                boolean shouldBreak = false;
-                
-                // Check if the block above has an empty or non-full collision shape (like vector plates)
-                VoxelShape collisionShape = aboveState.getCollisionShape(level, abovePos);
-                if (collisionShape.isEmpty() || !isFullBlock(collisionShape)) {
-                    shouldBreak = true;
-                }
-                
-                // If the block should break, break the vector block and drop the item
-                if (shouldBreak && !level.isClientSide()) {
-                    level.destroyBlock(pos, true); // The second parameter 'true' makes the block drop its item
-                }
-            }
-        }
-        
         super.neighborChanged(state, level, pos, block, orientation, isMoving);
     }
     
-    /**
-     * Check if a VoxelShape represents a full block (1x1x1)
-     */
-    private boolean isFullBlock(VoxelShape shape) {
-        return shape.min(Direction.Axis.X) <= 0.01 && shape.max(Direction.Axis.X) >= 0.99 &&
-               shape.min(Direction.Axis.Y) <= 0.01 && shape.max(Direction.Axis.Y) >= 0.99 &&
-               shape.min(Direction.Axis.Z) <= 0.01 && shape.max(Direction.Axis.Z) >= 0.99;
-    }
-    
-    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+    @Override
+    protected void entityInside(
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Entity entity,
+            InsideBlockEffectApplier effectApplier,
+            boolean isPrecise
+    ) {
         if (!level.isClientSide()) {
             // if affectsPlayers is true, push only players
             // if affectsPlayers is false, push only non-player entities

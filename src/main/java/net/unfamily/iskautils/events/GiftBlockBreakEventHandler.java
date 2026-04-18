@@ -96,7 +96,7 @@ public class GiftBlockBreakEventHandler {
                 PENDING_CONFIRMATIONS.remove(confirmationKey);
             }
             PENDING_CONFIRMATIONS.put(confirmationKey, currentTick);
-            player.sendSystemMessage(Component.translatable("message.iska_utils.gift.confirmation"));
+            player.sendOverlayMessage(Component.translatable("message.iska_utils.gift.confirmation"));
         }
     }
     
@@ -105,7 +105,7 @@ public class GiftBlockBreakEventHandler {
      */
     private static void openGift(ServerLevel level, Player player, BlockPos pos) {
         // Show message
-        player.sendSystemMessage(Component.translatable("message.iska_utils.gift.break_message"));
+        player.sendOverlayMessage(Component.translatable("message.iska_utils.gift.break_message"));
         
         // Drop greedy shield
         ItemStack greedyShieldStack = new ItemStack(ModItems.GREEDY_SHIELD.get(), 1);

@@ -84,7 +84,7 @@ public class StructurePlacerEvents {
         };
         
         // Show message to player
-        player.sendSystemMessage(Component.translatable("item.iska_utils.structure_placer.rotated", rotationText));
+        player.sendOverlayMessage(Component.translatable("item.iska_utils.structure_placer.rotated", rotationText));
     }
     
     /**
@@ -109,7 +109,7 @@ public class StructurePlacerEvents {
         };
         
         // Show message to player
-        player.sendSystemMessage(Component.translatable("item.iska_utils.structure_monouse.rotated", rotationText));
+        player.sendOverlayMessage(Component.translatable("item.iska_utils.structure_monouse.rotated", rotationText));
     }
     
     /**

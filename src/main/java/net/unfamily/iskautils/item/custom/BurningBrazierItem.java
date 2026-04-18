@@ -128,18 +128,23 @@ public class BurningBrazierItem extends Item {
             return;
         }
 
-        BlockPos playerPos = player.blockPosition();
-
-        // Check if the area is dark enough and position is valid
-        int maxLocalBrightness = level.getMaxLocalRawBrightness(playerPos);
-        boolean isPositionEmpty = level.isEmptyBlock(playerPos);
-
-        if (maxLocalBrightness > 8 || !isPositionEmpty) {
-            return; // Conditions not met, don't place flame
+        BlockPos feet = player.blockPosition();
+        BlockPos flamePos = null;
+        for (int dy = 1; dy <= 4; dy++) {
+            BlockPos candidate = feet.above(dy);
+            if (!level.isEmptyBlock(candidate)) {
+                continue;
+            }
+            if (level.getMaxLocalRawBrightness(candidate) > 8) {
+                continue;
+            }
+            flamePos = candidate;
+            break;
         }
 
-        // Place flame at player's position
-        BlockPos flamePos = playerPos;
+        if (flamePos == null) {
+            return;
+        }
 
         // Place burning flame
         BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();

@@ -114,17 +114,17 @@ public class StageItemHandler {
                     // Notify player about the restriction
                     switch (rule.consequence.toLowerCase()) {
                         case "drop":
-                            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                            player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
                                 "message.iska_utils.item_restriction.dropped"));
                             break;
                         case "delete":
-                            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                            player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
                                 "message.iska_utils.item_restriction.deleted"));
                             break;
                         case "block":
                         case "block_drop":
                         case "block_delete":
-                            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                            player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
                                 "message.iska_utils.item_restriction.blocked"));
                             break;
                     }
@@ -513,7 +513,7 @@ public class StageItemHandler {
         // If we should block, provide visual feedback to the player
         if (shouldBlock) {
             // Display a message to the player
-            serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+            serverPlayer.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
                 "message.iska_utils.item_restriction.blocked"));
                 
             // Invia un pacchetto al client per bloccare l'interazione
@@ -544,7 +544,7 @@ public class StageItemHandler {
         // If we should block, ensure the item attack damage is set to 0
         if (shouldBlock) {
             // Display a message to the player
-            serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+            serverPlayer.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
                 "message.iska_utils.item_restriction.blocked"));
                 
             // Set attack damage to 0 to prevent damage
@@ -680,19 +680,19 @@ public class StageItemHandler {
             case "block_drop":
                 player.drop(stack, false);
                 player.setItemInHand(hand, ItemStack.EMPTY);
-                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
                     "message.iska_utils.item_restriction.dropped"));
                 return true;
                 
             case "delete":
             case "block_delete":
                 player.setItemInHand(hand, ItemStack.EMPTY);
-                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
                     "message.iska_utils.item_restriction.deleted"));
                 return true;
                 
             case "block":
-                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
                     "message.iska_utils.item_restriction.blocked"));
                 return true;
                 

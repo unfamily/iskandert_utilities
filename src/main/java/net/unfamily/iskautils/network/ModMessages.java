@@ -14,7 +14,6 @@ import net.minecraft.core.Vec3i;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.client.ClientEvents;
-import net.unfamily.iskautils.client.MarkRenderer;
 import net.unfamily.iskautils.network.packet.VectorCharmC2SPacket;
 import net.unfamily.iskautils.network.packet.PortableDislocatorC2SPacket;
 import net.unfamily.iskautils.network.packet.TemporalOverclockerHighlightBlockC2SPacket;
@@ -425,7 +424,7 @@ public class ModMessages {
                     
                     String selectedStructure = machineEntity.getSelectedStructure();
                     if (selectedStructure.isEmpty()) {
-                        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cNo structure selected!"));
+                        player.sendOverlayMessage(net.minecraft.network.chat.Component.literal("§cNo structure selected!"));
                         return;
                     }
                     
@@ -433,7 +432,7 @@ public class ModMessages {
                     net.unfamily.iskalib.structure.StructureDefinition structure =
                         net.unfamily.iskalib.structure.StructureLoader.getStructure(selectedStructure);
                     if (structure == null) {
-                        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cStructure not found: " + selectedStructure));
+                        player.sendOverlayMessage(net.minecraft.network.chat.Component.literal("§cStructure not found: " + selectedStructure));
                         return;
                     }
                     
@@ -444,7 +443,7 @@ public class ModMessages {
                     showStructurePreview(level, machinePos, player, structure, machineEntity.getRotation());
                     
                     String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§bShowing preview: §f" + structureName));
+                    player.sendOverlayMessage(net.minecraft.network.chat.Component.literal("§bShowing preview: §f" + structureName));
                     
                 } catch (Exception e) {
                     LOGGER.error("Error executing packet on server thread: {}", e.getMessage());
@@ -499,7 +498,7 @@ public class ModMessages {
                                 };
                                 
                                 // Notify player
-                                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_placer_machine.rotated", rotationText));
+                                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_placer_machine.rotated", rotationText));
                             }
                         }
                     }
@@ -1278,7 +1277,7 @@ public class ModMessages {
                         net.unfamily.iskautils.data.BurningBrazierData.setAutoPlacementEnabledToPlayer(player, newState);
 
                         // Send message to player
-                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.burning_brazier_auto_placement." +
+                        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.burning_brazier_auto_placement." +
                                                      (newState ? "enabled" : "disabled")));
                     }
                 } catch (Exception e) {
@@ -1351,9 +1350,9 @@ public class ModMessages {
                     
                     // Show feedback in action bar
                     if (newState) {
-                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.enabled"));
+                        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.enabled"));
                     } else {
-                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.disabled"));
+                        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.disabled"));
                     }
                 } catch (Exception e) {
                     LOGGER.warn("Failed to toggle Gauntlet of Climbing: {}", e.getMessage());
@@ -1390,12 +1389,12 @@ public class ModMessages {
                         net.minecraft.world.level.GameType previousMode = net.unfamily.iskautils.data.GhostBrazierData.getPreviousGameMode(player);
                         player.setGameMode(previousMode);
                         net.unfamily.iskautils.data.GhostBrazierData.clearPreviousGameMode(player);
-                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_physical"));
+                        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_physical"));
                     } else {
                         // Switch to Spectator mode, save current mode
                         net.unfamily.iskautils.data.GhostBrazierData.setPreviousGameMode(player, currentGameMode);
                         player.setGameMode(net.minecraft.world.level.GameType.SPECTATOR);
-                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_ethereal"));
+                        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_ethereal"));
                     }
                 } catch (Exception e) {
                     LOGGER.warn("Failed to toggle Ghost Brazier game mode: {}", e.getMessage());
