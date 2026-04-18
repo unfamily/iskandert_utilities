@@ -13,6 +13,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.client.KeyBindings;
@@ -29,6 +30,7 @@ import java.util.function.Consumer;
  * {@link #isAutoPlacementEnabled(UUID)} is true for that player (default {@code false} until toggled).
  * Auto runs on this stack's
  * {@link #inventoryTick} only (no inventory/Curio scanning). Toggle is in-memory per player UUID, not saved.
+ * Manual use ignores light; auto only when {@link LightLayer#BLOCK} at the feet cell is {@code < 8} (mob-spawn style dim for artificial light).
  */
 public class BurningBrazierItem extends Item {
 
@@ -68,34 +70,21 @@ public class BurningBrazierItem extends Item {
         super(properties.durability(MAX_DURABILITY));
     }
 
-    /**
-     * Combined block+sky light at {@code pos} without extra {@link Level#getSkyDarken()} dampening, so day/night
-     * cycle does not skew the value the way {@link Level#getMaxLocalRawBrightness(BlockPos)} does.
-     */
-    private static int placementLightAt(Level level, BlockPos pos) {
+    /** Auto: only when artificial (block-emitted) light at {@code pos} is in mob-spawn range ({@code < 8}, i.e. 0–7). */
+    private static boolean blockLightAllowsAutoFlame(Level level, BlockPos pos) {
         if (!level.isLoaded(pos)) {
-            return 15;
+            return false;
         }
-        return level.getLightEngine().getRawBrightness(pos, 0);
+        return level.getBrightness(LightLayer.BLOCK, pos) < 8;
     }
 
-    /** Too bright to place a flame (same threshold as legacy: 8+). */
-    private static boolean isTooBrightToPlaceFlame(Level level, BlockPos pos) {
-        return placementLightAt(level, pos) >= 8;
-    }
-
-    /**
-     * Minecraft stores wear as {@code minecraft:damage}; fully depleted is {@code damage == max}
-     * (e.g. 512/512). {@link ItemStack#nextDamageWillBreak()} is true already at {@code max - 1} and wrongly blocks a valid last use.
-     */
-    private static int effectiveMaxDamage(ItemStack stack) {
-        int max = stack.getMaxDamage();
-        return max > 0 ? max : MAX_DURABILITY;
-    }
-
-    /** No placement when the stack is fully worn out ({@code damage >= max}). */
+    /** No placement when worn out ({@code damage >= max}); if max is unknown ({@code <= 0}), do not block. */
     private static boolean isDepletedForPlacement(ItemStack stack) {
-        return stack.getDamageValue() >= effectiveMaxDamage(stack);
+        int max = stack.getMaxDamage();
+        if (max <= 0) {
+            return false;
+        }
+        return stack.getDamageValue() >= max;
     }
 
     @Override
@@ -124,10 +113,6 @@ public class BurningBrazierItem extends Item {
         BlockPos placePos = clickedPos.above();
         BlockState targetState = level.getBlockState(placePos);
         if (!targetState.isAir()) {
-            return InteractionResult.FAIL;
-        }
-
-        if (isTooBrightToPlaceFlame(level, placePos)) {
             return InteractionResult.FAIL;
         }
 
@@ -160,7 +145,7 @@ public class BurningBrazierItem extends Item {
         }
 
         BlockPos pos = player.blockPosition();
-        if (isTooBrightToPlaceFlame(level, pos)) {
+        if (!blockLightAllowsAutoFlame(level, pos)) {
             return;
         }
 
