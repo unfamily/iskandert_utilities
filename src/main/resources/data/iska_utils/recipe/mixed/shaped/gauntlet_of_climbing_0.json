@@ -7,11 +7,7 @@
   ],
   "key": {
     "A": "#c:ingots/copper",
-    "B": [
-      "#c:slime_balls",
-      "#c:slimeballs",
-      "#c:storage_blocks/sap"
-    ],
+    "B": "#c:slime_balls",
     "C": "#c:leathers",
     "D": "#c:dyes/black"
   },

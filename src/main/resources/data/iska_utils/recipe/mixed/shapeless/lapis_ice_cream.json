@@ -4,11 +4,10 @@
     "#c:crops/wheat",
     [
       "minecraft:snow_block",
-      "#c:buckets/powder_snow"
+      "minecraft:powder_snow_bucket"
     ],
     [
-      "#c:drinks/milk",
-      "#c:buckets/milk"
+      "minecraft:milk_bucket"
     ],
     "#c:gems/lapis",
     "minecraft:sugar"

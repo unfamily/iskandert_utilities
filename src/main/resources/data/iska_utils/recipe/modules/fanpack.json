@@ -12,9 +12,9 @@
     "D": "iska_utils:vector_charm",
     "E": "iska_utils:capacitor_module",
     "F": [
-      "#c:storage_blocks/rubber",
-      "#c:storage_blocks/slime",
-      "#c:storage_blocks/tar_slime"
+      "iska_utils:rubber_block",
+      "minecraft:slime_block",
+      "iska_utils:tar_slime_block"
     ]
   },
   "result": {
