@@ -1,0 +1,104 @@
+{
+  "type": "iska_utils:plates",
+  "overwritable": true,
+  "plates": [
+    {
+      "plate_type": "effect",
+      "id": "iska_utils-poison",
+      "effect": "minecraft:poison",
+      "amplifier": 0,
+      "duration": 100,
+      "delay": 40,
+      "hide_particles": false,
+      "affects_players": true,
+      "affects_mobs": true,
+      "creative_tab": true,
+      "player_shift_disable": true
+    },
+    {
+      "plate_type": "effect",
+      "id": "iska_utils-weakness",
+      "effect": "minecraft:weakness",
+      "amplifier": 0,
+      "duration": 100,
+      "delay": 40,
+      "hide_particles": false,
+      "affects_players": true,
+      "affects_mobs": true,
+      "creative_tab": true,
+      "player_shift_disable": true
+    },
+    {
+      "plate_type": "effect",
+      "id": "iska_utils-slowness",
+      "effect": "minecraft:slowness",
+      "amplifier": 0,
+      "duration": 200,
+      "delay": 40,
+      "hide_particles": false,
+      "affects_players": true,
+      "affects_mobs": true,
+      "creative_tab": true,
+      "player_shift_disable": true
+    },
+    {
+      "plate_type": "damage",
+      "id": "iska_utils-damage",
+      "damage_type": "minecraft:generic",
+      "damage": 2.0,
+      "delay": 20,
+      "affects_players": true,
+      "affects_mobs": true,
+      "creative_tab": true,
+      "player_shift_disable": true,
+      "tooltip_lines": 1
+    },
+    {
+      "plate_type": "damage",
+      "id": "iska_utils-improved_damage",
+      "damage_type": "minecraft:player",
+      "damage": 4.0,
+      "delay": 20,
+      "affects_players": true,
+      "affects_mobs": true,
+      "creative_tab": true,
+      "player_shift_disable": true,
+      "tooltip_lines": 1
+    },
+    {
+      "plate_type": "damage",
+      "id": "iska_utils-lethal_damage",
+      "damage_type": "minecraft:player",
+      "damage": 500.0,
+      "delay": 20,
+      "affects_players": true,
+      "affects_mobs": true,
+      "creative_tab": true,
+      "player_shift_disable": true,
+      "tooltip_lines": 1
+    },
+    {
+      "plate_type": "special",
+      "id": "iska_utils-fire",
+      "apply": "fire",
+      "duration": 60,
+      "delay": 40,
+      "affects_players": true,
+      "affects_mobs": true,
+      "creative_tab": true,
+      "player_shift_disable": true
+    },
+    {
+      "plate_type": "special",
+      "id": "iska_utils-freeze",
+      "apply": "freeze",
+      "duration": 100,
+      "delay": 40,
+      "affects_players": true,
+      "affects_mobs": true,
+      "creative_tab": true,
+      "player_shift_disable": true
+    }
+  ]
+}
+

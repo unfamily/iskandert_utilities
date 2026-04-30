@@ -7,7 +7,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.Config;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -39,16 +38,11 @@ public class StageItemManager {
         }
         
         try {
-            // Load item restrictions using configured path
-            Path externalScriptsPath = Paths.get(Config.externalScriptsPath);
-            Path stageItemsPath = externalScriptsPath.resolve("iska_utils_stage_items");
-            ensureDirectoryExists(stageItemsPath);
-            createReadmeFile(stageItemsPath, true); // Always create/update README
-            
-            StageItemHandler.loadItemRestrictions(stageItemsPath);
+            // Load item restrictions from datapack (built-in defaults only at this stage; server reload will merge datapacks)
+            StageItemHandler.loadAll(null);
             
             initialized = true;
-            LOGGER.info("Item stage system successfully initialized (path: {})", stageItemsPath);
+            LOGGER.info("Item stage system successfully initialized from datapack load");
         } catch (Exception e) {
             LOGGER.error("Error initializing item stage system: {}", e.getMessage());
         }
@@ -222,12 +216,10 @@ public class StageItemManager {
      */
     public static void reloadItemRestrictions() {
         try {
-            Path externalScriptsPath = Paths.get(Config.externalScriptsPath);
-            Path stageItemsPath = externalScriptsPath.resolve("iska_utils_stage_items");
-            ensureDirectoryExists(stageItemsPath);
-            createReadmeFile(stageItemsPath, true); // Always update README on reload
-            StageItemHandler.loadItemRestrictions(stageItemsPath);
-            LOGGER.info("Item restrictions reloaded (path: {})", stageItemsPath);
+            var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            var rm = server != null ? server.getResourceManager() : null;
+            StageItemHandler.loadAll(rm);
+            LOGGER.info("Item restrictions reloaded from datapack");
         } catch (Exception e) {
             LOGGER.error("Error reloading item restrictions: {}", e.getMessage());
         }

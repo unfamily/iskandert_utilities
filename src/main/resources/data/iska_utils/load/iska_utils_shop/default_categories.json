@@ -1,0 +1,14 @@
+{
+  "type": "iska_utils:shop_category",
+  "overwritable": true,
+  "categories": [
+    {
+      "id": "000_default",
+      "name": "shop.category.default",
+      "description": "shop.category.default.desc",
+      "item": "minecraft:gold_nugget",
+      "priority": 0
+    }
+  ]
+}
+

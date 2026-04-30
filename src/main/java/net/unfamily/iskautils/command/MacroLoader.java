@@ -8,13 +8,17 @@ import com.google.gson.JsonObject;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -41,82 +45,35 @@ public class MacroLoader {
     private static final Map<String, Boolean> PROTECTED_MACROS = new HashMap<>();
     
     /**
-     * Scans the configuration directory for command macros
+     * Loads command macros from {@code data/<namespace>/load/iska_utils_macros/}.
      */
     public static void scanConfigDirectory() {
-        LOGGER.info("Scanning configuration directory for command macros...");
-        
+        LOGGER.info("Loading command macros from datapack...");
         try {
-            // Get the configured path for external scripts
-            String externalScriptsBasePath = net.unfamily.iskautils.Config.externalScriptsPath;
-            if (externalScriptsBasePath == null || externalScriptsBasePath.trim().isEmpty()) {
-                externalScriptsBasePath = "kubejs/external_scripts"; // default path
-            }
-            
-            // Create directory for command macros if it doesn't exist
-            Path configPath = Paths.get(externalScriptsBasePath, "iska_utils_macros");
-            if (!Files.exists(configPath)) {
-                Files.createDirectories(configPath);
-                LOGGER.info("Created directory for command macros: {}", configPath.toAbsolutePath());
-                
-                // Create a README file to explain the directory
-                createReadme(configPath);
-                
-                // Generate default configurations
-                generateDefaultConfigurations(configPath);
-                
-                // Generate index file
-                IndexGenerator.generateIndex();
-                
-                return;
-            }
-            
-            if (!Files.isDirectory(configPath)) {
-                LOGGER.warn("The path for macros exists but is not a directory: {}", configPath);
-                return;
-            }
-            
-            LOGGER.info("Scanning directory for macros: {}", configPath.toAbsolutePath());
-            
-            // Always regenerate README
-            createReadme(configPath);
-            LOGGER.info("Updated README.md");
-            
-            // Generate index file
-            IndexGenerator.generateIndex();
-            
-            // Clear previous protections
             PROTECTED_MACROS.clear();
-            
-            // Always check and regenerate default_commands_macro.json if needed
-            Path defaultCommandsFile = configPath.resolve("default_commands_macro.json");
-            if (!Files.exists(defaultCommandsFile)) {
-                LOGGER.info("Generating default_commands_macro.json file");
-                generateDefaultCommandsMacro(configPath);
-            } else {
-                // Check if the file has overwritable: true
-                if (shouldRegenerateDefaultCommandsMacro(defaultCommandsFile)) {
-                    LOGGER.info("Regenerating default_commands_macro.json file (overwritable: true)");
-                    generateDefaultCommandsMacro(configPath);
-                }
-            }
-            
-            // Scan all JSON files in the directory
-            try (Stream<Path> files = Files.walk(configPath)) {
-                files.filter(Files::isRegularFile)
-                     .filter(path -> path.toString().endsWith(".json"))
-                     .filter(path -> !path.getFileName().toString().startsWith("."))
-                     .sorted() // Process in alphabetical order
-                     .forEach(MacroLoader::scanConfigFile);
-            }
-            
-            LOGGER.info("Macro directory scan completed");
-            
+            loadJsonMacrosFrom(null);
+            registerCommandsIfServerAvailable();
         } catch (Exception e) {
             LOGGER.error("Error scanning macro directory: {}", e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private static void loadJsonMacrosFrom(ResourceManager resourceManagerOrNull) {
+        Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
+                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
+                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.MACROS))
+                : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.MACROS);
+        for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
+            if (!e.getValue().isJsonObject()) {
+                continue;
+            }
+            String p = e.getKey().getPath();
+            int slash = p.lastIndexOf('/');
+            String macroFileId = slash >= 0 ? p.substring(slash + 1) : p;
+            parseConfigJson(macroFileId, e.getKey().toString(), e.getValue().getAsJsonObject());
         }
     }
     
@@ -738,22 +695,10 @@ public class MacroLoader {
             // Clear previous protections
             PROTECTED_MACROS.clear();
             
-            // Reload configurations
-            String externalScriptsBasePath = net.unfamily.iskautils.Config.externalScriptsPath;
-            if (externalScriptsBasePath == null || externalScriptsBasePath.trim().isEmpty()) {
-                externalScriptsBasePath = "kubejs/external_scripts"; // default path
-            }
-            
-            Path configPath = Paths.get(externalScriptsBasePath, "iska_utils_macros");
-            if (Files.exists(configPath) && Files.isDirectory(configPath)) {
-                try (Stream<Path> files = Files.walk(configPath)) {
-                    files.filter(Files::isRegularFile)
-                         .filter(path -> path.toString().endsWith(".json"))
-                         .filter(path -> !path.getFileName().toString().startsWith("."))
-                         .sorted() // Process in alphabetical order
-                         .forEach(MacroLoader::scanConfigFile);
-                }
-            }
+            // Reload configurations from datapack (server RM when available; built-in only otherwise)
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            ResourceManager rm = server != null ? server.getResourceManager() : null;
+            loadJsonMacrosFrom(rm);
             
             // Restore protected macros that might have been overwritten
             for (Map.Entry<String, MacroCommand.MacroDefinition> entry : protectedMacros.entrySet()) {

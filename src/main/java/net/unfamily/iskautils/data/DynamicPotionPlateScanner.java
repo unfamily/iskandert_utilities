@@ -6,6 +6,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -30,69 +34,26 @@ public class DynamicPotionPlateScanner {
     private static final Map<String, PotionPlateConfig> DISCOVERED_CONFIGS = new HashMap<>();
     
     /**
-     * Scans external scripts directory for potion plate configurations.
-     * Internal defaults are registered first, then external scripts can override them.
-     * This is called during mod initialization, before RegisterEvent.
+     * Loads potion plate configs from {@code data/<namespace>/load/iska_utils_plates/}.
+     * Called during mod initialization (with null RM) and may be refreshed when the server reloads datapacks.
      */
-    public static void scanConfigDirectory() {
-        LOGGER.info("Scanning external scripts directory for iska utils plate configurations...");
-        
-        try {
-            // Clear previous configurations
-            DISCOVERED_CONFIGS.clear();
-            
-            // Register internal defaults first (scripts can override these)
-            registerInternalDefaults();
-            
-            // Get the configured external scripts path
-            String externalScriptsBasePath = net.unfamily.iskautils.Config.externalScriptsPath;
-            if (externalScriptsBasePath == null || externalScriptsBasePath.trim().isEmpty()) {
-                externalScriptsBasePath = "kubejs/external_scripts"; // fallback default
+    public static void loadAll(ResourceManager resourceManagerOrNull) {
+        DISCOVERED_CONFIGS.clear();
+        var merged = resourceManagerOrNull != null
+                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
+                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.PLATES))
+                : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.PLATES);
+        for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
+            if (!e.getValue().isJsonObject()) {
+                continue;
             }
-            
-            // Create external scripts directory if it doesn't exist
-            Path configPath = Paths.get(externalScriptsBasePath, "iska_utils_plates");
-            if (!Files.exists(configPath)) {
-                Files.createDirectories(configPath);
-                LOGGER.info("Created external scripts directory: {}", configPath.toAbsolutePath());
-                createConfigReadme(configPath, externalScriptsBasePath);
-                
-                LOGGER.info("Plate configurations scan completed. Total configurations: {} (internal defaults only)", DISCOVERED_CONFIGS.size());
-                return;
-            }
-            
-            if (!Files.isDirectory(configPath)) {
-                LOGGER.warn("External scripts path exists but is not a directory: {}", configPath);
-                return;
-            }
-            
-            LOGGER.info("Scanning external scripts directory: {}", configPath.toAbsolutePath());
-            
-            // Always check and regenerate README if missing or outdated
-            Path readmePath = configPath.resolve("README.md");
-            if (!Files.exists(readmePath) || !isReadmeUpToDate(readmePath)) {
-                LOGGER.info("README.md missing or outdated, regenerating...");
-                createConfigReadme(configPath, externalScriptsBasePath);
-            }
-            
-            // Scan all JSON files in the external scripts directory recursively
-            // Files are processed in alphabetical order for consistent override behavior
-            try (Stream<Path> files = Files.walk(configPath)) {
-                files.filter(Files::isRegularFile)
-                     .filter(path -> path.toString().endsWith(".json"))
-                     .filter(path -> !path.getFileName().toString().startsWith("."))
-                     .sorted() // Ensure consistent processing order
-                     .forEach(DynamicPotionPlateScanner::scanConfigFile);
-            }
-            
-            LOGGER.info("External scripts directory scanning completed. Total configurations found: {}", DISCOVERED_CONFIGS.size());
-            
-        } catch (Exception e) {
-            LOGGER.error("Error scanning external scripts directory: {}", e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
+            parseConfigFile(e.getKey().toString(), e.getValue().getAsJsonObject());
         }
+        LOGGER.info("Potion plate configurations loaded: {}", DISCOVERED_CONFIGS.size());
+    }
+
+    public static void scanConfigDirectory() {
+        loadAll(null);
     }
     
     /**
@@ -689,121 +650,6 @@ public class DynamicPotionPlateScanner {
         }
         
         return value;
-    }
-    
-    /**
-     * Dumps the internal default potion plate configs to a JSON file.
-     * Called by /iska_utils_debug dump_default to let users see and override defaults.
-     */
-    public static void dumpDefaultFile(java.nio.file.Path configPath) throws IOException {
-        java.nio.file.Path iskaUtilsFile = configPath.resolve("iska_utils_plates.json");
-        
-        String content = "{\n" +
-            "  \"type\": \"iska_utils:plates\",\n" +
-            "  \"overwritable\": true,\n" +
-            "  \"plates\": [\n" +
-            "    {\n" +
-            "      \"plate_type\": \"effect\",\n" +
-            "      \"id\": \"iska_utils-poison\",\n" +
-            "      \"effect\": \"minecraft:poison\",\n" +
-            "      \"amplifier\": 0,\n" +
-            "      \"duration\": 100,\n" +
-            "      \"delay\": 40,\n" +
-            "      \"hide_particles\": false,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"plate_type\": \"effect\",\n" +
-            "      \"id\": \"iska_utils-weakness\",\n" +
-            "      \"effect\": \"minecraft:weakness\",\n" +
-            "      \"amplifier\": 0,\n" +
-            "      \"duration\": 100,\n" +
-            "      \"delay\": 40,\n" +
-            "      \"hide_particles\": false,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"plate_type\": \"effect\",\n" +
-            "      \"id\": \"iska_utils-slowness\",\n" +
-            "      \"effect\": \"minecraft:slowness\",\n" +
-            "      \"amplifier\": 0,\n" +
-            "      \"duration\": 200,\n" +
-            "      \"delay\": 40,\n" +
-            "      \"hide_particles\": false,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"plate_type\": \"damage\",\n" +
-            "      \"id\": \"iska_utils-damage\",\n" +
-            "      \"damage_type\": \"minecraft:generic\",\n" +
-            "      \"damage\": 2.0,\n" +
-            "      \"delay\": 20,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true,\n" +
-            "      \"tooltip_lines\": 1\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"plate_type\": \"damage\",\n" +
-            "      \"id\": \"iska_utils-improved_damage\",\n" +
-            "      \"damage_type\": \"minecraft:player\",\n" +
-            "      \"damage\": 4.0,\n" +
-            "      \"delay\": 20,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true,\n" +
-            "      \"tooltip_lines\": 1\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"plate_type\": \"damage\",\n" +
-            "      \"id\": \"iska_utils-lethal_damage\",\n" +
-            "      \"damage_type\": \"minecraft:player\",\n" +
-            "      \"damage\": 500.0,\n" +
-            "      \"delay\": 20,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true,\n" +
-            "      \"tooltip_lines\": 1\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"plate_type\": \"special\",\n" +
-            "      \"id\": \"iska_utils-fire\",\n" +
-            "      \"apply\": \"fire\",\n" +
-            "      \"duration\": 60,\n" +
-            "      \"delay\": 40,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"plate_type\": \"special\",\n" +
-            "      \"id\": \"iska_utils-freeze\",\n" +
-            "      \"apply\": \"freeze\",\n" +
-            "      \"duration\": 100,\n" +
-            "      \"delay\": 40,\n" +
-            "      \"affects_players\": true,\n" +
-            "      \"affects_mobs\": true,\n" +
-            "      \"creative_tab\": true,\n" +
-            "      \"player_shift_disable\": true\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}\n";
-        
-        java.nio.file.Files.write(iskaUtilsFile, content.getBytes());
-        LOGGER.info("Dumped default potion plates to {}", iskaUtilsFile);
     }
     
     /**

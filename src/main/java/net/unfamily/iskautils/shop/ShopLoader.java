@@ -6,22 +6,18 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import net.unfamily.iskautils.Config;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import org.slf4j.Logger;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.stream.Stream;
 
 /**
  * Main loader for the custom shop system
@@ -37,94 +33,56 @@ public class ShopLoader {
     private static final Map<String, Boolean> PROTECTED_CURRENCIES = new HashMap<>();
     private static final Map<String, Boolean> PROTECTED_CATEGORIES = new HashMap<>();
     private static final Map<String, Boolean> PROTECTED_ENTRIES = new HashMap<>();
-    
-    public static void scanConfigDirectory() {
 
-        
+    public static void loadAll(ResourceManager resourceManagerOrNull) {
         try {
-            String externalScriptsBasePath = Config.externalScriptsPath;
-            if (externalScriptsBasePath == null || externalScriptsBasePath.trim().isEmpty()) {
-                externalScriptsBasePath = "kubejs/external_scripts";
-            }
-            
-            Path configPath = Paths.get(externalScriptsBasePath, "iska_utils_shop");
-            if (!Files.exists(configPath)) {
-                Files.createDirectories(configPath);
-
-                createReadme(configPath);
-                generateDefaultConfigurations(configPath);
-                return;
-            }
-            
-            if (!Files.isDirectory(configPath)) {
-                LOGGER.warn("Shop path exists but is not a directory: {}", configPath);
-                return;
-            }
-            
-
-            
-            // Always regenerate README
-            createReadme(configPath);
-            LOGGER.info("Updated README.md");
-            
-            // Check and regenerate default files if needed
-            checkAndRegenerateDefaultFiles(configPath);
-            
             CURRENCIES.clear();
             CATEGORIES.clear();
             ENTRIES.clear();
             PROTECTED_CURRENCIES.clear();
             PROTECTED_CATEGORIES.clear();
             PROTECTED_ENTRIES.clear();
-            
-            try (Stream<Path> files = Files.walk(configPath)) {
-                files.filter(Files::isRegularFile)
-                     .filter(path -> path.toString().endsWith(".json"))
-                     .filter(path -> !path.getFileName().toString().startsWith("."))
-                     .sorted()
-                     .forEach(ShopLoader::scanConfigFile);
-            }
-            
 
-            
+            Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
+                    ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
+                    id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.SHOP))
+                    : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.SHOP);
+            for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
+                if (!e.getValue().isJsonObject()) {
+                    continue;
+                }
+                String fileName = IskaUtilsLoadJson.definitionIdFromLocation(e.getKey()) + ".json";
+                ingestShopJson(fileName, e.getValue().getAsJsonObject());
+            }
         } catch (Exception e) {
-            LOGGER.error("Error during shop directory scan: {}", e.getMessage());
+            LOGGER.error("Error during shop load: {}", e.getMessage());
         }
     }
-    
-    private static void scanConfigFile(Path filePath) {
+
+    public static void scanConfigDirectory() {
+        loadAll(null);
+    }
+
+    private static void ingestShopJson(String fileName, JsonObject json) {
         try {
-            try (InputStream inputStream = Files.newInputStream(filePath);
-                 InputStreamReader reader = new InputStreamReader(inputStream)) {
-                
-                JsonElement jsonElement = GSON.fromJson(reader, JsonElement.class);
-                if (jsonElement == null || !jsonElement.isJsonObject()) {
-                    LOGGER.warn("File {} does not contain valid JSON", filePath.getFileName());
-                    return;
-                }
-                
-                JsonObject json = jsonElement.getAsJsonObject();
-                String type = json.has("type") ? json.get("type").getAsString() : "";
-                boolean overwritable = json.has("overwritable") ? json.get("overwritable").getAsBoolean() : false;
-                
-                switch (type) {
-                    case "shop_currency":
-                    case "shop_valute": // backward compatibility
-                        processCurrenciesFile(json, overwritable, filePath.getFileName().toString());
-                        break;
-                    case "shop_category":
-                        processCategoriesFile(json, overwritable, filePath.getFileName().toString());
-                        break;
-                    case "shop_entry":
-                        processEntriesFile(json, overwritable, filePath.getFileName().toString());
-                        break;
-                    default:
-                        break;
-                }
+            String type = json.has("type") ? json.get("type").getAsString() : "";
+            boolean overwritable = json.has("overwritable") && json.get("overwritable").getAsBoolean();
+            switch (type) {
+                case "iska_utils:shop_currency":
+                case "iska_utils:shop_valute":
+                    processCurrenciesFile(json, overwritable, fileName);
+                    break;
+                case "iska_utils:shop_category":
+                    processCategoriesFile(json, overwritable, fileName);
+                    break;
+                case "iska_utils:shop_entry":
+                    processEntriesFile(json, overwritable, fileName);
+                    break;
+                default:
+                    break;
             }
-            
         } catch (Exception e) {
-            LOGGER.error("Error scanning file {}: {}", filePath.getFileName(), e.getMessage());
+            LOGGER.error("Error scanning shop file {}: {}", fileName, e.getMessage());
         }
     }
     
@@ -271,288 +229,13 @@ public class ShopLoader {
             PROTECTED_ENTRIES.put(entryKey, !overwritable);
         }
     }
-    
-    private static void createReadme(Path configPath) {
-        try {
-            Path readmePath = configPath.resolve("README.md");
-            
-            String readmeContent = "# Iska Utils - Shop System\n\n" +
-                "Complete shop system with team support, multiple currencies, categories and stages.\n\n" +
-                "## Configuration Files\n\n" +
-                "The system uses three types of JSON files:\n\n" +
-                "### 1. shop_currency.json - Currencies\n" +
-                "Defines available currencies in the shop system.\n\n" +
-                "```json\n" +
-                "{\n" +
-                "  \"type\": \"shop_currency\",\n" +
-                "  \"overwritable\": true,\n" +
-                "  \"currencies\": [\n" +
-                "    {\n" +
-                "      \"id\": \"null_coin\",\n" +
-                "      \"name\": \"shop.currency.null_coin\",\n" +
-                "      \"char_symbol\": \"∅\"\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"id\": \"emerald\",\n" +
-                "      \"name\": \"shop.currency.emerald\",\n" +
-                "      \"char_symbol\": \"💎\"\n" +
-                "    }\n" +
-                "  ]\n" +
-                "}\n" +
-                "```\n\n" +
-                "**Fields:**\n" +
-                "- `id`: Unique identifier for the currency\n" +
-                "- `name`: Translation key for the currency name\n" +
-                "- `char_symbol`: Symbol displayed next to the name\n\n" +
-                "### 2. shop_category.json - Categories\n" +
-                "Defines product categories in the shop.\n\n" +
-                "```json\n" +
-                "{\n" +
-                "  \"type\": \"shop_category\",\n" +
-                "  \"overwritable\": true,\n" +
-                "  \"categories\": [\n" +
-                "    {\n" +
-                "      \"id\": \"000_default\",\n" +
-                "      \"name\": \"shop.category.default\",\n" +
-                "      \"description\": \"shop.category.default.desc\",\n" +
-                "      \"item\": \"minecraft:gold_nugget\",\n" +
-                "      \"priority\": 0\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"id\": \"tools\",\n" +
-                "      \"name\": \"shop.category.tools\",\n" +
-                "      \"description\": \"shop.category.tools.desc\",\n" +
-                "      \"item\": \"minecraft:diamond_pickaxe\",\n" +
-                "      \"priority\": 10\n" +
-                "    }\n" +
-                "  ]\n" +
-                "}\n" +
-                "```\n\n" +
-                "**Fields:**\n" +
-                "- `id`: Unique identifier for the category\n" +
-                "- `name`: Translation key for the category name\n" +
-                "- `description`: Translation key for the category description\n" +
-                "- `item`: Item ID used as icon for the category\n" +
-                "- `priority`: Display order (optional, default 0). Higher value = category shown first.\n\n" +
-                "### 3. shop_entry.json - Shop Products\n" +
-                "Defines specific products available in the shop.\n\n" +
-                "```json\n" +
-                "{\n" +
-                "  \"type\": \"shop_entry\",\n" +
-                "  \"overwritable\": true,\n" +
-                "  \"entries\": [\n" +
-                "    {\n" +
-                "      \"id\": \"bread_default\",\n" +
-                "      \"in_category\": \"000_default\",\n" +
-                "      \"item\": \"minecraft:bread\",\n" +
-                "      \"item_count\": 1,\n" +
-                "      \"currency\": \"null_coin\",\n" +
-                "      \"buy\": 1.0,\n" +
-                "      \"sell\": 0.5,\n" +
-                "      \"priority\": 0,\n" +
-                "      \"free\": false\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"id\": \"diamond_pickaxe_silk\",\n" +
-                "      \"in_category\": \"tools\",\n" +
-                "      \"item\": \"minecraft:diamond_pickaxe[custom_name='\"Silky\"',repair_cost=1,enchantments={levels:{\"minecraft:silk_touch\":1}}]\",\n" +
-                "      \"item_count\": 1,\n" +
-                "      \"currency\": \"emerald\",\n" +
-                "      \"buy\": 50.0,\n" +
-                "      \"sell\": 25.0,\n" +
-                "      \"priority\": 10,\n" +
-                "      \"stages\": [\n" +
-                "        {\n" +
-                "          \"stage\": \"advanced_tools\",\n" +
-                "          \"stage_type\": \"world\",\n" +
-                "          \"is\": true\n" +
-                "        }\n" +
-                "      ]\n" +
-                "    }\n" +
-                "  ]\n" +
-                "}\n" +
-                "```\n\n" +
-                "**Fields:**\n" +
-                "- `id`: Unique identifier for the product\n" +
-                "- `in_category`: Category ID this product belongs to\n" +
-                "- `item`: Item ID (supports compound tags)\n" +
-                "- `item_count`: Number of items in the stack\n" +
-                "- `currency`: Currency ID for this product\n" +
-                "- `buy`: Price to buy the item\n" +
-                "- `sell`: Price to sell the item\n" +
-                "- `priority`: Display order within category (optional, default 0). Higher value = entry shown first.\n" +
-                "- `free`: If true, item can be bought at no cost even when buy is 0; Buy button is shown (optional, default false).\n" +
-                "- `stages`: Array of required stages (optional)\n\n" +
-                "## 🎯 Stage System\n\n" +
-                "Stages allow unlocking products based on player/world progress.\n\n" +
-                "```json\n" +
-                "\"stages\": [\n" +
-                "  {\n" +
-                "    \"stage\": \"advanced_tools\",\n" +
-                "    \"stage_type\": \"world\",\n" +
-                "    \"is\": true\n" +
-                "  },\n" +
-                "  {\n" +
-                "    \"stage\": \"vip_player\",\n" +
-                "    \"stage_type\": \"player\",\n" +
-                "    \"is\": true\n" +
-                "  },\n" +
-                "  {\n" +
-                "    \"stage\": \"team_premium\",\n" +
-                "    \"stage_type\": \"team\",\n" +
-                "    \"is\": true\n" +
-                "  }\n" +
-                "]\n" +
-                "```\n\n" +
-                "**Stage Types:**\n" +
-                "- `world`: World stage (all players)\n" +
-                "- `player`: Player stage (single player)\n" +
-                "- `team`: Team stage (all team members)\n\n" +
-                "**Fields:**\n" +
-                "- `stage`: Stage name\n" +
-                "- `stage_type`: Stage type (world/player/team)\n" +
-                "- `is`: true = stage must be active, false = stage must be inactive\n\n" +
-                "## 🏷️ Compound Tag Support\n\n" +
-                "The `item` field supports compound tags to specify items with custom properties.\n\n" +
-                "### Compound Tag Examples:\n\n" +
-                "**1. Enchanted Item:**\n" +
-                "```json\n" +
-                "\"item\": \"minecraft:diamond_pickaxe[enchantments={levels:{\"minecraft:silk_touch\":1,\"minecraft:efficiency\":5}}]\"\n" +
-                "```\n\n" +
-                "**2. Custom Named Item:**\n" +
-                "```json\n" +
-                "\"item\": \"minecraft:diamond_sword[custom_name='\\\"Excalibur\\\"',repair_cost=0]\"\n" +
-                "```\n\n" +
-                "**3. Damaged Item:**\n" +
-                "```json\n" +
-                "\"item\": \"minecraft:diamond_pickaxe[damage=100]\"\n" +
-                "```\n\n" +
-                "**4. Item with Lore:**\n" +
-                "```json\n" +
-                "\"item\": \"minecraft:diamond_helmet[custom_name='\\\"Magic Helmet\\\"',display={lore:['\\\"Special helmet\\\"','\\\"With magic powers\\\"']}]\"\n" +
-                "```\n\n" +
-                "**5. Colored Item:**\n" +
-                "```json\n" +
-                "\"item\": \"minecraft:leather_chestplate[display={color:16711680}]\"\n" +
-                "```\n\n" +
-                "**6. Complex NBT Item:**\n" +
-                "```json\n" +
-                "\"item\": \"minecraft:book[pages:['\\\"{\\\\\\\"text\\\\\\\":\\\\\\\"Magical spell\\\\\\\"}\\\"'],title:\\\"Spellbook\\\",author:\\\"Wizard\\\"]\"\n" +
-                "```\n\n" +
-                "## Reloading\n\n" +
-                "Reload: `/iska_utils_debug reload` (quick) or `/reload` (full). Also `/iska_utils_shop reload` for shop only.\n\n" +
-                "## Overwritable System\n\n" +
-                "- `overwritable: false` = File cannot be overwritten by other files\n" +
-                "- `overwritable: true` = File can be overwritten by files loaded later\n" +
-                "- Files are processed in alphabetical order\n\n" +
-                "## Subdirectory Search\n\n" +
-                "The system automatically searches for files in all subdirectories of the shop directory.\n\n" +
-                "---\n" +
-                "Generated by Iska Utils";
-            
-            // Force overwrite the README file always
-            Files.write(readmePath, readmeContent.getBytes(), 
-                       java.nio.file.StandardOpenOption.CREATE, 
-                       java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
-            
-            LOGGER.info("Updated README.md in {}", readmePath);
-            
-        } catch (IOException e) {
-            LOGGER.error("Error creating README.md: {}", e.getMessage());
-        }
-    }
-    
-    private static void generateDefaultConfigurations(Path configPath) {
-        try {
-            ShopDefaultGenerator.generateDefaultCurrencies(configPath);
-            ShopDefaultGenerator.generateDefaultCategories(configPath);
-            ShopDefaultGenerator.generateDefaultEntries(configPath);
 
-        } catch (Exception e) {
-            LOGGER.error("Error generating default configurations: {}", e.getMessage());
-        }
-    }
-    
-    /**
-     * Checks if default files should be regenerated and regenerates them if needed
-     */
-    private static void checkAndRegenerateDefaultFiles(Path configPath) {
-        try {
-            // Check default currencies file
-            Path defaultCurrenciesFile = configPath.resolve("default_currencies.json");
-            if (!Files.exists(defaultCurrenciesFile)) {
-                LOGGER.info("Generating default_currencies.json file");
-                ShopDefaultGenerator.generateDefaultCurrencies(configPath);
-            } else if (shouldRegenerateDefaultFile(defaultCurrenciesFile)) {
-                LOGGER.info("Regenerating default_currencies.json file (overwritable: true)");
-                ShopDefaultGenerator.generateDefaultCurrencies(configPath);
-            }
-            
-            // Check default categories file
-            Path defaultCategoriesFile = configPath.resolve("default_categories.json");
-            if (!Files.exists(defaultCategoriesFile)) {
-                LOGGER.info("Generating default_categories.json file");
-                ShopDefaultGenerator.generateDefaultCategories(configPath);
-            } else if (shouldRegenerateDefaultFile(defaultCategoriesFile)) {
-                LOGGER.info("Regenerating default_categories.json file (overwritable: true)");
-                ShopDefaultGenerator.generateDefaultCategories(configPath);
-            }
-            
-            // Check default entries file
-            Path defaultEntriesFile = configPath.resolve("default_entries.json");
-            if (!Files.exists(defaultEntriesFile)) {
-                LOGGER.info("Generating default_entries.json file");
-                ShopDefaultGenerator.generateDefaultEntries(configPath);
-            } else if (shouldRegenerateDefaultFile(defaultEntriesFile)) {
-                LOGGER.info("Regenerating default_entries.json file (overwritable: true)");
-                ShopDefaultGenerator.generateDefaultEntries(configPath);
-            }
-            
-        } catch (Exception e) {
-            LOGGER.error("Error checking/regenerating default files: {}", e.getMessage());
-        }
-    }
-    
-    /**
-     * Checks if a default file should be regenerated based on its overwritable flag
-     */
-    private static boolean shouldRegenerateDefaultFile(Path filePath) {
-        try {
-            try (InputStream inputStream = Files.newInputStream(filePath);
-                 InputStreamReader reader = new InputStreamReader(inputStream)) {
-                
-                JsonElement jsonElement = GSON.fromJson(reader, JsonElement.class);
-                if (jsonElement != null && jsonElement.isJsonObject()) {
-                    JsonObject json = jsonElement.getAsJsonObject();
-                    
-                    // Check if the overwritable field exists and is true
-                    if (json.has("overwritable")) {
-                        boolean overwritable = json.get("overwritable").getAsBoolean();
-                        if (overwritable) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    
-                    // If no overwritable field, default to true (regenerate)
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Error reading {} file: {}", filePath.getFileName(), e.getMessage());
-        }
-        
-        // If the file can't be read or isn't valid JSON, regenerate it
-        return true;
-    }
-    
     public static void reloadAllConfigurations() {
 
         
-        // Simply reload everything from scratch - no protection of entries in memory
-        // The 'overwritable' flag is only for automatic regeneration of physical files
-        scanConfigDirectory();
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        var rm = server != null ? server.getResourceManager() : null;
+        loadAll(rm);
         
 
     }

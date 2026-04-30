@@ -50,7 +50,7 @@ public class ShopDefaultGenerator {
             }
             
             JsonObject root = new JsonObject();
-            root.addProperty("type", "shop_currency");
+            root.addProperty("type", "iska_utils:shop_currency");
             root.addProperty("overwritable", true);
             
             JsonArray currencies = new JsonArray();
@@ -113,7 +113,7 @@ public class ShopDefaultGenerator {
             }
             
             JsonObject root = new JsonObject();
-            root.addProperty("type", "shop_category");
+            root.addProperty("type", "iska_utils:shop_category");
             root.addProperty("overwritable", true);
             
             JsonArray categories = new JsonArray();
@@ -171,7 +171,7 @@ public class ShopDefaultGenerator {
             }
             
             JsonObject root = new JsonObject();
-            root.addProperty("type", "shop_entry");
+            root.addProperty("type", "iska_utils:shop_entry");
             root.addProperty("overwritable", true);
             
             JsonArray entries = new JsonArray();
@@ -227,7 +227,7 @@ CURRENCIES (default_currencies.json):
 
 Example:
 {
-  "type": "shop_currency",
+  "type": "iska_utils:shop_currency",
   "overwritable": true,
   "currencies": [
     {
@@ -252,7 +252,7 @@ CATEGORIES (default_categories.json):
 
 Example:
 {
-  "type": "shop_category",
+  "type": "iska_utils:shop_category",
   "overwritable": true,
   "categories": [
     {
@@ -283,7 +283,7 @@ ENTRIES (default_entries.json):
 
 Example:
 {
-  "type": "shop_entry",
+  "type": "iska_utils:shop_entry",
   "overwritable": true,
   "entries": [
     {

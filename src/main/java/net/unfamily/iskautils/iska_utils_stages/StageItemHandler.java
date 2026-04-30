@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
@@ -14,6 +15,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import net.unfamily.iskautils.stage.StageRegistry;
 import net.unfamily.iskautils.util.ResourceUtil;
 import org.slf4j.Logger;
@@ -36,6 +39,34 @@ public class StageItemHandler {
     
     // Map of item restrictions loaded from JSON files
     private static final Map<String, StageItemRestriction> ITEM_RESTRICTIONS = new HashMap<>();
+
+    /**
+     * Loads all item restrictions from {@code data/<namespace>/load/iska_utils_stage_items/}.
+     */
+    public static void loadAll(ResourceManager resourceManagerOrNull) {
+        ITEM_RESTRICTIONS.clear();
+        try {
+            Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
+                    ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
+                    id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.STAGE_ITEMS))
+                    : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STAGE_ITEMS);
+            for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
+                if (!e.getValue().isJsonObject()) {
+                    continue;
+                }
+                JsonObject json = e.getValue().getAsJsonObject();
+                if (json.has("type") && json.get("type").getAsString().equals("iska_utils:stage_item")) {
+                    StageItemRestriction restriction = parseRestriction(json);
+                    String id = IskaUtilsLoadJson.definitionIdFromLocation(e.getKey());
+                    ITEM_RESTRICTIONS.put(id, restriction);
+                    LOGGER.info("Loaded item restriction: {}", id);
+                }
+            }
+            LOGGER.info("Loaded {} item restrictions", ITEM_RESTRICTIONS.size());
+        } catch (Exception e) {
+            LOGGER.error("Error loading item restrictions: {}", e.getMessage());
+        }
+    }
     
     /**
      * Loads all item restrictions from JSON files

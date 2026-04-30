@@ -47,6 +47,7 @@ import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
 import net.unfamily.iskautils.data.DynamicPotionPlateModelLoader;
 import net.unfamily.iskautils.command.MacroLoader;
 import net.unfamily.iskautils.command.MacroCommand;
+import net.unfamily.iskautils.data.load.IskaUtilsDataReload;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -390,25 +391,10 @@ public class IskaUtils {
                 LOGGER.error("Error cleaning up scanner markers: {}", e.getMessage());
             }
             
-            // Reload macros to ensure all commands are registered
             try {
-                MacroLoader.reloadAllMacros();
+                IskaUtilsDataReload.reloadAllFromServer();
             } catch (Exception e) {
-                LOGGER.error("Error loading macros at server startup: {}", e.getMessage());
-            }
-
-            // Reload stage actions
-            try {
-                net.unfamily.iskautils.command.StageActionsLoader.reloadAllActions();
-            } catch (Exception e) {
-                LOGGER.error("Error loading stage actions at server startup: {}", e.getMessage());
-            }
-
-            // Reload command item definitions
-            try {
-                CommandItemRegistry.reloadDefinitions();
-            } catch (Exception e) {
-                LOGGER.error("Error loading command item definitions at server startup: {}", e.getMessage());
+                LOGGER.error("Error applying IskaUtils datapack load JSON at server startup: {}", e.getMessage());
             }
             
             // Sincronizza le strutture con tutti i client connessi
@@ -451,19 +437,8 @@ public class IskaUtils {
                             LOGGER.error("Error cleaning up scanner markers during reload: {}", e.getMessage());
                         }
                         
-                        // Reload command macros
-                        MacroLoader.reloadAllMacros();
-                        // Reload command item definitions
-                        CommandItemRegistry.reloadDefinitions();
-                        // Reload stage actions
-                        net.unfamily.iskautils.command.StageActionsLoader.reloadAllActions();
-                        // Reload stage item restrictions
-                        net.unfamily.iskautils.iska_utils_stages.StageItemManager.reloadItemRestrictions();
-                        // Reload shop system
-                        ShopLoader.reloadAllConfigurations();
+                        IskaUtilsDataReload.reloadAllFromServer();
                         net.unfamily.iskautils.command.ShopCommand.notifyClientGUIReload();
-                        // Reload structures
-                        net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(true);
                         // Sync structures to connected clients
                         MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
                         if (server != null) {

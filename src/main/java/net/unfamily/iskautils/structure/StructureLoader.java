@@ -4,6 +4,10 @@ import com.google.gson.*;
 import com.mojang.logging.LogUtils;
 import net.unfamily.iskautils.Config;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import org.slf4j.Logger;
 
 
@@ -97,19 +101,7 @@ public class StructureLoader {
      * @param includeClientStructures If true, include client structures in loading
      */
     private static void scanConfigDirectoryInternal(boolean forceClientStructures, net.minecraft.server.level.ServerPlayer player, boolean includeClientStructures) {
-        String configPath = Config.externalScriptsPath;
-        if (configPath == null || configPath.trim().isEmpty()) {
-            configPath = "kubejs/external_scripts";
-        }
-        
-        Path structuresPath = Paths.get(configPath, "iska_utils_structures");
-        
         try {
-            // Create directory if it doesn't exist
-            if (!Files.exists(structuresPath)) {
-                Files.createDirectories(structuresPath);
-            }
-            
             // Save client structures before clear (to preserve them during reload)
             Map<String, StructureDefinition> clientStructureBackup = new HashMap<>();
             Map<String, Boolean> clientProtectedBackup = new HashMap<>();
@@ -128,36 +120,47 @@ public class StructureLoader {
             // Restore saved client structures
             STRUCTURES.putAll(clientStructureBackup);
             PROTECTED_DEFINITIONS.putAll(clientProtectedBackup);
-            
-            // Generate default file if it doesn't exist
-            Path defaultStructuresFile = structuresPath.resolve("default_structures.json");
-            if (!Files.exists(defaultStructuresFile) || shouldRegenerateDefaultStructures(defaultStructuresFile)) {
-                generateDefaultStructures(structuresPath);
+
+            ResourceManager rm = null;
+            try {
+                MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+                if (server != null) {
+                    rm = server.getResourceManager();
+                }
+            } catch (Throwable ignored) {
             }
-            
-            // Scan all JSON files in the directory
-            try (Stream<Path> files = Files.walk(structuresPath)) {
-                files.filter(Files::isRegularFile)
-                     .filter(path -> path.toString().endsWith(".json"))
-                     .filter(path -> !path.getFileName().toString().startsWith("."))
-                     .sorted() // Process in alphabetical order
-                     .forEach(StructureLoader::scanConfigFile);
-            }
-            
-            int regularStructuresCount = STRUCTURES.size();
+
+            loadAllServerDefinitions(rm);
             
             // Scan client structures if enabled and requested
             if (includeClientStructures) {
                 scanClientStructures(forceClientStructures, player);
             }
-            
-            int totalStructuresCount = STRUCTURES.size();
-            
-            // Generate comprehensive documentation
-            StructureDocumentationGenerator.generateDocumentation();
-            
         } catch (Exception e) {
         }
+    }
+
+    /**
+     * Loads server structure definitions from datapacks under {@code data/<namespace>/load/iska_utils_structure_definitions/}.
+     * This does not touch client structures (ids starting with {@code client_}).
+     */
+    public static void loadAllServerDefinitions(ResourceManager resourceManagerOrNull) {
+        // Drop previous server structures (keep client)
+        STRUCTURES.keySet().removeIf(id -> !id.startsWith("client_"));
+        PROTECTED_DEFINITIONS.keySet().removeIf(id -> !id.startsWith("client_"));
+
+        Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
+                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
+                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS))
+                : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS);
+        for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
+            if (!e.getValue().isJsonObject()) {
+                continue;
+            }
+            String definitionId = IskaUtilsLoadJson.definitionIdFromLocation(e.getKey());
+            parseConfigJson(definitionId, e.getKey().toString(), e.getValue().getAsJsonObject());
+        }
+        LOGGER.info("Server structure definitions loaded: {}", STRUCTURES.size());
     }
 
     /**
@@ -1248,7 +1251,7 @@ public class StructureLoader {
         
         // Regenerate documentation
         try {
-            StructureDocumentationGenerator.generateDocumentation();
+            // Documentation generation removed (migrated to GitHub wiki)
         } catch (Exception e) {
         }
     }

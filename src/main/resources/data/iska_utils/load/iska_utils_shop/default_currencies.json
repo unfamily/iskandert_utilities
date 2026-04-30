@@ -1,0 +1,12 @@
+{
+  "type": "iska_utils:shop_currency",
+  "overwritable": true,
+  "currencies": [
+    {
+      "id": "null_coin",
+      "name": "shop.currency.null_coin",
+      "char_symbol": "\u2205"
+    }
+  ]
+}
+

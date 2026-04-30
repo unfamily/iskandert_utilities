@@ -741,17 +741,10 @@ public class Config
         BUILDER.comment("Development and Advanced Configuration").push("dev");
     }
 
-    // External Scripts configuration
-    private static final ModConfigSpec.ConfigValue<String> EXTERNAL_SCRIPTS_PATH = BUILDER
-            .comment("Path to the external scripts directory for custom potion plates and stage items",
-                    "Default: 'kubejs/external_scripts'",
-                    "The system will look for any scripts of this mod: <path>/potion_plates/")
-            .define("000_external_scripts_path", "kubejs/external_scripts");
-
     private static final ModConfigSpec.ConfigValue<String> CLIENT_STRUCTURE_PATH = BUILDER
-            .comment("Path to the external scripts directory for custom structures",
+            .comment("Path to the client structures directory",
                     "Default: 'iska_utils_client/structures'",
-                    "The system will look for any scripts of this mod: <path>/iska_utils_structures/")
+                    "This folder is not a datapack; it is read from the filesystem on client side.")
             .define("001_client_structure_path", "iska_utils_client/structures");
 
     private static final ModConfigSpec.BooleanValue ACCEPT_CLIENT_STRUCTURE = BUILDER
@@ -813,7 +806,6 @@ public class Config
     public static int portableDislocatorXpConsume;
     public static boolean portableDislocatorPrioritizeEnergy;
     public static boolean portableDislocatorPrioritizeXp;
-    public static String externalScriptsPath;
     public static java.util.List<String> stickyFluids;
     public static int electricTreetapEnergyConsume;
     public static int electricTreetapEnergyBuffer;
@@ -925,7 +917,6 @@ public class Config
         portableDislocatorXpConsume = PORTABLE_DISLOCATOR_XP_CONSUME.get();
         portableDislocatorPrioritizeEnergy = PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY.get();
         portableDislocatorPrioritizeXp = PORTABLE_DISLOCATOR_PRIORITIZE_XP.get();
-        externalScriptsPath = EXTERNAL_SCRIPTS_PATH.get();
         stickyFluids = new java.util.ArrayList<>(sticky_fluids.get());
         crudeOils = new java.util.ArrayList<>(crude_oils.get());
         // Electric Treetap logic

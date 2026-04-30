@@ -6,6 +6,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -13,15 +17,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 /**
- * Loads command item definitions from external JSON files
+ * Loads command item definitions from datapack JSON under {@code data/<namespace>/load/iska_utils_command_items/}.
  */
 public class CommandItemLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -32,79 +34,33 @@ public class CommandItemLoader {
     
     // Stores files with overwritable=false to prevent them from being overwritten
     private static final Map<String, Boolean> PROTECTED_DEFINITIONS = new HashMap<>();
-    
+
     /**
-     * Scans the configuration directory for command item definitions.
-     * Internal defaults are registered first, then external scripts can override them.
+     * Loads command item definitions from {@code data/<namespace>/load/iska_utils_command_items/} (merged datapacks),
+     * or from the mod jar only when {@code resourceManagerOrNull} is null (early mod construction).
      */
+    public static void loadAll(ResourceManager resourceManagerOrNull) {
+        LOGGER.info("Loading command item definitions from datapack path load/{} ...", IskaUtilsLoadPaths.COMMAND_ITEMS);
+        PROTECTED_DEFINITIONS.clear();
+        COMMAND_ITEMS.clear();
+        Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
+                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
+                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.COMMAND_ITEMS))
+                : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.COMMAND_ITEMS);
+        for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
+            JsonElement jsonElement = e.getValue();
+            if (jsonElement == null || !jsonElement.isJsonObject()) {
+                continue;
+            }
+            String definitionId = IskaUtilsLoadJson.definitionIdFromLocation(e.getKey());
+            parseConfigJson(definitionId, e.getKey().toString(), jsonElement.getAsJsonObject());
+        }
+        LOGGER.info("Command item definitions loaded: {}", COMMAND_ITEMS.size());
+    }
+
+    /** @deprecated kept for compatibility; uses built-in defaults only. */
     public static void scanConfigDirectory() {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Scanning configuration directory for command item definitions...");
-        }
-        
-        try {
-            // Clear previous protections and definitions
-            PROTECTED_DEFINITIONS.clear();
-            COMMAND_ITEMS.clear();
-            
-            // Register internal defaults first (scripts can override these)
-            registerInternalDefaults();
-            
-            // Get the configured path for external scripts
-            String externalScriptsBasePath = net.unfamily.iskautils.Config.externalScriptsPath;
-            if (externalScriptsBasePath == null || externalScriptsBasePath.trim().isEmpty()) {
-                externalScriptsBasePath = "kubejs/external_scripts"; // default path
-            }
-            
-            // Create directory for command items if it doesn't exist
-            Path configPath = Paths.get(externalScriptsBasePath, "iska_utils_command_items");
-            if (!Files.exists(configPath)) {
-                Files.createDirectories(configPath);
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("Created directory for command item definitions: {}", configPath.toAbsolutePath());
-                }
-                createReadme(configPath);
-                
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("Command item definitions scan completed. Loaded {} definitions (internal defaults only)", COMMAND_ITEMS.size());
-                }
-                return;
-            }
-            
-            if (!Files.isDirectory(configPath)) {
-                LOGGER.warn("The path for command item definitions exists but is not a directory: {}", configPath);
-                return;
-            }
-            
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Scanning directory for command item definitions: {}", configPath.toAbsolutePath());
-            }
-            
-            // Always regenerate README
-            createReadme(configPath);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Updated README.md");
-            }
-            
-            // Scan all JSON files in the directory (scripts can override internal defaults)
-            try (Stream<Path> files = Files.walk(configPath)) {
-                files.filter(Files::isRegularFile)
-                     .filter(path -> path.toString().endsWith(".json"))
-                     .filter(path -> !path.getFileName().toString().startsWith("."))
-                     .sorted() // Process in alphabetical order
-                     .forEach(CommandItemLoader::scanConfigFile);
-            }
-            
-            if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("Command item definitions scan completed. Loaded {} definitions", COMMAND_ITEMS.size());
-            }
-            
-        } catch (Exception e) {
-            LOGGER.error("Error scanning command item definitions directory: {}", e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
-        }
+        loadAll(null);
     }
     
     /**
@@ -833,66 +789,6 @@ public class CommandItemLoader {
     
     
     /**
-     * Dumps the internal default command items to a JSON file.
-     * Called by /iska_utils_debug dump_default to let users see and override defaults.
-     */
-    public static void dumpDefaultFile(Path configPath) throws IOException {
-        Path defaultItemsPath = configPath.resolve("default_command_items.json");
-        
-        String defaultItemsContent = "{\n" +
-            "  \"type\": \"iska_utils:command_item\",\n" +
-            "  \"overwritable\": true,\n" +
-            "  \"items\": [\n" +
-            "    {\n" +
-            "      \"id\": \"iska_utils-world_init\",\n" +
-            "      \"creative_tab\": false,\n" +
-            "      \"stack_size\": 1,\n" +
-            "      \"is_foil\": false,\n" +
-            "      \"stages_logic\": \"DEF_AND\",\n" +
-            "      \"cooldown\": 10,\n" +
-            "      \"stages\": [\n" +
-            "          {\"stage_type\": \"world\", \"stage\": \"initializing\", \"is\": false},\n" +
-            "          {\"stage_type\": \"world\", \"stage\": \"initialized\", \"is\": false},\n" +
-            "          {\"stage_type\": \"world\", \"stage\": \"initialized\", \"is\": true}\n" +
-            "      ],\n" +
-            "      \"do\": [\n" +
-            "        {\n" +
-            "          \"onTick\": [\n" +
-            "            {\"if\": [\n" +
-            "                {\"conditions\":[0,1]},\n" +
-            "                {\"execute\": \"iska_utils_stage add world initializing true\"},\n" +
-            "                {\"execute\": \"title @a times 20 100 40\"},\n" +
-            "                {\"execute\": \"title @a subtitle {\\\"text\\\":\\\"please stand still and do nothing.\\\",\\\"color\\\":\\\"dark_red\\\"}\"},\n" +
-            "                {\"execute\": \"title @a title {\\\"text\\\":\\\"World Initialization:\\\",\\\"color\\\":\\\"dark_red\\\"}\"},\n" +
-            "                {\"delay\": 160},\n" +
-            "                {\"execute\": \"kubejs reload server-scripts\"},\n" +
-            "                {\"execute\": \"reload\"},\n" +
-            "                {\"delay\": 20},\n" +
-            "                {\"execute\": \"custommachinery reload\"},\n" +
-            "                {\"execute\": \"title @a times 20 100 40\"},\n" +
-            "                {\"execute\": \"title @a subtitle {\\\"text\\\":\\\"completed, apologies for the wait\\\",\\\"color\\\":\\\"dark_green\\\"}\"},\n" +
-            "                {\"execute\": \"title @a title {\\\"text\\\":\\\"World Initialization:\\\",\\\"color\\\":\\\"dark_green\\\"}\"},\n" +
-            "                {\"execute\": \"title @a times 20 100 20\"},\n" +
-            "                {\"execute\": \"iska_utils_stage add world initialized true\"},\n" +
-            "                {\"execute\": \"iska_utils_stage remove world initializing true\"},\n" +
-            "                {\"item\": \"delete_all\"}\n" +
-            "            ]},\n" +
-            "            {\"if\": [\n" +
-            "                {\"conditions\":[0,2]},\n" +
-            "                {\"item\": \"delete_all\"}\n" +
-            "            ]}\n" +
-            "          ]\n" +
-            "        }\n" +
-            "      ]\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}";
-        
-        Files.write(defaultItemsPath, defaultItemsContent.getBytes());
-        LOGGER.info("Dumped default command items to {}", defaultItemsPath);
-    }
-    
-    /**
      * Get a command item definition by ID
      */
     public static CommandItemDefinition getCommandItem(String id) {
@@ -911,6 +807,8 @@ public class CommandItemLoader {
      */
     public static void reloadAllDefinitions() {
         LOGGER.info("Reloading all command item definitions...");
-        scanConfigDirectory();
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        var rm = server != null ? server.getResourceManager() : null;
+        loadAll(rm);
     }
 } 

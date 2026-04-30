@@ -1,0 +1,15 @@
+{
+  "type": "iska_utils:commands_macro",
+  "overwritable": true,
+  "commands": [
+    {
+      "command": "reloader",
+      "level": 2,
+      "do": [
+        {"execute": "kubejs reload server-scripts"},
+        {"execute": "reload"}
+      ]
+    }
+  ]
+}
+
