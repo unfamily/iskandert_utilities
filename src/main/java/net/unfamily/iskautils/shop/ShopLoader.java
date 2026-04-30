@@ -64,19 +64,34 @@ public class ShopLoader {
         loadAll(null);
     }
 
+    private static String normalizeType(String type) {
+        if (type == null) {
+            return "";
+        }
+        String t = type.trim();
+        if (t.isEmpty()) {
+            return "";
+        }
+        // Backward compatibility: accept un-namespaced shop types
+        if (!t.contains(":")) {
+            return "iska_utils:" + t;
+        }
+        return t;
+    }
+
     private static void ingestShopJson(String fileName, JsonObject json) {
         try {
-            String type = json.has("type") ? json.get("type").getAsString() : "";
+            String type = normalizeType(json.has("type") ? json.get("type").getAsString() : "");
             boolean overwritable = json.has("overwritable") && json.get("overwritable").getAsBoolean();
             switch (type) {
-                case "shop_currency":
-                case "shop_valute":
+                case "iska_utils:shop_currency":
+                case "iska_utils:shop_valute":
                     processCurrenciesFile(json, overwritable, fileName);
                     break;
-                case "shop_category":
+                case "iska_utils:shop_category":
                     processCategoriesFile(json, overwritable, fileName);
                     break;
-                case "shop_entry":
+                case "iska_utils:shop_entry":
                     processEntriesFile(json, overwritable, fileName);
                     break;
                 default:

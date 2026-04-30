@@ -1,5 +1,5 @@
 {
-  "type": "shop_category",
+  "type": "iska_utils:shop_category",
   "overwritable": true,
   "categories": [
     {
