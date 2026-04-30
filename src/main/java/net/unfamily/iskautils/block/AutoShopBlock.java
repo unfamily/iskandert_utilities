@@ -87,9 +87,10 @@ public class AutoShopBlock extends BaseEntityBlock {
                 // Save also the team ID of the player if they belong to a team
                 net.unfamily.iskalib.team.ShopTeamManager teamManager =
                     net.unfamily.iskalib.team.ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) serverPlayer.level());
-                String teamName = teamManager.getPlayerTeam(serverPlayer);
-                if (teamName != null) {
-                    UUID teamId = teamManager.getTeamIdByName(teamName);
+                String teamKey = teamManager.getPlayerTeamKey(serverPlayer);
+                if (teamKey != null) {
+                    String teamDisplay = teamManager.getTeamDisplayName(teamKey);
+                    UUID teamId = teamManager.getTeamIdByName(teamDisplay != null ? teamDisplay : teamKey);
                     if (teamId != null) {
                         autoShopEntity.setOwnerTeamId(teamId);
                     }

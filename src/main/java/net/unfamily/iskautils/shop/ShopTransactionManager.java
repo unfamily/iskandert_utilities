@@ -53,16 +53,16 @@ public class ShopTransactionManager {
         
         // Check if player is in a team
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "no_team", entryId, valuteId);
             return false;
         }
         
         // Check team balance
-        double teamBalance = teamManager.getTeamValuteBalance(teamName, valuteId);
+        double teamBalance = teamManager.getTeamValuteBalance(teamKey, valuteId);
         if (teamBalance < totalCost) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "insufficient_funds", entryId, valuteId);
@@ -70,7 +70,7 @@ public class ShopTransactionManager {
         }
         
         // Remove valutes from team
-        if (!teamManager.removeTeamValutes(teamName, valuteId, totalCost)) {
+        if (!teamManager.removeTeamValutes(teamKey, valuteId, totalCost)) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "transaction_failed", entryId, valuteId);
             return false;
@@ -79,7 +79,7 @@ public class ShopTransactionManager {
         // Give item to player - now uses the exact item from the entry
         if (!giveItemToPlayer(player, entry, entry.itemCount * quantity)) {
             // If we can't give the item, refund the money
-            teamManager.addTeamValutes(teamName, valuteId, totalCost);
+            teamManager.addTeamValutes(teamKey, valuteId, totalCost);
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "give_item_failed", entryId, valuteId);
             return false;
@@ -124,9 +124,9 @@ public class ShopTransactionManager {
         
         // Check if player is in a team
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "no_team", entryId, valuteId);
             return false;
@@ -140,7 +140,7 @@ public class ShopTransactionManager {
         }
         
         // Add valutes to team
-        if (!teamManager.addTeamValutes(teamName, valuteId, totalReward)) {
+        if (!teamManager.addTeamValutes(teamKey, valuteId, totalReward)) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "transaction_failed", entryId, valuteId);
             return false;
@@ -250,13 +250,13 @@ public class ShopTransactionManager {
      */
     public static double getPlayerTeamBalance(ServerPlayer player, String valuteId) {
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             return 0.0;
         }
         
-        return teamManager.getTeamValuteBalance(teamName, valuteId);
+        return teamManager.getTeamValuteBalance(teamKey, valuteId);
     }
     
     /**
@@ -271,21 +271,22 @@ public class ShopTransactionManager {
      */
     public static void showTeamBalance(ServerPlayer player) {
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             player.sendSystemMessage(Component.literal("§cYou are not in a team"));
             return;
         }
         
         player.sendSystemMessage(Component.literal("§6=== Team Balance ==="));
-        player.sendSystemMessage(Component.literal("§eTeam: " + teamName));
+        String displayName = teamManager.getTeamDisplayName(teamKey);
+        player.sendSystemMessage(Component.literal("§eTeam: " + (displayName != null ? displayName : teamKey)));
         
         // Show all available currencies with localized names and symbols
         Map<String, ShopCurrency> allCurrencies = ShopLoader.getCurrencies();
         for (String valuteId : allCurrencies.keySet()) {
             ShopCurrency currency = allCurrencies.get(valuteId);
-            double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
+            double balance = teamManager.getTeamValuteBalance(teamKey, valuteId);
             String localizedName = Component.translatable(currency.name).getString();
             String formattedName = localizedName + " " + currency.charSymbol;
             player.sendSystemMessage(Component.literal("§a" + formattedName + ": " + balance));
@@ -377,21 +378,22 @@ public class ShopTransactionManager {
      */
     private static void updatePlayerTeamDataInClient(ServerPlayer player) {
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName != null) {
+        if (teamKey != null) {
             // Get all team balances
             Map<String, Double> teamBalances = new HashMap<>();
             
             // Get all available currencies and their balances
             Map<String, ShopCurrency> allCurrencies = ShopLoader.getCurrencies();
             for (String valuteId : allCurrencies.keySet()) {
-                double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
+                double balance = teamManager.getTeamValuteBalance(teamKey, valuteId);
                 teamBalances.put(valuteId, balance);
             }
             
             // Send updated data to client
-            net.unfamily.iskautils.network.ModMessages.sendShopTeamDataToClient(player, teamName, teamBalances);
+            String displayName = teamManager.getTeamDisplayName(teamKey);
+            net.unfamily.iskautils.network.ModMessages.sendShopTeamDataToClient(player, displayName != null ? displayName : teamKey, teamBalances);
         }
     }
     

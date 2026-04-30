@@ -38,23 +38,24 @@ public record ShopTeamDataRequestC2SPacket() implements CustomPacketPayload {
         if (player == null) return;
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
         // Prepara i dati del team
         Map<String, Double> teamBalances = null;
-        if (teamName != null) {
+        if (teamKey != null) {
             teamBalances = new java.util.HashMap<>();
             Map<String, ShopCurrency> currencies = ShopLoader.getCurrencies();
             
             // Ottieni il balance per ogni valuta
             for (String currencyId : currencies.keySet()) {
-                double balance = teamManager.getTeamValuteBalance(teamName, currencyId);
+                double balance = teamManager.getTeamValuteBalance(teamKey, currencyId);
                 teamBalances.put(currencyId, balance);
             }
         }
         
         // Invia i dati al client
-        ModMessages.sendShopTeamDataToClient(player, teamName, teamBalances);
+        String displayName = teamKey != null ? teamManager.getTeamDisplayName(teamKey) : null;
+        ModMessages.sendShopTeamDataToClient(player, displayName != null ? displayName : teamKey, teamBalances);
     }
     
     public static void handle(ShopTeamDataRequestC2SPacket packet, IPayloadContext context) {

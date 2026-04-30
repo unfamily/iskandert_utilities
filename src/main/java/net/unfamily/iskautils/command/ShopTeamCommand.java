@@ -18,7 +18,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.world.entity.Entity;
+import net.unfamily.iskalib.integration.ftbteams.FtbTeamsBridge;
 import net.unfamily.iskalib.team.ShopTeamManager;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCurrency;
 
@@ -36,6 +38,30 @@ public class ShopTeamCommand {
 
     private static final SimpleCommandExceptionType ERROR_PLAYER_NOT_FOUND = new SimpleCommandExceptionType(
             Component.literal("No player found from selector"));
+
+    private static boolean ftbSyncActive(ServerPlayer player) {
+        return player != null && Config.ftbTeamsSyncEnabled && FtbTeamsBridge.isAvailable();
+    }
+
+    private static boolean runFtbTeamsAsPlayer(ServerPlayer player, String commandWithoutSlash) {
+        if (player == null || player.level() == null || player.level().getServer() == null) {
+            return false;
+        }
+        try {
+            player.level().getServer().getCommands().performPrefixedCommand(player.createCommandSourceStack(), commandWithoutSlash);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private static String displayTeamName(ShopTeamManager teamManager, String teamKeyOrNull) {
+        if (teamKeyOrNull == null) {
+            return null;
+        }
+        String display = teamManager.getTeamDisplayName(teamKeyOrNull);
+        return display != null ? display : teamKeyOrNull;
+    }
 
     /**
      * Gets target players from the argument (supports @p, @a, @r, @e, @s, @n).
@@ -222,6 +248,15 @@ public class ShopTeamCommand {
         
         String teamName = StringArgumentType.getString(context, "teamName");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
+
+        if (ftbSyncActive(player)) {
+            if (runFtbTeamsAsPlayer(player, "ftbteams party create " + teamName)) {
+                source.sendSuccess(() -> Component.literal("FTB party created; shop team will sync automatically."), false);
+                return 1;
+            }
+            source.sendFailure(Component.literal("Failed to create FTB party team (check FTB Teams permissions/state)."));
+            return 0;
+        }
         
         if (teamManager.createTeam(teamName, player)) {
             source.sendSuccess(() -> Component.literal("Team '" + teamName + "' created successfully!"), false);
@@ -242,15 +277,16 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        if (teamManager.deleteTeam(teamName, player)) {
-            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' deleted successfully!"), false);
+        String teamDisplay = displayTeamName(teamManager, teamKey);
+        if (teamManager.deleteTeam(teamKey, player)) {
+            source.sendSuccess(() -> Component.literal("Team '" + teamDisplay + "' deleted successfully!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to delete team. You might not be the leader."));
@@ -269,8 +305,14 @@ public class ShopTeamCommand {
         
         String teamName = StringArgumentType.getString(context, "teamName");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
+
+        if (ftbSyncActive(player)) {
+            source.sendFailure(Component.literal("When FTB Teams sync is enabled, delete is not supported here. Use FTB Teams party commands."));
+            return 0;
+        }
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
         
-        if (teamManager.deleteTeam(teamName, player)) {
+        if (teamManager.deleteTeam(teamKey, player)) {
             source.sendSuccess(() -> Component.literal("Team '" + teamName + "' deleted successfully!"), false);
             return 1;
         } else {
@@ -290,15 +332,25 @@ public class ShopTeamCommand {
         
         String newName = StringArgumentType.getString(context, "newName");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        if (teamManager.renameTeam(teamName, newName, player)) {
-            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' renamed to '" + newName + "' successfully!"), false);
+        if (ftbSyncActive(player)) {
+            if (runFtbTeamsAsPlayer(player, "ftbteams party settings display_name " + newName)) {
+                source.sendSuccess(() -> Component.literal("FTB party display name updated; shop team will sync automatically."), false);
+                return 1;
+            }
+            source.sendFailure(Component.literal("Failed to rename via FTB Teams (check permissions/state)."));
+            return 0;
+        }
+
+        String teamDisplay = displayTeamName(teamManager, teamKey);
+        if (teamManager.renameTeam(teamKey, newName, player)) {
+            source.sendSuccess(() -> Component.literal("Team '" + teamDisplay + "' renamed to '" + newName + "' successfully!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to rename team. Team might already exist or you're not the leader."));
@@ -318,8 +370,14 @@ public class ShopTeamCommand {
         String teamName = StringArgumentType.getString(context, "teamName");
         String newName = StringArgumentType.getString(context, "newName");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
+
+        if (ftbSyncActive(player)) {
+            source.sendFailure(Component.literal("When FTB Teams sync is enabled, rename is managed by FTB Teams party settings."));
+            return 0;
+        }
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
         
-        if (teamManager.renameTeam(teamName, newName, player)) {
+        if (teamManager.renameTeam(teamKey, newName, player)) {
             source.sendSuccess(() -> Component.literal("Team '" + teamName + "' renamed to '" + newName + "' successfully!"), false);
             return 1;
         } else {
@@ -339,16 +397,26 @@ public class ShopTeamCommand {
         
         ServerPlayer newLeader = getSingleTargetPlayer(context, "newLeader");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        if (teamManager.transferLeadership(teamName, player, newLeader)) {
+        if (ftbSyncActive(player)) {
+            if (runFtbTeamsAsPlayer(player, "ftbteams party transfer_ownership " + newLeader.getScoreboardName())) {
+                source.sendSuccess(() -> Component.literal("FTB party ownership transferred; shop team will sync automatically."), false);
+                return 1;
+            }
+            source.sendFailure(Component.literal("Failed to transfer ownership via FTB Teams (check permissions/state)."));
+            return 0;
+        }
+
+        String teamDisplay = displayTeamName(teamManager, teamKey);
+        if (teamManager.transferLeadership(teamKey, player, newLeader)) {
             source.sendSuccess(() -> Component.literal("Leadership transferred to " + newLeader.getName().getString() + "!"), false);
-            newLeader.sendSystemMessage(Component.literal("You are now the leader of team '" + teamName + "'!"));
+            newLeader.sendSystemMessage(Component.literal("You are now the leader of team '" + teamDisplay + "'!"));
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to transfer leadership. You might not be the leader or the new leader is not in your team."));
@@ -368,8 +436,14 @@ public class ShopTeamCommand {
         String teamName = StringArgumentType.getString(context, "teamName");
         ServerPlayer newLeader = getSingleTargetPlayer(context, "newLeader");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
+
+        if (ftbSyncActive(player)) {
+            source.sendFailure(Component.literal("When FTB Teams sync is enabled, leadership is managed by FTB Teams party commands."));
+            return 0;
+        }
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
         
-        if (teamManager.transferLeadership(teamName, player, newLeader)) {
+        if (teamManager.transferLeadership(teamKey, player, newLeader)) {
             source.sendSuccess(() -> Component.literal("Leadership of team '" + teamName + "' transferred to " + newLeader.getName().getString() + "!"), false);
             newLeader.sendSystemMessage(Component.literal("You are now the leader of team '" + teamName + "'!"));
             return 1;
@@ -390,9 +464,9 @@ public class ShopTeamCommand {
         
         List<ServerPlayer> assistants = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
@@ -402,10 +476,16 @@ public class ShopTeamCommand {
         }
         int count = 0;
         for (ServerPlayer assistant : assistants) {
-            if (teamManager.addTeamAssistant(teamName, player, assistant)) {
+            if (ftbSyncActive(player)) {
+                if (FtbTeamsBridge.setAssistant(player, assistant.getUUID(), true)) {
+                    count++;
+                }
+                continue;
+            }
+            if (teamManager.addTeamAssistant(teamKey, player, assistant)) {
                 count++;
                 source.sendSuccess(() -> Component.literal("Added " + assistant.getName().getString() + " as assistant to your team!"), false);
-                assistant.sendSystemMessage(Component.literal("You are now an assistant of team '" + teamName + "'!"));
+                assistant.sendSystemMessage(Component.literal("You are now an assistant of team '" + displayTeamName(teamManager, teamKey) + "'!"));
             }
         }
         if (count == 0) {
@@ -430,9 +510,14 @@ public class ShopTeamCommand {
             return 0;
         }
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
+        if (ftbSyncActive(player)) {
+            source.sendFailure(Component.literal("When FTB Teams sync is enabled, assistants are managed by FTB Teams party promote/demote."));
+            return 0;
+        }
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
         int count = 0;
         for (ServerPlayer assistant : assistants) {
-            if (teamManager.addTeamAssistant(teamName, player, assistant)) {
+            if (teamManager.addTeamAssistant(teamKey, player, assistant)) {
                 count++;
                 source.sendSuccess(() -> Component.literal("Added " + assistant.getName().getString() + " as assistant to team '" + teamName + "'!"), false);
                 assistant.sendSystemMessage(Component.literal("You are now an assistant of team '" + teamName + "'!"));
@@ -455,9 +540,9 @@ public class ShopTeamCommand {
         
         List<ServerPlayer> assistants = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
@@ -467,10 +552,16 @@ public class ShopTeamCommand {
         }
         int count = 0;
         for (ServerPlayer assistant : assistants) {
-            if (teamManager.removeTeamAssistant(teamName, player, assistant)) {
+            if (ftbSyncActive(player)) {
+                if (FtbTeamsBridge.setAssistant(player, assistant.getUUID(), false)) {
+                    count++;
+                }
+                continue;
+            }
+            if (teamManager.removeTeamAssistant(teamKey, player, assistant)) {
                 count++;
                 source.sendSuccess(() -> Component.literal("Removed " + assistant.getName().getString() + " as assistant from your team!"), false);
-                assistant.sendSystemMessage(Component.literal("You are no longer an assistant of team '" + teamName + "'!"));
+                assistant.sendSystemMessage(Component.literal("You are no longer an assistant of team '" + displayTeamName(teamManager, teamKey) + "'!"));
             }
         }
         if (count == 0) {
@@ -495,9 +586,14 @@ public class ShopTeamCommand {
             return 0;
         }
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
+        if (ftbSyncActive(player)) {
+            source.sendFailure(Component.literal("When FTB Teams sync is enabled, assistants are managed by FTB Teams party promote/demote."));
+            return 0;
+        }
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
         int count = 0;
         for (ServerPlayer assistant : assistants) {
-            if (teamManager.removeTeamAssistant(teamName, player, assistant)) {
+            if (teamManager.removeTeamAssistant(teamKey, player, assistant)) {
                 count++;
                 source.sendSuccess(() -> Component.literal("Removed " + assistant.getName().getString() + " as assistant from team '" + teamName + "'!"), false);
                 assistant.sendSystemMessage(Component.literal("You are no longer an assistant of team '" + teamName + "'!"));
@@ -518,14 +614,14 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        String teamKey = teamManager.getPlayerTeamKey(source.getPlayer());
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        return showTeamAssistants(source, teamName);
+        return showTeamAssistants(source, teamKey);
     }
     
     private static int listTeamAssistants(CommandContext<CommandSourceStack> context) {
@@ -537,19 +633,22 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        return showTeamAssistants(source, teamName);
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
+        return showTeamAssistants(source, teamKey);
     }
     
-    private static int showTeamAssistants(CommandSourceStack source, String teamName) {
+    private static int showTeamAssistants(CommandSourceStack source, String teamKey) {
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        List<UUID> assistants = teamManager.getTeamAssistants(teamName);
+        List<UUID> assistants = teamManager.getTeamAssistants(teamKey);
+        String teamDisplay = displayTeamName(teamManager, teamKey);
         
         if (assistants.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has no assistants"), false);
+            source.sendSuccess(() -> Component.literal("Team '" + teamDisplay + "' has no assistants"), false);
             return 1;
         }
         
-        source.sendSuccess(() -> Component.literal("=== Team '" + teamName + "' Assistants ==="), false);
+        source.sendSuccess(() -> Component.literal("=== Team '" + teamDisplay + "' Assistants ==="), false);
         for (UUID assistantId : assistants) {
             String assistantName = getPlayerName(assistantId, source.getServer());
             source.sendSuccess(() -> Component.literal("- " + assistantName), false);
@@ -569,9 +668,9 @@ public class ShopTeamCommand {
         
         List<ServerPlayer> targets = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
@@ -581,10 +680,11 @@ public class ShopTeamCommand {
         }
         int count = 0;
         for (ServerPlayer targetPlayer : targets) {
-            if (teamManager.invitePlayerToTeam(teamName, player, targetPlayer)) {
+            if (teamManager.invitePlayerToTeam(teamKey, player, targetPlayer)) {
                 count++;
                 source.sendSuccess(() -> Component.literal("Invited " + targetPlayer.getName().getString() + " to your team!"), false);
-                targetPlayer.sendSystemMessage(Component.literal("You have been invited to join team '" + teamName + "'! Use /iska_utils_team accept " + teamName + " to join."));
+                String teamDisplay = displayTeamName(teamManager, teamKey);
+                targetPlayer.sendSystemMessage(Component.literal("You have been invited to join team '" + teamDisplay + "'! Use /iska_utils_team accept " + teamDisplay + " to join."));
             }
         }
         if (count == 0) {
@@ -675,9 +775,9 @@ public class ShopTeamCommand {
         
         List<ServerPlayer> targets = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
@@ -687,10 +787,10 @@ public class ShopTeamCommand {
         }
         int count = 0;
         for (ServerPlayer targetPlayer : targets) {
-            if (teamManager.addPlayerToTeam(teamName, targetPlayer)) {
+            if (teamManager.addPlayerToTeam(teamKey, targetPlayer)) {
                 count++;
                 source.sendSuccess(() -> Component.literal("Added " + targetPlayer.getName().getString() + " to your team!"), false);
-                targetPlayer.sendSystemMessage(Component.literal("You have been added to team '" + teamName + "'!"));
+                targetPlayer.sendSystemMessage(Component.literal("You have been added to team '" + displayTeamName(teamManager, teamKey) + "'!"));
             }
         }
         if (count == 0) {
@@ -715,9 +815,10 @@ public class ShopTeamCommand {
             return 0;
         }
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
         int count = 0;
         for (ServerPlayer targetPlayer : targets) {
-            if (teamManager.addPlayerToTeam(teamName, targetPlayer)) {
+            if (teamManager.addPlayerToTeam(teamKey, targetPlayer)) {
                 count++;
                 source.sendSuccess(() -> Component.literal("Added " + targetPlayer.getName().getString() + " to team '" + teamName + "'!"), false);
                 targetPlayer.sendSystemMessage(Component.literal("You have been added to team '" + teamName + "'!"));
@@ -740,9 +841,9 @@ public class ShopTeamCommand {
         
         List<ServerPlayer> targets = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
@@ -752,10 +853,10 @@ public class ShopTeamCommand {
         }
         int count = 0;
         for (ServerPlayer targetPlayer : targets) {
-            if (teamManager.removePlayerFromTeam(teamName, targetPlayer)) {
+            if (teamManager.removePlayerFromTeam(teamKey, targetPlayer)) {
                 count++;
                 source.sendSuccess(() -> Component.literal("Removed " + targetPlayer.getName().getString() + " from your team!"), false);
-                targetPlayer.sendSystemMessage(Component.literal("You have been removed from team '" + teamName + "'!"));
+                targetPlayer.sendSystemMessage(Component.literal("You have been removed from team '" + displayTeamName(teamManager, teamKey) + "'!"));
             }
         }
         if (count == 0) {
@@ -780,9 +881,10 @@ public class ShopTeamCommand {
             return 0;
         }
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
         int count = 0;
         for (ServerPlayer targetPlayer : targets) {
-            if (teamManager.removePlayerFromTeam(teamName, targetPlayer)) {
+            if (teamManager.removePlayerFromTeam(teamKey, targetPlayer)) {
                 count++;
                 source.sendSuccess(() -> Component.literal("Removed " + targetPlayer.getName().getString() + " from team '" + teamName + "'!"), false);
                 targetPlayer.sendSystemMessage(Component.literal("You have been removed from team '" + teamName + "'!"));
@@ -803,14 +905,14 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        String teamKey = teamManager.getPlayerTeamKey(source.getPlayer());
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        return showTeamInfo(source, teamName);
+        return showTeamInfo(source, teamKey);
     }
     
     private static int teamInfo(CommandContext<CommandSourceStack> context) {
@@ -822,21 +924,24 @@ public class ShopTeamCommand {
             return 0;
         }
         
-        return showTeamInfo(source, teamName);
+        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
+        return showTeamInfo(source, teamKey);
     }
     
-    private static int showTeamInfo(CommandSourceStack source, String teamName) {
+    private static int showTeamInfo(CommandSourceStack source, String teamKey) {
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        List<UUID> members = teamManager.getTeamMembers(teamName);
-        List<UUID> assistants = teamManager.getTeamAssistants(teamName);
-        UUID leader = teamManager.getTeamLeader(teamName);
+        List<UUID> members = teamManager.getTeamMembers(teamKey);
+        List<UUID> assistants = teamManager.getTeamAssistants(teamKey);
+        UUID leader = teamManager.getTeamLeader(teamKey);
+        String teamDisplay = displayTeamName(teamManager, teamKey);
         
         if (leader == null) {
-            source.sendFailure(Component.literal("Team '" + teamName + "' does not exist"));
+            source.sendFailure(Component.literal("Team '" + teamDisplay + "' does not exist"));
             return 0;
         }
         
-        source.sendSuccess(() -> Component.literal("=== Team: " + teamName + " ==="), false);
+        source.sendSuccess(() -> Component.literal("=== Team: " + teamDisplay + " ==="), false);
         
         // Show leader
         String leaderName = getPlayerName(leader, source.getServer());
@@ -871,10 +976,10 @@ public class ShopTeamCommand {
         Map<String, ShopCurrency> allCurrencies = ShopLoader.getCurrencies();
         for (String currencyId : allCurrencies.keySet()) {
             ShopCurrency currency = allCurrencies.get(currencyId);
-            double balance = teamManager.getTeamCurrencyBalance(teamName, currencyId);
+            double balance = teamManager.getTeamCurrencyBalance(teamKey, currencyId);
             String localizedName = Component.translatable(currency.name).getString();
             String formattedName = localizedName + " " + currency.charSymbol;
-            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + formattedName), false);
+            source.sendSuccess(() -> Component.literal("Team '" + teamDisplay + "' has " + balance + " " + formattedName), false);
         }
         
         return 1;
@@ -897,9 +1002,10 @@ public class ShopTeamCommand {
         }
         
         source.sendSuccess(() -> Component.literal("=== All Teams ==="), false);
-        for (String teamName : teams) {
-            List<UUID> members = teamManager.getTeamMembers(teamName);
-            source.sendSuccess(() -> Component.literal(teamName + " (" + members.size() + " members)"), false);
+        for (String teamKey : teams) {
+            List<UUID> members = teamManager.getTeamMembers(teamKey);
+            String teamDisplay = displayTeamName(teamManager, teamKey);
+            source.sendSuccess(() -> Component.literal(teamDisplay + " (" + members.size() + " members)"), false);
         }
         
         return 1;
@@ -914,21 +1020,21 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        String teamKey = teamManager.getPlayerTeamKey(source.getPlayer());
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        double nullCoinBalance = teamManager.getTeamCurrencyBalance(teamName, "null_coin");
+        double nullCoinBalance = teamManager.getTeamCurrencyBalance(teamKey, "null_coin");
         ShopCurrency nullCoin = ShopLoader.getCurrencies().get("null_coin");
         if (nullCoin != null) {
             String localizedName = Component.translatable(nullCoin.name).getString();
             String formattedName = localizedName + " " + nullCoin.charSymbol;
-            source.sendSuccess(() -> Component.literal("Your team has " + nullCoinBalance + " " + formattedName), false);
+            source.sendSuccess(() -> Component.literal("Team '" + displayTeamName(teamManager, teamKey) + "' has " + nullCoinBalance + " " + formattedName), false);
         } else {
-            source.sendSuccess(() -> Component.literal("Your team has " + nullCoinBalance + " null_coin"), false);
+            source.sendSuccess(() -> Component.literal("Team '" + displayTeamName(teamManager, teamKey) + "' has " + nullCoinBalance + " null_coin"), false);
         }
         return 1;
     }
@@ -943,15 +1049,17 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        double balance = teamManager.getTeamCurrencyBalance(teamName, "null_coin");
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
+        String teamDisplay = displayTeamName(teamManager, teamKey);
+        double balance = teamManager.getTeamCurrencyBalance(teamKey, "null_coin");
         
         ShopCurrency nullCoin = ShopLoader.getCurrencies().get("null_coin");
         if (nullCoin != null) {
             String localizedName = Component.translatable(nullCoin.name).getString();
             String formattedName = localizedName + " " + nullCoin.charSymbol;
-            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + formattedName), false);
+            source.sendSuccess(() -> Component.literal("Team '" + teamDisplay + "' has " + balance + " " + formattedName), false);
         } else {
-            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " null_coin"), false);
+            source.sendSuccess(() -> Component.literal("Team '" + teamDisplay + "' has " + balance + " null_coin"), false);
         }
         return 1;
     }
@@ -967,7 +1075,9 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        double balance = teamManager.getTeamCurrencyBalance(teamName, currencyId);
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
+        String teamDisplay = displayTeamName(teamManager, teamKey);
+        double balance = teamManager.getTeamCurrencyBalance(teamKey, currencyId);
         
         ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
         String currencyDisplay;
@@ -978,7 +1088,7 @@ public class ShopTeamCommand {
             currencyDisplay = currencyId;
         }
         
-        source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + currencyDisplay), false);
+        source.sendSuccess(() -> Component.literal("Team '" + teamDisplay + "' has " + balance + " " + currencyDisplay), false);
         return 1;
     }
     
@@ -993,14 +1103,14 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        String teamKey = teamManager.getPlayerTeamKey(source.getPlayer());
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        if (teamManager.addTeamCurrency(teamName, currencyId, amount)) {
+        if (teamManager.addTeamCurrency(teamKey, currencyId, amount)) {
             ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
             String currencyDisplay;
             if (currency != null) {
@@ -1009,7 +1119,7 @@ public class ShopTeamCommand {
             } else {
                 currencyDisplay = currencyId;
             }
-            source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to your team '" + teamName + "'!"), false);
+            source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to team '" + displayTeamName(teamManager, teamKey) + "'!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to add currencies to team."));
@@ -1029,8 +1139,9 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
         
-        if (teamManager.addTeamCurrency(teamName, currencyId, amount)) {
+        if (teamManager.addTeamCurrency(teamKey, currencyId, amount)) {
             ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
             String currencyDisplay;
             if (currency != null) {
@@ -1039,7 +1150,7 @@ public class ShopTeamCommand {
             } else {
                 currencyDisplay = currencyId;
             }
-            source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to team '" + teamName + "'!"), false);
+            source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to team '" + displayTeamName(teamManager, teamKey) + "'!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to add currencies to team. Team might not exist."));
@@ -1061,16 +1172,16 @@ public class ShopTeamCommand {
             int count = 0;
             for (ServerPlayer targetPlayer : targets) {
                 ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) targetPlayer.level());
-                String teamName = teamManager.getPlayerTeam(targetPlayer);
-                if (teamName == null) {
+                String teamKey = teamManager.getPlayerTeamKey(targetPlayer);
+                if (teamKey == null) {
                     source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
                     continue;
                 }
-                if (teamManager.addTeamCurrency(teamName, currencyId, amount)) {
+                if (teamManager.addTeamCurrency(teamKey, currencyId, amount)) {
                     count++;
                     ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
                     String currencyDisplay = currency != null ? Component.translatable(currency.name).getString() + " " + currency.charSymbol : currencyId;
-                    source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
+                    source.sendSuccess(() -> Component.literal("Added " + amount + " " + currencyDisplay + " to " + targetPlayer.getName().getString() + "'s team '" + displayTeamName(teamManager, teamKey) + "'!"), false);
                 } else {
                     source.sendFailure(Component.literal("Failed to add currencies to team."));
                 }
@@ -1093,14 +1204,14 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        String teamKey = teamManager.getPlayerTeamKey(source.getPlayer());
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        if (teamManager.removeTeamCurrency(teamName, currencyId, amount)) {
+        if (teamManager.removeTeamCurrency(teamKey, currencyId, amount)) {
             ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
             String currencyDisplay;
             if (currency != null) {
@@ -1109,7 +1220,7 @@ public class ShopTeamCommand {
             } else {
                 currencyDisplay = currencyId;
             }
-            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from your team '" + teamName + "'!"), false);
+            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from team '" + displayTeamName(teamManager, teamKey) + "'!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to remove currencies from team. Insufficient balance or team doesn't exist."));
@@ -1129,8 +1240,9 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
         
-        if (teamManager.removeTeamCurrency(teamName, currencyId, amount)) {
+        if (teamManager.removeTeamCurrency(teamKey, currencyId, amount)) {
             ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
             String currencyDisplay;
             if (currency != null) {
@@ -1139,7 +1251,7 @@ public class ShopTeamCommand {
             } else {
                 currencyDisplay = currencyId;
             }
-            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from team '" + teamName + "'!"), false);
+            source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from team '" + displayTeamName(teamManager, teamKey) + "'!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to remove currencies from team. Insufficient balance or team doesn't exist."));
@@ -1161,16 +1273,16 @@ public class ShopTeamCommand {
             int count = 0;
             for (ServerPlayer targetPlayer : targets) {
                 ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) targetPlayer.level());
-                String teamName = teamManager.getPlayerTeam(targetPlayer);
-                if (teamName == null) {
+                String teamKey = teamManager.getPlayerTeamKey(targetPlayer);
+                if (teamKey == null) {
                     source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
                     continue;
                 }
-                if (teamManager.removeTeamCurrency(teamName, currencyId, amount)) {
+                if (teamManager.removeTeamCurrency(teamKey, currencyId, amount)) {
                     count++;
                     ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
                     String currencyDisplay = currency != null ? Component.translatable(currency.name).getString() + " " + currency.charSymbol : currencyId;
-                    source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from " + targetPlayer.getName().getString() + "'s team '" + teamName + "'!"), false);
+                    source.sendSuccess(() -> Component.literal("Removed " + amount + " " + currencyDisplay + " from " + targetPlayer.getName().getString() + "'s team '" + displayTeamName(teamManager, teamKey) + "'!"), false);
                 } else {
                     source.sendFailure(Component.literal("Failed to remove currencies from team. Insufficient balance or team doesn't exist."));
                 }
@@ -1193,14 +1305,14 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        String teamKey = teamManager.getPlayerTeamKey(source.getPlayer());
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        return setTeamCurrency(source, teamManager, teamName, currencyId, amount);
+        return setTeamCurrency(source, teamManager, teamKey, currencyId, amount);
     }
     
     private static int setCurrencyForTeam(CommandContext<CommandSourceStack> context) {
@@ -1215,7 +1327,8 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        return setTeamCurrency(source, teamManager, teamName, currencyId, amount);
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
+        return setTeamCurrency(source, teamManager, teamKey, currencyId, amount);
     }
     
     private static int setCurrencyForPlayerTeam(CommandContext<CommandSourceStack> context) {
@@ -1232,12 +1345,12 @@ public class ShopTeamCommand {
             int total = 0;
             for (ServerPlayer targetPlayer : targets) {
                 ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) targetPlayer.level());
-                String teamName = teamManager.getPlayerTeam(targetPlayer);
-                if (teamName == null) {
+                String teamKey = teamManager.getPlayerTeamKey(targetPlayer);
+                if (teamKey == null) {
                     source.sendFailure(Component.literal("Player " + targetPlayer.getName().getString() + " is not in a team"));
                     continue;
                 }
-                total += setTeamCurrency(source, teamManager, teamName, currencyId, amount);
+                total += setTeamCurrency(source, teamManager, teamKey, currencyId, amount);
             }
             return total;
         } catch (Exception e) {
@@ -1246,17 +1359,17 @@ public class ShopTeamCommand {
         }
     }
     
-    private static int setTeamCurrency(CommandSourceStack source, ShopTeamManager teamManager, String teamName, String currencyId, double targetAmount) {
-        double currentBalance = teamManager.getTeamCurrencyBalance(teamName, currencyId);
+    private static int setTeamCurrency(CommandSourceStack source, ShopTeamManager teamManager, String teamKey, String currencyId, double targetAmount) {
+        double currentBalance = teamManager.getTeamCurrencyBalance(teamKey, currencyId);
         double difference = targetAmount - currentBalance;
         
         boolean success;
         if (difference > 0) {
             // We need to add currencies   
-            success = teamManager.addTeamCurrency(teamName, currencyId, difference);
+            success = teamManager.addTeamCurrency(teamKey, currencyId, difference);
         } else if (difference < 0) {
             // We need to remove currencies
-            success = teamManager.removeTeamCurrency(teamName, currencyId, Math.abs(difference));
+            success = teamManager.removeTeamCurrency(teamKey, currencyId, Math.abs(difference));
         } else {
             // Balance is already at desired amount
             success = true;
@@ -1272,7 +1385,8 @@ public class ShopTeamCommand {
         }
         
         if (success) {
-            source.sendSuccess(() -> Component.literal("Set " + currencyDisplay + " balance for team '" + teamName + "' to " + targetAmount + "!"), false);
+            String teamDisplay = displayTeamName(teamManager, teamKey);
+            source.sendSuccess(() -> Component.literal("Set " + currencyDisplay + " balance for team '" + teamDisplay + "' to " + targetAmount + "!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to set currencies for team. Team might not exist."));
@@ -1297,8 +1411,9 @@ public class ShopTeamCommand {
         }
         
         source.sendSuccess(() -> Component.literal("=== Your Team Invitations ==="), false);
-        for (String teamName : invitations) {
-            source.sendSuccess(() -> Component.literal("- " + teamName + " (use /iska_utils_team accept " + teamName + " to join)"), false);
+        for (String invitationKey : invitations) {
+            String display = displayTeamName(teamManager, invitationKey);
+            source.sendSuccess(() -> Component.literal("- " + display + " (use /iska_utils_team accept " + display + " to join)"), false);
         }
         
         return 1;
@@ -1328,14 +1443,14 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        String teamKey = teamManager.getPlayerTeamKey(source.getPlayer());
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        return showTeamMembers(source, teamManager, teamName);
+        return showTeamMembers(source, teamManager, teamKey);
     }
     
     /**
@@ -1351,23 +1466,25 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
-        return showTeamMembers(source, teamManager, teamName);
+        String teamKey = teamManager.resolveTeamKeyByDisplayName(teamName);
+        return showTeamMembers(source, teamManager, teamKey);
     }
     
     /**
      * Shows team members with their roles (leader/assistant/member)
      */
-    private static int showTeamMembers(CommandSourceStack source, ShopTeamManager teamManager, String teamName) {
-        UUID leader = teamManager.getTeamLeader(teamName);
-        List<UUID> assistants = teamManager.getTeamAssistants(teamName);
-        List<UUID> members = teamManager.getTeamMembers(teamName);
+    private static int showTeamMembers(CommandSourceStack source, ShopTeamManager teamManager, String teamKey) {
+        UUID leader = teamManager.getTeamLeader(teamKey);
+        List<UUID> assistants = teamManager.getTeamAssistants(teamKey);
+        List<UUID> members = teamManager.getTeamMembers(teamKey);
+        String teamDisplay = displayTeamName(teamManager, teamKey);
         
         if (leader == null) {
-            source.sendFailure(Component.literal("Team '" + teamName + "' does not exist"));
+            source.sendFailure(Component.literal("Team '" + teamDisplay + "' does not exist"));
             return 0;
         }
         
-        source.sendSuccess(() -> Component.literal("=== Team: " + teamName + " Members ==="), false);
+        source.sendSuccess(() -> Component.literal("=== Team: " + teamDisplay + " Members ==="), false);
         
         // Show leader
         String leaderName = getPlayerName(leader, source.getServer());
@@ -1412,9 +1529,9 @@ public class ShopTeamCommand {
 
         List<ServerPlayer> invitees = getTargetPlayers(context, "player");
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeamKey(player);
 
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
@@ -1424,9 +1541,9 @@ public class ShopTeamCommand {
         }
         int count = 0;
         for (ServerPlayer invitee : invitees) {
-            if (teamManager.cancelTeamInvitation(teamName, player, invitee)) {
+            if (teamManager.cancelTeamInvitation(teamKey, player, invitee)) {
                 count++;
-                source.sendSuccess(() -> Component.literal("Cancelled invitation for '" + invitee.getName().getString() + "' to join team '" + teamName + "'"), false);
+                source.sendSuccess(() -> Component.literal("Cancelled invitation for '" + invitee.getName().getString() + "' to join team '" + displayTeamName(teamManager, teamKey) + "'"), false);
             }
         }
         if (count == 0) {
@@ -1664,7 +1781,7 @@ public class ShopTeamCommand {
         String toTeam = StringArgumentType.getString(context, "toTeam");
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String fromTeam = teamManager.getPlayerTeam(player);
+        String fromTeam = teamManager.getPlayerTeamKey(player);
         
         if (fromTeam == null) {
             source.sendFailure(Component.literal("You are not in a team"));
@@ -1704,28 +1821,32 @@ public class ShopTeamCommand {
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) source.getPlayer().level());
         
         // Use the common move logic
-        return moveCurrencyLogic(source, teamManager, fromTeam, toTeam, currencyId, amount);
+        String fromKey = teamManager.resolveTeamKeyByDisplayName(fromTeam);
+        String toKey = teamManager.resolveTeamKeyByDisplayName(toTeam);
+        return moveCurrencyLogic(source, teamManager, fromKey, toKey, currencyId, amount);
     }
     
     /**
      * Common logic for moving currency between teams
      */
     private static int moveCurrencyLogic(CommandSourceStack source, ShopTeamManager teamManager, String fromTeam, String toTeam, String currencyId, double amount) {
+        String fromDisplay = displayTeamName(teamManager, fromTeam);
+        String toDisplay = displayTeamName(teamManager, toTeam);
         // Check if both teams exist
         if (teamManager.getTeamLeader(fromTeam) == null) {
-            source.sendFailure(Component.literal("Source team '" + fromTeam + "' does not exist"));
+            source.sendFailure(Component.literal("Source team '" + fromDisplay + "' does not exist"));
             return 0;
         }
         
         if (teamManager.getTeamLeader(toTeam) == null) {
-            source.sendFailure(Component.literal("Destination team '" + toTeam + "' does not exist"));
+            source.sendFailure(Component.literal("Destination team '" + toDisplay + "' does not exist"));
             return 0;
         }
         
         // Check if source team has enough currency
         double currentBalance = teamManager.getTeamCurrencyBalance(fromTeam, currencyId);
         if (currentBalance < amount) {
-            source.sendFailure(Component.literal("Source team '" + fromTeam + "' does not have enough currency. Current balance: " + currentBalance));
+            source.sendFailure(Component.literal("Source team '" + fromDisplay + "' does not have enough currency. Current balance: " + currentBalance));
             return 0;
         }
         
@@ -1753,7 +1874,7 @@ public class ShopTeamCommand {
             currencyDisplay = currencyId;
         }
         
-        source.sendSuccess(() -> Component.literal("Moved " + amount + " " + currencyDisplay + " from team '" + fromTeam + "' to team '" + toTeam + "'!"), false);
+        source.sendSuccess(() -> Component.literal("Moved " + amount + " " + currencyDisplay + " from team '" + fromDisplay + "' to team '" + toDisplay + "'!"), false);
         return 1;
     }
 } 

@@ -244,6 +244,13 @@ public class Config {
                     "Default: 50",
                     "All EditBoxes are always created, even if empty")
             .defineInRange("411_deep_drawer_extractor_max_filters", 50, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.BooleanValue FTB_TEAMS_SYNC_ENABLED = BUILDER
+            .comment("Enable optional integration with FTB Teams for shop teams.",
+                    "When enabled and FTB Teams is present, team membership and roles are mirrored from FTB Teams,",
+                    "while balances remain stored in IskaUtils saved data.",
+                    "Default: true")
+            .define("420_ftb_teams_sync_enabled", true);
     
     // Category for Dolly Configuration (under general_utilities)
     static {
@@ -868,6 +875,7 @@ public class Config {
     public static boolean deepDrawersDebugExtractionEnabled;
     public static int deepDrawerExtractorInterval;
     public static int deepDrawerExtractorMaxFilters;
+    public static boolean ftbTeamsSyncEnabled;
     
     public static java.util.List<String> dollyWhitelist;
     public static java.util.List<String> dollyBlacklist;
@@ -980,6 +988,7 @@ public class Config {
         deepDrawersDebugExtractionEnabled = DEEP_DRAWERS_DEBUG_EXTRACTION_ENABLED.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
+        ftbTeamsSyncEnabled = FTB_TEAMS_SYNC_ENABLED.get();
         
         // Dolly configuration
         dollyWhitelist = new java.util.ArrayList<>(DOLLY_WHITELIST.get());
