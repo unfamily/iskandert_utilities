@@ -38,17 +38,18 @@ public record ShopTeamDataRequestC2SPacket() implements CustomPacketPayload {
         if (player == null) return;
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeam(player);
+        String teamName = teamKey != null ? teamManager.getTeamDisplayName(teamKey) : null;
         
         // Prepara i dati del team
         Map<String, Double> teamBalances = null;
-        if (teamName != null) {
+        if (teamKey != null) {
             teamBalances = new java.util.HashMap<>();
             Map<String, ShopCurrency> currencies = ShopLoader.getCurrencies();
             
             // Ottieni il balance per ogni valuta
             for (String currencyId : currencies.keySet()) {
-                double balance = teamManager.getTeamValuteBalance(teamName, currencyId);
+                double balance = teamManager.getTeamValuteBalance(teamKey, currencyId);
                 teamBalances.put(currencyId, balance);
             }
         }

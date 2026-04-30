@@ -350,6 +350,13 @@ public class IskaUtils {
                                        serverPlayer.getName().getString(), e.getMessage());
                         }
                     });
+
+                    // Ensure shop team is created/synced from FTB Teams when available
+                    try {
+                        net.unfamily.iskautils.shop.ShopTeamManager.getInstance(serverPlayer.serverLevel()).getPlayerTeam(serverPlayer);
+                    } catch (Exception e) {
+                        LOGGER.error("Error ensuring shop team for player {}: {}", serverPlayer.getName().getString(), e.getMessage());
+                    }
                 } catch (Exception e) {
                     LOGGER.error("Error in player login event: {}", e.getMessage());
                 }
@@ -395,6 +402,24 @@ public class IskaUtils {
                 IskaUtilsDataReload.reloadAllFromServer();
             } catch (Exception e) {
                 LOGGER.error("Error applying IskaUtils datapack load JSON at server startup: {}", e.getMessage());
+            }
+
+            // Optional integration: synchronize shop teams with FTB Teams if present
+            if (net.neoforged.fml.ModList.get().isLoaded("ftbteams")) {
+                try {
+                    net.unfamily.iskautils.integration.ftbteams.FtbTeamsEvents.init();
+                } catch (Throwable t) {
+                    LOGGER.error("Error initializing FTB Teams integration: {}", t.getMessage());
+                }
+            }
+
+            // Ensure shop team exists for already-online players (singleplayer)
+            try {
+                for (net.minecraft.server.level.ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+                    net.unfamily.iskautils.shop.ShopTeamManager.getInstance(player.serverLevel()).getPlayerTeam(player);
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error ensuring shop teams at server start: {}", e.getMessage());
             }
             
             // Sincronizza le strutture con tutti i client connessi

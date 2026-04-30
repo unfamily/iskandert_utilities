@@ -757,6 +757,11 @@ public class Config
                     "Default: true")
             .define("003_allow_client_structure_player_like", true);
 
+    private static final ModConfigSpec.BooleanValue FTB_TEAMS_SYNC_ENABLED = BUILDER
+            .comment("If true, IskaUtils shop teams are synchronized with FTB Teams when available",
+                    "Default: true")
+            .define("010_ftb_teams_sync_enabled", true);
+
     static {
         BUILDER.pop(); // End of dev category
 
@@ -844,6 +849,7 @@ public class Config
     public static int soundMufflerRangeMax;
     public static String clientStructurePath;
     public static boolean acceptClientStructure;
+    public static boolean ftbTeamsSyncEnabled;
     public static boolean allowClientStructurePlayerLike;
     public static boolean burningBrazierSuperHot;
     public static double greedyShieldBlockChance;
@@ -944,6 +950,7 @@ public class Config
         // Client Structure Path logic
         clientStructurePath = CLIENT_STRUCTURE_PATH.get();
         acceptClientStructure = ACCEPT_CLIENT_STRUCTURE.get();
+        ftbTeamsSyncEnabled = FTB_TEAMS_SYNC_ENABLED.get();
         allowClientStructurePlayerLike = ALLOW_CLIENT_STRUCTURE_PLAYER_LIKE.get();
 
         // Evil Things configuration

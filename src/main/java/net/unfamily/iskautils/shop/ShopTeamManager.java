@@ -6,9 +6,10 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.core.HolderLookup;
+import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.integration.ftbteams.FtbTeamsBridge;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -93,8 +94,72 @@ public class ShopTeamManager {
      * Gets the team a player belongs to
      */
     public String getPlayerTeam(ServerPlayer player) {
+        if (player == null) {
+            return null;
+        }
         TeamData data = getTeamData();
+        if (Config.ftbTeamsSyncEnabled && FtbTeamsBridge.isAvailable()) {
+            var infoOpt = FtbTeamsBridge.getEffectiveTeamInfo(player);
+            if (infoOpt.isPresent()) {
+                var info = infoOpt.get();
+                if (isFtbSyncEnabledForTeam(info.teamKey())) {
+                    ensureShopTeamForFtb(info.teamKey(), info.displayName(), info.ownerId());
+                    data.setPlayerTeam(player.getUUID(), info.teamKey());
+                    return info.teamKey();
+                }
+            }
+        }
+
         return data.getPlayerTeam(player.getUUID());
+    }
+
+    public void setPlayerTeamMapping(UUID playerId, String teamName) {
+        getTeamData().setPlayerTeam(playerId, teamName);
+    }
+
+    public void ensureShopTeamForFtb(String teamKey, String displayName, UUID ownerId) {
+        getTeamData().ensureTeamForFtb(teamKey, displayName, ownerId);
+    }
+
+    public void applyFtbTeamSnapshot(String teamKey, String displayName, UUID ownerId, Set<UUID> members, Set<UUID> assistants) {
+        getTeamData().applyFtbTeamSnapshot(teamKey, displayName, ownerId, members, assistants);
+    }
+
+    public String getTeamDisplayName(String teamKey) {
+        if (teamKey == null) {
+            return null;
+        }
+        Team t = getTeamByName(teamKey);
+        return t != null ? t.getName() : teamKey;
+    }
+
+    public Optional<String> findTeamKeyByDisplayName(String displayName) {
+        return getTeamData().findTeamKeyByDisplayName(displayName);
+    }
+
+    public boolean isFtbSyncEnabledForTeam(String teamKey) {
+        if (teamKey == null) {
+            return false;
+        }
+        Team t = getTeamByName(teamKey);
+        return t == null || !t.isFtbSyncDisabled();
+    }
+
+    public boolean setFtbSyncEnabledForTeam(String teamKey, boolean enabled) {
+        if (teamKey == null) {
+            return false;
+        }
+        Team t = getTeamByName(teamKey);
+        if (t == null) {
+            return false;
+        }
+        t.setFtbSyncDisabled(!enabled);
+        getTeamData().setDirty();
+        return true;
+    }
+
+    private Team getTeamByName(String teamName) {
+        return getTeamData().getTeam(teamName);
     }
     
     /**
@@ -110,7 +175,13 @@ public class ShopTeamManager {
      */
     public UUID getTeamLeader(String teamName) {
         TeamData data = getTeamData();
-        return data.getTeamLeader(teamName);
+        UUID leader = data.getTeamLeader(teamName);
+        if (leader != null && leader.equals(new UUID(0L, 0L)) && Config.ftbTeamsSyncEnabled && FtbTeamsBridge.isAvailable()) {
+            // Attempt live refresh from FTB to fix temporary NIL owner saved in shop data
+            FtbTeamsBridge.getTeamInfoByTeamKey(teamName).ifPresent(info -> data.ensureTeamForFtb(info.teamKey(), info.displayName(), info.ownerId()));
+            leader = data.getTeamLeader(teamName);
+        }
+        return leader;
     }
     
         /**
@@ -311,7 +382,11 @@ public class ShopTeamManager {
      * Gets all team names for autocompletion
      */
     public List<String> getAllTeamNames() {
-        return new ArrayList<>(getAllTeams());
+        List<String> out = new ArrayList<>();
+        for (String key : getAllTeams()) {
+            out.add(getTeamDisplayName(key));
+        }
+        return out;
     }
     
     /**
@@ -464,9 +539,134 @@ public class ShopTeamManager {
 
             return true;
         }
+
+        public Team getTeam(String teamName) {
+            return teams.get(teamName);
+        }
+
+        public void ensureTeamForFtb(String teamKey, String displayName, UUID ownerId) {
+            if (teamKey == null || teamKey.isBlank() || ownerId == null) {
+                return;
+            }
+
+            // Migration: legacy key may have been owner UUID string (old implementation)
+            String legacyKey = ownerId.toString();
+            if (!teams.containsKey(teamKey) && teams.containsKey(legacyKey)) {
+                Team legacy = teams.remove(legacyKey);
+                teams.put(teamKey, legacy);
+                legacy.setName(displayName != null && !displayName.isBlank() ? displayName : legacy.getName());
+                legacy.setLeader(ownerId);
+                legacy.addMember(ownerId);
+                // Update playerTeams mappings pointing to legacy key
+                for (Map.Entry<UUID, String> e : new HashMap<>(playerTeams).entrySet()) {
+                    if (legacyKey.equals(e.getValue())) {
+                        playerTeams.put(e.getKey(), teamKey);
+                    }
+                }
+                setDirty();
+            }
+
+            Team team = teams.get(teamKey);
+            if (team == null) {
+                team = new Team(displayName != null && !displayName.isBlank() ? displayName : teamKey, ownerId);
+                teams.put(teamKey, team);
+                teamsById.put(team.getTeamId(), team);
+            } else {
+                if (displayName != null && !displayName.isBlank()) {
+                    team.setName(displayName);
+                }
+                team.setLeader(ownerId);
+                team.addMember(ownerId);
+            }
+
+            playerTeams.put(ownerId, teamKey);
+            setDirty();
+        }
+
+        public Optional<String> findTeamKeyByDisplayName(String displayName) {
+            if (displayName == null || displayName.isBlank()) {
+                return Optional.empty();
+            }
+            String match = null;
+            for (Map.Entry<String, Team> e : teams.entrySet()) {
+                String dn = e.getValue() != null ? e.getValue().getName() : null;
+                if (dn != null && dn.equalsIgnoreCase(displayName)) {
+                    if (match != null && !match.equals(e.getKey())) {
+                        return Optional.empty(); // ambiguous
+                    }
+                    match = e.getKey();
+                }
+            }
+            return Optional.ofNullable(match);
+        }
+
+        public void applyFtbTeamSnapshot(String teamKey, String displayName, UUID ownerId, Set<UUID> members, Set<UUID> assistants) {
+            ensureTeamForFtb(teamKey, displayName, ownerId);
+
+            Team team = teams.get(teamKey);
+            if (team == null) {
+                return;
+            }
+
+            Set<UUID> newMembers = new HashSet<>();
+            if (members != null) {
+                newMembers.addAll(members);
+            }
+            newMembers.add(ownerId);
+
+            Set<UUID> newAssistants = new HashSet<>();
+            if (assistants != null) {
+                newAssistants.addAll(assistants);
+            }
+            newAssistants.remove(ownerId);
+
+            team.replaceMembers(newMembers);
+            team.replaceAssistants(newAssistants);
+
+            for (UUID id : newMembers) {
+                playerTeams.put(id, teamKey);
+            }
+
+            setDirty();
+        }
         
         public String getPlayerTeam(UUID player) {
             return playerTeams.get(player);
+        }
+
+        public void setPlayerTeam(UUID playerId, String teamName) {
+            if (playerId == null) {
+                return;
+            }
+            if (teamName == null) {
+                playerTeams.remove(playerId);
+            } else {
+                playerTeams.put(playerId, teamName);
+            }
+            setDirty();
+        }
+
+        /**
+         * Ensure a shop team exists for the given leader UUID. This is used by FTB sync.
+         * The team name key is expected to be {@code leaderId.toString()}.
+         */
+        public void ensureTeamForLeader(String teamName, UUID leaderId) {
+            if (teamName == null || leaderId == null) {
+                return;
+            }
+
+            Team team = teams.get(teamName);
+            if (team == null) {
+                team = new Team(teamName, leaderId);
+                teams.put(teamName, team);
+                teamsById.put(team.getTeamId(), team);
+            } else {
+                team.setLeader(leaderId);
+                team.addMember(leaderId);
+            }
+
+            playerTeams.put(leaderId, teamName);
+            setDirty();
         }
         
         public List<UUID> getTeamMembers(String teamName) {
@@ -790,6 +990,7 @@ public class ShopTeamManager {
         private UUID teamId; // Unique immutable team ID
         private String name;
         private UUID leader;
+        private boolean ftbSyncDisabled;
         private final Set<UUID> members;
         private final Set<UUID> assistants;
         private final Map<String, Double> valuteBalances;
@@ -798,6 +999,7 @@ public class ShopTeamManager {
             this.teamId = UUID.randomUUID(); // Generate a unique ID
             this.name = name;
             this.leader = leader;
+            this.ftbSyncDisabled = false;
             this.members = new HashSet<>();
             this.assistants = new HashSet<>();
             this.valuteBalances = new HashMap<>();
@@ -811,6 +1013,7 @@ public class ShopTeamManager {
             this.teamId = teamId;
             this.name = name;
             this.leader = leader;
+            this.ftbSyncDisabled = false;
             this.members = new HashSet<>();
             this.assistants = new HashSet<>();
             this.valuteBalances = new HashMap<>();
@@ -834,6 +1037,14 @@ public class ShopTeamManager {
         public void setLeader(UUID newLeader) {
             this.leader = newLeader;
         }
+
+        public boolean isFtbSyncDisabled() {
+            return ftbSyncDisabled;
+        }
+
+        public void setFtbSyncDisabled(boolean ftbSyncDisabled) {
+            this.ftbSyncDisabled = ftbSyncDisabled;
+        }
         
         public Set<UUID> getMembers() {
             return new HashSet<>(members);
@@ -850,6 +1061,22 @@ public class ShopTeamManager {
         public void removeMember(UUID player) {
             members.remove(player);
             assistants.remove(player); // Remove from assistants if they leave
+        }
+
+        void replaceMembers(Set<UUID> newMembers) {
+            members.clear();
+            if (newMembers != null) {
+                members.addAll(newMembers);
+            }
+            assistants.retainAll(members);
+        }
+
+        void replaceAssistants(Set<UUID> newAssistants) {
+            assistants.clear();
+            if (newAssistants != null) {
+                assistants.addAll(newAssistants);
+            }
+            assistants.retainAll(members);
         }
         
         public void addAssistant(UUID player) {
@@ -886,6 +1113,7 @@ public class ShopTeamManager {
             tag.putUUID("teamId", teamId);
             tag.putString("name", name);
             tag.putUUID("leader", leader);
+            tag.putBoolean("ftb_sync_disabled", ftbSyncDisabled);
             
             ListTag membersTag = new ListTag();
             for (UUID member : members) {
@@ -914,6 +1142,9 @@ public class ShopTeamManager {
             UUID leader = tag.getUUID("leader");
             
             Team team = new Team(teamId, name, leader);
+            if (tag.contains("ftb_sync_disabled")) {
+                team.ftbSyncDisabled = tag.getBoolean("ftb_sync_disabled");
+            }
             
             if (tag.contains("members")) {
                 ListTag membersTag = tag.getList("members", 8); // String tag type

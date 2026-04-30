@@ -134,6 +134,13 @@ dependencies {
     } else {
         compileOnly "curse.maven:curios-309927:6529130"
     }
+
+    // FTB Teams integration (optional; compileOnly + localRuntime for dev)
+    compileOnly "curse.maven:ftb-teams-forge-404468:7878281"
+    localRuntime "curse.maven:ftb-teams-forge-404468:7878281"
+    // Required dependency for FTB Teams
+    compileOnly "curse.maven:ftb-library-forge-404465:7746959"
+    localRuntime "curse.maven:ftb-library-forge-404465:7746959"
     
     if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "guideme") {
         implementation "curse.maven:guide-me-1173950:7127444"

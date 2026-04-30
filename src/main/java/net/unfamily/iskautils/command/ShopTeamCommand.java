@@ -3,6 +3,7 @@ package net.unfamily.iskautils.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
@@ -16,6 +17,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.Entity;
+import net.unfamily.iskautils.integration.ftbteams.FtbTeamsBridge;
 import net.unfamily.iskautils.shop.ShopTeamManager;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCurrency;
@@ -34,6 +36,24 @@ public class ShopTeamCommand {
 
     private static final SimpleCommandExceptionType ERROR_PLAYER_NOT_FOUND = new SimpleCommandExceptionType(
             Component.literal("No player found from selector"));
+
+    private static String resolveTeamKeyOrNull(ShopTeamManager teamManager, String userInput) {
+        if (teamManager == null || userInput == null || userInput.isBlank()) {
+            return null;
+        }
+        if (teamManager.getAllTeams().contains(userInput)) {
+            return userInput; // already a key
+        }
+        return teamManager.findTeamKeyByDisplayName(userInput).orElse(null);
+    }
+
+    private static String displayNameOrInput(ShopTeamManager teamManager, String teamKeyOrInput) {
+        if (teamManager == null || teamKeyOrInput == null) {
+            return teamKeyOrInput;
+        }
+        String key = resolveTeamKeyOrNull(teamManager, teamKeyOrInput);
+        return key != null ? teamManager.getTeamDisplayName(key) : teamKeyOrInput;
+    }
 
     /**
      * Gets target players from the argument (supports @p, @a, @r, @e, @s, @n).
@@ -199,6 +219,22 @@ public class ShopTeamCommand {
                                 .executes(ShopTeamCommand::moveCurrencyBetweenTeams))))))
             .then(Commands.literal("invitations")
                 .executes(ShopTeamCommand::listInvitations))
+            .then(Commands.literal("ftb_sync")
+                .executes(ShopTeamCommand::ftbSyncToggleSelf)
+                .then(Commands.argument("enabled", BoolArgumentType.bool())
+                    .executes(ShopTeamCommand::ftbSyncSetSelf))
+                .then(Commands.literal("team")
+                    .requires(source -> source.hasPermission(2))
+                    .then(Commands.argument("teamName", StringArgumentType.word())
+                        .executes(ShopTeamCommand::ftbSyncToggleTeam)
+                        .then(Commands.argument("enabled", BoolArgumentType.bool())
+                            .executes(ShopTeamCommand::ftbSyncSetTeam))))
+                .then(Commands.literal("player")
+                    .requires(source -> source.hasPermission(2))
+                    .then(Commands.argument("player", EntityArgument.entities())
+                        .executes(ShopTeamCommand::ftbSyncTogglePlayer)
+                        .then(Commands.argument("enabled", BoolArgumentType.bool())
+                            .executes(ShopTeamCommand::ftbSyncSetPlayer)))))
             .then(Commands.literal("help")
                 .executes(context -> showHelp(context, true, false)) // Default to user commands
                 .then(Commands.literal("all")
@@ -207,6 +243,130 @@ public class ShopTeamCommand {
                     .executes(context -> showHelp(context, true, false)))
                 .then(Commands.literal("admin")
                     .executes(context -> showHelp(context, false, true)))));
+    }
+
+    private static int ftbSyncToggleSelf(CommandContext<CommandSourceStack> context) {
+        return ftbSyncSetSelfInternal(context, null);
+    }
+
+    private static int ftbSyncSetSelf(CommandContext<CommandSourceStack> context) {
+        boolean enabled = BoolArgumentType.getBool(context, "enabled");
+        return ftbSyncSetSelfInternal(context, enabled);
+    }
+
+    private static int ftbSyncSetSelfInternal(CommandContext<CommandSourceStack> context, Boolean enabledOrNull) {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        if (!FtbTeamsBridge.isAvailable()) {
+            source.sendFailure(Component.literal("FTB Teams is not available"));
+            return 0;
+        }
+
+        var infoOpt = FtbTeamsBridge.getEffectiveTeamInfo(player);
+        if (infoOpt.isEmpty()) {
+            source.sendFailure(Component.literal("No FTB Team found for player"));
+            return 0;
+        }
+
+        var info = infoOpt.get();
+        ShopTeamManager mgr = ShopTeamManager.getInstance(player.serverLevel());
+        mgr.ensureShopTeamForFtb(info.teamKey(), info.displayName(), info.ownerId());
+        boolean current = mgr.isFtbSyncEnabledForTeam(info.teamKey());
+        boolean next = enabledOrNull != null ? enabledOrNull : !current;
+        mgr.setFtbSyncEnabledForTeam(info.teamKey(), next);
+        final boolean nextFinal = next;
+        final String teamNameFinal = info.displayName();
+        source.sendSuccess(() -> Component.literal("FTB Teams sync for team '" + teamNameFinal + "' is now " + (nextFinal ? "enabled" : "disabled")), false);
+        return 1;
+    }
+
+    private static int ftbSyncToggleTeam(CommandContext<CommandSourceStack> context) {
+        return ftbSyncSetTeamInternal(context, null);
+    }
+
+    private static int ftbSyncSetTeam(CommandContext<CommandSourceStack> context) {
+        boolean enabled = BoolArgumentType.getBool(context, "enabled");
+        return ftbSyncSetTeamInternal(context, enabled);
+    }
+
+    private static int ftbSyncSetTeamInternal(CommandContext<CommandSourceStack> context, Boolean enabledOrNull) {
+        CommandSourceStack source = context.getSource();
+        String teamName = StringArgumentType.getString(context, "teamName");
+
+        MinecraftServer server = source.getServer();
+        if (server == null || server.overworld() == null) {
+            source.sendFailure(Component.literal("Server not available"));
+            return 0;
+        }
+
+        ShopTeamManager mgr = ShopTeamManager.getInstance(server.overworld());
+
+        // Resolve teamKey from display name (preferred) or accept internal key if already present
+        String teamKey = mgr.getAllTeams().contains(teamName) ? teamName : mgr.findTeamKeyByDisplayName(teamName).orElse(null);
+        if (teamKey == null) {
+            source.sendFailure(Component.literal("Unknown team '" + teamName + "'"));
+            return 0;
+        }
+
+        boolean current = mgr.isFtbSyncEnabledForTeam(teamKey);
+        boolean next = enabledOrNull != null ? enabledOrNull : !current;
+        mgr.setFtbSyncEnabledForTeam(teamKey, next);
+        final boolean nextFinal = next;
+        final String teamNameFinal = mgr.getTeamDisplayName(teamKey);
+        source.sendSuccess(() -> Component.literal("FTB Teams sync for team '" + teamNameFinal + "' is now " + (nextFinal ? "enabled" : "disabled")), false);
+        return 1;
+    }
+
+    private static int ftbSyncTogglePlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return ftbSyncSetPlayerInternal(context, null);
+    }
+
+    private static int ftbSyncSetPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        boolean enabled = BoolArgumentType.getBool(context, "enabled");
+        return ftbSyncSetPlayerInternal(context, enabled);
+    }
+
+    private static int ftbSyncSetPlayerInternal(CommandContext<CommandSourceStack> context, Boolean enabledOrNull) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        if (!FtbTeamsBridge.isAvailable()) {
+            source.sendFailure(Component.literal("FTB Teams is not available"));
+            return 0;
+        }
+
+        List<ServerPlayer> targets = getTargetPlayers(context, "player");
+        if (targets.isEmpty()) {
+            throw ERROR_PLAYER_NOT_FOUND.create();
+        }
+
+        MinecraftServer server = source.getServer();
+        if (server == null || server.overworld() == null) {
+            source.sendFailure(Component.literal("Server not available"));
+            return 0;
+        }
+
+        ShopTeamManager mgr = ShopTeamManager.getInstance(server.overworld());
+        int changed = 0;
+        for (ServerPlayer p : targets) {
+            var infoOpt = FtbTeamsBridge.getEffectiveTeamInfo(p);
+            if (infoOpt.isEmpty()) {
+                continue;
+            }
+            var info = infoOpt.get();
+            mgr.ensureShopTeamForFtb(info.teamKey(), info.displayName(), info.ownerId());
+            boolean current = mgr.isFtbSyncEnabledForTeam(info.teamKey());
+            boolean next = enabledOrNull != null ? enabledOrNull : !current;
+            if (mgr.setFtbSyncEnabledForTeam(info.teamKey(), next)) {
+                changed++;
+            }
+        }
+
+        final int changedFinal = changed;
+        source.sendSuccess(() -> Component.literal("Updated FTB Teams sync for " + changedFinal + " player(s)"), false);
+        return changed > 0 ? 1 : 0;
     }
     
     private static int createTeam(CommandContext<CommandSourceStack> context) {
@@ -240,15 +400,16 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeam(player);
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        if (teamManager.deleteTeam(teamName, player)) {
-            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' deleted successfully!"), false);
+        String displayName = teamManager.getTeamDisplayName(teamKey);
+        if (teamManager.deleteTeam(teamKey, player)) {
+            source.sendSuccess(() -> Component.literal("Team '" + displayName + "' deleted successfully!"), false);
             return 1;
         } else {
             source.sendFailure(Component.literal("Failed to delete team. You might not be the leader."));
@@ -825,16 +986,23 @@ public class ShopTeamCommand {
     
     private static int showTeamInfo(CommandSourceStack source, String teamName) {
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
-        List<UUID> members = teamManager.getTeamMembers(teamName);
-        List<UUID> assistants = teamManager.getTeamAssistants(teamName);
-        UUID leader = teamManager.getTeamLeader(teamName);
-        
+        String teamKey = resolveTeamKeyOrNull(teamManager, teamName);
+        if (teamKey == null) {
+            source.sendFailure(Component.literal("Team '" + teamName + "' does not exist"));
+            return 0;
+        }
+
+        List<UUID> members = teamManager.getTeamMembers(teamKey);
+        List<UUID> assistants = teamManager.getTeamAssistants(teamKey);
+        UUID leader = teamManager.getTeamLeader(teamKey);
+
         if (leader == null) {
             source.sendFailure(Component.literal("Team '" + teamName + "' does not exist"));
             return 0;
         }
         
-        source.sendSuccess(() -> Component.literal("=== Team: " + teamName + " ==="), false);
+        final String displayName = teamManager.getTeamDisplayName(teamKey);
+        source.sendSuccess(() -> Component.literal("=== Team: " + displayName + " ==="), false);
         
         // Show leader
         String leaderName = getPlayerName(leader, source.getServer());
@@ -869,10 +1037,10 @@ public class ShopTeamCommand {
         Map<String, ShopCurrency> allCurrencies = ShopLoader.getCurrencies();
         for (String currencyId : allCurrencies.keySet()) {
             ShopCurrency currency = allCurrencies.get(currencyId);
-            double balance = teamManager.getTeamCurrencyBalance(teamName, currencyId);
+            double balance = teamManager.getTeamCurrencyBalance(teamKey, currencyId);
             String localizedName = Component.translatable(currency.name).getString();
             String formattedName = localizedName + " " + currency.charSymbol;
-            source.sendSuccess(() -> Component.literal("Team '" + teamName + "' has " + balance + " " + formattedName), false);
+            source.sendSuccess(() -> Component.literal("Team '" + displayName + "' has " + balance + " " + formattedName), false);
         }
         
         return 1;
@@ -897,7 +1065,8 @@ public class ShopTeamCommand {
         source.sendSuccess(() -> Component.literal("=== All Teams ==="), false);
         for (String teamName : teams) {
             List<UUID> members = teamManager.getTeamMembers(teamName);
-            source.sendSuccess(() -> Component.literal(teamName + " (" + members.size() + " members)"), false);
+            String displayName = teamManager.getTeamDisplayName(teamName);
+            source.sendSuccess(() -> Component.literal(displayName + " (" + members.size() + " members)"), false);
         }
         
         return 1;
@@ -912,21 +1081,23 @@ public class ShopTeamCommand {
         }
         
         ShopTeamManager teamManager = ShopTeamManager.getInstance(source.getPlayer().serverLevel());
-        String teamName = teamManager.getPlayerTeam(source.getPlayer());
+        String teamKey = teamManager.getPlayerTeam(source.getPlayer());
         
-        if (teamName == null) {
+        if (teamKey == null) {
             source.sendFailure(Component.literal("You are not in a team"));
             return 0;
         }
         
-        double nullCoinBalance = teamManager.getTeamCurrencyBalance(teamName, "null_coin");
+        double nullCoinBalance = teamManager.getTeamCurrencyBalance(teamKey, "null_coin");
         ShopCurrency nullCoin = ShopLoader.getCurrencies().get("null_coin");
         if (nullCoin != null) {
             String localizedName = Component.translatable(nullCoin.name).getString();
             String formattedName = localizedName + " " + nullCoin.charSymbol;
-            source.sendSuccess(() -> Component.literal("Your team has " + nullCoinBalance + " " + formattedName), false);
+            String displayName = teamManager.getTeamDisplayName(teamKey);
+            source.sendSuccess(() -> Component.literal("Team '" + displayName + "' has " + nullCoinBalance + " " + formattedName), false);
         } else {
-            source.sendSuccess(() -> Component.literal("Your team has " + nullCoinBalance + " null_coin"), false);
+            String displayName = teamManager.getTeamDisplayName(teamKey);
+            source.sendSuccess(() -> Component.literal("Team '" + displayName + "' has " + nullCoinBalance + " null_coin"), false);
         }
         return 1;
     }

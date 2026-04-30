@@ -376,21 +376,22 @@ public class ShopTransactionManager {
      */
     private static void updatePlayerTeamDataInClient(ServerPlayer player) {
         ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
-        String teamName = teamManager.getPlayerTeam(player);
+        String teamKey = teamManager.getPlayerTeam(player);
         
-        if (teamName != null) {
+        if (teamKey != null) {
             // Get all team balances
             Map<String, Double> teamBalances = new HashMap<>();
             
             // Get all available currencies and their balances
             Map<String, ShopCurrency> allCurrencies = ShopLoader.getCurrencies();
             for (String valuteId : allCurrencies.keySet()) {
-                double balance = teamManager.getTeamValuteBalance(teamName, valuteId);
+                double balance = teamManager.getTeamValuteBalance(teamKey, valuteId);
                 teamBalances.put(valuteId, balance);
             }
             
             // Send updated data to client
-            net.unfamily.iskautils.network.ModMessages.sendShopTeamDataToClient(player, teamName, teamBalances);
+            String displayName = teamManager.getTeamDisplayName(teamKey);
+            net.unfamily.iskautils.network.ModMessages.sendShopTeamDataToClient(player, displayName, teamBalances);
         }
     }
     
