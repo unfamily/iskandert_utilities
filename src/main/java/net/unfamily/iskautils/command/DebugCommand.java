@@ -16,7 +16,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.load.IskaUtilsDataReload;
-import net.unfamily.iskalib.debug.HandItemDump;
+import net.unfamily.iskautils.debug.HandItemDump;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

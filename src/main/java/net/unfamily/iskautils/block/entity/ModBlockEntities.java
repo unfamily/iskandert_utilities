@@ -164,6 +164,13 @@ public class ModBlockEntities {
                         return null;
                     }
             );
+
+            // Item transfer capability for RubberSapExtractor output (tubes/pipes)
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    RUBBER_SAP_EXTRACTOR.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof RubberSapExtractorBlockEntity be ? be.getItemTransferHandler() : null
+            );
             
             // Register energy capability for WeatherAlterer
             event.registerBlockEntity(

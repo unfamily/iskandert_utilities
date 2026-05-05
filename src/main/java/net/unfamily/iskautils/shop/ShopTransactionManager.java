@@ -9,13 +9,8 @@ import net.unfamily.iskalib.team.ShopTeamManager;
 import org.slf4j.Logger;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Items;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 /**
  * Manages shop transactions using team valutes
@@ -321,18 +316,14 @@ public class ShopTransactionManager {
     
     /**
      * Removes an item from player inventory
-     * Note: For selling, only compares the base item type (without data components)
-     * to allow selling any version of the item
      */
     private static boolean removeItemFromPlayer(ServerPlayer player, ShopEntry entry, int count) {
         try {
-            // For selling, use only the base item ID without components
-            String baseItemId = extractBaseItemId(entry.item);
-            Identifier itemResource = Identifier.tryParse(baseItemId);
-            var item = itemResource != null ? BuiltInRegistries.ITEM.getOptional(itemResource).orElse(null) : null;
-            
-            if (item == null || item == Items.AIR) {
-                LOGGER.warn("Item not found: {}", baseItemId);
+            // For selling, match exact item + data components (NBT/components).
+            // We parse once (count = 1) and then use ItemStack.isSameItemSameComponents for inventory checks.
+            ItemStack template = ItemConverter.parseItemString(entry.item, 1);
+            if (template.isEmpty()) {
+                LOGGER.warn("Unable to parse item for sell matching: {}", entry.item);
                 return false;
             }
             
@@ -342,7 +333,7 @@ public class ShopTransactionManager {
             int totalCount = 0;
             for (int i = 0; i < inventory.getContainerSize(); i++) {
                 ItemStack stack = inventory.getItem(i);
-                if (stack.getItem() == item) {
+                if (!stack.isEmpty() && ItemStack.isSameItemSameComponents(stack, template)) {
                     totalCount += stack.getCount();
                 }
             }
@@ -355,7 +346,7 @@ public class ShopTransactionManager {
             int remainingToRemove = count;
             for (int i = 0; i < inventory.getContainerSize() && remainingToRemove > 0; i++) {
                 ItemStack stack = inventory.getItem(i);
-                if (stack.getItem() == item) {
+                if (!stack.isEmpty() && ItemStack.isSameItemSameComponents(stack, template)) {
                     int toRemove = Math.min(remainingToRemove, stack.getCount());
                     stack.shrink(toRemove);
                     remainingToRemove -= toRemove;
