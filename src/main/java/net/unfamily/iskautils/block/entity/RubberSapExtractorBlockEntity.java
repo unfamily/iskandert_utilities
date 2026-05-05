@@ -5,12 +5,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.WorldlyContainer;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -19,6 +16,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.RubberLogEmptyBlock;
@@ -30,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
 public class RubberSapExtractorBlockEntity extends BlockEntity implements WorldlyContainer {
     // Inventory: slot 0 for output (sap)
     private final NonNullList<ItemStack> items = NonNullList.withSize(1, ItemStack.EMPTY);
+
+    // Capability-facing item handler (for pipes/tubes)
+    private final IItemHandler itemHandler = new OutputOnlyItemHandler();
     
     // Energy
     private final EnergyStorageImpl energyStorage;
@@ -43,6 +45,10 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
         super(ModBlockEntities.RUBBER_SAP_EXTRACTOR.get(), pos, state);
         int maxEnergy = Config.rubberSapExtractorEnergyConsume <= 0 ? 0 : Config.rubberSapExtractorEnergyBuffer;
         this.energyStorage = new EnergyStorageImpl(maxEnergy);
+    }
+
+    public IItemHandler getItemHandler() {
+        return itemHandler;
     }
     
     /**
@@ -304,6 +310,64 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
      */
     public IEnergyStorage getEnergyStorage() {
         return this.energyStorage;
+    }
+
+    private final class OutputOnlyItemHandler implements IItemHandlerModifiable {
+        @Override
+        public int getSlots() {
+            return 1;
+        }
+
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            return slot == 0 ? items.get(0) : ItemStack.EMPTY;
+        }
+
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            // Output-only: reject all inserts
+            return stack;
+        }
+
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot != 0 || amount <= 0) {
+                return ItemStack.EMPTY;
+            }
+            ItemStack existing = items.get(0);
+            if (existing.isEmpty()) {
+                return ItemStack.EMPTY;
+            }
+            int toExtract = Math.min(amount, existing.getCount());
+            ItemStack extracted = existing.copy();
+            extracted.setCount(toExtract);
+
+            if (!simulate) {
+                existing.shrink(toExtract);
+                items.set(0, existing.isEmpty() ? ItemStack.EMPTY : existing);
+                setChanged();
+            }
+            return extracted;
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 64;
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return false;
+        }
+
+        @Override
+        public void setStackInSlot(int slot, ItemStack stack) {
+            if (slot != 0) {
+                return;
+            }
+            items.set(0, stack.isEmpty() ? ItemStack.EMPTY : stack.copy());
+            setChanged();
+        }
     }
     
     // --- WorldlyContainer Implementation ---

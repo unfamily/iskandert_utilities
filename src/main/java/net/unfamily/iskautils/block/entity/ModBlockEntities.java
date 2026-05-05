@@ -189,6 +189,18 @@ public class ModBlockEntities {
                         return null;
                     }
             );
+
+            // Register item handler capability for RubberSapExtractor (output slot for tubes/pipes)
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    RUBBER_SAP_EXTRACTOR.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof RubberSapExtractorBlockEntity extractorEntity) {
+                            return extractorEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
             
             // Register energy capability for WeatherAlterer
             event.registerBlockEntity(
