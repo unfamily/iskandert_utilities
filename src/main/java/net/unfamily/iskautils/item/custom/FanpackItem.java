@@ -262,9 +262,6 @@ public class FanpackItem extends VectorCharmItem {
             // Show flight info without consumption (energy disabled or not required)
             tooltipComponents.add(Component.translatable("tooltip.iska_utils.fanpack.flight_no_energy"));
         }
-
-        // Add descriptive tooltip
-        tooltipComponents.add(Component.translatable("tooltip.iska_utils.fanpack.desc"));
     }
     
     /**

@@ -15,6 +15,8 @@ import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity;
 import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskautils.integration.jei.ghost.IIskaUtilsGhostTarget;
+import net.minecraft.client.renderer.Rect2i;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +24,8 @@ import org.slf4j.LoggerFactory;
  * Screen for Deep Drawer Extractor GUI
  * Shows scrollable EditBoxes for infinite filter fields, allow/deny button, and help text
  */
-public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawerExtractorMenu> {
+public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawerExtractorMenu>
+    implements IIskaUtilsGhostTarget {
     
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DeepDrawerExtractorScreen.class);
     
@@ -140,6 +143,43 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private String originalFilterValue = ""; // Original filter value when entering edit mode (to restore if cancelled)
     private java.util.List<String> filterVariants = new java.util.ArrayList<>(); // All possible filter variants for current item
     private int currentFilterVariantIndex = 0; // Current index in filterVariants list
+
+    @Override
+    public IGhostIngredientConsumer getGhostHandler() {
+        return new IGhostItemConsumer() {
+            @Override
+            public void accept(Object ingredient) {
+                if (ingredient instanceof ItemStack stack) {
+                    acceptJeiGhostItem(stack);
+                }
+            }
+        };
+    }
+
+    @Override
+    public Rect2i getGhostTargetArea() {
+        if (editModeFilterIndex < 0) {
+            return null;
+        }
+        int inventoryStartX = 159;
+        int slotColumn = 1;
+        int slotSize = 18;
+        int slotX = this.leftPos + inventoryStartX + slotColumn * 18 - 1;
+        int slotY = this.topPos + 100 - 1;
+        return new Rect2i(slotX, slotY, slotSize, slotSize);
+    }
+
+    private void acceptJeiGhostItem(ItemStack stack) {
+        if (editModeFilterIndex < 0 || stack == null || stack.isEmpty()) {
+            return;
+        }
+        ghostSlotItem = stack.copy();
+        filterVariants = generateAllFilterVariants(stack);
+        currentFilterVariantIndex = 0;
+        if (editModeTextBox != null && !filterVariants.isEmpty()) {
+            editModeTextBox.setValue(filterVariants.get(0));
+        }
+    }
     
     public DeepDrawerExtractorScreen(DeepDrawerExtractorMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);

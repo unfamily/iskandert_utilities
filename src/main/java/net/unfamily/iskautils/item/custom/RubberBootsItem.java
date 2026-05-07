@@ -7,6 +7,9 @@ import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.Item.TooltipContext;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.util.RubberNegateFallHandler;
@@ -23,6 +26,7 @@ import net.minecraft.Util;
 
 import java.util.List;
 import java.util.EnumMap;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Rubber boots that negate fall damage and make the player bounce
@@ -46,6 +50,12 @@ public class RubberBootsItem extends ArmorItem {
 
     public RubberBootsItem(Item.Properties properties) {
         super(ARMOR_MATERIAL, ArmorItem.Type.BOOTS, properties);
+    }
+
+    @Override
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltip, @NotNull TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
+        tooltip.add(Component.translatable("tooltip.iska_utils.rubber_boots.desc"));
     }
     
     /**

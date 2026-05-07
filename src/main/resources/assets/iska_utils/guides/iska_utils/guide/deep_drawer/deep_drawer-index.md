@@ -1,6 +1,6 @@
 ---
 navigation:
-  parent: guide.md
+  parent: hubs/storage.md
   title: Deep Drawer
   icon: deep_drawers
   position: 10

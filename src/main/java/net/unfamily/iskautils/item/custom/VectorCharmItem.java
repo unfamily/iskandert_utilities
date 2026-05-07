@@ -164,17 +164,6 @@ public class VectorCharmItem extends Item {
                 .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
             
             tooltipComponents.add(energyText);
-            
-            // Show consumption per speed level
-            List<Integer> consumption = getEffectiveEnergyConsume();
-            tooltipComponents.add(Component.literal("§7Energy consumption per tick:"));
-            
-            // Safe access to array elements with fallback to 0
-            String[] speedNames = {"None", "Slow", "Moderate", "Fast", "Extreme", "Ultra", "Hover"};
-            for (int i = 0; i < speedNames.length; i++) {
-                int energyConsumption = (i < consumption.size()) ? consumption.get(i) : 0;
-                tooltipComponents.add(Component.literal("§8  " + speedNames[i] + ": " + energyConsumption + " RF"));
-            }
         } else if (canStoreEnergy()) {
             // Energy storage enabled but no consumption required
             int energy = getEnergyStored(stack);

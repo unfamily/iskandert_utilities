@@ -226,9 +226,9 @@ public class Config
 
     private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_DIRECT_PIPE_ACCESS = BUILDER
             .comment("Allow hoppers and item pipes to interact directly with the Deep Drawer block (without Extender)",
-                    "Default: false - pipes/hoppers need the Deep Drawer Extender module to insert items",
+                    "Default: true - pipes/hoppers can insert directly into the Deep Drawer",
                     "When true, the Deep Drawer exposes IItemHandler capability directly to adjacent blocks")
-            .define("404_deep_drawers_direct_pipe_access", false);
+            .define("404_deep_drawers_direct_pipe_access", true);
 
     private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_DEBUG_EXTRACTION_ENABLED = BUILDER
             .comment("Enable debug extraction: Shift+Right-click to extract one item directly from the Deep Drawer",
@@ -241,6 +241,12 @@ public class Config
                     "When false, automated insertion is rejected (player GUI insertion still works).",
                     "Extraction via the exposed item handler is always disabled; use the Deep Drawer Extractor block to pull items.")
             .define("406_deep_drawers_allow_automation_insert", true);
+
+    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_ALLOW_AUTOMATION_EXTRACT = BUILDER
+            .comment("When false (default), hoppers and pipes cannot extract from Deep Drawers via the item handler.",
+                    "When true, automated extraction is allowed (this may be expensive for some pipes; the Deep Drawer Extractor is recommended).",
+                    "GUI extraction is controlled separately and remains allowed only through the GUI path.")
+            .define("407_deep_drawers_allow_automation_extract", false);
 
     // Deep Drawer Extractor Configuration (starts at 410)
     private static final ModConfigSpec.IntValue DEEP_DRAWER_EXTRACTOR_INTERVAL = BUILDER
@@ -885,6 +891,7 @@ public class Config
     public static boolean deepDrawersDirectPipeAccess;
     public static boolean deepDrawersDebugExtractionEnabled;
     public static boolean deepDrawersAllowAutomationInsert;
+    public static boolean deepDrawersAllowAutomationExtract;
     public static int deepDrawerExtractorInterval;
     public static int deepDrawerExtractorMaxFilters;
     
@@ -993,6 +1000,7 @@ public class Config
         deepDrawersDirectPipeAccess = DEEP_DRAWERS_DIRECT_PIPE_ACCESS.get();
         deepDrawersDebugExtractionEnabled = DEEP_DRAWERS_DEBUG_EXTRACTION_ENABLED.get();
         deepDrawersAllowAutomationInsert = DEEP_DRAWERS_ALLOW_AUTOMATION_INSERT.get();
+        deepDrawersAllowAutomationExtract = DEEP_DRAWERS_ALLOW_AUTOMATION_EXTRACT.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         

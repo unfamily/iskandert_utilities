@@ -155,6 +155,7 @@ dependencies {
     // JEI dependency (Curseforge)
     if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "jei") {
         localRuntime "curse.maven:jei-238222:6516057"
+        compileOnly "curse.maven:jei-238222:6516057"
     } else {
         compileOnly "curse.maven:jei-238222:6516057"
     }
