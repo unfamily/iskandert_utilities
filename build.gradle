@@ -140,7 +140,8 @@ dependencies {
     implementation "curse.maven:guideme-1173950:7929350"
     
     // JEI (compile-only) for ghost ingredient integration in GUIs
-    compileOnly "curse.maven:jei-238222:6516057"
+    // Must match the JEI API used at runtime for 26.1.2 (Identifier-based)
+    compileOnly "curse.maven:jei-238222:7920926"
     
     // Verify that the value of include_compass_mods is valid
     if (project.hasProperty('include_compass_mods') && 

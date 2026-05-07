@@ -1,11 +1,11 @@
 ---
 navigation:
   title: Potion plates
-  icon: iska_utils:potion_plate
+  icon: iska_utils:iska_utils_improved_damage
   parent: hubs/world_and_machines.md
   position: 80
 item_ids:
-  - iska_utils:potion_plate
+  - iska_utils:iska_utils_improved_damage
 categories:
   - World and machines
 ---
