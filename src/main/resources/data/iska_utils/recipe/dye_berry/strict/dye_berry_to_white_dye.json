@@ -1,0 +1,16 @@
+{
+  "type": "iska_lib:strict_shaped",
+  "pattern": [
+    "AAA",
+    "   ",
+    "   "
+  ],
+  "key": {
+    "A": "iska_utils:dye_berry"
+  },
+  "result": {
+    "id": "minecraft:white_dye",
+    "count": 4
+  }
+}
+
