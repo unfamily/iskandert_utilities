@@ -7,7 +7,7 @@
   ],
   "key": {
     "A": {
-      "item": "minecraft:smooth_stone"
+      "tag": "c:stones"
     },
     "B": {
       "item": "minecraft:repeater"
