@@ -1360,15 +1360,9 @@ public class ModMessages {
                         return;
                     }
 
-                    // Toggle climbing for the player
-                    boolean newState = net.unfamily.iskautils.data.GauntletClimbingData.toggleClimbing(player);
-                    
-                    // Show feedback in action bar
-                    if (newState) {
-                        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.enabled"));
-                    } else {
-                        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing.disabled"));
-                    }
+                    boolean newState = net.unfamily.iskautils.item.custom.GauntletOfClimbingItem.toggleClimbing(player);
+                    player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
+                            "message.iska_utils.gauntlet_climbing." + (newState ? "enabled" : "disabled")));
                 } catch (Exception e) {
                     LOGGER.warn("Failed to toggle Gauntlet of Climbing: {}", e.getMessage());
                 }

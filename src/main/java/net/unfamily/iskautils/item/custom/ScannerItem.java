@@ -3,6 +3,7 @@ package net.unfamily.iskautils.item.custom;
 import com.mojang.logging.LogUtils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -25,13 +26,14 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.neoforged.neoforge.common.Tags;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.client.KeyBindings;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 
@@ -1121,7 +1123,7 @@ public class ScannerItem extends Item {
         tooltipAdder.accept(rangeText);
         
         // Keybind information for range cycling
-        String keybindName = KeyBindings.SCANNER_RANGE_KEY.getTranslatedKeyMessage().getString();
+        Component keybindName = Component.translatable("key.iska_utils.scanner_range");
         Component keybindText = Component.translatable("item.iska_utils.scanner.tooltip.range_keybind", keybindName)
             .withStyle(style -> style.withColor(ChatFormatting.GRAY));
         tooltipAdder.accept(keybindText);
@@ -1174,7 +1176,7 @@ public class ScannerItem extends Item {
                         case 3 -> "item.iska_utils.scanner.tooltip.mining_level.iron";
                         case 4 -> "item.iska_utils.scanner.tooltip.mining_level.diamond";
                         case 5 -> "item.iska_utils.scanner.tooltip.mining_level.netherite";
-                        case 100 -> "item.iska_utils.scanner.tooltip.mining_level.modded";
+                        case 100 -> "item.iska_utils.scanner.tooltip.mining_level.other";
                         default -> "item.iska_utils.scanner.tooltip.target_ores_value";
                     };
                     MutableComponent mutableTargetText = targetText.copy();
@@ -1416,57 +1418,48 @@ public class ScannerItem extends Item {
     }
 
     /**
-     * Determines the mining level of a block
-     * @param blockState The block state to check
-     * @return 0 if no tool required, 1-5 for vanilla levels (wood, stone, iron, diamond, netherite), 100 for modded/unknown
+     * Mining tier for ore filtering: 0 = any / none, 1–5 = wood through netherite,
+     * 100 = other / unknown (e.g. tagged ores without a recognized {@code incorrect_for_*_tool} tier).
+     * Uses {@link BlockTags#INCORRECT_FOR_*_TOOLS} (weaker tool is wrong → need stronger tier).
+     * Netherite requirement also matches {@link Tags.Blocks#NEEDS_NETHERITE_TOOL} as an alias.
      */
     private int getBlockMiningLevel(BlockState blockState) {
-        Block block = blockState.getBlock();
-        
-        // Check vanilla mining level tags in order (highest first)
-        // Note: NEEDS_NETHERITE_TOOL might not exist in all versions
-        try {
-            if (block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL)) {
-                // Check if it also needs netherite (higher level)
-                // Since NEEDS_NETHERITE_TOOL might not exist, we'll use diamond as level 4
-                // and check for netherite blocks manually if needed
-                return 4; // Diamond level
-            }
-        } catch (Exception e) {
-            // Tag might not exist
+        Holder<Block> holder = blockState.getBlock().builtInRegistryHolder();
+
+        if (holder.is(BlockTags.INCORRECT_FOR_NETHERITE_TOOL)) {
+            return 100;
         }
-        try {
-            if (block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.NEEDS_IRON_TOOL)) {
-                return 3; // Iron level
-            }
-        } catch (Exception e) {
-            // Tag might not exist
+        if (holder.is(BlockTags.INCORRECT_FOR_DIAMOND_TOOL)) {
+            return 5;
         }
-        try {
-            if (block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL)) {
-                return 2; // Stone level
-            }
-        } catch (Exception e) {
-            // Tag might not exist
+        if (holder.is(Tags.Blocks.NEEDS_NETHERITE_TOOL)) {
+            return 5;
         }
-        
-        // Check if block requires correct tool (but no specific level tag)
-        // This usually means it can be mined with wood tools (level 1)
+        if (holder.is(BlockTags.INCORRECT_FOR_IRON_TOOL)) {
+            return 4;
+        }
+        if (holder.is(BlockTags.INCORRECT_FOR_STONE_TOOL)) {
+            return 3;
+        }
+        if (holder.is(BlockTags.INCORRECT_FOR_WOODEN_TOOL)) {
+            return 2;
+        }
+
+        int tier = 0;
         if (blockState.requiresCorrectToolForDrops()) {
-            // If it requires correct tool but no level tag, it might be wood level or modded
-            // Check if it's mineable at all
-            if (block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE) ||
-                block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.MINEABLE_WITH_AXE) ||
-                block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL) ||
-                block.builtInRegistryHolder().is(net.minecraft.tags.BlockTags.MINEABLE_WITH_HOE)) {
-                // It's mineable but has no level tag - could be wood level (1) or modded (100)
-                // We'll default to wood level (1) for vanilla blocks, modded will be detected differently
-                return 1; // Wood level (default for blocks requiring tools but no specific level)
+            if (holder.is(BlockTags.MINEABLE_WITH_PICKAXE)
+                    || holder.is(BlockTags.MINEABLE_WITH_AXE)
+                    || holder.is(BlockTags.MINEABLE_WITH_SHOVEL)
+                    || holder.is(BlockTags.MINEABLE_WITH_HOE)) {
+                tier = 1;
             }
         }
-        
-        // Block doesn't require any specific tool level (level 0)
-        return 0;
+
+        if (holder.is(Tags.Blocks.ORES) && (tier == 0 || tier == 1)) {
+            return 100;
+        }
+
+        return tier;
     }
     
     /**
@@ -1929,5 +1922,4 @@ public class ScannerItem extends Item {
         displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
     }
 } 
-
 

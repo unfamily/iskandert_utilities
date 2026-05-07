@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -16,7 +17,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.ModBlocks;
-import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskalib.stage.StageRegistry;
 import org.jspecify.annotations.Nullable;
@@ -134,6 +134,21 @@ public class BurningBrazierItem extends Item {
         if (!(entity instanceof ServerPlayer player)) {
             return;
         }
+
+        // Repair brazier durability using burning_flame block items from inventory (Curio slots ignored by design).
+        if (stack.isDamaged() && level.getGameTime() % 20 == 0) {
+            var flameItem = ModBlocks.BURNING_FLAME.get().asItem();
+            Inventory inv = player.getInventory();
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                ItemStack slotStack = inv.getItem(i);
+                if (!slotStack.isEmpty() && slotStack.is(flameItem)) {
+                    slotStack.shrink(1);
+                    stack.setDamageValue(Math.max(0, stack.getDamageValue() - 1));
+                    break;
+                }
+            }
+        }
+
         if (!isAutoPlacementEnabled(player.getUUID())) {
             return;
         }
@@ -169,9 +184,8 @@ public class BurningBrazierItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
-        String keybindName = KeyBindings.BURNING_BRAZIER_TOGGLE_KEY.getTranslatedKeyMessage().getString();
         tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc0"));
-        tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc1", keybindName));
+        tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc1", Component.translatable("key.iska_utils.burning_brazier_toggle")));
         tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc2"));
     }
 }

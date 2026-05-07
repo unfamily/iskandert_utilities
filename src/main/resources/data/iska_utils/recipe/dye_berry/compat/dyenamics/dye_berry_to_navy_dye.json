@@ -5,11 +5,11 @@
       "modid": "dyenamics"
     }
   ],
-  "type": "minecraft:crafting_shaped",
+  "type": "iska_lib:strict_shaped",
   "pattern": [
-    "A A",
     "  A",
-    "   "
+    "A  ",
+    " A "
   ],
   "key": {
     "A": "iska_utils:dye_berry"

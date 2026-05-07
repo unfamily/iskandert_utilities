@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.client.gui;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -7,11 +8,16 @@ import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPosition
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.unfamily.iskautils.block.FanBlock;
+import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.ModItems;
@@ -581,7 +587,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             case FORWARD -> menu.getRangeFront();
         };
         
-        // Get direction name
+        // Direction label: for vertical fan facing, map GUI axes to world N/S/E/W
         String directionKey = switch (rangeType) {
             case UP -> "up";
             case DOWN -> "down";
@@ -589,6 +595,22 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             case RIGHT -> "right";
             case FORWARD -> "forward";
         };
+        Level level = Minecraft.getInstance().level;
+        if (level != null) {
+            BlockState st = level.getBlockState(this.menu.getSyncedBlockPos());
+            if (st.is(ModBlocks.FAN.get())) {
+                Direction facing = st.getValue(FanBlock.FACING);
+                if (facing == Direction.UP || facing == Direction.DOWN) {
+                    directionKey = switch (rangeType) {
+                        case UP -> "north";
+                        case DOWN -> "south";
+                        case LEFT -> "west";
+                        case RIGHT -> "east";
+                        case FORWARD -> "forward";
+                    };
+                }
+            }
+        }
         
         // Get increment/decrement text
         String actionKey = delta > 0 ? "increment" : "decrement";

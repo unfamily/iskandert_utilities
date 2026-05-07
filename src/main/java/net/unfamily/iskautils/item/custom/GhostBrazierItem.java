@@ -9,7 +9,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.server.level.ServerLevel;
-import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.data.GhostBrazierData;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.util.ModUtils;
@@ -111,8 +110,7 @@ public class GhostBrazierItem extends Item {
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
 
-        // Get the keybind name
-        String keybindName = KeyBindings.GHOST_BRAZIER_TOGGLE_KEY.getTranslatedKeyMessage().getString();
+        Component keybindName = Component.translatable("key.iska_utils.ghost_brazier_toggle");
 
         // Show description
         tooltip.accept(Component.translatable("tooltip.iska_utils.ghost_brazier.desc0"));

@@ -210,7 +210,7 @@ public class ScannerChipItem extends Item {
                             case 3 -> "item.iska_utils.scanner_chip.mining_level.iron";
                             case 4 -> "item.iska_utils.scanner_chip.mining_level.diamond";
                             case 5 -> "item.iska_utils.scanner_chip.mining_level.netherite";
-                            case 100 -> "item.iska_utils.scanner_chip.mining_level.modded";
+                            case 100 -> "item.iska_utils.scanner_chip.mining_level.other";
                             default -> "item.iska_utils.scanner_chip.mining_level.none";
                         };
                         player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.mining_level.set",
@@ -577,7 +577,7 @@ public class ScannerChipItem extends Item {
                         case 3 -> "item.iska_utils.scanner_chip.tooltip.mining_level.iron";
                         case 4 -> "item.iska_utils.scanner_chip.tooltip.mining_level.diamond";
                         case 5 -> "item.iska_utils.scanner_chip.tooltip.mining_level.netherite";
-                        case 100 -> "item.iska_utils.scanner_chip.tooltip.mining_level.modded";
+                        case 100 -> "item.iska_utils.scanner_chip.tooltip.mining_level.other";
                         default -> "item.iska_utils.scanner_chip.tooltip.target_ores_value";
                     };
                     MutableComponent mutableTargetText = targetText.copy();
@@ -617,7 +617,7 @@ public class ScannerChipItem extends Item {
                         case 3 -> "item.iska_utils.scanner_chip.tooltip.mining_level.iron";
                         case 4 -> "item.iska_utils.scanner_chip.tooltip.mining_level.diamond";
                         case 5 -> "item.iska_utils.scanner_chip.tooltip.mining_level.netherite";
-                        case 100 -> "item.iska_utils.scanner_chip.tooltip.mining_level.modded";
+                        case 100 -> "item.iska_utils.scanner_chip.tooltip.mining_level.other";
                         default -> "item.iska_utils.scanner_chip.tooltip.target_ores_value";
                     };
                     MutableComponent mutableTargetText = targetText.copy();

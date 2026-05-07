@@ -582,7 +582,12 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             }
             // Always extract only 1 item at a time (even if more is requested)
             // This ensures shift-click and normal click both extract only 1 item
-            return delegate.extractItem(actualIndex, 1, simulate);
+            try {
+                DeepDrawersBlockEntity.ITEM_HANDLER_ALLOW_EXTRACT.set(true);
+                return delegate.extractItem(actualIndex, 1, simulate);
+            } finally {
+                DeepDrawersBlockEntity.ITEM_HANDLER_ALLOW_EXTRACT.set(false);
+            }
         }
         
         @Override
@@ -621,7 +626,12 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 if (delegate instanceof IItemHandlerModifiable modifiable) {
                     modifiable.setStackInSlot(actualIndex, ItemStack.EMPTY);
                 } else {
-                    delegate.extractItem(actualIndex, Integer.MAX_VALUE, false);
+                    try {
+                        DeepDrawersBlockEntity.ITEM_HANDLER_ALLOW_EXTRACT.set(true);
+                        delegate.extractItem(actualIndex, Integer.MAX_VALUE, false);
+                    } finally {
+                        DeepDrawersBlockEntity.ITEM_HANDLER_ALLOW_EXTRACT.set(false);
+                    }
                 }
             }
             // If stack is not empty, block the insertion

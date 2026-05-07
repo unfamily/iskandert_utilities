@@ -153,18 +153,7 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
         @NotNull
         @Override
         public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            DeepDrawersBlockEntity drawer = findAdjacentDrawer();
-            if (drawer == null) {
-                return net.minecraft.world.item.ItemStack.EMPTY;
-            }
-            // Interface needs to extract directly from drawer (bypassing blocked ItemHandler)
-            // Get the item at this slot first
-            ItemStack stackInSlot = getStackInSlot(slot);
-            if (stackInSlot.isEmpty()) {
-                return net.minecraft.world.item.ItemStack.EMPTY;
-            }
-            // Use extractItemByStack to extract from drawer directly
-            return drawer.extractItemByStack(stackInSlot, Math.min(amount, stackInSlot.getCount()), simulate);
+            return net.minecraft.world.item.ItemStack.EMPTY;
         }
         
         @Override

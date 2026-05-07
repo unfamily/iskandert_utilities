@@ -11,7 +11,10 @@
       "iska_utils:extreme_vect",
       "iska_utils:player_extreme_vect"
     ],
-    "A": "#c:gems/prismarine"
+    "A": [
+      "#c:gems/prismarine",
+      "#c:gems/diamond"
+    ]
   },
   "result": {
     "id": "iska_utils:ultra_vect",

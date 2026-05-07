@@ -19,7 +19,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
-import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.network.ModMessages;
 import net.minecraft.nbt.CompoundTag;
@@ -132,7 +131,7 @@ public class PortableDislocatorItem extends Item {
         super.appendHoverText(stack, context, display, tooltipAdder, tooltipFlag);
         
         // Get the keybind name
-        String keybindName = KeyBindings.PORTABLE_DISLOCATOR_KEY.getTranslatedKeyMessage().getString();
+        Component keybindName = Component.translatable("key.iska_utils.portable_dislocator");
         
         // Add main tooltip
         tooltipAdder.accept(Component.translatable("item.iska_utils.portable_dislocator.tooltip.main", keybindName));
