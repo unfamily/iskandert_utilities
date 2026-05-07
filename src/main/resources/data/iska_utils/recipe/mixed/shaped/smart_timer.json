@@ -6,7 +6,9 @@
     "ABA"
   ],
   "key": {
-    "A": "minecraft:smooth_stone",
+    "A": {
+      "tag": "c:stones"
+    },
     "B": "minecraft:repeater",
     "C": "minecraft:clock"
   },
