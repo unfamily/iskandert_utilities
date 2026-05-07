@@ -1,10 +1,13 @@
 package net.unfamily.iskautils.item.custom;
 
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.util.RubberNegateFallHandler;
 
@@ -20,6 +23,7 @@ import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.core.component.DataComponents;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Rubber boots that negate fall damage and make the player bounce
@@ -52,6 +56,12 @@ public class RubberBootsItem extends Item {
                 .enchantable(2)
                 .component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.FEET).setAsset(RUBBER_ASSET).build())
                 .component(DataComponents.ATTRIBUTE_MODIFIERS, RUBBER_MATERIAL.createAttributes(ArmorType.BOOTS)));
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
+        tooltip.accept(Component.translatable("tooltip.iska_utils.rubber_boots.desc"));
     }
     
     /**

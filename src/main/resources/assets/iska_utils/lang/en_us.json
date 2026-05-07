@@ -14,7 +14,6 @@
   "item.iska_utils.gauntlet_of_climbing": "Gauntlet of Climbing",
   "tooltip.iska_utils.gauntlet_of_climbing.desc": "§7Allows you to climb walls when held in inventory",
   "tooltip.iska_utils.gauntlet_of_climbing.toggle": "§7Press %s to toggle",
-  
   "tooltip.iska_utils.sacred_rubber_sapling.desc0": "Don't worry, it doesn't grow by itself...",
   "tooltip.iska_utils.sacred_rubber_sapling.desc1": "It requires a large dose of fertilizer.",
   "tooltip.iska_utils.sacred_rubber_sapling.desc2": "Tree of enormous size.",
@@ -49,7 +48,6 @@
   "gui.iska_utils.save_error_duplicate_id_hint": "Use a different ID or remove the existing structure first",
   "gui.iska_utils.save_error_no_coordinates": "No blueprint data found! Import a blueprint with coordinates first",
   "gui.iska_utils.update_area": "Area updated",
-  
   "gui.iska_utils.generic.show": "Show",
   "gui.iska_utils.generic.redstone_mode": "Redstone Mode: %s",
   "gui.iska_utils.generic.redstone_mode.none": "Redstone Mode: Ignore",
@@ -57,7 +55,6 @@
   "gui.iska_utils.generic.redstone_mode.high": "Redstone Mode: High",
   "gui.iska_utils.generic.redstone_mode.pulse": "Redstone Mode: Pulse",
   "gui.iska_utils.generic.redstone_mode.disabled": "Redstone Mode: Disabled",
-  
   "item.iska_utils.rubber_boots": "Rubber Boots",
   "block.iska_utils.rubber_log": "Rubber Log",
   "block.iska_utils.stripped_rubber_log": "Stripped Rubber Log",
@@ -91,23 +88,19 @@
   "block.iska_utils.wither_proof_stairs": "Wither Proof Stairs",
   "block.iska_utils.wither_proof_slab": "Wither Proof Slab",
   "block.iska_utils.wither_proof_wall": "Wither Proof Wall",
-  
   "block.iska_utils.tar_slime_block": "Tar Slime Block",
   "block.iska_utils.sap_block": "Rubber Sap Block",
   "item.iska_utils.tar_slimeball": "Tar Slimeball",
-  
   "block.iska_utils.slow_vect": "Mobfarm Slow Vector Plate",
   "block.iska_utils.moderate_vect": "Mobfarm Moderate Vector Plate",
   "block.iska_utils.fast_vect": "Mobfarm Fast Vector Plate",
   "block.iska_utils.extreme_vect": "Mobfarm Extreme Vector Plate",
   "block.iska_utils.ultra_vect": "Mobfarm Ultra Vector Plate",
-  
   "block.iska_utils.player_slow_vect": "Player Slow Vector Plate",
   "block.iska_utils.player_moderate_vect": "Player Moderate Vector Plate",
   "block.iska_utils.player_fast_vect": "Player Fast Vector Plate",
   "block.iska_utils.player_extreme_vect": "Player Extreme Vector Plate",
   "block.iska_utils.player_ultra_vect": "Player Ultra Vector Plate",
-  
   "block.iska_utils.hellfire_igniter": "Hellfire Igniter",
   "block.iska_utils.fan": "Modular Fan",
   "item.iska_utils.range_module": "Range Module",
@@ -135,7 +128,6 @@
   "gui.iska_utils.fan.range_button.direction.south": "South",
   "gui.iska_utils.fan.range_button.direction.east": "East",
   "gui.iska_utils.fan.range_button.direction.west": "West",
-  
   "block.iska_utils.smart_timer": "Smart Timer",
   "gui.iska_utils.smart_timer.cooldown": "Redstone off for:",
   "gui.iska_utils.smart_timer.signal_duration": "Redstone on for:",
@@ -149,7 +141,6 @@
   "block.iska_utils.raft": "Raft Bridge",
   "block.iska_utils.raft_no_drop": "Raft Bridge",
   "block.iska_utils.rubber_sap_extractor": "Rubber Sap Extractor",
-  
   "block.iska_utils.iska_utils_slowness": "Slowness Trap Plate",
   "block.iska_utils.iska_utils_poison": "Poison Trap Plate",
   "block.iska_utils.iska_utils_weakness": "Weakness Trap Plate",
@@ -158,11 +149,9 @@
   "block.iska_utils.iska_utils_lethal_damage": "Lethal Damage Trap Plate",
   "block.iska_utils.iska_utils_fire": "Fire Trap Plate",
   "block.iska_utils.iska_utils_freeze": "Freeze Trap Plate",
-  
   "tooltip.iska_utils.iska_utils_damage.desc0": "§7Damage: 2 (not player)",
   "tooltip.iska_utils.iska_utils_improved_damage.desc0": "§7Damage: 4 (player)",
   "tooltip.iska_utils.iska_utils_lethal_damage.desc0": "§7Damage: 500 (player)",
-
   "block.iska_utils.weather_detector": "Weather Detector",
   "block.iska_utils.sound_muffler": "Sound Muffler",
   "gui.iska_utils.sound_muffler.cat.all": "All",
@@ -200,7 +189,6 @@
   "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line1": "Left-click: +1 | Right-click: -1",
   "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line2": "Ctrl/Alt + Click: ±5 | Shift + Click: Max/Min",
   "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line3": "Middle-click: Reset to %s",
-  
   "gui.iska_utils.temporal_overclocker.show": "Show",
   "gui.iska_utils.temporal_overclocker.show_modifier_ctrl": "Ctrl/Alt: Same type",
   "gui.iska_utils.temporal_overclocker.show_modifier_shift": "Shift: All",
@@ -216,14 +204,12 @@
   "tooltip.iska_utils.temporal_overclocker.desc1": "Use the Temporal Overclocker Chipset to link it.",
   "tooltip.iska_utils.temporal_overclocker_chip.desc0": "Right-click on the Overclocker to activate linking mode, then click on blocks to link them.",
   "tooltip.iska_utils.temporal_overclocker_chip.desc1": "Right-click on the Overclocker again to deactivate linking mode.",
-  
   "block.iska_utils.angel_block": "Angel Block",
   "block.iska_utils.structure_saver_machine": "Structure Saver Machine",
   "item.iska_utils.structure_saver_machine": "Structure Saver Machine",
   "block.iska_utils.structure_marker": "Structure Marker",
   "block.iska_utils.shop": "Shop",
   "block.iska_utils.auto_shop": "Auto Shop",
-  
   "gui.iska_utils.shop.title": "Shop",
   "gui.iska_utils.auto_shop.title": "Auto Shop",
   "gui.iska_utils.auto_shop.select_item": "Item Selected",
@@ -249,16 +235,13 @@
   "gui.iska_utils.shop.feedback.no_team": "Not in team",
   "gui.iska_utils.shop.feedback.stage_requirements": "Missing or incompatible stage",
   "gui.iska_utils.shop.feedback.transaction_error": "Transaction error",
-  
   "creativetab.iska_utils.tab": "Iskandert's Utilities",
   "itemGroup.iska_utils.command_items": "Iskandert's Command Items",
-  
   "block.iska_utils.smooth_blackstone": "Smooth Blackstone",
   "block.iska_utils.smooth_blackstone_slab": "Smooth Blackstone Slab",
   "block.iska_utils.smooth_blackstone_stairs": "Smooth Blackstone Stairs",
   "block.iska_utils.smooth_blackstone_wall": "Smooth Blackstone Wall",
   "block.iska_utils.plate_base_block": "Plate Base",
-  
   "key.categories.iska_utils": "Iskandert's Utilities",
   "key.categories.iska_utils.iska_utils": "Iskandert's Utilities",
   "key.category.iska_utils": "Iskandert's Utilities",
@@ -273,14 +256,12 @@
   "key.iska_utils.burning_brazier_toggle": "Toggle Burning Brazier Auto-Placement",
   "key.iska_utils.ghost_brazier_toggle": "Toggle Ghost Brazier Spectator Mode",
   "key.iska_utils.scanner_range": "Cycle Scanner Range",
-  
   "message.iska_utils.structure_undo.no_history": "§eNo structures to disassemble",
   "message.iska_utils.structure_undo.structure_not_found": "§cStructure definition not found: %s",
   "message.iska_utils.structure_undo.no_positions": "§cNo positions calculated for the structure!",
   "message.iska_utils.structure_undo.success": "§aDisassembly completed! §f%s §aremoved §7(%d blocks removed, %d skipped)",
   "message.iska_utils.structure_undo.no_blocks": "§cNo blocks to remove for §f%s §c(structure not found or already modified)",
   "message.iska_utils.fan.use_back_side": "It is recommended to access the fan from the back side to view the GUI correctly",
-  
   "vectorcharm.factor.none": "None",
   "vectorcharm.factor.slow": "Slow",
   "vectorcharm.factor.moderate": "Moderate",
@@ -288,7 +269,6 @@
   "vectorcharm.factor.extreme": "Extreme",
   "vectorcharm.factor.ultra": "Ultra",
   "vectorcharm.factor.unknown": "Unknown",
-  
   "message.iska_utils.vector_vertical_factor": "Vector Charm vertical factor set to: %s",
   "message.iska_utils.vector_horizontal_factor": "Vector Charm horizontal factor set to: %s",
   "message.iska_utils.vector_hover_mode.hover": "Vector Charm mode: hover",
@@ -297,9 +277,8 @@
   "message.iska_utils.burning_brazier_auto_placement.disabled": "Burning Brazier auto-placement: §cdisabled",
   "message.iska_utils.ghost_brazier.became_ethereal": "§bYou became ethereal",
   "message.iska_utils.ghost_brazier.became_physical": "§aYou returned to physical form",
-  
-  "item.iska_utils.portable_dislocator.tooltip.main": "Press %s to teleport near compass coordinates (30-50 blocks away)",
-  "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Teleports near compass coordinates (30-50 blocks away)",
+  "item.iska_utils.portable_dislocator.tooltip.main": "Press %s to jump ~30–50 blocks toward a held compass target (Nature's Compass, Explorer's Compass, similar)",
+  "item.iska_utils.portable_dislocator.tooltip.main_no_keybind": "Jumps ~30–50 blocks toward a held compass target (Nature's Compass, Explorer's Compass, similar)",
   "item.iska_utils.portable_dislocator.tooltip.compasses": "Works with Nature's Compass, Explorer's Compass and other compass-like items",
   "item.iska_utils.portable_dislocator.tooltip.energy": "Energy: ",
   "item.iska_utils.portable_dislocator.tooltip.xp_backup": "Alternatively consumes %d XP if out of energy",
@@ -314,30 +293,22 @@
   "item.iska_utils.portable_dislocator.message.failed": "Failed to find safe teleportation destination after multiple attempts",
   "item.iska_utils.portable_dislocator.message.no_compass": "No valid compass in hands (Nature's, Explorer's, or Structure Compass).",
   "item.iska_utils.portable_dislocator.message.no_coordinates": "Could not read target coordinates from the compass.",
-  
   "curios.identifier.charm": "Charm",
   "curios.identifier.curio": "Curio",
-  
   "commands.iska_utils.macro.no_permission": "You don't have the required permission level to execute this macro",
   "commands.iska_utils.macro.success": "Macro execution started",
   "commands.iska_utils.macro.failed": "Failed to execute macro",
   "commands.iska_utils.macro.missing_parameter": "Missing required parameter",
-
   "item.iska_utils.iska_utils_world_init": "World Initializer",
-
   "message.iska_utils.item_restriction.dropped": "§4Stage restriction: invalid items in inventory dropped",
   "message.iska_utils.item_restriction.deleted": "§4Stage restriction: invalid items in inventory deleted",
   "message.iska_utils.item_restriction.blocked": "§4Stage restriction: invalid items in inventory blocked",
-
   "item.iska_utils.electric_treetap.tooltip.energy": "Energy: ",
   "item.iska_utils.electric_treetap.message.no_energy": "Not enough energy to use the Electric Treetap!",
-
   "item.iska_utils.rubber_chunk": "Rubber Chunk",
   "item.iska_utils.plastic_ingot": "Plastic Ingot",
-
   "advancements.iska_utils.sticky_oil.title": "Sticky Situation",
   "advancements.iska_utils.sticky_oil.descr": "You're stuck in Crude Oil!",
-
   "item.iska_utils.scanner": "Scanner",
   "item.iska_utils.scanner.target_set": "Target block set: %s",
   "item.iska_utils.scanner.no_target": "No target set. Use Shift+right click on a block or a mob to set it",
@@ -353,6 +324,8 @@
   "item.iska_utils.scanner.found_mobs": "Found %s mobs in the area",
   "item.iska_utils.scanner.no_energy": "Not enough energy to use the Scanner!",
   "item.iska_utils.scanner.tooltip.energy": "Energy: ",
+  "item.iska_utils.scanner.tooltip.range_key_line": "Range: %s blocks — %s to cycle",
+  "item.iska_utils.scanner.tooltip.brief_controls": "Shift+use: set/clear target · Hold use: scan · Offhand chip: copy target to chip",
   "item.iska_utils.scanner.tooltip.range": "Range",
   "item.iska_utils.scanner.tooltip.range_units": "blocks",
   "item.iska_utils.scanner.tooltip.range_keybind": "Press %s to change range",
@@ -384,8 +357,6 @@
   "item.iska_utils.scanner.found_all_mobs": "Found %d mobs in the area",
   "item.iska_utils.scanner.transferring_from_chip": "Transferring target from chip to scanner",
   "item.iska_utils.scanner.fish_powered": "🐟 Scanning is powered by fish... 🐟",
-
-  
   "item.iska_utils.scanner_chip.target_set": "Target block saved to chip: %s",
   "item.iska_utils.scanner_chip.mob_target_set": "Target set to scan for %s",
   "item.iska_utils.scanner_chip.no_target": "No target saved in chip",
@@ -425,33 +396,28 @@
   "item.iska_utils.scanner_chip.tooltip.mining_level.netherite": "Netherite",
   "item.iska_utils.scanner_chip.tooltip.mining_level.modded": "Greater than Netherite",
   "item.iska_utils.scanner_chip.tooltip.mining_level.other": "Other mining level",
-  
   "block.iska_utils.weather_detector.mode.sunny": "Weather Detector set to Sunny mode",
   "block.iska_utils.weather_detector.mode.rain": "Weather Detector set to Rain mode",
   "block.iska_utils.weather_detector.mode.storm": "Weather Detector set to Storm mode",
   "block.iska_utils.weather_detector.mode.both": "Weather Detector set to Rain or Storm mode",
   "block.iska_utils.weather_detector.mode.unknown": "Error: the weather detector has not been set correctly",
-
   "block.iska_utils.weather_alterer.mode.sunny": "Weather Alterer set to Sunny mode",
   "block.iska_utils.weather_alterer.mode.rain": "Weather Alterer set to Rain mode",
   "block.iska_utils.weather_alterer.mode.storm": "Weather Alterer set to Storm mode",
   "block.iska_utils.weather_alterer.mode.unknown": "Error: the weather alterer has not been set correctly",
-
   "block.iska_utils.time_alterer.mode.day": "Time Alterer set to Day mode",
   "block.iska_utils.time_alterer.mode.night": "Time Alterer set to Night mode",
   "block.iska_utils.time_alterer.mode.noon": "Time Alterer set to Noon mode",
   "block.iska_utils.time_alterer.mode.midnight": "Time Alterer set to Midnight mode",
   "block.iska_utils.time_alterer.mode.unknown": "Error: the time alterer has not been set correctly",
-
   "tooltip.iska_utils.necrotic_crystal_heart.desc0": "§5A dark heart that won't let you perish easily",
   "tooltip.iska_utils.necrotic_crystal_heart.desc1": "§5Your wounds will become deeper and deeper",
   "tooltip.iska_utils.necrotic_crystal_heart.desc2": "§5Only a good sleep will heal you",
   "tooltip.iska_utils.necrotic_crystal_heart.desc3": "§5Or you will be consumed by pain",
   "tooltip.iska_utils.necrotic_crystal_heart.artifacts_required": "§4Artifacts mod is required to obtain it",
   "tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded": "§6Artifacts' Mimic drops it",
-
   "item.iska_utils.swiss_wrench.rotation_mode.rotate_right": "Clockwise Rotation",
-  "item.iska_utils.swiss_wrench.rotation_mode.rotate_left": "Counter-Clockwise Rotation", 
+  "item.iska_utils.swiss_wrench.rotation_mode.rotate_left": "Counter-Clockwise Rotation",
   "item.iska_utils.swiss_wrench.rotation_mode.north": "North Direction",
   "item.iska_utils.swiss_wrench.rotation_mode.east": "East Direction",
   "item.iska_utils.swiss_wrench.rotation_mode.south": "South Direction",
@@ -459,20 +425,16 @@
   "item.iska_utils.swiss_wrench.rotation_mode.up": "Up Direction",
   "item.iska_utils.swiss_wrench.rotation_mode.down": "Down Direction",
   "item.iska_utils.swiss_wrench.message.mode_set": "Rotation mode set to: %s",
- 
   "tooltip.iska_utils.mining_equitizer.desc0": "An artifact that increases your strength when mining",
   "tooltip.iska_utils.mining_equitizer.desc1": "in unfavorable conditions (in water or when flying)",
-
   "item.iska_utils.swiss_wrench.message.block_rotated": "Block rotated successfully",
   "item.iska_utils.swiss_wrench.message.cannot_rotate": "Cannot rotate this block",
   "item.iska_utils.swiss_wrench.tooltip.current_mode": "Current mode: %s",
   "item.iska_utils.swiss_wrench.tooltip.desc0": "Shift + Right Click to rotate blocks",
   "item.iska_utils.swiss_wrench.tooltip.desc1": "Left Click to change rotation mode on a block",
-
   "commands.iska_utils.structure.error.not_found": "Structure not found",
   "commands.iska_utils.structure.error.placement_failed": "Failed to place structure",
   "commands.iska_utils.structure.error.force_not_allowed": "Force placement is not allowed for this structure",
-
   "gui.iska_utils.structure_placer.title": "Structure Placer",
   "gui.iska_utils.structure_placer.apply": "Apply",
   "gui.iska_utils.structure_placer.cancel": "Cancel",
@@ -483,7 +445,6 @@
   "iska_utils.wither_proof_block": "Wither-Proof Blocks",
   "minecraft.piston": "Minecraft: Piston",
   "minecraft.lever": "Minecraft: Lever",
-
   "item.iska_utils.structure_placer.tooltip.selected_structure": "§bSelected structure: §f%s",
   "item.iska_utils.structure_placer.tooltip.rotation": "§eRotation: §f%s",
   "item.iska_utils.structure_placer.tooltip.right_click_air": "§9Right click: Select structure (not on block)",
@@ -493,7 +454,6 @@
   "item.iska_utils.structure_placer.tooltip.left_click_rotate": "§9Left click on block: Rotate structure",
   "item.iska_utils.structure_placer.rotated": "§6Structure rotated to: §f%s",
   "item.iska_utils.structure_placer.no_structure_selected": "§cNo structure selected! Right-click to select",
-  
   "item.iska_utils.structure_monouse.rotated": "§6Structure rotated to: §f%s",
   "item.iska_utils.structure_monouse.tooltip.structure": "§bStructure: §f%s",
   "item.iska_utils.structure_monouse.tooltip.rotation": "§eRotation: §f%s",
@@ -503,22 +463,17 @@
   "item.iska_utils.structure_monouse.tooltip.right_click": "§9Right click: Preview",
   "item.iska_utils.structure_monouse.tooltip.double_click": "§9Double-click: Place (5s timeout)",
   "item.iska_utils.structure_monouse.tooltip.left_click_rotate": "§9Left click on block: Rotate structure",
-  
   "item.iska_utils.structure_monouse.message.structure_not_found": "§cStructure not found: %s",
   "item.iska_utils.structure_monouse.message.placed_successfully": "§aStructure §f%s §aplaced successfully!",
   "item.iska_utils.structure_monouse.message.placement_failed": "§cFailed to place structure! §7(Not enough space)",
   "item.iska_utils.structure_monouse.message.preview": "§ePreview: §f%s §7(Click again within 5s to place)",
-  
   "item.iska_utils.iska_utils_wither_grinder": "Wither Grinder Kit",
-  
   "block.iska_utils.structure_placer_machine": "Structure Placer Machine",
   "item.iska_utils.structure_placer_machine": "Structure Placer Machine",
-  
   "direction.iska_utils.north": "North",
-  "direction.iska_utils.east": "East", 
+  "direction.iska_utils.east": "East",
   "direction.iska_utils.south": "South",
   "direction.iska_utils.west": "West",
-
   "gui.iska_utils.structure_placer_machine.select": "Select",
   "gui.iska_utils.structure_placer_machine.rotate": "Rotate",
   "gui.iska_utils.structure_placer_machine.set_inventory": "Mark Input",
@@ -528,7 +483,6 @@
   "gui.iska_utils.structure_placer_machine.selected_structure": "Selected Structure",
   "gui.iska_utils.structure_placer_machine.none_selected": "None",
   "gui.iska_utils.structure_placer_machine.preview_enabled": "Preview enabled",
-  
   "block.iska_utils.scan_block_red": "Scan Block (Red)",
   "block.iska_utils.scan_block_green": "Scan Block (Green)",
   "gui.iska_utils.structure_placer_machine.preview_disabled": "Preview disabled",
@@ -536,9 +490,8 @@
   "gui.iska_utils.structure_placer_machine.rotated": "Structure rotated to: %s",
   "gui.iska_utils.structure_placer_machine.no_structure_selected": "No structure selected",
   "gui.iska_utils.structure_selection.title": "Select Structure",
-
   "item.iska_utils.blueprint.vertex1_saved": "Vertex 1 saved: %s",
-  "item.iska_utils.blueprint.vertex2_saved": "Vertex 2 saved: %s", 
+  "item.iska_utils.blueprint.vertex2_saved": "Vertex 2 saved: %s",
   "item.iska_utils.blueprint.reset": "Blueprint reset",
   "item.iska_utils.blueprint.area_info": "Area: %sx%sx%s (%s blocks)",
   "item.iska_utils.blueprint.tooltip.vertex1": "Vertex 1: %s",
@@ -560,19 +513,15 @@
   "gui.iska_utils.save_success": "Structure '%s' saved! Area: %s to %s, Center: %s",
   "gui.iska_utils.blueprint_imported_to_machine": "Blueprint imported to machine: %s to %s, center: %s",
   "gui.iska_utils.structure_saver": "Structure Saver Machine",
-  
   "gui.iska_utils.structure_saver.mode.normal": "Normal",
   "gui.iska_utils.structure_saver.mode.player": "Player",
   "gui.iska_utils.structure_saver.mode_tooltip.line1": "Structure placement mode:",
   "gui.iska_utils.structure_saver.mode_tooltip.line2.normal": "Normal: Places blocks as machine",
   "gui.iska_utils.structure_saver.mode_tooltip.line2.player": "Player: Places blocks as player",
   "gui.iska_utils.structure_saver.mode_tooltip.line3.player": "(Can break blocks, respects permissions)",
-  
   "gui.iska_utils.modify": "Modify",
-  
   "gui.iska_utils.structure_saver.name_hint": "Enter structure name",
   "gui.iska_utils.structure_saver.id_hint": "Enter structure ID",
-  
   "gui.iska_utils.structure_saver.error.machine_not_found": "Structure Saver Machine not found",
   "gui.iska_utils.structure_saver.error.invalid_name": "Invalid structure name",
   "gui.iska_utils.structure_saver.error.invalid_id": "Invalid structure ID",
@@ -585,7 +534,6 @@
   "gui.iska_utils.structure_saver.success": "§aStructure '§f%s§a' %s successfully!",
   "gui.iska_utils.structure_saver.command_sent": "§6%s command sent to client",
   "gui.iska_utils.structure_saver.client_success": "§aStructure %s: §f%s",
-  
   "block.iska_utils.auto_shop.currency_changed": "Auto Shop currency changed to: %s",
   "block.iska_utils.auto_shop.currency_changed.unset": "Currency is unset",
   "block.iska_utils.auto_shop.mode_changed": "Auto Shop mode changed to: %s",
@@ -595,7 +543,6 @@
   "shop.category.default.desc": "Default category",
   "gui.iska_utils.shop.category.tooltip": "Category description",
   "block.iska_utils.auto_shop.team.error": "You can't use this AutoShop. Break it to get it back",
-
   "commands.iska_utils.explosion.usage.title": "===== IskaUtils Custom Explosion =====",
   "commands.iska_utils.explosion.usage.command": "/iska_utils_explosion start <horizontal_radius> <vertical_radius> <tick_interval> <damage> <break_unbreakable> [x y z]",
   "commands.iska_utils.explosion.usage.damage": "- damage: Damage to deal to entities (min: 0.0, no limit)",
@@ -607,28 +554,22 @@
   "commands.iska_utils.explosion.created": "Explosion created! Center: %d, %d, %d | Radii: %dx%d | Tick: %d",
   "commands.iska_utils.explosion.stopped": "Stopped %d active explosions",
   "commands.iska_utils.explosion.none_active": "No active explosions to stop",
-  
   "block.iska_utils.chaotic_tnt": "Chaotic TNT",
   "item.iska_utils.chaotic_tnt": "Chaotic TNT",
-
   "item.iska_utils.auto_shop.tooltip.usage": "§7Put item in 'Selected Item' slot to specify what to buy/sell",
   "item.iska_utils.auto_shop.tooltip.modes": "§7Left click: switch between §aAuto-Buy §7and §cAuto-Sell §7modes",
   "item.iska_utils.auto_shop.tooltip.currency": "§7Shift + Right click: set currency for transactions",
-
   "item.iska_utils.burning_brazier": "Burning Brazier",
   "block.iska_utils.burning_flame": "Burning Flame",
   "tooltip.iska_utils.burning_brazier.desc0": "§fEmits a fire so strong that it will illuminate your path permanently",
   "tooltip.iska_utils.burning_brazier.desc1": "§7Press §f%s §7to toggle automatic flame placement",
   "tooltip.iska_utils.burning_brazier.desc2": "§7Right-click on flames to remove and recharge",
-  
   "item.iska_utils.redstone_activator": "Redstone Activator",
   "block.iska_utils.redstone_activator_signal": "Redstone Activator Signal",
   "tooltip.iska_utils.redstone_activator.desc": "§7Allows you to emit a temporary redstone signal",
-  
   "item.iska_utils.ghost_brazier": "Ghost Brazier",
   "tooltip.iska_utils.ghost_brazier.desc0": "§fA brazier that allows you to temporarily dissolve your body and become a ghost",
   "tooltip.iska_utils.ghost_brazier.desc1": "§7Press §e%s §7to toggle between physical and ethereal form",
-
   "item.iska_utils.greedy_shield": "Greedy Shield",
   "message.iska_utils.greedy_shield.blocked": "§aThe Greedy Shield completely blocked the damage!",
   "message.iska_utils.greedy_shield.reduced": "§eThe Greedy Shield reduced the damage!",
@@ -639,7 +580,6 @@
   "tooltip.iska_utils.greedy_shield.info": "§6Obtained from the gift",
   "tooltip.iska_utils.gift.availability": "§7Available from December 20 to 30",
   "tooltip.iska_utils.gift.place": "Place on ground and right-click it!",
-
   "block.iska_utils.gift": "Gift",
   "item.iska_utils.gift": "Gift",
   "block.iska_utils.hard_ice": "Hard Ice",
@@ -650,7 +590,6 @@
   "message.iska_utils.hard_ice.cannot_break": "§eDon't worry, it will disappear on January 1st...",
   "message.iska_utils.hard_ice.use_dolly": "§7If you need to move it, use a dolly!",
   "message.iska_utils.fanpack.low_energy": "§cFanpack energy low! (%d%% remaining)",
-
   "block.iska_utils.deep_drawer": "Deep Drawer",
   "item.iska_utils.deep_drawer": "Deep Drawer",
   "container.iska_utils.deep_drawer": "Deep Drawer",
@@ -659,7 +598,6 @@
   "tooltip.iska_utils.deep_drawer.desc2": "It is recommended to use an external system to view its contents rather than the native one",
   "tooltip.iska_utils.deep_drawer.desc3": "From the integrated GUI it is not possible to insert and extract with shift+click, use hoppers, pipes or similar",
   "message.iska_utils.deep_drawer.cannot_break": "§cCannot break Deep Drawer while it contains items!",
-
   "block.iska_utils.deep_drawer_interface": "Deep Drawer Interface",
   "item.iska_utils.deep_drawer_interface": "Deep Drawer Interface",
   "block.iska_utils.deep_drawer_extender": "Deep Drawer Extender",
@@ -667,7 +605,8 @@
   "block.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
   "item.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
   "item.iska_utils.guide": "Iska Utils Guide",
-
+  "tooltip.iska_utils.guide.line0": "GuideME manual (requires GuideME mod)",
+  "tooltip.iska_utils.rubber_boots.desc": "Negates fall damage and makes you bounce",
   "item.iska_utils.dolly": "Dolly",
   "tooltip.iska_utils.dolly.contains": "§7Contains: §f%s",
   "tooltip.iska_utils.dolly.empty": "§7Empty - Shift+Click to pick up a block",
@@ -677,7 +616,6 @@
   "message.iska_utils.dolly.not_allowed": "§cThis block is not allowed by the Dolly configuration!",
   "message.iska_utils.dolly.picked_up": "§aPicked up: §f%s",
   "message.iska_utils.dolly.placed": "§aPlaced: §f%s",
-
   "item.iska_utils.dolly_hard": "Hard Dolly",
   "tooltip.iska_utils.dolly_hard.contains": "§7Contains: §f%s",
   "tooltip.iska_utils.dolly_hard.empty": "§7Empty - Shift+Click to pick up a block",
@@ -687,7 +625,6 @@
   "message.iska_utils.dolly_hard.not_allowed": "§cThis block is not allowed by the Hard Dolly configuration!",
   "message.iska_utils.dolly_hard.picked_up": "§aPicked up: §f%s",
   "message.iska_utils.dolly_hard.placed": "§aPlaced: §f%s",
-  
   "item.iska_utils.dolly_creative": "Creative Dolly",
   "tooltip.iska_utils.dolly_creative.contains": "§7Contains: §f%s",
   "tooltip.iska_utils.dolly_creative.empty": "§7Empty - Shift+Click to pick up a block",
@@ -697,7 +634,6 @@
   "message.iska_utils.dolly_creative.no_block": "§cNo block stored in dolly!",
   "message.iska_utils.dolly_creative.picked_up": "§aPicked up: §f%s",
   "message.iska_utils.dolly_creative.placed": "§aPlaced: §f%s",
-
   "command.iska_utils.debug.only_player": "This command can only be used by a player",
   "command.iska_utils.debug.no_item": "§cNo item in hand!",
   "command.iska_utils.debug.serialization_error": "Serialization error: %s",
@@ -707,8 +643,6 @@
   "command.iska_utils.debug.chunk": "[Part %s/%s] %s",
   "command.iska_utils.debug.compoundtag_content": "%s",
   "command.iska_utils.debug.unknown_action": "Unknown action: %s",
- 
-
   "gui.iska_utils.deep_drawer_extractor.mode.allow": "Allow List",
   "gui.iska_utils.deep_drawer_extractor.mode.deny": "Deny List",
   "gui.iska_utils.deep_drawer_extractor.how_to_use": "Valid Keys",
@@ -724,14 +658,11 @@
   "gui.iska_utils.deep_drawer_extractor.apply": "Apply",
   "gui.iska_utils.deep_drawer_extractor.close_without_saving": "Close without saving",
   "gui.iska_utils.deep_drawer_extractor.not_available_in_edit_mode": "Not available",
-  
   "tooltip.iska_utils.shift_place_reverse": "§9Hold Shift to place it reversed",
-  
   "tooltip.iska_utils.fan_module.press_shift": "Press Shift to see where to install it",
   "tooltip.iska_utils.fan_module.modular_fan_max": "Modular Fan Max: %d",
   "tooltip.iska_utils.pattern_crafter.speed_module": "Pattern Crafter: max %d, reduces crafting time to %d%% of base",
   "tooltip.iska_utils.pattern_crafter.logic_module": "Pattern Crafter Max: %d",
-  
   "gui.iska_utils.general_filter_text.id": "- Extracts items by ID (e.g., ",
   "gui.iska_utils.general_filter_text.id.example": "-minecraft:diamond",
   "gui.iska_utils.general_filter_text.id.after": ")",
@@ -754,17 +685,14 @@
   "gui.iska_utils.general_filter_text.usage.what": "to see what you need",
   "gui.iska_utils.general_filter_text.click_to_copy": "Click to copy",
   "gui.iska_utils.general_filter_text.paste_hint": "For paste use Ctrl+V",
-  
   "command.iska_utils.debug.items_label": "Item:",
   "command.iska_utils.debug.items_content": "%s",
-   "command.iska_utils.debug.click_to_copy": "Click to copy",
+  "command.iska_utils.debug.click_to_copy": "Click to copy",
   "command.iska_utils.debug.copied": "Copied data!",
-  
   "message.iska_utils.deep_drawer.full": "Deep Drawer is full",
   "message.iska_utils.deep_drawer.status": "Deep Drawer: %d/%d slots filled",
   "message.iska_utils.deep_drawer.empty": "Deep Drawer is empty",
   "message.iska_utils.deep_drawer.debug_extracted": "§7[DEBUG] Extracted: %s",
   "message.iska_utils.deep_drawer_extractor.buffer_status": "Extractor Buffer: %d/%d slots filled",
-  
   "iska_utils.config.deprecated_scanner_scan_range": "000 [Deprecated] Scanner Scan Range"
 }

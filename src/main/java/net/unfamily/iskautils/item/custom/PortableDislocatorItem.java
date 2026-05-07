@@ -134,12 +134,8 @@ public class PortableDislocatorItem extends Item {
         // Get the keybind name
         Component keybindName = KeybindTooltipUtil.keybindOrTranslation("key.iska_utils.portable_dislocator", "PORTABLE_DISLOCATOR_KEY");
         
-        // Add main tooltip
         tooltipAdder.accept(Component.translatable("item.iska_utils.portable_dislocator.tooltip.main", keybindName));
-        
-        // Add compass info
-        tooltipAdder.accept(Component.translatable("item.iska_utils.portable_dislocator.tooltip.compasses"));
-        
+
         // Energy information
         if (canStoreEnergy()) {
             int energy = getEnergyStored(stack);

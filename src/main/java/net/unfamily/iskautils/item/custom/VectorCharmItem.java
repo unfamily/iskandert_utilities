@@ -154,41 +154,24 @@ public class VectorCharmItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltipComponents, tooltipFlag);
-        
-        // Energy information - only show if energy is enabled
+
         if (canStoreEnergy() && requiresEnergyToFunction()) {
             int energy = getEnergyStored(stack);
             int maxEnergy = getMaxEnergyStored(stack);
             float percentage = (float) energy / Math.max(1, maxEnergy) * 100f;
-            
             String energyString = String.format("%,d / %,d RF (%.1f%%)", energy, maxEnergy, percentage);
             Component energyText = Component.translatable("item.iska_utils.scanner.tooltip.energy")
                 .withStyle(style -> style.withColor(ChatFormatting.RED))
                 .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
-            
             tooltipComponents.accept(energyText);
-            
-            // Show consumption per speed level
-            List<Integer> consumption = getEffectiveEnergyConsume();
-            tooltipComponents.accept(Component.literal("§7Energy consumption per tick:"));
-            
-            // Safe access to array elements with fallback to 0
-            String[] speedNames = {"None", "Slow", "Moderate", "Fast", "Extreme", "Ultra", "Hover"};
-            for (int i = 0; i < speedNames.length; i++) {
-                int energyConsumption = (i < consumption.size()) ? consumption.get(i) : 0;
-                tooltipComponents.accept(Component.literal("§8  " + speedNames[i] + ": " + energyConsumption + " RF"));
-            }
         } else if (canStoreEnergy()) {
-            // Energy storage enabled but no consumption required
             int energy = getEnergyStored(stack);
             int maxEnergy = getMaxEnergyStored(stack);
             float percentage = (float) energy / Math.max(1, maxEnergy) * 100f;
-            
             String energyString = String.format("%,d / %,d RF (%.1f%%)", energy, maxEnergy, percentage);
             Component energyText = Component.translatable("item.iska_utils.scanner.tooltip.energy")
                 .withStyle(style -> style.withColor(ChatFormatting.RED))
                 .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
-            
             tooltipComponents.accept(energyText);
         } else {
             tooltipComponents.accept(Component.literal("§7No energy required"));

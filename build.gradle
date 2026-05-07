@@ -139,7 +139,8 @@ dependencies {
     // GuideME (only external mod we actively keep updated)
     implementation "curse.maven:guideme-1173950:7929350"
     
-    // runtime_itemlist_mod support has been removed (JEI/REI/EMI not used).
+    // JEI (compile-only) for ghost ingredient integration in GUIs
+    compileOnly "curse.maven:jei-238222:6516057"
     
     // Verify that the value of include_compass_mods is valid
     if (project.hasProperty('include_compass_mods') && 

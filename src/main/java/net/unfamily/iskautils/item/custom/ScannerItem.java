@@ -1098,78 +1098,57 @@ public class ScannerItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> tooltipAdder, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, display, tooltipAdder, tooltipFlag);
-        
-        // Energy information - only show if energy is enabled
+
         if (canStoreEnergy() && requiresEnergyToFunction()) {
             int energy = getEnergyStored(stack);
             int maxEnergy = getMaxEnergyStored(stack);
             float percentage = (float) energy / Math.max(1, maxEnergy) * 100f;
-            
             String energyString = String.format("%,d / %,d RF (%.1f%%)", energy, maxEnergy, percentage);
             Component energyText = Component.translatable("item.iska_utils.scanner.tooltip.energy")
                 .withStyle(style -> style.withColor(ChatFormatting.RED))
                 .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
-            
             tooltipAdder.accept(energyText);
         }
-        
-        // Scan range information
+
         int scanRange = getScanRange(stack);
-        Component rangeText = Component.translatable("item.iska_utils.scanner.tooltip.range")
-            .withStyle(style -> style.withColor(ChatFormatting.GREEN))
-            .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
-            .append(Component.literal(String.valueOf(scanRange)).withStyle(ChatFormatting.WHITE))
-            .append(Component.literal(" ").withStyle(ChatFormatting.GRAY))
-            .append(Component.translatable("item.iska_utils.scanner.tooltip.range_units").withStyle(ChatFormatting.WHITE));
-        tooltipAdder.accept(rangeText);
-        
-        // Keybind information for range cycling
         Component keybindName = KeybindTooltipUtil.keybindOrTranslation("key.iska_utils.scanner_range", "SCANNER_RANGE_KEY");
-        Component keybindText = Component.translatable("item.iska_utils.scanner.tooltip.range_keybind", keybindName)
-            .withStyle(style -> style.withColor(ChatFormatting.GRAY));
-        tooltipAdder.accept(keybindText);
-        
-        // Target information
+        tooltipAdder.accept(
+            Component.translatable("item.iska_utils.scanner.tooltip.range_key_line", scanRange, keybindName)
+                .withStyle(ChatFormatting.GRAY));
+
         Block targetBlock = getTargetBlock(stack);
         String targetMob = getTargetMob(stack);
         String genericTarget = getGenericTarget(stack);
-        
+
         if (targetBlock != null) {
-            Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_block")
-                .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
-                .append(targetBlock.getName().copy().withStyle(ChatFormatting.WHITE));
-            
-            tooltipAdder.accept(targetText);
+            tooltipAdder.accept(
+                Component.translatable("item.iska_utils.scanner.tooltip.target_block")
+                    .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                    .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
+                    .append(targetBlock.getName().copy().withStyle(ChatFormatting.WHITE)));
         } else if (targetMob != null) {
-            Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_mob")
-                .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
-                .append(getLocalizedMobName(targetMob).copy().withStyle(ChatFormatting.WHITE));
-            
-            tooltipAdder.accept(targetText);
+            tooltipAdder.accept(
+                Component.translatable("item.iska_utils.scanner.tooltip.target_mob")
+                    .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                    .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
+                    .append(getLocalizedMobName(targetMob).copy().withStyle(ChatFormatting.WHITE)));
         } else if (genericTarget != null) {
             if (genericTarget.startsWith("ores")) {
                 Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_ores_prefix")
                     .withStyle(style -> style.withColor(ChatFormatting.AQUA));
-                
-                // Extract mining level if present
                 int miningLevel = 0;
                 if (genericTarget.length() > 4) {
-                    String levelStr = genericTarget.substring(4); // Get everything after "ores"
+                    String levelStr = genericTarget.substring(4);
                     if (!levelStr.isEmpty()) {
                         try {
                             miningLevel = Integer.parseInt(levelStr);
-                        } catch (NumberFormatException e) {
-                            // Ignore
+                        } catch (NumberFormatException ignored) {
                         }
                     }
                 }
-                
                 if (miningLevel == 0) {
-                    MutableComponent mutableTargetText = targetText.copy();
-                    targetText = mutableTargetText.append(Component.translatable("item.iska_utils.scanner.tooltip.target_ores_value")
-                        .withStyle(ChatFormatting.WHITE));
+                    targetText = targetText.copy().append(
+                        Component.translatable("item.iska_utils.scanner.tooltip.target_ores_value").withStyle(ChatFormatting.WHITE));
                 } else {
                     String levelText = switch (miningLevel) {
                         case 1 -> "item.iska_utils.scanner.tooltip.mining_level.wood";
@@ -1180,54 +1159,27 @@ public class ScannerItem extends Item {
                         case 100 -> "item.iska_utils.scanner.tooltip.mining_level.other";
                         default -> "item.iska_utils.scanner.tooltip.target_ores_value";
                     };
-                    MutableComponent mutableTargetText = targetText.copy();
-                    mutableTargetText = mutableTargetText.append(Component.translatable("item.iska_utils.scanner.tooltip.target_ores_value")
-                        .withStyle(ChatFormatting.WHITE))
+                    targetText = targetText.copy()
+                        .append(Component.translatable("item.iska_utils.scanner.tooltip.target_ores_value").withStyle(ChatFormatting.WHITE))
                         .append(Component.literal(" (").withStyle(ChatFormatting.GRAY))
                         .append(Component.translatable(levelText).withStyle(ChatFormatting.YELLOW))
                         .append(Component.literal(")").withStyle(ChatFormatting.GRAY));
-                    targetText = mutableTargetText;
                 }
-                
                 tooltipAdder.accept(targetText);
             } else if ("mobs".equals(genericTarget)) {
-                Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_prefix")
-                    .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                    .append(Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_value")
-                    .withStyle(ChatFormatting.WHITE));
-                tooltipAdder.accept(targetText);
+                tooltipAdder.accept(
+                    Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_value")
+                            .withStyle(ChatFormatting.WHITE)));
             }
         } else {
-            Component noTargetText = Component.translatable("item.iska_utils.scanner.tooltip.no_target")
-                .withStyle(style -> style.withColor(ChatFormatting.GRAY));
-            
-            tooltipAdder.accept(noTargetText);
+            tooltipAdder.accept(
+                Component.translatable("item.iska_utils.scanner.tooltip.no_target").withStyle(style -> style.withColor(ChatFormatting.GRAY)));
         }
-        
-        // Instructions
-        Component instruction0Text = Component.translatable("item.iska_utils.scanner.tooltip.instruction0")
-            .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-        tooltipAdder.accept(instruction0Text);
 
-        Component instruction1Text = Component.translatable("item.iska_utils.scanner.tooltip.instruction1")
-            .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-        tooltipAdder.accept(instruction1Text);
-
-        // Chip integration info
-        Component chipInfoText = Component.translatable("item.iska_utils.scanner.tooltip.chip_info0")
-            .withStyle(style -> style.withColor(ChatFormatting.AQUA));
-
-        if(Config.scannerEnergyConsume > 0) {
-            Component chipInfoText1 = Component.translatable("item.iska_utils.scanner.tooltip.chip_info1")
-                .withStyle(style -> style.withColor(ChatFormatting.AQUA));
-            tooltipAdder.accept(chipInfoText1);
-        } else {
-            Component chipInfoText2 = Component.translatable("item.iska_utils.scanner.tooltip.chip_info2")
-                .withStyle(style -> style.withColor(ChatFormatting.AQUA));
-            tooltipAdder.accept(chipInfoText2);
-        }
-        
-        tooltipAdder.accept(chipInfoText);
+        tooltipAdder.accept(
+            Component.translatable("item.iska_utils.scanner.tooltip.brief_controls").withStyle(ChatFormatting.DARK_GRAY));
     }
     
     /**
