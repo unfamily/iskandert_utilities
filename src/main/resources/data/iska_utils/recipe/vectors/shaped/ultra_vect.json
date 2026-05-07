@@ -13,9 +13,10 @@
       {"item": "iska_utils:extreme_vect"},
       {"item": "iska_utils:player_extreme_vect"}
     ],
-    "A": {
-      "tag": "c:gems/prismarine"
-    }
+    "A": [
+      { "tag": "c:gems/prismarine" },
+      { "tag": "c:gems/diamond" }
+    ]
   },
   "result": {
     "id": "iska_utils:ultra_vect",

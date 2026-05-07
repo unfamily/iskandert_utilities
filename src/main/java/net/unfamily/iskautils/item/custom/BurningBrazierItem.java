@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -113,6 +114,20 @@ public class BurningBrazierItem extends Item {
         // Only work on server side and only if entity is a player
         if (level.isClientSide || !(entity instanceof ServerPlayer player)) {
             return;
+        }
+
+        // Repair brazier durability using burning_flame block items from inventory
+        if (stack.isDamaged() && level.getGameTime() % 20 == 0) {
+            var flameItem = ModBlocks.BURNING_FLAME.get().asItem();
+            Inventory inv = player.getInventory();
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                ItemStack slotStack = inv.getItem(i);
+                if (!slotStack.isEmpty() && slotStack.is(flameItem)) {
+                    slotStack.shrink(1);
+                    stack.setDamageValue(Math.max(0, stack.getDamageValue() - 1));
+                    break;
+                }
+            }
         }
 
         // Check if auto-placement is enabled for this player

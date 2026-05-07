@@ -30,6 +30,12 @@ import java.util.*;
  * Uses custom IItemHandler for hopper interaction with item validation
  */
 public class DeepDrawersBlockEntity extends BlockEntity {
+
+    /**
+     * When {@code true}, the exposed {@link IItemHandler} may extract items (GUI path only).
+     * Pipes and automation never set this.
+     */
+    public static final ThreadLocal<Boolean> ITEM_HANDLER_ALLOW_EXTRACT = ThreadLocal.withInitial(() -> false);
     
     // Sparse storage: only stores slots that contain items
     // Key = physical slot index, Value = ItemStack
@@ -900,6 +906,10 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             if (stack.isEmpty() || logicalSlot < 0) {
                 return stack;
             }
+
+            if (!Config.deepDrawersAllowAutomationInsert) {
+                return stack;
+            }
             
             
             // Validate item
@@ -1102,18 +1112,19 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         
         @Override
         public @NotNull ItemStack extractItem(int logicalSlot, int amount, boolean simulate) {
-            // DEBUG TEMPORANEO: Allow extraction from drawer via hoppers/pipes
-            // TODO: RIMUOVERE DOPO I TEST - È SOLO PER DEBUG
+            if (!ITEM_HANDLER_ALLOW_EXTRACT.get()) {
+                return ItemStack.EMPTY;
+            }
             if (logicalSlot < 0 || logicalSlot >= occupiedSlots.size()) {
                 return ItemStack.EMPTY;
             }
-            
+
             // Map logical slot to physical slot
             Integer physicalSlot = logicalToPhysical.get(logicalSlot);
             if (physicalSlot == null) {
                 return ItemStack.EMPTY;
             }
-            
+
             // Extract from physical slot
             return DeepDrawersBlockEntity.this.extractItemFromPhysicalSlot(physicalSlot, amount, simulate);
         }

@@ -2,14 +2,12 @@
   "neoforge:conditions": [
     {
       "type": "neoforge:mod_loaded",
-      "modid": "dyenamics"
+      "modid": "polymorph"
     }
   ],
-  "type": "iska_utils:strict_shaped",
+  "type": "minecraft:crafting_shaped",
   "pattern": [
-    " A ",
-    "  A",
-    "A  "
+    "AAA"
   ],
   "key": {
     "A": {
@@ -17,7 +15,8 @@
     }
   },
   "result": {
-    "id": "dyenamics:conifer_dye",
+    "id": "minecraft:magenta_dye",
     "count": 4
   }
 }
+

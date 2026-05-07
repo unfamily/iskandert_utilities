@@ -577,26 +577,20 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
                 maxZ = z + rightOffset;
             }
             case UP -> {
-                // Front is +Y, Left is -X, Right is +X (horizontal plane)
-                // Area starts at +1 in front direction (y+1), not including fan position (y)
                 minX = x - leftOffset;
                 maxX = x + rightOffset;
-                minY = y + 1; // Exclude fan position, start from y+1
+                minY = y + 1;
                 maxY = y + frontOffset;
-                // Use left/right for Z axis when facing UP/DOWN (create horizontal area)
-                minZ = z - leftOffset;
-                maxZ = z + rightOffset;
+                minZ = z - upOffset;
+                maxZ = z + downOffset;
             }
             case DOWN -> {
-                // Front is -Y, Left is -X, Right is +X (horizontal plane)
-                // Area starts at +1 in front direction (y-1), not including fan position (y)
                 minX = x - leftOffset;
                 maxX = x + rightOffset;
                 minY = y - frontOffset;
-                maxY = y - 1; // Exclude fan position, start from y-1
-                // Use left/right for Z axis when facing UP/DOWN (create horizontal area)
-                minZ = z - leftOffset;
-                maxZ = z + rightOffset;
+                maxY = y - 1;
+                minZ = z - upOffset;
+                maxZ = z + downOffset;
             }
             default -> {
                 minX = x;

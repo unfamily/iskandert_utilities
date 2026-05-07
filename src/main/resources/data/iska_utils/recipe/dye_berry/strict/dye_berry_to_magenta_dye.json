@@ -11,8 +11,8 @@
   "type": "iska_utils:strict_shaped",
   "pattern": [
     "   ",
-    "AAA",
-    "   "
+    "   ",
+    "AAA"
   ],
   "key": {
     "A": {
@@ -20,7 +20,8 @@
     }
   },
   "result": {
-    "id": "minecraft:orange_dye",
+    "id": "minecraft:magenta_dye",
     "count": 4
   }
 }
+

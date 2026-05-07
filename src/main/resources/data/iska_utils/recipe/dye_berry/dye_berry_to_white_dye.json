@@ -1,8 +1,26 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": ["AAA", "   ", "   "],
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:not",
+      "value": {
+        "type": "neoforge:mod_loaded",
+        "modid": "polymorph"
+      }
+    }
+  ],
+  "type": "iska_utils:strict_shaped",
+  "pattern": [
+    "AAA",
+    "   ",
+    "   "
+  ],
   "key": {
-    "A": { "item": "iska_utils:dye_berry" }
+    "A": {
+      "item": "iska_utils:dye_berry"
+    }
   },
-  "result": { "id": "minecraft:white_dye", "count": 4 }
+  "result": {
+    "id": "minecraft:white_dye",
+    "count": 4
+  }
 }

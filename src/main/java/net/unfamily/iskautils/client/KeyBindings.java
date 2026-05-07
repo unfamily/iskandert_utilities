@@ -245,6 +245,10 @@ public class KeyBindings {
                 ModMessages.sendBurningBrazierTogglePacket();
             }
 
+            if (GAUNTLET_CLIMBING_TOGGLE_KEY.consumeClick()) {
+                ModMessages.sendGauntletClimbingTogglePacket();
+            }
+
             // Key for Scanner range cycle
             if (SCANNER_RANGE_KEY.consumeClick()) {
                 // Send range cycle request to server

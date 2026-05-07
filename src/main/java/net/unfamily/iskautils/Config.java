@@ -236,6 +236,12 @@ public class Config
                     "WARNING: Debug feature, use only for testing")
             .define("405_deep_drawers_debug_extraction_enabled", false);
 
+    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_ALLOW_AUTOMATION_INSERT = BUILDER
+            .comment("When true (default), hoppers and pipes can insert into Deep Drawers via the item handler.",
+                    "When false, automated insertion is rejected (player GUI insertion still works).",
+                    "Extraction via the exposed item handler is always disabled; use the Deep Drawer Extractor block to pull items.")
+            .define("406_deep_drawers_allow_automation_insert", true);
+
     // Deep Drawer Extractor Configuration (starts at 410)
     private static final ModConfigSpec.IntValue DEEP_DRAWER_EXTRACTOR_INTERVAL = BUILDER
             .comment("Extraction interval in ticks for the Deep Drawer Extractor (lower is faster)",
@@ -687,7 +693,8 @@ public class Config
                         "zinc;00FF00", // Zinc ore - White-Green color
                         "allthemodium;C78938", // Allthemodium ore - Orange color
                         "vibranium;40BBBF", // Vibranium ore - Blue-Green color
-                        "unubtanium;993BAC" // Unubtanium ore - Purple color
+                        "unubtanium;993BAC", // Unubtanium ore - Purple color
+                        "draconium;9933FF" // Draconium Evolution / common mod ore - Purple
                     ), 
                     obj -> obj instanceof String && ((String)obj).contains(";"));
 
@@ -877,6 +884,7 @@ public class Config
     public static int deepDrawersSlotCount;
     public static boolean deepDrawersDirectPipeAccess;
     public static boolean deepDrawersDebugExtractionEnabled;
+    public static boolean deepDrawersAllowAutomationInsert;
     public static int deepDrawerExtractorInterval;
     public static int deepDrawerExtractorMaxFilters;
     
@@ -984,6 +992,7 @@ public class Config
         deepDrawersSlotCount = DEEP_DRAWERS_SLOT_COUNT.get();
         deepDrawersDirectPipeAccess = DEEP_DRAWERS_DIRECT_PIPE_ACCESS.get();
         deepDrawersDebugExtractionEnabled = DEEP_DRAWERS_DEBUG_EXTRACTION_ENABLED.get();
+        deepDrawersAllowAutomationInsert = DEEP_DRAWERS_ALLOW_AUTOMATION_INSERT.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         

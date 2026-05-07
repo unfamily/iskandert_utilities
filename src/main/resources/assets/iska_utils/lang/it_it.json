@@ -127,6 +127,10 @@
   "gui.iska_utils.fan.range_button.direction.left": "Sinistra",
   "gui.iska_utils.fan.range_button.direction.right": "Destra",
   "gui.iska_utils.fan.range_button.direction.forward": "Di fronte",
+  "gui.iska_utils.fan.range_button.direction.north": "Nord",
+  "gui.iska_utils.fan.range_button.direction.south": "Sud",
+  "gui.iska_utils.fan.range_button.direction.east": "Est",
+  "gui.iska_utils.fan.range_button.direction.west": "Ovest",
   
   "block.iska_utils.smart_timer": "Timer Intelligente",
   "gui.iska_utils.smart_timer.cooldown": "Redstone off for:",
@@ -362,6 +366,7 @@
   "item.iska_utils.scanner.tooltip.mining_level.diamond": "Diamante",
   "item.iska_utils.scanner.tooltip.mining_level.netherite": "Netherite",
   "item.iska_utils.scanner.tooltip.mining_level.modded": "Superiore a Netherite",
+  "item.iska_utils.scanner.tooltip.mining_level.other": "Altro livello di estrazione",
   "item.iska_utils.scanner.tooltip.target_all_mobs_prefix": "Scansione Per: ",
   "item.iska_utils.scanner.tooltip.target_all_mobs_value": "Tutti i Mob",
   "item.iska_utils.scanner.tooltip.no_target": "Nessun target impostato",
@@ -426,12 +431,14 @@
   "item.iska_utils.scanner_chip.mining_level.diamond": "Diamante",
   "item.iska_utils.scanner_chip.mining_level.netherite": "Netherite",
   "item.iska_utils.scanner_chip.mining_level.modded": "Superiore a Netherite",
+  "item.iska_utils.scanner_chip.mining_level.other": "Altro livello di estrazione",
   "item.iska_utils.scanner_chip.tooltip.mining_level.wood": "Legno",
   "item.iska_utils.scanner_chip.tooltip.mining_level.stone": "Pietra",
   "item.iska_utils.scanner_chip.tooltip.mining_level.iron": "Ferro",
   "item.iska_utils.scanner_chip.tooltip.mining_level.diamond": "Diamante",
   "item.iska_utils.scanner_chip.tooltip.mining_level.netherite": "Netherite",
   "item.iska_utils.scanner_chip.tooltip.mining_level.modded": "Superiore a Netherite",
+  "item.iska_utils.scanner_chip.tooltip.mining_level.other": "Altro livello di estrazione",
   
 
   "block.iska_utils.weather_detector.mode.sunny": "Rilevatore del Meteo impostato in modalità Sole",

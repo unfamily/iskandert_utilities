@@ -114,6 +114,7 @@ public class IskaUtils {
         
         // Register blocks and items
         ModBlocks.register(modEventBus);
+        IskaUtilsRecipes.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
