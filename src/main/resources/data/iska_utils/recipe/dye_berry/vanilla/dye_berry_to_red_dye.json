@@ -7,9 +7,9 @@
   ],
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "   ",
-    "   ",
-    "AAA"
+    "A A",
+    "A  ",
+    "   "
   ],
   "key": {
     "A": {
@@ -17,7 +17,7 @@
     }
   },
   "result": {
-    "id": "minecraft:magenta_dye",
+    "id": "minecraft:red_dye",
     "count": 4
   }
 }
