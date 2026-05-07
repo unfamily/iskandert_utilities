@@ -1361,8 +1361,8 @@ public class ModMessages {
                     }
 
                     boolean newState = net.unfamily.iskautils.item.custom.GauntletOfClimbingItem.toggleClimbing(player);
-                    player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
-                            "message.iska_utils.gauntlet_climbing." + (newState ? "enabled" : "disabled")));
+                    player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing_toggle." +
+                                                                                                 (newState ? "enabled" : "disabled")));
                 } catch (Exception e) {
                     LOGGER.warn("Failed to toggle Gauntlet of Climbing: {}", e.getMessage());
                 }

@@ -34,6 +34,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.neoforged.neoforge.common.Tags;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 
@@ -1123,7 +1124,7 @@ public class ScannerItem extends Item {
         tooltipAdder.accept(rangeText);
         
         // Keybind information for range cycling
-        Component keybindName = Component.translatable("key.iska_utils.scanner_range");
+        Component keybindName = KeybindTooltipUtil.keybindOrTranslation("key.iska_utils.scanner_range", "SCANNER_RANGE_KEY");
         Component keybindText = Component.translatable("item.iska_utils.scanner.tooltip.range_keybind", keybindName)
             .withStyle(style -> style.withColor(ChatFormatting.GRAY));
         tooltipAdder.accept(keybindText);

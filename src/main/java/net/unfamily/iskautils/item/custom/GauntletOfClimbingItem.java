@@ -15,6 +15,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 
@@ -94,7 +95,7 @@ public class GauntletOfClimbingItem extends Item {
             ItemStack stack, Item.TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
 
-        Component keybindName = Component.translatable("key.iska_utils.gauntlet_climbing_toggle");
+        Component keybindName = KeybindTooltipUtil.keybindOrTranslation("key.iska_utils.gauntlet_climbing_toggle", "GAUNTLET_CLIMBING_TOGGLE_KEY");
         tooltip.accept(Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.desc"));
         tooltip.accept(Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.toggle", keybindName));
 

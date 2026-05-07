@@ -22,6 +22,8 @@
   "tooltip.iska_utils.gauntlet_of_climbing.status.disabled": "§cArrampicata: Disattiva",
   "message.iska_utils.gauntlet_climbing.enabled": "§aArrampicata attivata",
   "message.iska_utils.gauntlet_climbing.disabled": "§cArrampicata disattivata",
+  "message.iska_utils.gauntlet_climbing_toggle.enabled": "Arrampicata guanto: §aattiva",
+  "message.iska_utils.gauntlet_climbing_toggle.disabled": "Arrampicata guanto: §cdisattiva",
   "key.iska_utils.gauntlet_climbing_toggle": "Attiva/Disattiva Arrampicata",
   "item.iska_utils.sap": "Linfa di Caucciù",
   "item.iska_utils.rubber": "Gomma",

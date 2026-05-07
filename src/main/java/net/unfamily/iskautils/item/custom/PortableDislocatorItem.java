@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.util.ModUtils;
+import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.unfamily.iskautils.block.entity.AngelBlockEntity;
@@ -131,7 +132,7 @@ public class PortableDislocatorItem extends Item {
         super.appendHoverText(stack, context, display, tooltipAdder, tooltipFlag);
         
         // Get the keybind name
-        Component keybindName = Component.translatable("key.iska_utils.portable_dislocator");
+        Component keybindName = KeybindTooltipUtil.keybindOrTranslation("key.iska_utils.portable_dislocator", "PORTABLE_DISLOCATOR_KEY");
         
         // Add main tooltip
         tooltipAdder.accept(Component.translatable("item.iska_utils.portable_dislocator.tooltip.main", keybindName));

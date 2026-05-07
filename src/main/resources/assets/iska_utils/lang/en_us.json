@@ -22,6 +22,8 @@
   "tooltip.iska_utils.gauntlet_of_climbing.status.disabled": "§cClimbing: Disabled",
   "message.iska_utils.gauntlet_climbing.enabled": "§aClimbing enabled",
   "message.iska_utils.gauntlet_climbing.disabled": "§cClimbing disabled",
+  "message.iska_utils.gauntlet_climbing_toggle.enabled": "Gauntlet climbing: §aenabled",
+  "message.iska_utils.gauntlet_climbing_toggle.disabled": "Gauntlet climbing: §cdisabled",
   "key.iska_utils.gauntlet_climbing_toggle": "Toggle Climbing",
   "item.iska_utils.sap": "Rubber Sap",
   "item.iska_utils.rubber": "Rubber",
