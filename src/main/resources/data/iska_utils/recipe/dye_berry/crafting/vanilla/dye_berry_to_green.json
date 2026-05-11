@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "  E",
+    "EE ",
+    "   "
+  ],
+  "key": {
+    "E": {
+      "item": "iska_utils:dye_berry"
+    }
+  },
+  "result": {
+    "id": "minecraft:green_dye",
+    "count": 4
+  }
+}

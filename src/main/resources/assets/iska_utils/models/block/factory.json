@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "north": "iska_utils:block/factory/factory_front",
+    "south": "iska_utils:block/factory/factory_side",
+    "east": "iska_utils:block/factory/factory_side",
+    "west": "iska_utils:block/factory/factory_side",
+    "up": "iska_utils:block/factory/factory_top",
+    "down": "iska_utils:block/factory/factory_bottom",
+    "particle": "iska_utils:block/factory/factory_side"
+  }
+}

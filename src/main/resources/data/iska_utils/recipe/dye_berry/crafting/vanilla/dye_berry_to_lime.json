@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "  E",
+    "  E",
+    "E  "
+  ],
+  "key": {
+    "E": {
+      "item": "iska_utils:dye_berry"
+    }
+  },
+  "result": {
+    "id": "minecraft:lime_dye",
+    "count": 4
+  }
+}
