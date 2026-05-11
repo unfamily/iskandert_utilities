@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BDB",
+    "ACA",
+    "BBB"
+  ],
+  "key": {
+    "B": "#c:cobblestones",
+    "A": "#minecraft:planks",
+    "C": "#c:ingots/iron",
+    "D": "iska_utils:green_sludge"
+  },
+  "result": {
+    "id": "iska_utils:factory",
+    "count": 1
+  }
+}

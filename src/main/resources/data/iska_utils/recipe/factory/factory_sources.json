@@ -1,0 +1,47 @@
+{
+  "type": "iska_utils:factory",
+  "recipes": [
+    {
+      "input": "iska_utils:dye_berry",
+      "amount": 3,
+      "energy_per_operation": 1,
+      "select": [
+        { "output": "minecraft:white_dye", "amount": 4 },
+        { "output": "minecraft:orange_dye", "amount": 4 },
+        { "output": "minecraft:magenta_dye", "amount": 4 },
+        { "output": "minecraft:light_blue_dye", "amount": 4 },
+        { "output": "minecraft:yellow_dye", "amount": 4 },
+        { "output": "minecraft:lime_dye", "amount": 4 },
+        { "output": "minecraft:pink_dye", "amount": 4 },
+        { "output": "minecraft:gray_dye", "amount": 4 },
+        { "output": "minecraft:light_gray_dye", "amount": 4 },
+        { "output": "minecraft:cyan_dye", "amount": 4 },
+        { "output": "minecraft:purple_dye", "amount": 4 },
+        { "output": "minecraft:blue_dye", "amount": 4 },
+        { "output": "minecraft:brown_dye", "amount": 4 },
+        { "output": "minecraft:green_dye", "amount": 4 },
+        { "output": "minecraft:red_dye", "amount": 4 },
+        { "output": "minecraft:black_dye", "amount": 4 },
+
+        { "output": "dyenamics:mint_dye", "amount": 4 },
+        { "output": "dyenamics:spring_green_dye", "amount": 4 },
+        { "output": "dyenamics:honey_dye", "amount": 4 },
+        { "output": "dyenamics:ultramarine_dye", "amount": 4 },
+        { "output": "dyenamics:amber_dye", "amount": 4 },
+        { "output": "dyenamics:bubblegum_dye", "amount": 4 },
+        { "output": "dyenamics:peach_dye", "amount": 4 },
+        { "output": "dyenamics:wine_dye", "amount": 4 },
+        { "output": "dyenamics:rose_dye", "amount": 4 },
+        { "output": "dyenamics:conifer_dye", "amount": 4 },
+        { "output": "dyenamics:aquamarine_dye", "amount": 4 },
+        { "output": "dyenamics:lavender_dye", "amount": 4 },
+        { "output": "dyenamics:persimmon_dye", "amount": 4 },
+        { "output": "dyenamics:maroon_dye", "amount": 4 },
+        { "output": "dyenamics:cherenkov_dye", "amount": 4 },
+        { "output": "dyenamics:fluorescent_dye", "amount": 4 },
+        { "output": "dyenamics:navy_dye", "amount": 4 },
+        { "output": "dyenamics:icy_blue_dye", "amount": 4 }
+      ]
+    }
+  ]
+}
