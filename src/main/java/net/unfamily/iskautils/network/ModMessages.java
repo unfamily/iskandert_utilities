@@ -159,6 +159,32 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket::handle
         );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket::handle
+        );
         
         LOGGER.info("Registered networking payloads for {}", IskaUtils.MOD_ID);
     }
@@ -186,6 +212,33 @@ public class ModMessages {
                 new PortableDislocatorC2SPacket(targetX, targetZ));
         } catch (Exception e) {
             LOGGER.warn("Failed to send Portable Dislocator packet: {}", e.getMessage());
+        }
+    }
+
+    public static void sendFactorySelectColor(net.minecraft.core.BlockPos pos, int index) {
+        try {
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket(pos, index));
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send Factory select color packet: {}", e.getMessage());
+        }
+    }
+
+    public static void sendFactoryScroll(net.minecraft.core.BlockPos pos, int offset) {
+        try {
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket(pos, offset));
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send Factory scroll packet: {}", e.getMessage());
+        }
+    }
+
+    public static void sendFactoryRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
+        try {
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket(pos, backward));
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send Factory redstone mode packet: {}", e.getMessage());
         }
     }
     
@@ -535,7 +588,7 @@ public class ModMessages {
     /**
      * Sends an Auto Shop Redstone Mode packet to the server (cycle mode on button click)
      */
-    public static void sendAutoShopRedstoneModePacket(BlockPos machinePos) {
+    public static void sendAutoShopRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
             if (minecraft == null) return;
@@ -550,9 +603,12 @@ public class ModMessages {
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.AutoShopBlockEntity autoShop) {
                             net.unfamily.iskautils.block.entity.AutoShopBlockEntity.RedstoneMode current =
                                     net.unfamily.iskautils.block.entity.AutoShopBlockEntity.RedstoneMode.fromValue(autoShop.getRedstoneMode());
-                            autoShop.setRedstoneMode(current.next().getValue());
+                            net.unfamily.iskautils.block.entity.AutoShopBlockEntity.RedstoneMode next =
+                                    backward ? current.previous() : current.next();
+                            autoShop.setRedstoneMode(next.getValue());
+                            float pitch = backward ? 0.82f : 1.0f;
                             level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
-                                    net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                                    net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, pitch);
                             autoShop.setChanged();
                         }
                     }
@@ -568,51 +624,10 @@ public class ModMessages {
     /**
      * Sends a Structure Placer Machine Redstone Mode packet to the server
      */
-    public static void sendStructurePlacerMachineRedstoneModePacket(BlockPos machinePos) {
-
-        
-        // Use simplified approach like other machine buttons
+    public static void sendStructurePlacerMachineRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-            if (server == null) {
-                LOGGER.error("Singleplayer server is null!");
-                return;
-            }
-            
-            // Execute on server thread
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
-                        
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
-                        if (blockEntity instanceof StructurePlacerMachineBlockEntity machine) {
-                            
-                            // Cycle to next redstone mode
-                            StructurePlacerMachineBlockEntity.RedstoneMode currentMode = StructurePlacerMachineBlockEntity.RedstoneMode.fromValue(machine.getRedstoneMode());
-                            StructurePlacerMachineBlockEntity.RedstoneMode nextMode = currentMode.next();
-                            machine.setRedstoneMode(nextMode.getValue());
-                            
-                            // Play click sound
-                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                            
-                            // Mark the block entity as changed
-                            machine.setChanged();
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Structure Placer Machine redstone mode packet: {}", e.getMessage());
-                }
-            });
-            
-
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket(machinePos, backward));
         } catch (Exception e) {
             LOGGER.error("Could not send Structure Placer Machine redstone mode packet: {}", e.getMessage(), e);
         }
@@ -621,57 +636,10 @@ public class ModMessages {
     /**
      * Sends a Deep Drawer Extractor Redstone Mode packet to the server
      */
-    public static void sendDeepDrawerExtractorRedstoneModePacket(BlockPos machinePos) {
-        // Use simplified approach like other machine buttons
+    public static void sendDeepDrawerExtractorRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-            if (server == null) {
-                LOGGER.error("Singleplayer server is null!");
-                return;
-            }
-            
-            // Execute on server thread
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
-                        
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
-                            
-                            // Cycle to next redstone mode
-                            int oldMode = extractor.getRedstoneMode();
-                            net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode currentMode = 
-                                net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode.fromValue(oldMode);
-                            net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode nextMode = currentMode.next();
-                            
-                            LOGGER.debug("DeepDrawerExtractor: Cycling redstone mode from {} ({}) to {} ({})", 
-                                oldMode, currentMode, nextMode.getValue(), nextMode);
-                            
-                            extractor.setRedstoneMode(nextMode.getValue());
-                            
-                            // Play click sound
-                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                            
-                            // setRedstoneMode already calls setChanged(), but we ensure it's marked as changed
-                            extractor.setChanged();
-                        } else {
-                            LOGGER.warn("DeepDrawerExtractor: BlockEntity at {} is not a DeepDrawerExtractorBlockEntity", machinePos);
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Deep Drawer Extractor redstone mode packet: {}", e.getMessage());
-                }
-            });
-            
-
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket(machinePos, backward));
         } catch (Exception e) {
             LOGGER.error("Could not send Deep Drawer Extractor redstone mode packet: {}", e.getMessage(), e);
         }
@@ -1683,7 +1651,7 @@ public class ModMessages {
     /**
      * Invia il packet per cambiare il redstone mode del Temporal Overclocker
      */
-    public static void sendTemporalOverclockerRedstoneModePacket(BlockPos machinePos) {
+    public static void sendTemporalOverclockerRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
             net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
             if (minecraft == null) {
@@ -1706,14 +1674,13 @@ public class ModMessages {
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
-                            // Cycle to next redstone mode
                             int currentMode = overclocker.getRedstoneMode();
-                            int nextMode = (currentMode + 1) % 5;
+                            int nextMode = backward ? (currentMode + 4) % 5 : (currentMode + 1) % 5;
                             overclocker.setRedstoneMode(nextMode);
                             
-                            // Play click sound
+                            float pitch = backward ? 0.82f : 1.0f;
                             level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
-                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, pitch);
                             
                             overclocker.setChanged();
                         }
@@ -1845,38 +1812,10 @@ public class ModMessages {
     /**
      * Sends Fan Redstone Mode packet to the server
      */
-    public static void sendFanRedstoneModePacket(BlockPos pos) {
+    public static void sendFanRedstoneModePacket(BlockPos pos, boolean backward) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-            if (server == null) return;
-            
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
-                            // Cycle to next redstone mode (0-4)
-                            int currentMode = fan.getRedstoneMode();
-                            int nextMode = (currentMode + 1) % 5; // Cycle 0->1->2->3->4->0
-                            fan.setRedstoneMode(nextMode);
-                            
-                            // Play click sound
-                            level.playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
-                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                            
-                            // Mark the block entity as changed
-                            fan.setChanged();
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Fan redstone mode packet: {}", e.getMessage());
-                }
-            });
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.FanRedstoneModeC2SPacket(pos, backward));
         } catch (Exception e) {
             LOGGER.error("Could not send Fan redstone mode packet: {}", e.getMessage(), e);
         }
@@ -1885,36 +1824,10 @@ public class ModMessages {
     /**
      * Sends Smart Timer Redstone Mode packet to the server
      */
-    public static void sendSmartTimerRedstoneModePacket(BlockPos pos) {
+    public static void sendSmartTimerRedstoneModePacket(BlockPos pos, boolean backward) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-            if (server == null) return;
-            
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
-                            // Cycle to next redstone mode (skip PULSE mode 3): 0->1->2->4->0
-                            timer.cycleRedstoneMode();
-                            
-                            // Play click sound
-                            level.playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
-                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                            
-                            // Mark the block entity as changed
-                            timer.setChanged();
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Smart Timer redstone mode packet: {}", e.getMessage());
-                }
-            });
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket(pos, backward));
         } catch (Exception e) {
             LOGGER.error("Could not send Smart Timer redstone mode packet: {}", e.getMessage(), e);
         }

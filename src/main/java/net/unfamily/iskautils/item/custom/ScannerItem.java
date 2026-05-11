@@ -35,6 +35,7 @@ import net.neoforged.neoforge.common.Tags;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
+import net.unfamily.iskautils.util.ScannerMobCategories;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 
@@ -302,9 +303,10 @@ public class ScannerItem extends Item {
                             serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_ores"));
                             scanForAllOres(serverPlayer, itemstack);
                             scanSuccess = true;
-                        } else if ("mobs".equals(genericTarget)) {
-                            serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_all_mobs"));
-                            scanForAllMobs(serverPlayer, itemstack);
+                        } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
+                            String mode = ScannerMobCategories.normalizedMode(genericTarget);
+                            serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_mobs." + mode));
+                            scanForAllMobs(serverPlayer, itemstack, genericTarget);
                             scanSuccess = true;
                         }
                     }
@@ -1166,11 +1168,12 @@ public class ScannerItem extends Item {
                         .append(Component.literal(")").withStyle(ChatFormatting.GRAY));
                 }
                 tooltipAdder.accept(targetText);
-            } else if ("mobs".equals(genericTarget)) {
+            } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
+                String mode = ScannerMobCategories.normalizedMode(genericTarget);
                 tooltipAdder.accept(
-                    Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_prefix")
+                    Component.translatable("item.iska_utils.scanner.tooltip.target_mobs_prefix")
                         .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                        .append(Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_value")
+                        .append(Component.translatable("item.iska_utils.scanner.tooltip.target_mobs." + mode)
                             .withStyle(ChatFormatting.WHITE)));
             }
         } else {
@@ -1364,8 +1367,9 @@ public class ScannerItem extends Item {
             // Notify the player
             if (genericTarget != null && genericTarget.startsWith("ores")) {
                 player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"));
-            } else if ("mobs".equals(genericTarget)) {
-                player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"));
+            } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
+                String mode = ScannerMobCategories.normalizedMode(genericTarget);
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mobs." + mode));
             }
         }
     }
@@ -1724,7 +1728,7 @@ public class ScannerItem extends Item {
     /**
      * Scans the area for all mobs
      */
-    private void scanForAllMobs(ServerPlayer player, ItemStack itemStack) {
+    private void scanForAllMobs(ServerPlayer player, ItemStack itemStack, String genericTarget) {
         if (player.level() == null || !(player.level() instanceof ServerLevel level)) {
             return;
         }
@@ -1807,7 +1811,9 @@ public class ScannerItem extends Item {
                         .stream()
                         .filter(entity -> {
                             double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
-                            return distanceSq <= scanRangeSquared && !(entity instanceof Player);
+                            return distanceSq <= scanRangeSquared
+                                    && !(entity instanceof Player)
+                                    && ScannerMobCategories.matches(entity, genericTarget);
                         })
                         .toList();
                 

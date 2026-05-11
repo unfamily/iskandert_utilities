@@ -116,6 +116,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("sound_muffler",
                     () -> new BlockEntityType<>(SoundMufflerBlockEntity::new, ModBlocks.SOUND_MUFFLER.get()));
 
+    // Dye Extractor Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FactoryBlockEntity>> FACTORY_BE =
+            BLOCK_ENTITIES.register("factory",
+                    () -> new BlockEntityType<>(FactoryBlockEntity::new, ModBlocks.FACTORY.get()));
+
     // Fan Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FanBlockEntity>> FAN_BE =
             BLOCK_ENTITIES.register("fan",
@@ -219,6 +224,12 @@ public class ModBlockEntities {
                     }
             );
 
+            event.registerBlockEntity(
+                    Capabilities.Energy.BLOCK,
+                    FACTORY_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof FactoryBlockEntity factory ? factory.getEnergyHandler() : null);
+
             // Item transfer (NeoForge 26 ResourceHandler; wraps legacy IItemHandler for hoppers / pipes)
             event.registerBlockEntity(
                     Capabilities.Item.BLOCK,
@@ -264,6 +275,13 @@ public class ModBlockEntities {
                     Capabilities.Item.BLOCK,
                     FAN_BE.get(),
                     (blockEntity, ctx) -> blockEntity instanceof FanBlockEntity be ? be.getItemTransferHandler() : null
+            );
+
+            // Factory: automation (insert input only, extract output only)
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    FACTORY_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof FactoryBlockEntity be ? be.getItemTransferHandler() : null
             );
         }
     }

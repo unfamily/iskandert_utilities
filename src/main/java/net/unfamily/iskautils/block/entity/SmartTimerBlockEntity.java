@@ -161,6 +161,18 @@ public class SmartTimerBlockEntity extends BlockEntity {
         this.redstoneMode = nextMode;
         setChanged();
     }
+
+    public void cycleRedstoneModeBackward() {
+        int m = this.redstoneMode;
+        int prev = switch (m) {
+            case 0 -> 4;
+            case 1 -> 0;
+            case 2 -> 1;
+            case 4 -> 2;
+            default -> m;
+        };
+        setRedstoneMode(prev);
+    }
     
     @Override
     protected void saveAdditional(ValueOutput output) {

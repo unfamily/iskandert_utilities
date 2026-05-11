@@ -338,23 +338,23 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 0) {
+        if (event.button() == 0 || event.button() == 1) {
             int buttonX = this.leftPos + REDSTONE_BUTTON_X;
             int buttonY = this.topPos + REDSTONE_BUTTON_Y;
             if (event.x() >= buttonX && event.x() <= buttonX + REDSTONE_BUTTON_SIZE &&
                 event.y() >= buttonY && event.y() <= buttonY + REDSTONE_BUTTON_SIZE) {
-                onRedstoneModePressed();
+                onRedstoneModePressed(event.button() == 1);
                 return true;
             }
         }
         return super.mouseClicked(event, doubleClick);
     }
     
-    private void onRedstoneModePressed() {
+    private void onRedstoneModePressed(boolean backward) {
         playButtonSound();
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            ModMessages.sendSmartTimerRedstoneModePacket(pos);
+            ModMessages.sendSmartTimerRedstoneModePacket(pos, backward);
         }
     }
 

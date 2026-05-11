@@ -401,12 +401,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             if (handleScrollbarClick(mouseX, mouseY)) {
                 return true;
             }
-            
-            // Check if click is on redstone mode button
+        }
+
+        if (!isHowToUseMode && (button == 0 || button == 1)) {
             if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                 mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-                
-                onRedstoneModePressed();
+                onRedstoneModePressed(button == 1);
                 return true;
             }
         }
@@ -606,7 +606,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
     }
     
-    private void onRedstoneModePressed() {
+    private void onRedstoneModePressed(boolean backward) {
         // Try multiple methods to get the machine position (like StructurePlacerMachineScreen.onRedstoneModePressed)
         BlockPos blockPos = menu.getSyncedBlockPos();
         
@@ -636,8 +636,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         if (!blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            // Send redstone mode packet to cycle the mode
-            ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos);
+            ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos, backward);
             playButtonSound();
         }
         

@@ -16,6 +16,8 @@ import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.resource.VanillaServerListeners;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.fml.ModList;
@@ -41,6 +43,7 @@ import net.unfamily.iskautils.block.PotionPlateBlock;
 import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
 import net.unfamily.iskautils.command.MacroLoader;
 import net.unfamily.iskautils.command.MacroCommand;
+import net.unfamily.iskautils.crafting.FactorySourcesReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 import java.util.Map;
@@ -131,8 +134,11 @@ public class IskaUtils {
         // Carica e inizializza il sistema shop custom
         ShopLoader.loadAll(null);
         
+        net.unfamily.iskautils.worldgen.ModBiomeModifierSerializers.register(modEventBus);
+
         // Register blocks and items
         ModBlocks.register(modEventBus);
+        net.unfamily.iskautils.crafting.ModFactoryRecipes.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
@@ -330,6 +336,8 @@ public class IskaUtils {
                 net.unfamily.iskautils.client.gui.FanScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SOUND_MUFFLER_MENU.get(),
                 net.unfamily.iskautils.client.gui.SoundMufflerScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FACTORY_MENU.get(),
+                net.unfamily.iskautils.client.gui.FactoryScreen::new);
         }
     }
 
@@ -349,7 +357,15 @@ public class IskaUtils {
             }
         }
         private static int cooldownCleanupTimer = 0;
-        
+
+        @SubscribeEvent
+        public static void onAddServerReloadListeners(AddServerReloadListenersEvent event) {
+            Identifier factoryReload =
+                    Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "factory_sources_reload");
+            event.addListener(factoryReload, new FactorySourcesReloadListener());
+            event.addDependency(VanillaServerListeners.RECIPES, factoryReload);
+        }
+
         @SubscribeEvent
         public static void onServerStarting(ServerStartingEvent event) {
             VectorCharmData.getInstance();
@@ -464,7 +480,7 @@ public class IskaUtils {
                     int r = muffler.getRange();
                     if (pos.distSqr(soundPos) > (long) r * r) continue;
                     if (muffler.hasFilter() && !muffler.isSoundAllowedByFilter(soundId)) continue;
-                    int p = muffler.getEffectiveVolumeFor(sound.getSource());
+                    int p = muffler.getEffectiveVolumeFor(sound.getSource(), sound.getIdentifier());
                     if (p < effectivePercent) effectivePercent = p;
                 }
             }

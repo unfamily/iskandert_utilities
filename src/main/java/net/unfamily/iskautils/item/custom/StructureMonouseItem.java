@@ -263,6 +263,12 @@ public class StructureMonouseItem extends Item {
             // Calculate structure block positions with rotation
             Map<BlockPos, String> blockPositions = calculateStructurePositions(centerPos, structure, rotation);
             Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
+
+            if (structure.isSkipIfMobsInBounds() && player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
+                    && net.unfamily.iskautils.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
+                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.structure_mobs_blocking"));
+                return false;
+            }
             
             // First pass: check if placement is possible (space available)
             for (Map.Entry<BlockPos, String> entry : blockPositions.entrySet()) {

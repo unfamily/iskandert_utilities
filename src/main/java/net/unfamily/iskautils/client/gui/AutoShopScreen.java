@@ -88,19 +88,19 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu> {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 0 && event.x() >= redstoneModeButtonX && event.x() < redstoneModeButtonX + REDSTONE_BUTTON_SIZE
+        if ((event.button() == 0 || event.button() == 1) && event.x() >= redstoneModeButtonX && event.x() < redstoneModeButtonX + REDSTONE_BUTTON_SIZE
                 && event.y() >= redstoneModeButtonY && event.y() < redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-            onRedstoneModePressed();
+            onRedstoneModePressed(event.button() == 1);
             return true;
         }
         return super.mouseClicked(event, doubleClick);
     }
 
-    private void onRedstoneModePressed() {
+    private void onRedstoneModePressed(boolean backward) {
         playButtonSound();
         BlockPos machinePos = menu.getSyncedBlockPos();
         if (!machinePos.equals(BlockPos.ZERO)) {
-            net.unfamily.iskautils.network.ModMessages.sendAutoShopRedstoneModePacket(machinePos);
+            net.unfamily.iskautils.network.ModMessages.sendAutoShopRedstoneModePacket(machinePos, backward);
         }
     }
 

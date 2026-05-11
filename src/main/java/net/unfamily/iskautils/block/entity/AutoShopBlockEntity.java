@@ -116,6 +116,16 @@ public class AutoShopBlockEntity extends BlockEntity {
                 case DISABLED -> NONE;
             };
         }
+
+        public RedstoneMode previous() {
+            return switch (this) {
+                case NONE -> DISABLED;
+                case LOW -> NONE;
+                case HIGH -> LOW;
+                case PULSE -> HIGH;
+                case DISABLED -> PULSE;
+            };
+        }
     }
     
     public AutoShopBlockEntity(BlockPos pos, BlockState blockState) {

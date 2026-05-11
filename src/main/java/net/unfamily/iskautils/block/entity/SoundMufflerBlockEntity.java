@@ -6,7 +6,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import com.mojang.serialization.Codec;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
@@ -15,6 +18,8 @@ import net.minecraft.world.level.storage.ValueOutput;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Block entity for Sound Muffler. Stores per-category volume (0-100%).
@@ -40,6 +45,8 @@ public class SoundMufflerBlockEntity extends BlockEntity {
     private int range = 8;
     /** Sound IDs (e.g. "minecraft:entity.creeper.hiss") in the filter. Empty = no filter applied. */
     private final List<String> filterSoundIds = new ArrayList<>();
+
+    private static final Pattern ENTITY_SOUND_PATH = Pattern.compile("^entity\\.([a-z0-9_]+)\\.");
 
     public SoundMufflerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SOUND_MUFFLER_BE.get(), pos, state);
@@ -131,17 +138,78 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         }
     }
 
-    /**
-     * Returns the effective volume (0-100) for a given SoundSource.
-     * MUSIC is never muffled (caller skips). ALL acts as global multiplier: effective = specific * (all / 100).
-     * E.g. All 50%, Blocks 30% -> 15%; All 75%, Blocks 50% -> 37%.
-     */
     public int getEffectiveVolumeFor(SoundSource source) {
+        return getEffectiveVolumeFor(source, null);
+    }
+
+    /**
+     * Effective volume using optional sound event id to correct categories when {@link SoundSource} does not match
+     * (e.g. some entity sounds using MASTER or OTHER).
+     */
+    public int getEffectiveVolumeFor(SoundSource source, @Nullable Identifier soundEventId) {
         if (source == SoundSource.MUSIC) return 100;
-        int categoryIndex = soundSourceToCategoryIndex(source);
+        int categoryIndex = resolveCategoryIndex(source, soundEventId);
         int all = volumes[0];
         int specific = categoryIndex >= 0 ? volumes[categoryIndex] : volumes[1]; // OTHER
         return (specific * all) / 100;
+    }
+
+    private static int resolveCategoryIndex(SoundSource source, @Nullable Identifier soundEventId) {
+        int fromSource = soundSourceToCategoryIndex(source);
+        int fromSound = categoryIndexFromSoundEventId(soundEventId);
+        if (fromSound >= 0 && fromSource >= 0) {
+            if ((fromSource == 0 || fromSource == 1) && fromSound >= 2) {
+                return fromSound;
+            }
+            if (fromSound == 5 && fromSource != 5) {
+                return 5;
+            }
+        }
+        return fromSource;
+    }
+
+    /**
+     * Maps a sound event id (path {@code entity.<name>.<event>}) to GUI category index, or -1 if unknown.
+     */
+    private static int categoryIndexFromSoundEventId(@Nullable Identifier soundEventId) {
+        if (soundEventId == null) {
+            return -1;
+        }
+        String path = soundEventId.getPath();
+        Matcher matcher = ENTITY_SOUND_PATH.matcher(path);
+        if (!matcher.find()) {
+            return -1;
+        }
+        String mobPath = matcher.group(1);
+        Identifier typeId = Identifier.fromNamespaceAndPath(soundEventId.getNamespace(), mobPath);
+        var opt = BuiltInRegistries.ENTITY_TYPE.getOptional(typeId);
+        if (opt.isEmpty() && "minecraft".equals(soundEventId.getNamespace())) {
+            opt = BuiltInRegistries.ENTITY_TYPE.getOptional(Identifier.withDefaultNamespace(mobPath));
+        }
+        if (opt.isEmpty()) {
+            return -1;
+        }
+        return mobCategoryToCategoryIndex(opt.get().getCategory());
+    }
+
+    private static int mobCategoryToCategoryIndex(MobCategory category) {
+        if (category == MobCategory.MONSTER) {
+            return 5;
+        }
+        if (category == MobCategory.CREATURE
+                || category == MobCategory.AXOLOTLS
+                || category == MobCategory.WATER_CREATURE
+                || category == MobCategory.WATER_AMBIENT
+                || category == MobCategory.UNDERGROUND_WATER_CREATURE) {
+            return 6;
+        }
+        if (category == MobCategory.AMBIENT) {
+            return 8;
+        }
+        if (category == MobCategory.MISC) {
+            return 1;
+        }
+        return -1;
     }
 
     /**

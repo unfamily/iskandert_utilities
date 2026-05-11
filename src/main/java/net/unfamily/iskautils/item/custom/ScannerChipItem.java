@@ -28,6 +28,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.ScannerMobCategories;
 
 import java.util.List;
 
@@ -83,8 +84,8 @@ public class ScannerChipItem extends Item {
             // Inizializza il chip per minerali
             setGenericTarget(itemStack, "ores");
         } else if (itemPath.contains("scanner_chip_mobs") && getGenericTarget(itemStack) == null) {
-            // Inizializza il chip per mostri
-            setGenericTarget(itemStack, "mobs");
+            // Initialize mob chip: scan all mobs by default
+            setGenericTarget(itemStack, ScannerMobCategories.ALL);
         }
     }
     
@@ -223,9 +224,21 @@ public class ScannerChipItem extends Item {
                     }
                     return InteractionResult.SUCCESS;
                 } else if (itemPath.contains("scanner_chip_mobs")) {
-                    // Set the chip to scan for all mobs if not already set
+                    if (hand == InteractionHand.MAIN_HAND) {
+                        String current = getGenericTarget(itemStack);
+                        if (current == null) {
+                            setGenericTarget(itemStack, ScannerMobCategories.ALL);
+                            current = ScannerMobCategories.ALL;
+                        }
+                        String next = ScannerMobCategories.cycleMobTarget(current);
+                        setGenericTarget(itemStack, next);
+                        String mode = ScannerMobCategories.normalizedMode(next);
+                        player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.mob_category.set",
+                                Component.translatable("item.iska_utils.scanner_chip.mob_category." + mode)));
+                        return InteractionResult.SUCCESS;
+                    }
                     if (getGenericTarget(itemStack) == null) {
-                        setGenericTarget(itemStack, "mobs");
+                        setGenericTarget(itemStack, ScannerMobCategories.ALL);
                     }
                     return InteractionResult.SUCCESS;
                 }
@@ -493,8 +506,9 @@ public class ScannerChipItem extends Item {
         // Display appropriate message based on target type
         if ("ores".equals(genericTarget)) {
             player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"));
-        } else if ("mobs".equals(genericTarget)) {
-            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"));
+        } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
+            String mode = ScannerMobCategories.normalizedMode(genericTarget);
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mobs." + mode));
         }
     }
     
@@ -590,11 +604,12 @@ public class ScannerChipItem extends Item {
                 }
                 
                 tooltipComponents.add(targetText);
-            } else if ("mobs".equals(genericTarget)) {
-                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_all_mobs_prefix")
+            } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
+                String mode = ScannerMobCategories.normalizedMode(genericTarget);
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mobs_prefix")
                         .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_all_mobs_value")
-                        .withStyle(ChatFormatting.WHITE));
+                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mobs." + mode)
+                                .withStyle(ChatFormatting.WHITE));
                 tooltipComponents.add(targetText);
             }
         } else {
@@ -631,10 +646,12 @@ public class ScannerChipItem extends Item {
                 
                 tooltipComponents.add(targetText);
             } else if (isMobsChip) {
-                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_all_mobs_prefix")
+                String gt = getGenericTarget(stack);
+                String mode = ScannerMobCategories.normalizedMode(gt != null ? gt : ScannerMobCategories.ALL);
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mobs_prefix")
                         .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_all_mobs_value")
-                        .withStyle(ChatFormatting.WHITE));
+                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mobs." + mode)
+                                .withStyle(ChatFormatting.WHITE));
                 tooltipComponents.add(targetText);
             } else {
                 Component noTargetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.no_target")

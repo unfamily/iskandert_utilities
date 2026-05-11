@@ -195,6 +195,16 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 case DISABLED -> NONE;
             };
         }
+
+        public RedstoneMode previous() {
+            return switch (this) {
+                case NONE -> DISABLED;
+                case LOW -> NONE;
+                case HIGH -> LOW;
+                case PULSE -> HIGH;
+                case DISABLED -> PULSE;
+            };
+        }
     }
     
     public StructurePlacerMachineBlockEntity(BlockPos pos, BlockState blockState) {
@@ -563,6 +573,11 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         BlockPos placementPos = machinePos.above();
         Map<BlockPos, String> blockPositions = calculateStructurePositions(placementPos, structure, getRotation());
         Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
+
+        if (structure.isSkipIfMobsInBounds() && level instanceof ServerLevel serverLevel
+                && net.unfamily.iskautils.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
+            return;
+        }
         
         if (blockPositions.isEmpty() || key == null) {
             return;

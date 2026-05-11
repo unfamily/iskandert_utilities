@@ -181,6 +181,15 @@ public class ModBlocks {
     public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",
             key -> new RubberSapExtractorBlock(assignBlockId(key, RUBBER_SAP_EXTRACTOR_PROPERTIES)));
 
+    private static final UnaryOperator<BlockBehaviour.Properties> FACTORY_PROPERTIES = p -> p
+            .mapColor(MapColor.STONE)
+            .strength(3.0f, 6.0f)
+            .sound(SoundType.STONE)
+            .requiresCorrectToolForDrops();
+
+    public static final DeferredBlock<net.unfamily.iskautils.block.custom.FactoryBlock> FACTORY = BLOCKS.register("factory",
+            key -> new net.unfamily.iskautils.block.custom.FactoryBlock(assignBlockId(key, FACTORY_PROPERTIES)));
+
     private static final UnaryOperator<BlockBehaviour.Properties> SMART_TIMER_PROPERTIES = p -> p
             .mapColor(MapColor.STONE)
             .strength(1.5f, 6.0f)

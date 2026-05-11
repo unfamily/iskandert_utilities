@@ -795,14 +795,14 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     }
     
     private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) { // Left click
-            // Check redstone mode button
+        if (button == 0 || button == 1) {
             if (mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                 mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-                onRedstoneModePressed();
+                onRedstoneModePressed(button == 1);
                 return true;
             }
-            
+        }
+        if (button == 0) { // Left click
             // Check push/pull button
             if (mouseX >= pushPullButtonX && mouseX <= pushPullButtonX + REDSTONE_BUTTON_SIZE &&
                 mouseY >= pushPullButtonY && mouseY <= pushPullButtonY + REDSTONE_BUTTON_SIZE) {
@@ -831,10 +831,10 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         return super.mouseClicked(event, doubleClick);
     }
     
-    private void onRedstoneModePressed() {
+    private void onRedstoneModePressed(boolean backward) {
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(BlockPos.ZERO)) {
-            ModMessages.sendFanRedstoneModePacket(pos);
+            ModMessages.sendFanRedstoneModePacket(pos, backward);
             playButtonSound();
         }
     }

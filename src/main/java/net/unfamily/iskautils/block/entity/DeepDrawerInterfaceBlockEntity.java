@@ -153,7 +153,11 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
         @NotNull
         @Override
         public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            return net.minecraft.world.item.ItemStack.EMPTY;
+            DeepDrawersBlockEntity drawer = findAdjacentDrawer();
+            if (drawer == null) {
+                return net.minecraft.world.item.ItemStack.EMPTY;
+            }
+            return drawer.getItemHandler().extractItem(slot, amount, simulate);
         }
         
         @Override

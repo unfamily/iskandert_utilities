@@ -261,6 +261,8 @@ public class ModItems {
 
     public static final DeferredItem<BlockItem> SOUND_MUFFLER = ITEMS.registerSimpleBlockItem(ModBlocks.SOUND_MUFFLER);
 
+    public static final DeferredItem<BlockItem> FACTORY = ITEMS.registerSimpleBlockItem(ModBlocks.FACTORY);
+
     public static final DeferredItem<BlockItem> WEATHER_ALTERER = ITEMS.registerSimpleBlockItem(ModBlocks.WEATHER_ALTERER);
 
     public static final DeferredItem<BlockItem> TIME_ALTERER = ITEMS.registerSimpleBlockItem(ModBlocks.TIME_ALTERER);

@@ -193,6 +193,11 @@ public class Config {
             .comment("Energy capacity of the Structure Placer Machine in RF/FE")
             .defineInRange("301_structurePlacerMachineEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
 
+    private static final ModConfigSpec.IntValue FACTORY_ENERGY_BUFFER = BUILDER
+            .comment("Energy capacity of the Factory in RF/FE (0 disables energy storage and consumption)",
+                    "Per-operation cost is set per recipe in data (energy_per_operation); default 1 RF when omitted.")
+            .defineInRange("303_factoryEnergyBuffer", 1000, 0, Integer.MAX_VALUE);
+
     private static final ModConfigSpec.IntValue SOUND_MUFFLER_RANGE_MAX = BUILDER
             .comment("Maximum range (blocks) for Sound Muffler effect. Minimum is always 8. Allowed values in GUI: 8, 16, 32, and up to this max (default 500).")
             .defineInRange("302_soundMufflerRangeMax", 16, 8, 1024);
@@ -559,6 +564,11 @@ public class Config {
         // === Rubber Tree Configuration ===
         BUILDER.comment("Rubber Tree Configuration").push("rubber_tree");
     }
+
+    public static final ModConfigSpec.BooleanValue GENERATE_RUBBER_TREES = BUILDER
+            .comment("When true, rubber trees are injected into overworld generation (vegetal_decoration step).",
+                    "Set to false to disable worldgen rubber trees (saplings and structures are unaffected).")
+            .define("000_generate_rubber_trees", true);
     
     public static final ModConfigSpec.IntValue MIN_SAP_REFILL_TIME = BUILDER
             .comment("Minimum time in ticks for a rubber log to refill with sap (1 tick = 1/20 second)")
@@ -591,6 +601,18 @@ public class Config {
         // Category for Development/Advanced Configuration
         BUILDER.comment("Tweaks Configuration").push("tweaks");
     }
+
+    public static final ModConfigSpec.DoubleValue MINING_EQUITIZER_AIR_MULTIPLIER = BUILDER
+            .comment("Break speed multiplier when the player is not on ground and not fully in water (e.g. creative flight).")
+            .defineInRange("300_miningEquitizerAirMultiplier", 5.0, 0.0, 100.0);
+
+    public static final ModConfigSpec.DoubleValue MINING_EQUITIZER_WATER_MULTIPLIER = BUILDER
+            .comment("Break speed multiplier when the player is in water but still on ground.")
+            .defineInRange("301_miningEquitizerWaterMultiplier", 5.0, 0.0, 100.0);
+
+    public static final ModConfigSpec.DoubleValue MINING_EQUITIZER_AIR_AND_WATER_MULTIPLIER = BUILDER
+            .comment("Break speed multiplier when both not on ground and in water (stacked bonus).")
+            .defineInRange("302_miningEquitizerAirAndWaterMultiplier", 8.0, 0.0, 100.0);
  
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>>  sticky_fluids = BUILDER
             .comment("List of fluids that should be sticky")
@@ -821,6 +843,10 @@ public class Config {
     public static int rubberSapExtractorEnergyConsume;
     public static int rubberSapExtractorEnergyBuffer;
     public static int rubberSapExtractorSpeed;
+    public static boolean generateRubberTrees;
+    public static double miningEquitizerAirMultiplier;
+    public static double miningEquitizerWaterMultiplier;
+    public static double miningEquitizerAirAndWaterMultiplier;
     public static java.util.List<String> crudeOils = new java.util.ArrayList<>();
     public static int scannerScanRange;
     public static java.util.List<Integer> scannerRangeOptions;
@@ -850,6 +876,7 @@ public class Config {
     public static java.util.List<String> scannerOreTags;
     public static int structurePlacerMachineEnergyConsume;
     public static int structurePlacerMachineEnergyBuffer;
+    public static int factoryEnergyBuffer;
     public static int soundMufflerRangeMax;
     public static String clientStructurePath;
     public static boolean acceptClientStructure;
@@ -956,6 +983,7 @@ public class Config {
         // Structure Placer Machine logic
         structurePlacerMachineEnergyConsume = STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME.get();
         structurePlacerMachineEnergyBuffer = STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER.get();
+        factoryEnergyBuffer = FACTORY_ENERGY_BUFFER.get();
         soundMufflerRangeMax = SOUND_MUFFLER_RANGE_MAX.get();
 
         // Client Structure Path logic
@@ -1061,6 +1089,10 @@ public class Config {
 
         
         rubberSapExtractorSpeed = RUBBER_SAP_EXTRACTOR_SPEED.get();
+        generateRubberTrees = GENERATE_RUBBER_TREES.get();
+        miningEquitizerAirMultiplier = MINING_EQUITIZER_AIR_MULTIPLIER.get();
+        miningEquitizerWaterMultiplier = MINING_EQUITIZER_WATER_MULTIPLIER.get();
+        miningEquitizerAirAndWaterMultiplier = MINING_EQUITIZER_AIR_AND_WATER_MULTIPLIER.get();
         
         scannerScanRange = SCANNER_SCAN_RANGE.get(); // Deprecated, kept for backward compatibility
         scannerRangeOptions = new java.util.ArrayList<>(SCANNER_RANGE_OPTIONS.get());

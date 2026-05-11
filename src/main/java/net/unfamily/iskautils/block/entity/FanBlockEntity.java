@@ -358,6 +358,18 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         }
         setRedstoneMode(nextMode);
     }
+
+    public void cycleRedstoneModeBackward() {
+        int m = getRedstoneMode();
+        int prev = switch (m) {
+            case 0 -> 4;
+            case 1 -> 0;
+            case 2 -> 1;
+            case 4 -> 2;
+            default -> m;
+        };
+        setRedstoneMode(prev);
+    }
     
     public boolean isPull() { return isPull; }
     public void setPull(boolean value) { 

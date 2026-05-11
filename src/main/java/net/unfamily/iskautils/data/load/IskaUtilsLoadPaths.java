@@ -28,4 +28,12 @@ public final class IskaUtilsLoadPaths {
         String p = id.getPath();
         return p.startsWith(loadSubdirPrefix(subdir)) && p.endsWith(".json");
     }
+
+    /**
+     * {@code data/iska_utils/recipe/factory/*.json} (crafting + factory datapack definitions).
+     */
+    public static boolean isFactoryRecipeFile(Identifier id) {
+        String p = id.getPath();
+        return p.startsWith("recipe/factory/") && p.endsWith(".json");
+    }
 }
