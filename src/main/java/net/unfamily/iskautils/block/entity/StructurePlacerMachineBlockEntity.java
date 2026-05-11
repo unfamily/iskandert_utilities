@@ -527,6 +527,11 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         BlockPos placementPos = machinePos.above();
         Map<BlockPos, String> blockPositions = calculateStructurePositions(placementPos, structure, getRotation());
         Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
+
+        if (structure.isSkipIfMobsInBounds() && level instanceof net.minecraft.server.level.ServerLevel serverLevel
+                && net.unfamily.iskautils.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
+            return;
+        }
         
         if (blockPositions.isEmpty() || key == null) {
             return;

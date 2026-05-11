@@ -144,6 +144,7 @@ public class ModCreativeModeTabs {
                                 // Deep drawer (all components)
                                 pOutput.accept(ModItems.DEEP_DRAWERS.get());
                                 pOutput.accept(ModItems.DEEP_DRAWER_EXTRACTOR.get());
+                                pOutput.accept(ModItems.FACTORY.get());
                                 pOutput.accept(ModItems.DEEP_DRAWER_INTERFACE.get());
                                 pOutput.accept(ModItems.DEEP_DRAWER_EXTENDER.get());
                                 

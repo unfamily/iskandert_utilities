@@ -137,6 +137,12 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(SoundMufflerBlockEntity::new, ModBlocks.SOUND_MUFFLER.get())
                             .build(null));
 
+    // Factory Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FactoryBlockEntity>> FACTORY_BE =
+            BLOCK_ENTITIES.register("factory",
+                    () -> BlockEntityType.Builder.of(FactoryBlockEntity::new, ModBlocks.FACTORY.get())
+                            .build(null));
+
     // Fan Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FanBlockEntity>> FAN_BE =
             BLOCK_ENTITIES.register("fan",
@@ -338,6 +344,25 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof DeepDrawerExtenderBlockEntity extenderEntity) {
                             return extenderEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    FACTORY_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof FactoryBlockEntity factory ? factory.getEnergyStorage() : null);
+
+            // Factory: allow automation via tubes/pipes (IItemHandler)
+            // Input slot: insert only. Output slot: extract only.
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    FACTORY_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof FactoryBlockEntity factoryEntity) {
+                            return factoryEntity.getItemHandler();
                         }
                         return null;
                     }

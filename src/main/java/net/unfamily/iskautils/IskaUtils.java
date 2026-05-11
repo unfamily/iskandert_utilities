@@ -47,6 +47,8 @@ import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
 import net.unfamily.iskautils.data.DynamicPotionPlateModelLoader;
 import net.unfamily.iskautils.command.MacroLoader;
 import net.unfamily.iskautils.command.MacroCommand;
+import net.unfamily.iskautils.crafting.FactorySourcesReloadListener;
+import net.unfamily.iskautils.crafting.ModFactoryRecipes;
 import net.unfamily.iskautils.data.load.IskaUtilsDataReload;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -114,7 +116,8 @@ public class IskaUtils {
         
         // Register blocks and items
         ModBlocks.register(modEventBus);
-        IskaUtilsRecipes.register(modEventBus);
+        net.unfamily.iskautils.worldgen.ModBiomeModifierSerializers.register(modEventBus);
+        ModFactoryRecipes.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
@@ -301,6 +304,8 @@ public class IskaUtils {
                 net.unfamily.iskautils.client.gui.FanScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SOUND_MUFFLER_MENU.get(),
                 net.unfamily.iskautils.client.gui.SoundMufflerScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FACTORY_MENU.get(),
+                net.unfamily.iskautils.client.gui.FactoryScreen::new);
         }
     }
 
@@ -480,6 +485,7 @@ public class IskaUtils {
                     return "IskaUtils Commands and Items";
                 }
             });
+            event.addListener(new FactorySourcesReloadListener());
         }
         
         @SubscribeEvent
@@ -509,7 +515,10 @@ public class IskaUtils {
                 return;
             }
             net.minecraft.client.resources.sounds.SoundInstance sound = event.getOriginalSound();
-            if (sound.getSource() == net.minecraft.sounds.SoundSource.MUSIC) {
+            if (sound == null) {
+                sound = event.getSound();
+            }
+            if (sound == null || sound.getSource() == net.minecraft.sounds.SoundSource.MUSIC) {
                 return;
             }
             net.minecraft.core.BlockPos soundPos = net.minecraft.core.BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
@@ -524,7 +533,7 @@ public class IskaUtils {
                     int r = muffler.getRange();
                     if (pos.distSqr(soundPos) > (long) r * r) continue;
                     if (muffler.hasFilter() && !muffler.isSoundAllowedByFilter(soundId)) continue;
-                    int p = muffler.getEffectiveVolumeFor(sound.getSource());
+                    int p = muffler.getEffectiveVolumeFor(sound.getSource(), sound.getLocation());
                     if (p < effectivePercent) effectivePercent = p;
                 }
             }

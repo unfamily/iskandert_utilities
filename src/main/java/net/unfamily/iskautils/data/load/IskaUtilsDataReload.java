@@ -39,6 +39,7 @@ public final class IskaUtilsDataReload {
         StageActionsLoader.loadAll(rm);
         StageItemHandler.loadAll(rm);
         StructureLoader.loadAllServerDefinitions(rm);
+        FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), rm);
     }
 }
 

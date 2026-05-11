@@ -28,5 +28,10 @@ public final class IskaUtilsLoadPaths {
         String p = id.getPath();
         return p.startsWith(loadSubdirPrefix(subdir)) && p.endsWith(".json");
     }
+
+    public static boolean isFactoryRecipeFile(ResourceLocation id) {
+        String p = id.getPath();
+        return p.startsWith("recipe/factory/") && p.endsWith(".json");
+    }
 }
 

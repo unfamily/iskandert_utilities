@@ -65,6 +65,29 @@ public final class IskaUtilsLoadJson {
         return out;
     }
 
+    public static Map<ResourceLocation, JsonElement> collectMergedJsonUnderDirectory(
+            ResourceManager resourceManager, String directoryUnderDataNamespace, Predicate<ResourceLocation> locationFilter) {
+        Map<ResourceLocation, JsonElement> out = new LinkedHashMap<>();
+        Map<ResourceLocation, List<Resource>> stacks =
+                resourceManager.listResourceStacks(directoryUnderDataNamespace, id -> id.getPath().endsWith(".json") && locationFilter.test(id));
+        for (Map.Entry<ResourceLocation, List<Resource>> entry : stacks.entrySet()) {
+            List<Resource> stack = entry.getValue();
+            if (stack.isEmpty()) {
+                continue;
+            }
+            Resource top = stack.getLast();
+            try (var reader = new BufferedReader(new InputStreamReader(top.open(), StandardCharsets.UTF_8))) {
+                JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
+                if (parsed != null) {
+                    out.put(entry.getKey(), parsed);
+                }
+            } catch (IOException | JsonParseException ex) {
+                LOGGER.error("Failed to read JSON {}: {}", entry.getKey(), ex.getMessage());
+            }
+        }
+        return out;
+    }
+
     /**
      * Order: built-in {@code iska_utils} namespace first, then other namespaces (string order),
      * so datapacks typically override mod defaults for the same logical ids inside JSON.

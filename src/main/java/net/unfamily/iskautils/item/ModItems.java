@@ -246,6 +246,10 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.DYE_BUSH_EMPTY.get(), new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> DYE_BUSH_FILLED = ITEMS.register("dye_bush_filled",
             () -> new BlockItem(ModBlocks.DYE_BUSH_FILLED.get(), new Item.Properties().stacksTo(64)));
+
+    // Dye Extractor machine block item
+    public static final DeferredItem<Item> FACTORY = ITEMS.register("factory",
+            () -> new BlockItem(ModBlocks.FACTORY.get(), ITEM_PROPERTIES));
             
     public static final DeferredItem<Item> RUBBER_SAPLING = ITEMS.register("rubber_sapling",
             () -> new BlockItem(ModBlocks.RUBBER_SAPLING.get(), ITEM_PROPERTIES));

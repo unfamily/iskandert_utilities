@@ -33,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.mojang.logging.LogUtils;
 import net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket;
+import net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket;
+import net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.function.BiConsumer;
@@ -145,6 +147,24 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket::handle
         );
+
+        registrar.playToServer(
+            FactorySelectColorC2SPacket.TYPE,
+            FactorySelectColorC2SPacket.STREAM_CODEC,
+            FactorySelectColorC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            FactoryScrollC2SPacket.TYPE,
+            FactoryScrollC2SPacket.STREAM_CODEC,
+            FactoryScrollC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket::handle
+        );
         
         LOGGER.info("Registered {} networking packets", 8);
     }
@@ -169,6 +189,75 @@ public class ModMessages {
     public static void sendPortableDislocatorPacket(int targetX, int targetZ) {
         LOGGER.info("Sending Portable Dislocator packet to server: {}, {}", targetX, targetZ);
         // Simplified implementation for single player compatibility
+    }
+
+    @net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
+    public static void sendFactorySelectColor(net.minecraft.core.BlockPos pos, int index) {
+        var packet = new net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket(pos, index);
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc != null && mc.getSingleplayerServer() != null) {
+                mc.getSingleplayerServer().execute(() -> {
+                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()
+                            ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.FactoryBlockEntity factory) {
+                            factory.setSelectedColorIndex(index);
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+    }
+
+    @net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
+    public static void sendFactoryScroll(net.minecraft.core.BlockPos pos, int offset) {
+        var packet = new net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket(pos, offset);
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc != null && mc.getSingleplayerServer() != null) {
+                mc.getSingleplayerServer().execute(() -> {
+                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()
+                            ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.FactoryBlockEntity factory) {
+                            factory.setScrollOffset(offset);
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendFactoryRedstoneMode(net.minecraft.core.BlockPos pos) {
+        var packet = new net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket(pos);
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc != null && mc.getSingleplayerServer() != null) {
+                mc.getSingleplayerServer().execute(() -> {
+                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()
+                            ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.FactoryBlockEntity factory) {
+                            factory.cycleRedstoneMode();
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
     }
     
     /**
@@ -1936,45 +2025,10 @@ public class ModMessages {
         }
     }
     
-    /**
-     * Sends Fan Redstone Mode packet to the server
-     */
     @OnlyIn(Dist.CLIENT)
-    public static void sendFanRedstoneModePacket(BlockPos pos) {
-        try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-            if (server == null) return;
-            
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
-                            // Cycle to next redstone mode (0-4)
-                            int currentMode = fan.getRedstoneMode();
-                            int nextMode = (currentMode + 1) % 5; // Cycle 0->1->2->3->4->0
-                            fan.setRedstoneMode(nextMode);
-                            
-                            // Play click sound
-                            level.playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
-                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                            
-                            // Mark the block entity as changed
-                            fan.setChanged();
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Fan redstone mode packet: {}", e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.error("Could not send Fan redstone mode packet: {}", e.getMessage(), e);
-        }
+    public static void sendFanRedstoneModePacket(BlockPos pos, boolean backward) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.FanRedstoneModeC2SPacket(pos, backward));
     }
     
     /**

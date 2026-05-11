@@ -190,6 +190,12 @@ public class StructurePlacerItem extends Item {
         // Calculate positions and create a specific block allocation map
         Map<BlockPos, String> blockPositions = calculateStructurePositions(centerPos, structure, stack);
         Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
+
+        if (structure.isSkipIfMobsInBounds() && player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
+                && net.unfamily.iskautils.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.structure_mobs_blocking"), true);
+            return InteractionResult.FAIL;
+        }
         
         // Create an allocation map that tracks exactly which block to use for each position
         Map<BlockPos, AllocatedBlock> blockAllocation = new HashMap<>();

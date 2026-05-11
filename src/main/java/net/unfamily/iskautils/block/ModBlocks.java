@@ -178,6 +178,16 @@ public class ModBlocks {
     // Rubber Sap Extractor (automatically extracts sap from rubber logs)
     public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",
             () -> new RubberSapExtractorBlock(RUBBER_SAP_EXTRACTOR_PROPERTIES));
+
+    // Factory (dye / item processing machine)
+    private static final BlockBehaviour.Properties FACTORY_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.STONE)
+            .strength(3.0f, 6.0f)
+            .sound(SoundType.STONE)
+            .requiresCorrectToolForDrops();
+
+    public static final DeferredBlock<net.unfamily.iskautils.block.custom.FactoryBlock> FACTORY =
+            BLOCKS.register("factory", () -> new net.unfamily.iskautils.block.custom.FactoryBlock(FACTORY_PROPERTIES));
     
     // Smart Timer (emits redstone signal periodically)
     private static final BlockBehaviour.Properties SMART_TIMER_PROPERTIES = BlockBehaviour.Properties.of()

@@ -37,6 +37,7 @@ import net.neoforged.neoforge.common.Tags;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.client.KeyBindings;
+import net.unfamily.iskautils.util.ScannerMobCategories;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import net.minecraft.world.item.UseAnim;
@@ -300,9 +301,10 @@ public class ScannerItem extends Item {
                             serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_ores"), true);
                             scanForAllOres(serverPlayer, itemstack);
                             scanSuccess = true;
-                        } else if ("mobs".equals(genericTarget)) {
-                            serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_all_mobs"), true);
-                            scanForAllMobs(serverPlayer, itemstack);
+                        } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
+                            String mode = ScannerMobCategories.normalizedMode(genericTarget);
+                            serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_mobs." + mode), true);
+                            scanForAllMobs(serverPlayer, itemstack, genericTarget);
                             scanSuccess = true;
                         }
                     }
@@ -1178,11 +1180,12 @@ public class ScannerItem extends Item {
                         .append(Component.literal(")").withStyle(ChatFormatting.GRAY));
                 }
                 tooltipComponents.add(targetText);
-            } else if ("mobs".equals(genericTarget)) {
+            } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
+                String mode = ScannerMobCategories.normalizedMode(genericTarget);
                 tooltipComponents.add(
-                    Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_prefix")
+                    Component.translatable("item.iska_utils.scanner.tooltip.target_mobs_prefix")
                         .withStyle(style -> style.withColor(ChatFormatting.AQUA))
-                        .append(Component.translatable("item.iska_utils.scanner.tooltip.target_all_mobs_value")
+                        .append(Component.translatable("item.iska_utils.scanner.tooltip.target_mobs." + mode)
                             .withStyle(ChatFormatting.WHITE)));
             }
         } else {
@@ -1375,8 +1378,9 @@ public class ScannerItem extends Item {
             // Notify the player
             if (genericTarget != null && genericTarget.startsWith("ores")) {
                 player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_ores"), true);
-            } else if ("mobs".equals(genericTarget)) {
-                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_all_mobs"), true);
+            } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
+                String mode = ScannerMobCategories.normalizedMode(genericTarget);
+                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mobs." + mode), true);
             }
         }
     }
@@ -1729,7 +1733,7 @@ public class ScannerItem extends Item {
     /**
      * Scans the area for all mobs
      */
-    private void scanForAllMobs(ServerPlayer player, ItemStack itemStack) {
+    private void scanForAllMobs(ServerPlayer player, ItemStack itemStack, String genericTarget) {
         if (player.level() == null || !(player.level() instanceof ServerLevel level)) {
             return;
         }
@@ -1809,7 +1813,9 @@ public class ScannerItem extends Item {
                     ),
                     entity -> {
                         double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
-                        return distanceSq <= scanRangeSquared && !(entity instanceof Player);
+                        return distanceSq <= scanRangeSquared
+                                && !(entity instanceof Player)
+                                && ScannerMobCategories.matches(entity, genericTarget != null ? genericTarget : ScannerMobCategories.LEGACY_ALL);
                     }
                 );
                 
