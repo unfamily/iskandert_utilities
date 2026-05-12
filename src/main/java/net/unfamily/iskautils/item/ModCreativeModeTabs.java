@@ -100,6 +100,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER.get());
                                 pOutput.accept(ModItems.RUBBER_CHUNK.get());
                                 pOutput.accept(ModItems.RUBBER_BLOCK.get());
+                                pOutput.accept(ModItems.PLASTIC_BLOCK.get());
                                 pOutput.accept(ModItems.PLASTIC_INGOT.get());
                                 pOutput.accept(ModItems.TAR_SLIME_BLOCK.get());
                                 pOutput.accept(ModItems.TAR_SLIMEBALL.get());

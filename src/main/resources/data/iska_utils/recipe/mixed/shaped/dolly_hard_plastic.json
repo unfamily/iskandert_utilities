@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "  B",
+    "  C",
+    "DAC"
+  ],
+  "key": {
+    "A": "#c:storage_blocks/plastic/lesser_plastic",
+    "B": "iska_utils:plastic_ingot",
+    "C": "#c:bars/netherite",
+    "D": "#c:ingots/netherite"
+  },
+  "result": {
+    "id": "iska_utils:dolly_hard",
+    "count": 1
+  }
+}
