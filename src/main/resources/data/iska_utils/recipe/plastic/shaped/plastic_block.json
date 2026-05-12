@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AA",
+    "AA"
+  ],
+  "key": {
+    "A": [
+      {
+        "tag": "c:plastics"
+      },
+      {
+        "tag": "c:ingots/plastic"
+      }
+    ]
+  },
+  "result": {
+    "id": "iska_utils:plastic_block",
+    "count": 1
+  }
+}

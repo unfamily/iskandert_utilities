@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "iska_utils:plastic_block"
+    }
+  ],
+  "result": {
+    "id": "iska_utils:plastic_ingot",
+    "count": 4
+  }
+}

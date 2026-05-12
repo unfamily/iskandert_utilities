@@ -267,6 +267,9 @@ public class ModItems {
 
     public static final DeferredItem<Item> RUBBER_BLOCK = ITEMS.register("rubber_block",
             () -> new BlockItem(ModBlocks.RUBBER_BLOCK.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> PLASTIC_BLOCK = ITEMS.register("plastic_block",
+            () -> new BlockItem(ModBlocks.PLASTIC_BLOCK.get(), ITEM_PROPERTIES));
             
     // Rubber block variants
     public static final DeferredItem<Item> RUBBER_STAIRS = ITEMS.register("rubber_stairs",

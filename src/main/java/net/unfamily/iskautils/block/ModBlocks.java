@@ -331,6 +331,13 @@ public class ModBlocks {
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(2.0f)
                     .sound(SoundType.TUFF)));
+
+    public static final DeferredBlock<PlasticBlock> PLASTIC_BLOCK = BLOCKS.register("plastic_block",
+            () -> new PlasticBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_GRAY)
+                    .strength(2.0f, 3.0f)
+                    .sound(SoundType.STONE)
+                    .requiresCorrectToolForDrops()));
                     
     // ===== RUBBER WOOD VARIANTS =====
     // Stairs, slabs, fences, fence gates, buttons, pressure plates, doors, trapdoors

@@ -6,9 +6,14 @@
     "DAC"
   ],
   "key": {
-    "A": {
-      "tag": "c:storage_blocks/rubber"
-    },
+    "A": [
+      {
+        "tag": "c:storage_blocks/rubber"
+      },
+      {
+        "tag": "c:storage_blocks/plastic/lesser_plastic"
+      }
+    ],
     "B": [
       {
         "tag": "c:plastics"
