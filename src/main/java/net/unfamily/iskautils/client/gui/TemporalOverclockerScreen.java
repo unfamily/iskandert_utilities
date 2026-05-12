@@ -580,15 +580,15 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                 onPersistentModePressed();
                 return true;
             }
-            
-            // Handle redstone mode button click
-            if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-                onRedstoneModePressed();
-                return true;
-            }
         }
-        
+
+        if ((button == 0 || button == 1)
+                && mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE
+                && mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
+            onRedstoneModePressed(button == 1);
+            return true;
+        }
+
         return super.mouseClicked(mouseX, mouseY, button);
     }
     
@@ -649,10 +649,10 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         }
     }
     
-    private void onRedstoneModePressed() {
+    private void onRedstoneModePressed(boolean backward) {
         BlockPos machinePos = this.menu.getSyncedBlockPos();
         if (!machinePos.equals(BlockPos.ZERO)) {
-            net.unfamily.iskautils.network.ModMessages.sendTemporalOverclockerRedstoneModePacket(machinePos);
+            net.unfamily.iskautils.network.ModMessages.sendTemporalOverclockerRedstoneModePacket(machinePos, backward);
         }
     }
     

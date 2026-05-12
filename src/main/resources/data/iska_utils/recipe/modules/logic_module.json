@@ -1,9 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "ACA",
+    "ECE",
     "CBC",
-    "ACA"
+    "ECE"
   ],
   "key": {
     "C": {
@@ -14,6 +14,12 @@
     },
     "A": {
       "item": "minecraft:comparator"
+    },
+    "D": {
+      "tag": "c:ingots/gold"
+    },
+    "E": {
+      "tag": "c:dusts/redstone"
     }
   },
   "result": {

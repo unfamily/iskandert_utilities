@@ -277,7 +277,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         }
     }
     
-    private void onRedstoneModePressed() {
+    private void onRedstoneModePressed(boolean backward) {
         // Try multiple methods to get the machine position
         BlockPos machinePos = this.menu.getSyncedBlockPos();
         
@@ -307,8 +307,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         }
         
         if (!machinePos.equals(BlockPos.ZERO)) {
-            // Send redstone mode packet to cycle the mode
-            net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineRedstoneModePacket(machinePos);
+            net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineRedstoneModePacket(machinePos, backward);
         }
     }
     
@@ -631,16 +630,14 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Check if click is on redstone mode button
-        if (button == 0) { // Left click
+        if (button == 0 || button == 1) {
             if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                 mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-                
-                onRedstoneModePressed();
+                onRedstoneModePressed(button == 1);
                 return true;
             }
         }
-        
+
         return super.mouseClicked(mouseX, mouseY, button);
     }
     

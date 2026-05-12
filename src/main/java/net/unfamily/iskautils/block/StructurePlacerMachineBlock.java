@@ -32,6 +32,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 
+import javax.annotation.Nullable;
+
 /**
  * A machine block for automated structure placement with directional facing
  */
@@ -63,6 +65,11 @@ public class StructurePlacerMachineBlock extends BaseEntityBlock {
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
+    }
+
+    @Override
+    public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
+        return true;
     }
     
     @Override

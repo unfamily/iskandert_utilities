@@ -104,6 +104,16 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 case DISABLED -> NONE;
             };
         }
+
+        public RedstoneMode previous() {
+            return switch (this) {
+                case NONE -> DISABLED;
+                case LOW -> NONE;
+                case HIGH -> LOW;
+                case PULSE -> HIGH;
+                case DISABLED -> PULSE;
+            };
+        }
     }
     
     public DeepDrawerExtractorBlockEntity(BlockPos pos, BlockState state) {

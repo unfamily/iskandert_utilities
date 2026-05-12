@@ -135,7 +135,13 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
             if (drawer == null) {
                 return net.minecraft.world.item.ItemStack.EMPTY;
             }
-            return drawer.getItemHandler().extractItem(slot, amount, simulate);
+            // Mirror path must bypass ITEM_HANDLER_ALLOW_EXTRACT and automation-extract config gate on the drawer handler.
+            DeepDrawersBlockEntity.ITEM_HANDLER_ALLOW_EXTRACT.set(true);
+            try {
+                return drawer.getItemHandler().extractItem(slot, amount, simulate);
+            } finally {
+                DeepDrawersBlockEntity.ITEM_HANDLER_ALLOW_EXTRACT.set(false);
+            }
         }
         
         @Override

@@ -81,6 +81,12 @@ public class Config
         BUILDER.comment("General Utilities Configuration").push("general_utilities");
     }
 
+    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_ALLOW_AUTOMATION_EXTRACT = BUILDER
+            .comment("When false (default), hoppers and pipes cannot extract from Deep Drawers via the item handler.",
+                    "When true, automated extraction is allowed (this may be expensive for some pipes; the Deep Drawer Extractor is recommended).",
+                    "GUI extraction is controlled separately and remains allowed only through the GUI path.")
+            .define("407_deep_drawers_allow_automation_extract", false);
+
     private static final ModConfigSpec.IntValue HELLFIRE_IGNITER_CONSUME = BUILDER
             .comment("Amount of energy consumed by the Hellfire Igniter",
                     "Recommended value: 10, but set to 0 to disable energy consumption")
@@ -199,7 +205,7 @@ public class Config
     private static final ModConfigSpec.IntValue FACTORY_ENERGY_BUFFER = BUILDER
             .comment("Energy capacity of the Factory in RF/FE (0 disables energy storage and consumption)",
                     "Per-operation cost is set per recipe in data (energy_per_operation); default 1 RF when omitted.")
-            .defineInRange("303_factoryEnergyBuffer", 1000, 0, Integer.MAX_VALUE);
+            .defineInRange("303_factoryEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue SOUND_MUFFLER_RANGE_MAX = BUILDER
             .comment("Maximum range (blocks) for Sound Muffler effect. Minimum is always 8. Allowed values in GUI: 8, 16, 32, and up to this max (default 500).")
@@ -226,8 +232,8 @@ public class Config
 
     private static final ModConfigSpec.IntValue DEEP_DRAWERS_SLOT_COUNT = BUILDER
             .comment("Number of slots in the Deep Drawers storage",
-                    "Default: 1024")
-            .defineInRange("402_deep_drawers_slot_count_v2", 1024, 1, Integer.MAX_VALUE);
+                    "Default: 4096")
+            .defineInRange("402_deep_drawers_slot_count_v2", 4096, 1, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_DIRECT_PIPE_ACCESS = BUILDER
             .comment("Allow hoppers and item pipes to interact directly with the Deep Drawer block (without Extender)",
@@ -246,12 +252,6 @@ public class Config
                     "When false, automated insertion is rejected (player GUI insertion still works).",
                     "Extraction via the exposed item handler is always disabled; use the Deep Drawer Extractor block to pull items.")
             .define("406_deep_drawers_allow_automation_insert", true);
-
-    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_ALLOW_AUTOMATION_EXTRACT = BUILDER
-            .comment("When false (default), hoppers and pipes cannot extract from Deep Drawers via the item handler.",
-                    "When true, automated extraction is allowed (this may be expensive for some pipes; the Deep Drawer Extractor is recommended).",
-                    "GUI extraction is controlled separately and remains allowed only through the GUI path.")
-            .define("407_deep_drawers_allow_automation_extract", false);
 
     // Deep Drawer Extractor Configuration (starts at 410)
     private static final ModConfigSpec.IntValue DEEP_DRAWER_EXTRACTOR_INTERVAL = BUILDER
@@ -488,6 +488,14 @@ public class Config
                     "Default: 0.15 (0.288 is like a ladder speed)")
             .defineInRange("010_gauntlet_climbing_speed", 0.15D, 0.0D, 10.0D);
 
+    private static final ModConfigSpec.DoubleValue MINING_EQUITIZER_AIR_MULTIPLIER = BUILDER
+            .comment("Mining Equitizer artifact: break speed multiplier when airborne (not on ground) and water bonus does not apply.")
+            .defineInRange("020_miningEquitizerAirMultiplier", 5.0, 0.0, 100.0);
+
+    private static final ModConfigSpec.DoubleValue MINING_EQUITIZER_WATER_MULTIPLIER = BUILDER
+            .comment("Mining Equitizer artifact: break speed multiplier when in fluid that counts as water for mining (strict full submersion or vanilla in-water).")
+            .defineInRange("021_miningEquitizerWaterMultiplier", 5.0, 0.0, 100.0);
+
     static {
         BUILDER.pop(); // End of artifacts_settings category
         BUILDER.pop(); // End of general_utilities category
@@ -568,11 +576,6 @@ public class Config
         BUILDER.comment("Rubber Tree Configuration").push("rubber_tree");
     }
 
-    public static final ModConfigSpec.BooleanValue GENERATE_RUBBER_TREES = BUILDER
-            .comment("When true, rubber trees are injected into overworld generation (vegetal_decoration step).",
-                    "Set to false to disable worldgen rubber trees (saplings and structures are unaffected).")
-            .define("000_generate_rubber_trees", true);
-    
     public static final ModConfigSpec.IntValue MIN_SAP_REFILL_TIME = BUILDER
             .comment("Minimum time in ticks for a rubber log to refill with sap (1 tick = 1/20 second)")
             .defineInRange("000_minSapRefillTime", 600, 0, Integer.MAX_VALUE);
@@ -601,22 +604,20 @@ public class Config
     static {
         BUILDER.pop(); // End of rubber_tree category
 
-        // Category for Development/Advanced Configuration
+        BUILDER.comment("Worldgen Configuration").push("worldgen");
+    }
+
+    public static final ModConfigSpec.BooleanValue GENERATE_RUBBER_TREES = BUILDER
+            .comment("When true, rubber trees are injected into overworld generation (vegetal_decoration step).",
+                    "Set to false to disable worldgen rubber trees (saplings and structures are unaffected).")
+            .define("000_generate_rubber_trees", true);
+
+    static {
+        BUILDER.pop(); // End of worldgen category
+
         BUILDER.comment("Tweaks Configuration").push("tweaks");
     }
 
-    public static final ModConfigSpec.DoubleValue MINING_EQUITIZER_AIR_MULTIPLIER = BUILDER
-            .comment("Break speed multiplier when the player is not on ground and not fully in water (e.g. creative flight).")
-            .defineInRange("300_miningEquitizerAirMultiplier", 5.0, 0.0, 100.0);
-
-    public static final ModConfigSpec.DoubleValue MINING_EQUITIZER_WATER_MULTIPLIER = BUILDER
-            .comment("Break speed multiplier when the player is in water but still on ground.")
-            .defineInRange("301_miningEquitizerWaterMultiplier", 5.0, 0.0, 100.0);
-
-    public static final ModConfigSpec.DoubleValue MINING_EQUITIZER_AIR_AND_WATER_MULTIPLIER = BUILDER
-            .comment("Break speed multiplier when both not on ground and in water (stacked bonus).")
-            .defineInRange("302_miningEquitizerAirAndWaterMultiplier", 8.0, 0.0, 100.0);
- 
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>>  sticky_fluids = BUILDER
             .comment("List of fluids that should be sticky")
             .defineList("000_sticky_fluids", java.util.Arrays.asList("#c:oil"), obj -> obj instanceof String);
@@ -627,8 +628,8 @@ public class Config
 
             
     static {
-        BUILDER.pop(); // pop rubber_sap category
-        
+        BUILDER.pop(); // End of tweaks category
+
         // Category for scanner
         BUILDER.comment("Scanner Configuration").push("scanner");
     }
@@ -853,9 +854,6 @@ public class Config
     public static int rubberSapExtractorEnergyBuffer;
     public static int rubberSapExtractorSpeed;
     public static boolean generateRubberTrees;
-    public static double miningEquitizerAirMultiplier;
-    public static double miningEquitizerWaterMultiplier;
-    public static double miningEquitizerAirAndWaterMultiplier;
     public static java.util.List<String> crudeOils;
     public static int scannerScanRange;
     public static java.util.List<Integer> scannerRangeOptions;
@@ -899,7 +897,9 @@ public class Config
     public static boolean burningFlameSuperHot;
     public static boolean giftPlaceHardIce;
     public static double gauntletClimbingSpeed;
-    
+    public static double miningEquitizerAirMultiplier;
+    public static double miningEquitizerWaterMultiplier;
+
     // Fan configuration
     public static int fanRangeHorizontalMax;
     public static int fanRangeVerticalMax;
@@ -1002,6 +1002,8 @@ public class Config
         greedyShieldReduceChance = GREEDY_SHIELD_REDUCE_CHANCE.get();
         greedyShieldReduceAmount = GREEDY_SHIELD_REDUCE_AMOUNT.get();
         greedyShieldInfo = GREEDY_SHIELD_INFO.get();
+        miningEquitizerAirMultiplier = MINING_EQUITIZER_AIR_MULTIPLIER.get();
+        miningEquitizerWaterMultiplier = MINING_EQUITIZER_WATER_MULTIPLIER.get();
         burningFlameSuperHot = BURNING_FLAME_SUPER_HOT.get();
         giftPlaceHardIce = GIFT_PLACE_HARD_ICE.get();
         
@@ -1095,9 +1097,6 @@ public class Config
         
         rubberSapExtractorSpeed = RUBBER_SAP_EXTRACTOR_SPEED.get();
         generateRubberTrees = GENERATE_RUBBER_TREES.get();
-        miningEquitizerAirMultiplier = MINING_EQUITIZER_AIR_MULTIPLIER.get();
-        miningEquitizerWaterMultiplier = MINING_EQUITIZER_WATER_MULTIPLIER.get();
-        miningEquitizerAirAndWaterMultiplier = MINING_EQUITIZER_AIR_AND_WATER_MULTIPLIER.get();
         
         scannerScanRange = SCANNER_SCAN_RANGE.get(); // Deprecated, kept for backward compatibility
         scannerRangeOptions = new java.util.ArrayList<>(SCANNER_RANGE_OPTIONS.get());

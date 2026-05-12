@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     "ACA",
-    "ABA",
+    "EBE",
     "ADA"
   ],
   "key": {
@@ -17,6 +17,9 @@
     },
     "D": {
       "tag": "c:ingots/gold"  
+    },
+    "E": {
+      "item": "minecraft:copper_bulb"
     }
   },
   "result": {

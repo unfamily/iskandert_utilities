@@ -160,6 +160,19 @@ public class SmartTimerBlockEntity extends BlockEntity {
         this.redstoneMode = nextMode;
         setChanged();
     }
+
+    public void cycleRedstoneModeBackward() {
+        // Reverse of cycleRedstoneMode (still skip PULSE mode 3)
+        int prev = switch (this.redstoneMode) {
+            case 0 -> 4;
+            case 1 -> 0;
+            case 2 -> 1;
+            case 4 -> 2;
+            default -> 0;
+        };
+        this.redstoneMode = prev;
+        setChanged();
+    }
     
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {

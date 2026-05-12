@@ -9,7 +9,7 @@ categories:
 ---
 # World and machines
 
-Weather and time blocks, Smart Timer, Angel Block, structure machines, Temporal Overclocker, shops, and Hellfire Igniter.
+**Weather, time, and ambience** (detector + alterers), **Sound Muffler**, **Smart Timer**, and **Angel Block** each have their own page below. Also in this hub: structure machines, Temporal Overclocker, Factory, shops, and Hellfire Igniter.
 
 
 <SubPages icons={true} alphabetical={true} />

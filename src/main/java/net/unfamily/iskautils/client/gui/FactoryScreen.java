@@ -358,8 +358,10 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 || button == 1) {
+            if (handleRedstoneButtonClick(mouseX, mouseY, button)) return true;
+        }
         if (button == 0) {
-            if (handleRedstoneButtonClick(mouseX, mouseY)) return true;
             if (handleScrollButtonClick(mouseX, mouseY)) return true;
             if (handleHandleClick(mouseX, mouseY)) return true;
             if (handleScrollbarClick(mouseX, mouseY)) return true;
@@ -367,11 +369,11 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    private boolean handleRedstoneButtonClick(double mouseX, double mouseY) {
+    private boolean handleRedstoneButtonClick(double mouseX, double mouseY, int button) {
         int bx = leftPos + REDSTONE_BUTTON_X;
         int by = topPos + REDSTONE_BUTTON_Y;
         if (mouseX >= bx && mouseX < bx + REDSTONE_BUTTON_SIZE && mouseY >= by && mouseY < by + REDSTONE_BUTTON_SIZE) {
-            ModMessages.sendFactoryRedstoneMode(menu.getSyncedBlockPos());
+            ModMessages.sendFactoryRedstoneMode(menu.getSyncedBlockPos(), button == 1);
             playClick();
             return true;
         }

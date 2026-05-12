@@ -124,6 +124,11 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
         setChangedAndSync();
     }
 
+    public void cycleRedstoneModeBackward() {
+        applyRedstoneMode((redstoneMode + 4) % 5);
+        setChangedAndSync();
+    }
+
     private void applyRedstoneMode(int mode) {
         this.redstoneMode = mode;
         if (mode == 3 && level != null && !level.isClientSide) {

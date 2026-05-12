@@ -350,6 +350,14 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
         }
         
+        if (!isHowToUseMode && (button == 0 || button == 1)) {
+            if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
+                mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
+                onRedstoneModePressed(button == 1);
+                return true;
+            }
+        }
+
         if (button == 0 && !isHowToUseMode) { // Left click, only in main mode
             // Handle ghost slot click (if in edit mode) - prioritize this
             if (editModeFilterIndex >= 0) {
@@ -380,14 +388,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             
             // Handle scrollbar area clicks
             if (handleScrollbarClick(mouseX, mouseY)) {
-                return true;
-            }
-            
-            // Check if click is on redstone mode button
-            if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-                
-                onRedstoneModePressed();
                 return true;
             }
         }
@@ -556,7 +556,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
     }
     
-    private void onRedstoneModePressed() {
+    private void onRedstoneModePressed(boolean backward) {
         // Try multiple methods to get the machine position (like StructurePlacerMachineScreen.onRedstoneModePressed)
         BlockPos blockPos = menu.getSyncedBlockPos();
         
@@ -586,8 +586,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         if (!blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            // Send redstone mode packet to cycle the mode
-            ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos);
+            ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos, backward);
             playButtonSound();
         }
         
