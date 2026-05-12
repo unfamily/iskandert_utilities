@@ -7,10 +7,7 @@
   ],
   "key": {
     "A": "#c:storage_blocks/rubber",
-    "B": [
-      "#c:plastics",
-      "#c:ingots/plastic"
-    ],
+    "B": "iska_utils:plastic_ingot",
     "C": "#c:bars/netherite",
     "D": "#c:ingots/netherite"
   },

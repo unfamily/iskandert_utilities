@@ -7,10 +7,7 @@
   ],
   "key": {
     "A": "#minecraft:wool",
-    "B": [
-      "#c:plastic_or_rubber",
-      "#c:storage_blocks/dried_kelp"
-    ]
+    "B": "iska_utils:plastic_ingot"
   },
   "result": {
     "id": "iska_utils:sound_muffler",

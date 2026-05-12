@@ -181,6 +181,11 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
             BlockEntityType<A> actualType, BlockEntityType<E> expectedType, BlockEntityTicker<? super E> ticker) {
         return expectedType == actualType ? (BlockEntityTicker<A>) ticker : null;
     }
+
+    @Override
+    public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
+        return direction != null;
+    }
     
     // when the block receives a redstone signal
     @Override

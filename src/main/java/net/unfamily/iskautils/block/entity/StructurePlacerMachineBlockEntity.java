@@ -159,54 +159,6 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     private int rotation = 0;
     private int redstoneMode = 0;
     
-    /**
-     * Enum for redstone modes
-     */
-    public enum RedstoneMode {
-        NONE(0),    // Gunpowder icon
-        LOW(1),     // Redstone dust icon  
-        HIGH(2),    // Redstone gui icon
-        PULSE(3),   // Repeater icon
-        DISABLED(4); // Barrier icon
-        
-        private final int value;
-        
-        RedstoneMode(int value) {
-            this.value = value;
-        }
-        
-        public int getValue() {
-            return value;
-        }
-        
-        public static RedstoneMode fromValue(int value) {
-            for (RedstoneMode mode : values()) {
-                if (mode.value == value) return mode;
-            }
-            return NONE;
-        }
-        
-        public RedstoneMode next() {
-            return switch (this) {
-                case NONE -> LOW;
-                case LOW -> HIGH;
-                case HIGH -> PULSE;
-                case PULSE -> DISABLED;
-                case DISABLED -> NONE;
-            };
-        }
-
-        public RedstoneMode previous() {
-            return switch (this) {
-                case NONE -> DISABLED;
-                case LOW -> NONE;
-                case HIGH -> LOW;
-                case PULSE -> HIGH;
-                case DISABLED -> PULSE;
-            };
-        }
-    }
-    
     public StructurePlacerMachineBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.STRUCTURE_PLACER_MACHINE_BE.get(), pos, blockState);
         // Initialize ghost filters list with 27 empty slots
@@ -463,7 +415,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         boolean hasRedstoneSignal = redstonePower > 0;
         
         // Auto-placement logic based on redstone mode
-        RedstoneMode mode = RedstoneMode.fromValue(blockEntity.getRedstoneMode());
+        StructurePlacerRedstoneMode mode = StructurePlacerRedstoneMode.fromValue(blockEntity.getRedstoneMode());
         boolean shouldPlace = false;
         
         switch (mode) {

@@ -1,14 +1,16 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "ACA",
+    "EAE",
     "CBC",
-    "ACA"
+    "EDE"
   ],
   "key": {
     "C": "minecraft:ender_eye",
     "B": "iska_utils:base_module",
-    "A": "minecraft:comparator"
+    "A": "minecraft:comparator",
+    "D": "#c:ingots/gold",
+    "E": "#c:dusts/redstone"
   },
   "result": {
     "id": "iska_utils:logic_module",

@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "#c:nether_stars",
+    "minecraft:heart_of_the_sea",
+    "minecraft:heavy_core",
+    "minecraft:echo_shard",
+    "minecraft:dragon_breath"
+  ]
+}

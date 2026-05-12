@@ -45,9 +45,9 @@ public record StructurePlacerMachineRedstoneModeC2SPacket(BlockPos pos, boolean 
             BlockEntity blockEntity = level.getBlockEntity(packet.pos());
             if (blockEntity instanceof StructurePlacerMachineBlockEntity machine) {
 
-                StructurePlacerMachineBlockEntity.RedstoneMode currentMode =
-                        StructurePlacerMachineBlockEntity.RedstoneMode.fromValue(machine.getRedstoneMode());
-                StructurePlacerMachineBlockEntity.RedstoneMode nextMode =
+                net.unfamily.iskautils.block.entity.StructurePlacerRedstoneMode currentMode =
+                        net.unfamily.iskautils.block.entity.StructurePlacerRedstoneMode.fromValue(machine.getRedstoneMode());
+                net.unfamily.iskautils.block.entity.StructurePlacerRedstoneMode nextMode =
                         packet.backward() ? currentMode.previous() : currentMode.next();
                 machine.setRedstoneMode(nextMode.getValue());
 

@@ -8,10 +8,7 @@
   "key": {
     "B": "iska_utils:plate_base_block",
     "S": "minecraft:sugar",
-    "L": [
-      "#c:slimeballs",
-      "#c:slime_balls"
-    ]
+    "L": "minecraft:slime_ball"
   },
   "result": {
     "id": "iska_utils:slow_vect",

@@ -72,6 +72,11 @@ public class FactoryBlock extends BaseEntityBlock {
         return RenderShape.MODEL;
     }
 
+    @Override
+    public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
+        return direction != null;
+    }
+
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {

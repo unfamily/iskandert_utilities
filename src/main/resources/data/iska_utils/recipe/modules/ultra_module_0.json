@@ -4,8 +4,10 @@
     "iska_utils:extreme_module",
     "minecraft:sugar",
     "minecraft:sugar",
-    "#c:gems/prismarine",
-    "#c:gems/diamond"
+    [
+      "minecraft:diamond",
+      "minecraft:prismarine_crystals"
+    ]
   ],
   "result": {
     "id": "iska_utils:ultra_module",

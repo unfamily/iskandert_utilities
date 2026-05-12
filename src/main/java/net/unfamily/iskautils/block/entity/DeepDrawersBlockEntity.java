@@ -1096,7 +1096,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         
         @Override
         public @NotNull ItemStack extractItem(int logicalSlot, int amount, boolean simulate) {
-            if (!ITEM_HANDLER_ALLOW_EXTRACT.get()) {
+            if (!ITEM_HANDLER_ALLOW_EXTRACT.get() && !Config.deepDrawersAllowAutomationExtract) {
                 return ItemStack.EMPTY;
             }
             if (logicalSlot < 0 || logicalSlot >= occupiedSlots.size()) {

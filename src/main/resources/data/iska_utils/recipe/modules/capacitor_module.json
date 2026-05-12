@@ -2,14 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     "ACA",
-    "ABA",
+    "EBE",
     "ADA"
   ],
   "key": {
     "C": "minecraft:redstone_lamp",
     "B": "iska_utils:base_module",
     "A": "#c:dusts/redstone",
-    "D": "#c:ingots/gold"
+    "D": "#c:ingots/gold",
+    "E": "minecraft:copper_bulb"
   },
   "result": {
     "id": "iska_utils:capacitor_module",

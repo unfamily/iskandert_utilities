@@ -7,8 +7,8 @@
   ],
   "key": {
     "A": [
-      "#c:ingots/iron",
-      "#c:ingots/copper"
+      "minecraft:iron_ingot",
+      "minecraft:copper_ingot"
     ],
     "B": "iska_utils:base_module",
     "C": "#c:dusts/redstone"

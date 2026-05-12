@@ -12,13 +12,7 @@
     " B "
   ],
   "key": {
-    "A": [
-      "#c:nether_stars",
-      "minecraft:heart_of_the_sea",
-      "minecraft:heavy_core",
-      "minecraft:echo_shard",
-      "minecraft:dragon_breath"
-    ],
+    "A": "#iska_utils:lethal_trap_core",
     "B": "iska_utils:iska_utils_improved_damage",
     "C": "#c:gems/amethyst"
   },
