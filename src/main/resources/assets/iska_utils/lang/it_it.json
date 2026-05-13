@@ -624,7 +624,7 @@
   "item.iska_utils.deep_drawer_extractor": "Estrattore della Cassettiera Profonda",
   "item.iska_utils.guide": "Manuale Iska Utils",
   "tooltip.iska_utils.guide.line0": "Manuale GuideME (richiede la mod GuideME)",
-  "tooltip.iska_utils.rubber_boots.desc": "Annulla il danno da caduta e ti fa rimbalzare",
+  "tooltip.iska_utils.rubber_boots.desc": "Annulla il danno da caduta",
   "item.iska_utils.dolly": "Dolly",
   "tooltip.iska_utils.dolly.contains": "§7Contiene: §f%s",
   "tooltip.iska_utils.dolly.empty": "§7Vuoto - Shift+Click per raccogliere un blocco",

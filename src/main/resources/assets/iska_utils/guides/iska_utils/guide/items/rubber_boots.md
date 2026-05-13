@@ -15,6 +15,5 @@ categories:
 
 ## What they do
 
-- Negate fall damage (boots take durability instead).
-- Bounce when you land from a sufficient height unless you **crouch** (crouch = no bounce, still negates fall damage).
+- Negate fall damage; the boots take durability when they absorb a fall.
 
