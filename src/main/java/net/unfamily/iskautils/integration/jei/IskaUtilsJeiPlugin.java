@@ -31,6 +31,7 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         registration.addRecipeCategories(new FactoryRecipeCategory(helper));
     }
 
+
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
         Minecraft mc = Minecraft.getInstance();
