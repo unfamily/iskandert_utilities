@@ -5,17 +5,7 @@
     "AA"
   ],
   "key": {
-    "A": {
-      "neoforge:ingredient_type": "neoforge:compound",
-      "children": [
-        {
-          "tag": "c:plastics"
-        },
-        {
-          "tag": "c:ingots/plastic"
-        }
-      ]
-    }
+    "A": "#c:plastics"
   },
   "result": {
     "id": "iska_utils:plastic_bricks",

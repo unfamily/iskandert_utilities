@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "#c:storage_blocks/slime",
+    "#c:storage_blocks/rubber",
+    "#c:storage_blocks/tar_slime",
+    "#c:storage_bricks/plastic"
+  ]
+}

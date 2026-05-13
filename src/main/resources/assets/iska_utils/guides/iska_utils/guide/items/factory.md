@@ -16,7 +16,3 @@ categories:
 ## What it does
 
 - A simple machine that **processes a small set of simple resources** into other.
-
-## Details
-
-- Exact recipes and amounts are listed in **JEI**; this guide only introduces the block role.

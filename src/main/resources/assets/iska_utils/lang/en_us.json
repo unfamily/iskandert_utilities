@@ -637,7 +637,7 @@
   "item.iska_utils.deep_drawer_extractor": "Deep Drawer Extractor",
   "item.iska_utils.guide": "Iska Utils Guide",
   "tooltip.iska_utils.guide.line0": "GuideME manual (requires GuideME mod)",
-  "tooltip.iska_utils.rubber_boots.desc": "Negates fall damage and makes you bounce",
+  "tooltip.iska_utils.rubber_boots.desc": "Negates fall damage",
   "item.iska_utils.dolly": "Dolly",
   "tooltip.iska_utils.dolly.contains": "§7Contains: §f%s",
   "tooltip.iska_utils.dolly.empty": "§7Empty - Shift+Click to pick up a block",
