@@ -320,6 +320,13 @@ public class ModBlocks {
                     .sound(SoundType.STONE)
                     .requiresCorrectToolForDrops())));
 
+    public static final DeferredBlock<PlasticBlock> PLASTIC_BRICKS = BLOCKS.register("plastic_bricks",
+            key -> new PlasticBlock(assignBlockId(key, p -> p
+                    .mapColor(MapColor.COLOR_LIGHT_GRAY)
+                    .strength(2.0f, 3.0f)
+                    .sound(SoundType.STONE)
+                    .requiresCorrectToolForDrops())));
+
     public static final DeferredBlock<RubberStairsBlock> RUBBER_STAIRS = BLOCKS.register("rubber_stairs",
             key -> new RubberStairsBlock(baseBlockStateForStairs("rubber_planks"), assignBlockId(key, RUBBER_PLANKS_PROPERTIES)));
 

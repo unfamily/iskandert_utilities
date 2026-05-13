@@ -6,7 +6,7 @@
     "DAC"
   ],
   "key": {
-    "A": "#c:storage_blocks/plastic/lesser_plastic",
+    "A": "#c:storage_bricks/plastic",
     "B": "iska_utils:plastic_ingot",
     "C": "#c:bars/netherite",
     "D": "#c:ingots/netherite"

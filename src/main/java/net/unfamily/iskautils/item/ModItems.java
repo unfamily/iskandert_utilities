@@ -188,6 +188,8 @@ public class ModItems {
 
     public static final DeferredItem<BlockItem> PLASTIC_BLOCK = ITEMS.registerSimpleBlockItem(ModBlocks.PLASTIC_BLOCK);
 
+    public static final DeferredItem<BlockItem> PLASTIC_BRICKS = ITEMS.registerSimpleBlockItem(ModBlocks.PLASTIC_BRICKS);
+
     public static final DeferredItem<BlockItem> RUBBER_STAIRS = ITEMS.registerSimpleBlockItem(ModBlocks.RUBBER_STAIRS);
 
     public static final DeferredItem<BlockItem> RUBBER_SLAB = ITEMS.registerSimpleBlockItem(ModBlocks.RUBBER_SLAB);
