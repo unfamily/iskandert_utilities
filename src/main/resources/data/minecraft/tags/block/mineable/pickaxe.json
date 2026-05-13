@@ -9,6 +9,7 @@
     "iska_utils:fan",
     "iska_utils:rubber_block",
     "iska_utils:plastic_block",
+    "iska_utils:plastic_bricks",
     "iska_utils:rubber_sap_extractor",
     "iska_utils:weather_detector",
     "iska_utils:sound_muffler",
