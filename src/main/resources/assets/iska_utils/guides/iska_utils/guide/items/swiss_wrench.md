@@ -14,6 +14,5 @@ categories:
 <ItemImage id="iska_utils:swiss_wrench" />
 
 ## Use
-
-- Repairs vector plates and interacts with supported Iska Utils blocks; see in-game tooltip for context actions.
-
+- **Shift + Right Click to rotate blocks**
+- **Left Click to change rotation mode on a block**
