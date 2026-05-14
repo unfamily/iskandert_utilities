@@ -10,12 +10,10 @@
     {
       "item": "minecraft:sugar"
     },
-    {
-      "tag": "c:gems/prismarine"
-    },
-    {
-      "tag": "c:gems/diamond"
-    }
+    [
+      {"tag": "c:gems/prismarine"},
+      {"tag": "c:gems/diamond"}
+    ]
   ],
   "result": {
     "id": "iska_utils:ultra_module",
