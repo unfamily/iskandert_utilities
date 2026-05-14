@@ -458,6 +458,10 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         // Validate and correct power based on installed acceleration modules
         blockEntity.validateAndCorrectPower();
 
+        if (blockEntity.redstoneMode == 3) {
+            blockEntity.redstoneMode = 4;
+        }
+
         // Get current redstone mode (ensure it's in valid range)
         int currentRedstoneMode = Math.max(0, Math.min(blockEntity.redstoneMode, 4));
         

@@ -22,12 +22,12 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.client.MarkRenderer;
+import net.unfamily.iskautils.structure.StructureBlockPlaceOrder;
 import net.unfamily.iskautils.structure.StructureDefinition;
 import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.structure.StructureMonouseDefinition;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -264,7 +264,7 @@ public class StructureMonouseItem extends Item {
             Map<BlockPos, String> blockPositions = calculateStructurePositions(centerPos, structure, rotation);
             Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
 
-            if (structure.isSkipIfMobsInBounds() && player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
+            if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
                     && net.unfamily.iskautils.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
                 player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.structure_mobs_blocking"), true);
                 return false;
@@ -356,7 +356,7 @@ public class StructureMonouseItem extends Item {
     private void placeStructureWithBlockDelay(ServerPlayer player, Map<BlockPos, String> blockPositions, 
                                             Map<String, List<StructureDefinition.BlockDefinition>> key, 
                                             StructureDefinition structure) {
-        List<Map.Entry<BlockPos, String>> blockList = new ArrayList<>(blockPositions.entrySet());
+        List<Map.Entry<BlockPos, String>> blockList = StructureBlockPlaceOrder.sortedEntries(blockPositions);
         
         // Place first block immediately
         if (!blockList.isEmpty()) {

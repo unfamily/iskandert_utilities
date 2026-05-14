@@ -752,10 +752,6 @@ public class StructureLoader {
             if (structureJson.has("hidden")) {
                 definition.setHidden(structureJson.get("hidden").getAsBoolean());
             }
-
-            if (structureJson.has("skip_if_mobs_in_bounds")) {
-                definition.setSkipIfMobsInBounds(structureJson.get("skip_if_mobs_in_bounds").getAsBoolean());
-            }
             
             // Register structure definition
             STRUCTURES.put(structureId, definition);
@@ -1100,10 +1096,6 @@ public class StructureLoader {
         // Parse hidden parameter (default: false)
         if (structureJson.has("hidden")) {
             definition.setHidden(structureJson.get("hidden").getAsBoolean());
-        }
-
-        if (structureJson.has("skip_if_mobs_in_bounds")) {
-            definition.setSkipIfMobsInBounds(structureJson.get("skip_if_mobs_in_bounds").getAsBoolean());
         }
         
         // Parse description array if present

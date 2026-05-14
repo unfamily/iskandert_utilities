@@ -36,7 +36,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     private int tickCounter = 0;
     private static final int ACCELERATION_INTERVAL = 1; // Accelerate every tick
     
-    // Redstone mode (0=NONE, 1=LOW, 2=HIGH, 3=PULSE, 4=DISABLED)
+    // Redstone mode (0=NONE, 1=LOW, 2=HIGH, 4=DISABLED). Mode 3 (PULSE) is not used; migrated to 4 on load.
     private int redstoneMode = 0;
     
     // Acceleration factor (modifiable from GUI, default from config)
@@ -136,7 +136,28 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         
         return null; // Can be linked
     }
-    
+
+    /** Server-side: whether linked blocks may be accelerated this tick (no PULSE mode). */
+    private boolean redstoneAllowsAcceleration(Level level) {
+        if (level == null || level.isClientSide) {
+            return false;
+        }
+        int mode = redstoneMode;
+        if (mode == 3) {
+            mode = 4;
+        }
+        if (mode == 4) {
+            return false;
+        }
+        boolean sig = level.getBestNeighborSignal(worldPosition) > 0;
+        return switch (mode) {
+            case 0 -> true;
+            case 1 -> !sig;
+            case 2 -> sig;
+            default -> false;
+        };
+    }
+
     /**
      * Main tick method
      */
@@ -191,6 +212,9 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
             
             // Accelerate each linked block
             if (!blockEntity.linkedBlocks.isEmpty() && level instanceof ServerLevel serverLevel) {
+                if (!blockEntity.redstoneAllowsAcceleration(level)) {
+                    return;
+                }
                 int accelerationFactor = blockEntity.accelerationFactor;
                 
                 // Count only non-air blocks for energy calculation
@@ -385,6 +409,9 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         if (tag.contains("redstoneMode")) {
             this.redstoneMode = tag.getInt("redstoneMode");
         }
+        if (this.redstoneMode == 3) {
+            this.redstoneMode = 4;
+        }
         
         // Load acceleration factor
         if (tag.contains("accelerationFactor")) {
@@ -436,7 +463,11 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
      * Sets the redstone mode
      */
     public void setRedstoneMode(int redstoneMode) {
-        this.redstoneMode = redstoneMode % 5; // Ensure mode is always 0-4
+        int m = Math.floorMod(redstoneMode, 5);
+        if (m == 3) {
+            m = 4;
+        }
+        this.redstoneMode = m;
         setChanged();
     }
     

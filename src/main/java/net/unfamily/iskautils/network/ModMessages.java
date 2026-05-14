@@ -1869,7 +1869,24 @@ public class ModMessages {
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
                             int currentMode = overclocker.getRedstoneMode();
-                            int nextMode = backward ? (currentMode + 4) % 5 : (currentMode + 1) % 5;
+                            if (currentMode == 3) {
+                                currentMode = 4;
+                            }
+                            int nextMode;
+                            if (backward) {
+                                nextMode = switch (currentMode) {
+                                    case 0 -> 4;
+                                    case 1 -> 0;
+                                    case 2 -> 1;
+                                    case 4 -> 2;
+                                    default -> currentMode;
+                                };
+                            } else {
+                                nextMode = Math.floorMod(currentMode + 1, 5);
+                                if (nextMode == 3) {
+                                    nextMode = 4;
+                                }
+                            }
                             overclocker.setRedstoneMode(nextMode);
                             float pitch = backward ? 0.82f : 1.0f;
                             level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
