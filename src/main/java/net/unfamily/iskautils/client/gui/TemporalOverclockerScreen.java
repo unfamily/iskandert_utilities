@@ -401,8 +401,11 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                         0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
                         96, 96); // Correct texture size: 96x96
         
-        // Get current redstone mode from menu
+        // Get current redstone mode from menu (3 = legacy PULSE, treat as DISABLED for display)
         int redstoneMode = this.menu.getRedstoneMode();
+        if (redstoneMode == 3) {
+            redstoneMode = 4;
+        }
         
         // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
         int iconX = this.redstoneModeButtonX + 2; // Center: (16-12)/2 = 2
@@ -424,13 +427,12 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                 // HIGH mode: Redstone GUI texture rendered as item-like (12x12)
                 renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
             }
-            case 3 -> {
-                // PULSE mode: Repeater icon
-                net.minecraft.world.item.ItemStack repeater = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REPEATER);
-                renderScaledItem(guiGraphics, repeater, iconX, iconY, iconSize);
-            }
             case 4 -> {
                 // DISABLED mode: Barrier icon
+                net.minecraft.world.item.ItemStack barrier = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BARRIER);
+                renderScaledItem(guiGraphics, barrier, iconX, iconY, iconSize);
+            }
+            default -> {
                 net.minecraft.world.item.ItemStack barrier = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BARRIER);
                 renderScaledItem(guiGraphics, barrier, iconX, iconY, iconSize);
             }
@@ -862,12 +864,14 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         
         if (isHovered) {
             int redstoneMode = this.menu.getRedstoneMode();
+            if (redstoneMode == 3) {
+                redstoneMode = 4;
+            }
             
             Component tooltip = switch (redstoneMode) {
                 case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
                 case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
                 case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-                case 3 -> Component.translatable("gui.iska_utils.generic.redstone_mode.pulse");
                 case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
                 default -> Component.literal("Unknown mode");
             };

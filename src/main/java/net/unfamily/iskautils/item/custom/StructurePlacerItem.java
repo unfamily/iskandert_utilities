@@ -192,7 +192,7 @@ public class StructurePlacerItem extends Item {
         Map<BlockPos, String> blockPositions = calculateStructurePositions(centerPos, structure, stack);
         Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
 
-        if (structure.isSkipIfMobsInBounds() && player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
+        if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
                 && net.unfamily.iskautils.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
             player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.structure_mobs_blocking"));
             return InteractionResult.FAIL;

@@ -38,11 +38,13 @@ import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.client.gui.StructurePlacerMachineMenu;
+import net.unfamily.iskautils.structure.StructureBlockPlaceOrder;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -145,6 +147,13 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     // Redstone state tracking for PULSE mode
     private boolean previousRedstoneState = false;
     private int pulseIgnoreTimer = 0; // Timer to ignore redstone after pulse placement
+
+    /** Server-side ticks before another auto-placement attempt (1s after a placement session ends). */
+    private int placementCooldownTicks = 0;
+    private static final int PLACEMENT_COOLDOWN_TICKS = 60; // 3 seconds
+
+    /** True while delayed multi-block placement threads are still expected to run (slower structures). */
+    private boolean multistepPlacementActive = false;
     
     // Player who placed this machine (for player-like placement)
     private UUID placedByPlayer = null;
@@ -210,6 +219,8 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
 
         output.putBoolean("previousRedstoneState", previousRedstoneState);
         output.putInt("pulseIgnoreTimer", pulseIgnoreTimer);
+        output.putInt("placementCooldownTicks", placementCooldownTicks);
+        output.putBoolean("multistepPlacementActive", multistepPlacementActive);
 
         output.putString("selectedStructure", selectedStructure);
         output.putBoolean("showPreview", showPreview);
@@ -245,6 +256,8 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
 
         previousRedstoneState = input.getBooleanOr("previousRedstoneState", false);
         pulseIgnoreTimer = input.getIntOr("pulseIgnoreTimer", 0);
+        placementCooldownTicks = input.getIntOr("placementCooldownTicks", 0);
+        multistepPlacementActive = input.getBooleanOr("multistepPlacementActive", false);
 
         this.selectedStructure = input.getStringOr("selectedStructure", "");
         this.showPreview = input.getBooleanOr("showPreview", false);
@@ -409,6 +422,10 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             blockEntity.needsSync = false;
             level.sendBlockUpdated(pos, state, state, 3);
         }
+
+        if (blockEntity.placementCooldownTicks > 0) {
+            blockEntity.placementCooldownTicks--;
+        }
         
         // Get current redstone power level
         int redstonePower = level.getBestNeighborSignal(pos);
@@ -483,7 +500,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         }
         
         // Attempt placement if conditions are met
-        if (shouldPlace) {
+        if (shouldPlace && blockEntity.placementCooldownTicks == 0 && !blockEntity.multistepPlacementActive) {
             blockEntity.attemptAutoPlacement(level, pos);
         }
         
@@ -526,7 +543,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         Map<BlockPos, String> blockPositions = calculateStructurePositions(placementPos, structure, getRotation());
         Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
 
-        if (structure.isSkipIfMobsInBounds() && level instanceof ServerLevel serverLevel
+        if (level instanceof ServerLevel serverLevel
                 && net.unfamily.iskautils.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
             return;
         }
@@ -535,9 +552,9 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             return;
         }
         
-        // Try to allocate blocks from inventory (simulate first)
-        Map<BlockPos, AllocatedBlock> blockAllocation = new HashMap<>();
-        for (Map.Entry<BlockPos, String> entry : blockPositions.entrySet()) {
+        // Bottom-up (Y), then X, then Z — matches pattern definition order, not HashMap bucket order
+        Map<BlockPos, AllocatedBlock> blockAllocation = new LinkedHashMap<>();
+        for (Map.Entry<BlockPos, String> entry : StructureBlockPlaceOrder.sortedEntries(blockPositions)) {
             BlockPos blockPos = entry.getKey();
             String character = entry.getValue();
             List<StructureDefinition.BlockDefinition> blockDefs = key.get(character);
@@ -596,7 +613,15 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             if (placedBlocks > 0) {
                 LOGGER.info("Structure Placer Machine placed {} blocks", placedBlocks);
             }
+            if (!blockAllocation.isEmpty()) {
+                startPlacementCooldown();
+            }
         }
+    }
+
+    private void startPlacementCooldown() {
+        this.placementCooldownTicks = PLACEMENT_COOLDOWN_TICKS;
+        setChanged();
     }
     
     /**
@@ -1022,78 +1047,76 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
      * Places the structure with 5 tick delay between each individual block (when slower is enabled)
      */
     private void placeStructureWithBlockDelay(ServerLevel level, Map<BlockPos, AllocatedBlock> blockAllocation, StructureDefinition structure) {
-        java.util.List<Map.Entry<BlockPos, AllocatedBlock>> blockList = new java.util.ArrayList<>(blockAllocation.entrySet());
-        
-        // Place first block immediately
-        if (!blockList.isEmpty()) {
-            Map.Entry<BlockPos, AllocatedBlock> firstBlock = blockList.get(0);
-            BlockPos blockPos = firstBlock.getKey();
-            AllocatedBlock simulated = firstBlock.getValue();
-            
-            // Check if position is still available
-            BlockState currentState = level.getBlockState(blockPos);
-            if (canReplaceBlock(currentState, structure)) {
-                // Check if we have enough energy BEFORE consuming the item
-                int energyRequired = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
-                if (energyRequired > 0 && energyStorage.getEnergyStored() < energyRequired) {
-                    // Not enough energy for first block, log message and stop (don't consume item)
-                    LOGGER.warn("Structure Placer Machine: Not enough energy to place blocks (need {}, have {})", 
-                        energyRequired, energyStorage.getEnergyStored());
+        java.util.List<Map.Entry<BlockPos, AllocatedBlock>> blockList = StructureBlockPlaceOrder.sortedEntries(blockAllocation);
+        if (blockList.isEmpty()) {
+            return;
+        }
+
+        final int n = blockList.size();
+
+        Map.Entry<BlockPos, AllocatedBlock> firstBlock = blockList.get(0);
+        BlockPos blockPos = firstBlock.getKey();
+        AllocatedBlock simulated = firstBlock.getValue();
+
+        BlockState currentState = level.getBlockState(blockPos);
+        if (canReplaceBlock(currentState, structure)) {
+            int energyRequired = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
+            if (energyRequired > 0 && energyStorage.getEnergyStored() < energyRequired) {
+                LOGGER.warn("Structure Placer Machine: Not enough energy to place blocks (need {}, have {})",
+                    energyRequired, energyStorage.getEnergyStored());
+                return;
+            }
+
+            if (consumeAllocatedBlock(simulated)) {
+                if (!placeSingleBlock(level, blockPos, simulated, structure)) {
+                    LOGGER.warn("Structure Placer Machine: Unexpected failure in placeSingleBlock after energy check");
                     return;
                 }
-                
-                // Only consume the item if we have enough energy
-                if (consumeAllocatedBlock(simulated)) {
-                    // Place the block with energy check (should always succeed now)
-                    if (!placeSingleBlock(level, blockPos, simulated, structure)) {
-                        // This should not happen since we already checked energy
-                        LOGGER.warn("Structure Placer Machine: Unexpected failure in placeSingleBlock after energy check");
-                        return;
-                    }
-                }
             }
-            
-            // Schedule remaining blocks with 5 tick delay between each
-            for (int i = 1; i < blockList.size(); i++) {
-                final Map.Entry<BlockPos, AllocatedBlock> blockEntry = blockList.get(i);
-                final int delayTicks = i * 5; // 5 ticks between each block
-                
-                // Schedule block placement after delay
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(delayTicks * 50); // Convert ticks to milliseconds
-                        level.getServer().execute(() -> {
-                            BlockPos pos = blockEntry.getKey();
-                            AllocatedBlock simulatedBlock = blockEntry.getValue();
-                            
-                            // Check if position is still available
-                            BlockState currentBlockState = level.getBlockState(pos);
-                            if (canReplaceBlock(currentBlockState, structure)) {
-                                // Check if we have enough energy BEFORE consuming the item
-                                int energyRequired = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
-                                if (energyRequired > 0 && energyStorage.getEnergyStored() < energyRequired) {
-                                    // Not enough energy, log message but don't consume item
-                                    LOGGER.warn("Structure Placer Machine: Not enough energy to place block at {} (need {}, have {})", 
-                                        pos, energyRequired, energyStorage.getEnergyStored());
-                                    return; // Stop placing more blocks
-                                }
-                                
-                                // Only consume the item if we have enough energy
-                                if (consumeAllocatedBlock(simulatedBlock)) {
-                                    // Place the block with energy check (should always succeed now)
-                                    if (!placeSingleBlock(level, pos, simulatedBlock, structure)) {
-                                        // This should not happen since we already checked energy
-                                        LOGGER.warn("Structure Placer Machine: Unexpected failure in placeSingleBlock after energy check at {}", pos);
-                                    }
+        }
+
+        if (n == 1) {
+            startPlacementCooldown();
+            return;
+        }
+
+        multistepPlacementActive = true;
+        setChanged();
+
+        for (int i = 1; i < n; i++) {
+            final Map.Entry<BlockPos, AllocatedBlock> blockEntry = blockList.get(i);
+            final int delayTicks = i * 5; // 5 ticks between each block
+            final int index = i;
+
+            new Thread(() -> {
+                try {
+                    Thread.sleep(delayTicks * 50L);
+                    level.getServer().execute(() -> {
+                        BlockPos pos = blockEntry.getKey();
+                        AllocatedBlock simulatedBlock = blockEntry.getValue();
+
+                        BlockState currentBlockState = level.getBlockState(pos);
+                        if (canReplaceBlock(currentBlockState, structure)) {
+                            int energyRequiredInner = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
+                            if (energyRequiredInner > 0 && energyStorage.getEnergyStored() < energyRequiredInner) {
+                                LOGGER.warn("Structure Placer Machine: Not enough energy to place block at {} (need {}, have {})",
+                                    pos, energyRequiredInner, energyStorage.getEnergyStored());
+                            } else if (consumeAllocatedBlock(simulatedBlock)) {
+                                if (!placeSingleBlock(level, pos, simulatedBlock, structure)) {
+                                    LOGGER.warn("Structure Placer Machine: Unexpected failure in placeSingleBlock after energy check at {}", pos);
                                 }
                             }
-                            // Note: if we can't place or consume, we do nothing (no need to restore since we never consumed)
-                        });
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }).start();
-            }
+                        }
+
+                        if (index == n - 1) {
+                            multistepPlacementActive = false;
+                            startPlacementCooldown();
+                        }
+                    });
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }).start();
         }
     }
 } 
