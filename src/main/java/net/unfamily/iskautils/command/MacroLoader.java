@@ -56,8 +56,7 @@ public class MacroLoader {
 
     private static void loadJsonMacrosFrom(ResourceManager resourceManagerOrNull) {
         Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
-                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
-                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.MACROS))
+                ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.MACROS)
                 : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.MACROS);
         for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
             if (!e.getValue().isJsonObject()) {

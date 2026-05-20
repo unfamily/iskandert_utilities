@@ -15,7 +15,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.data.load.IskaUtilsDataReload;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadEffects;
 import net.unfamily.iskautils.debug.HandItemDump;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,18 +49,9 @@ public class DebugCommand {
                 .withStyle(ChatFormatting.GRAY), false);
 
         try {
-            IskaUtilsDataReload.reloadAllFromServer();
-            ShopCommand.notifyClientGUIReload();
-            var server = source.getServer();
-            if (server != null && !server.isSingleplayer()) {
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
-                }
-                source.sendSuccess(() -> Component.literal("Reload complete (structures synced to clients)")
-                        .withStyle(ChatFormatting.GREEN), false);
-            } else {
-                source.sendSuccess(() -> Component.literal("Reload complete").withStyle(ChatFormatting.GREEN), false);
-            }
+            IskaUtilsLoadReloadEffects.applyReloadFromDatapacks();
+            source.sendSuccess(() -> Component.literal("Reload complete").withStyle(ChatFormatting.GREEN), false);
+            IskaUtilsLoadReloadEffects.sendReloadNotice(source);
             return 1;
         } catch (Exception e) {
             LOGGER.error("Error during IskaUtils reload: {}", e.getMessage());

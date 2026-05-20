@@ -33,8 +33,7 @@ public class DynamicPotionPlateScanner {
     public static void loadAll(ResourceManager resourceManagerOrNull) {
         DISCOVERED_CONFIGS.clear();
         Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
-                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
-                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.PLATES))
+                ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.PLATES)
                 : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.PLATES);
         for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
             if (!e.getValue().isJsonObject()) {

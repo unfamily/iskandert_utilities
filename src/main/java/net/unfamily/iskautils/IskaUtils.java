@@ -15,7 +15,9 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadScheduler;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.resource.VanillaServerListeners;
 import net.neoforged.neoforge.common.NeoForge;
@@ -57,6 +59,7 @@ import net.unfamily.iskautils.structure.StructureMonouseLoader;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import net.unfamily.iskautils.data.load.IskaUtilsDataReload;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadListener;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -222,8 +225,7 @@ public class IskaUtils {
             @Override
             public void loadServerStructureDefinitions(ResourceManager resourceManagerOrNull, StructureIOHooks.StructureDefinitionSink sink) {
                 Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
-                        ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
-                        id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS))
+                        ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS)
                         : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS);
                 for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
                     if (!e.getValue().isJsonObject()) {
@@ -360,6 +362,10 @@ public class IskaUtils {
 
         @SubscribeEvent
         public static void onAddServerReloadListeners(AddServerReloadListenersEvent event) {
+            Identifier loadReload =
+                    Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "load_data_reload");
+            event.addListener(loadReload, new IskaUtilsLoadReloadListener());
+            event.addDependency(VanillaServerListeners.RECIPES, loadReload);
             Identifier factoryReload =
                     Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "factory_sources_reload");
             event.addListener(factoryReload, new FactorySourcesReloadListener());
@@ -434,10 +440,9 @@ public class IskaUtils {
             }
         }
         
-        // Reload listener event type changed in 26.x; wiring will be reintroduced after API update.
-        
-        @SubscribeEvent
+        @SubscribeEvent(priority = EventPriority.LOWEST)
         public static void onServerTick(ServerTickEvent.Post event) {
+            IskaUtilsLoadReloadScheduler.runPending(event.getServer());
             // Clean up potion plate cooldowns every 5 minutes (6000 ticks)
             cooldownCleanupTimer++;
             if (cooldownCleanupTimer >= 6000) {

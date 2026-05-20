@@ -65,6 +65,23 @@ public final class IskaUtilsLoadJson {
     }
 
     /**
+     * Merged JSON from {@code load/<subdir>/} and flat {@code load/*.json} whose {@code type} matches the subdir.
+     */
+    public static Map<Identifier, JsonElement> collectMergedJsonForSubdir(
+            ResourceManager resourceManager,
+            String subdirUnderLoad) {
+        Map<Identifier, JsonElement> out = new LinkedHashMap<>();
+        out.putAll(collectMergedJson(resourceManager,
+                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, subdirUnderLoad)));
+        for (var e : collectMergedJson(resourceManager, IskaUtilsLoadPaths::isJsonDirectlyUnderLoad).entrySet()) {
+            if (IskaUtilsLoadPaths.jsonMatchesSubdir(e.getValue(), subdirUnderLoad)) {
+                out.put(e.getKey(), e.getValue());
+            }
+        }
+        return out;
+    }
+
+    /**
      * Merged JSON under {@code data/<namespace>/<directory>/...} (stack tail), filtered by full location id.
      */
     public static Map<Identifier, JsonElement> collectMergedJsonUnderDirectory(
@@ -174,6 +191,10 @@ public final class IskaUtilsLoadJson {
                     LOGGER.error("Mod container not found for {} during bootstrap! ModList: {}", IskaUtils.MOD_ID, ModList.get().getMods().stream().map(m -> m.getModId()).toList());
                     LOGGER.warn("Mod file not found for {}, cannot bootstrap load/{}", IskaUtils.MOD_ID, subdirUnderLoad);
                 });
+        int externalFiles = IskaUtilsFilesystemBootstrap.mergeInto(out, subdirUnderLoad);
+        if (externalFiles > 0) {
+            LOGGER.info("Bootstrap load/{}: merged {} file(s) from kubejs/datapacks on disk", subdirUnderLoad, externalFiles);
+        }
         return out;
     }
 

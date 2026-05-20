@@ -207,7 +207,8 @@ public class StructureCommand {
             } else {
                 source.sendSuccess(() -> Component.literal("§7Singleplayer mode: No client synchronization needed"), false);
             }
-            
+
+            net.unfamily.iskautils.data.load.IskaUtilsLoadReloadEffects.sendReloadNotice(source);
             return newCount;
         } catch (Exception e) {
             LOGGER.error("Error reloading structures: {}", e.getMessage());
