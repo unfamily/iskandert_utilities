@@ -47,8 +47,7 @@ public class StageItemHandler {
         ITEM_RESTRICTIONS.clear();
         try {
             Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
-                    ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
-                    id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.STAGE_ITEMS))
+                    ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.STAGE_ITEMS)
                     : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STAGE_ITEMS);
             for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {

@@ -659,6 +659,7 @@
   "message.iska_utils.dolly_creative.no_block": "§cNo block stored in dolly!",
   "message.iska_utils.dolly_creative.picked_up": "§aPicked up: §f%s",
   "message.iska_utils.dolly_creative.placed": "§aPlaced: §f%s",
+  "command.iska_utils.reload.notice": "§eNote: §7reloads only JSON files already loaded by the datapack loader; for a truly complete reload use §f/reload§7.",
   "command.iska_utils.debug.only_player": "This command can only be used by a player",
   "command.iska_utils.debug.no_item": "§cNo item in hand!",
   "command.iska_utils.debug.serialization_error": "Serialization error: %s",

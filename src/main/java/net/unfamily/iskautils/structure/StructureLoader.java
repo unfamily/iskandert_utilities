@@ -150,8 +150,7 @@ public class StructureLoader {
         PROTECTED_DEFINITIONS.keySet().removeIf(id -> !id.startsWith("client_"));
 
         Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
-                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
-                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS))
+                ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS)
                 : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS);
         for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
             if (!e.getValue().isJsonObject()) {

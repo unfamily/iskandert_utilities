@@ -21,7 +21,9 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadScheduler;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.fml.ModList;
@@ -50,11 +52,7 @@ import net.unfamily.iskautils.command.MacroCommand;
 import net.unfamily.iskautils.crafting.FactorySourcesReloadListener;
 import net.unfamily.iskautils.crafting.ModFactoryRecipes;
 import net.unfamily.iskautils.data.load.IskaUtilsDataReload;
-import net.minecraft.server.packs.resources.PreparableReloadListener;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.profiling.ProfilerFiller;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadListener;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.resources.ResourceLocation;
@@ -440,56 +438,14 @@ public class IskaUtils {
         
         @SubscribeEvent
         public static void onAddReloadListener(net.neoforged.neoforge.event.AddReloadListenerEvent event) {
-            LOGGER.info("Registering reload listeners for macros and command items...");
-            
-            // Add a ReloadListener that reloads macros and command item definitions when /reload command is executed
-            event.addListener(new PreparableReloadListener() {
-                @Override
-                public CompletableFuture<Void> reload(
-                        PreparableReloadListener.PreparationBarrier preparationBarrier,
-                        ResourceManager resourceManager,
-                        ProfilerFiller preparationsProfiler,
-                        ProfilerFiller reloadProfiler,
-                        Executor backgroundExecutor,
-                        Executor gameExecutor) {
-                    
-                    return CompletableFuture.runAsync(() -> {
-                        LOGGER.info("Server reload detected, reloading macros and command item definitions...");
-                        
-                        // Clean up any scanner markers
-                        try {
-                            MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
-                            if (server != null && server.overworld() != null) {
-                                // La funzionalità cleanupAllMarkers è stata rimossa
-                                // net.unfamily.iskautils.item.custom.ScannerItem.cleanupAllMarkers(server.overworld());
-                                LOGGER.info("Cleaned up all scanner markers during reload");
-                            }
-                        } catch (Exception e) {
-                            LOGGER.error("Error cleaning up scanner markers during reload: {}", e.getMessage());
-                        }
-                        
-                        IskaUtilsDataReload.reloadAllFromServer();
-                        net.unfamily.iskautils.command.ShopCommand.notifyClientGUIReload();
-                        // Sync structures to connected clients
-                        MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
-                        if (server != null) {
-                            for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
-                                net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
-                            }
-                        }
-                    }, gameExecutor).thenCompose(preparationBarrier::wait);
-                }
-                
-                @Override
-                public String getName() {
-                    return "IskaUtils Commands and Items";
-                }
-            });
+            LOGGER.info("Registering IskaUtils load/** reload listener");
+            event.addListener(new IskaUtilsLoadReloadListener());
             event.addListener(new FactorySourcesReloadListener());
         }
         
-        @SubscribeEvent
+        @SubscribeEvent(priority = EventPriority.LOWEST)
         public static void onServerTick(ServerTickEvent.Post event) {
+            IskaUtilsLoadReloadScheduler.runPending(event.getServer());
             // Clean up potion plate cooldowns every 5 minutes (6000 ticks)
             cooldownCleanupTimer++;
             if (cooldownCleanupTimer >= 6000) {

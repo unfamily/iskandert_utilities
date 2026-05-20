@@ -5,7 +5,7 @@
     {
       "id": "bread_default",
       "in_category": "000_default",
-      "item": "minecraft:stone[item_name='\"erttre\\\\\"\\\\\"\"']",
+      "item": "minecraft:bread",
       "item_count": 1,
       "currency": "null_coin",
       "buy": 1.0,

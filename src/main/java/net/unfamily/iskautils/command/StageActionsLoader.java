@@ -31,8 +31,7 @@ public class StageActionsLoader {
         LOADED_ACTIONS.clear();
         try {
             Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
-                    ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
-                    id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.STAGE_ACTIONS))
+                    ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.STAGE_ACTIONS)
                     : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STAGE_ACTIONS);
             for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {

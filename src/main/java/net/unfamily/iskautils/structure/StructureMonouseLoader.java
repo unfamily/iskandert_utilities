@@ -39,8 +39,7 @@ public class StructureMonouseLoader {
         PROTECTED_DEFINITIONS.clear();
         MONOUSE_ITEMS.clear();
         Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
-                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
-                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.STRUCTURE_MONOUSE))
+                ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.STRUCTURE_MONOUSE)
                 : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STRUCTURE_MONOUSE);
         for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
             if (!e.getValue().isJsonObject()) {

@@ -44,8 +44,7 @@ public class CommandItemLoader {
         PROTECTED_DEFINITIONS.clear();
         COMMAND_ITEMS.clear();
         Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
-                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
-                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.COMMAND_ITEMS))
+                ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.COMMAND_ITEMS)
                 : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.COMMAND_ITEMS);
         for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
             JsonElement jsonElement = e.getValue();

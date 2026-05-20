@@ -40,8 +40,7 @@ public class DynamicPotionPlateScanner {
     public static void loadAll(ResourceManager resourceManagerOrNull) {
         DISCOVERED_CONFIGS.clear();
         var merged = resourceManagerOrNull != null
-                ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
-                id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.PLATES))
+                ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.PLATES)
                 : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.PLATES);
         for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
             if (!e.getValue().isJsonObject()) {
@@ -239,7 +238,8 @@ public class DynamicPotionPlateScanner {
                 "}\n" +
                 "```\n\n" +
                 "## Example File Locations\n\n" +
-                "- KubeJS: `" + externalScriptsBasePath + "/iska_utils_plates/custom_plates.json`\n\n" +
+                "- KubeJS (subdir): `" + externalScriptsBasePath + "/iska_utils_plates/custom_plates.json`\n" +
+                "- KubeJS (flat): `kubejs/data/<namespace>/load/custom_plates.json` with `\"type\": \"iska_utils:plates\"`\n\n" +
                 "## Default Plates\n\n" +
                 "Default plates (poison, weakness, slowness, damage, improved_damage, lethal_damage, fire, freeze) are registered internally and always available.\n" +
                 "To see the internal defaults as JSON files, run: `/iska_utils_debug dump_default`\n" +

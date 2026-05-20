@@ -44,8 +44,7 @@ public class ShopLoader {
             PROTECTED_ENTRIES.clear();
 
             Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
-                    ? IskaUtilsLoadJson.collectMergedJson(resourceManagerOrNull,
-                    id -> IskaUtilsLoadPaths.isJsonUnderLoadSubdir(id, IskaUtilsLoadPaths.SHOP))
+                    ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.SHOP)
                     : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.SHOP);
             for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {

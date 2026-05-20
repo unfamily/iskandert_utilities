@@ -12,6 +12,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadEffects;
 import net.unfamily.iskautils.debug.HandItemDump;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,17 +45,9 @@ public class DebugCommand {
         source.sendSuccess(() -> Component.literal("§7Reloading IskaUtils load JSON (data/*/load/**)"), false);
 
         try {
-            net.unfamily.iskautils.data.load.IskaUtilsDataReload.reloadAllFromServer();
-            ShopCommand.notifyClientGUIReload();
-
-            var server = source.getServer();
-            if (server != null && !server.isSingleplayer()) {
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
-                }
-            }
-
+            IskaUtilsLoadReloadEffects.applyReloadFromDatapacks();
             source.sendSuccess(() -> Component.literal("§aReload complete"), false);
+            IskaUtilsLoadReloadEffects.sendReloadNotice(source);
             return 1;
         } catch (Exception e) {
             LOGGER.error("Error during IskaUtils reload: {}", e.getMessage());

@@ -11,6 +11,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadEffects;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
@@ -52,6 +53,7 @@ public class ShopCommand {
                         notifyClientGUIReload();
                         
                         source.sendSuccess(() -> Component.literal("Shop system reloaded successfully!"), false);
+                        IskaUtilsLoadReloadEffects.sendReloadNotice(source);
                         return 1;
                     } catch (Exception e) {
                         LOGGER.error("Error during shop system reload: {}", e.getMessage());
