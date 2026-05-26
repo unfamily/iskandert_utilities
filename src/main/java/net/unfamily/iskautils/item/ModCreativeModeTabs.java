@@ -82,6 +82,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RANGE_MODULE.get());
                                 pOutput.accept(ModItems.GHOST_MODULE.get());
                                 pOutput.accept(ModItems.LOGIC_MODULE.get());
+                                pOutput.accept(ModItems.PRODUCTION_MODULE.get());
                                 pOutput.accept(ModItems.CAPACITOR_MODULE.get());
                                 // Modules (follow vector tier)
                                 pOutput.accept(ModItems.SLOW_MODULE.get());

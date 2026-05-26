@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ADA",
+    "BCB",
+    "ADA"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:dusts/glowstone"
+    },
+    "B": {
+      "item": "iska_utils:green_sludge"
+    },
+    "C": {
+      "item": "iska_utils:base_module"
+    },
+    "D": {
+      "tag": "c:gems/emerald"
+    }
+  },
+  "result": {
+    "id": "iska_utils:production_module",
+    "count": 1
+  }
+}
