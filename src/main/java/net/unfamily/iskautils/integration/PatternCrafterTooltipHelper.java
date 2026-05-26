@@ -2,6 +2,7 @@ package net.unfamily.iskautils.integration;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.neoforged.fml.ModList;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -15,8 +16,22 @@ import java.util.List;
 public final class PatternCrafterTooltipHelper {
 
     private static final String CONFIG_CLASS = "net.unfamily.pattern_crafter.Config";
+    private static final String PATTERN_CRAFTER_MOD_ID = "pattern_crafter";
+    private static final int[] MIN_PRODUCTION_MODULE_VERSION = {1, 2, 0, 0, 0};
 
     private PatternCrafterTooltipHelper() {}
+
+    /**
+     * Production module tooltips require Pattern Crafter 1.2.0.0.0 or newer.
+     */
+    public static boolean supportsProductionModule() {
+        if (!ModList.get().isLoaded(PATTERN_CRAFTER_MOD_ID)) {
+            return false;
+        }
+        return ModList.get().getModContainerById(PATTERN_CRAFTER_MOD_ID)
+                .map(container -> isAtLeastVersion(container.getModInfo().getVersion().toString(), MIN_PRODUCTION_MODULE_VERSION))
+                .orElse(false);
+    }
 
     /** Speed module types: slow, moderate, fast, extreme, ultra. */
     public static final String[] SPEED_TYPES = { "slow", "moderate", "fast", "extreme", "ultra" };
@@ -40,6 +55,34 @@ public final class PatternCrafterTooltipHelper {
         int maxLogic = getConfigInt("MAX_LOGIC_MODULES", 3);
         tooltip.add(Component.translatable("tooltip.iska_utils.pattern_crafter.logic_module", maxLogic)
                 .withStyle(ChatFormatting.GRAY));
+    }
+
+    /**
+     * Appends Pattern Crafter tooltip for the production module (max 1, one stack per identical recipe).
+     */
+    public static void addProductionModuleTooltip(List<Component> tooltip) {
+        tooltip.add(Component.translatable("tooltip.iska_utils.pattern_crafter.production_module")
+                .withStyle(ChatFormatting.GRAY));
+    }
+
+    private static boolean isAtLeastVersion(String version, int[] minimum) {
+        String[] parts = version.split("\\.");
+        for (int i = 0; i < minimum.length; i++) {
+            int current = 0;
+            if (i < parts.length) {
+                String digits = parts[i].replaceAll("[^0-9].*", "");
+                if (!digits.isEmpty()) {
+                    current = Integer.parseInt(digits);
+                }
+            }
+            if (current > minimum[i]) {
+                return true;
+            }
+            if (current < minimum[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static double getSpeedMultiplier(String speedType) {

@@ -46,6 +46,7 @@ import net.unfamily.iskautils.item.custom.FastModuleItem;
 import net.unfamily.iskautils.item.custom.ExtremeModuleItem;
 import net.unfamily.iskautils.item.custom.UltraModuleItem;
 import net.unfamily.iskautils.item.custom.LogicModuleItem;
+import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 
 import net.unfamily.iskautils.util.ModUtils;
@@ -239,6 +240,8 @@ public class ModItems {
     public static final DeferredItem<Item> GHOST_MODULE = ITEMS.registerItem("ghost_module", GhostModuleItem::new, UnaryOperator.identity());
 
     public static final DeferredItem<Item> LOGIC_MODULE = ITEMS.registerItem("logic_module", LogicModuleItem::new, UnaryOperator.identity());
+
+    public static final DeferredItem<Item> PRODUCTION_MODULE = ITEMS.registerItem("production_module", ProductionModuleItem::new, UnaryOperator.identity());
 
     public static final DeferredItem<Item> CAPACITOR_MODULE = ITEMS.registerSimpleItem("capacitor_module");
 
