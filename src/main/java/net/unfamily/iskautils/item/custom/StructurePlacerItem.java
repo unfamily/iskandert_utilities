@@ -24,6 +24,7 @@ import net.unfamily.iskautils.network.packet.StructurePlacerGuiOpenC2SPacket;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskalib.structure.StructurePlacer;
+import net.unfamily.iskalib.structure.StructurePlacementFakePlayer;
 import net.unfamily.iskautils.util.ModUtils;
 
 import java.util.ArrayList;
@@ -613,6 +614,27 @@ public class StructurePlacerItem extends Item {
     }
     
     /**
+     * Places one structure block without consuming from the real player's hand.
+     */
+    private void placeStructureBlock(ServerLevel level, BlockPos pos, BlockState blockState, Block block,
+                                     StructureDefinition structure, ServerPlayer player, AllocatedBlock allocated) {
+        if (structure.isPlaceAsPlayer()) {
+            ItemStack stackForHand = allocated.getConsumedStack();
+            if (stackForHand.isEmpty()) {
+                stackForHand = new ItemStack(block.asItem());
+            }
+            StructurePlacementFakePlayer.placeBlockAsPlayer(
+                    level, pos, blockState, stackForHand,
+                    StructurePlacementFakePlayer.get(level, player.getUUID(), pos));
+        } else {
+            level.setBlock(pos, blockState, 3);
+        }
+        if (structure.isRefresh()) {
+            level.scheduleTick(pos, block, 0);
+        }
+    }
+
+    /**
      * Place a single layer of blocks
      */
     private boolean placeLayer(ServerLevel level, Map<BlockPos, AllocatedBlock> layerBlocks, 
@@ -659,49 +681,7 @@ public class StructurePlacerItem extends Item {
                         }
                     }
                     
-                    // Check if we should place as player
-                    if (structure.isPlaceAsPlayer()) {
-                        // Place as if done by player - create temporary ItemStack and use BlockItem
-                        try {
-                            Item blockItem = block.asItem();
-                            if (blockItem != null && blockItem != net.minecraft.world.item.Items.AIR) {
-                                ItemStack blockStack = new ItemStack(blockItem);
-                                
-                                // Create a fake UseOnContext to simulate player placement
-                                var context = new net.minecraft.world.item.context.UseOnContext(
-                                    player, 
-                                    net.minecraft.world.InteractionHand.MAIN_HAND, 
-                                    new net.minecraft.world.phys.BlockHitResult(
-                                        net.minecraft.world.phys.Vec3.atCenterOf(pos), 
-                                        net.minecraft.core.Direction.UP, 
-                                        pos, // Use the actual position, not below
-                                        false
-                                    )
-                                );
-                                
-                                // Try to use BlockItem.useOn to place it like a player would
-                                if (blockItem instanceof net.minecraft.world.item.BlockItem blockItemInstance) {
-                                    blockItemInstance.place(new net.minecraft.world.item.context.BlockPlaceContext(context));
-                                } else {
-                                    // Fallback to normal placement
-                                    level.setBlock(pos, blockState, 3);
-                                }
-                                if (structure.isRefresh()) level.scheduleTick(pos, block, 0);
-                            } else {
-                                // Fallback to normal placement
-                                level.setBlock(pos, blockState, 3);
-                                if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
-                            }
-                        } catch (Exception e) {
-                            // If player-like placement fails, fallback to normal placement
-                            level.setBlock(pos, blockState, 3);
-                            if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
-                        }
-                    } else {
-                        // Normal placement
-                        level.setBlock(pos, blockState, 3);
-                        if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
-                    }
+                    placeStructureBlock(level, pos, blockState, block, structure, player, allocated);
                     placedBlocks++;
                 } else {
                     // Invalid block - keep for restoration
@@ -818,49 +798,7 @@ public class StructurePlacerItem extends Item {
                     }
                 }
                 
-                // Check if we should place as player
-                if (structure.isPlaceAsPlayer()) {
-                    // Place as if done by player - create temporary ItemStack and use BlockItem
-                    try {
-                        Item blockItem = block.asItem();
-                        if (blockItem != null && blockItem != net.minecraft.world.item.Items.AIR) {
-                            ItemStack blockStack = new ItemStack(blockItem);
-                            
-                            // Create a fake UseOnContext to simulate player placement
-                            var context = new net.minecraft.world.item.context.UseOnContext(
-                                player, 
-                                net.minecraft.world.InteractionHand.MAIN_HAND, 
-                                new net.minecraft.world.phys.BlockHitResult(
-                                    net.minecraft.world.phys.Vec3.atCenterOf(pos), 
-                                    net.minecraft.core.Direction.UP, 
-                                    pos, // Use the actual position, not below
-                                    false
-                                )
-                            );
-                            
-                            // Try to use BlockItem.useOn to place it like a player would
-                            if (blockItem instanceof net.minecraft.world.item.BlockItem blockItemInstance) {
-                                blockItemInstance.place(new net.minecraft.world.item.context.BlockPlaceContext(context));
-                            } else {
-                                // Fallback to normal placement
-                                level.setBlock(pos, blockState, 3);
-                            }
-                            if (structure.isRefresh()) level.scheduleTick(pos, block, 0);
-                        } else {
-                            // Fallback to normal placement
-                            level.setBlock(pos, blockState, 3);
-                            if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
-                        }
-                    } catch (Exception e) {
-                        // If player-like placement fails, fallback to normal placement
-                        level.setBlock(pos, blockState, 3);
-                        if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
-                    }
-                } else {
-                    // Normal placement
-                    level.setBlock(pos, blockState, 3);
-                    if (structure.isRefresh()) level.scheduleTick(pos, blockState.getBlock(), 0);
-                }
+                placeStructureBlock(level, pos, blockState, block, structure, player, allocated);
                 return true;
             } else {
                 // Invalid block - keep for restoration

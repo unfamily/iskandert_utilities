@@ -9,7 +9,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.ItemStackWithSlot;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -19,8 +18,6 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -28,8 +25,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.transfer.ResourceHandler;
@@ -41,6 +37,9 @@ import net.unfamily.iskautils.client.gui.StructurePlacerMachineMenu;
 import net.unfamily.iskautils.structure.StructureBlockPlaceOrder;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructurePlacementFakePlayer;
+
+import java.nio.charset.StandardCharsets;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -155,8 +154,10 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     /** True while delayed multi-block placement threads are still expected to run (slower structures). */
     private boolean multistepPlacementActive = false;
     
-    // Player who placed this machine (for player-like placement)
+    // Player who placed this machine (kept for metadata; not used for block placement)
     private UUID placedByPlayer = null;
+
+    private transient FakePlayer placementFakePlayer;
     
     // Flag to force sync on next tick (after world reload)
     private boolean needsSync = false;
@@ -822,6 +823,23 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         return false; // Item no longer available
     }
     
+    @Override
+    public void setRemoved() {
+        placementFakePlayer = null;
+        super.setRemoved();
+    }
+
+    private FakePlayer getPlacementFakePlayer(ServerLevel level) {
+        if (placementFakePlayer == null || placementFakePlayer.level() != level) {
+            UUID ownerId = UUID.nameUUIDFromBytes(
+                    ("iska_structure_placer_machine:" + getBlockPos().asLong()).getBytes(StandardCharsets.UTF_8));
+            placementFakePlayer = StructurePlacementFakePlayer.get(level, ownerId, getBlockPos());
+        } else {
+            StructurePlacementFakePlayer.refreshPosition(placementFakePlayer, getBlockPos());
+        }
+        return placementFakePlayer;
+    }
+
     /**
      * Places a single block with structure settings and energy consumption
      */
@@ -859,46 +877,12 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             
             // Check if we should place as player
             if (structure.isPlaceAsPlayer()) {
-                // Place as if done by player - try to find the real player who placed this machine
-                try {
-                    Item blockItem = block.asItem();
-                    if (blockItem != null && blockItem != Items.AIR) {
-                        ItemStack blockStack = new ItemStack(blockItem);
-                        
-                        // Try to get the real player who placed this machine
-                        Player realPlayer = null;
-                        if (placedByPlayer != null) {
-                            realPlayer = level.getPlayerByUUID(placedByPlayer);
-                        }
-                        
-                        // Create UseOnContext with real player if available, null otherwise
-                        var context = new UseOnContext(
-                            realPlayer, // Use real player if available
-                            InteractionHand.MAIN_HAND, 
-                            new BlockHitResult(
-                                Vec3.atCenterOf(blockPos), 
-                                net.minecraft.core.Direction.UP, 
-                                blockPos, 
-                                false
-                            )
-                        );
-                        
-                        // Try to use BlockItem.place like the items do
-                        if (blockItem instanceof BlockItem blockItemInstance) {
-                            BlockPlaceContext placeContext = new BlockPlaceContext(context);
-                            blockItemInstance.place(placeContext);
-                        } else {
-                            // Fallback to normal placement
-                            level.setBlock(blockPos, blockState, 3);
-                        }
-                    } else {
-                        // Fallback to normal placement
-                        level.setBlock(blockPos, blockState, 3);
-                    }
-                } catch (Exception e) {
-                    // If player-like placement fails, fallback to normal placement
-                    level.setBlock(blockPos, blockState, 3);
+                ItemStack stackForHand = allocated.getOriginalStack();
+                if (stackForHand.isEmpty()) {
+                    stackForHand = new ItemStack(block.asItem());
                 }
+                StructurePlacementFakePlayer.placeBlockAsPlayer(
+                        level, blockPos, blockState, stackForHand, getPlacementFakePlayer(level));
             } else {
                 // Normal placement
                 level.setBlock(blockPos, blockState, 3);
