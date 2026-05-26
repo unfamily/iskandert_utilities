@@ -150,28 +150,6 @@ public class DeepDrawersBlock extends BaseEntityBlock {
         if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
             BlockEntity entity = level.getBlockEntity(pos);
             if (entity instanceof DeepDrawersBlockEntity deepDrawers) {
-                // Debug extraction: Shift+Right-click to extract one item (configurable, default disabled)
-                if (net.unfamily.iskautils.Config.deepDrawersDebugExtractionEnabled && player.isCrouching() && player.isShiftKeyDown()) {
-                    java.util.Map.Entry<Integer, net.minecraft.world.item.ItemStack> firstEntry = deepDrawers.getFirstStorageEntry();
-                    if (firstEntry != null) {
-                        net.minecraft.world.item.ItemStack extracted = deepDrawers.extractItemFromPhysicalSlot(firstEntry.getKey(), 1, false);
-                        if (!extracted.isEmpty()) {
-                            if (!player.getInventory().add(extracted)) {
-                                // Inventory full, drop item
-                                player.drop(extracted, false);
-                            }
-                            serverPlayer.displayClientMessage(
-                                net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.debug_extracted", extracted.getDisplayName()),
-                                true); // true = actionbar
-                        }
-                    } else {
-                        serverPlayer.displayClientMessage(
-                            net.minecraft.network.chat.Component.translatable("message.iska_utils.deep_drawers.empty"),
-                            true); // true = actionbar
-                    }
-                    return net.minecraft.world.InteractionResult.CONSUME;
-                }
-                
                 // Show status message (actionbar) if:
                 // - Shift+click (always), OR
                 // - Normal click when GUI is disabled
