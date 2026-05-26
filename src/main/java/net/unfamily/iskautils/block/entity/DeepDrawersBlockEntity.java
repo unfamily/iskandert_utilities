@@ -4,8 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.ItemTags;
@@ -36,6 +34,11 @@ import java.util.*;
  * Uses custom IItemHandler for hopper interaction with item validation
  */
 public class DeepDrawersBlockEntity extends BlockEntity {
+    /**
+     * Fixed Deep Drawer capacity. This is intentionally NOT configurable.
+     * The only supported configuration for Deep Drawer is allowed/blacklist item rules.
+     */
+    public static final int DEFAULT_MAX_SLOTS = 4096;
 
     /**
      * When {@code true}, the exposed {@link IItemHandler} may extract items (GUI path only).
@@ -238,7 +241,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
      * @return max slots from config (always up-to-date)
      */
     public int getMaxSlots() {
-        return Config.deepDrawersSlotCount;
+        return DEFAULT_MAX_SLOTS;
     }
     
     /**
@@ -504,34 +507,43 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     // ===== Item Validation =====
     
     /**
-     * Validates if an item can be stored in the Deep Drawers
-     * Checks against allowed tags/IDs and blacklist
+     * Validates if an item can be stored in the Deep Drawers.
+     * Order: deny (always reject) → allow (explicit override) → adaptive (non-stackable) → reject stackable.
      */
     private boolean isItemValid(ItemStack stack) {
         if (stack.isEmpty()) {
             return false;
         }
-        
-        // Check blacklist first (has priority)
-        for (String blacklisted : Config.deepDrawersBlacklist) {
-            if (matchesTagOrId(stack, blacklisted)) {
-                return false; // Item is blacklisted
+
+        for (String denied : Config.deepDrawersDeny) {
+            if (matchesTagOrId(stack, denied)) {
+                return false;
             }
         }
-        
-        // If no allowed tags configured, accept all (except blacklisted)
-        if (Config.deepDrawersAllowedTags.isEmpty()) {
-            return true;
-        }
-        
-        // Check if item matches any allowed tag/ID
-        for (String allowed : Config.deepDrawersAllowedTags) {
+
+        for (String allowed : Config.deepDrawersAllow) {
             if (matchesTagOrId(stack, allowed)) {
                 return true;
             }
         }
-        
-        return false; // Item doesn't match any allowed tag/ID
+
+        // Adaptive: non-stackable items accepted without tag checks.
+        // Use Item default stack size, NOT stack.getMaxStackSize() — the ItemStack mixin raises
+        // max stack size inside Deep Drawer context and would break this check during insert.
+        if (isIntrinsicallyNonStackable(stack)) {
+            return true;
+        }
+
+        // Stackable items only accepted via allow override
+        return false;
+    }
+
+    /**
+     * Whether the item type is intrinsically non-stackable (stacksTo(1) / max stack size 1).
+     * Must not use {@link ItemStack#getMaxStackSize()} during Deep Drawer operations.
+     */
+    private static boolean isIntrinsicallyNonStackable(ItemStack stack) {
+        return stack.getItem().getDefaultMaxStackSize() == 1;
     }
     
     /**
@@ -658,7 +670,7 @@ public class DeepDrawersBlockEntity extends BlockEntity {
      * Only searches within current maxSlots limit (from config)
      */
     private int findNextEmptySlot(int startFrom) {
-        int maxSlots = getMaxSlots(); // Read from config in real-time
+        int maxSlots = getMaxSlots();
         // Search forward from cursor
         for (int i = 0; i < maxSlots; i++) {
             int slot = (startFrom + i) % maxSlots;
@@ -890,10 +902,6 @@ public class DeepDrawersBlockEntity extends BlockEntity {
             if (stack.isEmpty() || logicalSlot < 0) {
                 return stack;
             }
-
-            if (!Config.deepDrawersAllowAutomationInsert) {
-                return stack;
-            }
             
             
             // Validate item
@@ -1096,7 +1104,9 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         
         @Override
         public @NotNull ItemStack extractItem(int logicalSlot, int amount, boolean simulate) {
-            if (!ITEM_HANDLER_ALLOW_EXTRACT.get() && !Config.deepDrawersAllowAutomationExtract) {
+            // Extraction is NEVER allowed through automation (pipes/hoppers).
+            // Only the Deep Drawer Interface is allowed to extract by explicitly enabling the ThreadLocal gate.
+            if (!ITEM_HANDLER_ALLOW_EXTRACT.get()) {
                 return ItemStack.EMPTY;
             }
             if (logicalSlot < 0 || logicalSlot >= occupiedSlots.size()) {

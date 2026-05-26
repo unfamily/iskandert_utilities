@@ -10,7 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.SlotItemHandler;
-import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.DeepDrawersBlockEntity;
 import org.jetbrains.annotations.NotNull;
@@ -78,7 +77,7 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         this.blockPos = blockEntity.getBlockPos();
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
         this.itemHandler = blockEntity.getItemHandler();
-        this.totalSlots = Config.deepDrawersSlotCount;
+        this.totalSlots = DeepDrawersBlockEntity.DEFAULT_MAX_SLOTS;
         
         // Always start with scroll offset 0 when opening GUI
         this.scrollOffset = 0;
@@ -154,8 +153,8 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         this.blockEntity = null;
         this.blockPos = BlockPos.ZERO;
         this.levelAccess = ContainerLevelAccess.NULL;
-        this.itemHandler = new net.neoforged.neoforge.items.ItemStackHandler(Config.deepDrawersSlotCount);
-        this.totalSlots = Config.deepDrawersSlotCount;
+        this.itemHandler = new net.neoforged.neoforge.items.ItemStackHandler(DeepDrawersBlockEntity.DEFAULT_MAX_SLOTS);
+        this.totalSlots = DeepDrawersBlockEntity.DEFAULT_MAX_SLOTS;
         
         // View handler for visible slots (synced by Minecraft)
         this.viewHandler = new net.neoforged.neoforge.items.ItemStackHandler(VISIBLE_SLOTS);

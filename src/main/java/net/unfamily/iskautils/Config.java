@@ -78,12 +78,6 @@ public class Config {
         BUILDER.comment("General Utilities Configuration").push("general_utilities");
     }
 
-    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_ALLOW_AUTOMATION_EXTRACT = BUILDER
-            .comment("When false (default), hoppers and pipes cannot extract from Deep Drawers via the item handler.",
-                    "When true, automated extraction is allowed (this may be expensive for some pipes; the Deep Drawer Extractor is recommended).",
-                    "GUI extraction is controlled separately and remains allowed only through the GUI path.")
-            .define("407_deep_drawers_allow_automation_extract", false);
-
     private static final ModConfigSpec.IntValue HELLFIRE_IGNITER_CONSUME = BUILDER
             .comment("Amount of energy consumed by the Hellfire Igniter",
                     "Recommended value: 10, but set to 0 to disable energy consumption")
@@ -209,45 +203,22 @@ public class Config {
             .defineInRange("302_soundMufflerRangeMax", 16, 8, 1024);
 
     // Deep Drawers Configuration (in general_utilities category)
-    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DEEP_DRAWERS_ALLOWED_TAGS = BUILDER
-            .comment("List of item tags that can be stored in the Deep Drawers",
-                    "Tags starting with # are item tags (e.g. #c:enchantables)",
-                    "Items without # are item IDs (e.g. apotheosis:gem, minecraft:enchanted_book)",
-                    "Only items matching these tags/IDs will be accepted")
-            .defineList("400_deep_drawers_allowed_tags", 
-                       java.util.Arrays.asList("#c:enchantables", "apotheosis:gem", "minecraft:enchanted_book", "minecraft:potion", "#c:tools", "#c:armors"), 
-                       obj -> obj instanceof String);
-
-    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DEEP_DRAWERS_BLACKLIST = BUILDER
-            .comment("List of item tags/IDs that are explicitly forbidden in the Deep Drawers",
-                    "This blacklist overrides the allowed tags list",
-                    "Tags starting with # are item tags, items without # are item IDs",
-                    "Default includes minecraft:book for safety reasons")
-            .defineList("401_deep_drawers_blacklist",
-                    java.util.Arrays.asList("minecraft:book", "#c:skulls", "#minecraft:skulls"),
+    // Renamed from 400_deep_drawers_allowed_tags / 401_deep_drawers_blacklist in 3.4.0.0.0
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DEEP_DRAWERS_ALLOW = BUILDER
+            .comment("Extra allow overrides for Deep Drawers (bypass adaptive rules).",
+                    "Required for stackable items (maxStackSize > 1); non-stackable items are accepted automatically.",
+                    "Tags starting with # are item tags, items without # are item IDs (e.g. apotheosis:gem, minecraft:potion)")
+            .defineList("400_deep_drawers_allow",
+                    java.util.Arrays.asList("apotheosis:gem", "minecraft:potion"),
                     obj -> obj instanceof String);
 
-    private static final ModConfigSpec.IntValue DEEP_DRAWERS_SLOT_COUNT = BUILDER
-            .comment("Number of slots in the Deep Drawers storage",
-                    "Default: 4096")
-            .defineInRange("402_deep_drawers_slot_count_v2", 4096, 1, Integer.MAX_VALUE);
-
-    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_DIRECT_PIPE_ACCESS = BUILDER
-            .comment("Legacy: hoppers and pipes always interact with the main Deep Drawer block (NeoForge item transfer).",
-                    "This option is kept for config file compatibility but is no longer read by the game.")
-            .define("404_deep_drawers_direct_pipe_access", true);
-
-    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_DEBUG_EXTRACTION_ENABLED = BUILDER
-            .comment("Enable debug extraction: Shift+Right-click to extract one item directly from the Deep Drawer",
-                    "Default: false - debug extraction is disabled",
-                    "WARNING: Debug feature, use only for testing")
-            .define("405_deep_drawers_debug_extraction_enabled", false);
-
-    private static final ModConfigSpec.BooleanValue DEEP_DRAWERS_ALLOW_AUTOMATION_INSERT = BUILDER
-            .comment("When true (default), hoppers and pipes can insert into Deep Drawers via the item handler.",
-                    "When false, automated insertion is rejected (player GUI insertion still works).",
-                    "Extraction via the exposed item handler is always disabled; use the Deep Drawer Extractor block to pull items.")
-            .define("406_deep_drawers_allow_automation_insert", true);
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DEEP_DRAWERS_DENY = BUILDER
+            .comment("Extra deny overrides for Deep Drawers (always blocked, wins over allow and adaptive).",
+                    "Tags starting with # are item tags, items without # are item IDs",
+                    "Default includes minecraft:book for safety reasons")
+            .defineList("401_deep_drawers_deny",
+                    java.util.Arrays.asList("minecraft:book", "#c:skulls", "#minecraft:skulls"),
+                    obj -> obj instanceof String);
 
     // Deep Drawer Extractor Configuration (starts at 410)
     private static final ModConfigSpec.IntValue DEEP_DRAWER_EXTRACTOR_INTERVAL = BUILDER
@@ -906,13 +877,8 @@ public class Config {
     public static int fanpackEnergyCapacity;
     public static int fanpackFlightEnergyConsume;
     
-    public static java.util.List<String> deepDrawersAllowedTags;
-    public static java.util.List<String> deepDrawersBlacklist;
-    public static int deepDrawersSlotCount;
-    public static boolean deepDrawersDirectPipeAccess;
-    public static boolean deepDrawersDebugExtractionEnabled;
-    public static boolean deepDrawersAllowAutomationInsert;
-    public static boolean deepDrawersAllowAutomationExtract;
+    public static java.util.List<String> deepDrawersAllow;
+    public static java.util.List<String> deepDrawersDeny;
     public static int deepDrawerExtractorInterval;
     public static int deepDrawerExtractorMaxFilters;
     public static boolean ftbTeamsSyncEnabled;
@@ -1024,13 +990,8 @@ public class Config {
         fanpackFlightEnergyConsume = FANPACK_FLIGHT_ENERGY_CONSUME.get();
         
         // Deep Drawers configuration
-        deepDrawersAllowedTags = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOWED_TAGS.get());
-        deepDrawersBlacklist = new java.util.ArrayList<>(DEEP_DRAWERS_BLACKLIST.get());
-        deepDrawersSlotCount = DEEP_DRAWERS_SLOT_COUNT.get();
-        deepDrawersDirectPipeAccess = DEEP_DRAWERS_DIRECT_PIPE_ACCESS.get();
-        deepDrawersDebugExtractionEnabled = DEEP_DRAWERS_DEBUG_EXTRACTION_ENABLED.get();
-        deepDrawersAllowAutomationInsert = DEEP_DRAWERS_ALLOW_AUTOMATION_INSERT.get();
-        deepDrawersAllowAutomationExtract = DEEP_DRAWERS_ALLOW_AUTOMATION_EXTRACT.get();
+        deepDrawersAllow = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOW.get());
+        deepDrawersDeny = new java.util.ArrayList<>(DEEP_DRAWERS_DENY.get());
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         ftbTeamsSyncEnabled = FTB_TEAMS_SYNC_ENABLED.get();
