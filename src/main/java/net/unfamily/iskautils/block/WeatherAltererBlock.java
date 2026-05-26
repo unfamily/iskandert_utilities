@@ -72,7 +72,7 @@ public class WeatherAltererBlock extends Block implements EntityBlock {
 
     @Override
     public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
-        return direction != null;
+        return true;
     }
     
     /**
