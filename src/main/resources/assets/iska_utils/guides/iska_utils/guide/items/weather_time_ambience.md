@@ -28,6 +28,7 @@ These blocks read or change **world weather** and **time of day**. Player-facing
 
 - Changes **world weather** depending on the selected mode.
 - **Right-click** the block to **cycle modes**.
+- **Redstone input:** triggers the selected mode on a **rising edge** (unpowered → powered), like other redstone-controlled machines in this mod. Redstone dust connects to all faces.
 
 ## Time Alterer
 
@@ -35,3 +36,4 @@ These blocks read or change **world weather** and **time of day**. Player-facing
 
 - Changes **time of day** depending on the selected mode.
 - **Right-click** the block to **cycle modes**.
+- **Redstone input:** triggers the selected mode on a **rising edge** (unpowered → powered), like other redstone-controlled machines in this mod. Redstone dust connects to all faces.
