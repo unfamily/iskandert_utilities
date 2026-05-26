@@ -427,42 +427,13 @@ public class StructureMonouseItem extends Item {
                 
                 // Check if we should place as player
                 if (structure.isPlaceAsPlayer()) {
-                    // Place as if done by player - create temporary ItemStack and use BlockItem
-                    try {
-                        Item blockItem = block.asItem();
-                        if (blockItem != null && blockItem != Items.AIR) {
-                            ItemStack blockStack = new ItemStack(blockItem);
-                            
-                            // Create a fake UseOnContext to simulate player placement
-                            var context = new net.minecraft.world.item.context.UseOnContext(
-                                player, 
-                                net.minecraft.world.InteractionHand.MAIN_HAND, 
-                                new net.minecraft.world.phys.BlockHitResult(
-                                    net.minecraft.world.phys.Vec3.atCenterOf(blockPos), 
-                                    net.minecraft.core.Direction.UP, 
-                                    blockPos, // Use the actual position, not below
-                                    false
-                                )
-                            );
-                            
-                            // Try to use BlockItem.useOn to place it like a player would
-                            if (blockItem instanceof net.minecraft.world.item.BlockItem blockItemInstance) {
-                                blockItemInstance.place(new net.minecraft.world.item.context.BlockPlaceContext(context));
-                            } else {
-                                // Fallback to normal placement
-                                ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
-                            }
-                            if (structure.isRefresh()) ((ServerLevel) player.level()).scheduleTick(blockPos, block, 0);
-                        } else {
-                            // Fallback to normal placement
-                            ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
-                            if (structure.isRefresh()) ((ServerLevel) player.level()).scheduleTick(blockPos, block, 0);
-                        }
-                    } catch (Exception e) {
-                        // If player-like placement fails, fallback to normal placement
-                        LOGGER.debug("Player-like placement failed for {}, using normal placement: {}", blockDef.getBlock(), e.getMessage());
-                        ((ServerLevel) player.level()).setBlock(blockPos, blockState, 3);
-                        if (structure.isRefresh()) ((ServerLevel) player.level()).scheduleTick(blockPos, block, 0);
+                    ServerLevel serverLevel = (ServerLevel) player.level();
+                    ItemStack stackForHand = new ItemStack(block.asItem());
+                    net.unfamily.iskautils.structure.StructurePlacementFakePlayer.placeBlockAsPlayer(
+                            serverLevel, blockPos, blockState, stackForHand,
+                            net.unfamily.iskautils.structure.StructurePlacementFakePlayer.get(serverLevel, player.getUUID(), blockPos));
+                    if (structure.isRefresh()) {
+                        serverLevel.scheduleTick(blockPos, block, 0);
                     }
                 } else {
                     // Normal placement
