@@ -52,7 +52,13 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     private final String[] filterFields;
     // Inverted filter configuration (same size as filterFields)
     private final String[] invertedFilterFields;
-    private boolean isWhitelistMode = true; // false = blacklist, true = whitelist (default: true to prevent random extraction)
+    // Whitelist + empty filters = no extraction; deny (inverted) list is evaluated before allow (primary).
+    private boolean isWhitelistMode = true;
+    /** 0 = allow list panel, 1 = deny list panel (GUI reopen default). */
+    private int lastFilterPanel = DeepDrawerExtractorBlockEntity.FILTER_PANEL_ALLOW;
+    
+    public static final int FILTER_PANEL_ALLOW = 0;
+    public static final int FILTER_PANEL_DENY = 1;
     
     // GUI state flags for filter optimization
     private boolean reloadFilters = false; // Set to true when GUI closes to trigger filter reordering
@@ -744,6 +750,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         filterTag.put("filters", filterList);
         filterTag.put("inverted_filters", invertedFilterList);
         filterTag.putBoolean("whitelist_mode", isWhitelistMode);
+        filterTag.putInt("last_filter_panel", lastFilterPanel);
         filterTag.putInt("filter_version", 5); // Version 5 = index-value pairs + inverted filters
         filterTag.putInt("filter_slot_count", maxSlots); // Save slot count for migration
         tag.put("filter_config", filterTag);
@@ -867,13 +874,21 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 }
             }
             
-            isWhitelistMode = filterTag.getBoolean("whitelist_mode");
+            if (filterTag.contains("whitelist_mode")) {
+                isWhitelistMode = filterTag.getBoolean("whitelist_mode");
+            } else {
+                isWhitelistMode = true;
+            }
+            lastFilterPanel = filterTag.contains("last_filter_panel")
+                    ? clampFilterPanel(filterTag.getInt("last_filter_panel"))
+                    : FILTER_PANEL_ALLOW;
         } else {
             // No filter_config tag: initialize all to empty
             for (int i = 0; i < maxSlots; i++) {
                 filterFields[i] = "";
                 invertedFilterFields[i] = "";
             }
+            lastFilterPanel = FILTER_PANEL_ALLOW;
         }
         
         // Load redstone mode
@@ -902,7 +917,24 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 invertedFilterFields[i] = "";
             }
             isWhitelistMode = true;
+            lastFilterPanel = FILTER_PANEL_ALLOW;
             dataVersion = "V2";
+            setChanged();
+        }
+    }
+    
+    private static int clampFilterPanel(int panel) {
+        return panel == FILTER_PANEL_DENY ? FILTER_PANEL_DENY : FILTER_PANEL_ALLOW;
+    }
+    
+    public int getLastFilterPanel() {
+        return lastFilterPanel;
+    }
+    
+    public void setLastFilterPanel(int panel) {
+        int clamped = clampFilterPanel(panel);
+        if (this.lastFilterPanel != clamped) {
+            this.lastFilterPanel = clamped;
             setChanged();
         }
     }
@@ -930,8 +962,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 String field = fields.get(i);
                 if (field != null) {
                     field = field.trim();
-                    // Remove single quotes (') for KubeJS compatibility
-                    field = field.replace("'", "");
+                    // Only strip wrapping quotes; do NOT remove quotes inside the string (NBT/JSON relies on them).
+                    field = stripWrappingQuotes(field);
                     filterFields[i] = field;
                 }
             }
@@ -970,8 +1002,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 String field = fields.get(i);
                 if (field != null) {
                     field = field.trim();
-                    // Remove single quotes (') for KubeJS compatibility
-                    field = field.replace("'", "");
+                    // Only strip wrapping quotes; do NOT remove quotes inside the string (NBT/JSON relies on them).
+                    field = stripWrappingQuotes(field);
                     invertedFilterFields[i] = field;
                 }
             }
@@ -1000,8 +1032,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 String value = entry.getValue();
                 if (index >= 0 && index < maxSlots && value != null) {
                     value = value.trim();
-                    // Remove single quotes (') for KubeJS compatibility
-                    value = value.replace("'", "");
+                    // Only strip wrapping quotes; do NOT remove quotes inside the string (NBT/JSON relies on them).
+                    value = stripWrappingQuotes(value);
                     invertedFilterFields[index] = value;
                 }
             }
@@ -1034,8 +1066,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                         // Debug: log value before processing
                         // LOGGER.debug("setFilterFieldsFromMap: index={}, original length={}, value={}", index, value.length(), value);
                         value = value.trim();
-                        // Remove single quotes (') for KubeJS compatibility
-                        value = value.replace("'", "");
+                        // Only strip wrapping quotes; do NOT remove quotes inside the string (NBT/JSON relies on them).
+                        value = stripWrappingQuotes(value);
                         // Debug: log value after processing
                         // LOGGER.debug("setFilterFieldsFromMap: index={}, processed length={}, value={}", index, value.length(), value);
                         filterFields[index] = value;
@@ -1074,8 +1106,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         if (index >= 0 && index < maxSlots) {
             if (filter != null) {
                 filter = filter.trim();
-                // Remove single quotes (') for KubeJS compatibility
-                filter = filter.replace("'", "");
+                // Only strip wrapping quotes; do NOT remove quotes inside the string (NBT/JSON relies on them).
+                filter = stripWrappingQuotes(filter);
             }
             filterFields[index] = filter != null ? filter : "";
             setChanged();
@@ -1083,6 +1115,21 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
             }
         }
+    }
+
+    private static String stripWrappingQuotes(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        if (t.length() >= 2) {
+            char first = t.charAt(0);
+            char last = t.charAt(t.length() - 1);
+            if ((first == '\'' && last == '\'') || (first == '"' && last == '"')) {
+                return t.substring(1, t.length() - 1);
+            }
+        }
+        return t;
     }
     
     /**

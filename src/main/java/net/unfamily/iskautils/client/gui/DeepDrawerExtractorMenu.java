@@ -29,7 +29,8 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
     private static final int FILTER_HASH_INDEX = 4; // Hash of filter fields
     private static final int INVERTED_FILTER_HASH_INDEX = 5; // Hash of inverted filter fields
     private static final int WHITELIST_MODE_INDEX = 6; // 0 = blacklist, 1 = whitelist
-    private static final int DATA_SIZE = 7;
+    private static final int LAST_FILTER_PANEL_INDEX = 7; // 0 = allow, 1 = deny
+    private static final int DATA_SIZE = 8;
     
     // Cached filter data (client-side) - now using dynamic list
     private java.util.List<String> cachedFilterFields = new java.util.ArrayList<>();
@@ -64,6 +65,7 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
                     case FILTER_HASH_INDEX -> calculateFilterHash(blockEntity.getFilterFields());
                     case INVERTED_FILTER_HASH_INDEX -> calculateFilterHash(blockEntity.getInvertedFilterFields());
                     case WHITELIST_MODE_INDEX -> blockEntity.isWhitelistMode() ? 1 : 0;
+                    case LAST_FILTER_PANEL_INDEX -> blockEntity.getLastFilterPanel();
                     default -> 0;
                 };
             }
@@ -283,6 +285,11 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
      */
     public boolean getWhitelistMode() {
         return this.containerData.get(WHITELIST_MODE_INDEX) != 0;
+    }
+    
+    /** 0 = allow list panel, 1 = deny list panel. */
+    public int getLastFilterPanel() {
+        return this.containerData.get(LAST_FILTER_PANEL_INDEX);
     }
     
     /**

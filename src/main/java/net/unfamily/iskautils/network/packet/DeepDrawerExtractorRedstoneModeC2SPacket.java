@@ -49,8 +49,6 @@ public record DeepDrawerExtractorRedstoneModeC2SPacket(BlockPos pos, boolean bac
                 DeepDrawerExtractorBlockEntity.RedstoneMode newMode =
                     packet.backward() ? currentMode.previous() : currentMode.next();
                 extractor.setRedstoneMode(newMode.getValue());
-                float pitch = packet.backward() ? 0.82f : 1.0f;
-                level.playSound(null, packet.pos(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.3f, pitch);
                 extractor.setChanged();
             }
         });

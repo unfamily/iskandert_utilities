@@ -317,6 +317,11 @@ public class IskaUtils {
                     menu.getBlockEntity().onGuiClosed();
                 }
             }
+            if (event.getContainer() instanceof net.unfamily.iskautils.client.gui.DeepDrawerExtractorMenu menu) {
+                if (menu.getBlockEntity() != null) {
+                    menu.getBlockEntity().onGuiClosed();
+                }
+            }
             if (event.getContainer() instanceof net.unfamily.iskautils.client.gui.FanMenu menu) {
                 if (menu.getBlockEntity() != null) {
                     menu.getBlockEntity().resetBackMessage();
