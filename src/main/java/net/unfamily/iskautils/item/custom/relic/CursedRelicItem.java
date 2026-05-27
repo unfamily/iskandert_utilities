@@ -5,6 +5,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.resources.ResourceLocation;
+import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.RelicBalanceFormat;
+import net.unfamily.iskautils.util.RelicTooltipUtil;
 
 import java.util.List;
 
@@ -13,7 +16,6 @@ import java.util.List;
  * Concrete effects are implemented elsewhere (events / keybind integration).
  */
 public class CursedRelicItem extends Item {
-    private static final String TOTEM_OF_PAIN_PATH = "totem_of_pain";
 
     public CursedRelicItem(Properties properties) {
         super(properties.stacksTo(1));
@@ -21,10 +23,18 @@ public class CursedRelicItem extends Item {
 
     public static void appendCursedArtifactTooltip(List<Component> tooltip, String path) {
         tooltip.add(Component.translatable("tooltip.iska_utils." + path + ".cursed"));
-        tooltip.add(Component.translatable("tooltip.iska_utils." + path + ".desc0"));
-        tooltip.add(Component.translatable("tooltip.iska_utils." + path + ".desc1"));
-        if (TOTEM_OF_PAIN_PATH.equals(path)) {
-            tooltip.add(Component.translatable("tooltip.iska_utils." + path + ".desc2"));
+        switch (path) {
+            case "totem_of_pain" -> RelicTooltipUtil.appendDescLines(
+                    tooltip, path, 2, RelicBalanceFormat.percent(Config.totemOfPainProcChance));
+            case "busted_crown" -> RelicTooltipUtil.appendDescLines(
+                    tooltip, path, 2, RelicBalanceFormat.flatBonus(Config.bustedCrownHpPerCursedRelic));
+            case "ritual_gauntlet" -> RelicTooltipUtil.appendDescLines(
+                    tooltip,
+                    path,
+                    2,
+                    RelicBalanceFormat.percent(Config.ritualGauntletCritChance),
+                    RelicBalanceFormat.percentBonusFromMultiplier(Config.ritualGauntletCritDamageMultiplier));
+            default -> RelicTooltipUtil.appendDescLines(tooltip, path);
         }
     }
 

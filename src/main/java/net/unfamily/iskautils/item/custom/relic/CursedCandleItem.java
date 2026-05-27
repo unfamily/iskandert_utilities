@@ -14,7 +14,9 @@ import net.unfamily.iskautils.stage.StageRegistry;
 import java.util.List;
 
 /**
- * Cursed Candle - eternal brazier that places non-droppable cursed flames when equipped in Curios.
+ * Cursed Candle - eternal brazier extension: cursed flames, no durability.
+ * Player ignite on place uses the same rules as {@link BurningBrazierItem}
+ * ({@code burning_brazier_super_hot} or {@code iska_utils_internal-curse_flame} stage).
  */
 public class CursedCandleItem extends BurningBrazierItem {
     private static final String PATH = "cursed_candle";
@@ -39,17 +41,23 @@ public class CursedCandleItem extends BurningBrazierItem {
     }
 
     @Override
-    protected boolean shouldBurnPlayerOnPlace(ServerPlayer player) {
-        return true;
-    }
-
-    @Override
     protected boolean canAutoPlace(ServerPlayer player, ServerLevel level, ItemStack stack) {
         return StageRegistry.playerHasStage(player, RelicEquipStages.CURSED_CANDLE);
     }
 
     @Override
+    protected String flamesTooltipDesc0Key() {
+        return "tooltip.iska_utils.burning_flames.desc0.cursed";
+    }
+
+    @Override
+    protected String flamesTooltipDesc2Key() {
+        return "tooltip.iska_utils.burning_flames.desc2.cursed";
+    }
+
+    @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        CursedRelicItem.appendCursedArtifactTooltip(tooltip, PATH);
+        tooltip.add(Component.translatable("tooltip.iska_utils." + PATH + ".cursed"));
+        appendFlamesTooltip(tooltip::add, flamesTooltipDesc0Key(), flamesTooltipDesc2Key());
     }
 }

@@ -279,6 +279,13 @@ public class IskaUtils {
                         return (y >= x) ? 1.0F : 0.0F;
                     }
                 );
+
+                ItemProperties.register(
+                    ModItems.THE_ROOTS.get(),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "unix_root"),
+                    (stack, level, entity, seed) ->
+                            net.unfamily.iskautils.item.custom.relic.TheRootsItem.isUnixLike() ? 1.0F : 0.0F
+                );
             });
         }
         

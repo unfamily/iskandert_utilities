@@ -5,6 +5,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 
+import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.RelicBalanceFormat;
+import net.unfamily.iskautils.util.RelicTooltipUtil;
+
 import java.util.List;
 
 /**
@@ -19,7 +23,6 @@ public class OldBrickItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        tooltip.add(Component.translatable("tooltip.iska_utils.old_brick.desc0"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.old_brick.desc1"));
+        RelicTooltipUtil.appendDescLines(tooltip, "old_brick", 3, RelicBalanceFormat.flatBonus(Config.oldBrickArmorBonus));
     }
 }

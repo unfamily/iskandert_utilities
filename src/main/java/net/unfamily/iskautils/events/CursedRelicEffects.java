@@ -19,6 +19,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.effect.ModMobEffects;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.stage.StageRegistry;
@@ -68,7 +69,7 @@ public final class CursedRelicEffects {
         }
         if (curseInst != null) {
             int amp = curseInst.getAmplifier();
-            float mult = 1.0f + 0.10f * (amp + 1);
+            float mult = 1.0f + (float) Config.curseOfPainDamagePerLevel * (amp + 1);
             event.setAmount(event.getAmount() * mult);
         }
 
@@ -77,19 +78,24 @@ public final class CursedRelicEffects {
 
         // Totem of Pain: apply stacking Curse of Pain to the hit target with chance.
         if (StageRegistry.playerHasStage(player, TOTEM_OF_PAIN_STAGE)) {
-            if (player.getRandom().nextFloat() < 0.25f) {
+            if (player.getRandom().nextDouble() < Config.totemOfPainProcChance) {
                 int amp = 0;
                 if (curseInst != null) {
                     amp = Math.min(4, curseInst.getAmplifier() + 1);
                 }
-                target.addEffect(new MobEffectInstance(ModMobEffects.CURSE_OF_PAIN.getDelegate(), 20 * 30, amp, true, true, true));
+                target.addEffect(new MobEffectInstance(
+                        ModMobEffects.CURSE_OF_PAIN.getDelegate(),
+                        20 * Config.totemOfPainCurseDurationSeconds,
+                        amp,
+                        true,
+                        true,
+                        true));
             }
         }
 
-        // Ritual gauntlet: 15% chance to deal +15% damage if player has any beneficial effect.
         if (StageRegistry.playerHasStage(player, RITUAL_GAUNTLET_STAGE) && hasAnyBeneficialEffect(player)) {
-            if (player.getRandom().nextFloat() < 0.15f) {
-                event.setAmount(event.getAmount() * 1.15f);
+            if (player.getRandom().nextDouble() < Config.ritualGauntletCritChance) {
+                event.setAmount(event.getAmount() * (float) Config.ritualGauntletCritDamageMultiplier);
             }
         }
     }
@@ -106,7 +112,8 @@ public final class CursedRelicEffects {
         if (used == null || used.isEmpty()) return;
         if (!used.has(DataComponents.FOOD)) return;
 
-        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 20 * 30, 0, true, true, true));
+        player.addEffect(new MobEffectInstance(
+                MobEffects.ABSORPTION, 20 * Config.theDeceptionAbsorptionDurationSeconds, 0, true, true, true));
     }
 
     private static boolean hasAnyBeneficialEffect(Player player) {
@@ -140,7 +147,7 @@ public final class CursedRelicEffects {
         if (maxHealth == null) return;
 
         AttributeModifier existing = maxHealth.getModifier(BUSTED_CROWN_HP_ID);
-        double amount = 2.0 * Math.max(0, cursedCount);
+        double amount = Config.bustedCrownHpPerCursedRelic * Math.max(0, cursedCount);
 
         if (existing != null) {
             // Replace if amount changed.

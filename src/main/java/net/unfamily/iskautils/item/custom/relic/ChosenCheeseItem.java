@@ -15,6 +15,7 @@ import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.RelicActivationUtil;
 import net.unfamily.iskautils.util.RelicEquipStages;
+import net.unfamily.iskautils.util.RelicTooltipUtil;
 
 import java.util.List;
 
@@ -50,8 +51,7 @@ public class ChosenCheeseItem extends Item {
         super.appendHoverText(stack, context, tooltip, flag);
         int y = getLevel(stack);
         int x = Config.chosenCheeseMax;
-        tooltip.add(Component.translatable("tooltip.iska_utils.chosen_cheese.desc0"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.chosen_cheese.desc1", y, x));
+        RelicTooltipUtil.appendDescLines(tooltip, "chosen_cheese", 3, y, x);
     }
 
     @Override

@@ -7,7 +7,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.RelicActivationUtil;
+import net.unfamily.iskautils.util.RelicBalanceFormat;
+import net.unfamily.iskautils.util.RelicTooltipUtil;
 
 import java.util.List;
 
@@ -40,11 +43,16 @@ public class TheRootsItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        tooltip.add(Component.translatable("tooltip.iska_utils.the_roots.desc0"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.the_roots.desc1"));
+        double maxMult = Config.theRootsBreakSpeedMinMultiplier + Config.theRootsBreakSpeedMaxBonus;
+        RelicTooltipUtil.appendDescLines(
+                tooltip,
+                "the_roots",
+                2,
+                RelicBalanceFormat.speedBonusPercent(Config.theRootsBreakSpeedMinMultiplier),
+                RelicBalanceFormat.speedBonusPercent(maxMult));
     }
 
-    private static boolean isUnixLike() {
+    public static boolean isUnixLike() {
         String os = System.getProperty("os.name", "").toLowerCase();
         return os.contains("linux") || os.contains("mac") || os.contains("unix") || os.contains("android");
     }

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.neoforged.fml.ModList;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.RelicBalanceFormat;
 import java.lang.reflect.Method;
 
 import java.util.List;
@@ -40,10 +41,11 @@ public class NecroticCrystalHeartItem extends Item {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
         tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.cursed"));
-        tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc0"));
-        tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc1"));
-        tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc2"));
-        tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc3"));
+        net.unfamily.iskautils.util.RelicTooltipUtil.appendDescLines(
+                tooltipComponents,
+                "necrotic_crystal_heart",
+                4,
+                RelicBalanceFormat.flatBonus(Config.necroticCrystalHeartHpCostPerSave));
         
         if (Config.artifactsInfo) {
             if (!isArtifactsLoaded()) {

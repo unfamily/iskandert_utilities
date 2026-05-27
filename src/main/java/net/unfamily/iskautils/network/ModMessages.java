@@ -1385,7 +1385,7 @@ public class ModMessages {
                         net.unfamily.iskautils.data.BurningBrazierData.setAutoPlacementEnabledToPlayer(player, newState);
 
                         // Send message to player
-                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.burning_brazier_auto_placement." +
+                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.burning_flames.auto_placement." +
                                                      (newState ? "enabled" : "disabled")), true);
                     }
                 } catch (Exception e) {

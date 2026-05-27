@@ -5,18 +5,11 @@
       "weight": 1,
       "luck": 0,
       "do": [
-        {
-          "message": {
-            "target": "@p",
-            "color": "#F54272",
-            "in": "action_bar",
-            "text": "message.suspicious_delivery.drop_of_chaos"
-          }
-        },
         { "drop": "iska_utils:drop_of_chaos" }
       ]
     },
     { "weight": 3, "luck": 0, "do": [ { "drop": "iska_utils:mining_equitizer" } ] },
+    { "weight": 3, "luck": 0, "do": [ { "drop": "iska_utils:necrotic_crystal_heart" } ] },
 
     { "weight": 3, "luck": 0, "do": [ { "drop": "iska_utils:old_brick" } ] },
     { "weight": 3, "luck": 0, "do": [ { "drop": "iska_utils:chosen_cheese" } ] },

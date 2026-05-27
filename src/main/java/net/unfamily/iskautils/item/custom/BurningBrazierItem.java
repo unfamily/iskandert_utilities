@@ -29,7 +29,7 @@ import java.util.List;
  */
 public class BurningBrazierItem extends Item {
 
-    protected static final int MAX_DURABILITY = 512;
+    public static final int MAX_DURABILITY = 512;
     private static final String CURSE_FLAME_STAGE = "iska_utils_internal-curse_flame";
 
     protected static boolean hasCurseFlame(ServerPlayer player) {
@@ -163,14 +163,26 @@ public class BurningBrazierItem extends Item {
         onFlamePlaced(player, stack);
     }
 
+    protected String flamesTooltipDesc0Key() {
+        return "tooltip.iska_utils.burning_flames.desc0";
+    }
+
+    protected String flamesTooltipDesc2Key() {
+        return "tooltip.iska_utils.burning_flames.desc2";
+    }
+
+    public static void appendFlamesTooltip(java.util.function.Consumer<Component> tooltip, String desc0Key, String desc2Key) {
+        tooltip.accept(Component.translatable(desc0Key));
+        String keybindName = KeyBindings.BURNING_BRAZIER_TOGGLE_KEY.getTranslatedKeyMessage().getString();
+        tooltip.accept(Component.translatable("tooltip.iska_utils.burning_flames.desc1", keybindName));
+        tooltip.accept(Component.translatable(desc2Key));
+    }
+
     @Override
     @OnlyIn(Dist.CLIENT)
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        String keybindName = KeyBindings.BURNING_BRAZIER_TOGGLE_KEY.getTranslatedKeyMessage().getString();
-        tooltip.add(Component.translatable("tooltip.iska_utils.burning_brazier.desc0"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.burning_brazier.desc1", keybindName));
-        tooltip.add(Component.translatable("tooltip.iska_utils.burning_brazier.desc2"));
+        appendFlamesTooltip(tooltip::add, flamesTooltipDesc0Key(), flamesTooltipDesc2Key());
     }
 
     @Override
