@@ -12,6 +12,7 @@ import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.structure.StructureMonouseLoader;
+import net.unfamily.iskautils.obtaining.SuspiciousDeliveryLoader;
 import org.slf4j.Logger;
 
 /**
@@ -40,6 +41,7 @@ public final class IskaUtilsDataReload {
         StageItemHandler.loadAll(rm);
         StructureLoader.loadAllServerDefinitions(rm);
         FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), rm);
+        SuspiciousDeliveryLoader.loadAll(rm);
     }
 }
 

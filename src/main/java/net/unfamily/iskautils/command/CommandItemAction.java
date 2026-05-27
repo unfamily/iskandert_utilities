@@ -29,6 +29,7 @@ public class CommandItemAction {
         EXECUTE,    // Execute a command
         DELAY,      // Wait for a delay
         ITEM,       // Perform an action on the item (consume, drop, etc.)
+        MESSAGE,    // Send localized message (chat/actionbar/title)
         IF          // Conditional action with sub-actions
     }
     
@@ -48,6 +49,7 @@ public class CommandItemAction {
     private String command;
     private int delay;
     private ItemActionType itemAction;
+    private net.unfamily.iskautils.obtaining.MessageSpec message;
     private List<CommandItemDefinition.StageCondition> stages = new ArrayList<>();
     
     // For IF action type
@@ -87,6 +89,14 @@ public class CommandItemAction {
      */
     public String getCommand() {
         return command;
+    }
+
+    public void setMessage(net.unfamily.iskautils.obtaining.MessageSpec message) {
+        this.message = message;
+    }
+
+    public net.unfamily.iskautils.obtaining.MessageSpec getMessage() {
+        return message;
     }
     
     /**
