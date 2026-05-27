@@ -314,11 +314,7 @@ public class Config {
                        obj -> obj instanceof String);
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> HARD_DOLLY_BLACKLIST = BUILDER
-            .comment("List of block tags/IDs that are explicitly forbidden from being picked up by the Hard Dolly",
-                    "This blacklist ALWAYS takes priority over the whitelist",
-                    "Tags starting with # are block tags, blocks without # are block IDs",
-                    "Empty list (default) means no blocks are blacklisted",
-                    "Examples: minecraft:bedrock, minecraft:end_portal_frame, #c:ores")
+            .comment("List ofsai:bedrock, minecraft:end_portal_frame, #c:ores")
             .defineList("011_hard_dolly_blacklist",
                     java.util.Collections.emptyList(),
                     obj -> obj instanceof String);
@@ -374,12 +370,7 @@ public class Config {
                     "If whitelist has entries, only those unbreakable blocks allowed")
             .defineList("021_creative_dolly_unbreakable_whitelist",
                     java.util.Collections.emptyList(),
-                    obj -> obj instanceof String);
-    
-    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> CREATIVE_DOLLY_UNBREAKABLE_BLACKLIST = BUILDER
-            .comment("List of unbreakable block IDs that are explicitly forbidden from being picked up by the Creative Dolly",
-                    "Only used when can_move_all_unbreakable is true",
-                    "This blacklist ALWAYS takes priority over the unbreakable whitelist",
+                    obj -> obj instancesaiLWAYS takes priority over the unbreakable whitelist",
                     "Blocks without # are block IDs (e.g. minecraft:bedrock, minecraft:end_portal_frame)",
                     "Empty list (default) means no unbreakable blocks are blacklisted")
             .defineList("022_creative_dolly_unbreakable_blacklist",
