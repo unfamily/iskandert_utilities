@@ -30,7 +30,7 @@ Deep Drawer is a massive storage system designed to contain items that are norma
 
 ## Integrated GUI
 
-Deep Drawer has an integrated GUI to view and manage its contents, similar to a normal chest.
+Deep Drawer has an integrated GUI to view and manage its contents.
 
 ## Additional Modules
 
