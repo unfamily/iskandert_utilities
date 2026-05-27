@@ -61,10 +61,18 @@ public class TemporalOverclockerChipsetItem extends Item {
             CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
             CompoundTag tag = customData.copyTag();
             if (tag.contains("LinkingOverclocker")) {
-                // We're already linking, cancel
-                tag.remove("LinkingOverclocker");
-                stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-                player.sendOverlayMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.linking_cancelled"));
+                long existingPos = tag.getLong("LinkingOverclocker").orElse(0L);
+                if (existingPos == pos.asLong()) {
+                    // Same overclocker: toggle off linking mode
+                    tag.remove("LinkingOverclocker");
+                    stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+                    player.sendOverlayMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.linking_cancelled"));
+                } else {
+                    // Different overclocker: switch linking session without extra click
+                    tag.putLong("LinkingOverclocker", pos.asLong());
+                    stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+                    player.sendOverlayMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.linking_started"));
+                }
             } else {
                 // Start linking
                 tag.putLong("LinkingOverclocker", pos.asLong());

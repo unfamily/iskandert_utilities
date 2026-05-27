@@ -29,7 +29,7 @@ categories:
 
 - Open **Filter** to manage a **list of sound IDs** (e.g. `minecraft:entity.creeper.primed`).
 - Toggle **allow list** vs **deny list** (how the list interacts with this muffler):
-  - **Deny list**: IDs on the list are **exempt** — this block **does not** attenuate those sounds (everything else still uses the category sliders).
-  - **Allow list**: only IDs on the list are attenuated by this block; sounds **not** listed pass through **unchanged** by this muffler.
+  - **Allow list**: IDs on the list are **exempt** — this block **does not** attenuate those sounds (everything else still uses the category sliders).
+  - **Deny list**: only IDs on the list are attenuated by this block; sounds **not** listed pass through **unchanged** by this muffler.
 - When the list is **empty**, the filter is inactive and **only** the category volumes apply.
 - Use **search** to find IDs quickly on busy packs.

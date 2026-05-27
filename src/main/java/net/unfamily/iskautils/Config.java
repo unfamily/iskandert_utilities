@@ -622,7 +622,7 @@ public class Config {
 
     private static final ModConfigSpec.IntValue SCANNER_SCAN_DURATION = BUILDER
             .comment("Duration in ticks needed to hold the scanner for scanning (1 second = 20 ticks)")
-            .defineInRange("001_scannerScanDuration", 60, 1, 200);
+            .defineInRange("001_scannerScanDuration", 40, 1, 200);
 
     private static final ModConfigSpec.IntValue SCANNER_MAX_BLOCKS = BUILDER
             .comment("Maximum number of blocks that can be scanned at once")
@@ -687,6 +687,8 @@ public class Config {
                         "nickel;CED1A1", // Nickel ore - White-Yellow color
                         "aluminum;B6B6B8", // Aluminum ore - White-Gray color
                         "zinc;00FF00", // Zinc ore - White-Green color
+                        "boro;2f4751", // Boron ore - Dark blue-gray color
+                        "chromo;31a929", // Chromium ore - Green color
                         "allthemodium;C78938", // Allthemodium ore - Orange color
                         "vibranium;40BBBF", // Vibranium ore - Blue-Green color
                         "unubtanium;993BAC", // Unubtanium ore - Purple color

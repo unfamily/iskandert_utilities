@@ -20,6 +20,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
+import java.util.function.Consumer;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
@@ -545,8 +547,9 @@ public class ScannerChipItem extends Item {
         return translated;
     }
     
-    // TODO(neoforge-26): update to the new tooltip callback signature (List->Consumer)
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltipAdder, TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltipAdder, tooltipFlag);
         // Check if this is a specialized chip (ores or mobs)
         Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         String itemPath = itemId.getPath();
@@ -564,14 +567,14 @@ public class ScannerChipItem extends Item {
                     .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
                     .append(targetBlock.getName().copy().withStyle(ChatFormatting.WHITE));
             
-            tooltipComponents.add(targetText);
+            tooltipAdder.accept(targetText);
         } else if (targetMob != null) {
             Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mob")
                     .withStyle(style -> style.withColor(ChatFormatting.AQUA))
                     .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
                     .append(getLocalizedMobName(targetMob).copy().withStyle(ChatFormatting.WHITE));
             
-            tooltipComponents.add(targetText);
+            tooltipAdder.accept(targetText);
         } else if (genericTarget != null) {
             if ("ores".equals(genericTarget)) {
                 Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_ores_prefix")
@@ -603,14 +606,14 @@ public class ScannerChipItem extends Item {
                     targetText = mutableTargetText;
                 }
                 
-                tooltipComponents.add(targetText);
+                tooltipAdder.accept(targetText);
             } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
                 String mode = ScannerMobCategories.normalizedMode(genericTarget);
                 Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mobs_prefix")
                         .withStyle(style -> style.withColor(ChatFormatting.AQUA))
                         .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mobs." + mode)
                                 .withStyle(ChatFormatting.WHITE));
-                tooltipComponents.add(targetText);
+                tooltipAdder.accept(targetText);
             }
         } else {
             // For specialized chips, show default target even if not set yet
@@ -644,7 +647,7 @@ public class ScannerChipItem extends Item {
                     targetText = mutableTargetText;
                 }
                 
-                tooltipComponents.add(targetText);
+                tooltipAdder.accept(targetText);
             } else if (isMobsChip) {
                 String gt = getGenericTarget(stack);
                 String mode = ScannerMobCategories.normalizedMode(gt != null ? gt : ScannerMobCategories.ALL);
@@ -652,45 +655,45 @@ public class ScannerChipItem extends Item {
                         .withStyle(style -> style.withColor(ChatFormatting.AQUA))
                         .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mobs." + mode)
                                 .withStyle(ChatFormatting.WHITE));
-                tooltipComponents.add(targetText);
+                tooltipAdder.accept(targetText);
             } else {
                 Component noTargetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.no_target")
                         .withStyle(style -> style.withColor(ChatFormatting.GRAY));
                 
-                tooltipComponents.add(noTargetText);
+                tooltipAdder.accept(noTargetText);
             }
         }
         
-        // Instructions - only show for regular chips
+        // Instructions - only show save-target hint for regular chips
         if (!isOresChip && !isMobsChip) {
             Component instruction0Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction0")
                     .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-            tooltipComponents.add(instruction0Text);
-            
-            Component instruction1Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction1")
-                    .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-            tooltipComponents.add(instruction1Text);
+            tooltipAdder.accept(instruction0Text);
         }
+        
+        Component instruction1Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction1")
+                .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
+        tooltipAdder.accept(instruction1Text);
         
         // Add transfer instruction for all chips
         Component transferText = Component.translatable("item.iska_utils.scanner_chip.tooltip.transfer_instruction")
                 .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-        tooltipComponents.add(transferText);
+        tooltipAdder.accept(transferText);
         
         // Special chip information
         if (isOresChip) {
             Component chipTypeText = Component.translatable("item.iska_utils.scanner_chip.tooltip.ore_chip_desc")
                     .withStyle(style -> style.withColor(ChatFormatting.LIGHT_PURPLE));
-            tooltipComponents.add(chipTypeText);
+            tooltipAdder.accept(chipTypeText);
             
             // Add mining level filter instruction
             Component miningLevelText = Component.translatable("item.iska_utils.scanner_chip.tooltip.ore_chip_mining_level")
                     .withStyle(style -> style.withColor(ChatFormatting.GRAY));
-            tooltipComponents.add(miningLevelText);
+            tooltipAdder.accept(miningLevelText);
         } else if (isMobsChip) {
             Component chipTypeText = Component.translatable("item.iska_utils.scanner_chip.tooltip.mob_chip_desc")
                     .withStyle(style -> style.withColor(ChatFormatting.LIGHT_PURPLE));
-            tooltipComponents.add(chipTypeText);
+            tooltipAdder.accept(chipTypeText);
         }
     }
 }
