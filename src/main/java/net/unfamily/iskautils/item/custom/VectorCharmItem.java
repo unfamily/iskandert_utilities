@@ -184,9 +184,6 @@ public class VectorCharmItem extends Item {
     @Override
     public void inventoryTick(ItemStack stack, net.minecraft.server.level.ServerLevel level, net.minecraft.world.entity.Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
         super.inventoryTick(stack, level, entity, slot);
-        if (entity instanceof Player player) {
-            net.unfamily.iskautils.client.VectorCharmMovement.applyMovement(player, stack);
-        }
     }
     
 

@@ -1,27 +1,28 @@
 package net.unfamily.iskautils.item.custom.relic;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.TooltipDisplay;
-import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.util.CurioEquipUtil;
+import net.unfamily.iskautils.util.RelicActivationUtil;
+import net.unfamily.iskautils.util.RelicEquipStages;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * The Chosen Cheese relic.
  * Stores an internal level (Y) in NBT and applies up to a cap (X) from config.
- * Combining is implemented via a custom crafting recipe.
  */
 public class ChosenCheeseItem extends Item {
     public static final String NBT_LEVEL = "chosen_cheese_level";
@@ -31,43 +32,87 @@ public class ChosenCheeseItem extends Item {
     }
 
     public static int getLevel(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return 0;
+        if (stack == null || stack.isEmpty()) return 1;
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return Math.max(0, tag.getInt(NBT_LEVEL).orElse(0));
+        if (!tag.contains(NBT_LEVEL)) {
+            return 1;
+        }
+        return Math.max(1, tag.getInt(NBT_LEVEL).orElse(1));
     }
 
     public static void setLevel(ItemStack stack, int level) {
         if (stack == null || stack.isEmpty()) return;
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        tag.putInt(NBT_LEVEL, Math.max(0, level));
+        tag.putInt(NBT_LEVEL, Math.max(1, level));
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, java.util.function.Consumer<Component> output, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> output, TooltipFlag flag) {
         super.appendHoverText(stack, context, display, output, flag);
         int y = getLevel(stack);
         int x = Config.chosenCheeseMax;
+        output.accept(Component.translatable("tooltip.iska_utils.chosen_cheese.desc1"));
         output.accept(Component.translatable("tooltip.iska_utils.chosen_cheese.desc0", y, x));
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, net.minecraft.server.level.ServerLevel level, Entity entity, net.minecraft.world.entity.EquipmentSlot slot) {
+    public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, EquipmentSlot slot) {
         super.inventoryTick(stack, level, entity, slot);
+        syncCustomModelData(stack);
         if (!(entity instanceof Player player)) return;
-        if (!CurioEquipUtil.hasEquipped(player, this)) return;
+        RelicActivationUtil.syncCurioOnlyStage(player, stack, RelicEquipStages.CHOSEN_CHEESE);
+    }
 
-        int effective = Math.min(getLevel(stack), Config.chosenCheeseMax);
-        AttributeInstance maxHealth = player.getAttribute(Attributes.MAX_HEALTH);
-        if (maxHealth == null) return;
+    private static void syncCustomModelData(ItemStack stack) {
+        int y = getLevel(stack);
+        int x = Config.chosenCheeseMax;
+        int desired = (y >= x) ? 1 : 0;
 
-        double desired = 20.0 + (double) effective;
-        if (maxHealth.getBaseValue() != desired) {
-            maxHealth.setBaseValue(desired);
-            if (player.getHealth() > player.getMaxHealth()) {
-                player.setHealth(player.getMaxHealth());
-            }
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        int current = tag.getInt("CustomModelData").orElse(0);
+        if (current == desired) {
+            return;
+        }
+        if (desired == 0) {
+            tag.remove("CustomModelData");
+        } else {
+            tag.putInt("CustomModelData", desired);
+        }
+        if (tag.isEmpty()) {
+            stack.remove(DataComponents.CUSTOM_DATA);
+        } else {
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
     }
-}
 
+    @Override
+    public InteractionResult use(net.minecraft.world.level.Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (level.isClientSide()) {
+            return InteractionResult.PASS;
+        }
+        if (!player.isShiftKeyDown()) {
+            return InteractionResult.PASS;
+        }
+
+        int foundSlot = -1;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack s = player.getInventory().getItem(i);
+            if (s == stack) continue;
+            if (!s.isEmpty() && s.getItem() == this) {
+                foundSlot = i;
+                break;
+            }
+        }
+        if (foundSlot < 0) {
+            return InteractionResult.PASS;
+        }
+
+        ItemStack other = player.getInventory().getItem(foundSlot);
+        int inc = Math.max(1, getLevel(other));
+        setLevel(stack, Math.min(Config.chosenCheeseMax, getLevel(stack) + inc));
+        other.shrink(1);
+        return InteractionResult.SUCCESS;
+    }
+}

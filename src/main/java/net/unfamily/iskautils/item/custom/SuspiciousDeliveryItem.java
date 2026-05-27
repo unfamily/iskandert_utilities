@@ -8,20 +8,35 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryDefinition;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryLoader;
+import net.neoforged.fml.ModList;
+import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class SuspiciousDeliveryItem extends Item {
     private static final Logger LOGGER = LoggerFactory.getLogger(SuspiciousDeliveryItem.class);
 
     public SuspiciousDeliveryItem(Properties properties) {
         super(properties.stacksTo(64));
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
+        tooltip.accept(Component.translatable("tooltip.iska_utils.suspicious_delivery.obtaining0"));
+        tooltip.accept(Component.translatable("tooltip.iska_utils.suspicious_delivery.obtaining1"));
+        if (ModList.get().isLoaded("artifacts")) {
+            tooltip.accept(Component.translatable("tooltip.iska_utils.suspicious_delivery.artifacts_loaded"));
+        }
     }
 
     @Override

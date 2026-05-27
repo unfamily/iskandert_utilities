@@ -45,6 +45,7 @@ public class NecroticCrystalHeartItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltipComponents, tooltipFlag);
         
+        tooltipComponents.accept(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.cursed").getString()));
         tooltipComponents.accept(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc0").getString()));
         tooltipComponents.accept(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc1").getString()));
         tooltipComponents.accept(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc2").getString()));

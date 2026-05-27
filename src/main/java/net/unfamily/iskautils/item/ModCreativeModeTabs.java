@@ -178,6 +178,12 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.DOLLY.get());
                                 pOutput.accept(ModItems.DOLLY_HARD.get());
                                 pOutput.accept(ModItems.DOLLY_CREATIVE.get());
+
+                                // Not artifacts (craftable tools): show after Dolly
+                                pOutput.accept(ModItems.REDSTONE_ACTIVATOR.get());
+                                pOutput.accept(ModItems.BURNING_BRAZIER.get());
+                                pOutput.accept(ModItems.GHOST_BRAZIER.get());
+                                pOutput.accept(ModItems.GAUNTLET_OF_CLIMBING.get());
                                 
                                 // Command Items
                                 Map<String, DeferredHolder<Item, CommandItem>> commandItems = 
@@ -192,13 +198,29 @@ public class ModCreativeModeTabs {
                                 // 7. Food
                                 pOutput.accept(ModItems.LAPIS_ICE_CREAM.get());
                                 
-                                // 8. Artifacts
+                                // 8. Artifacts (includes reliquie)
+                                // Suspicious Delivery first, then all other artifacts/reliquie,
+                                // then the delivery-related items after all artifacts.
+                                pOutput.accept(ModItems.SUSPICIOUS_DELIVERY.get());
                                 pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());
                                 pOutput.accept(ModItems.MINING_EQUITIZER.get());
-                                pOutput.accept(ModItems.BURNING_BRAZIER.get());
-                                pOutput.accept(ModItems.REDSTONE_ACTIVATOR.get());
-                                pOutput.accept(ModItems.GHOST_BRAZIER.get());
-                                pOutput.accept(ModItems.GAUNTLET_OF_CLIMBING.get());
+
+                                pOutput.accept(ModItems.OLD_BRICK.get());
+                                pOutput.accept(ModItems.CHOSEN_CHEESE.get());
+                                pOutput.accept(ModItems.ICE_DIAMOND.get());
+                                pOutput.accept(ModItems.SHARPENED_BONE.get());
+                                pOutput.accept(ModItems.THE_ROOTS.get());
+                                pOutput.accept(ModItems.TOTEM_OF_PAIN.get());
+                                pOutput.accept(ModItems.CURSED_CANDLE.get());
+                                pOutput.accept(ModItems.BUSTED_CROWN.get());
+                                pOutput.accept(ModItems.RITUAL_GAUNTLET.get());
+                                pOutput.accept(ModItems.THE_DECEPTION.get());
+
+                                // Delivery-related items (after all artifacts)
+                                pOutput.accept(ModItems.DROP_OF_CHAOS.get());
+                                pOutput.accept(ModItems.MIXIN_TABLET.get());
+                                pOutput.accept(ModItems.UNSTABLE_DROP.get());
+                                pOutput.accept(ModItems.CHAOTIC_CRYSTAL.get());
 
                             }).build());
 

@@ -58,24 +58,16 @@ public class GauntletOfClimbingItem extends Item {
         return speed > 0.0 ? speed : DEFAULT_CLIMB_SPEED;
     }
 
-    @Override
-    public void inventoryTick(ItemStack stack, net.minecraft.server.level.ServerLevel level, Entity entity, @Nullable EquipmentSlot slot) {
-        super.inventoryTick(stack, level, entity, slot);
-
-        if (!(entity instanceof Player player)) {
-            return;
-        }
-
+    public static void tickEquipped(Player player) {
         if (!isClimbingEnabled(player.getUUID())) {
             return;
         }
-
         if (player.horizontalCollision) {
             makePlayerClimb(player, getClimbSpeed());
         }
     }
 
-    private void makePlayerClimb(Player player, double climbSpeed) {
+    private static void makePlayerClimb(Player player, double climbSpeed) {
         Vec3 motion = player.getDeltaMovement();
 
         if (player.isShiftKeyDown()) {

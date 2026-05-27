@@ -1,7 +1,13 @@
 {
-  "parent": "item/generated",
+  "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "iska_utils:item/chosen_cheese"
-  }
+    "layer0": "iska_utils:item/the_chosen_cheese_partial"
+  },
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 1.0 },
+      "model": "iska_utils:item/chosen_cheese_full"
+    }
+  ]
 }
 

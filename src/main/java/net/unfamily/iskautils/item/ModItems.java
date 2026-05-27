@@ -50,7 +50,6 @@ import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem;
-import net.unfamily.iskautils.item.custom.relic.CursedCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
 import net.unfamily.iskautils.item.custom.relic.IceDiamondItem;
 import net.unfamily.iskautils.item.custom.relic.OldBrickItem;
@@ -178,9 +177,6 @@ public class ModItems {
     public static final DeferredItem<Item> BUSTED_CROWN = ITEMS.registerItem("busted_crown", CursedRelicItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> RITUAL_GAUNTLET = ITEMS.registerItem("ritual_gauntlet", CursedRelicItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> THE_DECEPTION = ITEMS.registerItem("the_deception", CursedRelicItem::new, p -> p.stacksTo(1));
-
-    // Delivery drops
-    public static final DeferredItem<Item> CURSED_CRYSTAL_HEART = ITEMS.registerItem("cursed_crystal_heart", CursedCrystalHeartItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<Item> RUBBER_CHUNK = ITEMS.registerSimpleItem("rubber_chunk");
 

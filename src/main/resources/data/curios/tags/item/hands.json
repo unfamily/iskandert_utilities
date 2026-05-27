@@ -1,6 +1,7 @@
 {
     "replace": false,
     "values": [
-      "iska_utils:gauntlet_of_climbing"
+      "iska_utils:gauntlet_of_climbing",
+      "iska_utils:ritual_gauntlet"
     ]
   }

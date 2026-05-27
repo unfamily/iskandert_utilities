@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
+import java.util.function.Consumer;
 
 /**
  * Small helper to detect if an item is "equipped" via Curios without a hard dependency.
@@ -30,7 +31,51 @@ public final class CurioEquipUtil {
         return false;
     }
 
-    private static boolean isInCuriosSlots(Player player, Item item) {
+    public static void forEachEquippedCurioStack(Player player, Consumer<ItemStack> consumer) {
+        if (player == null || consumer == null || !ModUtils.isCuriosLoaded()) {
+            return;
+        }
+        if (forEachViaCuriosInventory(player, consumer)) {
+            return;
+        }
+        forEachViaCuriosHelper(player, consumer);
+    }
+
+    private static boolean forEachViaCuriosInventory(Player player, Consumer<ItemStack> consumer) {
+        try {
+            Class<?> curiosApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
+            Method getCuriosInventory = curiosApiClass.getMethod("getCuriosInventory", LivingEntity.class);
+            Object curiosInventoryOpt = getCuriosInventory.invoke(null, player);
+            if (!(curiosInventoryOpt instanceof java.util.Optional<?> opt) || opt.isEmpty()) {
+                return false;
+            }
+            Object curiosInventory = opt.get();
+            Method getCurios = curiosInventory.getClass().getMethod("getCurios");
+            Object curiosMap = getCurios.invoke(curiosInventory);
+            if (!(curiosMap instanceof java.util.Map<?, ?> map)) {
+                return false;
+            }
+            for (Object slotInventory : map.values()) {
+                Method getStacks = slotInventory.getClass().getMethod("getStacks");
+                Object stacksHandler = getStacks.invoke(slotInventory);
+                Method getSlots = stacksHandler.getClass().getMethod("getSlots");
+                int slots = (Integer) getSlots.invoke(stacksHandler);
+                Method getStackInSlot = stacksHandler.getClass().getMethod("getStackInSlot", int.class);
+                for (int i = 0; i < slots; i++) {
+                    ItemStack stack = (ItemStack) getStackInSlot.invoke(stacksHandler, i);
+                    if (stack != null && !stack.isEmpty()) {
+                        consumer.accept(stack);
+                    }
+                }
+            }
+            return true;
+        } catch (Throwable t) {
+            LOGGER.debug("Curios inventory scan failed: {}", t.toString());
+            return false;
+        }
+    }
+
+    private static void forEachViaCuriosHelper(Player player, Consumer<ItemStack> consumer) {
         try {
             Class<?> curiosApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
             Method getCuriosHelperMethod = curiosApiClass.getMethod("getCuriosHelper");
@@ -43,16 +88,23 @@ public final class CurioEquipUtil {
                 for (Object itemPair : items) {
                     Method getRight = itemPair.getClass().getMethod("getRight");
                     ItemStack stack = (ItemStack) getRight.invoke(itemPair);
-                    if (stack != null && stack.getItem() == item) {
-                        return true;
+                    if (stack != null && !stack.isEmpty()) {
+                        consumer.accept(stack);
                     }
                 }
             }
-            return false;
         } catch (Throwable t) {
-            LOGGER.debug("Curios equipped check failed: {}", t.toString());
-            return false;
+            LOGGER.debug("Curios helper scan failed: {}", t.toString());
         }
     }
-}
 
+    private static boolean isInCuriosSlots(Player player, Item item) {
+        final boolean[] found = {false};
+        forEachEquippedCurioStack(player, stack -> {
+            if (stack.getItem() == item) {
+                found[0] = true;
+            }
+        });
+        return found[0];
+    }
+}

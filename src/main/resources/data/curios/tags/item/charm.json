@@ -1,6 +1,8 @@
 {
     "replace": false,
     "values": [
-      "iska_utils:portable_dislocator"
+      "iska_utils:portable_dislocator",
+      "iska_utils:totem_of_pain",
+      "iska_utils:sharpened_bone"
     ]
   }

@@ -129,14 +129,7 @@ public class BurningBrazierItem extends Item {
         return InteractionResult.SUCCESS;
     }
 
-    @Override
-    public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @Nullable EquipmentSlot slot) {
-        super.inventoryTick(stack, level, entity, slot);
-        if (!(entity instanceof ServerPlayer player)) {
-            return;
-        }
-
-        // Repair brazier durability using burning_flame block items from inventory (Curio slots ignored by design).
+    public static void tickEquipped(ServerPlayer player, ServerLevel level, ItemStack stack) {
         if (stack.isDamaged() && level.getGameTime() % 20 == 0) {
             var flameItem = ModBlocks.BURNING_FLAME.get().asItem();
             Inventory inv = player.getInventory();
@@ -164,9 +157,7 @@ public class BurningBrazierItem extends Item {
         if (!blockLightAllowsAutoFlame(level, pos)) {
             return;
         }
-
-        BlockState existing = level.getBlockState(pos);
-        if (!existing.isAir()) {
+        if (!level.getBlockState(pos).isAir()) {
             return;
         }
 
@@ -175,8 +166,7 @@ public class BurningBrazierItem extends Item {
             return;
         }
 
-        boolean shouldBurn = Config.burningBrazierSuperHot || hasCurseFlame(player);
-        if (shouldBurn) {
+        if (Config.burningBrazierSuperHot || hasCurseFlame(player)) {
             player.setRemainingFireTicks(5 * 20);
         }
         stack.setDamageValue(stack.getDamageValue() + 1);

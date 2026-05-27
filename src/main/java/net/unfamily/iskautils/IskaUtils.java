@@ -34,6 +34,7 @@ import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
+import net.unfamily.iskautils.effect.ModMobEffects;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskalib.client.marker.VanillaWorldMarkerClientHooks;
 import net.unfamily.iskalib.team.ShopTeamManager;
@@ -143,6 +144,7 @@ public class IskaUtils {
         ModBlocks.register(modEventBus);
         net.unfamily.iskautils.crafting.ModFactoryRecipes.register(modEventBus);
         ModItems.register(modEventBus);
+        ModMobEffects.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
         
@@ -306,7 +308,7 @@ public class IskaUtils {
         
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            // Client render layers and item model properties need 26.x-specific APIs.
+            // No-op for now. Use CustomModelData-driven model overrides for 26.x.
         }
         
         // Custom geometry loaders removed for 26.x baseline.
