@@ -5,13 +5,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
 public class MiningEquitizer extends Item {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MiningEquitizer.class);
 
     public MiningEquitizer(Properties properties) {
         super(properties);
