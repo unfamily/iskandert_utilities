@@ -5,8 +5,7 @@
   "refmap": "iska_utils.refmap.json",
   "mixins": [
     "ItemStackMixin",
-    "CraftingInputMixin",
-    "PlayerMiningEquitizerMixin"
+    "CraftingInputMixin"
   ],
   "minVersion": "0.8"
 }

@@ -4,11 +4,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.TooltipFlag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.List;
+
 public class MiningEquitizer extends Item {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MiningEquitizer.class);
 
     public MiningEquitizer(Properties properties) {
         super(properties);
