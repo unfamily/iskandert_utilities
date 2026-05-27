@@ -60,18 +60,37 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int CLOSE_BUTTON_Y = 5;
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
+
+    private final class SilentCloseButton extends Button.Plain {
+        private SilentCloseButton(int x, int y, int w, int h, Component message, java.lang.Runnable action) {
+            super(x, y, w, h, message, button -> action.run(), DEFAULT_NARRATION);
+        }
+
+        @Override
+        public void playDownSound(net.minecraft.client.sounds.SoundManager handler) {
+            // Silent by design.
+        }
+    }
     
-    // Screen mode: false = main screen, true = how to use screen
-    private boolean isHowToUseMode = false;
+    private enum SubView {
+        MAIN,
+        DENY_FILTERS,
+        ALLOW_FILTERS,
+        HOW_TO_USE
+    }
+
+    private SubView subView = SubView.MAIN;
+    private SubView filterListBeforeHelp = SubView.MAIN;
+    private boolean pendingFilterSubviewRestore = true;
     
-    // Entry dimensions and positions (scrollable)
-    // ENTRY_WIDE is 140x24
-    private static final int ENTRY_WIDTH = 140; // Width of entry_wide.png texture
-    private static final int ENTRY_HEIGHT = 24; // Height of entry_wide.png texture
+    // Filter list on the left (original Deep Drawer layout)
     private static final int ENTRY_X = 8;
-    private static final int FILTERS_LABEL_Y = 30; // Y position for "Filters" label
-    private static final int FIRST_ROW_Y = FILTERS_LABEL_Y + 12; // Start entries after "Filters" label (12px for label height + spacing)
-    private static final int ENTRY_SPACING = 0; // No spacing between entries (they touch each other)
+    private static final int ENTRY_WIDTH = 140;
+    private static final int ENTRY_HEIGHT = 24;
+    private static final int SCROLLBAR_WIDTH = 8;
+    private static final int FILTERS_LABEL_Y = 30;
+    private static final int FIRST_ROW_Y = FILTERS_LABEL_Y + 12;
+    private static final int ENTRY_SPACING = 0;
     /** Menu-relative Y of buffer row (must match {@link DeepDrawerExtractorMenu} addBufferSlots). */
     private static final int BUFFER_SLOTS_Y_MENU = 223;
     private static final int BUFFER_SLOTS_FIRST_X = 32;
@@ -81,44 +100,46 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int PLAYER_INV_GUI_X = 159;
     private static final int PLAYER_INV_FIRST_ROW_Y = 165;
     private static final int PLAYER_INV_COLUMNS = 9;
-    private static final int MAX_FILTER_SLOTS = net.unfamily.iskautils.Config.deepDrawerExtractorMaxFilters; // Total filter slots in BlockEntity (from config, default 50)
-    private static final int VISIBLE_ENTRIES = 7; // Number of entries visible at once (scrollable) - reduced because wide entries are taller
+    private static final int MAX_FILTER_SLOTS = net.unfamily.iskautils.Config.deepDrawerExtractorMaxFilters;
+    private static final int VISIBLE_ENTRIES = 7;
     
-    // Scrollbar constants (identical to DeepDrawersScreen)
-    private static final int SCROLLBAR_WIDTH = 8;      // Width of each scrollbar element
-    private static final int SCROLLBAR_HEIGHT = 34;    // Height of scrollbar background in texture
-    private static final int HANDLE_SIZE = 8;          // Size of UP/DOWN buttons and handle
-    private static final int SCROLLBAR_X = ENTRY_X + ENTRY_WIDTH + 4; // After entry + spacing (8 + 140 + 4 = 152)
-    private static final int BUTTON_UP_Y = FIRST_ROW_Y; // Aligned with first entry (after "Filters" label)
-    private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE; // Scrollbar starts after UP button
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT; // DOWN button after scrollbar
+    // Scrollbar constants
+    private static final int SCROLLBAR_HEIGHT = 34;
+    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_X = ENTRY_X + ENTRY_WIDTH + 4;
+    private static final int BUTTON_UP_Y = FIRST_ROW_Y;
+    private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE;
+    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
     
-    // Button dimensions and position (moved right, same spacing from right edge as entries from left edge)
-    private static final int BUTTON_WIDTH = 80;
-    private static final int BUTTON_HEIGHT = 16; // Reduced from 20 to match other buttons
-    private static final int BUTTON_X = GUI_WIDTH - BUTTON_WIDTH - 8; // 8px from right edge (same as entries from left)
-    private static final int BUTTON_Y = FIRST_ROW_Y; // Aligned with first EditBox (after "Filters" label)
-    private static final int VERTICAL_BUTTON_SPACING = 2; // Reduced spacing between buttons (was 4)
-    
-    // How to use button
-    private Button howToUseButton;
-    private static final int HOW_TO_USE_BUTTON_Y = BUTTON_Y; // Same Y as first EditBox
-    
-    // Redstone mode button
-    private int redstoneModeButtonX, redstoneModeButtonY;
+    // Top-right row: Allow | <<<<>>>> | Deny | Redstone
+    private static final int TOP_ROW_Y = FIRST_ROW_Y;
+    private static final int TOP_ROW_SPACING = 4;
+    private static final int NAV_BTN_HEIGHT = 16;
     private static final int REDSTONE_BUTTON_SIZE = 16;
+    private static final int REDSTONE_GUI_X = GUI_WIDTH - 8 - REDSTONE_BUTTON_SIZE;
+    /** First X for nav text buttons — right of filter scrollbar column. */
+    private static final int NAV_ROW_LEFT = SCROLLBAR_X + SCROLLBAR_WIDTH + TOP_ROW_SPACING;
+    private static final int NAV_ROW_RIGHT = REDSTONE_GUI_X - TOP_ROW_SPACING;
+    private static final int NAV_TEXT_BTN_WIDTH = (NAV_ROW_RIGHT - NAV_ROW_LEFT - 2 * TOP_ROW_SPACING) / 3;
+    // AD-style order: Deny | inverter | Allow
+    private static final int DENY_NAV_X = NAV_ROW_LEFT;
+    private static final int LIST_LOGIC_X = DENY_NAV_X + NAV_TEXT_BTN_WIDTH + TOP_ROW_SPACING;
+    private static final int ALLOW_NAV_X = LIST_LOGIC_X + NAV_TEXT_BTN_WIDTH + TOP_ROW_SPACING;
+    /** Valid Keys only beside the open filter entry row (edit mode). */
+    private static final int FILTER_NAV_GAP = 4;
     
-    // Bypass/Exclusion List button (dynamic based on mode) - now in place of Allow/Deny button
-    private Button invertedFilterButton;
-    private static final int INVERTED_FILTER_BUTTON_HEIGHT = 16;
-    private static final int INVERTED_FILTER_BUTTON_WIDTH = 60; // Same width as old mode button
-    private static final int BUTTON_SPACING = 4; // Space between redstone and inverted filter button
+    // How to use back button
+    private static final int BACK_BUTTON_X = 8;
+    private static final int BACK_BUTTON_Y = GUI_HEIGHT - 25;
     
-    // Track current mode locally (for immediate UI feedback on button click)
-    private boolean isWhitelistMode = false;
+    private Button validKeysButton;
+    private Button denyNavButton;
+    private Button allowNavButton;
+    private Button listLogicButton;
+    private Button backButton;
     
-    // Track if we're in inverted filter mode (editing inverted filters instead of normal filters)
-    private boolean isInvertedMode = false;
+    private int redstoneModeButtonX;
+    private int redstoneModeButtonY;
     
     // Cached filter fields for rendering (synced from server) - dynamic list
     private java.util.List<String> cachedFilterFields = new java.util.ArrayList<>();
@@ -194,117 +215,227 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     public DeepDrawerExtractorScreen(DeepDrawerExtractorMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
-        // Hide inventory label in how to use mode (will be set dynamically)
-        this.inventoryLabelY = 10000; // Hidden by default, will be adjusted in updateWidgetVisibility
+        this.inventoryLabelY = 10000;
     }
     
     @Override
     protected void init() {
         super.init();
 
-        // Center main title in GUI space (extractLabels draws in translated pose at titleLabelX/Y)
         this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
         this.titleLabelY = TITLE_Y;
-        
-        // Load initial mode from ContainerData (like rotation in StructurePlacerMachineScreen)
-        isWhitelistMode = menu.getWhitelistMode();
-        
-        // Initialize cached filter fields (will be updated in containerTick)
+
         cachedFilterFields.clear();
         cachedInvertedFilterFields.clear();
-        
-        // Create edit buttons for visible entries
-        updateEditButtons();
-        
-        // Close button
-        closeButton = Button.builder(Component.literal("✕"), 
-                                    button -> onCloseButtonClicked())
-                           .bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, 
-                                  CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
-                           .build();
+
+        closeButton = new SilentCloseButton(
+                this.leftPos + CLOSE_BUTTON_X,
+                this.topPos + CLOSE_BUTTON_Y,
+                CLOSE_BUTTON_SIZE,
+                CLOSE_BUTTON_SIZE,
+                Component.literal("✕"),
+                this::onCloseButtonClicked
+        );
         addRenderableWidget(closeButton);
-        
-        // How to use button (moved left, same spacing from edge as entries)
-        howToUseButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.how_to_use"), 
-                                       button -> onHowToUseButtonClicked())
-                              .bounds(this.leftPos + BUTTON_X, this.topPos + HOW_TO_USE_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)
-                              .build();
-        addRenderableWidget(howToUseButton);
-        
-        // Redstone mode button (below how to use)
-        this.redstoneModeButtonX = this.leftPos + BUTTON_X;
-        this.redstoneModeButtonY = this.topPos + BUTTON_Y + BUTTON_HEIGHT + VERTICAL_BUTTON_SPACING; // Reduced spacing
-        
-        // Deny Filter List button (now in place of Allow/Deny button, same Y as redstone button)
-        int invertedFilterButtonX = this.leftPos + BUTTON_X; // Start from same X as how to use
-        int invertedFilterButtonY = this.redstoneModeButtonY; // Same Y as redstone button
-        Component invertedFilterButtonText = getInvertedFilterSwitchButtonLabel();
-        
-        invertedFilterButton = Button.builder(invertedFilterButtonText, button -> onInvertedFilterButtonClicked())
-                .bounds(invertedFilterButtonX, invertedFilterButtonY, INVERTED_FILTER_BUTTON_WIDTH, INVERTED_FILTER_BUTTON_HEIGHT)
+
+        allowNavButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.allow"),
+                        button -> openFilterSubview(SubView.ALLOW_FILTERS))
+                .bounds(this.leftPos + ALLOW_NAV_X, this.topPos + TOP_ROW_Y, NAV_TEXT_BTN_WIDTH, NAV_BTN_HEIGHT)
                 .build();
-        addRenderableWidget(invertedFilterButton);
-        
-        // Update redstone button X position to be after inverted filter button with spacing
-        this.redstoneModeButtonX = invertedFilterButtonX + INVERTED_FILTER_BUTTON_WIDTH + BUTTON_SPACING;
-        
-        // Back button (for how to use screen)
-        backButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.back"), 
-                                   button -> onBackButtonClicked())
-                          .bounds(this.leftPos + BACK_BUTTON_X, this.topPos + BACK_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)
-                          .build();
+        addRenderableWidget(allowNavButton);
+
+        listLogicButton = Button.builder(getListLogicButtonLabel(),
+                        button -> onListLogicButtonClicked())
+                .bounds(this.leftPos + LIST_LOGIC_X, this.topPos + TOP_ROW_Y, NAV_TEXT_BTN_WIDTH, NAV_BTN_HEIGHT)
+                .build();
+        addRenderableWidget(listLogicButton);
+
+        denyNavButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.deny"),
+                        button -> openFilterSubview(SubView.DENY_FILTERS))
+                .bounds(this.leftPos + DENY_NAV_X, this.topPos + TOP_ROW_Y, NAV_TEXT_BTN_WIDTH, NAV_BTN_HEIGHT)
+                .build();
+        addRenderableWidget(denyNavButton);
+
+        validKeysButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.how_to_use"),
+                        button -> openHowToUse())
+                .bounds(0, 0, NAV_TEXT_BTN_WIDTH, NAV_BTN_HEIGHT)
+                .build();
+        addRenderableWidget(validKeysButton);
+
+        this.redstoneModeButtonX = this.leftPos + REDSTONE_GUI_X;
+        this.redstoneModeButtonY = this.topPos + TOP_ROW_Y;
+
+        backButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.back"),
+                        button -> handleCloseOrBack())
+                .bounds(this.leftPos + BACK_BUTTON_X, this.topPos + BACK_BUTTON_Y, NAV_TEXT_BTN_WIDTH, NAV_BTN_HEIGHT)
+                .build();
         addRenderableWidget(backButton);
-        
-        // Update visibility based on current mode
-        updateWidgetVisibility();
+
+        applySubViewVisibility();
+        tryRestoreSavedFilterSubview();
     }
-    
-    private void onCloseButtonClicked() {
-        // If in edit mode, exit edit mode instead of closing
-        if (editModeFilterIndex >= 0) {
-            playButtonSound();
-            exitEditMode();
+
+    private void tryRestoreSavedFilterSubview() {
+        if (!pendingFilterSubviewRestore || subView != SubView.MAIN) {
             return;
         }
-        
-        if (isHowToUseMode) {
-            // In how to use mode, close button acts as back
-            playButtonSound();
-            switchToMainScreen();
-        } else {
-            // In main mode, close button closes GUI (no sound)
-            this.onClose();
+        SubView saved = menu.getLastFilterPanel() == DeepDrawerExtractorBlockEntity.FILTER_PANEL_DENY
+                ? SubView.DENY_FILTERS
+                : SubView.ALLOW_FILTERS;
+        subView = saved;
+        filterListBeforeHelp = saved;
+        filterScrollOffset = 0;
+        updateCachedFiltersForMode();
+        applySubViewVisibility();
+        updateEditButtons();
+        pendingFilterSubviewRestore = false;
+    }
+
+    private void persistFilterPanelPreference(SubView target) {
+        if (target != SubView.ALLOW_FILTERS && target != SubView.DENY_FILTERS) {
+            return;
+        }
+        BlockPos blockPos = resolveMachinePos();
+        if (!blockPos.equals(BlockPos.ZERO)) {
+            int panel = target == SubView.DENY_FILTERS
+                    ? DeepDrawerExtractorBlockEntity.FILTER_PANEL_DENY
+                    : DeepDrawerExtractorBlockEntity.FILTER_PANEL_ALLOW;
+            ModMessages.sendDeepDrawerExtractorFilterPanelPacket(blockPos, panel);
         }
     }
-    
-    private void onHowToUseButtonClicked() {
-        playButtonSound();
-        switchToHowToUseScreen();
+
+    private boolean isFilterListOpen() {
+        return subView == SubView.ALLOW_FILTERS || subView == SubView.DENY_FILTERS;
     }
-    
-    private void onBackButtonClicked() {
-        playButtonSound();
-        switchToMainScreen();
+
+    private boolean inEditMode() {
+        return editModeFilterIndex >= 0;
     }
-    
-    private void switchToHowToUseScreen() {
-        isHowToUseMode = true;
-        updateWidgetVisibility();
+
+    /**
+     * In AD, allow/deny lists are stable; inverter only changes precedence logic.
+     * So we never swap which list a panel edits based on whitelist mode.
+     */
+    private boolean isDenyPanelActive() {
+        return effectiveFilterLineSubview() == SubView.DENY_FILTERS;
     }
-    
-    private void switchToMainScreen() {
-        isHowToUseMode = false;
-        updateWidgetVisibility();
+
+    /** Filter list subview owning allow/deny semantics (persists across Valid Keys overlay). */
+    private SubView effectiveFilterLineSubview() {
+        if (subView == SubView.HOW_TO_USE) {
+            return filterListBeforeHelp;
+        }
+        return subView;
     }
-    
-    private void updateWidgetVisibility() {
-        // Update visibility of widgets based on current mode
-        boolean showMain = !isHowToUseMode;
-        boolean isInEditMode = editModeFilterIndex >= 0;
-        
-        // Vanilla label uses GUI-relative coords inside translated pose; default inventoryLabelX=8 would paint
-        // "Inventory" on the left over the filter list — center it above the player grid instead.
-        if (isHowToUseMode) {
+
+    private int getFilterPanelScreenX() {
+        return this.leftPos + ENTRY_X;
+    }
+
+    private Component getListLogicButtonLabel() {
+        // <<<<< = deny list applied first (whitelist / allow-primary mode); >>>>> = allow bypasses via inverted list first
+        // AD-style default: show >>>>> when whitelistMode is true (default).
+        return Component.literal(menu.getWhitelistMode() ? ">>>>>" : "<<<<<");
+    }
+
+    private BlockPos resolveMachinePos() {
+        BlockPos machinePos = menu.getSyncedBlockPos();
+        if (machinePos.equals(BlockPos.ZERO)) {
+            machinePos = menu.getBlockPos();
+        }
+        if (machinePos.equals(BlockPos.ZERO) && this.minecraft != null && this.minecraft.level != null && this.minecraft.player != null) {
+            BlockPos playerPos = this.minecraft.player.blockPosition();
+            for (int x = -8; x <= 8; x++) {
+                for (int y = -8; y <= 8; y++) {
+                    for (int z = -8; z <= 8; z++) {
+                        BlockPos searchPos = playerPos.offset(x, y, z);
+                        if (this.minecraft.level.getBlockEntity(searchPos) instanceof DeepDrawerExtractorBlockEntity) {
+                            return searchPos;
+                        }
+                    }
+                }
+            }
+        }
+        return machinePos;
+    }
+
+    private void openFilterSubview(SubView target) {
+        if (inEditMode()) {
+            return;
+        }
+        saveFilterData();
+        subView = target;
+        filterListBeforeHelp = target;
+        filterScrollOffset = 0;
+        updateCachedFiltersForMode();
+        applySubViewVisibility();
+        updateEditButtons();
+        persistFilterPanelPreference(target);
+    }
+
+    private void closeFilterSubview() {
+        saveFilterData();
+        subView = SubView.MAIN;
+        applySubViewVisibility();
+        updateEditButtons();
+    }
+
+    private void openHowToUse() {
+        if (editModeTextBox != null) {
+            editModeTextBox.setFocused(false);
+        }
+        if (editingEditBox != null) {
+            editingEditBox.setFocused(false);
+        }
+        filterListBeforeHelp = subView;
+        subView = SubView.HOW_TO_USE;
+        applySubViewVisibility();
+    }
+
+    private void closeHowToUse() {
+        subView = filterListBeforeHelp;
+        applySubViewVisibility();
+        if (isFilterListOpen() || inEditMode()) {
+            updateEditButtons();
+        }
+    }
+
+    private void handleCloseOrBack() {
+        if (subView == SubView.HOW_TO_USE) {
+            closeHowToUse();
+            return;
+        }
+        if (inEditMode()) {
+            exitEditMode(true);
+            return;
+        }
+        if (isFilterListOpen()) {
+            closeFilterSubview();
+            return;
+        }
+        onClose();
+    }
+
+    private void onCloseButtonClicked() {
+        onClose();
+    }
+
+    private void onListLogicButtonClicked() {
+        if (inEditMode()) {
+            return;
+        }
+        BlockPos blockPos = resolveMachinePos();
+        if (!blockPos.equals(BlockPos.ZERO)) {
+            ModMessages.sendDeepDrawerExtractorModeTogglePacket(blockPos);
+        }
+    }
+
+    private void applySubViewVisibility() {
+        boolean howTo = subView == SubView.HOW_TO_USE;
+        boolean filterList = isFilterListOpen();
+        boolean edit = inEditMode();
+
+        if (howTo) {
             this.inventoryLabelY = 10000;
         } else {
             int invPixelWidth = PLAYER_INV_COLUMNS * BUFFER_SLOT_STEP;
@@ -312,30 +443,52 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             this.inventoryLabelX = invMidX - this.font.width(this.playerInventoryTitle) / 2;
             this.inventoryLabelY = PLAYER_INV_FIRST_ROW_Y - this.font.lineHeight - 2;
         }
-        
-        // Update buttons
-        // Valid Keys and Deny Filter List buttons are hidden in edit mode
-        if (howToUseButton != null) {
-            howToUseButton.visible = showMain && !isInEditMode;
+
+        if (denyNavButton != null) {
+            denyNavButton.visible = !howTo;
+            denyNavButton.active = !edit && subView != SubView.DENY_FILTERS;
         }
-        if (invertedFilterButton != null) {
-            invertedFilterButton.visible = showMain && !isInEditMode;
+        if (allowNavButton != null) {
+            allowNavButton.visible = !howTo;
+            allowNavButton.active = !edit && subView != SubView.ALLOW_FILTERS;
+        }
+        if (listLogicButton != null) {
+            listLogicButton.visible = !howTo;
+            listLogicButton.active = !edit;
+            listLogicButton.setMessage(getListLogicButtonLabel());
+        }
+        if (validKeysButton != null) {
+            validKeysButton.visible = !howTo && edit;
+            validKeysButton.active = true;
+            if (validKeysButton.visible) {
+                layoutValidKeysButton();
+            }
         }
         if (backButton != null) {
-            backButton.visible = isHowToUseMode;
+            backButton.visible = howTo;
         }
-        // Redstone button is always visible in main mode (rendered in renderBg)
-        
-        // Hide editing EditBox in how to use mode
-        if (!showMain && editingEditBox != null) {
-            editingEditBox.visible = false;
+
+        boolean showEditChrome = edit && !howTo && isFilterListOpen();
+        if (editModeTextBox != null) {
+            editModeTextBox.visible = showEditChrome;
         }
-        
-        // Update edit and delete buttons visibility
-        if (showMain) {
-            updateEditButtons();
-        } else {
-            // Hide all edit and delete buttons in how to use mode
+        if (leftArrowButton != null) {
+            leftArrowButton.visible = showEditChrome;
+        }
+        if (rightArrowButton != null) {
+            rightArrowButton.visible = showEditChrome;
+        }
+        if (editModeClearButton != null) {
+            editModeClearButton.visible = showEditChrome;
+        }
+        if (editModeApplyButton != null) {
+            editModeApplyButton.visible = showEditChrome;
+        }
+        if (editModeCloseButton != null) {
+            editModeCloseButton.visible = showEditChrome;
+        }
+
+        if (!filterList || howTo) {
             for (Button button : editButtons) {
                 if (button != null) {
                     button.visible = false;
@@ -346,12 +499,31 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                     button.visible = false;
                 }
             }
+        } else {
+            updateEditButtons();
+        }
+
+        if (howTo && editingEditBox != null) {
+            editingEditBox.visible = false;
         }
     }
-    
+
+    /** Beside edit row when a filter entry is open. */
+    private void layoutValidKeysButton() {
+        if (validKeysButton == null || subView == SubView.HOW_TO_USE || !inEditMode() || editModeCloseButton == null) {
+            return;
+        }
+        int gap = FILTER_NAV_GAP;
+        int vkY = editModeCloseButton.getY() + (editModeCloseButton.getHeight() - NAV_BTN_HEIGHT) / 2;
+        validKeysButton.setX(editModeCloseButton.getX() + editModeCloseButton.getWidth() + gap);
+        validKeysButton.setY(vkY);
+        validKeysButton.setWidth(NAV_TEXT_BTN_WIDTH);
+        validKeysButton.setHeight(NAV_BTN_HEIGHT);
+    }
+
     private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
         // Check if clicking on an example in how to use mode
-        if (button == 0 && isHowToUseMode) { // Left click in how to use mode
+        if (button == 0 && subView == SubView.HOW_TO_USE) { // Left click in how to use mode
             for (ExampleData exampleData : exampleDataList) {
                 int screenX = this.leftPos + exampleData.x;
                 int screenY = this.topPos + exampleData.y;
@@ -369,7 +541,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
         }
         
-        if (button == 0 && !isHowToUseMode) { // Left click, only in main mode
+        if (button == 0 && isFilterListOpen()) {
             // Handle ghost slot click (if in edit mode) - prioritize this
             if (editModeFilterIndex >= 0) {
                 // Position: align horizontally with second column of player inventory (x = 159 + 18 = 177)
@@ -403,7 +575,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
         }
 
-        if (!isHowToUseMode && (button == 0 || button == 1)) {
+        if (subView != SubView.HOW_TO_USE && (button == 0 || button == 1)) {
             if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
                 mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
                 onRedstoneModePressed(button == 1);
@@ -413,7 +585,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Handle clicks on filter entries (left click to edit, right click to clear)
         // But prioritize edit button clicks - if click is on edit button area, let the button handle it
-        if (!isHowToUseMode && button == 0) {
+        if (subView != SubView.HOW_TO_USE && isFilterListOpen() && button == 0) {
             // Check if click is on a filter entry
             for (int i = 0; i < VISIBLE_ENTRIES; i++) {
                 int filterIndex = filterScrollOffset + i;
@@ -440,7 +612,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                     if (mouseX >= deleteButtonX && mouseX < deleteButtonX + buttonSize &&
                         mouseY >= buttonY && mouseY < buttonY + buttonSize) {
                         // Click is on delete button - handle it directly
-                        playButtonSound();
                         onDeleteButtonClicked(filterIndex);
                         return true; // Consume the click
                     }
@@ -449,7 +620,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                     if (mouseX >= editButtonX && mouseX < editButtonX + buttonSize &&
                         mouseY >= buttonY && mouseY < buttonY + buttonSize) {
                         // Click is on edit button - handle it directly
-                        playButtonSound();
                         onEditButtonClicked(filterIndex);
                         return true; // Consume the click
                     }
@@ -462,7 +632,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         // Handle right click on entries (clear filter)
-        if (!isHowToUseMode && button == 1) {
+        if (subView != SubView.HOW_TO_USE && isFilterListOpen() && button == 1) {
             // First check if right click is on edit mode textbox
             if (editModeTextBox != null && editModeFilterIndex >= 0) {
                 int textBoxX = editModeTextBox.getX();
@@ -529,75 +699,16 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
     }
 
-    /**
-     * Title above the scroll list: must match server {@link DeepDrawerExtractorBlockEntity} semantics.
-     * Primary filters = allow list when whitelist, block list when blacklist. Inverted list is the opposite overlay.
-     */
     private Component getFilterListHeaderLabel() {
-        boolean whitelist = menu.getWhitelistMode();
-        boolean showAllowLabel = (!isInvertedMode && whitelist) || (isInvertedMode && !whitelist);
-        return Component.translatable(showAllowLabel
-                ? "gui.iska_utils.deep_drawer_extractor.filters.allow"
-                : "gui.iska_utils.deep_drawer_extractor.filters.deny");
+        return Component.translatable(effectiveFilterLineSubview() == SubView.ALLOW_FILTERS
+                ? "gui.iska_utils.deep_drawer_extractor.mode.allow"
+                : "gui.iska_utils.deep_drawer_extractor.mode.deny");
     }
 
-    /**
-     * Switch button: when editing primary, label is the other editor you open; when editing inverted, label is primary you return to.
-     */
-    private Component getInvertedFilterSwitchButtonLabel() {
-        boolean whitelist = menu.getWhitelistMode();
-        if (isInvertedMode) {
-            return Component.translatable(whitelist
-                    ? "gui.iska_utils.deep_drawer_extractor.inverted_filter_button.allow"
-                    : "gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny");
-        }
-        return Component.translatable(whitelist
-                ? "gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny"
-                : "gui.iska_utils.deep_drawer_extractor.inverted_filter_button.allow");
-    }
-    
-    private void onInvertedFilterButtonClicked() {
-        // Block click if in edit mode
-        if (editModeFilterIndex >= 0) {
-            return;
-        }
-        
-        // Save current filters before switching mode
-        saveFilterData();
-        
-        // Toggle inverted mode: switch between editing normal filters and inverted filters
-        playButtonSound();
-        isInvertedMode = !isInvertedMode;
-        
-        // Update button text and label based on mode
-        updateInvertedModeUI();
-    }
-    
-    /**
-     * Updates UI elements when inverted mode changes
-     */
-    private void updateInvertedModeUI() {
-        if (invertedFilterButton != null) {
-            invertedFilterButton.setMessage(getInvertedFilterSwitchButtonLabel());
-        }
-        
-        // Update cached filters to show the correct list
-        updateCachedFiltersForMode();
-    }
-    
-    /**
-     * Updates cached filters based on current mode (normal or inverted)
-     */
     private void updateCachedFiltersForMode() {
-        if (isInvertedMode) {
-            // Show inverted filters
-            cachedFilterFields = new java.util.ArrayList<>(menu.getCachedInvertedFilterFields());
-        } else {
-            // Show normal filters
-            cachedFilterFields = new java.util.ArrayList<>(menu.getCachedFilterFields());
-        }
-        
-        // Ensure we always have exactly MAX_FILTER_SLOTS entries
+        cachedFilterFields = isDenyPanelActive()
+                ? new java.util.ArrayList<>(menu.getCachedInvertedFilterFields())
+                : new java.util.ArrayList<>(menu.getCachedFilterFields());
         while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
             cachedFilterFields.add("");
         }
@@ -607,40 +718,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     }
     
     private void onRedstoneModePressed(boolean backward) {
-        // Try multiple methods to get the machine position (like StructurePlacerMachineScreen.onRedstoneModePressed)
-        BlockPos blockPos = menu.getSyncedBlockPos();
-        
-        // If getSyncedBlockPos returns ZERO, try getBlockPos
-        if (blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            blockPos = menu.getBlockPos();
-        }
-        
-        // If still ZERO, try to find the machine by searching nearby
-        if (blockPos.equals(net.minecraft.core.BlockPos.ZERO) && this.minecraft != null && this.minecraft.level != null && this.minecraft.player != null) {
-            BlockPos playerPos = this.minecraft.player.blockPosition();
-            
-            // Search in a 16x16x16 area around player for the machine
-            for (int x = -8; x <= 8; x++) {
-                for (int y = -8; y <= 8; y++) {
-                    for (int z = -8; z <= 8; z++) {
-                        BlockPos searchPos = playerPos.offset(x, y, z);
-                        if (this.minecraft.level.getBlockEntity(searchPos) instanceof DeepDrawerExtractorBlockEntity) {
-                            blockPos = searchPos;
-                            break;
-                        }
-                    }
-                    if (!blockPos.equals(net.minecraft.core.BlockPos.ZERO)) break;
-                }
-                if (!blockPos.equals(net.minecraft.core.BlockPos.ZERO)) break;
-            }
-        }
-        
-        if (!blockPos.equals(net.minecraft.core.BlockPos.ZERO)) {
+        BlockPos blockPos = resolveMachinePos();
+        if (!blockPos.equals(BlockPos.ZERO)) {
             ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos, backward);
             playButtonSound();
         }
-        
-        // Save filter data to ensure all changes are persisted
         saveFilterData();
     }
     
@@ -650,19 +732,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      */
     private void saveFilterData() {
         // Get the machine position from the menu (synced from server, like rotation)
-        BlockPos machinePos = menu.getSyncedBlockPos();
-        
-        // If synced position is ZERO, try fallback methods (like StructurePlacerMachineScreen.onShowPressed)
-        if (machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
-            // Try to get position from block entity as fallback
-            if (this.minecraft != null && this.minecraft.level != null) {
-                DeepDrawerExtractorBlockEntity blockEntity = menu.getBlockEntityFromLevel(this.minecraft.level);
-                if (blockEntity != null) {
-                    machinePos = blockEntity.getBlockPos();
-                }
-            }
-        }
-        
+        BlockPos machinePos = resolveMachinePos();
         if (!machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
             // Collect filter field values as index-value pairs (only non-empty filters)
             java.util.Map<Integer, String> filterMap = new java.util.HashMap<>();
@@ -678,8 +748,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             // This ensures we use the server-authoritative value, not stale local state
             boolean currentWhitelistMode = menu.getWhitelistMode();
             
-            // Send to server via packet - use inverted filter packet if in inverted mode
-            if (isInvertedMode) {
+            // Deny panel always writes inverted filters.
+            if (isDenyPanelActive()) {
                 ModMessages.sendDeepDrawerExtractorInvertedFilterUpdatePacket(machinePos, filterMap);
             } else {
                 ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(machinePos, filterMap, currentWhitelistMode);
@@ -691,17 +761,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         // Align with leftPos/topPos so slots, widgets, and texture match (AbstractContainerScreen uses leftPos/topPos)
-        Identifier backgroundTexture = isHowToUseMode ? BACKGROUND_EMPTY : BACKGROUND;
+        Identifier backgroundTexture = subView == SubView.HOW_TO_USE ? BACKGROUND_EMPTY : BACKGROUND;
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, backgroundTexture, this.leftPos, this.topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
-        // Render filter list label (only in main mode, not in how to use)
-        if (!isHowToUseMode) {
-            Component filtersLabel = getFilterListHeaderLabel();
-            int labelWidth = this.font.width(filtersLabel);
-            // Center the label with the entries
-            int labelX = this.leftPos + ENTRY_X + (ENTRY_WIDTH - labelWidth) / 2;
-            guiGraphics.text(this.font, filtersLabel, labelX, this.topPos + FILTERS_LABEL_Y, GuiTextColors.TITLE, false);
-
+        if (subView != SubView.HOW_TO_USE) {
             Component bufferLabel = Component.translatable("gui.iska_utils.deep_drawer_extractor.buffer_label");
             int bufferLabelWidth = this.font.width(bufferLabel);
             int bufferRowPixelWidth = BUFFER_SLOT_COUNT * BUFFER_SLOT_STEP;
@@ -709,20 +772,23 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             int bufferLabelX = this.leftPos + bufferCenterGuiX - bufferLabelWidth / 2;
             int bufferLabelY = this.topPos + BUFFER_SLOTS_Y_MENU - this.font.lineHeight - 3;
             guiGraphics.text(this.font, bufferLabel, bufferLabelX, bufferLabelY, GuiTextColors.TITLE, false);
-            
-            // Render filter entries (wide entries with single slot)
+        }
+
+        if (isFilterListOpen()) {
+            Component filtersLabel = getFilterListHeaderLabel();
+            int labelWidth = this.font.width(filtersLabel);
+            int labelX = this.leftPos + ENTRY_X + (ENTRY_WIDTH - labelWidth) / 2;
+            guiGraphics.text(this.font, filtersLabel, labelX, this.topPos + FILTERS_LABEL_Y, GuiTextColors.TITLE, false);
             renderFilterEntries(guiGraphics, mouseX, mouseY);
         }
         
-        // Render redstone mode button (only in main mode, not in how to use)
-        if (!isHowToUseMode) {
+        if (subView != SubView.HOW_TO_USE) {
             renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
-            // Render redstone mode tooltip
             renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
-            // Render scrollbar (only in main mode, not in how to use)
-            renderScrollbar(guiGraphics, mouseX, mouseY);
+            if (isFilterListOpen()) {
+                renderScrollbar(guiGraphics, mouseX, mouseY);
+            }
             
-            // Render edit mode UI (ghost slot and textbox) if in edit mode
             if (editModeFilterIndex >= 0) {
                 renderEditModeUI(guiGraphics, mouseX, mouseY);
             }
@@ -1012,8 +1078,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         deleteButtons.clear();
         
-        if (isHowToUseMode) {
-            return; // Don't create buttons in how to use mode
+        if (subView == SubView.HOW_TO_USE) {
+            return;
+        }
+        if (!isFilterListOpen()) {
+            return;
         }
         
         // Create edit and delete buttons for visible entries
@@ -1038,9 +1107,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             // Create delete button (C) with "Clear" tooltip
             Button deleteButton = Button.builder(Component.literal("C"), 
                 button -> {
-                    playButtonSound();
-                    onDeleteButtonClicked(finalFilterIndex);
-                })
+                        onDeleteButtonClicked(finalFilterIndex);
+                    })
                 .bounds(deleteButtonX, buttonY, buttonSize, buttonSize)
                 .tooltip(net.minecraft.client.gui.components.Tooltip.create(
                     Component.translatable("gui.iska_utils.deep_drawer_extractor.clear")))
@@ -1052,9 +1120,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             // Create edit button
             Button editButton = Button.builder(Component.literal("✎"), 
                 button -> {
-                    playButtonSound();
-                    onEditButtonClicked(finalFilterIndex);
-                })
+                        onEditButtonClicked(finalFilterIndex);
+                    })
                 .bounds(editButtonX, buttonY, buttonSize, buttonSize)
                 .build();
             
@@ -1103,48 +1170,30 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      */
     private void enterEditMode(int filterIndex) {
         editModeFilterIndex = filterIndex;
-        // Save original value to restore if user cancels
         if (filterIndex >= 0 && filterIndex < cachedFilterFields.size()) {
             originalFilterValue = cachedFilterFields.get(filterIndex) != null ? cachedFilterFields.get(filterIndex) : "";
         } else {
             originalFilterValue = "";
         }
-        // Hide Valid Keys and Deny Filter List buttons when in edit mode
-        if (howToUseButton != null) {
-            howToUseButton.visible = false;
-        }
-        if (invertedFilterButton != null) {
-            invertedFilterButton.visible = false;
-        }
-        // Update widget visibility
-        updateWidgetVisibility();
         createEditModeUI();
+        applySubViewVisibility();
     }
-    
-    /**
-     * Exits edit mode (without saving - restores original value)
-     */
+
     private void exitEditMode() {
-        // Restore original value (discard changes)
-        if (editModeFilterIndex >= 0) {
+        exitEditMode(true);
+    }
+
+    private void exitEditMode(boolean discardChanges) {
+        if (discardChanges && editModeFilterIndex >= 0) {
             while (cachedFilterFields.size() <= editModeFilterIndex) {
                 cachedFilterFields.add("");
             }
             cachedFilterFields.set(editModeFilterIndex, originalFilterValue);
-            // Don't save to server - changes are discarded
         }
         editModeFilterIndex = -1;
         originalFilterValue = "";
-        // Show Valid Keys and Deny Filter List buttons when exiting edit mode
-        if (howToUseButton != null) {
-            howToUseButton.visible = true;
-        }
-        if (invertedFilterButton != null) {
-            invertedFilterButton.visible = true;
-        }
-        // Update widget visibility to ensure buttons are shown
-        updateWidgetVisibility();
         removeEditModeUI();
+        applySubViewVisibility();
     }
     
     /**
@@ -1163,44 +1212,36 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         int slotY = this.topPos + 100 - 1; // Positioned higher, not aligned vertically with inventory, -1px up
         
         // Button size and spacing (small buttons)
-        int buttonSize = 12; // Small buttons
-        int buttonSpacing = 2; // Space between button and slot
+        int buttonSize = 12;
+        int buttonSpacing = 2;
+        int arrowSpacing = 4;
+        int editActionGap = 8;
         
         // Left arrow button (to the left of slot)
-        int leftButtonX = slotX - buttonSize - buttonSpacing;
-        int leftButtonY = slotY + (slotSize - buttonSize) / 2; // Center vertically with slot
+        int leftButtonX = slotX - buttonSize - arrowSpacing;
+        int leftButtonY = slotY + (slotSize - buttonSize) / 2;
         
         leftArrowButton = Button.builder(Component.literal("←"), 
-            button -> {
-                playButtonSound();
-                cycleFilterVariant(-1); // Previous variant
-            })
+            button -> cycleFilterVariant(-1))
             .bounds(leftButtonX, leftButtonY, buttonSize, buttonSize)
             .build();
         addRenderableWidget(leftArrowButton);
         
         // Right arrow button (to the right of slot)
-        int rightButtonX = slotX + slotSize + buttonSpacing;
-        int rightButtonY = slotY + (slotSize - buttonSize) / 2; // Center vertically with slot
+        int rightButtonX = slotX + slotSize + arrowSpacing;
+        int rightButtonY = slotY + (slotSize - buttonSize) / 2;
         
         rightArrowButton = Button.builder(Component.literal("→"), 
-            button -> {
-                playButtonSound();
-                cycleFilterVariant(1); // Next variant
-            })
+            button -> cycleFilterVariant(1))
             .bounds(rightButtonX, rightButtonY, buttonSize, buttonSize)
             .build();
         addRenderableWidget(rightArrowButton);
         
-        // Buttons C (clear), A (apply), and X (close) - on the same row as slot
-        // Align X button with "Valid Keys" button (howToUseButton)
-        // Valid Keys button is at BUTTON_X = GUI_WIDTH - BUTTON_WIDTH - 8
-        int validKeysButtonRightEdge = this.leftPos + BUTTON_X + BUTTON_WIDTH; // Right edge of Valid Keys button
-        int buttonAfterSlotSpacing = 2; // Space between slot/buttons and textbox row
-        int closeButtonX = validKeysButtonRightEdge - buttonSize; // X button aligned with Valid Keys right edge
-        int applyButtonX = closeButtonX - buttonSize - buttonSpacing; // A button before X button
-        int clearButtonX = applyButtonX - buttonSize - buttonSpacing; // C button before A button
-        int buttonAfterSlotY = slotY + (slotSize - buttonSize) / 2; // Center vertically with slot
+        // C (clear), A (apply), X (close) — after the right arrow, with extra gap so C does not overlap →
+        int buttonAfterSlotY = slotY + (slotSize - buttonSize) / 2;
+        int clearButtonX = rightButtonX + buttonSize + editActionGap;
+        int applyButtonX = clearButtonX + buttonSize + buttonSpacing;
+        int closeButtonX = applyButtonX + buttonSize + buttonSpacing;
         
         // Textbox position - one row below slot and buttons
         int textBoxX = this.leftPos + inventoryStartX; // Start from first column of inventory
@@ -1250,7 +1291,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Create clear button (C) - clears the textbox
         editModeClearButton = Button.builder(Component.literal("C"), 
             button -> {
-                playButtonSound();
                 if (editModeTextBox != null) {
                     editModeTextBox.setValue("");
                     editModeTextBox.setCursorPosition(0);
@@ -1266,7 +1306,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Create apply button (A) - saves changes and exits edit mode
         editModeApplyButton = Button.builder(Component.literal("A"), 
             button -> {
-                playButtonSound();
                 // Save the current textbox value
                 if (editModeTextBox != null && editModeFilterIndex >= 0) {
                     String value = editModeTextBox.getValue();
@@ -1280,15 +1319,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 editModeFilterIndex = -1;
                 originalFilterValue = "";
                 removeEditModeUI();
-                // Show Valid Keys and Deny Filter List buttons when exiting edit mode
-                if (howToUseButton != null) {
-                    howToUseButton.visible = true;
-                }
-                if (invertedFilterButton != null) {
-                    invertedFilterButton.visible = true;
-                }
-                // Update widget visibility to ensure buttons are shown
-                updateWidgetVisibility();
+                applySubViewVisibility();
             })
             .bounds(applyButtonX, buttonAfterSlotY, buttonSize, buttonSize)
             .tooltip(net.minecraft.client.gui.components.Tooltip.create(
@@ -1297,17 +1328,18 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         addRenderableWidget(editModeApplyButton);
         
         // Create close button (X) - exits edit mode without saving
-        editModeCloseButton = Button.builder(Component.literal("✕"), 
-            button -> {
-                playButtonSound();
-                exitEditMode();
-            })
-            .bounds(closeButtonX, buttonAfterSlotY, buttonSize, buttonSize)
-            .tooltip(net.minecraft.client.gui.components.Tooltip.create(
-                Component.translatable("gui.iska_utils.deep_drawer_extractor.close_without_saving")))
-            .build();
+        editModeCloseButton = new SilentCloseButton(
+                closeButtonX,
+                buttonAfterSlotY,
+                buttonSize,
+                buttonSize,
+                Component.literal("✕"),
+                this::exitEditMode
+        );
         addRenderableWidget(editModeCloseButton);
-        
+
+        layoutValidKeysButton();
+
         // Initialize ghost slot as empty
         ghostSlotItem = ItemStack.EMPTY;
     }
@@ -1486,6 +1518,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         for (String tagId : itemTags) {
             variants.add("#" + tagId);
         }
+
+        // NBT/SNBT filter: encode the full stack to NBT via codec (1.26 lacks ItemStack#save(registryAccess)).
+        try {
+            if (this.minecraft != null && this.minecraft.level != null) {
+                var ops = this.minecraft.level.registryAccess()
+                    .createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+                net.minecraft.nbt.Tag encoded = ItemStack.CODEC.encodeStart(ops, stack).getOrThrow();
+                String snbt = encoded.toString();
+                if (!snbt.isEmpty()) {
+                    variants.add("?" + snbt);
+                }
+            }
+        } catch (Exception ignored) {}
         
         return variants;
     }
@@ -1687,11 +1732,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int HELP_TEXT_X = 8;
     private static final int HELP_TEXT_LINE_HEIGHT = 12; // Normal line height
     
-    // Back button (for how to use screen)
-    private Button backButton;
-    private static final int BACK_BUTTON_X = 8; // Left side, same as EditBoxes
-    private static final int BACK_BUTTON_Y = GUI_HEIGHT - 25; // Near bottom
-    
     // Example text positions and data for copy functionality
     private static class ExampleData {
         final String example;
@@ -1765,7 +1805,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        if (isHowToUseMode) {
+        if (subView == SubView.HOW_TO_USE) {
             // Do not render container slots in how-to-use mode.
             for (net.minecraft.client.gui.components.Renderable renderable : this.renderables) {
                 renderable.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
@@ -1920,6 +1960,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     @Override
     public void containerTick() {
         super.containerTick();
+        tryRestoreSavedFilterSubview();
         
         // Update cached filters from server (like redstone mode and structure)
         menu.updateCachedFilters();
@@ -1950,101 +1991,40 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // No need to update entries - they are rendered directly from cachedFilterFields
         
-        if (invertedFilterButton != null) {
-            invertedFilterButton.setMessage(getInvertedFilterSwitchButtonLabel());
-            isWhitelistMode = menu.getWhitelistMode();
+        if (listLogicButton != null) {
+            listLogicButton.setMessage(getListLogicButtonLabel());
         }
     }
     
     @Override
     public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
         int keyCode = event.key();
-        // Check if editing EditBox is focused
         boolean isEditBoxFocused = editingEditBox != null && editingEditBox.isFocused();
-        
-        // Check if edit mode textbox is focused
         boolean isEditModeTextBoxFocused = editModeTextBox != null && editModeTextBox.isFocused();
-        
-        // Check if in edit mode (not editing text, but in edit mode for a filter)
-        boolean isInEditMode = editModeFilterIndex >= 0;
-        
-        // Handle ESC key
-        if (keyCode == 256) { // ESC key
-            if (isEditBoxFocused) {
-                // If EditBox is focused, stop editing
-                stopEditingFilter();
-                return true;
-            }
-            // If in edit mode, block ESC (can only exit via buttons)
-            if (isInEditMode) {
-                return true; // Block ESC, don't exit edit mode
-            }
-        }
-        
+        boolean esc = keyCode == 256;
+        boolean inv = this.minecraft != null && this.minecraft.options.keyInventory.matches(event);
+
         if (isEditBoxFocused && editingEditBox != null) {
-            // Let the focused EditBox handle the key first
             if (editingEditBox.keyPressed(event)) {
                 return true;
             }
-            
-            // If Enter is pressed, stop editing
-            if (keyCode == 257) { // Enter key
+            if (keyCode == 257) {
                 stopEditingFilter();
                 return true;
             }
-            
-            // If inventory key is pressed while EditBox is focused, prevent closing
-            // This works even if the user has changed the inventory key binding
-            if (this.minecraft != null && this.minecraft.options.keyInventory.matches(event)) {
-                return true; // Prevent closing
-            }
         }
-        
-        // Handle edit mode textbox key presses
+
         if (isEditModeTextBoxFocused && editModeTextBox != null) {
-            // Let the focused edit mode textbox handle the key first
             if (editModeTextBox.keyPressed(event)) {
                 return true;
             }
-            
-            // If inventory key is pressed while edit mode textbox is focused, block it (prevent closing)
-            // This works even if the user has changed the inventory key binding
-            if (this.minecraft != null && this.minecraft.options.keyInventory.matches(event)) {
-                return true; // Block the key, don't exit edit mode
-            }
         }
-        
-        // Handle ESC and inventory key based on current mode
-        if (isHowToUseMode) {
-            // In how to use mode, ESC or inventory key returns to main screen
-            if (keyCode == 256 || // ESC key
-                (this.minecraft != null && this.minecraft.options.keyInventory.matches(event))) {
-                if (!isEditBoxFocused && !isEditModeTextBoxFocused) {
-                    // If in edit mode, block closing (can only exit via buttons)
-                    if (isInEditMode) {
-                        return true; // Block, don't exit edit mode
-                    }
-                    playButtonSound();
-                    switchToMainScreen();
-                    return true;
-                }
-            }
-        } else {
-            // In main mode, ESC or inventory key closes GUI (unless EditBox is focused or in edit mode)
-            if (keyCode == 256 || // ESC key
-                (this.minecraft != null && this.minecraft.options.keyInventory.matches(event))) {
-                if (!isEditBoxFocused && !isEditModeTextBoxFocused) {
-                    // If in edit mode, block closing (can only exit via buttons)
-                    if (isInEditMode) {
-                        return true; // Block, don't exit edit mode
-                    }
-                    // Close GUI without sound
-                    this.onClose();
-                    return true;
-                }
-            }
+
+        if (esc || inv) {
+            onClose();
+            return true;
         }
-        
+
         return super.keyPressed(event);
     }
     
@@ -2072,7 +2052,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
-        if (!isHowToUseMode) {
+        if (isFilterListOpen()) {
             if (deltaY > 0) {
                 return scrollUpSilent();
             } else if (deltaY < 0) {

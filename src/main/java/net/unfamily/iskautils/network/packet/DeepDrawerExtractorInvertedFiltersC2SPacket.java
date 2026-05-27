@@ -70,7 +70,6 @@ public record DeepDrawerExtractorInvertedFiltersC2SPacket(BlockPos pos, Map<Inte
                 return;
             }
             extractor.setInvertedFilterFieldsFromMap(packet.invertedFilterMap());
-            player.level().playSound(null, packet.pos(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.3f, 1.0f);
         });
     }
 }

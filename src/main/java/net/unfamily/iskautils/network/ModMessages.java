@@ -165,6 +165,16 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket::handle
         );
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket::handle
+        );
+        registrar.playToServer(
             net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket::handle
@@ -1465,42 +1475,19 @@ public class ModMessages {
      * Toggles between whitelist and blacklist mode (like rotation in Structure Placer)
      */
     public static void sendDeepDrawerExtractorModeTogglePacket(BlockPos machinePos) {
-        // Use simplified approach like rotation in Structure Placer
-        try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-            if (server == null) {
-                LOGGER.error("Singleplayer server is null!");
-                return;
-            }
-            
-            // Execute on server thread
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        // Directly call the toggle logic
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = ((net.minecraft.server.level.ServerLevel) player.level()).getBlockEntity(machinePos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
-                            // Toggle whitelist/blacklist mode
-                            boolean currentMode = extractor.isWhitelistMode();
-                            extractor.setWhitelistMode(!currentMode);
-                            // setWhitelistMode() already calls setChanged() which forces sync
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Deep Drawer Extractor mode toggle packet: {}", e.getMessage());
-                }
-            });
-            
-        } catch (Exception e) {
-            LOGGER.error("Could not send Deep Drawer Extractor mode toggle packet: {}", e.getMessage(), e);
+        if (machinePos == null || machinePos.equals(BlockPos.ZERO)) {
+            return;
         }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket(machinePos));
+    }
+    
+    public static void sendDeepDrawerExtractorFilterPanelPacket(BlockPos machinePos, int panel) {
+        if (machinePos == null || machinePos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket(machinePos, panel));
     }
     
     /**

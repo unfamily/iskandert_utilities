@@ -73,7 +73,6 @@ public record DeepDrawerExtractorFilterUpdateC2SPacket(BlockPos pos, Map<Integer
             }
             extractor.setFilterFieldsFromMap(packet.filterMap());
             extractor.setWhitelistMode(packet.whitelistMode());
-            player.level().playSound(null, packet.pos(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.3f, 1.0f);
         });
     }
 }
