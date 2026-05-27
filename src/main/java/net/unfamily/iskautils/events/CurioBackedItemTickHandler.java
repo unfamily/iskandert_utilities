@@ -3,16 +3,21 @@ package net.unfamily.iskautils.events;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.BurningBrazierItem;
+import net.unfamily.iskautils.item.custom.FanpackItem;
 import net.unfamily.iskautils.item.custom.GauntletOfClimbingItem;
+import net.unfamily.iskautils.item.custom.GhostBrazierItem;
+import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 
+/**
+ * Centralizes server ticks for Curio-backed items (Curios, hands, or inventory).
+ */
 @EventBusSubscriber
 public final class CurioBackedItemTickHandler {
     private CurioBackedItemTickHandler() {}
@@ -30,39 +35,33 @@ public final class CurioBackedItemTickHandler {
             return;
         }
 
-        ItemStack gauntlet = findActiveStack(sp, ModItems.GAUNTLET_OF_CLIMBING.get());
-        if (gauntlet != null) {
+        ItemStack gauntlet = CurioEquipUtil.findActiveStack(sp, ModItems.GAUNTLET_OF_CLIMBING.get());
+        if (!gauntlet.isEmpty()) {
             GauntletOfClimbingItem.tickEquipped(sp);
         }
 
-        ItemStack brazier = findActiveStack(sp, ModItems.BURNING_BRAZIER.get());
-        if (brazier != null) {
+        ItemStack brazier = CurioEquipUtil.findActiveStack(sp, ModItems.BURNING_BRAZIER.get());
+        if (!brazier.isEmpty()) {
             BurningBrazierItem.tickEquipped(sp, level, brazier);
         }
-    }
 
-    private static ItemStack findActiveStack(ServerPlayer player, Item item) {
-        ItemStack[] curioFound = new ItemStack[1];
-        CurioEquipUtil.forEachEquippedCurioStack(player, stack -> {
-            if (curioFound[0] == null && stack.is(item)) {
-                curioFound[0] = stack;
-            }
-        });
-        if (curioFound[0] != null) {
-            return curioFound[0];
+        ItemStack cursedCandle = CurioEquipUtil.findEquippedCurioStack(sp, ModItems.CURSED_CANDLE.get());
+        if (!cursedCandle.isEmpty()) {
+            BurningBrazierItem.tickEquipped(sp, level, cursedCandle);
         }
-        if (player.getMainHandItem().is(item)) {
-            return player.getMainHandItem();
+
+        ItemStack fanpack = CurioEquipUtil.findActiveStack(sp, ModItems.FANPACK.get());
+        if (!fanpack.isEmpty() && fanpack.getItem() instanceof FanpackItem pack) {
+            pack.tickEquipped(sp, fanpack, level);
         }
-        if (player.getOffhandItem().is(item)) {
-            return player.getOffhandItem();
+
+        ItemStack dislocator = CurioEquipUtil.findActiveStack(sp, ModItems.PORTABLE_DISLOCATOR.get());
+        if (!dislocator.isEmpty()) {
+            PortableDislocatorItem.tickEquipped(sp, dislocator, level);
         }
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.is(item)) {
-                return stack;
-            }
+
+        if (!CurioEquipUtil.findActiveStack(sp, ModItems.GHOST_BRAZIER.get()).isEmpty()) {
+            GhostBrazierItem.tickEquipped(sp);
         }
-        return null;
     }
 }

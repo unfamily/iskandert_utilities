@@ -22,6 +22,8 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.effect.ModMobEffects;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskautils.util.CurioEquipUtil;
+import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +33,6 @@ public final class CursedRelicEffects {
 
     private static final ResourceLocation BUSTED_CROWN_HP_ID = ResourceLocation.fromNamespaceAndPath("iska_utils", "busted_crown_hp");
     private static final String TOTEM_OF_PAIN_STAGE = "iska_utils_internal-totem_of_pain_equip";
-    private static final String CURSED_CANDLE_STAGE = "iska_utils_internal-cursed_candle_equip";
-    private static final String BUSTED_CROWN_STAGE = "iska_utils_internal-busted_crown_equip";
     private static final String RITUAL_GAUNTLET_STAGE = "iska_utils_internal-ritual_gauntlet_equip";
     private static final String THE_DECEPTION_STAGE = "iska_utils_internal-the_deception_equip";
 
@@ -44,13 +44,13 @@ public final class CursedRelicEffects {
         if (player.level().isClientSide) return;
         if (!(player instanceof ServerPlayer sp)) return;
 
-        // Busted Crown: +2 HP for each cursed relic worn.
-        if (!StageRegistry.playerHasStage(sp, BUSTED_CROWN_STAGE)) {
+        // Busted Crown: +2 HP for each cursed relic worn in Curios (not inventory).
+        if (!hasBustedCrownEquipped(sp)) {
             removeBustedCrownModifier(sp);
             return;
         }
 
-        int cursedCount = countCursedRelicsEquipped(sp);
+        int cursedCount = countEquippedCursedRelics(sp);
         applyBustedCrownModifier(sp, cursedCount);
     }
 
@@ -118,14 +118,21 @@ public final class CursedRelicEffects {
         return false;
     }
 
-    private static int countCursedRelicsEquipped(Player player) {
-        int count = 0;
-        if (StageRegistry.playerHasStage(player, TOTEM_OF_PAIN_STAGE)) count++;
-        if (StageRegistry.playerHasStage(player, CURSED_CANDLE_STAGE)) count++;
-        if (StageRegistry.playerHasStage(player, BUSTED_CROWN_STAGE)) count++;
-        if (StageRegistry.playerHasStage(player, RITUAL_GAUNTLET_STAGE)) count++;
-        if (StageRegistry.playerHasStage(player, THE_DECEPTION_STAGE)) count++;
-        return count;
+    private static boolean hasBustedCrownEquipped(ServerPlayer player) {
+        if (!ModUtils.isCuriosLoaded()) {
+            return false;
+        }
+        boolean[] found = {false};
+        CurioEquipUtil.forEachEquippedCurioStack(player, stack -> {
+            if (stack.is(ModItems.BUSTED_CROWN.get())) {
+                found[0] = true;
+            }
+        });
+        return found[0];
+    }
+
+    private static int countEquippedCursedRelics(ServerPlayer player) {
+        return CurioEquipUtil.countEquippedCursedRelics(player);
     }
 
     private static void applyBustedCrownModifier(ServerPlayer player, int cursedCount) {
@@ -157,6 +164,6 @@ public final class CursedRelicEffects {
         }
     }
 
-    // Activation is tracked via stages (synced from inventoryTick using Curios-only semantics).
+    // Cursed relic equip stages are synced each tick by CurioEquipStageSync.
 }
 

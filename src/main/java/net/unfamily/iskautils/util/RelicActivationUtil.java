@@ -2,6 +2,7 @@ package net.unfamily.iskautils.util;
 
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.stage.StageRegistry;
 
@@ -22,7 +23,32 @@ public final class RelicActivationUtil {
     public static boolean isActiveInCurioOnly(Player player, ItemStack stack) {
         if (player == null || stack == null || stack.isEmpty()) return false;
         if (isStackInHands(player, stack)) return false;
-        return !ModUtils.isStackInVanillaPlayerInventory(player, stack);
+        if (ModUtils.isStackInVanillaPlayerInventory(player, stack)) return false;
+        return CurioEquipUtil.isStackEquippedInCurios(player, stack);
+    }
+
+    /**
+     * True when at least one equipped Curios stack is {@code item} and that stack is not in vanilla inventory or hands
+     * (same rule as {@link net.unfamily.iskautils.events.CurioEquipStageSync}).
+     */
+    public static boolean hasItemActiveInCurioOnly(Player player, Item item) {
+        if (player == null || item == null || !ModUtils.isCuriosLoaded()) {
+            return false;
+        }
+        boolean[] found = {false};
+        CurioEquipUtil.forEachEquippedCurioStack(player, stack -> {
+            if (!stack.is(item)) {
+                return;
+            }
+            if (ModUtils.isStackInVanillaPlayerInventory(player, stack)) {
+                return;
+            }
+            if (isStackInHands(player, stack)) {
+                return;
+            }
+            found[0] = true;
+        });
+        return found[0];
     }
 
     public static void syncCurioOnlyStage(Player player, ItemStack stack, String stageId) {

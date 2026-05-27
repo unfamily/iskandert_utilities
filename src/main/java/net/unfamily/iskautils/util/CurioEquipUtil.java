@@ -7,8 +7,12 @@ import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
+import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
+
 import java.lang.reflect.Method;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Small helper to detect if an item is "equipped" via Curios without a hard dependency.
@@ -99,6 +103,53 @@ public final class CurioEquipUtil {
         }
     }
 
+    public static boolean isStackEquippedInCurios(Player player, ItemStack stack) {
+        if (player == null || stack == null || stack.isEmpty() || !ModUtils.isCuriosLoaded()) {
+            return false;
+        }
+        boolean[] found = {false};
+        forEachEquippedCurioStack(player, curioStack -> {
+            if (curioStack == stack) {
+                found[0] = true;
+            }
+        });
+        return found[0];
+    }
+
+    public static int countEquippedCurioStacks(Player player, Predicate<ItemStack> predicate) {
+        if (player == null || predicate == null || !ModUtils.isCuriosLoaded()) {
+            return 0;
+        }
+        int[] count = {0};
+        forEachEquippedCurioStack(player, stack -> {
+            if (predicate.test(stack)) {
+                count[0]++;
+            }
+        });
+        return count[0];
+    }
+
+    public static int countEquippedCursedRelics(Player player) {
+        return countEquippedCurioStacks(player, stack -> isCursedArtifactItem(stack.getItem()));
+    }
+
+    public static ItemStack findEquippedCurioStack(Player player, Item item) {
+        if (player == null || item == null || !ModUtils.isCuriosLoaded()) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack[] found = new ItemStack[1];
+        forEachEquippedCurioStack(player, stack -> {
+            if (found[0] == null && stack.is(item)) {
+                found[0] = stack;
+            }
+        });
+        return found[0] != null ? found[0] : ItemStack.EMPTY;
+    }
+
+    private static boolean isCursedArtifactItem(Item item) {
+        return item instanceof CursedRelicItem || item instanceof CursedCandleItem;
+    }
+
     private static boolean isInCuriosSlots(Player player, Item item) {
         final boolean[] found = {false};
         forEachEquippedCurioStack(player, stack -> {
@@ -107,5 +158,36 @@ public final class CurioEquipUtil {
             }
         });
         return found[0];
+    }
+
+    /**
+     * Finds an active item stack: Curios slots, then hands, then inventory.
+     */
+    public static ItemStack findActiveStack(Player player, Item item) {
+        if (player == null || item == null) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack[] curioFound = new ItemStack[1];
+        forEachEquippedCurioStack(player, stack -> {
+            if (curioFound[0] == null && stack.is(item)) {
+                curioFound[0] = stack;
+            }
+        });
+        if (curioFound[0] != null) {
+            return curioFound[0];
+        }
+        if (player.getMainHandItem().is(item)) {
+            return player.getMainHandItem();
+        }
+        if (player.getOffhandItem().is(item)) {
+            return player.getOffhandItem();
+        }
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (stack.is(item)) {
+                return stack;
+            }
+        }
+        return ItemStack.EMPTY;
     }
 }

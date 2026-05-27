@@ -39,17 +39,17 @@ public class NecroticCrystalHeartItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.cursed").getString()));
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc0").getString()));
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc1").getString()));
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc2").getString()));
-        tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc3").getString()));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.cursed"));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc0"));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc1"));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc2"));
+        tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.desc3"));
         
         if (Config.artifactsInfo) {
             if (!isArtifactsLoaded()) {
-                tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_required").getString()));
+                tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_required"));
             } else {
-                tooltipComponents.add(Component.literal(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded").getString()));
+                tooltipComponents.add(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded"));
             }
         }
     }

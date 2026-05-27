@@ -167,25 +167,22 @@ public class PortableDislocatorItem extends Item {
         }
     }
     
+    public static void tickEquipped(Player player, ItemStack stack, Level level) {
+        if (!level.isClientSide()) {
+            handlePendingTeleportation(player, level);
+            checkForTeleportRequest(player, stack, level);
+        }
+    }
+
     /**
      * Called every tick for every item in the inventory
      */
     @Override
     public void inventoryTick(ItemStack stack, net.minecraft.world.level.Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
         super.inventoryTick(stack, level, entity, slotId, isSelected);
-        
-        // Execute only for players
-        if (entity instanceof Player player) {
-            // Handle keybind on client side
-            if (level.isClientSide) {
-                tickInInventory(stack, level, player, slotId, isSelected);
-            }
-            
-            // Handle pending teleportation on server side
-            if (!level.isClientSide) {
-                handlePendingTeleportation(player, level);
-                checkForTeleportRequest(player, stack, level);
-            }
+
+        if (entity instanceof Player player && level.isClientSide) {
+            tickInInventory(stack, level, player, slotId, isSelected);
         }
     }
     

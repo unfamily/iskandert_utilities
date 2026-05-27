@@ -47,6 +47,7 @@ import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem;
+import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
 import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
 import net.unfamily.iskautils.item.custom.relic.IceDiamondItem;
 import net.unfamily.iskautils.item.custom.relic.OldBrickItem;
@@ -237,7 +238,7 @@ public class ModItems {
     public static final DeferredItem<Item> TOTEM_OF_PAIN = ITEMS.register("totem_of_pain",
             () -> new CursedRelicItem(new Item.Properties()));
     public static final DeferredItem<Item> CURSED_CANDLE = ITEMS.register("cursed_candle",
-            () -> new CursedRelicItem(new Item.Properties()));
+            () -> new CursedCandleItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> BUSTED_CROWN = ITEMS.register("busted_crown",
             () -> new CursedRelicItem(new Item.Properties()));
     public static final DeferredItem<Item> RITUAL_GAUNTLET = ITEMS.register("ritual_gauntlet",

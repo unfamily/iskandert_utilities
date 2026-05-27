@@ -98,25 +98,17 @@ public class GhostBrazierItem extends Item {
         }
     }
 
+    public static void tickEquipped(ServerPlayer serverPlayer) {
+        GhostBrazierData.setHasGhostBrazier(serverPlayer, true);
+    }
+
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
         super.inventoryTick(stack, level, entity, slotId, isSelected);
 
-        // Execute only for players
-        if (entity instanceof Player player) {
-            // Handle keybind on client side
-            if (level.isClientSide) {
-                // Check if the ghost brazier keybind was pressed
-                if (KeyBindings.consumeGhostBrazierToggleKeyClick()) {
-                    // Send toggle request to server
-                    ModMessages.sendGhostBrazierTogglePacket();
-                }
-            }
-
-            // Mark that this player has a Ghost Brazier (server side)
-            // Works for both normal inventory and Curios (Curios calls inventoryTick automatically)
-            if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-                GhostBrazierData.setHasGhostBrazier(serverPlayer, true);
+        if (entity instanceof Player player && level.isClientSide) {
+            if (KeyBindings.consumeGhostBrazierToggleKeyClick()) {
+                ModMessages.sendGhostBrazierTogglePacket();
             }
         }
     }

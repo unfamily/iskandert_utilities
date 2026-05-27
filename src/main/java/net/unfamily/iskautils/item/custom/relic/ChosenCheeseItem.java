@@ -50,8 +50,8 @@ public class ChosenCheeseItem extends Item {
         super.appendHoverText(stack, context, tooltip, flag);
         int y = getLevel(stack);
         int x = Config.chosenCheeseMax;
-        tooltip.add(Component.translatable("tooltip.iska_utils.chosen_cheese.desc1"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.chosen_cheese.desc0", y, x));
+        tooltip.add(Component.translatable("tooltip.iska_utils.chosen_cheese.desc0"));
+        tooltip.add(Component.translatable("tooltip.iska_utils.chosen_cheese.desc1", y, x));
     }
 
     @Override
@@ -85,8 +85,14 @@ public class ChosenCheeseItem extends Item {
         }
 
         ItemStack other = player.getInventory().getItem(foundSlot);
-        int inc = Math.max(1, getLevel(other));
-        setLevel(stack, Math.min(Config.chosenCheeseMax, getLevel(stack) + inc));
+        int handLevel = getLevel(stack);
+        int otherLevel = getLevel(other);
+        if (handLevel >= Config.chosenCheeseMax || otherLevel >= Config.chosenCheeseMax) {
+            return InteractionResultHolder.pass(stack);
+        }
+
+        int inc = Math.max(1, otherLevel);
+        setLevel(stack, Math.min(Config.chosenCheeseMax, handLevel + inc));
         other.shrink(1);
         return InteractionResultHolder.success(stack);
     }

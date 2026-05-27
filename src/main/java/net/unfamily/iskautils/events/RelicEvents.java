@@ -45,9 +45,8 @@ public class RelicEvents {
         if (!StageRegistry.playerHasStage(player, THE_ROOTS_STAGE)) return;
 
         // The Roots: random mining speed boost. Keep it bounded.
-        float original = event.getOriginalSpeed();
         float mult = 1.0f + (player.getRandom().nextFloat() * 1.0f); // 1.0 .. 2.0
-        event.setNewSpeed(original * mult);
+        event.setNewSpeed(event.getNewSpeed() * mult);
     }
 }
 

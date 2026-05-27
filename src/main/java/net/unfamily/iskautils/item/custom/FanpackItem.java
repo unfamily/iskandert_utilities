@@ -162,49 +162,31 @@ public class FanpackItem extends VectorCharmItem {
     
     
     /**
-     * This method is called every tick for every item in the inventory
+     * Server-side heartbeat for flight stage and energy (Curios, hands, or inventory).
      */
-    @Override
-    public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-        
-        if (entity instanceof Player player && !level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-            // Apply Vector Charm movement (parent class handles this)
-            // Flight is handled by FanpackFlightHandler event
-            
-            // Handle energy consumption for flight
-            // Check if flight energy consumption is enabled
-            boolean flightEnergyRequired = Config.fanpackFlightEnergyConsume > 0;
-            boolean hasEnoughEnergyForFlight = true;
-            
-            if (flightEnergyRequired && Config.fanpackEnergyCapacity > 0) {
-                int currentEnergy = this.getEnergyStored(stack);
-                int maxEnergy = this.getMaxEnergyStored(stack);
-                int requiredEnergy = Config.fanpackFlightEnergyConsume;
-                
-                // Check if we have enough energy for flight
-                hasEnoughEnergyForFlight = currentEnergy >= requiredEnergy;
-                
-                // Check if energy is at 10% or below and show warning
-                if (maxEnergy > 0 && currentEnergy <= maxEnergy * 0.1) {
-                    long currentTick = level.getGameTime();
-                    UUID playerId = player.getUUID();
-                    Long lastWarning = lastWarningTime.get(playerId);
-                    
-                    // Show warning every 2 seconds (40 ticks)
-                    if (lastWarning == null || currentTick - lastWarning >= WARNING_COOLDOWN) {
-                        // Calculate current energy percentage
-                        int energyPercent = (int) Math.round((currentEnergy * 100.0) / maxEnergy);
-                        
-                        // Show warning message in action bar with current percentage
-                        serverPlayer.displayClientMessage(
+    public void tickEquipped(ServerPlayer serverPlayer, ItemStack stack, Level level) {
+        boolean flightEnergyRequired = Config.fanpackFlightEnergyConsume > 0;
+        boolean hasEnoughEnergyForFlight = true;
+
+        if (flightEnergyRequired && Config.fanpackEnergyCapacity > 0) {
+            int currentEnergy = this.getEnergyStored(stack);
+            int maxEnergy = this.getMaxEnergyStored(stack);
+            int requiredEnergy = Config.fanpackFlightEnergyConsume;
+
+            hasEnoughEnergyForFlight = currentEnergy >= requiredEnergy;
+
+            if (maxEnergy > 0 && currentEnergy <= maxEnergy * 0.1) {
+                long currentTick = level.getGameTime();
+                UUID playerId = serverPlayer.getUUID();
+                Long lastWarning = lastWarningTime.get(playerId);
+
+                if (lastWarning == null || currentTick - lastWarning >= WARNING_COOLDOWN) {
+                    int energyPercent = (int) Math.round((currentEnergy * 100.0) / maxEnergy);
+                    serverPlayer.displayClientMessage(
                             Component.translatable("message.iska_utils.fanpack.low_energy", energyPercent)
-                                .withStyle(net.minecraft.ChatFormatting.RED),
-                            true // action bar
-                        );
-                        
-                        // Play breeze sound
-                        level.playSound(
+                                    .withStyle(net.minecraft.ChatFormatting.RED),
+                            true);
+                    level.playSound(
                             null,
                             serverPlayer.getX(),
                             serverPlayer.getY(),
@@ -212,38 +194,34 @@ public class FanpackItem extends VectorCharmItem {
                             SoundEvents.BREEZE_IDLE_AIR,
                             SoundSource.PLAYERS,
                             0.5f,
-                            1.0f
-                        );
-                        
-                        lastWarningTime.put(playerId, currentTick);
-                    }
-                }
-                
-                // If player is flying, consume energy (but not if in spectator or creative mode)
-                if (player.getAbilities().flying && currentEnergy >= requiredEnergy 
-                        && !player.getAbilities().instabuild && !player.isSpectator()) {
-                    int newEnergy = currentEnergy - requiredEnergy;
-                    this.setEnergyStored(stack, newEnergy);
+                            1.0f);
+                    lastWarningTime.put(playerId, currentTick);
                 }
             }
-            
-            // Set internal stage to indicate fanpack is present (heartbeat)
-            // Only add stage if we have enough energy for flight (or energy is not required)
-            // This works for items in inventory or hands
-            if (hasEnoughEnergyForFlight) {
-                StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
-            } else {
-                // Not enough energy - remove stage if present
-                if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight0")) {
-                    StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
-                }
-            }
-            
-            // Auto-remove flight1 stage if present (indicates handler detected it)
-            if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight1")) {
-                StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1", true);
+
+            if (serverPlayer.getAbilities().flying && currentEnergy >= requiredEnergy
+                    && !serverPlayer.getAbilities().instabuild && !serverPlayer.isSpectator()) {
+                this.setEnergyStored(stack, currentEnergy - requiredEnergy);
             }
         }
+
+        if (hasEnoughEnergyForFlight) {
+            StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
+        } else if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight0")) {
+            StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0", true);
+        }
+
+        if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight1")) {
+            StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight1", true);
+        }
+    }
+
+    /**
+     * This method is called every tick for every item in the inventory
+     */
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
+        super.inventoryTick(stack, level, entity, slotId, isSelected);
     }
     
     
