@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -39,6 +40,12 @@ public class TemporalOverclockerChipsetItem extends Item {
                 .withStyle(ChatFormatting.GRAY));
     }
     
+    private static void sendActionBar(Player player, Component message) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.displayClientMessage(message, true);
+        }
+    }
+    
     @Override
     @NotNull
     public InteractionResult useOn(UseOnContext context) {
@@ -59,15 +66,23 @@ public class TemporalOverclockerChipsetItem extends Item {
             CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
             CompoundTag tag = customData.copyTag();
             if (tag.contains("LinkingOverclocker")) {
-                // We're already linking, cancel
-                tag.remove("LinkingOverclocker");
-                stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-                player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.linking_cancelled"));
+                long existingPos = tag.getLong("LinkingOverclocker");
+                if (existingPos == pos.asLong()) {
+                    // Same overclocker: toggle off linking mode
+                    tag.remove("LinkingOverclocker");
+                    stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+                    sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.linking_cancelled"));
+                } else {
+                    // Different overclocker: switch linking session without extra click
+                    tag.putLong("LinkingOverclocker", pos.asLong());
+                    stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+                    sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.linking_started"));
+                }
             } else {
                 // Start linking
                 tag.putLong("LinkingOverclocker", pos.asLong());
                 stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-                player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.linking_started"));
+                sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.linking_started"));
             }
             return InteractionResult.CONSUME;
         }
@@ -83,21 +98,21 @@ public class TemporalOverclockerChipsetItem extends Item {
             if (overclockerBE instanceof TemporalOverclockerBlockEntity overclocker) {
                 // Verify we're not trying to link the block to itself
                 if (pos.equals(overclockerPos)) {
-                    player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.cannot_link_self"));
+                    sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.cannot_link_self"));
                     return InteractionResult.FAIL;
                 }
                 
                 // Verify the target block is not air. It's acceptable if it doesn't have a BlockEntity.
                 net.minecraft.world.level.block.state.BlockState targetState = level.getBlockState(pos);
                 if (targetState.isAir()) {
-                    player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
+                    sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
                     return InteractionResult.FAIL;
                 }
                 
                 // If already linked, remove it
                 if (overclocker.isLinked(pos)) {
                     if (overclocker.removeLinkedBlock(pos)) {
-                        player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_removed"));
+                        sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.link_removed"));
                         // Keep the binding to the overclocker so the player can link more blocks
                     }
                 } else {
@@ -106,18 +121,18 @@ public class TemporalOverclockerChipsetItem extends Item {
                     if (error == null) {
                         // Try to add the link
                         if (overclocker.addLinkedBlock(pos)) {
-                            player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_success"));
+                            sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.link_success"));
                             // Keep the binding to the overclocker so the player can link more blocks
                         } else {
-                            player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
+                            sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
                         }
                     } else {
                         // Show specific error message
                         switch (error) {
-                            case "max_links" -> player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
-                            case "too_far" -> player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_too_far", net.unfamily.iskautils.Config.temporalOverclockerLinkRange));
-                            case "already_linked" -> player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
-                            default -> player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
+                            case "max_links" -> sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
+                            case "too_far" -> sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.link_too_far", net.unfamily.iskautils.Config.temporalOverclockerLinkRange));
+                            case "already_linked" -> sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
+                            default -> sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.link_failed"));
                         }
                     }
                 }
@@ -126,11 +141,10 @@ public class TemporalOverclockerChipsetItem extends Item {
                 // The overclocker block no longer exists, cancel linking
                 tag.remove("LinkingOverclocker");
                 stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-                player.sendSystemMessage(Component.translatable("item.iska_utils.temporal_overclocker_chip.overclocker_removed"));
+                sendActionBar(player, Component.translatable("item.iska_utils.temporal_overclocker_chip.overclocker_removed"));
             }
         }
         
         return InteractionResult.PASS;
     }
 }
-

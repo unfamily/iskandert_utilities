@@ -664,16 +664,16 @@ public class ScannerChipItem extends Item {
             }
         }
         
-        // Instructions - only show for regular chips
+        // Instructions - only show save-target hint for regular chips
         if (!isOresChip && !isMobsChip) {
             Component instruction0Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction0")
                     .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
             tooltipComponents.add(instruction0Text);
-            
-            Component instruction1Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction1")
-                    .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
-            tooltipComponents.add(instruction1Text);
         }
+        
+        Component instruction1Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction1")
+                .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
+        tooltipComponents.add(instruction1Text);
         
         // Add transfer instruction for all chips
         Component transferText = Component.translatable("item.iska_utils.scanner_chip.tooltip.transfer_instruction")

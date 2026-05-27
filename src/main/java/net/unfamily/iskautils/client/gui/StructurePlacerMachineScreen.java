@@ -169,7 +169,14 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         this.setInventoryButton = Button.builder(
                 Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory"),
                 button -> onSetInventoryPressed()
-        ).bounds(showButtonX, bottomRowY, buttonWidth, buttonHeight).build();
+        ).bounds(showButtonX, bottomRowY, buttonWidth, buttonHeight)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                        Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line1")
+                                .append("\n")
+                                .append(Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line2"))
+                                .append("\n")
+                                .append(Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line3"))))
+                .build();
         this.addRenderableWidget(this.setInventoryButton);
         
         // Right side: Redstone Mode Button (opposite to energy bar, between Show and Set Inventory)
@@ -458,9 +465,6 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // Render redstone mode button tooltip
         renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
         
-        // Render Set Inventory button tooltip
-        renderSetInventoryTooltip(guiGraphics, mouseX, mouseY);
-        
         // Render item tooltips
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
@@ -543,19 +547,6 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             
             // Use the standard tooltip rendering system (with background and border)
             guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
-        }
-    }
-    
-    private void renderSetInventoryTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Check if mouse is over the Set Inventory button
-        if (this.setInventoryButton != null && this.setInventoryButton.isHovered()) {
-            java.util.List<Component> tooltipLines = new java.util.ArrayList<>();
-            tooltipLines.add(Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line1"));
-            tooltipLines.add(Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line2"));
-            tooltipLines.add(Component.translatable("gui.iska_utils.structure_placer_machine.set_inventory.tooltip.line3"));
-            
-            // Use the correct method for multi-line tooltips
-            guiGraphics.renderComponentTooltip(this.font, tooltipLines, mouseX, mouseY);
         }
     }
     

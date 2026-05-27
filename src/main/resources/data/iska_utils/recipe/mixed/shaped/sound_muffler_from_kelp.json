@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " A ",
+    "ABA",
+    " A "
+  ],
+  "key": {
+    "A": {
+      "tag": "minecraft:wool"
+    },
+    "B": {
+      "item": "minecraft:dried_kelp_block"
+    }
+  },
+  "result": {
+    "id": "iska_utils:sound_muffler",
+    "count": 1
+  }
+}

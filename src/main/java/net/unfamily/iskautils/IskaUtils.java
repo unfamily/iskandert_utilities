@@ -387,10 +387,6 @@ public class IskaUtils {
             // Server is fully started, all external datapacks should be loaded by now
             LOGGER.info("Server fully started, all external datapacks should be available");
             
-            // Initialize a new session ID for markers
-            net.unfamily.iskautils.util.SessionVariables.resetScannerSessionId();
-            LOGGER.info("Initialized new scanner session ID: {}", net.unfamily.iskautils.util.SessionVariables.getScannerSessionId());
-            
             // Clean up any scanner markers that might be leftover from previous session
             try {
                 if (event.getServer().overworld() != null) {

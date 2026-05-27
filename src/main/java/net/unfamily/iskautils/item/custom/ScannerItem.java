@@ -56,10 +56,8 @@ public class ScannerItem extends Item {
     private static final String TARGET_MOB_TAG = "TargetMob";
     private static final String TARGET_GEN_TAG = "TargetGeneric";
     private static final String SCANNER_ID_TAG = "ScannerId";
-    private static final String CLEAR_MARKERS_TAG = "ClearMarkers";
     private static final String ENERGY_TAG = "Energy";
     private static final String SCAN_RANGE_TAG = "ScanRange"; 
-    private boolean clear_markers=false;
     private static final int TTL_MULTIPLIER = 1;
     
     // Map to track active markers by scanner ID
@@ -69,6 +67,8 @@ public class ScannerItem extends Item {
     private static final Map<BlockPos, Integer> MARKER_TTL = new HashMap<>();
 
     private static final int LOADING_BAR_LENGTH = 15; // Number of blocks █ in the loading bar
+    /** Extra hold ticks after scan requirement before the loading bar shows 100%. */
+    private static final int HOLD_LOADING_BAR_MARGIN_TICKS = 10;
     private static final Map<UUID, LoadingData> LOADING_DATA = new HashMap<>(); // Class to track loading data
     
     // Class to track loading data
@@ -312,11 +312,6 @@ public class ScannerItem extends Item {
                     // Consume energy if scan was successful
                     if (scanSuccess) {
                         consumeEnergyForOperation(itemstack);
-                        
-                        // Show completed loading bar
-                        if (!world.isClientSide) {
-                            displayLoadingBar(serverPlayer, requiredDuration, requiredDuration);
-                        }
                     }
                 } else {
                     // If player released before required time, clear existing markers
@@ -347,9 +342,6 @@ public class ScannerItem extends Item {
             tag.putUUID(SCANNER_ID_TAG, UUID.randomUUID());
         }
         
-        // Set clear_markers state
-        tag.putBoolean(CLEAR_MARKERS_TAG, clear_markers);
-        
         // Save data to ItemStack
         itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
@@ -362,14 +354,7 @@ public class ScannerItem extends Item {
         if (!tag.contains(TARGET_BLOCK_TAG)) {
             return null;
         }
-        
-        // Read clear_markers state
-        if (tag.contains(CLEAR_MARKERS_TAG)) {
-            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
-        } else {
-            clear_markers = false;
-        }
-        
+
         String blockId = tag.getString(TARGET_BLOCK_TAG);
         return BuiltInRegistries.BLOCK.get(ResourceLocation.parse(blockId));
     }
@@ -379,11 +364,6 @@ public class ScannerItem extends Item {
      */
     private String getTargetMob(ItemStack itemStack) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        
-        // Read clear_markers state if present
-        if (tag.contains(CLEAR_MARKERS_TAG)) {
-            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
-        }
         
         if (!tag.contains(TARGET_MOB_TAG)) {
             LOGGER.debug("No target mob found in item");
@@ -402,11 +382,6 @@ public class ScannerItem extends Item {
      */
     private String getGenericTarget(ItemStack itemStack) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        
-        // Read clear_markers state if present
-        if (tag.contains(CLEAR_MARKERS_TAG)) {
-            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
-        }
         
         if (!tag.contains(TARGET_GEN_TAG)) {
             return null;
@@ -440,9 +415,6 @@ public class ScannerItem extends Item {
         if (!tag.contains(SCAN_RANGE_TAG)) {
             tag.putInt(SCAN_RANGE_TAG, Config.scannerDefaultRange);
         }
-        
-        // Set clear_markers state
-        tag.putBoolean(CLEAR_MARKERS_TAG, clear_markers);
         
         // Save data to ItemStack
         itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
@@ -530,6 +502,55 @@ public class ScannerItem extends Item {
         // Display message to player
         player.displayClientMessage(Component.translatable("item.iska_utils.scanner.range_set", nextRange), true);
     }
+
+    /**
+     * Returns sorted scan range steps from config up to maxRange (inclusive).
+     * If maxRange is not in the configured options, it is appended as the final step.
+     */
+    private static List<Integer> getRangeStepsUpTo(int maxRange) {
+        java.util.TreeSet<Integer> steps = new java.util.TreeSet<>();
+        if (Config.scannerRangeOptions != null) {
+            for (Integer option : Config.scannerRangeOptions) {
+                if (option != null && option > 0 && option <= maxRange) {
+                    steps.add(option);
+                }
+            }
+        }
+        if (steps.isEmpty() || steps.last() < maxRange) {
+            steps.add(maxRange);
+        }
+        return new ArrayList<>(steps);
+    }
+
+    private static int countChunksForRangeSteps(List<Integer> rangeSteps) {
+        int total = 0;
+        for (int ringRange : rangeSteps) {
+            int chunkRadius = Math.max(1, ringRange / 16);
+            total += (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
+        }
+        return total;
+    }
+
+    /** Horizontal (XZ) distance only; vertical offset does not affect scan range. */
+    private static boolean isWithinHorizontalRange(Player player, BlockPos pos, long ringRangeSq) {
+        double dx = (pos.getX() + 0.5) - player.getX();
+        double dz = (pos.getZ() + 0.5) - player.getZ();
+        return dx * dx + dz * dz <= ringRangeSq;
+    }
+
+    private static boolean isWithinHorizontalRange(Player player, double x, double z, double ringRangeSquared) {
+        double dx = x - player.getX();
+        double dz = z - player.getZ();
+        return dx * dx + dz * dz <= ringRangeSquared;
+    }
+
+    private static void sendScanLimitReachedMessage(ServerPlayer player, int maxLimit) {
+        player.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_limit_reached", maxLimit), true);
+    }
+
+    private static int getHoldLoadingBarTicks() {
+        return Config.scannerScanDuration + HOLD_LOADING_BAR_MARGIN_TICKS;
+    }
     
     /**
      * Removes all existing markers for this scanner
@@ -608,13 +629,6 @@ public class ScannerItem extends Item {
         tag.remove(TARGET_MOB_TAG);
         tag.remove(TARGET_GEN_TAG);
         
-        // Set clear_markers from NBT
-        if (tag.contains(CLEAR_MARKERS_TAG)) {
-            clear_markers = tag.getBoolean(CLEAR_MARKERS_TAG);
-        } else {
-            clear_markers = false;
-        }
-        
         // Save data to ItemStack
         itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
@@ -643,8 +657,8 @@ public class ScannerItem extends Item {
         int maxBlocksScan = Config.scannerMaxBlocks;
         int baseTTL = Config.scannerMarkerTTL;
         
-        // Determine the number of chunks to scan based on the configured radius
-        int chunkRadius = Math.max(1, scanRange / 16);
+        // Scan from smallest configured range outward so nearby matches are prioritized
+        List<Integer> rangeSteps = getRangeStepsUpTo(scanRange);
         
         // Create a set of currently existing marker positions
         Set<BlockPos> existingMarkerPositions = new HashSet<>(scannerMarkers);
@@ -655,69 +669,47 @@ public class ScannerItem extends Item {
         int remainingCapacity = infiniteBlocks ? Integer.MAX_VALUE : maxBlocksScan - existingMarkerPositions.size();
         
         if (!infiniteBlocks && remainingCapacity <= 0) {
-            // Already at maximum capacity
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan), true);
+            sendScanLimitReachedMessage(player, maxBlocksScan);
             return;
         }
         
-        // Calculate the total number of chunks to scan 
-        int totalChunksToScan = (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
-        int currentChunksScanned = 0;
-        
-        // Scan in a radius based on the configured scan range
+        // Scan in expanding radius rings
         int newMarkersFound = 0;
         boolean limitReached = false;
         
         scanLoop:
-        for (int chunkX = playerChunkPos.x - chunkRadius; chunkX <= playerChunkPos.x + chunkRadius; chunkX++) {
-            for (int chunkZ = playerChunkPos.z - chunkRadius; chunkZ <= playerChunkPos.z + chunkRadius; chunkZ++) {
+        for (int ringRange : rangeSteps) {
+            int chunkRadius = Math.max(1, ringRange / 16);
+            long ringRangeSq = (long) ringRange * ringRange;
+            for (int chunkX = playerChunkPos.x - chunkRadius; chunkX <= playerChunkPos.x + chunkRadius; chunkX++) {
+                for (int chunkZ = playerChunkPos.z - chunkRadius; chunkZ <= playerChunkPos.z + chunkRadius; chunkZ++) {
                 ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
                 
                 // Check if chunk is loaded
                 if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
-                    currentChunksScanned++;
                     continue;
                 }
-                
-                // Update the loading bar for each chunk
-                float percentage = (float) currentChunksScanned / totalChunksToScan;
-                displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
                 
                 // Scan the chunk
                 for (int x = currentChunkPos.getMinBlockX(); x <= currentChunkPos.getMaxBlockX(); x++) {
                     for (int z = currentChunkPos.getMinBlockZ(); z <= currentChunkPos.getMaxBlockZ(); z++) {
-                        // Prioritize blocks closer to the player's Y level
-                        int playerY = playerPos.getY();
-                        
-                        // Scan from player Y outward in both directions
-                        for (int yOffset = 0; yOffset < level.getMaxBuildHeight() - level.getMinBuildHeight(); yOffset++) {
-                            // Try above player first, then below
-                            for (int yDir = 0; yDir <= 1; yDir++) {
-                                int y = playerY + (yDir == 0 ? yOffset : -yOffset);
-                                
-                                // Skip if out of world bounds
-                                if (y < level.getMinBuildHeight() || y > level.getMaxBuildHeight()) {
-                                    continue;
-                                }
-                                
-                                BlockPos pos = new BlockPos(x, y, z);
-                                
-                                // Check if it's too far from the player
-                                if (player.distanceToSqr(pos.getX(), pos.getY(), pos.getZ()) > scanRange * scanRange) {
-                                    continue;
-                                }
-                                
-                                // Check the block
-                                if (level.getBlockState(pos).getBlock() == targetBlock) {
-                                    // Skip if we already have a marker at this position
+                        for (int y = level.getMinBuildHeight(); y <= level.getMaxBuildHeight(); y++) {
+                            BlockPos pos = new BlockPos(x, y, z);
+                            
+                            if (!isWithinHorizontalRange(player, pos, ringRangeSq)) {
+                                continue;
+                            }
+                            
+                            // Check the block
+                            if (level.getBlockState(pos).getBlock() == targetBlock) {
+                                    // Skip positions already marked (do not re-scan)
                                     if (existingMarkerPositions.contains(pos)) {
-                                        // Refresh TTL for existing marker
-                                        MARKER_TTL.put(pos, baseTTL);
                                         continue;
                                     }
                                     
                                     // Add the block position to the scanner's markers
                                     scannerMarkers.add(pos);
+                                    existingMarkerPositions.add(pos);
                                     newMarkersFound++;
                                     
                                     // Calculate TTL multiplier based on the number of scanned blocks
@@ -794,29 +786,20 @@ public class ScannerItem extends Item {
                                         break scanLoop;
                                     }
                                 }
-                            }
                         }
                     }
                 }
                 
-                // Increment scanned chunks
-                currentChunksScanned++;
             }
         }
-        
-        Component message;
-        if (limitReached) {
-            message = Component.translatable("item.iska_utils.scanner.found_blocks_limit", 
-                    newMarkersFound, targetBlock.getName(), maxBlocksScan);
-        } else {
-            message = Component.translatable("item.iska_utils.scanner.found_blocks", 
-                    newMarkersFound, targetBlock.getName());
         }
         
-        player.displayClientMessage(message, true);
-        
-        // Make sure to show the completed bar at the end
-        displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
+        if (limitReached) {
+            sendScanLimitReachedMessage(player, maxBlocksScan);
+        } else {
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_blocks",
+                    newMarkersFound, targetBlock.getName()), true);
+        }
     }
     
     /**
@@ -871,16 +854,13 @@ public class ScannerItem extends Item {
         // Get scan range from scanner (or use default)
         int scanRange = getScanRange(itemStack);
         int maxTTL = Config.scannerMarkerTTL;
+        int maxMarkersScan = Config.scannerMaxBlocks;
         
-        // Calculate the total number of chunks to scan
-        int chunkRadius = Math.max(1, scanRange / 16);
-        int totalChunksToScan = (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
-        int currentChunksScanned = 0;
+        // Scan from smallest configured range outward
+        List<Integer> rangeSteps = getRangeStepsUpTo(scanRange);
         
-        // Scan in a radius
         int markersFound = 0;
-        
-        double scanRangeSquared = scanRange * scanRange;
+        boolean limitReached = false;
         
         // Create a set of currently existing marker positions
         Set<BlockPos> existingMarkerPositions = new HashSet<>();
@@ -891,20 +871,28 @@ public class ScannerItem extends Item {
         // Get or create a list for this scanner's markers
         List<BlockPos> scannerMarkers = ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>());
         
-        // Scan the chunks in the area
-        for (int chunkX = playerPos.getX() / 16 - chunkRadius; chunkX <= playerPos.getX() / 16 + chunkRadius; chunkX++) {
-            for (int chunkZ = playerPos.getZ() / 16 - chunkRadius; chunkZ <= playerPos.getZ() / 16 + chunkRadius; chunkZ++) {
+        boolean infiniteMarkers = maxMarkersScan == -1;
+        int remainingCapacity = infiniteMarkers ? Integer.MAX_VALUE : maxMarkersScan - existingMarkerPositions.size();
+        if (!infiniteMarkers && remainingCapacity <= 0) {
+            sendScanLimitReachedMessage(player, maxMarkersScan);
+            return;
+        }
+        
+        int playerChunkX = playerPos.getX() >> 4;
+        int playerChunkZ = playerPos.getZ() >> 4;
+        
+        scanLoop:
+        for (int ringRange : rangeSteps) {
+            int chunkRadius = Math.max(1, ringRange / 16);
+            double ringRangeSquared = (double) ringRange * ringRange;
+            for (int chunkX = playerChunkX - chunkRadius; chunkX <= playerChunkX + chunkRadius; chunkX++) {
+                for (int chunkZ = playerChunkZ - chunkRadius; chunkZ <= playerChunkZ + chunkRadius; chunkZ++) {
                 ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
                 
                 // Check if the chunk is loaded
                 if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
-                    currentChunksScanned++;
                     continue;
                 }
-                
-                // Update the loading bar for each chunk
-                float percentage = (float) currentChunksScanned / totalChunksToScan;
-                displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
                 
                 // Search for entities in the current chunk
                 List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(
@@ -913,11 +901,8 @@ public class ScannerItem extends Item {
                         currentChunkPos.getMinBlockX(), level.getMinBuildHeight(), currentChunkPos.getMinBlockZ(),
                         currentChunkPos.getMaxBlockX(), level.getMaxBuildHeight(), currentChunkPos.getMaxBlockZ()
                     ),
-                    entity -> {
-                        double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
-                        return distanceSq <= scanRangeSquared && 
-                               BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString().equals(targetMobId);
-                    }
+                    entity -> isWithinHorizontalRange(player, entity.getX(), entity.getZ(), ringRangeSquared)
+                            && BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString().equals(targetMobId)
                 );
                 
                 // Process the found entities
@@ -925,15 +910,14 @@ public class ScannerItem extends Item {
                     // Get the entity's position
                     BlockPos entityPos = entity.blockPosition();
                     
-                    // Skip if we already have a marker at this position
+                    // Skip positions already marked (do not re-scan)
                     if (existingMarkerPositions.contains(entityPos)) {
-                        // Refresh TTL for existing marker
-                        MARKER_TTL.put(entityPos, maxTTL);
                         continue;
                     }
                     
                     // Add the entity position to the scanner's markers
                     scannerMarkers.add(entityPos);
+                    existingMarkerPositions.add(entityPos);
                     markersFound++;
                     
                     // Calculate the final TTL
@@ -946,18 +930,23 @@ public class ScannerItem extends Item {
                     // Get color from config and apply alpha
                     int color = (Config.scannerDefaultAlpha << 24) | Config.scannerDefaultMobColor;
                     net.unfamily.iskautils.network.ModMessages.sendAddBillboardWithNamePacket(player, entityPos, color, finalTTL, entity.getName().getString());
+                    
+                    if (!infiniteMarkers && markersFound >= remainingCapacity) {
+                        limitReached = true;
+                        break scanLoop;
+                    }
                 }
                 
-                // Increment scanned chunks
-                currentChunksScanned++;
             }
         }
+        }
         
-        player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_mobs", 
-                markersFound, getLocalizedMobName(targetMobId)), true);
-        
-        // Make sure to show the completed bar at the end
-        displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
+        if (limitReached) {
+            sendScanLimitReachedMessage(player, maxMarkersScan);
+        } else {
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_mobs",
+                    markersFound, getLocalizedMobName(targetMobId)), true);
+        }
     }
 
     // ===== ENERGY MANAGEMENT METHODS =====
@@ -1228,15 +1217,14 @@ public class ScannerItem extends Item {
             // Calculate the completion percentage
             int totalDuration = getUseDuration(stack, entity);
             int ticksUsed = totalDuration - remainingUseDuration;
-            int requiredDuration = Config.scannerScanDuration;
             
             // Update loading data
             UUID playerId = player.getUUID();
             LOADING_DATA.computeIfAbsent(playerId, k -> new LoadingData()).update(ticksUsed);
             
-            // Show a loading bar to the player
-            if (ticksUsed % 5 == 0) { // Aggiorna ogni 5 tick per non spammare
-                displayLoadingBar(player, ticksUsed, requiredDuration);
+            // Show a loading bar to the player (fixed scale, independent from scan execution time)
+            if (ticksUsed % 2 == 0) {
+                displayLoadingBar(player, ticksUsed, getHoldLoadingBarTicks());
             }
         }
     }
@@ -1470,8 +1458,8 @@ public class ScannerItem extends Item {
         // Force alpha to be 80 for consistency
         defaultAlpha = 0x80;
         
-        // Determine the number of chunks to scan based on the configured radius
-        int chunkRadius = Math.max(1, scanRange / 16);
+        // Scan from smallest configured range outward so nearby matches are prioritized
+        List<Integer> rangeSteps = getRangeStepsUpTo(scanRange);
         
         // Create a set of currently existing marker positions
         Set<BlockPos> existingMarkerPositions = new HashSet<>(scannerMarkers);
@@ -1482,16 +1470,11 @@ public class ScannerItem extends Item {
         int remainingCapacity = infiniteBlocks ? Integer.MAX_VALUE : maxBlocksScan - existingMarkerPositions.size();
         
         if (!infiniteBlocks && remainingCapacity <= 0) {
-            // Already at maximum capacity
-            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.max_markers_reached", maxBlocksScan), true);
+            sendScanLimitReachedMessage(player, maxBlocksScan);
             return;
         }
         
-        // Calculate the total number of chunks to scan 
-        int totalChunksToScan = (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
-        int currentChunksScanned = 0;
-        
-        // Scan in a radius based on the configured scan range
+        // Scan in expanding radius rings
         int newMarkersFound = 0;
         boolean limitReached = false;
         
@@ -1514,46 +1497,30 @@ public class ScannerItem extends Item {
         int defaultOreColor = Config.scannerDefaultOreColor; // Default ore color without alpha
         
         scanLoop:
-        for (int chunkX = playerChunkPos.x - chunkRadius; chunkX <= playerChunkPos.x + chunkRadius; chunkX++) {
-            for (int chunkZ = playerChunkPos.z - chunkRadius; chunkZ <= playerChunkPos.z + chunkRadius; chunkZ++) {
+        for (int ringRange : rangeSteps) {
+            int chunkRadius = Math.max(1, ringRange / 16);
+            long ringRangeSq = (long) ringRange * ringRange;
+            for (int chunkX = playerChunkPos.x - chunkRadius; chunkX <= playerChunkPos.x + chunkRadius; chunkX++) {
+                for (int chunkZ = playerChunkPos.z - chunkRadius; chunkZ <= playerChunkPos.z + chunkRadius; chunkZ++) {
                 ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
                 
                 // Check if chunk is loaded
                 if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
-                    currentChunksScanned++;
                     continue;
                 }
-                
-                // Update the loading bar for each chunk
-                float percentage = (float) currentChunksScanned / totalChunksToScan;
-                displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
                 
                 // Scan the chunk
                 for (int x = currentChunkPos.getMinBlockX(); x <= currentChunkPos.getMaxBlockX(); x++) {
                     for (int z = currentChunkPos.getMinBlockZ(); z <= currentChunkPos.getMaxBlockZ(); z++) {
-                        // Prioritize blocks closer to the player's Y level
-                        int playerY = playerPos.getY();
-                        
-                        // Scan from player Y outward in both directions
-                        for (int yOffset = 0; yOffset < level.getMaxBuildHeight() - level.getMinBuildHeight(); yOffset++) {
-                            // Try above player first, then below
-                            for (int yDir = 0; yDir <= 1; yDir++) {
-                                int y = playerY + (yDir == 0 ? yOffset : -yOffset);
-                                
-                                // Skip if out of world bounds
-                                if (y < level.getMinBuildHeight() || y > level.getMaxBuildHeight()) {
-                                    continue;
-                                }
-                                
-                                BlockPos pos = new BlockPos(x, y, z);
-                                
-                                // Check if it's too far from the player
-                                if (player.distanceToSqr(pos.getX(), pos.getY(), pos.getZ()) > scanRange * scanRange) {
-                                    continue;
-                                }
-                                
-                                // Check if the block is an ore
-                                BlockState blockState = level.getBlockState(pos);
+                        for (int y = level.getMinBuildHeight(); y <= level.getMaxBuildHeight(); y++) {
+                            BlockPos pos = new BlockPos(x, y, z);
+                            
+                            if (!isWithinHorizontalRange(player, pos, ringRangeSq)) {
+                                continue;
+                            }
+                            
+                            // Check if the block is an ore
+                            BlockState blockState = level.getBlockState(pos);
                                 Block block = blockState.getBlock();
                                 String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
                                 
@@ -1622,15 +1589,14 @@ public class ScannerItem extends Item {
                                 }
                                 
                                 if (isOre) {
-                                    // Skip if we already have a marker at this position
+                                    // Skip positions already marked (do not re-scan)
                                     if (existingMarkerPositions.contains(pos)) {
-                                        // Refresh TTL for existing marker
-                                        MARKER_TTL.put(pos, baseTTL);
                                         continue;
                                     }
                                     
                                     // Add the block position to the scanner's markers
                                     scannerMarkers.add(pos);
+                                    existingMarkerPositions.add(pos);
                                     newMarkersFound++;
                                     
                                     // Calculate TTL multiplier based on the number of scanned blocks
@@ -1705,29 +1671,20 @@ public class ScannerItem extends Item {
                                         break scanLoop;
                                     }
                                 }
-                            }
                         }
                     }
                 }
                 
-                // Increment scanned chunks
-                currentChunksScanned++;
             }
         }
-        
-        Component message;
-        if (limitReached) {
-            message = Component.translatable("item.iska_utils.scanner.found_ores_limit", 
-                    newMarkersFound, maxBlocksScan);
-        } else {
-            message = Component.translatable("item.iska_utils.scanner.found_ores", 
-                    newMarkersFound);
         }
         
-        player.displayClientMessage(message, true);
-        
-        // Make sure to show the completed bar at the end
-        displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
+        if (limitReached) {
+            sendScanLimitReachedMessage(player, maxBlocksScan);
+        } else {
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_ores",
+                    newMarkersFound), true);
+        }
     }
 
     /**
@@ -1747,20 +1704,17 @@ public class ScannerItem extends Item {
         // Get scan range from scanner (or use default)
         int scanRange = getScanRange(itemStack);
         int maxTTL = Config.scannerMarkerTTL;
+        int maxMarkersScan = Config.scannerMaxBlocks;
         int defaultAlpha = Config.scannerDefaultAlpha;
         
         // Force alpha to be 80 for consistency
         defaultAlpha = 0x80;
         
-        // Calculate the total number of chunks to scan
-        int chunkRadius = Math.max(1, scanRange / 16);
-        int totalChunksToScan = (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
-        int currentChunksScanned = 0;
+        // Scan from smallest configured range outward
+        List<Integer> rangeSteps = getRangeStepsUpTo(scanRange);
         
-        // Scan in a radius
         int markersFound = 0;
-        
-        double scanRangeSquared = scanRange * scanRange;
+        boolean limitReached = false;
         
         // Create a set of currently existing marker positions
         Set<BlockPos> existingMarkerPositions = new HashSet<>();
@@ -1770,6 +1724,13 @@ public class ScannerItem extends Item {
         
         // Get or create a list for this scanner's markers
         List<BlockPos> scannerMarkers = ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>());
+        
+        boolean infiniteMarkers = maxMarkersScan == -1;
+        int remainingCapacity = infiniteMarkers ? Integer.MAX_VALUE : maxMarkersScan - existingMarkerPositions.size();
+        if (!infiniteMarkers && remainingCapacity <= 0) {
+            sendScanLimitReachedMessage(player, maxMarkersScan);
+            return;
+        }
         
         // Load mob color mappings from config
         Map<String, Integer> mobColorMap = new HashMap<>();
@@ -1789,20 +1750,21 @@ public class ScannerItem extends Item {
         // Default color for mobs not in the config (magenta/purple)
         int defaultMobColor = Config.scannerDefaultMobColor; // Without alpha
         
-        // Scan the chunks in the area
-        for (int chunkX = playerPos.getX() / 16 - chunkRadius; chunkX <= playerPos.getX() / 16 + chunkRadius; chunkX++) {
-            for (int chunkZ = playerPos.getZ() / 16 - chunkRadius; chunkZ <= playerPos.getZ() / 16 + chunkRadius; chunkZ++) {
+        int playerChunkX = playerPos.getX() >> 4;
+        int playerChunkZ = playerPos.getZ() >> 4;
+        
+        scanLoop:
+        for (int ringRange : rangeSteps) {
+            int chunkRadius = Math.max(1, ringRange / 16);
+            double ringRangeSquared = (double) ringRange * ringRange;
+            for (int chunkX = playerChunkX - chunkRadius; chunkX <= playerChunkX + chunkRadius; chunkX++) {
+                for (int chunkZ = playerChunkZ - chunkRadius; chunkZ <= playerChunkZ + chunkRadius; chunkZ++) {
                 ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
                 
                 // Check if the chunk is loaded
                 if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
-                    currentChunksScanned++;
                     continue;
                 }
-                
-                // Update the loading bar for each chunk
-                float percentage = (float) currentChunksScanned / totalChunksToScan;
-                displayLoadingBar(player, (int)(percentage * Config.scannerScanDuration), Config.scannerScanDuration);
                 
                 // Search for all entities in the current chunk
                 List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(
@@ -1811,12 +1773,9 @@ public class ScannerItem extends Item {
                         currentChunkPos.getMinBlockX(), level.getMinBuildHeight(), currentChunkPos.getMinBlockZ(),
                         currentChunkPos.getMaxBlockX(), level.getMaxBuildHeight(), currentChunkPos.getMaxBlockZ()
                     ),
-                    entity -> {
-                        double distanceSq = player.distanceToSqr(entity.getX(), entity.getY(), entity.getZ());
-                        return distanceSq <= scanRangeSquared
-                                && !(entity instanceof Player)
-                                && ScannerMobCategories.matches(entity, genericTarget != null ? genericTarget : ScannerMobCategories.LEGACY_ALL);
-                    }
+                    entity -> isWithinHorizontalRange(player, entity.getX(), entity.getZ(), ringRangeSquared)
+                            && !(entity instanceof Player)
+                            && ScannerMobCategories.matches(entity, genericTarget != null ? genericTarget : ScannerMobCategories.LEGACY_ALL)
                 );
                 
                 // Process the found entities
@@ -1824,15 +1783,14 @@ public class ScannerItem extends Item {
                     // Get the entity's position
                     BlockPos entityPos = entity.blockPosition();
                     
-                    // Skip if we already have a marker at this position
+                    // Skip positions already marked (do not re-scan)
                     if (existingMarkerPositions.contains(entityPos)) {
-                        // Refresh TTL for existing marker
-                        MARKER_TTL.put(entityPos, maxTTL);
                         continue;
                     }
                     
                     // Add the entity position to the scanner's markers
                     scannerMarkers.add(entityPos);
+                    existingMarkerPositions.add(entityPos);
                     markersFound++;
                     
                     // Calculate the final TTL
@@ -1870,17 +1828,22 @@ public class ScannerItem extends Item {
                     
                     // Use MarkRenderer to add a billboard marker on the client side with the entity name
                     net.unfamily.iskautils.network.ModMessages.sendAddBillboardWithNamePacket(player, entityPos, colorWithAlpha, finalTTL, entityName);
+                    
+                    if (!infiniteMarkers && markersFound >= remainingCapacity) {
+                        limitReached = true;
+                        break scanLoop;
+                    }
                 }
                 
-                // Increment scanned chunks
-                currentChunksScanned++;
             }
         }
+        }
         
-        player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_all_mobs", markersFound), true);
-        
-        // Make sure to show the completed bar at the end
-        displayLoadingBar(player, Config.scannerScanDuration, Config.scannerScanDuration);
+        if (limitReached) {
+            sendScanLimitReachedMessage(player, maxMarkersScan);
+        } else {
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner.found_all_mobs", markersFound), true);
+        }
     }
 } 
 

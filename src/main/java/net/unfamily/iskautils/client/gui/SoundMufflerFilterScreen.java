@@ -148,7 +148,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
         int x1 = leftPos + BOTTOM_ROW_START_X;
         int x2 = x1 + BOTTOM_BUTTON_W + BOTTOM_BUTTON_GAP;
         int x3 = x2 + BOTTOM_BUTTON_W + BOTTOM_BUTTON_GAP;
-        denyAllowListButton = Button.builder(Component.translatable("gui.iska_utils.sound_muffler.deny_list"), btn -> onDenyAllowListClicked())
+        denyAllowListButton = Button.builder(Component.translatable("gui.iska_utils.sound_muffler.allow_list"), btn -> onDenyAllowListClicked())
                 .bounds(x1, buttonY, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
                 .build();
         saveButton = Button.builder(Component.translatable("gui.iska_utils.structure_placer.apply"), btn -> handleApply())
@@ -167,10 +167,18 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     }
 
     /**
-     * ESC and inventory key (E) return to parent (like Cancel); search box gets other keys when focused.
+     * ESC returns to parent; inventory key (E) returns to parent unless search box is focused.
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (searchBox != null && searchBox.isFocused()) {
+            if (searchBox.keyPressed(keyCode, scanCode, modifiers)) {
+                return true;
+            }
+            if (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+                return true;
+            }
+        }
         if (keyCode == 256) { // GLFW_KEY_ESCAPE
             handleCancel();
             return true;
@@ -178,9 +186,6 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
         if (minecraft != null && minecraft.options.keyInventory.matches(keyCode, scanCode)) {
             handleCancel();
             return true;
-        }
-        if (searchBox != null && searchBox.isFocused()) {
-            return searchBox.keyPressed(keyCode, scanCode, modifiers);
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
@@ -232,7 +237,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
             SoundMufflerBlockEntity be = menu.getBlockEntityFromLevel(minecraft != null ? minecraft.level : null);
             boolean allowList = be != null && be.isAllowList();
             denyAllowListButton.setMessage(
-                    allowList ? Component.translatable("gui.iska_utils.sound_muffler.allow_list") : Component.translatable("gui.iska_utils.sound_muffler.deny_list"));
+                    allowList ? Component.translatable("gui.iska_utils.sound_muffler.deny_list") : Component.translatable("gui.iska_utils.sound_muffler.allow_list"));
         }
     }
 
