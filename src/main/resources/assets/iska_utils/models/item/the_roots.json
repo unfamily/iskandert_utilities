@@ -2,6 +2,12 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "iska_utils:item/the_roots"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 1.0 },
+      "model": "iska_utils:item/the_root"
+    }
+  ]
 }
 

@@ -54,7 +54,7 @@ public final class RelicTickEffects {
         if (StageRegistry.playerHasStage(player, RelicEquipStages.OLD_BRICK)) {
             if (existing == null) {
                 armor.addTransientModifier(new AttributeModifier(
-                        OLD_BRICK_ARMOR_ID, 2.0, AttributeModifier.Operation.ADD_VALUE));
+                        OLD_BRICK_ARMOR_ID, Config.oldBrickArmorBonus, AttributeModifier.Operation.ADD_VALUE));
             }
         } else if (existing != null) {
             armor.removeModifier(OLD_BRICK_ARMOR_ID);
@@ -75,10 +75,13 @@ public final class RelicTickEffects {
         }
 
         ItemStack cheese = findEquippedStack(player, ChosenCheeseItem.class);
+        if (cheese != null) {
+            ChosenCheeseItem.syncDisplayModel(cheese);
+        }
         int effective = cheese != null
                 ? Math.min(ChosenCheeseItem.getLevel(cheese), Config.chosenCheeseMax)
                 : 0;
-        double bonus = effective * 2.0;
+        double bonus = effective * Config.chosenCheeseHpPerLevel;
         AttributeModifier existing = maxHealth.getModifier(CHOSEN_CHEESE_HP_ID);
         if (existing != null && existing.amount() == bonus) {
             return;
@@ -97,7 +100,7 @@ public final class RelicTickEffects {
         if (!StageRegistry.playerHasStage(player, RelicEquipStages.ICE_DIAMOND)) {
             return;
         }
-        if ((player.tickCount % 20) != 0) {
+        if ((player.tickCount % Config.iceDiamondRepairIntervalTicks) != 0) {
             return;
         }
         ItemStack iceDiamond = findEquippedStack(player, IceDiamondItem.class);
@@ -151,9 +154,9 @@ public final class RelicTickEffects {
     private static int computeIceDiamondCost(Level level, Player player) {
         Biome biome = level.getBiome(player.blockPosition()).value();
         float t = biome.getBaseTemperature();
-        if (t <= 0.15f) return 0;
-        if (t >= 1.5f) return 5;
-        return 1;
+        if (t <= Config.iceDiamondColdBiomeMaxTemp) return Config.iceDiamondColdRepairCost;
+        if (t >= Config.iceDiamondHotBiomeMinTemp) return Config.iceDiamondHotRepairCost;
+        return Config.iceDiamondTemperateRepairCost;
     }
 
     private static void clampHealth(ServerPlayer player) {

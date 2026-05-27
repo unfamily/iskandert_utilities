@@ -2,5 +2,6 @@
   "parent": "minecraft:block/cross",
   "textures": {
     "cross": "iska_utils:block/cursed_burning_flame"
-  }
+  },
+  "render_type": "cutout_mipped"
 }

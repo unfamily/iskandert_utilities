@@ -1,15 +1,22 @@
 package net.unfamily.iskautils.item.custom.relic;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.TooltipDisplay;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
+import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.CustomModelDataUtil;
+import net.unfamily.iskautils.util.RelicBalanceFormat;
 import net.unfamily.iskautils.util.RelicActivationUtil;
+import net.unfamily.iskautils.util.RelicTooltipUtil;
 
 import java.util.function.Consumer;
 
@@ -42,13 +49,23 @@ public class TheRootsItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
-        tooltip.accept(Component.translatable("tooltip.iska_utils.the_roots.desc0"));
-        tooltip.accept(Component.translatable("tooltip.iska_utils.the_roots.desc1"));
+        double maxMult = Config.theRootsBreakSpeedMinMultiplier + Config.theRootsBreakSpeedMaxBonus;
+        RelicTooltipUtil.appendDescLines(
+                tooltip,
+                "the_roots",
+                2,
+                RelicBalanceFormat.speedBonusPercent(Config.theRootsBreakSpeedMinMultiplier),
+                RelicBalanceFormat.speedBonusPercent(maxMult));
     }
 
-    private static boolean isUnixLike() {
+    public static boolean isUnixLike() {
         String os = System.getProperty("os.name", "").toLowerCase();
         return os.contains("linux") || os.contains("mac") || os.contains("unix") || os.contains("android");
+    }
+
+    /** Client-only: drives {@code custom_model_data} override to {@code the_root} texture. */
+    public static void syncClientCustomModelData(ItemStack stack) {
+        CustomModelDataUtil.setFloat0(stack, isUnixLike() ? 1.0F : 0.0F);
     }
 }
 

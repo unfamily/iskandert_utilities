@@ -201,13 +201,26 @@ public class BurningBrazierItem extends Item {
         onFlamePlaced(player, stack);
     }
 
+    protected String flamesTooltipDesc0Key() {
+        return "tooltip.iska_utils.burning_flames.desc0";
+    }
+
+    protected String flamesTooltipDesc2Key() {
+        return "tooltip.iska_utils.burning_flames.desc2";
+    }
+
+    public static void appendFlamesTooltip(Consumer<Component> tooltip, String desc0Key, String desc2Key) {
+        tooltip.accept(Component.translatable(desc0Key));
+        tooltip.accept(Component.translatable(
+                "tooltip.iska_utils.burning_flames.desc1",
+                KeybindTooltipUtil.keybindOrTranslation("key.iska_utils.burning_brazier_toggle", "BURNING_BRAZIER_TOGGLE_KEY")));
+        tooltip.accept(Component.translatable(desc2Key));
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
-        tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc0"));
-        tooltip.accept(Component.translatable(
-                "tooltip.iska_utils.burning_brazier.desc1",
-                KeybindTooltipUtil.keybindOrTranslation("key.iska_utils.burning_brazier_toggle", "BURNING_BRAZIER_TOGGLE_KEY")));
-        tooltip.accept(Component.translatable("tooltip.iska_utils.burning_brazier.desc2"));
+        appendFlamesTooltip(tooltip, flamesTooltipDesc0Key(), flamesTooltipDesc2Key());
     }
+
 }

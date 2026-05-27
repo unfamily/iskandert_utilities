@@ -6,6 +6,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 
+import net.unfamily.iskautils.util.RelicTooltipUtil;
+
 import java.util.function.Consumer;
 
 /**
@@ -20,7 +22,6 @@ public class IceDiamondItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, display, tooltip, flag);
-        tooltip.accept(Component.translatable("tooltip.iska_utils.ice_diamond.desc0"));
-        tooltip.accept(Component.translatable("tooltip.iska_utils.ice_diamond.desc1"));
+        RelicTooltipUtil.appendDescLines(tooltip, "ice_diamond");
     }
 }

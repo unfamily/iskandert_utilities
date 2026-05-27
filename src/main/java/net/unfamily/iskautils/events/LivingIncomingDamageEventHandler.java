@@ -25,8 +25,6 @@ public class LivingIncomingDamageEventHandler {
     public static final String NECRO_CRYSTAL_HEART_COUNTER = "necro_crystal_heart_hex";
     public static final String NECRO_CRYSTAL_HEART_EQUIP_STAGE = "iska_utils_internal-necro_crystal_heart_equip";
 
-    // Minimum health threshold before it becomes lethal
-    private static final float MIN_HEALTH_THRESHOLD = 2.0f;
 
     /**
      * Intercepts incoming damage events for an entity.
@@ -74,7 +72,7 @@ public class LivingIncomingDamageEventHandler {
         setUsageCounter(player, 0.0f);
         AttributeInstance maxHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
         if (maxHealthAttr != null) {
-            maxHealthAttr.setBaseValue(20.0);
+            maxHealthAttr.setBaseValue(Config.necroticCrystalHeartBaseHealth);
         }
         StageRegistry.removePlayerStage(player, NECRO_CRYSTAL_HEART_EQUIP_STAGE, true);
     }
@@ -104,7 +102,7 @@ public class LivingIncomingDamageEventHandler {
                         // Reset max health to original value
                         AttributeInstance playerHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
                         if (playerHealthAttr != null) {
-                            playerHealthAttr.setBaseValue(20.0);
+                            playerHealthAttr.setBaseValue(Config.necroticCrystalHeartBaseHealth);
                         }
                     }
                 });
@@ -112,8 +110,7 @@ public class LivingIncomingDamageEventHandler {
             return;
         }
 
-        // Base health is 20.0 (10 hearts)
-        double baseHealth = 20.0;
+        double baseHealth = Config.necroticCrystalHeartBaseHealth;
         
         // Get current hex counter value
         float hexCounter = getCurrentUsageCounter(player);
@@ -124,8 +121,7 @@ public class LivingIncomingDamageEventHandler {
             return;
         }
         
-        // Increment counter by 2.0f (one heart)
-        float newHexCounter = hexCounter + 2.0f;
+        float newHexCounter = hexCounter + (float) Config.necroticCrystalHeartHpCostPerSave;
         
         // Set the new counter value
         setUsageCounter(player, newHexCounter);
@@ -134,7 +130,7 @@ public class LivingIncomingDamageEventHandler {
         double newMaxHealth = baseHealth - newHexCounter;
         
         // If new max health drops below minimum threshold, player must die
-        if (newMaxHealth < MIN_HEALTH_THRESHOLD) {
+        if (newMaxHealth < Config.necroticCrystalHeartMinMaxHealth) {
             // Don't zero out damage, allowing player to die
             
             // Schedule reset after death

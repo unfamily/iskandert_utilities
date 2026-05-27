@@ -15,8 +15,10 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.CustomModelDataUtil;
 import net.unfamily.iskautils.util.RelicActivationUtil;
 import net.unfamily.iskautils.util.RelicEquipStages;
+import net.unfamily.iskautils.util.RelicTooltipUtil;
 
 import java.util.function.Consumer;
 
@@ -52,38 +54,22 @@ public class ChosenCheeseItem extends Item {
         super.appendHoverText(stack, context, display, output, flag);
         int y = getLevel(stack);
         int x = Config.chosenCheeseMax;
-        output.accept(Component.translatable("tooltip.iska_utils.chosen_cheese.desc0"));
-        output.accept(Component.translatable("tooltip.iska_utils.chosen_cheese.desc1", y, x));
+        RelicTooltipUtil.appendDescLines(output, "chosen_cheese", 3, y, x);
     }
 
     @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, EquipmentSlot slot) {
         super.inventoryTick(stack, level, entity, slot);
-        syncCustomModelData(stack);
+        syncDisplayModel(stack);
         if (!(entity instanceof Player player)) return;
         RelicActivationUtil.syncCurioOnlyStage(player, stack, RelicEquipStages.CHOSEN_CHEESE);
     }
 
-    private static void syncCustomModelData(ItemStack stack) {
+    /** Updates the full/partial item model via {@link DataComponents#CUSTOM_MODEL_DATA}. */
+    public static void syncDisplayModel(ItemStack stack) {
         int y = getLevel(stack);
         int x = Config.chosenCheeseMax;
-        int desired = (y >= x) ? 1 : 0;
-
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        int current = tag.getInt("CustomModelData").orElse(0);
-        if (current == desired) {
-            return;
-        }
-        if (desired == 0) {
-            tag.remove("CustomModelData");
-        } else {
-            tag.putInt("CustomModelData", desired);
-        }
-        if (tag.isEmpty()) {
-            stack.remove(DataComponents.CUSTOM_DATA);
-        } else {
-            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-        }
+        CustomModelDataUtil.setFloat0(stack, y >= x ? 1.0F : 0.0F);
     }
 
     @Override
@@ -118,6 +104,7 @@ public class ChosenCheeseItem extends Item {
 
         int inc = Math.max(1, otherLevel);
         setLevel(stack, Math.min(Config.chosenCheeseMax, handLevel + inc));
+        syncDisplayModel(stack);
         other.shrink(1);
         return InteractionResult.SUCCESS;
     }

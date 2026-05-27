@@ -1,7 +1,20 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "iska_utils:item/chosen_cheese"
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "entries": [
+      {
+        "threshold": 1.0,
+        "model": {
+          "type": "minecraft:model",
+          "model": "iska_utils:item/chosen_cheese_full"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "iska_utils:item/chosen_cheese"
+    }
   }
 }
-

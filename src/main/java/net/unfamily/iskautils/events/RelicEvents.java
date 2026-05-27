@@ -8,7 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskalib.stage.StageRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +29,9 @@ public class RelicEvents {
         if (!(event.getEntity() instanceof LivingEntity target)) return;
 
         if (StageRegistry.playerHasStage(player, SHARPENED_BONE_STAGE)) {
-            float dmg = event.getAmount() + 1.0f;
-            if (player.getRandom().nextFloat() < 0.25f) {
-                dmg += 2.0f;
+            float dmg = event.getAmount() + (float) Config.sharpenedBoneBonusDamage;
+            if (player.getRandom().nextDouble() < Config.sharpenedBoneProcChance) {
+                dmg += (float) Config.sharpenedBoneProcBonusDamage;
             }
             event.setAmount(dmg);
         }
@@ -43,7 +43,8 @@ public class RelicEvents {
         if (!(entity instanceof Player player)) return;
         if (!StageRegistry.playerHasStage(player, THE_ROOTS_STAGE)) return;
 
-        float mult = 1.0f + (player.getRandom().nextFloat() * 1.0f);
+        float mult = (float) (Config.theRootsBreakSpeedMinMultiplier
+                + player.getRandom().nextDouble() * Config.theRootsBreakSpeedMaxBonus);
         event.setNewSpeed(event.getNewSpeed() * mult);
     }
 }

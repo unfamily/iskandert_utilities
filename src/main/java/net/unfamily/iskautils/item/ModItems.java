@@ -338,7 +338,8 @@ public class ModItems {
 
     public static final DeferredItem<BlockItem> CHAOTIC_TNT = ITEMS.registerSimpleBlockItem(ModBlocks.CHAOTIC_TNT);
 
-    public static final DeferredItem<Item> BURNING_BRAZIER = ITEMS.registerItem("burning_brazier", BurningBrazierItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> BURNING_BRAZIER = ITEMS.registerItem("burning_brazier", BurningBrazierItem::new,
+            p -> p.stacksTo(1).durability(BurningBrazierItem.MAX_DURABILITY));
 
     public static final DeferredItem<Item> REDSTONE_ACTIVATOR = ITEMS.registerItem("redstone_activator", RedstoneSignalItem::new, p -> p.stacksTo(1));
 

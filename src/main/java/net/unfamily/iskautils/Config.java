@@ -222,9 +222,100 @@ public class Config {
 
     // Relics configuration (starts at 500)
     private static final ModConfigSpec.IntValue CHOSEN_CHEESE_MAX = BUILDER
-            .comment("Maximum bonus hearts (as raw health points) applied by The Chosen Cheese relic.",
-                    "This is the X value shown in the tooltip Y/X. Effective bonus is min(Y, X).")
+            .comment("Maximum cheese level (X in tooltip Y/X). Effective bonus uses min(Y, X) levels.")
             .defineInRange("500_chosen_cheese_max", 10, 0, 200);
+
+    private static final ModConfigSpec.DoubleValue CHOSEN_CHEESE_HP_PER_LEVEL = BUILDER
+            .comment("Max health bonus per cheese level (2.0 = one heart).")
+            .defineInRange("501_chosen_cheese_hp_per_level", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue OLD_BRICK_ARMOR_BONUS = BUILDER
+            .comment("Armor bonus from Old Brick while equipped in Curios.")
+            .defineInRange("502_old_brick_armor_bonus", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue SHARPENED_BONE_BONUS_DAMAGE = BUILDER
+            .comment("Flat bonus melee damage while Sharpened Bone is active.")
+            .defineInRange("503_sharpened_bone_bonus_damage", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue SHARPENED_BONE_PROC_CHANCE = BUILDER
+            .comment("Chance (0.0–1.0) for Sharpened Bone extra hit effect.")
+            .defineInRange("504_sharpened_bone_proc_chance", 0.25D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue SHARPENED_BONE_PROC_BONUS_DAMAGE = BUILDER
+            .comment("Extra damage on Sharpened Bone proc.")
+            .defineInRange("505_sharpened_bone_proc_bonus_damage", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue THE_ROOTS_BREAK_SPEED_MIN_MULTIPLIER = BUILDER
+            .comment("Minimum break-speed multiplier for The Roots (1.0 = no bonus).")
+            .defineInRange("506_the_roots_break_speed_min_multiplier", 1.0D, 0.1D, 10.0D);
+
+    private static final ModConfigSpec.DoubleValue THE_ROOTS_BREAK_SPEED_MAX_BONUS = BUILDER
+            .comment("Random extra break-speed multiplier added on top of the minimum (final = min + random(0..max)).")
+            .defineInRange("507_the_roots_break_speed_max_bonus", 1.0D, 0.0D, 10.0D);
+
+    private static final ModConfigSpec.DoubleValue TOTEM_OF_PAIN_PROC_CHANCE = BUILDER
+            .comment("Chance (0.0–1.0) to apply Curse of Pain on hit with Totem of Pain.")
+            .defineInRange("508_totem_of_pain_proc_chance", 0.25D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.IntValue TOTEM_OF_PAIN_CURSE_DURATION_SECONDS = BUILDER
+            .comment("Duration in seconds for Curse of Pain applied by Totem of Pain.")
+            .defineInRange("509_totem_of_pain_curse_duration_seconds", 30, 1, 3600);
+
+    private static final ModConfigSpec.DoubleValue RITUAL_GAUNTLET_CRIT_CHANCE = BUILDER
+            .comment("Chance (0.0–1.0) for Ritual Gauntlet critical damage bonus.")
+            .defineInRange("510_ritual_gauntlet_crit_chance", 0.15D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue RITUAL_GAUNTLET_CRIT_DAMAGE_MULTIPLIER = BUILDER
+            .comment("Damage multiplier on Ritual Gauntlet crit (1.15 = +15% damage).")
+            .defineInRange("511_ritual_gauntlet_crit_damage_multiplier", 1.15D, 1.0D, 10.0D);
+
+    private static final ModConfigSpec.DoubleValue BUSTED_CROWN_HP_PER_CURSED_RELIC = BUILDER
+            .comment("Max health bonus per cursed relic worn with Busted Crown.")
+            .defineInRange("512_busted_crown_hp_per_cursed_relic", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue CURSE_OF_PAIN_DAMAGE_PER_LEVEL = BUILDER
+            .comment("Incoming damage multiplier per Curse of Pain level (0.10 = +10% per level).")
+            .defineInRange("513_curse_of_pain_damage_per_level", 0.10D, 0.0D, 10.0D);
+
+    private static final ModConfigSpec.IntValue THE_DECEPTION_ABSORPTION_DURATION_SECONDS = BUILDER
+            .comment("Absorption duration in seconds after eating with The Deception equipped.")
+            .defineInRange("514_the_deception_absorption_duration_seconds", 30, 1, 3600);
+
+    private static final ModConfigSpec.DoubleValue NECROTIC_CRYSTAL_HEART_HP_COST_PER_SAVE = BUILDER
+            .comment("Max health removed each time Necrotic Crystal Heart prevents lethal damage (2.0 = one heart).")
+            .defineInRange("515_necrotic_crystal_heart_hp_cost_per_save", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue NECROTIC_CRYSTAL_HEART_MIN_MAX_HEALTH = BUILDER
+            .comment("Minimum max health before Necrotic Crystal Heart stops saving the player.")
+            .defineInRange("516_necrotic_crystal_heart_min_max_health", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue NECROTIC_CRYSTAL_HEART_BASE_HEALTH = BUILDER
+            .comment("Base max health used by Necrotic Crystal Heart hex tracking.")
+            .defineInRange("517_necrotic_crystal_heart_base_health", 20.0D, 1.0D, 1000.0D);
+
+    private static final ModConfigSpec.IntValue ICE_DIAMOND_REPAIR_INTERVAL_TICKS = BUILDER
+            .comment("Ticks between Ice Diamond repair attempts while equipped.")
+            .defineInRange("518_ice_diamond_repair_interval_ticks", 20, 1, 1200);
+
+    private static final ModConfigSpec.DoubleValue ICE_DIAMOND_COLD_BIOME_MAX_TEMP = BUILDER
+            .comment("Biomes at or below this temperature cost no Ice Diamond durability per repair.")
+            .defineInRange("519_ice_diamond_cold_biome_max_temp", 0.15D, -1.0D, 2.0D);
+
+    private static final ModConfigSpec.DoubleValue ICE_DIAMOND_HOT_BIOME_MIN_TEMP = BUILDER
+            .comment("Biomes at or above this temperature use the hot repair durability cost.")
+            .defineInRange("520_ice_diamond_hot_biome_min_temp", 1.5D, -1.0D, 3.0D);
+
+    private static final ModConfigSpec.IntValue ICE_DIAMOND_COLD_REPAIR_COST = BUILDER
+            .comment("Ice Diamond durability cost per repair in cold biomes.")
+            .defineInRange("521_ice_diamond_cold_repair_cost", 0, 0, 100);
+
+    private static final ModConfigSpec.IntValue ICE_DIAMOND_TEMPERATE_REPAIR_COST = BUILDER
+            .comment("Ice Diamond durability cost per repair in temperate biomes.")
+            .defineInRange("522_ice_diamond_temperate_repair_cost", 1, 0, 100);
+
+    private static final ModConfigSpec.IntValue ICE_DIAMOND_HOT_REPAIR_COST = BUILDER
+            .comment("Ice Diamond durability cost per repair in hot biomes.")
+            .defineInRange("523_ice_diamond_hot_repair_cost", 5, 0, 100);
 
     // Deep Drawer Extractor Configuration (starts at 410)
     private static final ModConfigSpec.IntValue DEEP_DRAWER_EXTRACTOR_INTERVAL = BUILDER
@@ -859,6 +950,29 @@ public class Config {
     public static boolean giftPlaceHardIce;
     public static double gauntletClimbingSpeed;
     public static int chosenCheeseMax;
+    public static double chosenCheeseHpPerLevel;
+    public static double oldBrickArmorBonus;
+    public static double sharpenedBoneBonusDamage;
+    public static double sharpenedBoneProcChance;
+    public static double sharpenedBoneProcBonusDamage;
+    public static double theRootsBreakSpeedMinMultiplier;
+    public static double theRootsBreakSpeedMaxBonus;
+    public static double totemOfPainProcChance;
+    public static int totemOfPainCurseDurationSeconds;
+    public static double ritualGauntletCritChance;
+    public static double ritualGauntletCritDamageMultiplier;
+    public static double bustedCrownHpPerCursedRelic;
+    public static double curseOfPainDamagePerLevel;
+    public static int theDeceptionAbsorptionDurationSeconds;
+    public static double necroticCrystalHeartHpCostPerSave;
+    public static double necroticCrystalHeartMinMaxHealth;
+    public static double necroticCrystalHeartBaseHealth;
+    public static int iceDiamondRepairIntervalTicks;
+    public static double iceDiamondColdBiomeMaxTemp;
+    public static double iceDiamondHotBiomeMinTemp;
+    public static int iceDiamondColdRepairCost;
+    public static int iceDiamondTemperateRepairCost;
+    public static int iceDiamondHotRepairCost;
 
     // Fan configuration
     public static int fanRangeHorizontalMax;
@@ -986,6 +1100,29 @@ public class Config {
         deepDrawersAllow = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOW.get());
         deepDrawersDeny = new java.util.ArrayList<>(DEEP_DRAWERS_DENY.get());
         chosenCheeseMax = CHOSEN_CHEESE_MAX.get();
+        chosenCheeseHpPerLevel = CHOSEN_CHEESE_HP_PER_LEVEL.get();
+        oldBrickArmorBonus = OLD_BRICK_ARMOR_BONUS.get();
+        sharpenedBoneBonusDamage = SHARPENED_BONE_BONUS_DAMAGE.get();
+        sharpenedBoneProcChance = SHARPENED_BONE_PROC_CHANCE.get();
+        sharpenedBoneProcBonusDamage = SHARPENED_BONE_PROC_BONUS_DAMAGE.get();
+        theRootsBreakSpeedMinMultiplier = THE_ROOTS_BREAK_SPEED_MIN_MULTIPLIER.get();
+        theRootsBreakSpeedMaxBonus = THE_ROOTS_BREAK_SPEED_MAX_BONUS.get();
+        totemOfPainProcChance = TOTEM_OF_PAIN_PROC_CHANCE.get();
+        totemOfPainCurseDurationSeconds = TOTEM_OF_PAIN_CURSE_DURATION_SECONDS.get();
+        ritualGauntletCritChance = RITUAL_GAUNTLET_CRIT_CHANCE.get();
+        ritualGauntletCritDamageMultiplier = RITUAL_GAUNTLET_CRIT_DAMAGE_MULTIPLIER.get();
+        bustedCrownHpPerCursedRelic = BUSTED_CROWN_HP_PER_CURSED_RELIC.get();
+        curseOfPainDamagePerLevel = CURSE_OF_PAIN_DAMAGE_PER_LEVEL.get();
+        theDeceptionAbsorptionDurationSeconds = THE_DECEPTION_ABSORPTION_DURATION_SECONDS.get();
+        necroticCrystalHeartHpCostPerSave = NECROTIC_CRYSTAL_HEART_HP_COST_PER_SAVE.get();
+        necroticCrystalHeartMinMaxHealth = NECROTIC_CRYSTAL_HEART_MIN_MAX_HEALTH.get();
+        necroticCrystalHeartBaseHealth = NECROTIC_CRYSTAL_HEART_BASE_HEALTH.get();
+        iceDiamondRepairIntervalTicks = ICE_DIAMOND_REPAIR_INTERVAL_TICKS.get();
+        iceDiamondColdBiomeMaxTemp = ICE_DIAMOND_COLD_BIOME_MAX_TEMP.get();
+        iceDiamondHotBiomeMinTemp = ICE_DIAMOND_HOT_BIOME_MIN_TEMP.get();
+        iceDiamondColdRepairCost = ICE_DIAMOND_COLD_REPAIR_COST.get();
+        iceDiamondTemperateRepairCost = ICE_DIAMOND_TEMPERATE_REPAIR_COST.get();
+        iceDiamondHotRepairCost = ICE_DIAMOND_HOT_REPAIR_COST.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         ftbTeamsSyncEnabled = FTB_TEAMS_SYNC_ENABLED.get();
