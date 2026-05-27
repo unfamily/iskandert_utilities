@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:block",
+  "random_sequence": "iska_utils:blocks/cursed_burning_flame",
+  "pools": []
+}

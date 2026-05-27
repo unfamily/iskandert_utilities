@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "iska_utils.refmap.json",
   "mixins": [
-    "ItemStackMixin"
+    "ItemStackMixin",
+    "PlayerMiningEquitizerMixin"
   ],
   "minVersion": "0.8"
 }

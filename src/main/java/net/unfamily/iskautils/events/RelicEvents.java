@@ -43,9 +43,8 @@ public class RelicEvents {
         if (!(entity instanceof Player player)) return;
         if (!StageRegistry.playerHasStage(player, THE_ROOTS_STAGE)) return;
 
-        float original = event.getOriginalSpeed();
         float mult = 1.0f + (player.getRandom().nextFloat() * 1.0f);
-        event.setNewSpeed(original * mult);
+        event.setNewSpeed(event.getNewSpeed() * mult);
     }
 }
 

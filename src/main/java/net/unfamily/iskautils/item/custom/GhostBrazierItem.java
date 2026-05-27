@@ -11,6 +11,8 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.server.level.ServerLevel;
 import net.unfamily.iskautils.data.GhostBrazierData;
 import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import net.minecraft.network.chat.Component;
@@ -42,69 +44,16 @@ public class GhostBrazierItem extends Item {
         if (player == null) {
             return false;
         }
-
-        // Check hands first (highest priority)
-        ItemStack mainHand = player.getMainHandItem();
-        if (mainHand.getItem() instanceof GhostBrazierItem) {
-            return true;
-        }
-
-        ItemStack offHand = player.getOffhandItem();
-        if (offHand.getItem() instanceof GhostBrazierItem) {
-            return true;
-        }
-
-        // If Curios is loaded, check Curios slots (second priority)
-        if (ModUtils.isCuriosLoaded()) {
-            if (checkCuriosSlots(player)) {
-                return true;
-            }
-        }
-
-        // Check player inventory (lowest priority)
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.getItem() instanceof GhostBrazierItem) {
-                return true;
-            }
-        }
-
-        return false;
+        return !CurioEquipUtil.findActiveStack(player, ModItems.GHOST_BRAZIER.get()).isEmpty();
     }
 
-    /**
-     * Uses reflection to check if the Ghost Brazier is equipped in a Curios slot
-     */
-    private static boolean checkCuriosSlots(Player player) {
-        try {
-            Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-            Method getCuriosHandlerMethod = curioApiClass.getMethod("getCuriosHelper");
-            Object curiosHelper = getCuriosHandlerMethod.invoke(null);
-            Method getEquippedCurios = curiosHelper.getClass().getMethod("getEquippedCurios", LivingEntity.class);
-            Object equippedCurios = getEquippedCurios.invoke(curiosHelper, player);
-            
-            if (equippedCurios instanceof Iterable<?> items) {
-                for (Object itemPair : items) {
-                    Method getStackMethod = itemPair.getClass().getMethod("getRight");
-                    ItemStack stack = (ItemStack) getStackMethod.invoke(itemPair);
-                    if (stack.getItem() instanceof GhostBrazierItem) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            LOGGER.warn("Error checking Curios slots for Ghost Brazier: {}", e.getMessage());
-            return false;
-        }
+    public static void tickEquipped(ServerPlayer serverPlayer) {
+        GhostBrazierData.setHasGhostBrazier(serverPlayer, true);
     }
 
     @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
         super.inventoryTick(stack, level, entity, slot);
-        if (entity instanceof ServerPlayer serverPlayer) {
-            GhostBrazierData.setHasGhostBrazier(serverPlayer, true);
-        }
     }
 
     @Override

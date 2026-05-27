@@ -445,6 +445,9 @@ public class ModBlocks {
     public static final DeferredBlock<BurningFlameBlock> BURNING_FLAME = BLOCKS.register("burning_flame",
             key -> new BurningFlameBlock(assignBlockId(key, BURNING_FLAME_PROPERTIES)));
 
+    public static final DeferredBlock<CursedBurningFlameBlock> CURSED_BURNING_FLAME = BLOCKS.register("cursed_burning_flame",
+            key -> new CursedBurningFlameBlock(assignBlockId(key, BURNING_FLAME_PROPERTIES)));
+
     private static final UnaryOperator<BlockBehaviour.Properties> REDSTONE_SIGNAL_PROPERTIES = p -> p
             .mapColor(MapColor.NONE)
             .noCollision()

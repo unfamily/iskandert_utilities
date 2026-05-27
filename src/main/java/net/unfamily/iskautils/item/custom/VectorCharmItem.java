@@ -13,6 +13,7 @@ import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -346,41 +347,14 @@ public class VectorCharmItem extends Item {
      * Uses reflection to check if the Vector Charm is equipped in a Curios slot and consume energy
      */
     private static ItemStack checkCuriosSlots(Player player, int speedLevel) {
-        try {
-            // Approccio alternativo che usa getCuriosHandler invece di getAllEquipped
-            Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-            
-            // Ottiene l'handler delle Curios per il player
-            Method getCuriosHandlerMethod = curioApiClass.getMethod("getCuriosHelper");
-            Object curiosHelper = getCuriosHandlerMethod.invoke(null);
-            
-            Method getEquippedCurios = curiosHelper.getClass().getMethod("getEquippedCurios", LivingEntity.class);
-            Object equippedCurios = getEquippedCurios.invoke(curiosHelper, player);
-            
-            if (equippedCurios instanceof Iterable<?> items) {
-                for (Object itemPair : items) {
-                    // Extract stack from each pair
-                    Method getStackMethod = itemPair.getClass().getMethod("getRight");
-                    ItemStack stack = (ItemStack) getStackMethod.invoke(itemPair);
-                    
-                    if (stack.getItem() instanceof VectorCharmItem charm) {
-                        if (charm.hasEnoughEnergy(stack, speedLevel)) {
-                            return stack;
-                        }
-                    }
-                }
+        ItemStack[] found = new ItemStack[1];
+        CurioEquipUtil.forEachEquippedCurioStack(player, stack -> {
+            if (found[0] == null && stack.getItem() instanceof VectorCharmItem charm
+                    && charm.hasEnoughEnergy(stack, speedLevel)) {
+                found[0] = stack;
             }
-            
-            return null;
-            
-        } catch (Exception e) {
-            // If there's an error in reflection, log and continue
-            LOGGER.error("Error checking Curios slots: {}", e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                e.printStackTrace();
-            }
-            return null;
-        }
+        });
+        return found[0];
     }
     
     /**

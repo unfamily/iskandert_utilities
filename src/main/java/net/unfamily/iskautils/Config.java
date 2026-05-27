@@ -457,14 +457,6 @@ public class Config {
                     "Default: 0.15 (0.288 is like a ladder speed)")
             .defineInRange("010_gauntlet_climbing_speed", 0.15D, 0.0D, 10.0D);
 
-    private static final ModConfigSpec.DoubleValue MINING_EQUITIZER_AIR_MULTIPLIER = BUILDER
-            .comment("Mining Equitizer artifact: break speed multiplier when airborne (not on ground) and water bonus does not apply.")
-            .defineInRange("020_miningEquitizerAirMultiplier", 5.0, 0.0, 100.0);
-
-    private static final ModConfigSpec.DoubleValue MINING_EQUITIZER_WATER_MULTIPLIER = BUILDER
-            .comment("Mining Equitizer artifact: break speed multiplier when in fluid that counts as water for mining (strict full submersion or vanilla in-water).")
-            .defineInRange("021_miningEquitizerWaterMultiplier", 5.0, 0.0, 100.0);
-
     static {
         BUILDER.pop(); // End of artifacts_settings category
         BUILDER.pop(); // End of general_utilities category
@@ -866,8 +858,6 @@ public class Config {
     public static boolean burningFlameSuperHot;
     public static boolean giftPlaceHardIce;
     public static double gauntletClimbingSpeed;
-    public static double miningEquitizerAirMultiplier;
-    public static double miningEquitizerWaterMultiplier;
     public static int chosenCheeseMax;
 
     // Fan configuration
@@ -973,8 +963,6 @@ public class Config {
         greedyShieldReduceChance = GREEDY_SHIELD_REDUCE_CHANCE.get();
         greedyShieldReduceAmount = GREEDY_SHIELD_REDUCE_AMOUNT.get();
         greedyShieldInfo = GREEDY_SHIELD_INFO.get();
-        miningEquitizerAirMultiplier = MINING_EQUITIZER_AIR_MULTIPLIER.get();
-        miningEquitizerWaterMultiplier = MINING_EQUITIZER_WATER_MULTIPLIER.get();
         burningFlameSuperHot = BURNING_FLAME_SUPER_HOT.get();
         giftPlaceHardIce = GIFT_PLACE_HARD_ICE.get();
         

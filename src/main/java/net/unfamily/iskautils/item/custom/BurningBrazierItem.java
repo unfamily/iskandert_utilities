@@ -5,8 +5,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -15,12 +13,12 @@ import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
-import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,16 +27,12 @@ import java.util.function.Consumer;
 /**
  * Burning Brazier: manual placement with {@link #useOn}; optional auto-placement only while
  * {@link #isAutoPlacementEnabled(UUID)} is true for that player (default {@code false} until toggled).
- * Auto runs on this stack's
- * {@link #inventoryTick} only (no inventory/Curio scanning). Toggle is in-memory per player UUID, not saved.
- * Manual use ignores light; auto only when {@link LightLayer#BLOCK} at the feet cell is {@code < 8} (mob-spawn style dim for artificial light).
  */
 public class BurningBrazierItem extends Item {
 
     public static final int MAX_DURABILITY = 512;
     private static final String CURSE_FLAME_STAGE = "iska_utils_internal-curse_flame";
 
-    /** In-memory only; not persisted. Absent UUID defaults to {@code false} (manual only until toggled on). */
     private static final ConcurrentHashMap<UUID, Boolean> AUTO_PLACEMENT_BY_PLAYER = new ConcurrentHashMap<>();
 
     public static boolean isAutoPlacementEnabled(UUID playerId) {
@@ -49,7 +43,6 @@ public class BurningBrazierItem extends Item {
         AUTO_PLACEMENT_BY_PLAYER.put(playerId, enabled);
     }
 
-    /** Toggles auto-placement and returns the new value. */
     public static boolean toggleAutoPlacement(ServerPlayer player) {
         UUID id = player.getUUID();
         boolean next = !isAutoPlacementEnabled(id);
@@ -61,17 +54,48 @@ public class BurningBrazierItem extends Item {
         AUTO_PLACEMENT_BY_PLAYER.remove(playerId);
     }
 
-    private static boolean hasCurseFlame(ServerPlayer player) {
+    protected static boolean hasCurseFlame(ServerPlayer player) {
         return StageRegistry.playerHasStage(player, CURSE_FLAME_STAGE)
                 || StageRegistry.playerTeamHasStage(player, CURSE_FLAME_STAGE)
                 || StageRegistry.worldHasStage(player.level(), CURSE_FLAME_STAGE);
     }
 
     public BurningBrazierItem(Properties properties) {
-        super(properties.durability(MAX_DURABILITY));
+        super(properties);
     }
 
-    /** Auto: only when artificial (block-emitted) light at {@code pos} is in mob-spawn range ({@code < 8}, i.e. 0–7). */
+    protected Block getFlameBlock() {
+        return ModBlocks.BURNING_FLAME.get();
+    }
+
+    protected boolean isManagedFlame(Block block) {
+        return block == getFlameBlock();
+    }
+
+    protected boolean consumesDurability() {
+        return true;
+    }
+
+    protected boolean shouldBurnPlayerOnPlace(ServerPlayer player) {
+        return Config.burningBrazierSuperHot || hasCurseFlame(player);
+    }
+
+    protected boolean canAutoPlace(ServerPlayer player, ServerLevel level, ItemStack stack) {
+        return !isDepletedForPlacement(stack);
+    }
+
+    protected void onFlamePlaced(ServerPlayer player, ItemStack stack) {
+        if (consumesDurability()) {
+            stack.setDamageValue(stack.getDamageValue() + 1);
+        }
+    }
+
+    protected void onFlameRemoved(ServerPlayer player, ItemStack stack) {
+        if (consumesDurability()) {
+            stack.setDamageValue(Math.max(0, stack.getDamageValue() - 1));
+        }
+    }
+
     private static boolean blockLightAllowsAutoFlame(Level level, BlockPos pos) {
         if (!level.isLoaded(pos)) {
             return false;
@@ -79,8 +103,10 @@ public class BurningBrazierItem extends Item {
         return level.getBrightness(LightLayer.BLOCK, pos) < 8;
     }
 
-    /** No placement when worn out ({@code damage >= max}); if max is unknown ({@code <= 0}), do not block. */
-    private static boolean isDepletedForPlacement(ItemStack stack) {
+    protected boolean isDepletedForPlacement(ItemStack stack) {
+        if (!consumesDurability()) {
+            return false;
+        }
         int max = stack.getMaxDamage();
         if (max <= 0) {
             return false;
@@ -100,10 +126,9 @@ public class BurningBrazierItem extends Item {
         }
 
         BlockState clickedState = level.getBlockState(clickedPos);
-
-        if (clickedState.getBlock() == ModBlocks.BURNING_FLAME.get()) {
+        if (isManagedFlame(clickedState.getBlock())) {
             level.destroyBlock(clickedPos, false);
-            stack.setDamageValue(Math.max(0, stack.getDamageValue() - 1));
+            onFlameRemoved(serverPlayer, stack);
             return InteractionResult.SUCCESS;
         }
 
@@ -117,20 +142,25 @@ public class BurningBrazierItem extends Item {
             return InteractionResult.FAIL;
         }
 
-        BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();
-        level.setBlock(placePos, flameState, 3);
+        level.setBlock(placePos, getFlameBlock().defaultBlockState(), 3);
 
-        boolean shouldBurn = Config.burningBrazierSuperHot || hasCurseFlame(serverPlayer);
-        if (shouldBurn) {
+        if (shouldBurnPlayerOnPlace(serverPlayer)) {
             serverPlayer.setRemainingFireTicks(5 * 20);
         }
 
-        stack.setDamageValue(stack.getDamageValue() + 1);
+        onFlamePlaced(serverPlayer, stack);
         return InteractionResult.SUCCESS;
     }
 
     public static void tickEquipped(ServerPlayer player, ServerLevel level, ItemStack stack) {
-        if (stack.isDamaged() && level.getGameTime() % 20 == 0) {
+        if (!(stack.getItem() instanceof BurningBrazierItem brazier)) {
+            return;
+        }
+        brazier.tickEquippedItem(player, level, stack);
+    }
+
+    protected void tickEquippedItem(ServerPlayer player, ServerLevel level, ItemStack stack) {
+        if (consumesDurability() && stack.isDamaged() && level.getGameTime() % 20 == 0) {
             var flameItem = ModBlocks.BURNING_FLAME.get().asItem();
             Inventory inv = player.getInventory();
             for (int i = 0; i < inv.getContainerSize(); i++) {
@@ -146,7 +176,7 @@ public class BurningBrazierItem extends Item {
         if (!isAutoPlacementEnabled(player.getUUID())) {
             return;
         }
-        if (isDepletedForPlacement(stack)) {
+        if (!canAutoPlace(player, level, stack)) {
             return;
         }
         if (level.getGameTime() % 40 != 0) {
@@ -161,15 +191,14 @@ public class BurningBrazierItem extends Item {
             return;
         }
 
-        BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();
-        if (!level.setBlock(pos, flameState, 3)) {
+        if (!level.setBlock(pos, getFlameBlock().defaultBlockState(), 3)) {
             return;
         }
 
-        if (Config.burningBrazierSuperHot || hasCurseFlame(player)) {
+        if (shouldBurnPlayerOnPlace(player)) {
             player.setRemainingFireTicks(5 * 20);
         }
-        stack.setDamageValue(stack.getDamageValue() + 1);
+        onFlamePlaced(player, stack);
     }
 
     @Override

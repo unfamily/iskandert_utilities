@@ -16,6 +16,7 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskalib.stage.StageRegistry;
+import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -166,50 +167,32 @@ public class FanpackItem extends VectorCharmItem {
     
     
     /**
-     * This method is called every tick for every item in the inventory
+     * Server-side heartbeat for flight stage and energy (Curios, hands, or inventory).
      */
-    @Override
-    public void inventoryTick(ItemStack stack, ServerLevel level, net.minecraft.world.entity.Entity entity, @Nullable EquipmentSlot slot) {
-        super.inventoryTick(stack, level, entity, slot);
-        if (entity instanceof ServerPlayer serverPlayer) {
-            // Apply Vector Charm movement (parent class handles this)
-            // Flight is handled by FanpackFlightHandler event
-            
-            // Handle energy consumption for flight
-            // Check if flight energy consumption is enabled
-            boolean flightEnergyRequired = Config.fanpackFlightEnergyConsume > 0;
-            boolean hasEnoughEnergyForFlight = true;
-            
-            if (flightEnergyRequired && Config.fanpackEnergyCapacity > 0) {
-                int currentEnergy = this.getEnergyStored(stack);
-                int maxEnergy = this.getMaxEnergyStored(stack);
-                int requiredEnergy = Config.fanpackFlightEnergyConsume;
-                
-                // Check if we have enough energy for flight
-                hasEnoughEnergyForFlight = currentEnergy >= requiredEnergy;
-                
-                // Check if energy is at 10% or below and show warning
-                if (maxEnergy > 0 && currentEnergy <= maxEnergy * 0.1) {
-                    long currentTick = level.getGameTime();
-                    UUID playerId = serverPlayer.getUUID();
-                    Long lastWarning = lastWarningTime.get(playerId);
-                    
-                    // Show warning every 2 seconds (40 ticks)
-                    if (lastWarning == null || currentTick - lastWarning >= WARNING_COOLDOWN) {
-                        // Calculate current energy percentage
-                        int energyPercent = (int) Math.round((currentEnergy * 100.0) / maxEnergy);
-                        
-                        // Show warning message in action bar with current percentage
-                        serverPlayer.connection.send(
+    public void tickEquipped(ServerPlayer serverPlayer, ItemStack stack, ServerLevel level) {
+        boolean flightEnergyRequired = Config.fanpackFlightEnergyConsume > 0;
+        boolean hasEnoughEnergyForFlight = true;
+
+        if (flightEnergyRequired && Config.fanpackEnergyCapacity > 0) {
+            int currentEnergy = this.getEnergyStored(stack);
+            int maxEnergy = this.getMaxEnergyStored(stack);
+            int requiredEnergy = Config.fanpackFlightEnergyConsume;
+
+            hasEnoughEnergyForFlight = currentEnergy >= requiredEnergy;
+
+            if (maxEnergy > 0 && currentEnergy <= maxEnergy * 0.1) {
+                long currentTick = level.getGameTime();
+                UUID playerId = serverPlayer.getUUID();
+                Long lastWarning = lastWarningTime.get(playerId);
+
+                if (lastWarning == null || currentTick - lastWarning >= WARNING_COOLDOWN) {
+                    int energyPercent = (int) Math.round((currentEnergy * 100.0) / maxEnergy);
+                    serverPlayer.connection.send(
                             new ClientboundSystemChatPacket(
-                                Component.translatable("message.iska_utils.fanpack.low_energy", energyPercent)
-                                    .withStyle(net.minecraft.ChatFormatting.RED),
-                                true
-                            )
-                        );
-                        
-                        // Play breeze sound
-                        level.playSound(
+                                    Component.translatable("message.iska_utils.fanpack.low_energy", energyPercent)
+                                            .withStyle(net.minecraft.ChatFormatting.RED),
+                                    true));
+                    level.playSound(
                             null,
                             serverPlayer.getX(),
                             serverPlayer.getY(),
@@ -217,33 +200,27 @@ public class FanpackItem extends VectorCharmItem {
                             SoundEvents.BREEZE_IDLE_AIR,
                             SoundSource.PLAYERS,
                             0.5f,
-                            1.0f
-                        );
-                        
-                        lastWarningTime.put(playerId, currentTick);
-                    }
-                }
-                
-                // If player is flying, consume energy (but not if in spectator or creative mode)
-                if (serverPlayer.getAbilities().flying && currentEnergy >= requiredEnergy 
-                        && !serverPlayer.getAbilities().instabuild && !serverPlayer.isSpectator()) {
-                    int newEnergy = currentEnergy - requiredEnergy;
-                    this.setEnergyStored(stack, newEnergy);
+                            1.0f);
+                    lastWarningTime.put(playerId, currentTick);
                 }
             }
-            
-            // Set internal stage to indicate fanpack is present (heartbeat)
-            // Only add stage if we have enough energy for flight (or energy is not required)
-            // This works for items in inventory or hands
-            if (hasEnoughEnergyForFlight) {
-                StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0");
-            } else {
-                // Not enough energy - remove stage if present
-                if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight0")) {
-                    StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0");
-                }
+
+            if (serverPlayer.getAbilities().flying && currentEnergy >= requiredEnergy
+                    && !serverPlayer.getAbilities().instabuild && !serverPlayer.isSpectator()) {
+                this.setEnergyStored(stack, currentEnergy - requiredEnergy);
             }
         }
+
+        if (hasEnoughEnergyForFlight) {
+            StageRegistry.addPlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0");
+        } else if (StageRegistry.playerHasStage(serverPlayer, "iska_utils_internal-funpack_flight0")) {
+            StageRegistry.removePlayerStage(serverPlayer, "iska_utils_internal-funpack_flight0");
+        }
+    }
+
+    @Override
+    public void inventoryTick(ItemStack stack, ServerLevel level, net.minecraft.world.entity.Entity entity, @Nullable EquipmentSlot slot) {
+        super.inventoryTick(stack, level, entity, slot);
     }
     
     
@@ -309,37 +286,16 @@ public class FanpackItem extends VectorCharmItem {
      */
     @Nullable
     private static ItemStack checkCuriosSlotsStatic(Player player, int speedLevel) {
-        try {
-            // Approccio alternativo che usa getCuriosHandler invece di getAllEquipped
-            Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-            
-            // Ottiene l'handler delle Curios per il player
-            Method getCuriosHandlerMethod = curioApiClass.getMethod("getCuriosHelper");
-            Object curiosHelper = getCuriosHandlerMethod.invoke(null);
-            
-            Method getEquippedCurios = curiosHelper.getClass().getMethod("getEquippedCurios", LivingEntity.class);
-            Object equippedCurios = getEquippedCurios.invoke(curiosHelper, player);
-            
-            if (equippedCurios instanceof Iterable<?> items) {
-                for (Object itemPair : items) {
-                    // Extract stack from each pair
-                    Method getStackMethod = itemPair.getClass().getMethod("getRight");
-                    ItemStack stack = (ItemStack) getStackMethod.invoke(itemPair);
-                    
-                    if (stack.getItem() instanceof FanpackItem pack) {
-                        if (pack.hasEnoughEnergy(stack, speedLevel)) {
-                            return stack;
-                        }
-                    }
-                }
-            }
-            
+        if (!ModUtils.isCuriosLoaded()) {
             return null;
-            
-        } catch (Exception e) {
-            // Curios not available or error accessing
         }
-        return null;
+        ItemStack[] found = new ItemStack[1];
+        CurioEquipUtil.forEachEquippedCurioStack(player, stack -> {
+            if (found[0] == null && stack.getItem() instanceof FanpackItem pack && pack.hasEnoughEnergy(stack, speedLevel)) {
+                found[0] = stack;
+            }
+        });
+        return found[0];
     }
     
     /**
@@ -388,31 +344,15 @@ public class FanpackItem extends VectorCharmItem {
      */
     @Nullable
     private static ItemStack checkCuriosSlotsStaticForFlight(Player player) {
-        try {
-            // Approccio alternativo che usa getCuriosHandler invece di getAllEquipped
-            Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-            
-            // Ottiene l'handler delle Curios per il player
-            Method getCuriosHandlerMethod = curioApiClass.getMethod("getCuriosHelper");
-            Object curiosHelper = getCuriosHandlerMethod.invoke(null);
-            
-            Method getEquippedCurios = curiosHelper.getClass().getMethod("getEquippedCurios", LivingEntity.class);
-            Object equippedCurios = getEquippedCurios.invoke(curiosHelper, player);
-            
-            if (equippedCurios instanceof Iterable<?> items) {
-                for (Object itemPair : items) {
-                    // Extract stack from each pair
-                    Method getStackMethod = itemPair.getClass().getMethod("getRight");
-                    ItemStack stack = (ItemStack) getStackMethod.invoke(itemPair);
-                    
-                    if (stack.getItem() instanceof FanpackItem) {
-                        return stack;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // Curios not available or error accessing
+        if (!ModUtils.isCuriosLoaded()) {
+            return null;
         }
-        return null;
+        ItemStack[] found = new ItemStack[1];
+        CurioEquipUtil.forEachEquippedCurioStack(player, stack -> {
+            if (found[0] == null && stack.getItem() instanceof FanpackItem) {
+                found[0] = stack;
+            }
+        });
+        return found[0];
     }
 }

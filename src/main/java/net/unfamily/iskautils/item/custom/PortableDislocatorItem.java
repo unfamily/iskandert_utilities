@@ -28,6 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
+import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import net.unfamily.iskautils.block.ModBlocks;
@@ -167,18 +169,16 @@ public class PortableDislocatorItem extends Item {
         }
     }
     
+    public static void tickEquipped(Player player, ItemStack stack, Level level) {
+        tickInCurios(stack, level, player);
+    }
+
     /**
      * Called every tick for every item in the inventory
      */
     @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, EquipmentSlot slot) {
         super.inventoryTick(stack, level, entity, slot);
-
-        // Execute only for players (server-side only with the new signature)
-        if (entity instanceof Player player) {
-            handlePendingTeleportation(player, level);
-            checkForTeleportRequest(player, stack, level);
-        }
     }
     
     /**
@@ -1719,34 +1719,8 @@ public class PortableDislocatorItem extends Item {
      * @return ItemStack of the Portable Dislocator if found, null otherwise
      */
     public static ItemStack findPortableDislocator(Player player) {
-        // Check hands first (highest priority)
-        ItemStack mainHand = player.getMainHandItem();
-        if (mainHand.getItem() instanceof PortableDislocatorItem) {
-            return mainHand;
-        }
-        
-        ItemStack offHand = player.getOffhandItem();
-        if (offHand.getItem() instanceof PortableDislocatorItem) {
-            return offHand;
-        }
-        
-        // If Curios is loaded, check Curios slots (second priority)
-        if (ModUtils.isCuriosLoaded()) {
-            ItemStack curioDislocator = checkCuriosSlots(player);
-            if (curioDislocator != null) {
-                return curioDislocator;
-            }
-        }
-        
-        // Check player inventory (lowest priority)
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.getItem() instanceof PortableDislocatorItem) {
-                return stack;
-            }
-        }
-        
-        return null;
+        ItemStack stack = CurioEquipUtil.findActiveStack(player, ModItems.PORTABLE_DISLOCATOR.get());
+        return stack.isEmpty() ? null : stack;
     }
     
     /**

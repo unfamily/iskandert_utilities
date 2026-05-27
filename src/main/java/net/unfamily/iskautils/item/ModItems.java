@@ -50,6 +50,7 @@ import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem;
+import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
 import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
 import net.unfamily.iskautils.item.custom.relic.IceDiamondItem;
 import net.unfamily.iskautils.item.custom.relic.OldBrickItem;
@@ -173,7 +174,7 @@ public class ModItems {
     public static final DeferredItem<Item> THE_ROOTS = ITEMS.registerItem("the_roots", TheRootsItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<Item> TOTEM_OF_PAIN = ITEMS.registerItem("totem_of_pain", CursedRelicItem::new, p -> p.stacksTo(1));
-    public static final DeferredItem<Item> CURSED_CANDLE = ITEMS.registerItem("cursed_candle", CursedRelicItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> CURSED_CANDLE = ITEMS.registerItem("cursed_candle", CursedCandleItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> BUSTED_CROWN = ITEMS.registerItem("busted_crown", CursedRelicItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> RITUAL_GAUNTLET = ITEMS.registerItem("ritual_gauntlet", CursedRelicItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> THE_DECEPTION = ITEMS.registerItem("the_deception", CursedRelicItem::new, p -> p.stacksTo(1));
