@@ -212,7 +212,7 @@ public class Config
                     "Required for stackable items (maxStackSize > 1); non-stackable items are accepted automatically.",
                     "Tags starting with # are item tags, items without # are item IDs (e.g. apotheosis:gem, minecraft:potion)")
             .defineList("400_deep_drawers_allow",
-                    java.util.Arrays.asList("apotheosis:gem", "minecraft:potion"),
+                    java.util.Arrays.asList("apotheosis:gem", "minecraft:potion", "minecraft:enchanted_book", "irons_spellbooks:scroll"),
                     obj -> obj instanceof String);
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DEEP_DRAWERS_DENY = BUILDER

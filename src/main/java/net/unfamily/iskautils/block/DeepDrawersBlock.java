@@ -153,7 +153,7 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                 // Show status message (actionbar) if:
                 // - Shift+click (always), OR
                 // - Normal click when GUI is disabled
-                boolean showStatus = player.isShiftKeyDown() || true; // GUI always disabled
+                boolean showStatus = player.isShiftKeyDown();
                 
                 if (showStatus) {
                     boolean isFull = deepDrawers.isFull();
@@ -170,6 +170,20 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                     }
                     return net.minecraft.world.InteractionResult.CONSUME;
                 }
+
+                // Normal click: open GUI
+                serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
+                    @Override
+                    public net.minecraft.network.chat.Component getDisplayName() {
+                        return deepDrawers.getDisplayName();
+                    }
+
+                    @Override
+                    public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int id, net.minecraft.world.entity.player.Inventory inv, Player p) {
+                        return new net.unfamily.iskautils.client.gui.DeepDrawersMenu(id, inv, deepDrawers);
+                    }
+                }, pos);
+                return net.minecraft.world.InteractionResult.CONSUME;
             }
         }
         return net.minecraft.world.InteractionResult.SUCCESS;

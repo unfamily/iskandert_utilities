@@ -194,7 +194,7 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 this.addSlot(new SlotItemHandler(offsetItemHandler, slotIndex, xPos, yPos) {
                     @Override
                     public boolean mayPlace(@NotNull ItemStack stack) {
-                        // Block all insertions from GUI
+                        // Do not use vanilla slot placement; we intercept clicks in clicked() for safe insertion.
                         return false;
                     }
                     
@@ -258,8 +258,98 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        // BLOCKED: No shift-click allowed (neither insertion nor extraction)
+        if (index < 0 || index >= this.slots.size()) {
+            return ItemStack.EMPTY;
+        }
+        Slot clicked = this.slots.get(index);
+        if (clicked == null || !clicked.hasItem()) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack stackInSlot = clicked.getItem();
+        ItemStack original = stackInSlot.copy();
+
+        // Storage grid (0..53): extract 1 directly into player inventory (no cursor).
+        if (this.blockEntity != null
+                && this.blockEntity.getLevel() != null
+                && !this.blockEntity.getLevel().isClientSide()
+                && index >= 0
+                && index < VISIBLE_SLOTS) {
+            ItemStack extracted = this.offsetItemHandler.extractItem(index, 1, false);
+            if (extracted.isEmpty()) {
+                return ItemStack.EMPTY;
+            }
+            boolean inserted = player.getInventory().add(extracted);
+            if (!inserted) {
+                // Give back to drawer if inventory full.
+                int virtualInsertSlot = Math.max(0, this.blockEntity.getOccupiedSlotsCount());
+                this.blockEntity.getItemHandler().insertItem(virtualInsertSlot, extracted, false);
+                return ItemStack.EMPTY;
+            }
+            this.blockEntity.setChanged();
+            updateViewHandler();
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                sendAllSlotsToClient(serverPlayer);
+            }
+            return original;
+        }
+
+        // Player inventory / hotbar: shift-insert into drawer buffer (virtual insertion slot).
+        if (this.blockEntity != null
+                && this.blockEntity.getLevel() != null
+                && !this.blockEntity.getLevel().isClientSide()) {
+            if (this.blockEntity.isFull()) {
+                return ItemStack.EMPTY;
+            }
+            int virtualInsertSlot = Math.max(0, this.blockEntity.getOccupiedSlotsCount());
+            ItemStack remainder = this.blockEntity.getItemHandler().insertItem(virtualInsertSlot, stackInSlot.copy(), false);
+            int insertedCount = stackInSlot.getCount() - remainder.getCount();
+            if (insertedCount <= 0) {
+                return ItemStack.EMPTY;
+            }
+            stackInSlot.shrink(insertedCount);
+            clicked.set(stackInSlot.isEmpty() ? ItemStack.EMPTY : stackInSlot);
+            clicked.setChanged();
+            this.blockEntity.setChanged();
+            updateViewHandler();
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                sendAllSlotsToClient(serverPlayer);
+            }
+            return original;
+        }
+
         return ItemStack.EMPTY;
+    }
+
+    @Override
+    public void clicked(int slotId, int button, net.minecraft.world.inventory.ClickType clickType, Player player) {
+        // Safe GUI insertion: do not rely on SlotItemHandler default placement logic (can desync and "eat" items).
+        // When the player is carrying an item and clicks the storage grid, insert via the block entity handler.
+        if (
+                clickType == net.minecraft.world.inventory.ClickType.PICKUP
+                        && this.blockEntity != null
+                        && this.blockEntity.getLevel() != null
+                        && !this.blockEntity.getLevel().isClientSide()
+                        && slotId >= 0
+                        && slotId < VISIBLE_SLOTS
+        ) {
+            ItemStack carried = this.getCarried();
+            if (!carried.isEmpty()) {
+                if (this.blockEntity.isFull()) {
+                    return; // Do not consume items when full.
+                }
+                // Insert using the virtual insertion slot (last slot) of the sparse handler.
+                int virtualInsertSlot = Math.max(0, this.blockEntity.getOccupiedSlotsCount());
+                ItemStack remainder = this.blockEntity.getItemHandler().insertItem(virtualInsertSlot, carried, false);
+                this.setCarried(remainder);
+                this.blockEntity.setChanged();
+                updateViewHandler();
+                if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                    sendAllSlotsToClient(serverPlayer);
+                }
+                return;
+            }
+        }
+        super.clicked(slotId, button, clickType, player);
     }
     
     /**
@@ -281,18 +371,12 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 // Copy items from actual storage to the view handler
                 if (this.viewHandler instanceof net.neoforged.neoforge.items.ItemStackHandler stackHandler) {
                     for (int i = 0; i < VISIBLE_SLOTS; i++) {
-                        int actualIndex = this.scrollOffset + i;
-                        // Fix: check bounds to allow last slot
-                        if (actualIndex >= 0 && actualIndex < totalSlots) {
-                            // Use getStackInPhysicalSlot to access physical storage directly
-                            ItemStack stack = this.blockEntity.getStackInPhysicalSlot(actualIndex);
-                            
-                            // Set in view handler (this will NOT trigger setStackInSlot because we're updating directly)
-                            stackHandler.setStackInSlot(i, stack.copy());
-                        } else {
-                            // Out of bounds, set empty
-                            stackHandler.setStackInSlot(i, ItemStack.EMPTY);
-                        }
+                        int occupiedIndex = this.scrollOffset + i;
+                        int physicalSlot = this.blockEntity.getPhysicalSlotAtOccupiedIndex(occupiedIndex);
+                        ItemStack stack = physicalSlot >= 0
+                                ? this.blockEntity.getStackInPhysicalSlot(physicalSlot)
+                                : ItemStack.EMPTY;
+                        stackHandler.setStackInSlot(i, stack.copy());
                     }
                     // Force full state broadcast to sync to client (this will update slots without recursion)
                     this.broadcastFullState();
@@ -549,24 +633,39 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 return ItemStack.EMPTY;
             }
             int currentOffset = getCurrentScrollOffset();
-            int physicalSlot = currentOffset + slot;
-            if (physicalSlot < 0 || physicalSlot >= totalSlots) {
-                return ItemStack.EMPTY;
-            }
-            
-            // Read directly from physical slot to get the item with correct count
-            // This ensures we always see the actual quantity stored in the physical slot
+            int occupiedIndex = currentOffset + slot;
             if (blockEntity != null) {
+                int physicalSlot = blockEntity.getPhysicalSlotAtOccupiedIndex(occupiedIndex);
+                if (physicalSlot < 0) {
+                    return ItemStack.EMPTY;
+                }
                 return blockEntity.getStackInPhysicalSlot(physicalSlot);
             }
-            // Fallback: try to use delegate (may not work if it uses logical slots)
-            return delegate.getStackInSlot(physicalSlot);
+            // Client fallback path: use linear index into cached slots (best-effort).
+            return delegate.getStackInSlot(occupiedIndex);
         }
         
         @Override
         public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
-            // Block all insertions from GUI
-            return stack;
+            if (slot < 0 || slot >= VISIBLE_SLOTS || stack.isEmpty()) {
+                return stack;
+            }
+            int currentOffset = getCurrentScrollOffset();
+            int occupiedIndex = currentOffset + slot;
+
+            // Delegate is the sparse logical handler: it exposes (occupiedSlots + 1) where the last slot is virtual insertion.
+            int delegateSlots = delegate.getSlots();
+            if (delegateSlots <= 0) {
+                return stack;
+            }
+            int logicalSlot = Math.min(occupiedIndex, delegateSlots - 1);
+            ItemStack remainder = delegate.insertItem(logicalSlot, stack, simulate);
+            if (!simulate && blockEntity != null && blockEntity.getLevel() != null && !blockEntity.getLevel().isClientSide()) {
+                // Force refresh + sync so the inserted item is immediately visible client-side.
+                blockEntity.setChanged();
+                updateViewHandler();
+            }
+            return remainder;
         }
         
         @Override
@@ -575,15 +674,12 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 return ItemStack.EMPTY;
             }
             int currentOffset = getCurrentScrollOffset();
-            int actualIndex = currentOffset + slot;
-            if (actualIndex < 0 || actualIndex >= totalSlots) {
-                return ItemStack.EMPTY;
-            }
+            int occupiedIndex = currentOffset + slot;
             // Always extract only 1 item at a time (even if more is requested)
             // This ensures shift-click and normal click both extract only 1 item
             try {
                 DeepDrawersBlockEntity.ITEM_HANDLER_ALLOW_EXTRACT.set(true);
-                return delegate.extractItem(actualIndex, 1, simulate);
+                return delegate.extractItem(occupiedIndex, 1, simulate);
             } finally {
                 DeepDrawersBlockEntity.ITEM_HANDLER_ALLOW_EXTRACT.set(false);
             }
@@ -595,11 +691,8 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 return 64;
             }
             int currentOffset = getCurrentScrollOffset();
-            int actualIndex = currentOffset + slot;
-            if (actualIndex < 0 || actualIndex >= totalSlots) {
-                return 64;
-            }
-            return delegate.getSlotLimit(actualIndex);
+            int occupiedIndex = currentOffset + slot;
+            return delegate.getSlotLimit(occupiedIndex);
         }
         
         @Override
@@ -615,19 +708,16 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 return;
             }
             int currentOffset = getCurrentScrollOffset();
-            int actualIndex = currentOffset + slot;
-            if (actualIndex < 0 || actualIndex >= totalSlots) {
-                return;
-            }
+            int occupiedIndex = currentOffset + slot;
             // Only allow clearing slots (extracting), not inserting
             if (stack.isEmpty()) {
                 // Allow extraction by clearing the slot
                 if (delegate instanceof IItemHandlerModifiable modifiable) {
-                    modifiable.setStackInSlot(actualIndex, ItemStack.EMPTY);
+                    modifiable.setStackInSlot(occupiedIndex, ItemStack.EMPTY);
                 } else {
                     try {
                         DeepDrawersBlockEntity.ITEM_HANDLER_ALLOW_EXTRACT.set(true);
-                        delegate.extractItem(actualIndex, Integer.MAX_VALUE, false);
+                        delegate.extractItem(occupiedIndex, Integer.MAX_VALUE, false);
                     } finally {
                         DeepDrawersBlockEntity.ITEM_HANDLER_ALLOW_EXTRACT.set(false);
                     }
@@ -655,6 +745,10 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
      * Gets the maximum scroll offset
      */
     public int getMaxScrollOffset() {
+        // Scroll through occupied entries only; physical slots are sparse and would appear empty otherwise.
+        if (blockEntity != null) {
+            return Math.max(0, blockEntity.getOccupiedSlotsCount() - VISIBLE_SLOTS);
+        }
         return Math.max(0, totalSlots - VISIBLE_SLOTS);
     }
     
