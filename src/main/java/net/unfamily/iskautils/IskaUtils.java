@@ -346,6 +346,28 @@ public class IskaUtils {
     public static class GameEventBusEvents {
         
         @SubscribeEvent
+        public static void onContainerOpen(net.neoforged.neoforge.event.entity.player.PlayerContainerEvent.Open event) {
+            if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+                    && event.getContainer() instanceof net.unfamily.iskautils.client.gui.DeepDrawersMenu menu) {
+                menu.sendAllSlotsToClient(serverPlayer);
+            }
+        }
+
+        @SubscribeEvent
+        public static void onPlayerTick(net.neoforged.neoforge.event.tick.PlayerTickEvent.Post event) {
+            if (!(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) {
+                return;
+            }
+            if (!(serverPlayer.containerMenu instanceof net.unfamily.iskautils.client.gui.DeepDrawersMenu menu)) {
+                return;
+            }
+            // Periodic sync: keep GUI refreshed even if other code paths mutate storage.
+            if (serverPlayer.tickCount % 20 == 0) {
+                menu.sendAllSlotsToClient(serverPlayer);
+            }
+        }
+
+        @SubscribeEvent
         public static void onContainerClose(net.neoforged.neoforge.event.entity.player.PlayerContainerEvent.Close event) {
             if (event.getContainer() instanceof net.unfamily.iskautils.client.gui.DeepDrawersMenu menu) {
                 if (menu.getBlockEntity() != null) {
