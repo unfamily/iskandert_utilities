@@ -28,6 +28,10 @@ Deep Drawer is a massive storage system designed to contain items that are norma
 - **Item Extraction**: Requires the Deep Drawer Extractor module to automatically extract items from the drawer
 - **Storage Mod Integration**: Requires Deep Drawer Interface module to integrate with storage mods like Applied Energistics 2, Refined Storage 2, and Tom's Storage
 
+## Integrated GUI
+
+Deep Drawer has an integrated GUI to view and manage its contents, similar to a normal chest.
+
 ## Additional Modules
 
 Deep Drawer can be extended with several modules that enhance its functionality. All modules also function as Extenders, allowing hoppers and pipes to insert items into the drawer:
