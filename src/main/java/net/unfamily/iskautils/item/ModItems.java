@@ -47,7 +47,6 @@ import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem;
-import net.unfamily.iskautils.item.custom.relic.CursedCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
 import net.unfamily.iskautils.item.custom.relic.IceDiamondItem;
 import net.unfamily.iskautils.item.custom.relic.OldBrickItem;
@@ -246,10 +245,6 @@ public class ModItems {
     public static final DeferredItem<Item> THE_DECEPTION = ITEMS.register("the_deception",
             () -> new CursedRelicItem(new Item.Properties()));
 
-    // Delivery drops
-    public static final DeferredItem<Item> CURSED_CRYSTAL_HEART = ITEMS.register("cursed_crystal_heart",
-            () -> new CursedCrystalHeartItem(new Item.Properties()));
-            
     // Rubber chunk item created from rubber
     public static final DeferredItem<Item> RUBBER_CHUNK = ITEMS.register("rubber_chunk",
             () -> new Item(ITEM_PROPERTIES));

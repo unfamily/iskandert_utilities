@@ -107,16 +107,7 @@ public class BurningBrazierItem extends Item {
         return InteractionResult.SUCCESS;
     }
 
-    @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-
-        // Only work on server side and only if entity is a player
-        if (level.isClientSide || !(entity instanceof ServerPlayer player)) {
-            return;
-        }
-
-        // Repair brazier durability using burning_flame block items from inventory
+    public static void tickEquipped(ServerPlayer player, ServerLevel level, ItemStack stack) {
         if (stack.isDamaged() && level.getGameTime() % 20 == 0) {
             var flameItem = ModBlocks.BURNING_FLAME.get().asItem();
             Inventory inv = player.getInventory();
@@ -130,47 +121,29 @@ public class BurningBrazierItem extends Item {
             }
         }
 
-        // Check if auto-placement is enabled for this player
         if (!BurningBrazierData.getAutoPlacementEnabledFromPlayer(player)) {
-            return; // Auto-placement is disabled
+            return;
         }
-
-        // Check if item has durability left
         if (stack.getDamageValue() >= MAX_DURABILITY) {
-            return; // No durability left, don't place flames automatically
+            return;
         }
-
-        // Only tick occasionally (every 40 ticks = 2 seconds)
         if (level.getGameTime() % 40 != 0) {
             return;
         }
 
         BlockPos playerPos = player.blockPosition();
-
-        // Check if the area is dark enough and position is valid
         int maxLocalBrightness = level.getMaxLocalRawBrightness(playerPos);
         boolean isPositionEmpty = level.isEmptyBlock(playerPos);
-
         if (maxLocalBrightness > 8 || !isPositionEmpty) {
-            return; // Conditions not met, don't place flame
+            return;
         }
 
-        // Place flame at player's position
-        BlockPos flamePos = playerPos;
-
-        // Place burning flame
         BlockState flameState = ModBlocks.BURNING_FLAME.get().defaultBlockState();
-        level.setBlock(flamePos, flameState, 3);
+        level.setBlock(playerPos, flameState, 3);
 
-        // If super hot mode is enabled OR curse_flame on player/team/world, set the player on fire
-        boolean shouldBurn = Config.burningBrazierSuperHot
-                || hasCurseFlame(player);
-
-        if (shouldBurn) {
-            player.setRemainingFireTicks(5 * 20); // 5 seconds of fire (5 * 20 ticks)
+        if (Config.burningBrazierSuperHot || hasCurseFlame(player)) {
+            player.setRemainingFireTicks(5 * 20);
         }
-
-        // Consume durability (reduce by 1)
         stack.setDamageValue(stack.getDamageValue() + 1);
     }
 

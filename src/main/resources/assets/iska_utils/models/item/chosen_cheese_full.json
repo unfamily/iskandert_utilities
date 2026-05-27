@@ -1,7 +1,7 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "iska_utils:item/cursed_crystal_heart"
+    "layer0": "iska_utils:item/the_chosen_cheese_full"
   }
 }
 

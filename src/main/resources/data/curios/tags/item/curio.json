@@ -6,6 +6,11 @@
       "iska_utils:mining_equitizer",
       "iska_utils:burning_brazier",
       "iska_utils:ghost_brazier",
-      "iska_utils:greedy_shield"
+      "iska_utils:greedy_shield",
+      "iska_utils:old_brick",
+      "iska_utils:chosen_cheese",
+      "iska_utils:the_deception",
+      "iska_utils:cursed_candle",
+      "iska_utils:ice_diamond"
     ]
   }

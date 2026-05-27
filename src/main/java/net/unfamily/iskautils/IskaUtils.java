@@ -34,6 +34,7 @@ import net.unfamily.iskautils.client.ClientEvents;
 import net.unfamily.iskautils.command.CommandItemLoader;
 import net.unfamily.iskautils.data.VectorCharmData;
 import net.unfamily.iskautils.events.LootEvents;
+import net.unfamily.iskautils.effect.ModMobEffects;
 import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
@@ -117,6 +118,7 @@ public class IskaUtils {
         net.unfamily.iskautils.worldgen.ModBiomeModifierSerializers.register(modEventBus);
         ModFactoryRecipes.register(modEventBus);
         ModItems.register(modEventBus);
+        ModMobEffects.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
         
@@ -265,6 +267,16 @@ public class IskaUtils {
                             net.minecraft.world.item.component.CustomData.EMPTY);
                         net.minecraft.nbt.CompoundTag nbt = customData.copyTag();
                         return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
+                    }
+                );
+
+                ItemProperties.register(
+                    ModItems.CHOSEN_CHEESE.get(),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "chosen_cheese_full"),
+                    (stack, level, entity, seed) -> {
+                        int y = net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem.getLevel(stack);
+                        int x = Config.chosenCheeseMax;
+                        return (y >= x) ? 1.0F : 0.0F;
                     }
                 );
             });

@@ -55,24 +55,16 @@ public class GauntletOfClimbingItem extends Item {
         return speed > 0.0 ? speed : DEFAULT_CLIMB_SPEED;
     }
 
-    @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-
-        if (!(entity instanceof Player player)) {
-            return;
-        }
-
+    public static void tickEquipped(Player player) {
         if (!isClimbingEnabled(player.getUUID())) {
             return;
         }
-
         if (player.horizontalCollision) {
             makePlayerClimb(player, getClimbSpeed());
         }
     }
 
-    private void makePlayerClimb(Player player, double climbSpeed) {
+    private static void makePlayerClimb(Player player, double climbSpeed) {
         Vec3 motion = player.getDeltaMovement();
 
         if (player.isShiftKeyDown()) {
