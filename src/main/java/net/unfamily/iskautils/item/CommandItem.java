@@ -378,7 +378,8 @@ public class CommandItem extends Item {
                     // We can execute the action independently of the item's state
                     // for EXECUTE and IF types
                     ItemStack stack = action.stack;
-                    if (action.action.getType() == CommandItemAction.ActionType.EXECUTE || 
+                    if (action.action.getType() == CommandItemAction.ActionType.EXECUTE ||
+                        action.action.getType() == CommandItemAction.ActionType.MESSAGE ||
                         action.action.getType() == CommandItemAction.ActionType.IF) {
                         // Execute these actions even if the item might be gone
                         LOGGER.debug("Executing delayed {} action even if item might be gone", action.action.getType());
@@ -578,7 +579,10 @@ public class CommandItem extends Item {
             }
             
             // For other types of action, use normal logic
-            if (!stack.isEmpty() || action.getType() == CommandItemAction.ActionType.EXECUTE || action.getType() == CommandItemAction.ActionType.IF) {
+            if (!stack.isEmpty() ||
+                action.getType() == CommandItemAction.ActionType.EXECUTE ||
+                action.getType() == CommandItemAction.ActionType.MESSAGE ||
+                action.getType() == CommandItemAction.ActionType.IF) {
                 // All EXECUTE and IF actions can be executed even after item deletion
                 executeAction(player, action, stack, slot);
                 // Check if this action deleted the item
@@ -601,6 +605,16 @@ public class CommandItem extends Item {
         switch (action.getType()) {
             case EXECUTE:
                 executeCommand(player, action.getCommand());
+                break;
+
+            case MESSAGE:
+                if (action.getMessage() != null) {
+                    action.getMessage().send(
+                            player.createCommandSourceStack().withSuppressedOutput(),
+                            player.position(),
+                            LOGGER,
+                            "command_item:" + getDefinitionId());
+                }
                 break;
                 
             case DELAY:
@@ -686,7 +700,10 @@ public class CommandItem extends Item {
             }
             
             // Execute the action based on type and item availability
-            if (!stack.isEmpty() || currentAction.getType() == CommandItemAction.ActionType.EXECUTE || currentAction.getType() == CommandItemAction.ActionType.IF) {
+            if (!stack.isEmpty() ||
+                currentAction.getType() == CommandItemAction.ActionType.EXECUTE ||
+                currentAction.getType() == CommandItemAction.ActionType.MESSAGE ||
+                currentAction.getType() == CommandItemAction.ActionType.IF) {
                 executeAction(player, currentAction, stack, slot);
                 
                 // If this action deleted the item, update the state

@@ -30,6 +30,7 @@ public final class IskaUtilsLoadPaths {
     public static final String TYPE_STAGE_ACTIONS = "iska_utils:stage_actions";
     public static final String TYPE_STAGE_ITEM = "iska_utils:stage_item";
     public static final String TYPE_STRUCTURE = "iska_utils:structure";
+    public static final String TYPE_SUSPICIOUS_DELIVERY = "iska_utils:suspicious_delivery";
 
     public static final String COMMAND_ITEMS = "iska_utils_command_items";
     public static final String PLATES = "iska_utils_plates";
@@ -40,6 +41,7 @@ public final class IskaUtilsLoadPaths {
     public static final String STAGE_ITEMS = "iska_utils_stage_items";
     /** Server structure definitions (iska_utils:structure), not monouse items. */
     public static final String STRUCTURE_DEFINITIONS = "iska_utils_structure_definitions";
+    public static final String OBTAINING = "iska_utils_obtaining";
 
     private static final Map<String, Set<String>> TYPES_BY_SUBDIR = Map.of(
             COMMAND_ITEMS, Set.of(TYPE_COMMAND_ITEM),
@@ -49,7 +51,8 @@ public final class IskaUtilsLoadPaths {
             MACROS, Set.of(TYPE_MACRO),
             STAGE_ACTIONS, Set.of(TYPE_STAGE_ACTIONS),
             STAGE_ITEMS, Set.of(TYPE_STAGE_ITEM),
-            STRUCTURE_DEFINITIONS, Set.of(TYPE_STRUCTURE)
+            STRUCTURE_DEFINITIONS, Set.of(TYPE_STRUCTURE),
+            OBTAINING, Set.of(TYPE_SUSPICIOUS_DELIVERY)
     );
 
     public static String loadSubdirPrefix(String subdir) {

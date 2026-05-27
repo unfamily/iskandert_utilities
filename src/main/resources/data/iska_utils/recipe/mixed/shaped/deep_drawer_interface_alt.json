@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CAC",
+    "ABA",
+    "CAC"
+  ],
+  "key": {
+    "A": "iska_utils:green_sludge",
+    "B": "minecraft:ender_eye",
+    "C": "iska_utils:deep_drawer_extender"
+  },
+  "result": {
+    "id": "iska_utils:deep_drawer_interface",
+    "count": 1
+  }
+}

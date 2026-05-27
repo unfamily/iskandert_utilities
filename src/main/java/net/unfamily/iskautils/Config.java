@@ -220,6 +220,12 @@ public class Config {
                     java.util.Arrays.asList("minecraft:book", "#c:skulls", "#minecraft:skulls"),
                     obj -> obj instanceof String);
 
+    // Relics configuration (starts at 500)
+    private static final ModConfigSpec.IntValue CHOSEN_CHEESE_MAX = BUILDER
+            .comment("Maximum bonus hearts (as raw health points) applied by The Chosen Cheese relic.",
+                    "This is the X value shown in the tooltip Y/X. Effective bonus is min(Y, X).")
+            .defineInRange("500_chosen_cheese_max", 10, 0, 200);
+
     // Deep Drawer Extractor Configuration (starts at 410)
     private static final ModConfigSpec.IntValue DEEP_DRAWER_EXTRACTOR_INTERVAL = BUILDER
             .comment("Extraction interval in ticks for the Deep Drawer Extractor (lower is faster)",
@@ -370,7 +376,12 @@ public class Config {
                     "If whitelist has entries, only those unbreakable blocks allowed")
             .defineList("021_creative_dolly_unbreakable_whitelist",
                     java.util.Collections.emptyList(),
-                    obj -> obj instancesaiLWAYS takes priority over the unbreakable whitelist",
+                    obj -> obj instanceof String);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> CREATIVE_DOLLY_UNBREAKABLE_BLACKLIST = BUILDER
+            .comment("List of unbreakable block IDs that are explicitly forbidden from being picked up by the Creative Dolly",
+                    "Only used when can_move_all_unbreakable is true",
+                    "This blacklist ALWAYS takes priority over the unbreakable whitelist",
                     "Blocks without # are block IDs (e.g. minecraft:bedrock, minecraft:end_portal_frame)",
                     "Empty list (default) means no unbreakable blocks are blacklisted")
             .defineList("022_creative_dolly_unbreakable_blacklist",
@@ -857,6 +868,7 @@ public class Config {
     public static double gauntletClimbingSpeed;
     public static double miningEquitizerAirMultiplier;
     public static double miningEquitizerWaterMultiplier;
+    public static int chosenCheeseMax;
 
     // Fan configuration
     public static int fanRangeHorizontalMax;
@@ -985,6 +997,7 @@ public class Config {
         // Deep Drawers configuration
         deepDrawersAllow = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOW.get());
         deepDrawersDeny = new java.util.ArrayList<>(DEEP_DRAWERS_DENY.get());
+        chosenCheeseMax = CHOSEN_CHEESE_MAX.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         ftbTeamsSyncEnabled = FTB_TEAMS_SYNC_ENABLED.get();

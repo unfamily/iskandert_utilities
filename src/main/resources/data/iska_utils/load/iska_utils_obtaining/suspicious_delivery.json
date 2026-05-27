@@ -1,0 +1,51 @@
+{
+  "type": "iska_utils:suspicious_delivery",
+  "entrities": [
+    {
+      "weight": 5,
+      "luck": 0,
+      "do": [
+        {
+          "message": {
+            "target": "@p",
+            "color": "#F54272",
+            "in": "action_bar",
+            "text": "message.suspicious_delivery.drop_of_chaos"
+          }
+        },
+        { "drop": "iska_utils:drop_of_chaos" }
+      ]
+    },
+    {
+      "weight": 2,
+      "luck": 0,
+      "do": [
+        {
+          "message": {
+            "target": "@p",
+            "color": "#B36BFF",
+            "in": "action_bar",
+            "text": "message.suspicious_delivery.cursed_crystal_heart"
+          }
+        },
+        { "drop": "iska_utils:cursed_crystal_heart" }
+      ]
+    },
+    {
+      "weight": 2,
+      "luck": 0,
+      "do": [
+        {
+          "message": {
+            "target": "@p",
+            "color": "#F5C542",
+            "in": "action_bar",
+            "text": "message.suspicious_delivery.mining_equitizer"
+          }
+        },
+        { "drop": "iska_utils:mining_equitizer" }
+      ]
+    }
+  ]
+}
+

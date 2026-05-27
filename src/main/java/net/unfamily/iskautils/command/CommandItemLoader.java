@@ -379,6 +379,14 @@ public class CommandItemLoader {
                 action.setType(CommandItemAction.ActionType.EXECUTE);
                 action.setCommand(actionJson.get("execute").getAsString());
             }
+            // Localized message (new format, like Suspicious Delivery)
+            else if (actionJson.has("message") && actionJson.get("message").isJsonObject()) {
+                action.setType(CommandItemAction.ActionType.MESSAGE);
+                action.setMessage(net.unfamily.iskautils.obtaining.MessageSpec.fromJson(
+                        actionJson.getAsJsonObject("message"),
+                        LOGGER,
+                        "command_item_action"));
+            }
             // Delay
             else if (actionJson.has("delay")) {
                 action.setType(CommandItemAction.ActionType.DELAY);

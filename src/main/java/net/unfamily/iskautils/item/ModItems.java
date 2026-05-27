@@ -48,6 +48,14 @@ import net.unfamily.iskautils.item.custom.UltraModuleItem;
 import net.unfamily.iskautils.item.custom.LogicModuleItem;
 import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
+import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
+import net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem;
+import net.unfamily.iskautils.item.custom.relic.CursedCrystalHeartItem;
+import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
+import net.unfamily.iskautils.item.custom.relic.IceDiamondItem;
+import net.unfamily.iskautils.item.custom.relic.OldBrickItem;
+import net.unfamily.iskautils.item.custom.relic.SharpenedBoneItem;
+import net.unfamily.iskautils.item.custom.relic.TheRootsItem;
 
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
@@ -146,6 +154,33 @@ public class ModItems {
     public static final DeferredItem<Item> DYE_BERRY = ITEMS.registerItem("dye_berry",
             net.unfamily.iskautils.item.custom.DyeBerryItem::new, p -> p.food(ModFoodProperties.DYE_BERRY));
     public static final DeferredItem<Item> GREEN_SLUDGE = ITEMS.registerSimpleItem("green_sludge");
+
+    // ===== NEW ARTIFACTS (obtaining) =====
+    public static final DeferredItem<Item> SUSPICIOUS_DELIVERY = ITEMS.registerItem("suspicious_delivery", SuspiciousDeliveryItem::new, UnaryOperator.identity());
+
+    public static final DeferredItem<Item> DROP_OF_CHAOS = ITEMS.registerSimpleItem("drop_of_chaos");
+
+    public static final DeferredItem<Item> MIXIN_TABLET = ITEMS.registerItem("mixin_tablet", Item::new, p -> p.stacksTo(1));
+
+    public static final DeferredItem<Item> UNSTABLE_DROP = ITEMS.registerSimpleItem("unstable_drop");
+
+    public static final DeferredItem<Item> CHAOTIC_CRYSTAL = ITEMS.registerSimpleItem("chaotic_crystal");
+
+    // ===== RELICS (reliquie) =====
+    public static final DeferredItem<Item> OLD_BRICK = ITEMS.registerItem("old_brick", OldBrickItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> CHOSEN_CHEESE = ITEMS.registerItem("chosen_cheese", ChosenCheeseItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> ICE_DIAMOND = ITEMS.registerItem("ice_diamond", IceDiamondItem::new, p -> p.stacksTo(1).durability(1024));
+    public static final DeferredItem<Item> SHARPENED_BONE = ITEMS.registerItem("sharpened_bone", SharpenedBoneItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> THE_ROOTS = ITEMS.registerItem("the_roots", TheRootsItem::new, p -> p.stacksTo(1));
+
+    public static final DeferredItem<Item> TOTEM_OF_PAIN = ITEMS.registerItem("totem_of_pain", CursedRelicItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> CURSED_CANDLE = ITEMS.registerItem("cursed_candle", CursedRelicItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> BUSTED_CROWN = ITEMS.registerItem("busted_crown", CursedRelicItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> RITUAL_GAUNTLET = ITEMS.registerItem("ritual_gauntlet", CursedRelicItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> THE_DECEPTION = ITEMS.registerItem("the_deception", CursedRelicItem::new, p -> p.stacksTo(1));
+
+    // Delivery drops
+    public static final DeferredItem<Item> CURSED_CRYSTAL_HEART = ITEMS.registerItem("cursed_crystal_heart", CursedCrystalHeartItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<Item> RUBBER_CHUNK = ITEMS.registerSimpleItem("rubber_chunk");
 
