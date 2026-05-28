@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "iska_utils:item/chaotic_crystal"
+    "layer0": "iska_utils:item/drop_of_entropy"
   }
 }
 

@@ -1,17 +1,17 @@
 ---
 navigation:
-  title: Drop of Chaos
-  icon: iska_utils:drop_of_chaos
-  parent: hubs/chaos_materials.md
+  title: Drop of Entropy
+  icon: iska_utils:drop_of_entropy
+  parent: hubs/entropy_materials.md
   position: 0
 item_ids:
-  - iska_utils:drop_of_chaos
+  - iska_utils:drop_of_entropy
 categories:
-  - Chaos materials
+  - Entropy materials
 ---
-# Drop of Chaos
+# Drop of Entropy
 
-<ItemImage id="iska_utils:drop_of_chaos" />
+<ItemImage id="iska_utils:drop_of_entropy" />
 
 ## What it does
 

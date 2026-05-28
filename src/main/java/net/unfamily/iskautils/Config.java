@@ -892,27 +892,27 @@ public class Config
                     "Hard Ice is indestructible and cannot be broken")
             .define("100_gift_place_hard_ice", true);
 
-    private static final ModConfigSpec.BooleanValue UNSTABLE_DROP_DECAY_KILLS_PLAYER = BUILDER
-            .comment("If true, the player dies when an unstable_drop fully decays in their inventory.")
-            .define("200_unstable_drop_decay_kills_player", false);
+    private static final ModConfigSpec.BooleanValue UNSTABLE_ENTROPY_CATALYST_DECAY_KILLS_PLAYER = BUILDER
+            .comment("If true, the player dies when an unstable_entropy_catalyst fully decays in their inventory.")
+            .define("200_unstable_entropy_catalyst_decay_kills_player", false);
 
     static {
         BUILDER.pop(); // End of evil_things category
-        BUILDER.comment("Unstable Drop Configuration").push("unstable_drop");
+        BUILDER.comment("Unstable Entropy Catalyst Configuration").push("unstable_entropy_catalyst");
     }
 
-    private static final ModConfigSpec.IntValue UNSTABLE_DROP_DECAY_TICKS = BUILDER
-            .comment("Ticks until unstable_drop decays in player inventory (0 = disabled). Default 600 = 30 seconds.")
-            .defineInRange("110_unstable_drop_decay_ticks", 600, 0, Integer.MAX_VALUE);
+    private static final ModConfigSpec.IntValue UNSTABLE_ENTROPY_CATALYST_DECAY_TICKS = BUILDER
+            .comment("Ticks until unstable_entropy_catalyst decays in player inventory (0 = disabled). Default 600 = 30 seconds.")
+            .defineInRange("110_unstable_entropy_catalyst_decay_ticks", 600, 0, Integer.MAX_VALUE);
 
-    private static final ModConfigSpec.ConfigValue<String> UNSTABLE_DROP_DECAY_TINTS = BUILDER
-            .comment("Color ramp used by unstable_drop as it decays (semicolon-separated).",
+    private static final ModConfigSpec.ConfigValue<String> UNSTABLE_ENTROPY_CATALYST_DECAY_TINTS = BUILDER
+            .comment("Color ramp used by unstable_entropy_catalyst as it decays (semicolon-separated).",
                     "Format: #RRGGBB;#RRGGBB;... (spaces allowed).",
                     "Default: pink -> red.")
-            .define("111_unstable_drop_decay_tints", "#FFFFFF;#FF77AA;#FF3355;#FF0000");
+            .define("111_unstable_entropy_catalyst_decay_tints", "#FFFFFF;#FF77AA;#FF3355;#FF0000");
 
     static {
-        BUILDER.pop(); // End of general_utilities.unstable_drop
+        BUILDER.pop(); // End of general_utilities.unstable_entropy_catalyst
     }
 
     static final ModConfigSpec SPEC = BUILDER.build();
@@ -989,9 +989,9 @@ public class Config
     public static boolean greedyShieldInfo;
     public static boolean burningFlameSuperHot;
     public static boolean giftPlaceHardIce;
-    public static int unstableDropDecayTicks;
-    public static boolean unstableDropDecayKillsPlayer;
-    public static java.util.List<Integer> unstableDropDecayTintColors;
+    public static int unstableEntropyCatalystDecayTicks;
+    public static boolean unstableEntropyCatalystDecayKillsPlayer;
+    public static java.util.List<Integer> unstableEntropyCatalystDecayTintColors;
     public static double gauntletClimbingSpeed;
     public static int chosenCheeseMax;
     public static double chosenCheeseHpPerLevel;
@@ -1119,9 +1119,9 @@ public class Config
         greedyShieldInfo = GREEDY_SHIELD_INFO.get();
         burningFlameSuperHot = BURNING_FLAME_SUPER_HOT.get();
         giftPlaceHardIce = GIFT_PLACE_HARD_ICE.get();
-        unstableDropDecayTicks = UNSTABLE_DROP_DECAY_TICKS.get();
-        unstableDropDecayTintColors = parseHexRgbList(UNSTABLE_DROP_DECAY_TINTS.get(), java.util.List.of(0xFF0000));
-        unstableDropDecayKillsPlayer = UNSTABLE_DROP_DECAY_KILLS_PLAYER.get();
+        unstableEntropyCatalystDecayTicks = UNSTABLE_ENTROPY_CATALYST_DECAY_TICKS.get();
+        unstableEntropyCatalystDecayTintColors = parseHexRgbList(UNSTABLE_ENTROPY_CATALYST_DECAY_TINTS.get(), java.util.List.of(0xFF0000));
+        unstableEntropyCatalystDecayKillsPlayer = UNSTABLE_ENTROPY_CATALYST_DECAY_KILLS_PLAYER.get();
 
         // Fan configuration
         fanRangeHorizontalMax = FAN_RANGE_HORIZONTAL_MAX.get();

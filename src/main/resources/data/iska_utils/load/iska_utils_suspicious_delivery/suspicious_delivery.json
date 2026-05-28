@@ -11,10 +11,10 @@
             "target": "@s",
             "in": "action_bar",
             "color": "#C040FF",
-            "text": "message.iska_utils.suspicious_delivery.chaos_primitive"
+            "text": "message.iska_utils.suspicious_delivery.entropy_primitive"
           }
         },
-        { "drop": "iska_utils:drop_of_chaos" }
+        { "drop": "iska_utils:drop_of_entropy" }
       ]
     },
     {

@@ -314,9 +314,9 @@ public class IskaUtils {
                         if (tintIndex == 0) {
                             return 0xFFFFFFFF;
                         }
-                        return 0xFF000000 | net.unfamily.iskautils.item.component.UnstableDropDecay.calcTintRgb(stack);
+                        return 0xFF000000 | net.unfamily.iskautils.item.component.UnstableEntropyCatalystDecay.calcTintRgb(stack);
                     },
-                    ModItems.UNSTABLE_DROP.get()
+                    ModItems.UNSTABLE_ENTROPY_CATALYST.get()
             );
         }
         

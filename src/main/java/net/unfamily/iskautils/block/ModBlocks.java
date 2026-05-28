@@ -19,7 +19,7 @@ import net.unfamily.iskautils.block.ShopBlock;
 import net.unfamily.iskautils.block.AutoShopBlock;
 import net.unfamily.iskautils.block.BurningFlameBlock;
 import net.unfamily.iskautils.block.RedstoneSignalBlock;
-import net.unfamily.iskautils.block.ChaoticTntBlock;
+import net.unfamily.iskautils.block.EntropyTntBlock;
 import net.unfamily.iskautils.block.HardIceBlock;
 import net.unfamily.iskautils.block.SmartTimerBlock;
 import net.unfamily.iskautils.block.TemporalOverclockerBlock;
@@ -470,9 +470,9 @@ public class ModBlocks {
             .pushReaction(PushReaction.DESTROY)
             .isViewBlocking((state, level, pos) -> false)));
 
-    // Chaotic TNT Block (massive explosion with various triggers)
-    public static final DeferredBlock<ChaoticTntBlock> CHAOTIC_TNT = BLOCKS.register("chaotic_tnt",
-            () -> new ChaoticTntBlock());
+    // Entropy TNT Block (massive explosion with various triggers)
+    public static final DeferredBlock<EntropyTntBlock> ENTROPY_TNT = BLOCKS.register("entropy_tnt",
+            () -> new EntropyTntBlock());
 
     // ===== BURNING FLAME BLOCK =====
     private static final BlockBehaviour.Properties BURNING_FLAME_PROPERTIES = BlockBehaviour.Properties.of()

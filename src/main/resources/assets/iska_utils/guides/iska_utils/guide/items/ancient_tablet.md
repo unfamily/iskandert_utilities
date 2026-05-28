@@ -2,12 +2,12 @@
 navigation:
   title: Ancient Tablet
   icon: iska_utils:ancient_tablet
-  parent: hubs/chaos_materials.md
+  parent: hubs/entropy_materials.md
   position: 1
 item_ids:
   - iska_utils:ancient_tablet
 categories:
-  - Chaos materials
+  - Entropy materials
 ---
 # Ancient Tablet
 
@@ -30,7 +30,7 @@ Hold the tablet in your **main hand**. It stores up to **64** ingredients (one i
 
 ## Outputs
 
-The tablet is used to craft **Chaotic Crystal** and **Unstable Drop** (see the other pages in **Chaos materials**). Recipes use **Drop of Chaos** — see that page for how to obtain it. Other delivery relics can be recycled into chaos drops in a **crafting table** or **Factory**.
+The tablet is used to craft **Entropy Crystal** and **Unstable Entropy Catalyst** (see the other pages in **Entropy materials**). Recipes use **Drop of Entropy** — see that page for how to obtain it. Other delivery relics can be recycled into drops of entropy in a **crafting table** or **Factory**.
 
 ## Obtaining the tablet
 

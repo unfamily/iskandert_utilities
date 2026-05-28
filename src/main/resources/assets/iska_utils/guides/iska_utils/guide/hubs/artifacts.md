@@ -13,6 +13,6 @@ Relics and special curios obtained mainly by opening a **Suspicious Delivery** p
 
 Most items must be worn in **Curios** slots. The **Cursed Candle** is an exception and can be used from your inventory like a tool.
 
-**Chaos materials** (Ancient Tablet, Drop of Chaos, and related crafts) are listed right after the delivery page below.
+**Entropy materials** (Ancient Tablet, Drop of Entropy, and related crafts) are listed right after the delivery page below.
 
 <SubPages icons={true} alphabetical={false} />

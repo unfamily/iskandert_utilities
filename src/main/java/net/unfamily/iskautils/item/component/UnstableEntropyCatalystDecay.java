@@ -6,26 +6,26 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.unfamily.iskautils.Config;
 
-public final class UnstableDropDecay {
-    private static final String NBT_REMAINING = "unstable_drop_remaining_ticks";
+public final class UnstableEntropyCatalystDecay {
+    private static final String NBT_REMAINING = "unstable_entropy_catalyst_remaining_ticks";
 
-    private UnstableDropDecay() {}
+    private UnstableEntropyCatalystDecay() {}
 
     public static boolean isDecayEnabled() {
-        return Config.unstableDropDecayTicks > 0;
+        return Config.unstableEntropyCatalystDecayTicks > 0;
     }
 
     public static int getRemainingTicks(ItemStack stack) {
         if (!isDecayEnabled()) {
-            return Config.unstableDropDecayTicks;
+            return Config.unstableEntropyCatalystDecayTicks;
         }
         CustomData custom = stack.get(DataComponents.CUSTOM_DATA);
         if (custom == null) {
-            return Config.unstableDropDecayTicks;
+            return Config.unstableEntropyCatalystDecayTicks;
         }
         CompoundTag tag = custom.copyTag();
         if (!tag.contains(NBT_REMAINING)) {
-            return Config.unstableDropDecayTicks;
+            return Config.unstableEntropyCatalystDecayTicks;
         }
         return tag.getInt(NBT_REMAINING);
     }
@@ -42,7 +42,7 @@ public final class UnstableDropDecay {
 
     public static int calcTintRgb(float instability) {
         float t = Math.min(1f, Math.max(0f, instability));
-        java.util.List<Integer> colors = Config.unstableDropDecayTintColors;
+        java.util.List<Integer> colors = Config.unstableEntropyCatalystDecayTintColors;
         if (colors == null || colors.isEmpty()) {
             return 0xFF0000;
         }
@@ -68,7 +68,7 @@ public final class UnstableDropDecay {
     }
 
     public static float instability(ItemStack stack) {
-        int max = Config.unstableDropDecayTicks;
+        int max = Config.unstableEntropyCatalystDecayTicks;
         if (max <= 0) {
             return 0f;
         }

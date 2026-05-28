@@ -46,7 +46,7 @@ import net.unfamily.iskautils.item.custom.LogicModuleItem;
 import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.AncientTabletItem;
-import net.unfamily.iskautils.item.custom.UnstableDropItem;
+import net.unfamily.iskautils.item.custom.UnstableEntropyCatalystItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
@@ -217,16 +217,16 @@ public class ModItems {
             "suspicious_delivery_undefined",
             () -> new Item(new Item.Properties()));
 
-    public static final DeferredItem<Item> DROP_OF_CHAOS = ITEMS.register("drop_of_chaos",
+    public static final DeferredItem<Item> DROP_OF_ENTROPY = ITEMS.register("drop_of_entropy",
             () -> new Item(ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> ANCIENT_TABLET = ITEMS.register("ancient_tablet",
             () -> new AncientTabletItem(new Item.Properties()));
 
-    public static final DeferredItem<Item> UNSTABLE_DROP = ITEMS.register("unstable_drop",
-            () -> new UnstableDropItem(ITEM_PROPERTIES));
+    public static final DeferredItem<Item> UNSTABLE_ENTROPY_CATALYST = ITEMS.register("unstable_entropy_catalyst",
+            () -> new UnstableEntropyCatalystItem(ITEM_PROPERTIES));
 
-    public static final DeferredItem<Item> CHAOTIC_CRYSTAL = ITEMS.register("chaotic_crystal",
+    public static final DeferredItem<Item> ENTROPY_CRYSTAL = ITEMS.register("entropy_crystal",
             () -> new Item(ITEM_PROPERTIES));
 
     // ===== RELICS (reliquie) =====
@@ -501,9 +501,9 @@ public class ModItems {
     public static final DeferredItem<Item> BLUEPRINT = ITEMS.register("blueprint",
             () -> new BlueprintItem(new Item.Properties().stacksTo(1)));
 
-    // Chaotic TNT Block
-    public static final DeferredItem<Item> CHAOTIC_TNT = ITEMS.register("chaotic_tnt",
-            () -> new BlockItem(ModBlocks.CHAOTIC_TNT.get(), ITEM_PROPERTIES));
+    // Entropy TNT Block
+    public static final DeferredItem<Item> ENTROPY_TNT = ITEMS.register("entropy_tnt",
+            () -> new BlockItem(ModBlocks.ENTROPY_TNT.get(), ITEM_PROPERTIES));
 
     // ===== BURNING BRAZIER ITEM =====
 

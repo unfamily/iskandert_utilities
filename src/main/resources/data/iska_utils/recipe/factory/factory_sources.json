@@ -46,7 +46,7 @@
       "input": "#iska_utils:delivery_recycle",
       "amount": 1,
       "select": [
-        { "output": "iska_utils:drop_of_chaos", "amount": 1 }
+        { "output": "iska_utils:drop_of_entropy", "amount": 1 }
       ]
     }
   ]

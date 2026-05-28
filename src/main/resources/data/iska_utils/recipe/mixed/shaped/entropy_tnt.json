@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    "BCB",
+    "AAA"
+  ],
+  "key": {
+    "A": "minecraft:tnt",
+    "B": "iska_utils:entropy_crystal",
+    "C": "iska_utils:unstable_entropy_catalyst"
+  },
+  "result": {
+    "id": "iska_utils:entropy_tnt",
+    "count": 1
+  }
+}

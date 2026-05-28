@@ -217,10 +217,11 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.THE_DECEPTION.get());
 
                                 // Delivery-related items (after all artifacts)
-                                pOutput.accept(ModItems.DROP_OF_CHAOS.get());
+                                pOutput.accept(ModItems.DROP_OF_ENTROPY.get());
                                 pOutput.accept(ModItems.ANCIENT_TABLET.get());
-                                pOutput.accept(ModItems.UNSTABLE_DROP.get());
-                                pOutput.accept(ModItems.CHAOTIC_CRYSTAL.get());
+                                pOutput.accept(ModItems.ENTROPY_CRYSTAL.get());
+                                pOutput.accept(ModItems.UNSTABLE_ENTROPY_CATALYST.get());
+                                pOutput.accept(ModItems.ENTROPY_TNT.get());
 
                             }).build());
 

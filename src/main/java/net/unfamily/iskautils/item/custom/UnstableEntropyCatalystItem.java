@@ -6,22 +6,21 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.item.component.UnstableDropDecay;
+import net.unfamily.iskautils.item.component.UnstableEntropyCatalystDecay;
 
 import java.util.List;
 
-public class UnstableDropItem extends Item {
+public class UnstableEntropyCatalystItem extends Item {
 
     private static final int BAR_LENGTH = 15;
 
-    public UnstableDropItem(Properties properties) {
+    public UnstableEntropyCatalystItem(Properties properties) {
         super(properties);
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        // Remove dye/color component tooltips (e.g. "Dyed" / "Color: #RRGGBB") if present.
         tooltip.removeIf(c -> {
             if (c == null) {
                 return false;
@@ -33,11 +32,11 @@ public class UnstableDropItem extends Item {
             }
             return false;
         });
-        if (!UnstableDropDecay.isDecayEnabled()) {
+        if (!UnstableEntropyCatalystDecay.isDecayEnabled()) {
             return;
         }
-        int remaining = UnstableDropDecay.getRemainingTicks(stack);
-        int max = Config.unstableDropDecayTicks;
+        int remaining = UnstableEntropyCatalystDecay.getRemainingTicks(stack);
+        int max = Config.unstableEntropyCatalystDecayTicks;
         float ratio = max > 0 ? remaining / (float) max : 0f;
         int filled = Math.round(ratio * BAR_LENGTH);
         ChatFormatting color = ratio > 0.5f ? ChatFormatting.GREEN
@@ -47,10 +46,10 @@ public class UnstableDropItem extends Item {
             bar.append(i < filled ? '█' : '░');
         }
         tooltip.add(Component.literal(bar.toString()).withStyle(color));
-        tooltip.add(Component.translatable("tooltip.iska_utils.unstable_drop.decay", remaining / 20, max / 20)
+        tooltip.add(Component.translatable("tooltip.iska_utils.unstable_entropy_catalyst.decay", remaining / 20, max / 20)
                 .withStyle(ChatFormatting.GRAY));
-        if (Config.unstableDropDecayKillsPlayer) {
-            tooltip.add(Component.translatable("tooltip.iska_utils.unstable_drop.lethal").withStyle(ChatFormatting.DARK_RED));
+        if (Config.unstableEntropyCatalystDecayKillsPlayer) {
+            tooltip.add(Component.translatable("tooltip.iska_utils.unstable_entropy_catalyst.lethal").withStyle(ChatFormatting.DARK_RED));
         }
     }
 }
