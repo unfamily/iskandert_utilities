@@ -6,6 +6,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
+import net.unfamily.iskautils.integration.ColossalReactorsTooltipHelper;
 import net.unfamily.iskautils.integration.PatternCrafterTooltipHelper;
 
 import java.util.ArrayList;
@@ -32,13 +33,20 @@ public class ProductionModuleItem extends Item {
     ) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
 
-        if (!PatternCrafterTooltipHelper.supportsProductionModule()) {
+        boolean showPatternCrafter = PatternCrafterTooltipHelper.supportsProductionModule();
+        boolean showColossalReactors = ColossalReactorsTooltipHelper.supportsRadiationScrubberProductionModule();
+        if (!showPatternCrafter && !showColossalReactors) {
             return;
         }
 
         if (flag.hasShiftDown()) {
             List<Component> tmp = new ArrayList<>();
-            PatternCrafterTooltipHelper.addProductionModuleTooltip(tmp);
+            if (showPatternCrafter) {
+                PatternCrafterTooltipHelper.addProductionModuleTooltip(tmp);
+            }
+            if (showColossalReactors) {
+                ColossalReactorsTooltipHelper.addRadiationScrubberProductionModuleTooltip(tmp);
+            }
             tmp.forEach(tooltip);
         } else {
             tooltip.accept(Component.translatable("tooltip.iska_utils.fan_module.press_shift")
