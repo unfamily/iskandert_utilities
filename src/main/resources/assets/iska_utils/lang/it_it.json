@@ -631,6 +631,7 @@
   "tooltip.iska_utils.ancient_tablet.desc1": "§7Sembra l'epopea di un dev impazzito.",
   "tooltip.iska_utils.ancient_tablet.contents": "§7Contenuto: %1$s / %2$s",
   "message.iska_utils.ancient_tablet.wrong_order": "Ordine dei componenti errato nella tavoletta.",
+  "message.iska_utils.ancient_tablet.wrong_order_destroyed": "Ordine dei componenti errato. Il contenuto della tavoletta è stato distrutto.",
   "jei.iska_utils.ancient_tablet": "Tavoletta Antica",
   "jei.iska_utils.ancient_tablet.warn_ordered": "Richiede ordine esatto negli slot (must_ordered).",
   "jei.iska_utils.ancient_tablet.warn_destroy": "Ordine errato distrugge il contenuto (destroy_if_wrong).",
