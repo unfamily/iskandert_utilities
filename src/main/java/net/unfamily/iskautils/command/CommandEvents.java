@@ -17,6 +17,7 @@ public final class CommandEvents {
         net.unfamily.iskalib.command.StageCommand.register(event.getDispatcher());
         net.unfamily.iskalib.command.MarkerCommand.register(event.getDispatcher());
         net.unfamily.iskalib.command.IskaLibDebugCommand.register(event.getDispatcher());
+        net.unfamily.iskalib.command.ExplosionCommand.register(event.getDispatcher());
 
         // Mod-owned commands (depend on mod configuration/assets)
         ShopCommand.register(event.getDispatcher());

@@ -314,7 +314,7 @@
   "item.iska_utils.scanner": "Scanner",
   "item.iska_utils.scanner.target_set": "Blocco target impostato: %s",
   "commands.iska_utils.explosion.usage.title": "===== Esplosione Custom IskaUtils =====",
-  "commands.iska_utils.explosion.usage.command": "/iska_utils_explosion start <raggio_orizzontale> <raggio_verticale> <tick_interval> <danno> <rompi_indistruttibili> [x y z]",
+  "commands.iska_utils.explosion.usage.command": "/iska_lib_explosion start <raggio_orizzontale> <raggio_verticale> <tick_interval> <danno> <rompi_indistruttibili> [x y z]",
   "commands.iska_utils.explosion.usage.damage": "- danno: Danno da infliggere alle entità (min: 0.0, no limite)",
   "commands.iska_utils.explosion.usage.break_unbreakable": "- rompi_indistruttibili: Se rompere bedrock e barriere (true/false)",
   "commands.iska_utils.explosion.usage.horizontal": "- raggio_orizzontale: Raggio X/Z dell'ellisse (min: 1, no limite)",
