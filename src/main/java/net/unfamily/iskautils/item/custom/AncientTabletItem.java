@@ -4,6 +4,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickAction;
 import net.minecraft.world.inventory.Slot;
@@ -24,13 +26,13 @@ public class AncientTabletItem extends Item {
     }
 
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack tablet = player.getItemInHand(hand);
         if (!level.isClientSide) {
             AncientTabletContents.dropAll(level, player, tablet);
             player.playSound(SoundEvents.BUNDLE_DROP_CONTENTS, 0.8f, 1.0f);
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionResultHolder.sidedSuccess(tablet, level.isClientSide);
     }
 
     @Override
@@ -49,26 +51,38 @@ public class AncientTabletItem extends Item {
     }
 
     @Override
-    public boolean overrideStackedOnOther(ItemStack tablet, ItemStack other, Slot slot, ClickAction action, Player player) {
-        if (action != ClickAction.PRIMARY || other.isEmpty() || tablet.isEmpty()) {
+    public boolean overrideStackedOnOther(ItemStack tablet, Slot slot, ClickAction action, Player player) {
+        if (action != ClickAction.PRIMARY || tablet.getCount() != 1) {
             return false;
         }
-        if (!AncientTabletContents.tryInsert(tablet, other)) {
+        ItemStack other = slot.getItem();
+        if (other.isEmpty()) {
+            return false;
+        }
+        if (!AncientTabletContents.tryInsert(tablet, player.registryAccess(), other)) {
             return false;
         }
         other.shrink(1);
+        player.containerMenu.broadcastChanges();
         return true;
     }
 
     @Override
-    public boolean overrideOtherStackedOnMe(ItemStack tablet, ItemStack other, Slot slot, ClickAction action, Player player) {
-        if (action != ClickAction.PRIMARY || other.isEmpty() || tablet.isEmpty()) {
+    public boolean overrideOtherStackedOnMe(
+            ItemStack tablet,
+            ItemStack other,
+            Slot slot,
+            ClickAction action,
+            Player player,
+            SlotAccess carriedItem) {
+        if (action != ClickAction.PRIMARY || tablet.getCount() != 1 || other.isEmpty()) {
             return false;
         }
-        if (!AncientTabletContents.tryInsert(tablet, other)) {
+        if (!AncientTabletContents.tryInsert(tablet, player.registryAccess(), other)) {
             return false;
         }
         other.shrink(1);
+        player.containerMenu.broadcastChanges();
         return true;
     }
 

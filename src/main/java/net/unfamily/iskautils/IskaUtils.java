@@ -303,6 +303,12 @@ public class IskaUtils {
                     (stack, level, entity, seed) ->
                             net.unfamily.iskautils.item.custom.relic.TheRootsItem.isUnixLike() ? 1.0F : 0.0F
                 );
+
+                ItemProperties.register(
+                    ModItems.UNSTABLE_DROP.get(),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "instability"),
+                    (stack, level, entity, seed) -> net.unfamily.iskautils.item.component.UnstableDropDecay.instability(stack)
+                );
             });
         }
         

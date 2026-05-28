@@ -46,6 +46,7 @@ import net.unfamily.iskautils.item.custom.LogicModuleItem;
 import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.AncientTabletItem;
+import net.unfamily.iskautils.item.custom.UnstableDropItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
@@ -223,7 +224,7 @@ public class ModItems {
             () -> new AncientTabletItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredItem<Item> UNSTABLE_DROP = ITEMS.register("unstable_drop",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new UnstableDropItem(ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> CHAOTIC_CRYSTAL = ITEMS.register("chaotic_crystal",
             () -> new Item(ITEM_PROPERTIES));

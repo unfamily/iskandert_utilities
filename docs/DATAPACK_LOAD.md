@@ -18,6 +18,36 @@ Reload on server: `/reload` or `/iska_utils_debug reload`.
 
 Factory recipes use `data/<namespace>/recipe/factory/` (not under `load/`).
 
+Ancient Tablet recipes use `data/<namespace>/recipe/**/*.json` with `"type": "iska_utils:ancient_tablet"` (merged entries from all matching files).
+
+## Ancient Tablet recipes
+
+- Path: `data/<namespace>/recipe/**/<file>.json` with `"type": "iska_utils:ancient_tablet"`
+- Reload: `/reload` or `/iska_utils_debug reload` (includes `AncientTabletRecipeLoader`)
+- Wiki: [Ancient-Tablet](https://github.com/unfamily/Iskandert_Utilities/wiki/Ancient-Tablet)
+
+Each file has an `entries` array. Every valid entry from every file is merged at runtime.
+
+### Entry fields
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `must_ordered` | `false` | If `true`, tablet slots 0…N−1 must match `require` in order |
+| `destroy_if_wrong` | `false` | Only with `must_ordered`: wrong order clears tablet with no output |
+| `require` | — | Ordered list of slot requirements (tags allowed) |
+| `produce` | — | Outputs (items only; no tags) |
+
+### Requirement syntax
+
+| Form | Meaning |
+|------|---------|
+| `"minecraft:obsidian"` | One slot |
+| `"#c:ingots/copper"` | One slot, tag |
+| `{"id":"iska_utils:drop_of_chaos","count":8}` | Eight separate slots |
+| `"minecraft:stone_shovel[damage=10]"` | Item with minimum damage |
+
+`count` repeats slots; it is not stack size inside one slot.
+
 ## Suspicious Delivery
 
 - Default: `data/iska_utils/load/iska_utils_suspicious_delivery/suspicious_delivery.json`

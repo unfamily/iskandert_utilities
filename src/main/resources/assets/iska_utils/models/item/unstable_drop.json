@@ -2,6 +2,19 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "iska_utils:item/unstable_drop"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": { "iska_utils:instability": 0.75 },
+      "model": "iska_utils:item/unstable_drop_2"
+    },
+    {
+      "predicate": { "iska_utils:instability": 0.5 },
+      "model": "iska_utils:item/unstable_drop_1"
+    },
+    {
+      "predicate": { "iska_utils:instability": 0.25 },
+      "model": "iska_utils:item/unstable_drop_0"
+    }
+  ]
 }
-
