@@ -28,6 +28,14 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.fml.ModList;
 import guideme.Guide;
+import guideme.GuideItemSettings;
+import guideme.compiler.TagCompiler;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import java.util.List;
+import java.util.Optional;
+import net.unfamily.iskautils.guide.TheRootsNavigationIndex;
+import net.unfamily.iskautils.guide.TheRootsTitleTagCompiler;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.ClientEvents;
@@ -151,7 +159,16 @@ public class IskaUtils {
         // Initialize GuideME guide if available
         if (ModList.get().isLoaded("guideme")) {
             try {
-                Guide.builder(ResourceLocation.fromNamespaceAndPath(MOD_ID, "guide")).build();
+                var guideItemSettings = new GuideItemSettings(
+                        Optional.of(Component.translatable("item.iska_utils.guide")),
+                        List.of(Component.translatable("tooltip.iska_utils.guide.line0")
+                                .withStyle(ChatFormatting.DARK_GRAY)),
+                        Optional.empty());
+                Guide.builder(ResourceLocation.fromNamespaceAndPath(MOD_ID, "guide"))
+                        .itemSettings(guideItemSettings)
+                        .extension(TagCompiler.EXTENSION_POINT, new TheRootsTitleTagCompiler())
+                        .index(new TheRootsNavigationIndex())
+                        .build();
                 LOGGER.info("GuideME guide registered");
             } catch (Exception e) {
                 LOGGER.warn("Failed to register GuideME guide: {}", e.getMessage());

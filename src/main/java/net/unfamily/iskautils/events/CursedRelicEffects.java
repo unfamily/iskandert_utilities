@@ -45,7 +45,7 @@ public final class CursedRelicEffects {
         if (player.level().isClientSide) return;
         if (!(player instanceof ServerPlayer sp)) return;
 
-        // Busted Crown: +2 HP for each cursed relic worn in Curios (not inventory).
+        // Busted Crown: bonus HP per cursed artifact (Curios); Cursed Candle also counts in inventory/hands.
         if (!hasBustedCrownEquipped(sp)) {
             removeBustedCrownModifier(sp);
             return;

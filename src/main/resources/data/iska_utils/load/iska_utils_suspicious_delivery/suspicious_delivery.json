@@ -1,0 +1,87 @@
+{
+  "type": "iska_utils:suspicious_delivery",
+  "entries": [
+    {
+      "weight": 30,
+      "luck": 10000,
+      "jeimode": "show",
+      "do": [
+        {
+          "message": {
+            "target": "@s",
+            "in": "action_bar",
+            "color": "#C040FF",
+            "text": "message.iska_utils.suspicious_delivery.chaos_primitive"
+          }
+        },
+        { "drop": "iska_utils:drop_of_chaos" }
+      ]
+    },
+    {
+      "weight": 85,
+      "luck": 0,
+      "jeimode": "show",
+      "do": [
+        {
+          "message": {
+            "target": "@s",
+            "in": "action_bar",
+            "text": "message.iska_utils.suspicious_delivery.nested"
+          }
+        },
+        { "drop": "iska_utils:suspicious_delivery" }
+      ]
+    },
+    {
+      "weight": 50,
+      "luck": -10,
+      "jeimode": "mask",
+      "do": [
+        {
+          "message": {
+            "target": "@s",
+            "in": "action_bar",
+            "text": "message.iska_utils.suspicious_delivery.bomb_tickle"
+          }
+        },
+        { "delay": 20 },
+        {
+          "message": {
+            "target": "@s",
+            "in": "action_bar",
+            "color": "#FF0000",
+            "text": "message.iska_utils.suspicious_delivery.bomb_alarm"
+          }
+        },
+        {
+          "execute": "summon tnt ~ ~ ~ {fuse:5000, Tags:[\"fake_tnt\"]}"
+        },
+        { "delay": 100 },
+        {
+          "execute": "kill @e[type=tnt,tag=fake_tnt]"
+        },
+        {
+          "message": {
+            "target": "@s",
+            "in": "action_bar",
+            "text": "message.iska_utils.suspicious_delivery.bomb_clock"
+          }
+        },
+        { "drop": "minecraft:clock" }
+      ]
+    },
+    { "weight": 100, "luck": 1200, "jeimode": "show", "do": [{ "drop": "iska_utils:chosen_cheese" }] },
+    { "weight": 100, "luck": 1100, "jeimode": "show", "do": [{ "drop": "iska_utils:totem_of_pain" }] },
+    { "weight": 100, "luck": 1000, "jeimode": "show", "do": [{ "drop": "iska_utils:necrotic_crystal_heart" }] },
+    { "weight": 100, "luck": 900, "jeimode": "show", "do": [{ "drop": "iska_utils:sharpened_bone" }] },
+    { "weight": 75, "luck": 850, "jeimode": "show", "do": [{ "drop": "iska_utils:ancient_tablet" }] },
+    { "weight": 100, "luck": 800, "jeimode": "show", "do": [{ "drop": "iska_utils:ritual_gauntlet" }] },
+    { "weight": 100, "luck": 700, "jeimode": "show", "do": [{ "drop": "iska_utils:busted_crown" }] },
+    { "weight": 100, "luck": 600, "jeimode": "show", "do": [{ "drop": "iska_utils:the_deception" }] },
+    { "weight": 100, "luck": 500, "jeimode": "show", "do": [{ "drop": "iska_utils:ice_diamond" }] },
+    { "weight": 100, "luck": 400, "jeimode": "show", "do": [{ "drop": "iska_utils:old_brick" }] },
+    { "weight": 100, "luck": 300, "jeimode": "show", "do": [{ "drop": "iska_utils:the_roots" }] },
+    { "weight": 100, "luck": 200, "jeimode": "show", "do": [{ "drop": "iska_utils:mining_equitizer" }] },
+    { "weight": 75, "luck": 100, "jeimode": "show", "do": [{ "drop": "iska_utils:cursed_candle" }] }
+  ]
+}

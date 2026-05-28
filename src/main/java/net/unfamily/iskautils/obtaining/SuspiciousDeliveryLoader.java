@@ -11,6 +11,10 @@ import org.slf4j.Logger;
 
 import java.util.Map;
 
+/**
+ * Loads Suspicious Delivery loot from {@code data/<namespace>/load/iska_utils_suspicious_delivery/}
+ * (or flat {@code load/*.json} with {@code "type": "iska_utils:suspicious_delivery"}).
+ */
 public final class SuspiciousDeliveryLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -20,7 +24,7 @@ public final class SuspiciousDeliveryLoader {
 
     public static void loadAll(ResourceManager rm) {
         Map<ResourceLocation, JsonElement> merged =
-                IskaUtilsLoadJson.collectMergedJsonForSubdir(rm, IskaUtilsLoadPaths.OBTAINING);
+                IskaUtilsLoadJson.collectMergedJsonForSubdir(rm, IskaUtilsLoadPaths.SUSPICIOUS_DELIVERY);
         SuspiciousDeliveryDefinition found = null;
         for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
             JsonElement el = e.getValue();
@@ -36,7 +40,7 @@ public final class SuspiciousDeliveryLoader {
             LOGGER.info("Loaded Suspicious Delivery definition ({} entries)", found.entries().size());
         } else {
             SUSPICIOUS_DELIVERY = new SuspiciousDeliveryDefinition(java.util.List.of());
-            LOGGER.info("No Suspicious Delivery definition found under load/{}, using empty definition", IskaUtilsLoadPaths.OBTAINING);
+            LOGGER.info("No Suspicious Delivery definition found under load/{}, using empty definition", IskaUtilsLoadPaths.SUSPICIOUS_DELIVERY);
         }
     }
 

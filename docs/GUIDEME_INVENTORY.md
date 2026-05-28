@@ -17,15 +17,15 @@ English-only guide pages under `assets/iska_utils/guides/iska_utils/guide/`.
 | Vector modules (crafting) | `base_module`, `slow_module`, `moderate_module`, `fast_module`, `extreme_module`, `ultra_module` |
 | Travel / climb | `portable_dislocator`, `gauntlet_of_climbing` |
 | Scanner | `scanner`, `scanner_chip`, `scanner_chip_ores`, `scanner_chip_mobs` |
-| Curios / combat | `necrotic_crystal_heart`, `greedy_shield` |
-| Tools | `swiss_wrench`, `mining_equitizer`, `dolly`, `dolly_hard`, `dolly_creative`, `blueprint`, `structure_placer` |
+| Artifacts and relics | `suspicious_delivery`, `drop_of_chaos`, `mining_equitizer`, `necrotic_crystal_heart`, `old_brick`, `chosen_cheese`, `ice_diamond`, `sharpened_bone`, `the_roots`, `totem_of_pain`, `cursed_candle`, `busted_crown`, `ritual_gauntlet`, `the_deception` — hub `hubs/artifacts.md` |
+| Tools | `swiss_wrench`, `dolly`, `dolly_hard`, `dolly_creative`, `blueprint`, `structure_placer` |
 | Rubber / tap | `treetap`, `electric_treetap`, `rubber_sap_extractor`, `sacred_rubber_sapling`, `rubber_boots`, `dye_berry` |
 | World / RS | `weather_detector`, `sound_muffler`, `weather_alterer`, `time_alterer`, `smart_timer`, `angel_block`, `hellfire_igniter` |
 | Machines | `temporal_overclocker`, `temporal_overclocker_chip`, `structure_placer_machine`, `structure_saver_machine`, `rubber_sap_extractor` |
 | Shops | `shop`, `auto_shop` |
 | Braziers / signals | `burning_brazier`, `ghost_brazier`, `redstone_activator` |
 | Deep drawer (v24: `deep_drawers`; v26: `deep_drawer`) | main block + `deep_drawer_extractor`, `deep_drawer_interface`, `deep_drawer_extender` |
-| Other | `gift`, `potion_plate` (dynamic IDs — document category), `chaotic_tnt`, `raft` / `raft_no_drop` |
+| Other | `potion_plate` (dynamic IDs — document category), `chaotic_tnt`, `raft` / `raft_no_drop` |
 
 ## Class B
 
@@ -34,6 +34,7 @@ English-only guide pages under `assets/iska_utils/guides/iska_utils/guide/`.
 ## Class C (examples)
 
 - Wither-proof set, netherite bars, smooth blackstone variants, plate base, rubber decor blocks, dye bush empty/filled blocks, filled/empty rubber logs, lapis ice cream food only.
+- **`greedy_shield`**, **`gift`**: intentionally **excluded** from the in-game GuideME (no `guides/…/*.md` page); discover in-world only.
 
 ## Source signals used
 

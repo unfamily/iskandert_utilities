@@ -45,6 +45,7 @@ import net.unfamily.iskautils.item.custom.UltraModuleItem;
 import net.unfamily.iskautils.item.custom.LogicModuleItem;
 import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
+import net.unfamily.iskautils.item.custom.AncientTabletItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
@@ -210,11 +211,16 @@ public class ModItems {
     public static final DeferredItem<Item> SUSPICIOUS_DELIVERY = ITEMS.register("suspicious_delivery",
             () -> new SuspiciousDeliveryItem(new Item.Properties()));
 
+    /** Placeholder shown in JEI for masked loot entries; not in creative tab. */
+    public static final DeferredItem<Item> SUSPICIOUS_DELIVERY_UNDEFINED = ITEMS.register(
+            "suspicious_delivery_undefined",
+            () -> new Item(new Item.Properties()));
+
     public static final DeferredItem<Item> DROP_OF_CHAOS = ITEMS.register("drop_of_chaos",
             () -> new Item(ITEM_PROPERTIES));
 
-    public static final DeferredItem<Item> MIXIN_TABLET = ITEMS.register("mixin_tablet",
-            () -> new Item(ITEM_PROPERTIES.stacksTo(1)));
+    public static final DeferredItem<Item> ANCIENT_TABLET = ITEMS.register("ancient_tablet",
+            () -> new AncientTabletItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredItem<Item> UNSTABLE_DROP = ITEMS.register("unstable_drop",
             () -> new Item(ITEM_PROPERTIES));

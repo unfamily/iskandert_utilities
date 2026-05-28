@@ -28,7 +28,9 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
     @Override
     public void registerCategories(IRecipeCategoryRegistration registration) {
         var helper = registration.getJeiHelpers().getGuiHelper();
-        registration.addRecipeCategories(new FactoryRecipeCategory(helper));
+        registration.addRecipeCategories(
+                new FactoryRecipeCategory(helper),
+                new SuspiciousDeliveryRecipeCategory(helper));
     }
 
     @Override
@@ -36,13 +38,20 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
             FactoryJeiRecipes.reloadForClient(mc);
+            SuspiciousDeliveryJeiRecipes.reloadForClient(mc);
         }
         registration.addRecipes(FactoryRecipeCategory.RECIPE_TYPE, FactoryJeiRecipes.buildAll());
+        registration.addRecipes(
+                SuspiciousDeliveryRecipeCategory.RECIPE_TYPE,
+                SuspiciousDeliveryJeiRecipes.buildAll());
     }
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
         registration.addRecipeCatalyst(new ItemStack(ModItems.FACTORY.get()), FactoryRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(
+                new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get()),
+                SuspiciousDeliveryRecipeCategory.RECIPE_TYPE);
     }
 
     @Override

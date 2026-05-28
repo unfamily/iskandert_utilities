@@ -218,7 +218,7 @@ public class ModCreativeModeTabs {
 
                                 // Delivery-related items (after all artifacts)
                                 pOutput.accept(ModItems.DROP_OF_CHAOS.get());
-                                pOutput.accept(ModItems.MIXIN_TABLET.get());
+                                pOutput.accept(ModItems.ANCIENT_TABLET.get());
                                 pOutput.accept(ModItems.UNSTABLE_DROP.get());
                                 pOutput.accept(ModItems.CHAOTIC_CRYSTAL.get());
 

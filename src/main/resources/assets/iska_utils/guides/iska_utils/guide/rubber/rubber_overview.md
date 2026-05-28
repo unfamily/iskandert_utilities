@@ -1,6 +1,6 @@
 ---
 navigation:
-  title: Rubber: overview
+  title: "Rubber: overview"
   icon: iska_utils:rubber
   parent: hubs/rubber_and_processing.md
   position: 5

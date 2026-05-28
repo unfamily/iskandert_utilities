@@ -2,12 +2,12 @@
 navigation:
   title: Necrotic Crystal Heart
   icon: iska_utils:necrotic_crystal_heart
-  parent: hubs/combat_and_travel.md
-  position: 10
+  parent: hubs/artifacts.md
+  position: 3
 item_ids:
   - iska_utils:necrotic_crystal_heart
 categories:
-  - Combat and travel
+  - Artifacts and relics
 ---
 # Necrotic Crystal Heart
 
@@ -15,11 +15,10 @@ categories:
 
 ## What it does
 
-- Prevents **lethal** damage when equipped, at the cost of reducing your **maximum health**.
+A **cursed** crystal relic. Worn in **Curios**, it can stop a hit that would **kill** you, but each time it does your **maximum health** shrinks a little.
 
-## Details
+When your health is already too low, it can no longer save you. The penalty **resets after death** or after you **sleep**.
 
-- When an incoming hit would kill you, the heart cancels that damage and permanently reduces your max health (one heart at a time).
-- Once your max health is reduced too far, lethal damage is no longer prevented and you will die normally.
-- The max-health penalty resets after death, and also after sleeping (on wake-up).
+## How to obtain
 
+From opening **Suspicious Delivery** (see that entry for how to get the parcel).

@@ -20,7 +20,6 @@ public final class RelicEquipStages {
     public static final String THE_ROOTS = "iska_utils_internal-the_roots_equip";
     public static final String MINING_EQUITIZER = "iska_utils_internal-mining_equitizer_equip";
     public static final String TOTEM_OF_PAIN = "iska_utils_internal-totem_of_pain_equip";
-    public static final String CURSED_CANDLE = "iska_utils_internal-cursed_candle_equip";
     public static final String BUSTED_CROWN = "iska_utils_internal-busted_crown_equip";
     public static final String RITUAL_GAUNTLET = "iska_utils_internal-ritual_gauntlet_equip";
     public static final String THE_DECEPTION = "iska_utils_internal-the_deception_equip";
@@ -35,7 +34,6 @@ public final class RelicEquipStages {
             THE_ROOTS,
             MINING_EQUITIZER,
             TOTEM_OF_PAIN,
-            CURSED_CANDLE,
             BUSTED_CROWN,
             RITUAL_GAUNTLET,
             THE_DECEPTION,
@@ -71,7 +69,6 @@ public final class RelicEquipStages {
         map.put(ModItems.THE_ROOTS.get(), THE_ROOTS);
         map.put(ModItems.MINING_EQUITIZER.get(), MINING_EQUITIZER);
         map.put(ModItems.TOTEM_OF_PAIN.get(), TOTEM_OF_PAIN);
-        map.put(ModItems.CURSED_CANDLE.get(), CURSED_CANDLE);
         map.put(ModItems.BUSTED_CROWN.get(), BUSTED_CROWN);
         map.put(ModItems.RITUAL_GAUNTLET.get(), RITUAL_GAUNTLET);
         map.put(ModItems.THE_DECEPTION.get(), THE_DECEPTION);

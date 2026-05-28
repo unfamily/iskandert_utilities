@@ -7,6 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
 import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
 

@@ -15,15 +15,15 @@ public final class FactoryJeiBackgroundDrawable implements IDrawable {
     public static final ResourceLocation SLOT_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
 
-    public static final int SLOT_SIZE = 18;
-    public static final int BG_PADDING_V = 5;
-    public static final int INPUT_X = 4;
-    public static final int GRID_X = 28;
-    public static final int GRID_Y = BG_PADDING_V;
-    public static final int INPUT_Y = GRID_Y + SLOT_SIZE;
-    public static final int GRID_COLS = 9;
-    public static final int GRID_ROWS = 3;
-    public static final int ITEM_OFFSET = 1;
+    public static final int SLOT_SIZE = IskaUtilsGridJeiLayout.SLOT_SIZE;
+    public static final int BG_PADDING_V = IskaUtilsGridJeiLayout.BG_PADDING_V;
+    public static final int INPUT_X = IskaUtilsGridJeiLayout.INPUT_X;
+    public static final int GRID_X = IskaUtilsGridJeiLayout.GRID_X;
+    public static final int GRID_Y = IskaUtilsGridJeiLayout.GRID_Y;
+    public static final int INPUT_Y = IskaUtilsGridJeiLayout.INPUT_Y;
+    public static final int GRID_COLS = IskaUtilsGridJeiLayout.GRID_COLS;
+    public static final int GRID_ROWS = IskaUtilsGridJeiLayout.GRID_ROWS;
+    public static final int ITEM_OFFSET = IskaUtilsGridJeiLayout.ITEM_OFFSET;
 
     private final int width;
     private final int height;
