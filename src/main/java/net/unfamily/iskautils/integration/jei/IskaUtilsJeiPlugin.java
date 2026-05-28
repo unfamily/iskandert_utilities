@@ -30,7 +30,8 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         var helper = registration.getJeiHelpers().getGuiHelper();
         registration.addRecipeCategories(
                 new FactoryRecipeCategory(helper),
-                new SuspiciousDeliveryRecipeCategory(helper));
+                new SuspiciousDeliveryRecipeCategory(helper),
+                new AncientTabletRecipeCategory(helper));
     }
 
     @Override
@@ -39,11 +40,13 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         if (mc != null) {
             FactoryJeiRecipes.reloadForClient(mc);
             SuspiciousDeliveryJeiRecipes.reloadForClient(mc);
+            AncientTabletJeiRecipes.reloadForClient(mc);
         }
         registration.addRecipes(FactoryRecipeCategory.RECIPE_TYPE, FactoryJeiRecipes.buildAll());
         registration.addRecipes(
                 SuspiciousDeliveryRecipeCategory.RECIPE_TYPE,
                 SuspiciousDeliveryJeiRecipes.buildAll());
+        registration.addRecipes(AncientTabletRecipeCategory.RECIPE_TYPE, AncientTabletJeiRecipes.cached());
     }
 
     @Override
@@ -52,6 +55,9 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         registration.addCraftingStation(
                 SuspiciousDeliveryRecipeCategory.RECIPE_TYPE,
                 new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get()));
+        registration.addCraftingStation(
+                AncientTabletRecipeCategory.RECIPE_TYPE,
+                new ItemStack(ModItems.ANCIENT_TABLET.get()));
     }
 
     @Override

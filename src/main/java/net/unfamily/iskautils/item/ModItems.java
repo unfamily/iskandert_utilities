@@ -13,6 +13,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.item.custom.AncientTabletItem;
+import net.unfamily.iskautils.item.custom.UnstableDropItem;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import net.unfamily.iskautils.item.custom.GauntletOfClimbingItem;
@@ -167,7 +168,7 @@ public class ModItems {
 
     public static final DeferredItem<Item> ANCIENT_TABLET = ITEMS.registerItem("ancient_tablet", AncientTabletItem::new, p -> p.stacksTo(1));
 
-    public static final DeferredItem<Item> UNSTABLE_DROP = ITEMS.registerSimpleItem("unstable_drop");
+    public static final DeferredItem<Item> UNSTABLE_DROP = ITEMS.registerItem("unstable_drop", UnstableDropItem::new, UnaryOperator.identity());
 
     public static final DeferredItem<Item> CHAOTIC_CRYSTAL = ITEMS.registerSimpleItem("chaotic_crystal");
 
