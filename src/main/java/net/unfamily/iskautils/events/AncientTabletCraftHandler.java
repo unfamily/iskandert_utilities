@@ -92,6 +92,8 @@ public final class AncientTabletCraftHandler {
         if (recipe.destroyIfWrong()) {
             AncientTabletContents.clear(tablet);
             player.playSound(SoundEvents.FIRE_EXTINGUISH, 0.8f, 0.6f);
+            player.sendSystemMessage(
+                    Component.translatable("message.iska_utils.ancient_tablet.wrong_order_destroyed"), true);
         } else {
             player.sendSystemMessage(Component.translatable("message.iska_utils.ancient_tablet.wrong_order"), true);
         }

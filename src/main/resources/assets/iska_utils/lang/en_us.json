@@ -642,6 +642,7 @@
   "tooltip.iska_utils.ancient_tablet.desc1": "§7They read like the epic of a mad developer.",
   "tooltip.iska_utils.ancient_tablet.contents": "§7Contents: %1$s / %2$s",
   "message.iska_utils.ancient_tablet.wrong_order": "Wrong component order in the tablet.",
+  "message.iska_utils.ancient_tablet.wrong_order_destroyed": "Wrong component order. The tablet contents were destroyed.",
   "jei.iska_utils.ancient_tablet": "Ancient Tablet",
   "jei.iska_utils.ancient_tablet.warn_ordered": "Requires exact slot order (must_ordered).",
   "jei.iska_utils.ancient_tablet.warn_destroy": "Wrong order destroys contents (destroy_if_wrong).",
