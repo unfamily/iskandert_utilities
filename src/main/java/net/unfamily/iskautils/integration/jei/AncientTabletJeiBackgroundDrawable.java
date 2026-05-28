@@ -11,15 +11,21 @@ public final class AncientTabletJeiBackgroundDrawable implements IDrawable {
     public static final Identifier SLOT_TEXTURE =
             Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
 
+    public static final Identifier ARROW_TEXTURE =
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/jei_arrow.png");
+
     public static final int SLOT_SIZE = 18;
-    public static final int COLS = 6;
-    public static final int ROWS = 3;
+    public static final int COLS = 3;
+    public static final int ROWS = 6;
     public static final int MAX_SLOTS = 18;
     public static final int INPUT_X = 6;
-    public static final int OUTPUT_X = 98;
+    public static final int ARROW_X = INPUT_X + COLS * SLOT_SIZE + 6;
+    public static final int OUTPUT_X = ARROW_X + 16 + 6;
     public static final int GRID_Y = 6;
     public static final int ITEM_OFFSET = 1;
     public static final int WARN_Y = GRID_Y + ROWS * SLOT_SIZE + 4;
+    private static final int ARROW_W = 24;
+    private static final int ARROW_H = 17;
 
     private final int width;
     private final int height;
@@ -50,5 +56,10 @@ public final class AncientTabletJeiBackgroundDrawable implements IDrawable {
                 graphics.blit(RenderPipelines.GUI_TEXTURED, SLOT_TEXTURE, xOffset + xOut, yOffset + y, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
             }
         }
+
+        // Arrow between grids.
+        int ax = xOffset + ARROW_X - 4;
+        int ay = yOffset + GRID_Y + (ROWS * SLOT_SIZE / 2) - (ARROW_H / 2);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, ARROW_TEXTURE, ax, ay, 0, 0, ARROW_W, ARROW_H, ARROW_W, ARROW_H);
     }
 }

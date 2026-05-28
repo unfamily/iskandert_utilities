@@ -873,16 +873,27 @@ public class Config {
                     "Hard Ice is indestructible and cannot be broken")
             .define("100_gift_place_hard_ice", true);
 
+    private static final ModConfigSpec.BooleanValue UNSTABLE_DROP_DECAY_KILLS_PLAYER = BUILDER
+            .comment("If true, the player dies when an unstable_drop fully decays in their inventory.")
+            .define("200_unstable_drop_decay_kills_player", false);
+
+    static {
+        BUILDER.pop(); // End of evil_things category
+        BUILDER.comment("Unstable Drop Configuration").push("unstable_drop");
+    }
+
     private static final ModConfigSpec.IntValue UNSTABLE_DROP_DECAY_TICKS = BUILDER
             .comment("Ticks until unstable_drop decays in player inventory (0 = disabled). Default 600 = 30 seconds.")
             .defineInRange("110_unstable_drop_decay_ticks", 600, 0, Integer.MAX_VALUE);
 
-    private static final ModConfigSpec.BooleanValue UNSTABLE_DROP_DECAY_KILLS_PLAYER = BUILDER
-            .comment("If true, the player dies when an unstable_drop fully decays in their inventory.")
-            .define("111_unstable_drop_decay_kills_player", false);
+    private static final ModConfigSpec.ConfigValue<String> UNSTABLE_DROP_DECAY_TINTS = BUILDER
+            .comment("Color ramp used by unstable_drop as it decays (semicolon-separated).",
+                    "Format: #RRGGBB;#RRGGBB;... (spaces allowed).",
+                    "Default: pink -> red.")
+            .define("111_unstable_drop_decay_tints", "#FFFFFF;#FF77AA;#FF3355;#FF0000");
 
     static {
-        BUILDER.pop(); // End of evil_things category
+        BUILDER.pop(); // End of general_utilities.unstable_drop
     }
 
     static final ModConfigSpec SPEC = BUILDER.build();
@@ -958,6 +969,7 @@ public class Config {
     public static boolean giftPlaceHardIce;
     public static int unstableDropDecayTicks;
     public static boolean unstableDropDecayKillsPlayer;
+    public static java.util.List<Integer> unstableDropDecayTintColors;
     public static double gauntletClimbingSpeed;
     public static int chosenCheeseMax;
     public static double chosenCheeseHpPerLevel;
@@ -1090,6 +1102,7 @@ public class Config {
         burningFlameSuperHot = BURNING_FLAME_SUPER_HOT.get();
         giftPlaceHardIce = GIFT_PLACE_HARD_ICE.get();
         unstableDropDecayTicks = UNSTABLE_DROP_DECAY_TICKS.get();
+        unstableDropDecayTintColors = parseHexRgbList(UNSTABLE_DROP_DECAY_TINTS.get(), java.util.List.of(0xFF0000));
         unstableDropDecayKillsPlayer = UNSTABLE_DROP_DECAY_KILLS_PLAYER.get();
 
         // Fan configuration
@@ -1305,6 +1318,52 @@ public class Config {
         
         // Gauntlet of Climbing logic
         gauntletClimbingSpeed = GAUNTLET_CLIMBING_SPEED.get();
+    }
+
+    private static int parseHexRgb(String hex, int fallback) {
+        if (hex == null) {
+            return fallback;
+        }
+        String s = hex.trim();
+        if (s.startsWith("#")) {
+            s = s.substring(1);
+        }
+        if (s.startsWith("0x") || s.startsWith("0X")) {
+            s = s.substring(2);
+        }
+        if (s.length() != 6) {
+            return fallback;
+        }
+        try {
+            return Integer.parseUnsignedInt(s, 16) & 0xFFFFFF;
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    private static java.util.List<Integer> parseHexRgbList(String raw, java.util.List<Integer> fallback) {
+        if (raw == null) {
+            return fallback;
+        }
+        String s = raw.trim();
+        if (s.isEmpty()) {
+            return fallback;
+        }
+        java.util.ArrayList<Integer> out = new java.util.ArrayList<>();
+        for (String part : s.split(";")) {
+            if (part == null) {
+                continue;
+            }
+            String p = part.trim();
+            if (p.isEmpty()) {
+                continue;
+            }
+            int rgb = parseHexRgb(p, -1);
+            if (rgb != -1) {
+                out.add(rgb & 0xFFFFFF);
+            }
+        }
+        return out.isEmpty() ? fallback : java.util.Collections.unmodifiableList(out);
     }
 
     @SubscribeEvent

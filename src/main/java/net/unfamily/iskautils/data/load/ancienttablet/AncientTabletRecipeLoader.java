@@ -28,6 +28,10 @@ public final class AncientTabletRecipeLoader {
                         rm,
                         "recipe",
                         IskaUtilsLoadPaths::isJsonUnderRecipeTree);
+        loadAllMerged(merged);
+    }
+
+    public static void loadAllMerged(Map<Identifier, JsonElement> merged) {
         List<AncientTabletRecipeEntry> out = new ArrayList<>();
         for (var entry : IskaUtilsLoadJson.orderedEntries(merged)) {
             parseFile(entry.getKey(), entry.getValue(), out);

@@ -4,8 +4,9 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.util.CustomModelDataUtil;
 
 public final class UnstableDropDecay {
     private static final String NBT_REMAINING = "unstable_drop_remaining_ticks";
@@ -35,7 +36,38 @@ public final class UnstableDropDecay {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         tag.putInt(NBT_REMAINING, Math.max(0, ticks));
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-        CustomModelDataUtil.setFloat0(stack, instabilityIndex(stack));
+        // 26.x uses model-driven tints (ItemTintSource). We update DYED_COLOR to drive the tint.
+        stack.set(DataComponents.DYED_COLOR, new DyedItemColor(calcTintRgb(stack)));
+        // Hide the DYED_COLOR component tooltip line ("Color: #RRGGBB") while keeping tinting.
+        TooltipDisplay display = stack.getOrDefault(DataComponents.TOOLTIP_DISPLAY, TooltipDisplay.DEFAULT);
+        stack.set(DataComponents.TOOLTIP_DISPLAY, display.withHidden(DataComponents.DYED_COLOR, true));
+    }
+
+    private static int calcTintRgb(ItemStack stack) {
+        float t = Math.min(1f, Math.max(0f, instability(stack)));
+        java.util.List<Integer> colors = Config.unstableDropDecayTintColors;
+        if (colors == null || colors.isEmpty()) {
+            return 0xFF0000;
+        }
+        if (colors.size() == 1) {
+            return colors.get(0) & 0xFFFFFF;
+        }
+        float seg = t * (colors.size() - 1);
+        int i = (int) Math.floor(seg);
+        if (i < 0) {
+            i = 0;
+        } else if (i >= colors.size() - 1) {
+            i = colors.size() - 2;
+        }
+        float u = seg - i;
+        int c0 = colors.get(i) & 0xFFFFFF;
+        int c1 = colors.get(i + 1) & 0xFFFFFF;
+        int r0 = (c0 >> 16) & 0xFF, g0 = (c0 >> 8) & 0xFF, b0 = c0 & 0xFF;
+        int r1 = (c1 >> 16) & 0xFF, g1 = (c1 >> 8) & 0xFF, b1 = c1 & 0xFF;
+        int r = (int) (r0 + (r1 - r0) * u);
+        int g = (int) (g0 + (g1 - g0) * u);
+        int b = (int) (b0 + (b1 - b0) * u);
+        return (r << 16) | (g << 8) | b;
     }
 
     public static float instability(ItemStack stack) {
@@ -47,7 +79,4 @@ public final class UnstableDropDecay {
         return 1f - (remaining / (float) max);
     }
 
-    private static float instabilityIndex(ItemStack stack) {
-        return instability(stack) * 3f;
-    }
 }

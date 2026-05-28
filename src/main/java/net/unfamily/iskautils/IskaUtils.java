@@ -314,9 +314,9 @@ public class IskaUtils {
         
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            // No-op for now. Use CustomModelData-driven model overrides for 26.x.
+            // No-op for now.
         }
-        
+
         // Custom geometry loaders removed for 26.x baseline.
         
         

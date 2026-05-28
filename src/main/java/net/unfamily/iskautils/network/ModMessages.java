@@ -195,6 +195,12 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket::handle
         );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket::handle
+        );
         
         LOGGER.info("Registered networking payloads for {}", IskaUtils.MOD_ID);
     }

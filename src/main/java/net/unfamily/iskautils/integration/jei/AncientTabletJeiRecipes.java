@@ -2,8 +2,10 @@ package net.unfamily.iskautils.integration.jei;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.MinecraftServer;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeEntry;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeLoader;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeMatcher;
@@ -19,13 +21,15 @@ public final class AncientTabletJeiRecipes {
     private AncientTabletJeiRecipes() {}
 
     public static void reloadForClient(Minecraft mc) {
-        if (mc.getResourceManager() != null) {
-            AncientTabletRecipeLoader.loadAll(mc.getResourceManager());
-        }
+        ensureLoaded(mc);
         CACHE = buildAll();
     }
 
     public static List<AncientTabletJeiRecipe> buildAll() {
+        var mc = Minecraft.getInstance();
+        if (mc != null) {
+            ensureLoaded(mc);
+        }
         List<AncientTabletJeiRecipe> out = new ArrayList<>();
         for (AncientTabletRecipeEntry entry : AncientTabletRecipeLoader.getEntries()) {
             out.add(new AncientTabletJeiRecipe(
@@ -39,6 +43,21 @@ public final class AncientTabletJeiRecipes {
 
     public static List<AncientTabletJeiRecipe> cached() {
         return CACHE;
+    }
+
+    private static void ensureLoaded(Minecraft mc) {
+        if (!AncientTabletRecipeLoader.getEntries().isEmpty()) {
+            return;
+        }
+        MinecraftServer server = mc.getSingleplayerServer();
+        if (server != null) {
+            AncientTabletRecipeLoader.loadAll(server.getResourceManager());
+            return;
+        }
+        // Client boot (JEI registers before integrated server exists): fall back to mod jar defaults.
+        AncientTabletRecipeLoader.loadAllMerged(
+                IskaUtilsLoadJson.collectFromModJarOnlyUnderDataDir("recipe", IskaUtilsLoadPaths::isJsonUnderRecipeTree)
+        );
     }
 
     private static List<ItemStack> groupedStacks(List<AncientTabletRequirement> flat) {

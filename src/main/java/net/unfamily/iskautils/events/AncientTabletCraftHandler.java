@@ -10,12 +10,14 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeEntry;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeLoader;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeMatcher;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.component.AncientTabletContents;
+import net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,23 +29,29 @@ public final class AncientTabletCraftHandler {
 
     @SubscribeEvent
     public static void onLeftClickEmpty(PlayerInteractEvent.LeftClickEmpty event) {
-        tryCraft(event.getEntity(), event.getLevel());
+        if (event.getLevel().isClientSide()) {
+            ClientPacketDistributor.sendToServer(new AncientTabletCraftC2SPacket());
+        }
     }
 
     @SubscribeEvent
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        tryCraft(event.getEntity(), event.getLevel());
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            tryCraftFromServer(sp);
+        }
     }
 
-    private static void tryCraft(Player player, Level level) {
-        if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
+    public static void tryCraftFromServer(ServerPlayer serverPlayer) {
+        Level level = serverPlayer.level();
+        if (level.isClientSide()) {
             return;
         }
-        ItemStack tablet = player.getMainHandItem();
+        ItemStack tablet = serverPlayer.getMainHandItem();
         if (!tablet.is(ModItems.ANCIENT_TABLET.get())) {
             return;
         }
-        List<ItemStack> slots = new ArrayList<>(AncientTabletContents.getSlots(tablet, serverPlayer.registryAccess()));
+        List<AncientTabletContents.SlotView> slots =
+                new ArrayList<>(AncientTabletContents.expandForMatching(tablet, serverPlayer.registryAccess()));
         if (slots.isEmpty()) {
             return;
         }
@@ -91,10 +99,13 @@ public final class AncientTabletCraftHandler {
     private static void handleWrongOrder(ServerPlayer player, ItemStack tablet, AncientTabletRecipeEntry recipe) {
         if (recipe.destroyIfWrong()) {
             AncientTabletContents.clear(tablet);
-            player.playSound(SoundEvents.FIRE_EXTINGUISH, 0.8f, 0.6f);
+            // Failure with consumption/destruction of input.
+            player.playSound(SoundEvents.ITEM_BREAK.value(), 0.9f, 0.9f);
             player.sendSystemMessage(
                     Component.translatable("message.iska_utils.ancient_tablet.wrong_order_destroyed"), true);
         } else {
+            // Failure without consumption.
+            player.playSound(SoundEvents.VILLAGER_NO, 0.6f, 1.0f);
             player.sendSystemMessage(Component.translatable("message.iska_utils.ancient_tablet.wrong_order"), true);
         }
         player.containerMenu.broadcastChanges();

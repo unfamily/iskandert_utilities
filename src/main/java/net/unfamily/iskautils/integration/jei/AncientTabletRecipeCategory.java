@@ -9,7 +9,6 @@ import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -28,7 +27,9 @@ public class AncientTabletRecipeCategory implements IRecipeCategory<AncientTable
     public static final IRecipeType<AncientTabletJeiRecipe> RECIPE_TYPE =
             IRecipeType.create(UID, AncientTabletJeiRecipe.class);
 
-    private static final int WIDTH = 176;
+    private static final int WIDTH = AncientTabletJeiBackgroundDrawable.OUTPUT_X
+            + AncientTabletJeiBackgroundDrawable.COLS * AncientTabletJeiBackgroundDrawable.SLOT_SIZE
+            + 6;
     private static final int HEIGHT = AncientTabletJeiBackgroundDrawable.WARN_Y + 28;
 
     private final IDrawable background;

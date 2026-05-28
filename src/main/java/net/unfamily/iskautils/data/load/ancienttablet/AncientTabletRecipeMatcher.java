@@ -1,8 +1,8 @@
 package net.unfamily.iskautils.data.load.ancienttablet;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.unfamily.iskautils.item.component.AncientTabletContents;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,7 +20,7 @@ public final class AncientTabletRecipeMatcher {
 
     private AncientTabletRecipeMatcher() {}
 
-    public static MatchOutcome tryMatch(AncientTabletRecipeEntry recipe, List<ItemStack> tabletSlots) {
+    public static MatchOutcome tryMatch(AncientTabletRecipeEntry recipe, List<AncientTabletContents.SlotView> tabletSlots) {
         if (recipe.require().isEmpty()) {
             return new MatchOutcome(MatchResult.NO_MATCH, List.of());
         }
@@ -30,17 +30,18 @@ public final class AncientTabletRecipeMatcher {
         return matchUnordered(recipe, tabletSlots);
     }
 
-    private static MatchOutcome matchOrdered(AncientTabletRecipeEntry recipe, List<ItemStack> slots) {
+    private static MatchOutcome matchOrdered(AncientTabletRecipeEntry recipe, List<AncientTabletContents.SlotView> slots) {
         List<AncientTabletRequirement> req = recipe.require();
         if (slots.size() < req.size()) {
             return new MatchOutcome(MatchResult.NO_MATCH, List.of());
         }
         List<Integer> used = new ArrayList<>();
         for (int i = 0; i < req.size(); i++) {
-            if (!req.get(i).matches(slots.get(i))) {
+            AncientTabletContents.SlotView view = slots.get(i);
+            if (!req.get(i).matches(view.stack1())) {
                 boolean anyLater = false;
                 for (int j = 0; j < slots.size(); j++) {
-                    if (req.get(i).matches(slots.get(j))) {
+                    if (req.get(i).matches(slots.get(j).stack1())) {
                         anyLater = true;
                         break;
                     }
@@ -50,12 +51,12 @@ public final class AncientTabletRecipeMatcher {
                 }
                 return new MatchOutcome(MatchResult.NO_MATCH, List.of());
             }
-            used.add(i);
+            used.add(view.slotIndex());
         }
         return new MatchOutcome(MatchResult.SUCCESS, used);
     }
 
-    private static MatchOutcome matchUnordered(AncientTabletRecipeEntry recipe, List<ItemStack> slots) {
+    private static MatchOutcome matchUnordered(AncientTabletRecipeEntry recipe, List<AncientTabletContents.SlotView> slots) {
         List<AncientTabletRequirement> needed = new ArrayList<>(recipe.require());
         List<Integer> usedIndices = new ArrayList<>();
         boolean[] used = new boolean[slots.size()];
@@ -65,9 +66,10 @@ public final class AncientTabletRecipeMatcher {
                 if (used[i]) {
                     continue;
                 }
-                if (req.matches(slots.get(i))) {
+                AncientTabletContents.SlotView view = slots.get(i);
+                if (req.matches(view.stack1())) {
                     used[i] = true;
-                    usedIndices.add(i);
+                    usedIndices.add(view.slotIndex());
                     found = true;
                     break;
                 }

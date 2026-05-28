@@ -209,7 +209,11 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.CHOSEN_CHEESE.get());
                                 pOutput.accept(ModItems.ICE_DIAMOND.get());
                                 pOutput.accept(ModItems.SHARPENED_BONE.get());
-                                pOutput.accept(ModItems.THE_ROOTS.get());
+                                {
+                                    var roots = new net.minecraft.world.item.ItemStack(ModItems.THE_ROOTS.get());
+                                    net.unfamily.iskautils.item.custom.relic.TheRootsItem.syncClientCustomModelData(roots);
+                                    pOutput.accept(roots);
+                                }
                                 pOutput.accept(ModItems.TOTEM_OF_PAIN.get());
                                 pOutput.accept(ModItems.CURSED_CANDLE.get());
                                 pOutput.accept(ModItems.BUSTED_CROWN.get());

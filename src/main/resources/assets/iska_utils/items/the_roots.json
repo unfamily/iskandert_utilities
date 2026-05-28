@@ -8,13 +8,13 @@
         "threshold": 1.0,
         "model": {
           "type": "minecraft:model",
-          "model": "iska_utils:item/the_root"
+          "model": "iska_utils:item/the_roots"
         }
       }
     ],
     "fallback": {
       "type": "minecraft:model",
-      "model": "iska_utils:item/the_roots"
+      "model": "iska_utils:item/the_root"
     }
   }
 }

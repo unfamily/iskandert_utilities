@@ -1,34 +1,16 @@
 {
   "model": {
-    "type": "minecraft:range_dispatch",
-    "property": "minecraft:custom_model_data",
-    "index": 0,
-    "entries": [
+    "type": "minecraft:model",
+    "model": "iska_utils:item/unstable_drop",
+    "tints": [
       {
-        "threshold": 3.0,
-        "model": {
-          "type": "minecraft:model",
-          "model": "iska_utils:item/unstable_drop_2"
-        }
+        "type": "minecraft:constant",
+        "value": 16777215
       },
       {
-        "threshold": 2.0,
-        "model": {
-          "type": "minecraft:model",
-          "model": "iska_utils:item/unstable_drop_1"
-        }
-      },
-      {
-        "threshold": 1.0,
-        "model": {
-          "type": "minecraft:model",
-          "model": "iska_utils:item/unstable_drop_0"
-        }
+        "type": "minecraft:dye",
+        "default": 16777215
       }
-    ],
-    "fallback": {
-      "type": "minecraft:model",
-      "model": "iska_utils:item/unstable_drop"
-    }
+    ]
   }
 }

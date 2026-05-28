@@ -8,9 +8,11 @@ import com.mojang.serialization.DataResult;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.ClickEvent;
@@ -100,6 +102,7 @@ public final class HandItemDump {
 
     private static void appendDetailedDump(CommandSourceStack source, ItemStack stack) {
         String itemIdStr = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        String itemClass = stack.getItem().getClass().getName();
 
         MutableComponent itemIdLabel = Component.literal("Item ID: ").withStyle(ChatFormatting.WHITE);
         MutableComponent itemIdComponent = Component.literal(itemIdStr)
@@ -108,6 +111,15 @@ public final class HandItemDump {
                         .withClickEvent(new ClickEvent.CopyToClipboard(itemIdStr))
                         .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy"))));
         source.sendSuccess(() -> itemIdLabel.append(itemIdComponent), false);
+
+        BundleContents contents = stack.get(DataComponents.BUNDLE_CONTENTS);
+        if (contents == null) {
+            source.sendSuccess(() -> Component.literal("BundleContents: <absent>").withStyle(ChatFormatting.RED), false);
+        } else {
+            source.sendSuccess(() -> Component.literal("BundleContents: present | empty=" + contents.isEmpty())
+                    .withStyle(ChatFormatting.GREEN), false);
+        }
+        source.sendSuccess(() -> Component.literal("Item Class: " + itemClass).withStyle(ChatFormatting.GRAY), false);
 
         Item item = stack.getItem();
         boolean isBlock = item instanceof BlockItem;

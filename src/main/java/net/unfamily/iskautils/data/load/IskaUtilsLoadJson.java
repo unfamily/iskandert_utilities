@@ -198,6 +198,84 @@ public final class IskaUtilsLoadJson {
         return out;
     }
 
+    /**
+     * Bootstrap from mod jar / resources for arbitrary {@code data/<modid>/<directory>/...} trees.
+     * Intended for client-only contexts (e.g. JEI) where {@link ResourceManager} for SERVER_DATA is not available.
+     */
+    public static Map<Identifier, JsonElement> collectFromModJarOnlyUnderDataDir(
+            String directoryUnderDataNamespace,
+            Predicate<Identifier> locationFilter) {
+        Map<Identifier, JsonElement> out = new LinkedHashMap<>();
+        String dirInRoot = "data/" + IskaUtils.MOD_ID + "/" + directoryUnderDataNamespace;
+        LOGGER.info("Bootstrap loading from: {}", dirInRoot);
+        ModList.get().getModContainerById(IskaUtils.MOD_ID).ifPresentOrElse(
+                container -> {
+                    var modFileInfo = container.getModInfo().getOwningFile();
+                    if (modFileInfo == null) {
+                        LOGGER.warn("No mod jar file for {}, cannot bootstrap data/{}", IskaUtils.MOD_ID, directoryUnderDataNamespace);
+                        return;
+                    }
+                    Path root = modFileInfo.getFile().getFilePath();
+                    try {
+                        if (Files.isDirectory(root)) {
+                            Path buildDir = root.getParent().getParent().getParent(); // build/
+                            Path resourcesFolder = buildDir.resolve("resources").resolve("main");
+                            Path base = Files.exists(resourcesFolder) ? resourcesFolder.resolve(dirInRoot) : root.resolve(dirInRoot);
+                            if (Files.exists(base)) {
+                                try (Stream<Path> walk = Files.walk(base)) {
+                                    walk.filter(Files::isRegularFile)
+                                            .filter(p -> p.toString().endsWith(".json"))
+                                            .sorted()
+                                            .forEach(file -> readOneDataJsonFile(out, base, file, locationFilter));
+                                }
+                            } else {
+                                LOGGER.warn("Directory does not exist: {}", base);
+                            }
+                        } else {
+                            try (var fs = FileSystems.newFileSystem(root, Map.of())) {
+                                Path base = fs.getPath(dirInRoot);
+                                if (Files.exists(base)) {
+                                    try (Stream<Path> walk = Files.walk(base)) {
+                                        walk.filter(Files::isRegularFile)
+                                                .filter(p -> p.toString().endsWith(".json"))
+                                                .sorted()
+                                                .forEach(file -> readOneDataJsonFile(out, base, file, locationFilter));
+                                    }
+                                } else {
+                                    LOGGER.warn("Directory does not exist in JAR: {}", base);
+                                }
+                            }
+                        }
+                    } catch (IOException ex) {
+                        LOGGER.error("Failed walking mod data path {}: {}", dirInRoot, ex.getMessage());
+                    }
+                },
+                () -> LOGGER.warn("Mod container not found for {} during bootstrap data/{}", IskaUtils.MOD_ID, directoryUnderDataNamespace));
+        return out;
+    }
+
+    private static void readOneDataJsonFile(
+            Map<Identifier, JsonElement> out,
+            Path base,
+            Path file,
+            Predicate<Identifier> locationFilter) {
+        try {
+            String rel = base.relativize(file).toString().replace('\\', '/');
+            Identifier id = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, base.getFileName() + "/" + rel);
+            if (!locationFilter.test(id)) {
+                return;
+            }
+            try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
+                if (parsed != null) {
+                    out.put(id, parsed);
+                }
+            }
+        } catch (Exception ex) {
+            LOGGER.error("Failed reading {}: {}", file, ex.getMessage());
+        }
+    }
+
     private static void readOneJsonFile(Map<Identifier, JsonElement> out, Path base, Path file) {
         try {
             String subdir = base.getFileName().toString();

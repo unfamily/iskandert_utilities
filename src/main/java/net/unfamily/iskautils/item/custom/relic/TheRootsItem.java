@@ -32,6 +32,15 @@ public class TheRootsItem extends Item {
     }
 
     @Override
+    public ItemStack getDefaultInstance() {
+        ItemStack stack = super.getDefaultInstance();
+        // Ensure item icon (creative tabs, etc.) uses the correct model variant on the client.
+        // Safe on dedicated server too: it's just CustomModelData.
+        syncClientCustomModelData(stack);
+        return stack;
+    }
+
+    @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @org.jspecify.annotations.Nullable EquipmentSlot slot) {
         super.inventoryTick(stack, level, entity, slot);
         if (!(entity instanceof Player player)) return;
@@ -63,9 +72,10 @@ public class TheRootsItem extends Item {
         return os.contains("linux") || os.contains("mac") || os.contains("unix") || os.contains("android");
     }
 
-    /** Client-only: drives {@code items/the_roots.json} range_dispatch to {@code the_root} on Unix-like OS. */
+    /** Client-only: drives {@code items/the_roots.json} range_dispatch. */
     public static void syncClientCustomModelData(ItemStack stack) {
-        CustomModelDataUtil.setFloat0(stack, isUnixLike() ? 1.0F : 0.0F);
+        // Model fallback is "the_root". We set custom_model_data=1 only on non-unix to switch to "the_roots".
+        CustomModelDataUtil.setFloat0(stack, isUnixLike() ? 0.0F : 1.0F);
     }
 }
 
