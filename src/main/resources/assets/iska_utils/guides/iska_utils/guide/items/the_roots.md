@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:the_roots
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 <iska_utils:TheRootsTitle />
 

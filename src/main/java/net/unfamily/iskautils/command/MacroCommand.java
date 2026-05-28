@@ -434,12 +434,7 @@ public class MacroCommand {
             CommandSourceStack source;
             
             if (player != null) {
-                // If player source, use player position
-                source = player.createCommandSourceStack()
-                    .withPosition(player.position())       // Set player position
-                    .withEntity(player)                    // Set player entity
-                    .withRotation(player.getRotationVector()); // Set player rotation
-                
+                source = PlayerCommandSources.at(player);
                 server.getCommands().performPrefixedCommand(source, command);
                 
                 if (LOGGER.isDebugEnabled()) {

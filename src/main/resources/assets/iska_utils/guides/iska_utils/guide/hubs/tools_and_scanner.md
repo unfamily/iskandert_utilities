@@ -9,7 +9,7 @@ categories:
 ---
 # Tools and scanner
 
-Dollies, structure tools, Swiss Wrench, and the Scanner. For **Mining Equitizer** and other relics see **Artifacts and relics**.
+Dollies, structure tools, Swiss Wrench, and the Scanner. For **Mining Equitizer** and other relics see **Suspicious Delivery**.
 
 
 <SubPages icons={true} alphabetical={true} />

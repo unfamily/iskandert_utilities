@@ -77,7 +77,8 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
             return;
         }
         ItemStack in = items.getItem(SLOT_INPUT);
-        var src = FactoryLoader.findSource(in);
+        Level level = getLevel();
+        var src = level != null ? FactoryLoader.findSource(in, level) : FactoryLoader.findSource(in);
         if (src.isEmpty()) {
             this.selectedColorIndex = -1;
             setChangedAndSync();
@@ -193,10 +194,10 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
             return;
         }
 
-        int stamp = computeInputRecipeStamp(in);
+        int stamp = computeInputRecipeStamp(level, in);
         if (stamp != be.inputRecipeStamp) {
             be.inputRecipeStamp = stamp;
-            var srcOpt = FactoryLoader.findSource(in);
+            var srcOpt = FactoryLoader.findSource(in, level);
             if (srcOpt.isEmpty()) {
                 be.selectedColorIndex = -1;
             } else {
@@ -212,7 +213,7 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
             be.setChangedAndSync();
         }
 
-        var sourceOpt = FactoryLoader.findSource(in);
+        var sourceOpt = FactoryLoader.findSource(in, level);
         if (sourceOpt.isEmpty()) return;
         var source = sourceOpt.get();
 
@@ -285,12 +286,12 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
         be.setChangedAndSync();
     }
 
-    private static int computeInputRecipeStamp(ItemStack in) {
+    private static int computeInputRecipeStamp(Level level, ItemStack in) {
         if (in.isEmpty()) {
             return 0;
         }
         var itemId = BuiltInRegistries.ITEM.getId(in.getItem());
-        var src = FactoryLoader.findSource(in);
+        var src = FactoryLoader.findSource(in, level);
         if (src.isEmpty()) {
             return Objects.hash(itemId, 0);
         }
@@ -547,7 +548,9 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
                 }
             }
         }
-        inputRecipeStamp = computeInputRecipeStamp(items.getItem(SLOT_INPUT));
+        if (level != null) {
+            inputRecipeStamp = computeInputRecipeStamp(level, items.getItem(SLOT_INPUT));
+        }
     }
 
     private void loadPrefsList(CompoundTag tag, String key) {

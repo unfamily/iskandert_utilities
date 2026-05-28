@@ -2,6 +2,7 @@ package net.unfamily.iskautils.integration.jei;
 
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
@@ -51,6 +52,9 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
+        if (net.unfamily.iskautils.Config.factoryStonecutterEnabled) {
+            registration.addRecipeCatalyst(new ItemStack(ModItems.FACTORY.get()), RecipeTypes.STONECUTTING);
+        }
         registration.addRecipeCatalyst(new ItemStack(ModItems.FACTORY.get()), FactoryRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(
                 new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get()),

@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:the_deception
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # The Deception
 

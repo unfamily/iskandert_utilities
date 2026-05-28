@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:cursed_candle
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # Cursed Candle
 

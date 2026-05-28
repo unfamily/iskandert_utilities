@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:sharpened_bone
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # Sharpened Bone
 

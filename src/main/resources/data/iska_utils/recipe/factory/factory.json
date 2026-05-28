@@ -8,7 +8,7 @@
   "key": {
     "B": { "tag": "c:cobblestones" },
     "A": { "tag": "minecraft:planks" },
-    "C": { "tag": "c:ingots/iron" },
+    "C": { "item": "minecraft:stonecutter" },
     "D": { "item": "iska_utils:green_sludge" }
   },
   "result": {

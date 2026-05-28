@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:totem_of_pain
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # Totem of Pain
 

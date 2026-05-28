@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:chosen_cheese
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # The Chosen Cheese
 

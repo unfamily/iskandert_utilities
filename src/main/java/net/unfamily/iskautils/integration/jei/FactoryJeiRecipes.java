@@ -19,10 +19,17 @@ public final class FactoryJeiRecipes {
     }
 
     private static void ensureSourcesLoaded() {
-        if (!FactoryLoader.getSources().isEmpty()) return;
+        if (!FactoryLoader.getSources().isEmpty()) {
+            return;
+        }
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
             FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), server.getResourceManager());
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null) {
+            FactoryLoader.loadFromMergedRecipeResources(mc.getResourceManager());
         }
     }
 

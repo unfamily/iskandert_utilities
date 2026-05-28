@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:mining_equitizer
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # Mining Equitizer
 

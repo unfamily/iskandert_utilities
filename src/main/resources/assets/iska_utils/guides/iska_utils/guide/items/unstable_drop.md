@@ -2,10 +2,12 @@
 navigation:
   title: Unstable Drop
   icon: iska_utils:unstable_drop
-  parent: hubs/artifacts.md
+  parent: hubs/chaos_materials.md
   position: 3
+item_ids:
+  - iska_utils:unstable_drop
 categories:
-  - Artifacts and relics
+  - Chaos materials
 ---
 # Unstable Drop
 
@@ -15,4 +17,4 @@ While it sits in your inventory, it **decays** over time (about half a minute by
 
 When it fully decays, the item **vanishes**. On some servers, decay can be lethal — watch the red warning on the tooltip.
 
-Craft it from the Ancient Tablet recipe shown in **JEI**.
+Craft it on the **Ancient Tablet** (high-tier ingredients — see **JEI** → Ancient Tablet). Use it soon after crafting; **Chaotic Crystal** is the stable alternative when you need a chaos material that lasts in storage.

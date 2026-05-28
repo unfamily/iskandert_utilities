@@ -11,6 +11,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.command.CommandItemAction;
 import net.unfamily.iskautils.command.CommandItemDefinition;
+import net.unfamily.iskautils.command.PlayerCommandSources;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -103,13 +104,14 @@ public final class SuspiciousDeliveryScriptRunner {
 
     private static void executeOne(ServerPlayer player, CommandItemAction action) {
         Vec3 origin = player.position();
-        CommandSourceStack source = player.createCommandSourceStack().withSuppressedOutput();
+        CommandSourceStack source = PlayerCommandSources.atSilent(player);
         switch (action.getType()) {
             case EXECUTE -> {
                 try {
-                    player.getServer().getCommands().performPrefixedCommand(
-                            player.getServer().createCommandSourceStack().withEntity(player),
-                            action.getCommand());
+                    var server = player.getServer();
+                    if (server != null) {
+                        server.getCommands().performPrefixedCommand(source, action.getCommand());
+                    }
                 } catch (Exception e) {
                     LOGGER.error("Suspicious Delivery command failed: {}", e.getMessage());
                 }
