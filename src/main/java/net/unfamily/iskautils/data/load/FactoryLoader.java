@@ -17,7 +17,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.crafting.FactorySourcesRecipe;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -124,9 +126,20 @@ public final class FactoryLoader {
     }
 
     public static Optional<Source> findSource(ItemStack input) {
-        if (input.isEmpty()) return Optional.empty();
+        return findSource(input, null);
+    }
+
+    public static Optional<Source> findSource(ItemStack input, @Nullable Level level) {
+        if (input.isEmpty()) {
+            return Optional.empty();
+        }
         for (Source s : SOURCES) {
-            if (s.selector().matches(input)) return Optional.of(s);
+            if (s.selector().matches(input)) {
+                return Optional.of(s);
+            }
+        }
+        if (level != null) {
+            return FactoryStonecutterSupport.resolve(input, level);
         }
         return Optional.empty();
     }
@@ -165,7 +178,11 @@ public final class FactoryLoader {
     }
 
     public static List<ItemStack> previewOutputs(ItemStack heldInput) {
-        return findSource(heldInput)
+        return previewOutputs(heldInput, null);
+    }
+
+    public static List<ItemStack> previewOutputs(ItemStack heldInput, @Nullable Level level) {
+        return findSource(heldInput, level)
                 .map(src -> src.outputs().stream()
                         .map(FactoryLoader::resolveOutputStack)
                         .flatMap(Optional::stream)

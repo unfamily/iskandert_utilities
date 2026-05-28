@@ -851,6 +851,17 @@ public class Config {
                     "Default: true")
             .define("010_ftb_teams_sync_enabled", true);
 
+    private static final ModConfigSpec.BooleanValue FACTORY_STONECUTTER_ENABLED = BUILDER
+            .comment("If true, the Factory can process vanilla stonecutter recipes when no iska_utils:factory mapping exists.",
+                    "Stonecutter recipes are not added to JEI Factory category.",
+                    "Default: true")
+            .define("004_factory_stonecutter_enabled", true);
+
+    private static final ModConfigSpec.IntValue FACTORY_STONECUTTER_ENERGY_PER_OPERATION = BUILDER
+            .comment("RF/FE consumed per stonecutter-style Factory operation (only when factory energy buffer is enabled).",
+                    "Default: 5")
+            .defineInRange("005_factory_stonecutter_energy_per_operation", 5, 0, Integer.MAX_VALUE);
+
     static {
         BUILDER.pop(); // End of dev category
 
@@ -956,6 +967,8 @@ public class Config {
     public static int structurePlacerMachineEnergyConsume;
     public static int structurePlacerMachineEnergyBuffer;
     public static int factoryEnergyBuffer;
+    public static boolean factoryStonecutterEnabled;
+    public static int factoryStonecutterEnergyPerOp;
     public static int soundMufflerRangeMax;
     public static String clientStructurePath;
     public static boolean acceptClientStructure;
@@ -1086,6 +1099,8 @@ public class Config {
         structurePlacerMachineEnergyConsume = STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME.get();
         structurePlacerMachineEnergyBuffer = STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER.get();
         factoryEnergyBuffer = FACTORY_ENERGY_BUFFER.get();
+        factoryStonecutterEnabled = FACTORY_STONECUTTER_ENABLED.get();
+        factoryStonecutterEnergyPerOp = FACTORY_STONECUTTER_ENERGY_PER_OPERATION.get();
         soundMufflerRangeMax = SOUND_MUFFLER_RANGE_MAX.get();
 
         // Client Structure Path logic

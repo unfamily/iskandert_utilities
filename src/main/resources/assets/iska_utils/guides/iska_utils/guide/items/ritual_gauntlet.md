@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:ritual_gauntlet
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # Ritual Gauntlet
 

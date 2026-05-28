@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:ice_diamond
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # Ice Diamond
 

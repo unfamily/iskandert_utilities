@@ -207,12 +207,7 @@ public class StageActionsManager {
             MinecraftServer server = ((ServerLevel) player.level()).getServer();
             if (server == null) return;
 
-            CommandSourceStack source = player.createCommandSourceStack()
-                .withPosition(player.position())
-                .withEntity(player)
-                .withRotation(player.getRotationVector());
-
-            server.getCommands().performPrefixedCommand(source, command);
+            server.getCommands().performPrefixedCommand(PlayerCommandSources.at(player), command);
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Stage action executed command: '{}' for player {}", command, player.getName().getString());

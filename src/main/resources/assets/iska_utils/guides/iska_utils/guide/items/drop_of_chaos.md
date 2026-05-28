@@ -2,12 +2,12 @@
 navigation:
   title: Drop of Chaos
   icon: iska_utils:drop_of_chaos
-  parent: hubs/artifacts.md
-  position: 1
+  parent: hubs/chaos_materials.md
+  position: 0
 item_ids:
   - iska_utils:drop_of_chaos
 categories:
-  - Artifacts and relics
+  - Chaos materials
 ---
 # Drop of Chaos
 

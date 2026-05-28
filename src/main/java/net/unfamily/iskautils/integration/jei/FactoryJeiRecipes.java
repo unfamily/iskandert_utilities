@@ -11,11 +11,15 @@ public final class FactoryJeiRecipes {
     private FactoryJeiRecipes() {}
 
     public static void reloadForClient(Minecraft mc) {
-        if (!FactoryLoader.getSources().isEmpty()) return;
+        if (!FactoryLoader.getSources().isEmpty()) {
+            return;
+        }
         var server = mc.getSingleplayerServer();
         if (server != null) {
             FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), server.getResourceManager());
+            return;
         }
+        FactoryLoader.loadFromMergedRecipeResources(mc.getResourceManager());
     }
 
     public static List<FactoryJeiRecipe> buildAll() {

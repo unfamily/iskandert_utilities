@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:old_brick
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # Old Brick
 

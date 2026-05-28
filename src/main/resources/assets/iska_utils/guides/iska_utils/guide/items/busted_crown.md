@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:busted_crown
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # Busted Crown
 

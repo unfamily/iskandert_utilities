@@ -9,8 +9,12 @@ import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.api.distmarker.Dist;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.FactoryBlockEntity;
+import net.unfamily.iskautils.client.FactoryClientSourcesBootstrap;
 import net.unfamily.iskautils.data.load.FactoryLoader;
 
 public class FactoryMenu extends AbstractContainerMenu {
@@ -83,7 +87,7 @@ public class FactoryMenu extends AbstractContainerMenu {
         addSlot(new Slot(blockEntity.getItems(), FactoryBlockEntity.SLOT_INPUT, SLOT_INPUT_X, SLOT_INPUT_Y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.isEmpty() || FactoryLoader.findSource(stack).isPresent();
+                return FactoryMenu.this.acceptsFactoryInput(stack);
             }
         });
         addSlot(new Slot(blockEntity.getItems(), FactoryBlockEntity.SLOT_OUTPUT, SLOT_OUTPUT_X, SLOT_OUTPUT_Y) {
@@ -108,7 +112,7 @@ public class FactoryMenu extends AbstractContainerMenu {
         addSlot(new Slot(dummy, FactoryBlockEntity.SLOT_INPUT, SLOT_INPUT_X, SLOT_INPUT_Y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.isEmpty() || FactoryLoader.findSource(stack).isPresent();
+                return FactoryMenu.this.acceptsFactoryInput(stack);
             }
         });
         addSlot(new Slot(dummy, FactoryBlockEntity.SLOT_OUTPUT, SLOT_OUTPUT_X, SLOT_OUTPUT_Y) {
@@ -157,7 +161,7 @@ public class FactoryMenu extends AbstractContainerMenu {
                 return ItemStack.EMPTY;
             }
         } else {
-            if (FactoryLoader.findSource(slotStack).isEmpty()) {
+            if (!acceptsFactoryInput(slotStack)) {
                 return ItemStack.EMPTY;
             }
             if (!this.moveItemStackTo(slotStack, 0, 1, false)) {
@@ -171,6 +175,22 @@ public class FactoryMenu extends AbstractContainerMenu {
             slot.setChanged();
         }
         return result;
+    }
+
+    private boolean acceptsFactoryInput(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return true;
+        }
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
+            FactoryClientSourcesBootstrap.ensureLoaded();
+        }
+        if (blockEntityOrNull != null) {
+            Level level = blockEntityOrNull.getLevel();
+            if (level != null) {
+                return FactoryLoader.findSource(stack, level).isPresent();
+            }
+        }
+        return levelAccess.evaluate((level, pos) -> FactoryLoader.findSource(stack, level).isPresent(), false);
     }
 
     public BlockPos getSyncedBlockPos() {

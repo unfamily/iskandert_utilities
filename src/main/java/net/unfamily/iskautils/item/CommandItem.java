@@ -19,6 +19,7 @@ import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.command.CommandItemAction;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.command.CommandItemLoader;
+import net.unfamily.iskautils.command.PlayerCommandSources;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -830,11 +831,10 @@ public class CommandItem extends Item {
      */
     private void executeCommand(ServerPlayer player, String command) {
         try {
-            // Execute the command on the server
-            player.level().getServer().getCommands().performPrefixedCommand(
-                    player.level().getServer().createCommandSourceStack().withEntity(player), command);
+            var server = ((net.minecraft.server.level.ServerLevel) player.level()).getServer();
+            server.getCommands().performPrefixedCommand(PlayerCommandSources.at(player), command);
         } catch (Exception e) {
-            LOGGER.error("Error executing command '{}' for player {}: {}", 
+            LOGGER.error("Error executing command '{}' for player {}: {}",
                     command, player.getName().getString(), e.getMessage());
         }
     }

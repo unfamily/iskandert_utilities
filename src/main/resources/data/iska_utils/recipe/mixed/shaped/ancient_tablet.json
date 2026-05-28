@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ABA",
+    "BCB",
+    "ABA"
+  ],
+  "key": {
+    "A": "#c:stones",
+    "B": "iska_utils:drop_of_chaos",
+    "C": "#minecraft:signs"
+  },
+  "result": {
+    "id": "iska_utils:ancient_tablet",
+    "count": 1
+  }
+}

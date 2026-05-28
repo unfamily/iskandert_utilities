@@ -13,7 +13,9 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.client.FactoryClientSourcesBootstrap;
 import net.unfamily.iskautils.data.load.FactoryLoader;
+import net.unfamily.iskautils.integration.jei.FactoryJeiRecipes;
 import net.unfamily.iskautils.network.ModMessages;
 
 import java.util.ArrayList;
@@ -72,16 +74,17 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
     private static final int ENERGY_BAR_X = GRID_START_X - SCROLLBAR_GAP_X - ENERGY_BAR_WIDTH;
 
     private static final int REDSTONE_BUTTON_SIZE = 16;
-    private static final int OUTPUT_SIDE_REDSTONE_GAP = 4;
-    private static final int REDSTONE_BUTTON_X =
-            FactoryMenu.SLOT_OUTPUT_X + FactoryMenu.SLOT_SIZE + OUTPUT_SIDE_REDSTONE_GAP;
-    private static final int REDSTONE_BUTTON_Y =
-            FactoryMenu.yCenteredInSlotRow(FactoryMenu.SLOT_OUTPUT_Y, REDSTONE_BUTTON_SIZE);
 
     private static final int SCROLLBAR_COLUMN_TOTAL = HANDLE_SIZE + SCROLLBAR_HEIGHT + HANDLE_SIZE;
     private static final int BUTTON_UP_Y = GRID_START_Y + (GRID_PIXEL_H - SCROLLBAR_COLUMN_TOTAL) / 2;
     private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE;
     private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+
+    /** Horizontally centered on the scroll-down button; vertically centered on the output slot row. */
+    private static final int REDSTONE_BUTTON_X =
+            SCROLLBAR_X + (SCROLLBAR_WIDTH - REDSTONE_BUTTON_SIZE) / 2;
+    private static final int REDSTONE_BUTTON_Y =
+            FactoryMenu.yCenteredInSlotRow(FactoryMenu.SLOT_OUTPUT_Y, REDSTONE_BUTTON_SIZE);
 
     private final List<AbstractButton> colorGridButtons = new ArrayList<>();
 
@@ -285,6 +288,10 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
 
     @Override
     protected void init() {
+        if (minecraft != null) {
+            FactoryJeiRecipes.reloadForClient(minecraft);
+            FactoryClientSourcesBootstrap.ensureLoaded();
+        }
         super.init();
         this.scrollOffset = menu.getScrollOffset();
         this.selectedIndex = menu.getSelectedColorIndex();
@@ -367,7 +374,7 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         if (input.isEmpty()) {
             return List.of();
         }
-        return FactoryLoader.previewOutputs(input);
+        return FactoryLoader.previewOutputs(input, minecraft.level);
     }
 
     private int getMaxScrollOffset(int totalEntries) {

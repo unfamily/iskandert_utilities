@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:necrotic_crystal_heart
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # Necrotic Crystal Heart
 

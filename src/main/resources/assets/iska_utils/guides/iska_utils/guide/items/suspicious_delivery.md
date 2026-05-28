@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:suspicious_delivery
 categories:
-  - Artifacts and relics
+  - Suspicious Delivery
 ---
 # Suspicious Delivery
 
