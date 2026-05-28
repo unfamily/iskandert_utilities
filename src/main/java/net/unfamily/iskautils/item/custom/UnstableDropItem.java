@@ -21,6 +21,18 @@ public class UnstableDropItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
+        // Remove dye/color component tooltips (e.g. "Dyed" / "Color: #RRGGBB") if present.
+        tooltip.removeIf(c -> {
+            if (c == null) {
+                return false;
+            }
+            var contents = c.getContents();
+            if (contents instanceof net.minecraft.network.chat.contents.TranslatableContents t) {
+                String key = t.getKey();
+                return "item.dyed".equals(key) || "item.color".equals(key);
+            }
+            return false;
+        });
         if (!UnstableDropDecay.isDecayEnabled()) {
             return;
         }

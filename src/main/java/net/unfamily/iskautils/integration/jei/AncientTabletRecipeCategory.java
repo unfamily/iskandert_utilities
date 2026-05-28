@@ -27,7 +27,9 @@ public class AncientTabletRecipeCategory implements IRecipeCategory<AncientTable
     public static final RecipeType<AncientTabletJeiRecipe> RECIPE_TYPE =
             new RecipeType<>(UID, AncientTabletJeiRecipe.class);
 
-    private static final int WIDTH = 176;
+    private static final int WIDTH = AncientTabletJeiBackgroundDrawable.OUTPUT_X
+            + AncientTabletJeiBackgroundDrawable.COLS * AncientTabletJeiBackgroundDrawable.SLOT_SIZE
+            + 6;
     private static final int HEIGHT = AncientTabletJeiBackgroundDrawable.WARN_Y + 28;
 
     private final IDrawable background;

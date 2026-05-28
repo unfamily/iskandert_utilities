@@ -221,7 +221,7 @@ public class ModItems {
             () -> new Item(ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> ANCIENT_TABLET = ITEMS.register("ancient_tablet",
-            () -> new AncientTabletItem(new Item.Properties().stacksTo(1)));
+            () -> new AncientTabletItem(new Item.Properties()));
 
     public static final DeferredItem<Item> UNSTABLE_DROP = ITEMS.register("unstable_drop",
             () -> new UnstableDropItem(ITEM_PROPERTIES));

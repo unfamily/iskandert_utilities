@@ -304,12 +304,20 @@ public class IskaUtils {
                             net.unfamily.iskautils.item.custom.relic.TheRootsItem.isUnixLike() ? 1.0F : 0.0F
                 );
 
-                ItemProperties.register(
-                    ModItems.UNSTABLE_DROP.get(),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "instability"),
-                    (stack, level, entity, seed) -> net.unfamily.iskautils.item.component.UnstableDropDecay.instability(stack)
-                );
             });
+        }
+
+        @SubscribeEvent
+        public static void registerItemColors(net.neoforged.neoforge.client.event.RegisterColorHandlersEvent.Item event) {
+            event.register(
+                    (stack, tintIndex) -> {
+                        if (tintIndex == 0) {
+                            return 0xFFFFFFFF;
+                        }
+                        return 0xFF000000 | net.unfamily.iskautils.item.component.UnstableDropDecay.calcTintRgb(stack);
+                    },
+                    ModItems.UNSTABLE_DROP.get()
+            );
         }
         
         @SubscribeEvent

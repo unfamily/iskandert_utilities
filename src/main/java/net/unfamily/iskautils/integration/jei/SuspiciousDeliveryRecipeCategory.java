@@ -88,9 +88,7 @@ public class SuspiciousDeliveryRecipeCategory implements IRecipeCategory<Suspici
             String pct = String.format(Locale.ROOT, "%.1f%%", entry.weightPercent());
             slot.addRichTooltipCallback((view, tooltip) -> {
                 tooltip.add(Component.literal(pct));
-                if (entry.entryLuck() != 0) {
-                    tooltip.add(Component.literal("luck: " + entry.entryLuck()));
-                }
+                tooltip.add(Component.literal("luck: " + entry.entryLuck()));
             });
         }
     }

@@ -14,6 +14,7 @@ import net.unfamily.iskautils.obtaining.SuspiciousDeliveryLoader;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryLoot;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public final class SuspiciousDeliveryJeiRecipes {
@@ -57,6 +58,11 @@ public final class SuspiciousDeliveryJeiRecipes {
         if (slots.isEmpty()) {
             return List.of();
         }
+
+        // Sort for JEI: from most unlikely to most likely; within same chance, most lucky to least lucky.
+        slots.sort(Comparator
+                .comparingDouble(SuspiciousDeliveryJeiEntry::weightPercent)
+                .thenComparing(Comparator.comparingInt(SuspiciousDeliveryJeiEntry::entryLuck).reversed()));
 
         List<SuspiciousDeliveryJeiRecipe> pages = new ArrayList<>();
         for (int p = 0; p < slots.size(); p += OUTPUTS_PER_PAGE) {

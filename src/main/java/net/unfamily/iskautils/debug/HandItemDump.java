@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -21,9 +22,11 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.BundleContents;
 import net.unfamily.iskautils.shop.ItemConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.math.Fraction;
 
 /**
  * Server-side dump of held items (aligned with {@code iskandert_utilities_26} / Iskandert Library):
@@ -88,6 +91,7 @@ public final class HandItemDump {
 
     private static void appendDetailedDump(CommandSourceStack source, ServerPlayer player, ItemStack stack) {
         String itemIdStr = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        String itemClass = stack.getItem().getClass().getName();
 
         CompoundTag nbtTag = new CompoundTag();
         nbtTag.putString("components", stack.getComponentsPatch().toString());
@@ -100,6 +104,22 @@ public final class HandItemDump {
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                                 Component.translatable("command.iska_utils.debug.click_to_copy"))));
         source.sendSuccess(() -> itemIdLabel.append(itemIdComponent), false);
+
+        BundleContents contents = stack.get(DataComponents.BUNDLE_CONTENTS);
+        if (contents == null) {
+            source.sendSuccess(() -> Component.literal("BundleContents: <absent>")
+                    .withStyle(ChatFormatting.RED), false);
+        } else {
+            Fraction weight = contents.weight();
+            int itemCountTmp = 0;
+            for (ItemStack ignored : contents.itemsCopy()) {
+                itemCountTmp++;
+            }
+            final int itemCount = itemCountTmp;
+            source.sendSuccess(() -> Component.literal("BundleContents: present | weight=" + weight + " | items=" + itemCount)
+                    .withStyle(ChatFormatting.GREEN), false);
+        }
+        source.sendSuccess(() -> Component.literal("Item Class: " + itemClass).withStyle(ChatFormatting.GRAY), false);
 
         boolean isBlock = stack.getItem() instanceof BlockItem;
         CompoundTag blocksTag = new CompoundTag();

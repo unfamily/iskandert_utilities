@@ -18,6 +18,7 @@ Hold the tablet in your **main hand**. It stores up to **64** ingredients (one i
 ## Emptying
 
 - **Right-click** in the air or on a block: drops **all** contents at your feet.
+- In your inventory: **right-click** the tablet to take the **last inserted** item out.
 
 ## Crafting
 
@@ -27,4 +28,4 @@ Hold the tablet in your **main hand**. It stores up to **64** ingredients (one i
 
 ## Recycling delivery loot
 
-Any item from a Suspicious Delivery opening (and the parcel itself), except **Drop of Chaos**, can be turned into **Drop of Chaos** in a **crafting table** or in the **Factory**.
+Any item from a Suspicious Delivery opening (and the Suspicious Delivery itself), except **Drop of Chaos**, can be turned into **Drop of Chaos** in a **crafting table** or in the **Factory**.

@@ -1,20 +1,8 @@
 {
   "parent": "minecraft:item/generated",
+  "render_type": "minecraft:translucent",
   "textures": {
-    "layer0": "iska_utils:item/unstable_drop"
-  },
-  "overrides": [
-    {
-      "predicate": { "iska_utils:instability": 0.75 },
-      "model": "iska_utils:item/unstable_drop_2"
-    },
-    {
-      "predicate": { "iska_utils:instability": 0.5 },
-      "model": "iska_utils:item/unstable_drop_1"
-    },
-    {
-      "predicate": { "iska_utils:instability": 0.25 },
-      "model": "iska_utils:item/unstable_drop_0"
-    }
-  ]
+    "layer0": "iska_utils:item/unstable_drop",
+    "layer1": "iska_utils:item/unstable_drop_overlay"
+  }
 }
