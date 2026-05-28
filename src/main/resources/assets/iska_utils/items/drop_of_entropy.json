@@ -1,7 +1,7 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "iska_utils:item/drop_of_chaos"
+    "model": "iska_utils:item/drop_of_entropy"
   }
 }
 

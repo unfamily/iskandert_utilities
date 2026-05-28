@@ -428,8 +428,8 @@ public class ModBlocks {
                     .pushReaction(PushReaction.DESTROY)
                     .isViewBlocking((state, level, pos) -> false))));
 
-    public static final DeferredBlock<ChaoticTntBlock> CHAOTIC_TNT = BLOCKS.register("chaotic_tnt",
-            key -> new ChaoticTntBlock(assignBlockId(key, p -> p.strength(0.0F).sound(SoundType.GRASS).ignitedByLava())));
+    public static final DeferredBlock<EntropyTntBlock> ENTROPY_TNT = BLOCKS.register("entropy_tnt",
+            key -> new EntropyTntBlock(assignBlockId(key, p -> p.strength(0.0F).sound(SoundType.GRASS).ignitedByLava())));
 
     private static final UnaryOperator<BlockBehaviour.Properties> BURNING_FLAME_PROPERTIES = p -> p
             .mapColor(MapColor.COLOR_ORANGE)

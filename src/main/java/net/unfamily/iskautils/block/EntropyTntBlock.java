@@ -29,10 +29,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;
 
-public class ChaoticTntBlock extends Block {
+public class EntropyTntBlock extends Block {
     public static final BooleanProperty UNSTABLE = BooleanProperty.create("unstable");
 
-    public ChaoticTntBlock(BlockBehaviour.Properties properties) {
+    public EntropyTntBlock(BlockBehaviour.Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(UNSTABLE, Boolean.FALSE));
     }

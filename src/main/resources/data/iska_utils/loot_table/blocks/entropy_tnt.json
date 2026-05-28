@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "iska_utils:chaotic_tnt"
+          "name": "iska_utils:entropy_tnt"
         }
       ],
       "conditions": [
@@ -16,5 +16,5 @@
       ]
     }
   ],
-  "random_sequence": "iska_utils:blocks/chaotic_tnt"
+  "random_sequence": "iska_utils:blocks/entropy_tnt"
 }

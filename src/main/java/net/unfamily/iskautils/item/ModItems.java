@@ -13,7 +13,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.item.custom.AncientTabletItem;
-import net.unfamily.iskautils.item.custom.UnstableDropItem;
+import net.unfamily.iskautils.item.custom.UnstableEntropyCatalystItem;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import net.unfamily.iskautils.item.custom.GauntletOfClimbingItem;
@@ -164,13 +164,14 @@ public class ModItems {
     public static final DeferredItem<Item> SUSPICIOUS_DELIVERY_UNDEFINED =
             ITEMS.registerSimpleItem("suspicious_delivery_undefined");
 
-    public static final DeferredItem<Item> DROP_OF_CHAOS = ITEMS.registerSimpleItem("drop_of_chaos");
+    public static final DeferredItem<Item> DROP_OF_ENTROPY = ITEMS.registerSimpleItem("drop_of_entropy");
 
     public static final DeferredItem<Item> ANCIENT_TABLET = ITEMS.registerItem("ancient_tablet", AncientTabletItem::new, p -> p.stacksTo(1));
 
-    public static final DeferredItem<Item> UNSTABLE_DROP = ITEMS.registerItem("unstable_drop", UnstableDropItem::new, UnaryOperator.identity());
+    public static final DeferredItem<Item> UNSTABLE_ENTROPY_CATALYST = ITEMS.registerItem(
+            "unstable_entropy_catalyst", UnstableEntropyCatalystItem::new, UnaryOperator.identity());
 
-    public static final DeferredItem<Item> CHAOTIC_CRYSTAL = ITEMS.registerSimpleItem("chaotic_crystal");
+    public static final DeferredItem<Item> ENTROPY_CRYSTAL = ITEMS.registerSimpleItem("entropy_crystal");
 
     // ===== RELICS (reliquie) =====
     public static final DeferredItem<Item> OLD_BRICK = ITEMS.registerItem("old_brick", OldBrickItem::new, p -> p.stacksTo(1));
@@ -342,7 +343,7 @@ public class ModItems {
     // Blueprint - Strumento per salvare coordinate di vertici
     public static final DeferredItem<Item> BLUEPRINT = ITEMS.registerItem("blueprint", BlueprintItem::new, p -> p.stacksTo(1));
 
-    public static final DeferredItem<BlockItem> CHAOTIC_TNT = ITEMS.registerSimpleBlockItem(ModBlocks.CHAOTIC_TNT);
+    public static final DeferredItem<BlockItem> ENTROPY_TNT = ITEMS.registerSimpleBlockItem(ModBlocks.ENTROPY_TNT);
 
     public static final DeferredItem<Item> BURNING_BRAZIER = ITEMS.registerItem("burning_brazier", BurningBrazierItem::new,
             p -> p.stacksTo(1).durability(BurningBrazierItem.MAX_DURABILITY));

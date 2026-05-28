@@ -9,36 +9,36 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.item.component.UnstableDropDecay;
+import net.unfamily.iskautils.item.component.UnstableEntropyCatalystDecay;
 
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
-public final class UnstableDropDecayHandler {
+public final class UnstableEntropyCatalystDecayHandler {
 
-    private UnstableDropDecayHandler() {}
+    private UnstableEntropyCatalystDecayHandler() {}
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity().level().isClientSide() || !(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
-        if (!UnstableDropDecay.isDecayEnabled()) {
+        if (!UnstableEntropyCatalystDecay.isDecayEnabled()) {
             return;
         }
         Inventory inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack stack = inv.getItem(i);
-            if (!stack.is(ModItems.UNSTABLE_DROP.get())) {
+            if (!stack.is(ModItems.UNSTABLE_ENTROPY_CATALYST.get())) {
                 continue;
             }
-            int remaining = UnstableDropDecay.getRemainingTicks(stack);
+            int remaining = UnstableEntropyCatalystDecay.getRemainingTicks(stack);
             remaining--;
             if (remaining <= 0) {
                 inv.setItem(i, ItemStack.EMPTY);
-                if (Config.unstableDropDecayKillsPlayer) {
+                if (Config.unstableEntropyCatalystDecayKillsPlayer) {
                     player.hurt(player.level().damageSources().magic(), Float.MAX_VALUE);
                 }
             } else {
-                UnstableDropDecay.setRemainingTicks(stack, remaining);
+                UnstableEntropyCatalystDecay.setRemainingTicks(stack, remaining);
             }
         }
     }
