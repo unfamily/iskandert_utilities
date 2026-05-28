@@ -1,0 +1,21 @@
+{
+  "type": "iska_utils:ancient_tablet",
+  "entries": [
+    {
+      "require": [
+        { "id": "#c:gems/amethyst", "count": 8 },
+        { "id": "iska_utils:drop_of_chaos", "count": 4 }
+      ],
+      "produce": [ "iska_utils:chaotic_crystal" ]
+    },
+    {
+      "require": [
+        { "id": "#c:ingots/copper", "count": 16 },
+        { "id": "iska_utils:drop_of_chaos", "count": 8 },
+        { "id": "#c:nether_stars", "count": 4 },
+        "minecraft:dragon_breath"
+      ],
+      "produce": [ "iska_utils:unstable_drop" ]
+    }
+  ]
+}

@@ -91,16 +91,9 @@ public final class IskaUtilsLoadPaths {
         return typesForSubdir(subdirUnderLoad).contains(obj.get("type").getAsString());
     }
 
-    /**
-     * {@code data/iska_utils/recipe/factory/*.json} (crafting + factory datapack definitions).
-     */
-    public static boolean isFactoryRecipeFile(Identifier id) {
-        String p = id.getPath();
-        return p.startsWith("recipe/factory/") && p.endsWith(".json");
-    }
-
     public static boolean isJsonUnderRecipeTree(Identifier id) {
         String p = id.getPath();
         return p.startsWith("recipe/") && p.endsWith(".json");
     }
+
 }

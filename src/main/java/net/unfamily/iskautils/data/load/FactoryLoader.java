@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 
 /**
  * Factory machine input/output mappings: server from {@link FactorySourcesRecipe}; client from merged
- * {@code data/iska_utils/recipe/factory/*.json}.
+ * Scans all {@code recipe/} JSON; uses files with {@code type} {@code iska_utils:factory} or {@code iska_utils:factory_sources}.
  */
 public final class FactoryLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -76,7 +76,7 @@ public final class FactoryLoader {
     /** Client GUI/JEI and server fallback: parses factory recipe JSON from merged datapacks. */
     public static void loadFromMergedRecipeResources(ResourceManager rm) {
         Map<Identifier, JsonElement> merged =
-                IskaUtilsLoadJson.collectMergedJsonUnderDirectory(rm, "recipe", IskaUtilsLoadPaths::isFactoryRecipeFile);
+                IskaUtilsLoadJson.collectMergedJsonUnderDirectory(rm, "recipe", IskaUtilsLoadPaths::isJsonUnderRecipeTree);
         List<Source> out = new ArrayList<>();
         for (var entry : IskaUtilsLoadJson.orderedEntries(merged)) {
             parseFactoryRecipeJson(entry.getKey(), entry.getValue(), out);
