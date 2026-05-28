@@ -21,8 +21,8 @@ import net.unfamily.iskautils.crafting.FactorySourcesRecipe;
 import org.slf4j.Logger;
 
 /**
- * Factory mappings: server from {@link FactorySourcesRecipe}; client from merged recipe JSON
- * (no full recipe holder list on the client).
+ * Factory mappings: server from {@link FactorySourcesRecipe}; client scans all {@code recipe/} JSON and
+ * filters by {@code type} (no full recipe holder list on the client).
  */
 public final class FactoryLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -73,10 +73,10 @@ public final class FactoryLoader {
         loadFromMergedRecipeResources(Objects.requireNonNull(datapackResources, "datapackResources"));
     }
 
-    /** Client GUI/JEI and server fallback: merged JSON under each namespace {@code recipe/factory/}. */
+    /** Client GUI/JEI and server fallback: scans all {@code recipe/} JSON; keeps files whose {@code type} is factory. */
     public static void loadFromMergedRecipeResources(ResourceManager rm) {
         Map<ResourceLocation, JsonElement> merged =
-                IskaUtilsLoadJson.collectMergedJsonUnderDirectory(rm, "recipe", IskaUtilsLoadPaths::isFactoryRecipeFile);
+                IskaUtilsLoadJson.collectMergedJsonUnderDirectory(rm, "recipe", IskaUtilsLoadPaths::isJsonUnderRecipeTree);
         List<Source> out = new ArrayList<>();
         for (var entry : IskaUtilsLoadJson.orderedEntries(merged)) {
             parseFactoryRecipeJson(entry.getKey(), entry.getValue(), out);

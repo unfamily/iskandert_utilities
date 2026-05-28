@@ -91,15 +91,11 @@ public final class IskaUtilsLoadPaths {
         return typesForSubdir(subdirUnderLoad).contains(obj.get("type").getAsString());
     }
 
-    public static boolean isFactoryRecipeFile(ResourceLocation id) {
-        String p = id.getPath();
-        return p.startsWith("recipe/factory/") && p.endsWith(".json");
-    }
-
     /** Any JSON under {@code recipe/} (including subfolders). */
     public static boolean isJsonUnderRecipeTree(ResourceLocation id) {
         String p = id.getPath();
         return p.startsWith("recipe/") && p.endsWith(".json");
     }
+
 }
 
