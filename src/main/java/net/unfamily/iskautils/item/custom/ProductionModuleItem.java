@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.unfamily.iskautils.integration.ColossalReactorsTooltipHelper;
 import net.unfamily.iskautils.integration.PatternCrafterTooltipHelper;
 
 import java.util.List;
@@ -27,12 +28,19 @@ public class ProductionModuleItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
 
-        if (!PatternCrafterTooltipHelper.supportsProductionModule()) {
+        boolean showPatternCrafter = PatternCrafterTooltipHelper.supportsProductionModule();
+        boolean showColossalReactors = ColossalReactorsTooltipHelper.supportsRadiationScrubberProductionModule();
+        if (!showPatternCrafter && !showColossalReactors) {
             return;
         }
 
         if (Screen.hasShiftDown()) {
-            PatternCrafterTooltipHelper.addProductionModuleTooltip(tooltip);
+            if (showPatternCrafter) {
+                PatternCrafterTooltipHelper.addProductionModuleTooltip(tooltip);
+            }
+            if (showColossalReactors) {
+                ColossalReactorsTooltipHelper.addRadiationScrubberProductionModuleTooltip(tooltip);
+            }
         } else {
             tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.press_shift")
                     .withStyle(ChatFormatting.GRAY));
