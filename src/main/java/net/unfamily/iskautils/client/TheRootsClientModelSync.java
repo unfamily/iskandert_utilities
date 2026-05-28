@@ -1,11 +1,12 @@
 package net.unfamily.iskautils.client;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.relic.TheRootsItem;
 import net.unfamily.iskautils.util.CurioEquipUtil;
@@ -18,9 +19,9 @@ public final class TheRootsClientModelSync {
     private TheRootsClientModelSync() {}
 
     @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        Player player = event.getEntity();
-        if (!player.level().isClientSide()) {
+    public static void onClientTick(ClientTickEvent.Post event) {
+        Player player = Minecraft.getInstance().player;
+        if (player == null) {
             return;
         }
         syncIfRoots(player.getMainHandItem());

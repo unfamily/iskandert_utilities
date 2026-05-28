@@ -63,7 +63,7 @@ public class TheRootsItem extends Item {
         return os.contains("linux") || os.contains("mac") || os.contains("unix") || os.contains("android");
     }
 
-    /** Client-only: drives {@code custom_model_data} override to {@code the_root} texture. */
+    /** Client-only: drives {@code items/the_roots.json} range_dispatch to {@code the_root} on Unix-like OS. */
     public static void syncClientCustomModelData(ItemStack stack) {
         CustomModelDataUtil.setFloat0(stack, isUnixLike() ? 1.0F : 0.0F);
     }

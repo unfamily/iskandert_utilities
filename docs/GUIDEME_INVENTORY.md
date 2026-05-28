@@ -6,3 +6,5 @@ English-only guide pages under `assets/iska_utils/guides/iska_utils/guide/`.
 **v26 note:** Deep Drawer block item id is `iska_utils:deep_drawer` (v24 uses `iska_utils:deep_drawers`).
 
 See sibling repo `docs/GUIDEME_INVENTORY.md` for full A/B/C tables.
+
+**Excluded from GuideME:** `greedy_shield`, `gift` (no player guide pages).

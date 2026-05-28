@@ -9,7 +9,7 @@ categories:
 ---
 # Combat and travel
 
-Shields, hearts, braziers, climbing gauntlet, portable dislocator, and related gear.
+Braziers, climbing gauntlet, portable dislocator, and related gear. For **Necrotic Crystal Heart** and delivery relics see **Artifacts and relics**.
 
 
 <SubPages icons={true} alphabetical={true} />

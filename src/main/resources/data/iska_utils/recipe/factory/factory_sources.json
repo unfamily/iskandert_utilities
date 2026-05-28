@@ -42,6 +42,13 @@
         { "output": "dyenamics:navy_dye", "amount": 4 },
         { "output": "dyenamics:icy_blue_dye", "amount": 4 }
       ]
+    },
+    {
+      "input": "#iska_utils:delivery_recycle",
+      "amount": 1,
+      "select": [
+        { "output": "iska_utils:drop_of_chaos", "amount": 1 }
+      ]
     }
   ]
 }

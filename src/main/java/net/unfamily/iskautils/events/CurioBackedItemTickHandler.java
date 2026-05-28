@@ -46,7 +46,7 @@ public final class CurioBackedItemTickHandler {
             BurningBrazierItem.tickEquipped(sp, level, brazier);
         }
 
-        ItemStack cursedCandle = CurioEquipUtil.findEquippedCurioStack(sp, ModItems.CURSED_CANDLE.get());
+        ItemStack cursedCandle = CurioEquipUtil.findActiveStack(sp, ModItems.CURSED_CANDLE.get());
         if (!cursedCandle.isEmpty()) {
             BurningBrazierItem.tickEquipped(sp, level, cursedCandle);
         }

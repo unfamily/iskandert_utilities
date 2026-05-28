@@ -5,7 +5,7 @@ navigation:
 ---
 # Iskandert's Utilities
 
-Player-facing documentation for **Iskandert's Utilities** (powered by **GuideME**). Use the entries below — hubs group related items; **Materials** covers rubber and dye intermediates. Recipe details are in **JEI**, not in this guide.
+Player-facing documentation for **Iskandert's Utilities** (powered by **GuideME**). Use the entries below — hubs group related items; **Artifacts and relics** covers Suspicious Delivery and special Curios gear; **Materials** covers rubber and dye intermediates. Recipe details are in **JEI**, not in this guide.
 
 ## Contents
 

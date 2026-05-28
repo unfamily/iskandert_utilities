@@ -41,7 +41,8 @@ public final class IskaUtilsLoadPaths {
     public static final String STAGE_ITEMS = "iska_utils_stage_items";
     /** Server structure definitions (iska_utils:structure), not monouse items. */
     public static final String STRUCTURE_DEFINITIONS = "iska_utils_structure_definitions";
-    public static final String OBTAINING = "iska_utils_obtaining";
+    /** Suspicious Delivery loot table JSON ({@code iska_utils:suspicious_delivery}). */
+    public static final String SUSPICIOUS_DELIVERY = "iska_utils_suspicious_delivery";
 
     private static final Map<String, Set<String>> TYPES_BY_SUBDIR = Map.of(
             COMMAND_ITEMS, Set.of(TYPE_COMMAND_ITEM),
@@ -52,7 +53,7 @@ public final class IskaUtilsLoadPaths {
             STAGE_ACTIONS, Set.of(TYPE_STAGE_ACTIONS),
             STAGE_ITEMS, Set.of(TYPE_STAGE_ITEM),
             STRUCTURE_DEFINITIONS, Set.of(TYPE_STRUCTURE),
-            OBTAINING, Set.of(TYPE_SUSPICIOUS_DELIVERY)
+            SUSPICIOUS_DELIVERY, Set.of(TYPE_SUSPICIOUS_DELIVERY)
     );
 
     public static String loadSubdirPrefix(String subdir) {

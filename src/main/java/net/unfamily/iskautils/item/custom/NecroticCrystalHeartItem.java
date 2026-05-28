@@ -19,8 +19,7 @@ import net.unfamily.iskalib.stage.StageRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.neoforged.fml.ModList;
-import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.util.RelicBalanceFormat;
+import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
 import java.lang.reflect.Method;
 
 import java.util.List;
@@ -46,20 +45,7 @@ public class NecroticCrystalHeartItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltipComponents, tooltipFlag);
         
-        tooltipComponents.accept(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.cursed"));
-        net.unfamily.iskautils.util.RelicTooltipUtil.appendDescLines(
-                tooltipComponents,
-                "necrotic_crystal_heart",
-                4,
-                RelicBalanceFormat.flatBonus(Config.necroticCrystalHeartHpCostPerSave));
-        
-        if (Config.artifactsInfo) {
-            if (!isArtifactsLoaded()) {
-                tooltipComponents.accept(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_required"));
-            } else {
-                tooltipComponents.accept(Component.translatable("tooltip.iska_utils.necrotic_crystal_heart.artifacts_loaded"));
-            }
-        }
+        CursedRelicItem.appendCursedArtifactTooltip(tooltipComponents, "necrotic_crystal_heart");
     }
     
     /**
@@ -108,8 +94,4 @@ public class NecroticCrystalHeartItem extends Item {
 		StageRegistry.removePlayerStage(entity, LivingIncomingDamageEventHandler.NECRO_CRYSTAL_HEART_EQUIP_STAGE, true);
 		return true;
 	}
-
-    private boolean isArtifactsLoaded() {
-        return net.neoforged.fml.ModList.get().isLoaded("artifacts");
-    }
 } 

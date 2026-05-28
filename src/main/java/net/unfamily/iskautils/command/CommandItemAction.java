@@ -30,7 +30,8 @@ public class CommandItemAction {
         DELAY,      // Wait for a delay
         ITEM,       // Perform an action on the item (consume, drop, etc.)
         MESSAGE,    // Send localized message (chat/actionbar/title)
-        IF          // Conditional action with sub-actions
+        IF,         // Conditional action with sub-actions
+        DROP        // Drop an item at the player position (datapack item id)
     }
     
     /**
@@ -50,6 +51,7 @@ public class CommandItemAction {
     private int delay;
     private ItemActionType itemAction;
     private net.unfamily.iskautils.obtaining.MessageSpec message;
+    private net.minecraft.resources.Identifier dropItemId;
     private List<CommandItemDefinition.StageCondition> stages = new ArrayList<>();
     
     // For IF action type
@@ -97,6 +99,14 @@ public class CommandItemAction {
 
     public net.unfamily.iskautils.obtaining.MessageSpec getMessage() {
         return message;
+    }
+
+    public void setDropItemId(net.minecraft.resources.Identifier dropItemId) {
+        this.dropItemId = dropItemId;
+    }
+
+    public net.minecraft.resources.Identifier getDropItemId() {
+        return dropItemId;
     }
     
     /**

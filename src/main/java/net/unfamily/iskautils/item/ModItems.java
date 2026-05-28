@@ -12,6 +12,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.item.custom.AncientTabletItem;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import net.unfamily.iskautils.item.custom.GauntletOfClimbingItem;
@@ -158,9 +159,13 @@ public class ModItems {
     // ===== NEW ARTIFACTS (obtaining) =====
     public static final DeferredItem<Item> SUSPICIOUS_DELIVERY = ITEMS.registerItem("suspicious_delivery", SuspiciousDeliveryItem::new, UnaryOperator.identity());
 
+    /** Placeholder for masked JEI entries; not in creative tab. */
+    public static final DeferredItem<Item> SUSPICIOUS_DELIVERY_UNDEFINED =
+            ITEMS.registerSimpleItem("suspicious_delivery_undefined");
+
     public static final DeferredItem<Item> DROP_OF_CHAOS = ITEMS.registerSimpleItem("drop_of_chaos");
 
-    public static final DeferredItem<Item> MIXIN_TABLET = ITEMS.registerItem("mixin_tablet", Item::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> ANCIENT_TABLET = ITEMS.registerItem("ancient_tablet", AncientTabletItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<Item> UNSTABLE_DROP = ITEMS.registerSimpleItem("unstable_drop");
 

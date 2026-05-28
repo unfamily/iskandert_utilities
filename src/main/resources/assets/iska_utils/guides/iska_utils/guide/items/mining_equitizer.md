@@ -2,12 +2,12 @@
 navigation:
   title: Mining Equitizer
   icon: iska_utils:mining_equitizer
-  parent: hubs/tools_and_scanner.md
-  position: 30
+  parent: hubs/artifacts.md
+  position: 2
 item_ids:
   - iska_utils:mining_equitizer
 categories:
-  - Tools and scanner
+  - Artifacts and relics
 ---
 # Mining Equitizer
 
@@ -15,5 +15,8 @@ categories:
 
 ## What it does
 
-- Reduces or removes the mining speed penalty while flying/eligible movement states (as implemented for the version you play).
+An artifact for mining in harsh conditions. While worn in **Curios**, it removes most of the **mining speed penalty** when you are **in water** or **not standing on solid ground**.
 
+## How to obtain
+
+From opening **Suspicious Delivery** (see that entry for how to get the parcel).

@@ -11,6 +11,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
+import net.unfamily.iskautils.script.LoadActionParser;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -351,126 +352,11 @@ public class CommandItemLoader {
      * Parse stage conditions for a specific action (used with DEF stages logic)
      */
     private static void parseActionStages(JsonObject actionJson, CommandItemAction action) {
-        // Check if this action has stage requirements
-        if (actionJson.has("stages") && actionJson.get("stages").isJsonArray()) {
-            JsonArray stagesArray = actionJson.getAsJsonArray("stages");
-            for (JsonElement stageElement : stagesArray) {
-                if (stageElement.isJsonObject()) {
-                    JsonObject stageJson = stageElement.getAsJsonObject();
-                    String stageType = stageJson.has("stage_type") ? stageJson.get("stage_type").getAsString() : "player";
-                    String stage = stageJson.get("stage").getAsString();
-                    boolean is = stageJson.has("is") ? stageJson.get("is").getAsBoolean() : true;
-                    
-                    action.addStage(stageType, stage, is);
-                }
-            }
-        }
+        LoadActionParser.parseActionStages(actionJson, action);
     }
-    
-    /**
-     * Parse a single action from a JSON object
-     */
+
     private static CommandItemAction parseItemAction(JsonObject actionJson) {
-        try {
-            CommandItemAction action = new CommandItemAction();
-            
-            // Execute command
-            if (actionJson.has("execute")) {
-                action.setType(CommandItemAction.ActionType.EXECUTE);
-                action.setCommand(actionJson.get("execute").getAsString());
-            }
-            // Localized message (new format, like Suspicious Delivery)
-            else if (actionJson.has("message") && actionJson.get("message").isJsonObject()) {
-                action.setType(CommandItemAction.ActionType.MESSAGE);
-                action.setMessage(net.unfamily.iskautils.obtaining.MessageSpec.fromJson(
-                        actionJson.getAsJsonObject("message"),
-                        LOGGER,
-                        "command_item_action"));
-            }
-            // Delay
-            else if (actionJson.has("delay")) {
-                action.setType(CommandItemAction.ActionType.DELAY);
-                action.setDelay(actionJson.get("delay").getAsInt());
-            }
-            // Item operation
-            else if (actionJson.has("item")) {
-                action.setType(CommandItemAction.ActionType.ITEM);
-                String itemAction = actionJson.get("item").getAsString().toLowerCase();
-                switch (itemAction) {
-                    case "delete_all":
-                        action.setItemAction(CommandItemAction.ItemActionType.DELETE_ALL);
-                        break;
-                    case "delete":
-                        action.setItemAction(CommandItemAction.ItemActionType.DELETE);
-                        break;
-                    case "drop_all":
-                        action.setItemAction(CommandItemAction.ItemActionType.DROP_ALL);
-                        break;
-                    case "drop":
-                        action.setItemAction(CommandItemAction.ItemActionType.DROP);
-                        break;
-                    case "consume":
-                        action.setItemAction(CommandItemAction.ItemActionType.CONSUME);
-                        break;
-                    case "damage":
-                        action.setItemAction(CommandItemAction.ItemActionType.DAMAGE);
-                        break;
-                    default:
-                        LOGGER.warn("Unknown item action: {}", itemAction);
-                        return null;
-                }
-            }
-            // If condition
-            else if (actionJson.has("if") && actionJson.get("if").isJsonArray()) {
-                action.setType(CommandItemAction.ActionType.IF);
-                JsonArray ifArray = actionJson.getAsJsonArray("if");
-                
-                // The first element contains the conditions
-                if (ifArray.size() > 0 && ifArray.get(0).isJsonObject()) {
-                    JsonObject conditionsObj = ifArray.get(0).getAsJsonObject();
-                    
-                    // Parse conditions array which contains indices to stages
-                    if (conditionsObj.has("conditions") && conditionsObj.get("conditions").isJsonArray()) {
-                        JsonArray conditionsArray = conditionsObj.getAsJsonArray("conditions");
-                        List<Integer> indices = new ArrayList<>();
-                        
-                        for (JsonElement indexElement : conditionsArray) {
-                            if (indexElement.isJsonPrimitive()) {
-                                indices.add(indexElement.getAsInt());
-                            }
-                        }
-                        
-                        action.setConditionIndices(indices);
-                    }
-                }
-                
-                // Process sub-actions (all elements after the first one)
-                for (int i = 1; i < ifArray.size(); i++) {
-                    if (ifArray.get(i).isJsonObject()) {
-                        JsonObject subActionJson = ifArray.get(i).getAsJsonObject();
-                        CommandItemAction subAction = parseItemAction(subActionJson);
-                        if (subAction != null) {
-                            action.addSubAction(subAction);
-                        }
-                    }
-                }
-                
-                if (action.getSubActions().isEmpty()) {
-                    LOGGER.warn("No valid sub-actions found in 'if' block");
-                    return null;
-                }
-            }
-            // Unknown action
-            else {
-                LOGGER.warn("Unknown command item action type: {}", actionJson);
-                return null;
-            }
-            
-            return action;
-        } catch (Exception e) {
-            LOGGER.error("Error parsing command item action: {}", e.getMessage());
-            return null;
-        }
+        return LoadActionParser.parseItemAction(actionJson, "command_item_action");
     }
     /**
      * Get a command item definition by ID

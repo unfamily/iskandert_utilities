@@ -68,8 +68,19 @@ public class BurningBrazierItem extends Item {
         return ModBlocks.BURNING_FLAME.get();
     }
 
+    /** Flame blocks this item places (subtype per tool). */
     protected boolean isManagedFlame(Block block) {
         return block == getFlameBlock();
+    }
+
+    /** Both normal and cursed flame blocks can be picked up with brazier or candle. */
+    protected static boolean isModFlameBlock(Block block) {
+        return block == ModBlocks.BURNING_FLAME.get() || block == ModBlocks.CURSED_BURNING_FLAME.get();
+    }
+
+    /** Only normal burning flames restore brazier durability (cursed flames do not). */
+    protected boolean restoresDurabilityFromFlameBlock(Block block) {
+        return consumesDurability() && block == ModBlocks.BURNING_FLAME.get();
     }
 
     protected boolean consumesDurability() {
@@ -90,8 +101,8 @@ public class BurningBrazierItem extends Item {
         }
     }
 
-    protected void onFlameRemoved(ServerPlayer player, ItemStack stack) {
-        if (consumesDurability()) {
+    protected void onFlameRemoved(ServerPlayer player, ItemStack stack, Block removedFlame) {
+        if (restoresDurabilityFromFlameBlock(removedFlame)) {
             stack.setDamageValue(Math.max(0, stack.getDamageValue() - 1));
         }
     }
@@ -126,9 +137,10 @@ public class BurningBrazierItem extends Item {
         }
 
         BlockState clickedState = level.getBlockState(clickedPos);
-        if (isManagedFlame(clickedState.getBlock())) {
+        Block clickedBlock = clickedState.getBlock();
+        if (isModFlameBlock(clickedBlock)) {
             level.destroyBlock(clickedPos, false);
-            onFlameRemoved(serverPlayer, stack);
+            onFlameRemoved(serverPlayer, stack, clickedBlock);
             return InteractionResult.SUCCESS;
         }
 

@@ -37,6 +37,8 @@ public class CursedRelicItem extends Item {
                     2,
                     RelicBalanceFormat.percent(Config.ritualGauntletCritChance),
                     RelicBalanceFormat.percentBonusFromMultiplier(Config.ritualGauntletCritDamageMultiplier));
+            case "necrotic_crystal_heart" -> RelicTooltipUtil.appendDescLines(
+                    tooltip, path, 4, RelicBalanceFormat.flatBonus(Config.necroticCrystalHeartHpCostPerSave));
             default -> RelicTooltipUtil.appendDescLines(tooltip, path);
         }
     }
