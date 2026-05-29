@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ADA",
+    "BCB",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "item": "iska_utils:wither_proof_block"
+    },
+    "B": {
+      "item": "iska_utils:entropy_crystal"
+    },
+    "C": {
+      "item": "iska_utils:entropic_smithing_template"
+    },
+    "D": {
+      "item": "iska_utils:drop_of_entropy"
+    }
+  },
+  "result": {
+    "id": "iska_utils:entropic_smithing_template",
+    "count": 2
+  }
+}
