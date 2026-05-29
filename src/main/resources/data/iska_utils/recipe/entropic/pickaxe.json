@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": "iska_utils:entropic_smithing_template",
+  "base": "minecraft:netherite_pickaxe",
+  "addition": "iska_utils:entropy_crystal",
+  "result": {
+    "id": "iska_utils:entropic_pickaxe"
+  }
+}

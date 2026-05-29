@@ -64,6 +64,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.unfamily.iskautils.item.custom.RubberBootsItem;
 import net.unfamily.iskautils.item.custom.MiningEquitizer;
+import net.unfamily.iskautils.item.entropic.EntropicArmorItem;
+import net.unfamily.iskautils.item.entropic.EntropicGear;
+import net.unfamily.iskautils.item.entropic.EntropicHoeItem;
+import net.unfamily.iskautils.item.entropic.EntropicPaxelItem;
+import net.unfamily.iskautils.item.custom.DurableShearsItem;
+import net.unfamily.iskautils.item.entropic.EntropicSmithingTemplateItem;
+import net.unfamily.iskautils.item.entropic.EntropicToolItem;
+import net.minecraft.world.item.equipment.ArmorType;
 
 
 
@@ -173,6 +181,46 @@ public class ModItems {
 
     public static final DeferredItem<Item> ENTROPY_CRYSTAL = ITEMS.registerSimpleItem("entropy_crystal");
 
+    // ===== ENTROPIC GEAR (indestructible) =====
+    public static final DeferredItem<Item> ENTROPIC_SMITHING_TEMPLATE = ITEMS.registerItem(
+            "entropic_smithing_template", EntropicSmithingTemplateItem::new, p -> EntropicSmithingTemplateItem.defaultProperties());
+
+    public static final DeferredItem<Item> ENTROPIC_SWORD = ITEMS.registerItem(
+            "entropic_sword", EntropicToolItem::new, p -> EntropicGear.swordProperties());
+
+    public static final DeferredItem<Item> ENTROPIC_PICKAXE = ITEMS.registerItem(
+            "entropic_pickaxe", EntropicToolItem::new, p -> EntropicGear.pickaxeProperties());
+
+    public static final DeferredItem<Item> ENTROPIC_AXE = ITEMS.registerItem(
+            "entropic_axe", EntropicToolItem::new, p -> EntropicGear.axeProperties());
+
+    public static final DeferredItem<Item> ENTROPIC_SHOVEL = ITEMS.registerItem(
+            "entropic_shovel", EntropicToolItem::new, p -> EntropicGear.shovelProperties());
+
+    public static final DeferredItem<Item> ENTROPIC_HOE = ITEMS.registerItem(
+            "entropic_hoe", EntropicHoeItem::new, EntropicGear::baseProperties);
+
+    public static final DeferredItem<Item> ENTROPIC_PAXEL = ITEMS.registerItem(
+            "entropic_paxel", EntropicPaxelItem::new, p -> EntropicGear.baseProperties());
+
+    public static final DeferredItem<Item> DURABLE_SHEARS = ITEMS.registerItem(
+            "durable_shears", DurableShearsItem::new, p -> p.stacksTo(1).durability(DurableShearsItem.MAX_DURABILITY));
+
+    public static final DeferredItem<Item> ENTROPIC_SPEAR = ITEMS.registerItem(
+            "entropic_spear", EntropicToolItem::new, p -> EntropicGear.spearProperties());
+
+    public static final DeferredItem<Item> ENTROPIC_HELMET = ITEMS.registerItem(
+            "entropic_helmet", p -> new EntropicArmorItem(ArmorType.HELMET, p), EntropicGear::armorProperties);
+
+    public static final DeferredItem<Item> ENTROPIC_CHESTPLATE = ITEMS.registerItem(
+            "entropic_chestplate", p -> new EntropicArmorItem(ArmorType.CHESTPLATE, p), EntropicGear::armorProperties);
+
+    public static final DeferredItem<Item> ENTROPIC_LEGGINGS = ITEMS.registerItem(
+            "entropic_leggings", p -> new EntropicArmorItem(ArmorType.LEGGINGS, p), EntropicGear::armorProperties);
+
+    public static final DeferredItem<Item> ENTROPIC_BOOTS = ITEMS.registerItem(
+            "entropic_boots", p -> new EntropicArmorItem(ArmorType.BOOTS, p), EntropicGear::armorProperties);
+
     // ===== RELICS (reliquie) =====
     public static final DeferredItem<Item> OLD_BRICK = ITEMS.registerItem("old_brick", OldBrickItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> CHOSEN_CHEESE = ITEMS.registerItem("chosen_cheese", ChosenCheeseItem::new, p -> p.stacksTo(1));
@@ -184,7 +232,9 @@ public class ModItems {
     public static final DeferredItem<Item> CURSED_CANDLE = ITEMS.registerItem("cursed_candle", CursedCandleItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> BUSTED_CROWN = ITEMS.registerItem("busted_crown", CursedRelicItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> RITUAL_GAUNTLET = ITEMS.registerItem("ritual_gauntlet", CursedRelicItem::new, p -> p.stacksTo(1));
-    public static final DeferredItem<Item> THE_DECEPTION = ITEMS.registerItem("the_deception", CursedRelicItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> THE_DECEPTION = ITEMS.registerItem("the_deception",
+            props -> new net.unfamily.iskautils.item.custom.relic.TheDeceptionItem(ModBlocks.THE_DECEPTION.get(), props),
+            Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<Item> RUBBER_CHUNK = ITEMS.registerSimpleItem("rubber_chunk");
 

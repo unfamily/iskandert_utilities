@@ -492,6 +492,15 @@ public class ModBlocks {
     public static final DeferredBlock<Block> GIFT = BLOCKS.register("gift",
             key -> new Block(assignBlockId(key, GIFT_PROPERTIES)));
 
+    private static final UnaryOperator<BlockBehaviour.Properties> THE_DECEPTION_PROPERTIES = p -> p
+            .mapColor(MapColor.TERRACOTTA_BROWN)
+            .strength(2.0f, 3.0f)
+            .sound(SoundType.WOOD)
+            .noOcclusion();
+
+    public static final DeferredBlock<TheDeceptionBlock> THE_DECEPTION = BLOCKS.register("the_deception",
+            key -> new TheDeceptionBlock(assignBlockId(key, THE_DECEPTION_PROPERTIES)));
+
     private static final UnaryOperator<BlockBehaviour.Properties> HARD_ICE_PROPERTIES = p -> p
             .strength(-1.0f, 3600000.0f)
             .sound(SoundType.GLASS)

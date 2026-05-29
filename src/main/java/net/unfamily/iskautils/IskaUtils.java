@@ -300,6 +300,8 @@ public class IskaUtils {
         ClientEvents.init();
 
         NeoForge.EVENT_BUS.register(ClientGameEvents.class);
+
+        event.enqueueWork(() -> net.unfamily.iskautils.client.entropic.EntropicAnimatedArmorTextures.register());
         
         // Register custom GUI screens - will be done in ClientModEvents
     }

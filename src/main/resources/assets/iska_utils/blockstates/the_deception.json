@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "iska_utils:block/the_deception"
+    },
+    "facing=east": {
+      "model": "iska_utils:block/the_deception",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "iska_utils:block/the_deception",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "iska_utils:block/the_deception",
+      "y": 270
+    }
+  }
+}

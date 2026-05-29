@@ -75,6 +75,7 @@
     { "weight": 100, "luck": 1000, "jeimode": "show", "do": [{ "drop": "iska_utils:necrotic_crystal_heart" }] },
     { "weight": 100, "luck": 900, "jeimode": "show", "do": [{ "drop": "iska_utils:sharpened_bone" }] },
     { "weight": 75, "luck": 850, "jeimode": "show", "do": [{ "drop": "iska_utils:ancient_tablet" }] },
+    { "weight": 75, "luck": 50, "jeimode": "show", "do": [{ "drop": "iska_utils:durable_shears" }] },
     { "weight": 100, "luck": 800, "jeimode": "show", "do": [{ "drop": "iska_utils:ritual_gauntlet" }] },
     { "weight": 100, "luck": 700, "jeimode": "show", "do": [{ "drop": "iska_utils:busted_crown" }] },
     { "weight": 100, "luck": 600, "jeimode": "show", "do": [{ "drop": "iska_utils:the_deception" }] },

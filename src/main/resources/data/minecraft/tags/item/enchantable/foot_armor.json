@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "iska_utils:rubber_boots"
+    "iska_utils:rubber_boots",
+    "iska_utils:entropic_boots"
   ]
 }

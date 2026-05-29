@@ -1,7 +1,43 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "iska_utils:item/the_deception"
+  "parent": "iska_utils:block/the_deception",
+  "display": {
+    "thirdperson_righthand": {
+      "translation": [0, -2.5, -2.25],
+      "scale": [0.33, 0.33, 0.33]
+    },
+    "thirdperson_lefthand": {
+      "translation": [0, -2.5, -2.25],
+      "scale": [0.33, 0.33, 0.33]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 35, 0],
+      "translation": [-0.5, 0, -0.5],
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 35, 0],
+      "translation": [-0.5, 0, -0.5],
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "ground": {
+      "translation": [0, 2, 0],
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "gui": {
+      "rotation": [17, -150, 0],
+      "translation": [0.5, -1.75, 0],
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "head": {
+      "translation": [0, 14.5, -0.25]
+    },
+    "fixed": {
+      "translation": [0, 0, -2.5],
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "on_shelf": {
+      "rotation": [0, 180, 0],
+      "translation": [0, 0, 3.25]
+    }
   }
 }
-

@@ -8,6 +8,7 @@
     {
       "required": false,
       "id": "#c:tools/shear"
-    }
+    },
+    "iska_utils:durable_shears"
   ]
-} 
+}
