@@ -19,4 +19,15 @@ A rare **resource** relic — not worn on the body. Used in crafting and progres
 
 ## How to obtain
 
-Most often from opening **Suspicious Delivery** (uncommon reward).
+**From opening a parcel**
+
+- Uncommon reward when you open a **Suspicious Delivery**.
+
+**From recycling**
+
+- Crafting table (shapeless) or **Factory**: one eligible item → one Drop of Entropy.
+- You can recycle:
+  - An **unopened Suspicious Delivery** if you do not want to gamble on its contents.
+  - **Rewards from Suspicious Delivery** — relics and items you already received from opened parcels but do not need (duplicates, wrong build, and so on).
+
+Check **JEI** for the full list of recyclable delivery items (tag `iska_utils:delivery_recycle`).

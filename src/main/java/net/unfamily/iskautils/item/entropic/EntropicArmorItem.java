@@ -17,6 +17,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.item.ModItems;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -53,6 +54,14 @@ public class EntropicArmorItem extends ArmorItem {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        tooltip.add(Component.translatable("tooltip.iska_utils.entropic.unbreakable"));
+        if (stack.is(ModItems.ENTROPIC_HELMET.get())) {
+            EntropicTooltip.appendToolLines(tooltip, "entropic_helmet");
+        } else if (stack.is(ModItems.ENTROPIC_CHESTPLATE.get())) {
+            EntropicTooltip.appendToolLines(tooltip, "entropic_chestplate");
+        } else if (stack.is(ModItems.ENTROPIC_LEGGINGS.get())) {
+            EntropicTooltip.appendToolLines(tooltip, "entropic_leggings");
+        } else if (stack.is(ModItems.ENTROPIC_BOOTS.get())) {
+            EntropicTooltip.appendToolLines(tooltip, "entropic_boots");
+        }
     }
 }

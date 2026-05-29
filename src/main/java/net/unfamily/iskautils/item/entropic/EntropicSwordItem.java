@@ -15,6 +15,6 @@ public class EntropicSwordItem extends SwordItem {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        tooltip.add(Component.translatable("tooltip.iska_utils.entropic.unbreakable"));
+        EntropicTooltip.appendToolLines(tooltip, "entropic_sword");
     }
 }

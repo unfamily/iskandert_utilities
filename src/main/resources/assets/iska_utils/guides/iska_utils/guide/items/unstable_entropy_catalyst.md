@@ -17,4 +17,4 @@ While it sits in your inventory, it **decays** over time (about half a minute by
 
 When it fully decays, the item **vanishes**. On some servers, decay can be lethal — watch the red warning on the tooltip.
 
-Craft it on the **Ancient Tablet** (high-tier ingredients — see **JEI** → Ancient Tablet). Use it soon after crafting; **Entropy Crystal** is the stable alternative when you need an entropy material that lasts in storage. It is also used to craft **Entropy TNT**.
+Craft it on the **Ancient Tablet** (high-tier ingredients — see **JEI** → Ancient Tablet). Use it soon after crafting; **Entropy Crystal** is the stable alternative when you need an entropy material that lasts in storage. It is also used to craft **Entropy TNT** and the **Entropic Smithing Template**.

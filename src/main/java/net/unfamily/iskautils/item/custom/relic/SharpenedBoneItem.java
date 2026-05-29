@@ -39,8 +39,7 @@ public class SharpenedBoneItem extends Item {
                 tooltip,
                 "sharpened_bone",
                 2,
-                RelicBalanceFormat.flatBonus(Config.sharpenedBoneBonusDamage),
-                RelicBalanceFormat.percent(Config.sharpenedBoneProcChance));
+                RelicBalanceFormat.percent(Config.sharpenedBoneArmorIgnoreChance));
     }
 }
 

@@ -42,7 +42,7 @@ public final class EntropicGear {
     }
 
     public static Item.Properties axeProperties() {
-        return baseProperties().attributes(AxeItem.createAttributes(EntropicTier.INSTANCE, 5.0F, -3.0F));
+        return baseProperties().attributes(AxeItem.createAttributes(EntropicTier.INSTANCE, 7.0F, -3.0F));
     }
 
     public static Item.Properties shovelProperties() {

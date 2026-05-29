@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
 import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
 import net.unfamily.iskautils.item.custom.relic.TheDeceptionItem;
@@ -131,8 +132,25 @@ public final class CurioEquipUtil {
         return count[0];
     }
 
+    /**
+     * Cursed artifacts counted for {@link net.unfamily.iskautils.events.CursedRelicEffects} (Busted Crown).
+     * Most relics must be in Curios; {@link ModItems#CURSED_CANDLE} also counts from inventory or hands.
+     */
     public static int countEquippedCursedRelics(Player player) {
-        return countEquippedCurioStacks(player, stack -> isCursedArtifactItem(stack.getItem()));
+        if (player == null) {
+            return 0;
+        }
+        int count = ModUtils.isCuriosLoaded()
+                ? countEquippedCurioStacks(player, stack -> isCursedArtifactItem(stack.getItem()))
+                : 0;
+        if (!findActiveStack(player, ModItems.CURSED_CANDLE.get()).isEmpty()) {
+            boolean candleInCurios = ModUtils.isCuriosLoaded()
+                    && countEquippedCurioStacks(player, stack -> stack.is(ModItems.CURSED_CANDLE.get())) > 0;
+            if (!candleInCurios) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public static ItemStack findEquippedCurioStack(Player player, Item item) {
@@ -149,7 +167,10 @@ public final class CurioEquipUtil {
     }
 
     private static boolean isCursedArtifactItem(Item item) {
-        return item instanceof CursedRelicItem || item instanceof CursedCandleItem || item instanceof TheDeceptionItem;
+        return item instanceof CursedRelicItem
+                || item instanceof CursedCandleItem
+                || item instanceof TheDeceptionItem
+                || item instanceof NecroticCrystalHeartItem;
     }
 
     private static boolean isInCuriosSlots(Player player, Item item) {

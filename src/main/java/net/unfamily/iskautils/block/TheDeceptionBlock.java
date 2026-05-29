@@ -54,10 +54,12 @@ public class TheDeceptionBlock extends HorizontalDirectionalBlock {
     @Override
     protected InteractionResult useWithoutItem(
             BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (TheDeceptionSeatUtil.trySit(state, level, pos, player)) {
-            return InteractionResult.sidedSuccess(level.isClientSide());
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
         }
-        return InteractionResult.PASS;
+        return TheDeceptionSeatUtil.trySit(state, level, pos, player)
+                ? InteractionResult.sidedSuccess(false)
+                : InteractionResult.PASS;
     }
 
     @Override
@@ -69,16 +71,18 @@ public class TheDeceptionBlock extends HorizontalDirectionalBlock {
             Player player,
             InteractionHand hand,
             BlockHitResult hitResult) {
-        if (TheDeceptionSeatUtil.trySit(state, level, pos, player)) {
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+        if (level.isClientSide()) {
+            return ItemInteractionResult.SUCCESS;
         }
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return TheDeceptionSeatUtil.trySit(state, level, pos, player)
+                ? ItemInteractionResult.sidedSuccess(false)
+                : ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
-            TheDeceptionSeatUtil.removeSeat(level, pos);
+            TheDeceptionSeatUtil.stopSitAt(level, pos);
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
@@ -111,7 +115,7 @@ public class TheDeceptionBlock extends HorizontalDirectionalBlock {
                 element(11, 0, 11, 13, 7, 13, facing),
                 element(11, 0, 3, 13, 7, 5, facing),
                 element(3, 8, 14, 4, 14, 15, facing),
-                element(11, 8, 14, 12, 14, 15, facing),
+                element(12, 8, 14, 13, 14, 15, facing),
                 element(1.5, 13.5, 13.5, 13.5, 23.5, 15.5, facing));
     }
 

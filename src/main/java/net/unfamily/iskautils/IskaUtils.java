@@ -128,6 +128,7 @@ public class IskaUtils {
         ModItems.register(modEventBus);
         ModMobEffects.register(modEventBus);
         ModBlockEntities.register(modEventBus);
+        net.unfamily.iskautils.entity.ModEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
         
         // Register dynamic potion plate blocks and items
@@ -234,6 +235,14 @@ public class IskaUtils {
     @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
         
+        @SubscribeEvent
+        public static void registerEntityRenderers(
+                net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
+            event.registerEntityRenderer(
+                    net.unfamily.iskautils.entity.ModEntities.DECEPTION_SEAT.get(),
+                    net.unfamily.iskautils.client.renderer.DeceptionSeatRenderer::new);
+        }
+
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             // Register CUTOUT rendering for the slow_vect block
