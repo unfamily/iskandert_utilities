@@ -18,39 +18,53 @@ categories:
 ---
 # Entropic tools
 
-**Indestructible** netherite upgrades with extra powers. Craft at a smithing table with the **Entropic Smithing Template** and **Entropy Crystal** (see **JEI**).
+**Indestructible** netherite upgrades with extra powers. Upgrade at a smithing table with <ItemImage id="iska_utils:entropic_smithing_template" /> **Entropic Smithing Template** and <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal**.
 
 ## Sword
 
-Chance on hit to **partially ignore** target **armor and toughness** (configurable).
+<ItemImage id="iska_utils:entropic_sword" />
+
+Chance on hit to **partially ignore** target **armor and toughness** (values on tooltip / config).
 
 ## Spear
 
-Same **armor penetration** on hit as the entropic sword (upgraded from a **netherite spear**).
+<ItemImage id="iska_utils:entropic_spear" />
+
+Same **armor penetration** on hit as the entropic sword (smithing upgrade from a **netherite spear**).
 
 ## Axe
 
+<ItemImage id="iska_utils:entropic_axe" />
+
 - Same **armor penetration** as the sword.
 - **Right-click** with a log in your **off-hand** to strip it.
-- **Sneak + right-click** to strip every stack of the **same log type** as your off-hand (off-hand + inventory only; other wood types are left alone).
+- **Sneak + right-click** to strip every stack of the **same log type** as your off-hand (off-hand + inventory only).
 
 ## Pickaxe
 
-While mining, chance for an **extra loot roll** on top of normal drops. The bonus roll uses **+1 Fortune tier** (configurable) **in addition to** any Fortune enchant on the tool.
+<ItemImage id="iska_utils:entropic_pickaxe" />
+
+While mining, block drops always use **+1 Fortune tier** on top of any Fortune enchant on the tool. **Silk Touch** on the tool disables this bonus so silk mining still works normally.
 
 ## Shovel
 
-**Right-click** brushable blocks (suspicious sand/gravel, and so on) for **instant** brushing — no cooldown.
+<ItemImage id="iska_utils:entropic_shovel" />
+
+**Right-click** brushable blocks (suspicious sand/gravel, and so on) for **instant** brushing.
 
 ## Hoe
+
+<ItemImage id="iska_utils:entropic_hoe" />
 
 **Right-click** a **mature crop** to drop one seed and reset growth to age 0 (can require mature crops depending on config).
 
 ## Paxel
 
-**Shapeless**: **entropic pickaxe** + **entropic axe** + **entropic shovel** + **6× netherite bars** (`#c:bars/netherite`). Combines all three tool powers above (not the hoe). Also has **armor penetration** on hit like the sword.
+<ItemImage id="iska_utils:entropic_paxel" />
+
+Combines <ItemImage id="iska_utils:entropic_pickaxe" /> pickaxe, <ItemImage id="iska_utils:entropic_axe" /> axe, and <ItemImage id="iska_utils:entropic_shovel" /> shovel powers (not the hoe), plus **armor penetration** on hit. Crafted by merging those three entropic tools with **netherite bars**.
 
 ## Tips
 
-- Tooltips list current proc chances and values from your **config**.
+- Tooltips list current proc chances from **config**.
 - Paxel is the best “one slot” entropic tool for exploration and combat.

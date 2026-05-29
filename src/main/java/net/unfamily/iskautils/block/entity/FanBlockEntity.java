@@ -69,6 +69,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     private PushType pushType = PushType.MOBS_ONLY; // Default: only mobs
     private int redstoneMode = 0; // Redstone mode (0=NONE, 1=LOW, 2=HIGH, 3=PULSE, 4=DISABLED)
     private boolean isPull = false; // false = push, true = pull
+    private boolean showAreaEnabled = false;
     // Redstone pulse mode tracking
     private boolean previousRedstoneState = false; // For PULSE mode
     private int pulseIgnoreTimer = 0; // Timer to ignore redstone after pulse
@@ -350,6 +351,17 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
     
+    public boolean isShowAreaEnabled() {
+        return showAreaEnabled;
+    }
+
+    public void setShowAreaEnabled(boolean showAreaEnabled) {
+        if (this.showAreaEnabled != showAreaEnabled) {
+            this.showAreaEnabled = showAreaEnabled;
+            setChanged();
+        }
+    }
+
     public void cycleRedstoneMode() {
         // Cycle through 0->1->2->4->0 (skip PULSE mode 3)
         int nextMode = (this.redstoneMode + 1) % 5;
@@ -427,6 +439,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
             redstoneMode = 4; // Convert old PULSE mode to DISABLED
         }
         isPull = input.getBooleanOr("IsPull", false); // Default: push
+        showAreaEnabled = input.getBooleanOr("ShowAreaEnabled", false);
         previousRedstoneState = input.getBooleanOr("PreviousRedstoneState", false);
         pulseIgnoreTimer = input.getIntOr("PulseIgnoreTimer", 0);
         hasShownBackMessage = input.getBooleanOr("HasShownBackMessage", false);
@@ -453,6 +466,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         output.putInt("PushType", pushType.getId());
         output.putInt("RedstoneMode", redstoneMode);
         output.putBoolean("IsPull", isPull);
+        output.putBoolean("ShowAreaEnabled", showAreaEnabled);
         output.putBoolean("PreviousRedstoneState", previousRedstoneState);
         output.putInt("PulseIgnoreTimer", pulseIgnoreTimer);
         output.putBoolean("HasShownBackMessage", hasShownBackMessage);

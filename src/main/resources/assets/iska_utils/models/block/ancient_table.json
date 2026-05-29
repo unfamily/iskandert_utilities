@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "up": "iska_utils:block/ancient_table/ancient_table_top",
+    "down": "iska_utils:block/ancient_table/ancient_table_bottom",
+    "north": "iska_utils:block/ancient_table/ancient_table_side",
+    "south": "iska_utils:block/ancient_table/ancient_table_side",
+    "east": "iska_utils:block/ancient_table/ancient_table_side",
+    "west": "iska_utils:block/ancient_table/ancient_table_side",
+    "particle": "iska_utils:block/ancient_table/ancient_table_side"
+  }
+}

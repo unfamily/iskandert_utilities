@@ -11,10 +11,19 @@ categories:
 ---
 # Unstable Entropy Catalyst
 
-A highly unstable entropy material crafted on the **Ancient Tablet**.
+<ItemImage id="iska_utils:unstable_entropy_catalyst" />
 
-While it sits in your inventory, it **decays** over time (about half a minute by default). The tooltip shows a **stability bar** that drains as it destabilizes; the icon changes as it worsens.
+A highly unstable entropy material crafted on the <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet**.
 
-When it fully decays, the item **vanishes**. On some servers, decay can be lethal — watch the red warning on the tooltip.
+## Decay
 
-Craft it on the **Ancient Tablet** (high-tier ingredients — see **JEI** → Ancient Tablet). Use it soon after crafting; **Entropy Crystal** is the stable alternative when you need an entropy material that lasts in storage. It is also used to craft **Entropy TNT** and the **Entropic Smithing Template**.
+While it sits in your inventory, it **decays** over time (about half a minute by default). The tooltip shows a **stability bar**; the icon changes as it worsens.
+
+When it fully decays, the item **vanishes**. On some servers, decay can be lethal — read the red warning on the tooltip.
+
+## Uses
+
+- Craft <ItemImage id="iska_utils:entropic_smithing_template" /> **Entropic Smithing Template** (use it soon after making the catalyst).
+- Craft <ItemImage id="iska_utils:entropy_tnt" /> **Entropy TNT** with <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal**.
+
+For storage-friendly entropy, prefer <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal**.

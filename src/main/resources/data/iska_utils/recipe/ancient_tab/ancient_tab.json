@@ -1,7 +1,8 @@
 {
-  "type": "iska_utils:ancient_tablet",
+  "type": "iska_utils:ancient_tab",
   "entries": [
     {
+      "fuel_cost": 10,
       "require": [
         { "id": "#c:gems/amethyst", "count": 8 },
         { "id": "iska_utils:drop_of_entropy", "count": 4 }
@@ -9,6 +10,7 @@
       "produce": [ "iska_utils:entropy_crystal" ]
     },
     {
+      "fuel_cost": 10,
       "require": [
         { "id": "#c:ingots/copper", "count": 16 },
         { "id": "iska_utils:drop_of_entropy", "count": 8 },

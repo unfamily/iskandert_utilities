@@ -16,13 +16,11 @@ categories:
 
 ## What it does
 
-A **smithing template** used to upgrade **netherite** tools, weapons, and armor into **entropic** versions. Consumed when you apply an upgrade at a smithing table (same idea as netherite upgrade templates).
+A **smithing template** used to upgrade **netherite** tools, weapons, and armor into **entropic** versions. **Consumed** when you apply an upgrade at a smithing table (same idea as netherite upgrade templates).
 
-## How to craft
+## How to obtain
 
-**Shaped** (1×): **Wither Proof Block** on the outer ring, **Entropy Crystal** on the sides, **Unstable Entropy Catalyst** in the center, **Drop of Entropy** on the top and bottom rows (pattern `ADA` / `BCB` / `AAA`).
-
-**Duplicate** (2×): same layout, but the center uses an **Entropic Smithing Template** instead of the catalyst. See **JEI**.
+Made in a **crafting table** from entropy materials: <ItemImage id="iska_utils:wither_proof_block" /> **Wither Proof Block**, <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal**, <ItemImage id="iska_utils:unstable_entropy_catalyst" /> **Unstable Entropy Catalyst**, and <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**. Existing templates can be copied without spending another catalyst.
 
 ## How to use
 
@@ -30,6 +28,6 @@ At a **smithing table**:
 
 1. Place this template in the template slot.
 2. Add the **netherite** base item (sword, pickaxe, armor piece, and so on).
-3. Add **Entropy Crystal** in the addition slot.
+3. Add <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal** in the addition slot.
 
-The result is the matching **entropic** item. Check **JEI** → Smithing for every combination.
+The result is the matching **entropic** item.

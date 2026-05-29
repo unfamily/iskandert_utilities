@@ -11,16 +11,19 @@ categories:
 ---
 # Entropy TNT
 
-A block of highly unstable entropy explosive. Craft it from **TNT**, **Entropy Crystal**, and **Unstable Entropy Catalyst**:
+<ItemImage id="iska_utils:entropy_tnt" />
 
-```
-AAA
-BCB
-AAA
-```
+A block of highly unstable entropy explosive. Handle with extreme care.
 
-- **A** — TNT  
-- **B** — Entropy Crystal  
-- **C** — Unstable Entropy Catalyst  
+## Behavior
 
-When placed, it detonates if powered by **redstone**. The blast is a large progressive ellipsoid that destroys terrain (including normally unbreakable blocks). Handle with extreme care.
+When placed, it detonates if the block receives **redstone** power (including when placed already powered). A neighbor signal change can also trigger it.
+
+The blast is a **progressive ellipsoid**:
+
+| Axis | Radius (blocks) |
+|------|-----------------|
+| Horizontal (X / Z) | **250** |
+| Vertical (Y) | **50** |
+
+It destroys terrain over that volume, including blocks that are normally unbreakable (such as bedrock). The explosion expands over time rather than instantly clearing the whole area.

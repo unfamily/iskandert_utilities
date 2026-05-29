@@ -21,8 +21,11 @@ import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskautils.network.ModMessages;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.unfamily.iskautils.network.packet.FanRangeUpdateC2SPacket;
+import net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket;
 
 public class FanScreen extends AbstractContainerScreen<FanMenu> {
     
@@ -88,7 +91,8 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     private Button bottomLeftButton, bottomRightButton; // Below grid
     private Button barLeftButton, barRightButton; // In the bar
     private Button closeButton; // X button top right
-    private Button showButton; // Show button
+    private Button showButton;
+    private boolean previewButtonShowsHide;
     private int redstoneModeButtonX, redstoneModeButtonY; // Redstone mode button position
     private int pushPullButtonX, pushPullButtonY; // Push/Pull button position
     private int pushTypeButtonX, pushTypeButtonY; // Push type button position
@@ -140,12 +144,24 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         int showButtonX = rightButtonsRightEdge - buttonWidth; // Align right edge
         int showButtonY = labelY + (this.font.lineHeight - buttonHeight) / 2; // Vertically centered with label text
         
+        previewButtonShowsHide = menu.isShowAreaEnabled();
+        Component initialShowText = Component.translatable(
+                previewButtonShowsHide ? "gui.iska_utils.generic.hide" : "gui.iska_utils.generic.show");
         showButton = Button.builder(
-            showText,
-            button -> onShowPressed()
+            initialShowText,
+            button -> togglePreview()
         ).bounds(showButtonX, showButtonY, buttonWidth, buttonHeight).build();
         
         this.addRenderableWidget(showButton);
+    }
+
+    @Override
+    public void containerTick() {
+        super.containerTick();
+        if (menu.isShowAreaEnabled() != previewButtonShowsHide) {
+            previewButtonShowsHide = menu.isShowAreaEnabled();
+            updateShowButtonLabel();
+        }
     }
     
     private void createRangeButtons() {
@@ -855,11 +871,25 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         }
     }
     
-    private void onShowPressed() {
+    private void togglePreview() {
         BlockPos pos = menu.getSyncedBlockPos();
-        if (!pos.equals(BlockPos.ZERO)) {
-            ModMessages.sendFanShowAreaPacket(pos);
-            playButtonSound();
+        if (pos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        playButtonSound();
+        boolean enabling = !menu.isShowAreaEnabled();
+        MarkRenderer.getInstance().clearBillboardMarkersForOwner(pos);
+        ClientPacketDistributor.sendToServer(new FanShowAreaC2SPacket(pos, enabling));
+        previewButtonShowsHide = enabling;
+        updateShowButtonLabel();
+    }
+
+    private void updateShowButtonLabel() {
+        if (showButton != null) {
+            showButton.setMessage(Component.translatable(
+                    previewButtonShowsHide
+                            ? "gui.iska_utils.generic.hide"
+                            : "gui.iska_utils.generic.show"));
         }
     }
     

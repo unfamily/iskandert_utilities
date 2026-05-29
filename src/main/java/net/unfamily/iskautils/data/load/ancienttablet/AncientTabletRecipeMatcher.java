@@ -56,7 +56,7 @@ public final class AncientTabletRecipeMatcher {
         return new MatchOutcome(MatchResult.SUCCESS, used);
     }
 
-    private static MatchOutcome matchUnordered(AncientTabletRecipeEntry recipe, List<AncientTabletContents.SlotView> slots) {
+    public static MatchOutcome matchUnordered(AncientTabletRecipeEntry recipe, List<AncientTabletContents.SlotView> slots) {
         List<AncientTabletRequirement> needed = new ArrayList<>(recipe.require());
         List<Integer> usedIndices = new ArrayList<>();
         boolean[] used = new boolean[slots.size()];
@@ -81,12 +81,19 @@ public final class AncientTabletRecipeMatcher {
         return new MatchOutcome(MatchResult.SUCCESS, usedIndices);
     }
 
+    public static ItemStack exampleStackFromTag(AncientTabletRequirement.TagRequirement tr) {
+        return BuiltInRegistries.ITEM.get(tr.tag())
+                .flatMap(holders -> holders.stream().findFirst())
+                .map(h -> new ItemStack(h.value()))
+                .orElse(ItemStack.EMPTY);
+    }
+
     public static List<ItemStack> expandToExampleStacks(List<AncientTabletRequirement> requirements) {
         List<ItemStack> out = new ArrayList<>();
         for (AncientTabletRequirement req : requirements) {
             switch (req) {
                 case AncientTabletRequirement.ItemRequirement ir -> out.add(new ItemStack(ir.item()));
-                case AncientTabletRequirement.TagRequirement tr -> exampleFromTag(tr);
+                case AncientTabletRequirement.TagRequirement tr -> exampleStackFromTag(tr);
             }
         }
         return out;
@@ -125,9 +132,4 @@ public final class AncientTabletRecipeMatcher {
     }
 
     public record GroupedRequirement(AncientTabletRequirement requirement, int count) {}
-
-    private static ItemStack exampleFromTag(AncientTabletRequirement.TagRequirement tr) {
-        var it = BuiltInRegistries.ITEM.getTagOrEmpty(tr.tag()).iterator();
-        return it.hasNext() ? new ItemStack(it.next().value()) : ItemStack.EMPTY;
-    }
 }

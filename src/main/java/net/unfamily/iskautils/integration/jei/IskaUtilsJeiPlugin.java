@@ -18,8 +18,7 @@ import net.unfamily.iskautils.item.ModItems;
 @JeiPlugin
 public final class IskaUtilsJeiPlugin implements IModPlugin {
 
-    private static final Identifier PLUGIN_ID =
-        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "jei_plugin");
+    private static final Identifier PLUGIN_ID = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "jei_plugin");
 
     @Override
     public Identifier getPluginUid() {
@@ -53,15 +52,18 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
         if (net.unfamily.iskautils.Config.factoryStonecutterEnabled) {
-            registration.addCraftingStation(RecipeTypes.STONECUTTING, new ItemStack(ModItems.FACTORY.get()));
+            registration.addRecipeCatalyst(new ItemStack(ModItems.FACTORY.get()), RecipeTypes.STONECUTTING);
         }
-        registration.addCraftingStation(FactoryRecipeCategory.RECIPE_TYPE, new ItemStack(ModItems.FACTORY.get()));
-        registration.addCraftingStation(
-                SuspiciousDeliveryRecipeCategory.RECIPE_TYPE,
-                new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get()));
-        registration.addCraftingStation(
-                AncientTabletRecipeCategory.RECIPE_TYPE,
-                new ItemStack(ModItems.ANCIENT_TABLET.get()));
+        registration.addRecipeCatalyst(new ItemStack(ModItems.FACTORY.get()), FactoryRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(
+                new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get()),
+                SuspiciousDeliveryRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(
+                new ItemStack(ModItems.ANCIENT_TABLET.get()),
+                AncientTabletRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(
+                new ItemStack(ModItems.ANCIENT_TABLE.get()),
+                AncientTabletRecipeCategory.RECIPE_TYPE);
     }
 
     @Override
@@ -72,5 +74,4 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         );
     }
 }
-
 

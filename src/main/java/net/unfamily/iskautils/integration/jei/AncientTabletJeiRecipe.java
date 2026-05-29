@@ -8,4 +8,5 @@ public record AncientTabletJeiRecipe(
         List<ItemStack> inputs,
         List<ItemStack> outputs,
         boolean mustOrdered,
-        boolean destroyIfWrong) {}
+        boolean destroyIfWrong,
+        int fuelCost) {}

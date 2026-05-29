@@ -15,19 +15,32 @@ categories:
 
 ## What it does
 
-A rare **resource** relic — not worn on the body. Used in crafting and progression; check **JEI** for recipes in your pack.
+A rare **resource** — not worn on the body. Used on the <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet**, in entropic crafts, and elsewhere in this progression chain.
 
 ## How to obtain
 
 **From opening a parcel**
 
-- Uncommon reward when you open a **Suspicious Delivery**.
+- Reward when you open a **Suspicious Delivery** (uncommon).
 
 **From recycling**
 
-- Crafting table (shapeless) or **Factory**: one eligible item → one Drop of Entropy.
-- You can recycle:
-  - An **unopened Suspicious Delivery** if you do not want to gamble on its contents.
-  - **Rewards from Suspicious Delivery** — relics and items you already received from opened parcels but do not need (duplicates, wrong build, and so on).
+- Crafting table (shapeless) or <ItemImage id="iska_utils:factory" /> **Factory**: one eligible item → one Drop of Entropy.
+- **Unopened** <ItemImage id="iska_utils:suspicious_delivery" /> **Suspicious Delivery**
+- Most **delivery relics** you do not need, for example:
+  - <ItemImage id="iska_utils:ancient_tablet" /> Ancient Tablet
+  - <ItemImage id="iska_utils:durable_shears" /> Durable Shears
+  - <ItemImage id="iska_utils:chosen_cheese" /> Chosen Cheese
+  - <ItemImage id="iska_utils:totem_of_pain" /> Totem of Pain
+  - <ItemImage id="iska_utils:necrotic_crystal_heart" /> Necrotic Crystal Heart
+  - <ItemImage id="iska_utils:sharpened_bone" /> Sharpened Bone
+  - <ItemImage id="iska_utils:ritual_gauntlet" /> Ritual Gauntlet
+  - <ItemImage id="iska_utils:busted_crown" /> Busted Crown
+  - <ItemImage id="iska_utils:the_deception" /> The Deception
+  - <ItemImage id="iska_utils:ice_diamond" /> Ice Diamond
+  - <ItemImage id="iska_utils:old_brick" /> Old Brick
+  - <ItemImage id="iska_utils:the_roots" /> The Roots
+  - <ItemImage id="iska_utils:mining_equitizer" /> Mining Equitizer
+  - <ItemImage id="iska_utils:cursed_candle" /> Cursed Candle
 
-Check **JEI** for the full list of recyclable delivery items (tag `iska_utils:delivery_recycle`).
+**Drop of Entropy** itself is **not** recyclable.

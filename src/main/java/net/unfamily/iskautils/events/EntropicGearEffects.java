@@ -68,31 +68,31 @@ public final class EntropicGearEffects {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOW)
     public static void onBlockDrops(BlockDropsEvent event) {
         if (event.isCanceled()) {
             return;
         }
-        if (!(event.getBreaker() instanceof ServerPlayer player)) {
+        ItemStack tool = event.getTool();
+        if (!EntropicGearUtil.isEntropicPickaxeTool(tool)) {
             return;
         }
-        if (!EntropicGearUtil.isEntropicPickaxeTool(event.getTool())) {
-            return;
-        }
-        if (Config.entropicPickaxeBonusFortuneChance <= 0.0D) {
-            return;
-        }
-        if (player.getRandom().nextDouble() >= Config.entropicPickaxeBonusFortuneChance) {
+        if (Config.entropicPickaxeBonusFortuneLevels <= 0) {
             return;
         }
 
         ServerLevel level = event.getLevel();
+        if (hasSilkTouch(tool, level)) {
+            return;
+        }
+
         BlockState state = event.getState();
         BlockPos pos = event.getPos();
         BlockEntity blockEntity = event.getBlockEntity();
         Entity breaker = event.getBreaker();
-        ItemStack probe = copyWithBonusFortune(event.getTool(), level);
+        ItemStack probe = copyWithBonusFortune(tool, level);
 
+        event.getDrops().clear();
         for (ItemStack drop : Block.getDrops(state, level, pos, blockEntity, breaker, probe)) {
             if (drop.isEmpty()) {
                 continue;
@@ -106,12 +106,14 @@ public final class EntropicGearEffects {
         }
     }
 
+    private static boolean hasSilkTouch(ItemStack tool, ServerLevel level) {
+        var silk = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.SILK_TOUCH);
+        return EnchantmentHelper.getItemEnchantmentLevel(silk, tool) > 0;
+    }
+
     private static ItemStack copyWithBonusFortune(ItemStack tool, ServerLevel level) {
         ItemStack probe = tool.copy();
         int extra = Config.entropicPickaxeBonusFortuneLevels;
-        if (extra <= 0) {
-            return probe;
-        }
         var fortune = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.FORTUNE);
         int current = EnchantmentHelper.getItemEnchantmentLevel(fortune, probe);
         probe.enchant(fortune, current + extra);

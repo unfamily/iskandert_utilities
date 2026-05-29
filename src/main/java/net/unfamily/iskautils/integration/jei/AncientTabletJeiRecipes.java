@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeEntry;
@@ -21,22 +22,20 @@ public final class AncientTabletJeiRecipes {
     private AncientTabletJeiRecipes() {}
 
     public static void reloadForClient(Minecraft mc) {
-        ensureLoaded(mc);
+        ensureLoaded();
         CACHE = buildAll();
     }
 
     public static List<AncientTabletJeiRecipe> buildAll() {
-        var mc = Minecraft.getInstance();
-        if (mc != null) {
-            ensureLoaded(mc);
-        }
+        ensureLoaded();
         List<AncientTabletJeiRecipe> out = new ArrayList<>();
         for (AncientTabletRecipeEntry entry : AncientTabletRecipeLoader.getEntries()) {
             out.add(new AncientTabletJeiRecipe(
                     groupedStacks(entry.require()),
                     groupedStacks(entry.produce()),
                     entry.mustOrdered(),
-                    entry.destroyIfWrong()));
+                    entry.destroyIfWrong(),
+                    entry.fuelCost()));
         }
         return List.copyOf(out);
     }
@@ -45,11 +44,11 @@ public final class AncientTabletJeiRecipes {
         return CACHE;
     }
 
-    private static void ensureLoaded(Minecraft mc) {
+    private static void ensureLoaded() {
         if (!AncientTabletRecipeLoader.getEntries().isEmpty()) {
             return;
         }
-        MinecraftServer server = mc.getSingleplayerServer();
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
             AncientTabletRecipeLoader.loadAll(server.getResourceManager());
             return;
@@ -72,15 +71,11 @@ public final class AncientTabletJeiRecipes {
         return stacks;
     }
 
-    private static ItemStack exampleFromTag(AncientTabletRequirement.TagRequirement tr) {
-        var it = BuiltInRegistries.ITEM.getTagOrEmpty(tr.tag()).iterator();
-        return it.hasNext() ? new ItemStack(it.next().value()) : ItemStack.EMPTY;
-    }
-
     private static ItemStack exampleStack(AncientTabletRequirement req) {
         return switch (req) {
             case AncientTabletRequirement.ItemRequirement ir -> new ItemStack(ir.item());
-            case AncientTabletRequirement.TagRequirement tr -> exampleFromTag(tr);
+            case AncientTabletRequirement.TagRequirement tr ->
+                    AncientTabletRecipeMatcher.exampleStackFromTag(tr);
         };
     }
 }

@@ -357,6 +357,8 @@ public class IskaUtils {
                 net.unfamily.iskautils.client.gui.SoundMufflerScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FACTORY_MENU.get(),
                 net.unfamily.iskautils.client.gui.FactoryScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.ANCIENT_TABLE_MENU.get(),
+                net.unfamily.iskautils.client.gui.AncientTableScreen::new);
         }
     }
 

@@ -15,10 +15,13 @@ categories:
 
 ## What it is
 
-A crystallized entropy resource forged on the **Ancient Tablet**. It is more stable than an **Unstable Entropy Catalyst** and does not decay in your inventory.
+A crystallized entropy resource forged on the <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet**. More stable than <ItemImage id="iska_utils:unstable_entropy_catalyst" /> **Unstable Entropy Catalyst** — it does **not** decay in your inventory.
 
-## How to craft
+## How to make
 
-Load the tablet with the ingredients shown in **JEI** → **Ancient Tablet** (typically amethyst gems and **Drop of Entropy**). **Left-click** with the filled tablet in your main hand to craft.
+Load the tablet with the ingredients listed on the **Ancient Tablet** page (typically amethyst and <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**). **Left-click** with the filled tablet in your main hand.
 
-Check **JEI** for exact amounts and tags in your modpack.
+## Uses
+
+- **Smithing table**: with <ItemImage id="iska_utils:entropic_smithing_template" /> **Entropic Smithing Template** and **netherite** gear → **entropic** tools and armor.
+- Component for <ItemImage id="iska_utils:entropy_tnt" /> **Entropy TNT** and other entropy crafts.

@@ -31,7 +31,7 @@ public final class IskaUtilsLoadPaths {
     public static final String TYPE_STAGE_ITEM = "iska_utils:stage_item";
     public static final String TYPE_STRUCTURE = "iska_utils:structure";
     public static final String TYPE_SUSPICIOUS_DELIVERY = "iska_utils:suspicious_delivery";
-    public static final String TYPE_ANCIENT_TABLET = "iska_utils:ancient_tablet";
+    public static final String TYPE_ANCIENT_TAB = "iska_utils:ancient_tab";
 
     public static final String COMMAND_ITEMS = "iska_utils_command_items";
     public static final String PLATES = "iska_utils_plates";

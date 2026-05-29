@@ -49,7 +49,7 @@ public final class AncientTabletRecipeLoader {
             return;
         }
         JsonObject obj = root.getAsJsonObject();
-        if (!obj.has("type") || !IskaUtilsLoadPaths.TYPE_ANCIENT_TABLET.equals(obj.get("type").getAsString())) {
+        if (!obj.has("type") || !IskaUtilsLoadPaths.TYPE_ANCIENT_TAB.equals(obj.get("type").getAsString())) {
             return;
         }
         if (!obj.has("entries") || !obj.get("entries").isJsonArray()) {
@@ -65,6 +65,16 @@ public final class AncientTabletRecipeLoader {
             JsonObject e = el.getAsJsonObject();
             boolean mustOrdered = e.has("must_ordered") && e.get("must_ordered").getAsBoolean();
             boolean destroyIfWrong = e.has("destroy_if_wrong") && e.get("destroy_if_wrong").getAsBoolean();
+            int fuelCost = AncientTabletRecipeEntry.DEFAULT_FUEL_COST;
+            if (e.has("fuel_cost")) {
+                fuelCost = e.get("fuel_cost").getAsInt();
+            } else if (e.has("chaos_cost")) {
+                fuelCost = e.get("chaos_cost").getAsInt();
+            }
+            if (fuelCost < 1) {
+                LOGGER.warn("Ancient Tablet entry in {} has fuel_cost < 1, using 1", fileId);
+                fuelCost = 1;
+            }
             List<AncientTabletRequirement> require =
                     AncientTabletRequirementParser.parseArray(ctx, e.get("require"), true);
             List<AncientTabletRequirement> produce =
@@ -73,7 +83,7 @@ public final class AncientTabletRecipeLoader {
                 LOGGER.warn("Ancient Tablet entry in {} skipped (empty require or produce)", fileId);
                 continue;
             }
-            out.add(new AncientTabletRecipeEntry(fileId, mustOrdered, destroyIfWrong, require, produce));
+            out.add(new AncientTabletRecipeEntry(fileId, mustOrdered, destroyIfWrong, fuelCost, require, produce));
         }
     }
 

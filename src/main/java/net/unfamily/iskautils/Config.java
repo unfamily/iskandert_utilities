@@ -198,6 +198,22 @@ public class Config {
                     "Per-operation cost is set per recipe in data (energy_per_operation); default 1 RF when omitted.")
             .defineInRange("303_factoryEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
 
+    private static final ModConfigSpec.IntValue ANCIENT_TABLE_MAX_FUEL = BUILDER
+            .comment("Maximum internal fuel stored in an Ancient Table (entropy drops add fuelPerDrop each)")
+            .defineInRange("304_ancientTableMaxFuel", 10000, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue ANCIENT_TABLE_CRAFT_TICKS = BUILDER
+            .comment("Ticks per Ancient Table craft operation")
+            .defineInRange("305_ancientTableCraftTicks", 10, 1, 72000);
+
+    private static final ModConfigSpec.IntValue ANCIENT_TABLE_IO_SLOTS = BUILDER
+            .comment("Logical input and output slot count per side on the Ancient Table")
+            .defineInRange("306_ancientTableIoSlots", 63, 9, 63);
+
+    private static final ModConfigSpec.IntValue ANCIENT_TABLE_FUEL_PER_DROP = BUILDER
+            .comment("Internal fuel gained when one Drop of Entropy is consumed from the fuel slot")
+            .defineInRange("307_ancientTableFuelPerDrop", 1000, 1, Integer.MAX_VALUE);
+
     private static final ModConfigSpec.IntValue SOUND_MUFFLER_RANGE_MAX = BUILDER
             .comment("Maximum range (blocks) for Sound Muffler effect. Minimum is always 8. Allowed values in GUI: 8, 16, 32, and up to this max (default 500).")
             .defineInRange("302_soundMufflerRangeMax", 16, 8, 1024);
@@ -219,95 +235,6 @@ public class Config {
             .defineList("401_deep_drawers_deny",
                     java.util.Arrays.asList("minecraft:book", "#c:skulls", "#minecraft:skulls"),
                     obj -> obj instanceof String);
-
-    // Relics configuration (starts at 500)
-    private static final ModConfigSpec.IntValue CHOSEN_CHEESE_MAX = BUILDER
-            .comment("Maximum cheese level (X in tooltip Y/X). Effective bonus uses min(Y, X) levels.")
-            .defineInRange("500_chosen_cheese_max", 10, 0, 200);
-
-    private static final ModConfigSpec.DoubleValue CHOSEN_CHEESE_HP_PER_LEVEL = BUILDER
-            .comment("Max health bonus per cheese level (2.0 = one heart).")
-            .defineInRange("501_chosen_cheese_hp_per_level", 2.0D, 0.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue OLD_BRICK_ARMOR_BONUS = BUILDER
-            .comment("Armor bonus from Old Brick while equipped in Curios.")
-            .defineInRange("502_old_brick_armor_bonus", 2.0D, 0.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue SHARPENED_BONE_ARMOR_IGNORE_CHANCE = BUILDER
-            .comment("Chance (0.0–1.0) to fully ignore target armor on hit (toughness still applies).")
-            .defineInRange("503_sharpened_bone_armor_ignore_chance", 0.25D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.DoubleValue THE_ROOTS_BREAK_SPEED_MIN_MULTIPLIER = BUILDER
-            .comment("Minimum break-speed multiplier for The Roots (1.0 = no bonus).")
-            .defineInRange("506_the_roots_break_speed_min_multiplier", 1.0D, 0.1D, 10.0D);
-
-    private static final ModConfigSpec.DoubleValue THE_ROOTS_BREAK_SPEED_MAX_BONUS = BUILDER
-            .comment("Random extra break-speed multiplier added on top of the minimum (final = min + random(0..max)).")
-            .defineInRange("507_the_roots_break_speed_max_bonus", 1.0D, 0.0D, 10.0D);
-
-    private static final ModConfigSpec.DoubleValue TOTEM_OF_PAIN_PROC_CHANCE = BUILDER
-            .comment("Chance (0.0–1.0) to apply Curse of Pain on hit with Totem of Pain.")
-            .defineInRange("508_totem_of_pain_proc_chance", 0.25D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.IntValue TOTEM_OF_PAIN_CURSE_DURATION_SECONDS = BUILDER
-            .comment("Duration in seconds for Curse of Pain applied by Totem of Pain.")
-            .defineInRange("509_totem_of_pain_curse_duration_seconds", 30, 1, 3600);
-
-    private static final ModConfigSpec.DoubleValue RITUAL_GAUNTLET_CRIT_CHANCE = BUILDER
-            .comment("Chance (0.0–1.0) for Ritual Gauntlet critical damage bonus.")
-            .defineInRange("510_ritual_gauntlet_crit_chance", 0.15D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.DoubleValue RITUAL_GAUNTLET_CRIT_DAMAGE_MULTIPLIER = BUILDER
-            .comment("Damage multiplier on Ritual Gauntlet crit (1.15 = +15% damage).")
-            .defineInRange("511_ritual_gauntlet_crit_damage_multiplier", 1.15D, 1.0D, 10.0D);
-
-    private static final ModConfigSpec.DoubleValue BUSTED_CROWN_HP_PER_CURSED_RELIC = BUILDER
-            .comment("Max health bonus per cursed relic worn with Busted Crown.")
-            .defineInRange("512_busted_crown_hp_per_cursed_relic", 2.0D, 0.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue CURSE_OF_PAIN_DAMAGE_PER_LEVEL = BUILDER
-            .comment("Incoming damage multiplier per Curse of Pain level (0.10 = +10% per level).")
-            .defineInRange("513_curse_of_pain_damage_per_level", 0.10D, 0.0D, 10.0D);
-
-    private static final ModConfigSpec.IntValue THE_DECEPTION_ABSORPTION_DURATION_SECONDS = BUILDER
-            .comment("Absorption duration in seconds after eating with The Deception equipped.")
-            .defineInRange("514_the_deception_absorption_duration_seconds", 30, 1, 3600);
-
-    private static final ModConfigSpec.DoubleValue NECROTIC_CRYSTAL_HEART_HP_COST_PER_SAVE = BUILDER
-            .comment("Max health removed each time Necrotic Crystal Heart prevents lethal damage (2.0 = one heart).")
-            .defineInRange("515_necrotic_crystal_heart_hp_cost_per_save", 2.0D, 0.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue NECROTIC_CRYSTAL_HEART_MIN_MAX_HEALTH = BUILDER
-            .comment("Minimum max health before Necrotic Crystal Heart stops saving the player.")
-            .defineInRange("516_necrotic_crystal_heart_min_max_health", 2.0D, 0.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue NECROTIC_CRYSTAL_HEART_BASE_HEALTH = BUILDER
-            .comment("Base max health used by Necrotic Crystal Heart hex tracking.")
-            .defineInRange("517_necrotic_crystal_heart_base_health", 20.0D, 1.0D, 1000.0D);
-
-    private static final ModConfigSpec.IntValue ICE_DIAMOND_REPAIR_INTERVAL_TICKS = BUILDER
-            .comment("Ticks between Ice Diamond repair attempts while equipped.")
-            .defineInRange("518_ice_diamond_repair_interval_ticks", 20, 1, 1200);
-
-    private static final ModConfigSpec.DoubleValue ICE_DIAMOND_COLD_BIOME_MAX_TEMP = BUILDER
-            .comment("Biomes at or below this temperature cost no Ice Diamond durability per repair.")
-            .defineInRange("519_ice_diamond_cold_biome_max_temp", 0.15D, -1.0D, 2.0D);
-
-    private static final ModConfigSpec.DoubleValue ICE_DIAMOND_HOT_BIOME_MIN_TEMP = BUILDER
-            .comment("Biomes at or above this temperature use the hot repair durability cost.")
-            .defineInRange("520_ice_diamond_hot_biome_min_temp", 1.5D, -1.0D, 3.0D);
-
-    private static final ModConfigSpec.IntValue ICE_DIAMOND_COLD_REPAIR_COST = BUILDER
-            .comment("Ice Diamond durability cost per repair in cold biomes.")
-            .defineInRange("521_ice_diamond_cold_repair_cost", 0, 0, 100);
-
-    private static final ModConfigSpec.IntValue ICE_DIAMOND_TEMPERATE_REPAIR_COST = BUILDER
-            .comment("Ice Diamond durability cost per repair in temperate biomes.")
-            .defineInRange("522_ice_diamond_temperate_repair_cost", 1, 0, 100);
-
-    private static final ModConfigSpec.IntValue ICE_DIAMOND_HOT_REPAIR_COST = BUILDER
-            .comment("Ice Diamond durability cost per repair in hot biomes.")
-            .defineInRange("523_ice_diamond_hot_repair_cost", 5, 0, 100);
 
     // Deep Drawer Extractor Configuration (starts at 410)
     private static final ModConfigSpec.IntValue DEEP_DRAWER_EXTRACTOR_INTERVAL = BUILDER
@@ -516,6 +443,95 @@ public class Config {
             .comment("If false not desplay where obtain the artifacts or mod dependecy required for obtain it (only for lootable artifacts)")
             .define("900_artifacts_info", true);
 
+    // Relics configuration (starts at 500)
+    private static final ModConfigSpec.IntValue CHOSEN_CHEESE_MAX = BUILDER
+            .comment("Maximum cheese level (X in tooltip Y/X). Effective bonus uses min(Y, X) levels.")
+            .defineInRange("500_chosen_cheese_max", 10, 0, 200);
+
+    private static final ModConfigSpec.DoubleValue CHOSEN_CHEESE_HP_PER_LEVEL = BUILDER
+            .comment("Max health bonus per cheese level (2.0 = one heart).")
+            .defineInRange("501_chosen_cheese_hp_per_level", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue OLD_BRICK_ARMOR_BONUS = BUILDER
+            .comment("Armor bonus from Old Brick while equipped in Curios.")
+            .defineInRange("502_old_brick_armor_bonus", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue SHARPENED_BONE_ARMOR_IGNORE_CHANCE = BUILDER
+            .comment("Chance (0.0–1.0) to fully ignore target armor on hit (toughness still applies).")
+            .defineInRange("503_sharpened_bone_armor_ignore_chance", 0.25D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue THE_ROOTS_BREAK_SPEED_MIN_MULTIPLIER = BUILDER
+            .comment("Minimum break-speed multiplier for The Roots (1.0 = no bonus).")
+            .defineInRange("506_the_roots_break_speed_min_multiplier", 1.0D, 0.1D, 10.0D);
+
+    private static final ModConfigSpec.DoubleValue THE_ROOTS_BREAK_SPEED_MAX_BONUS = BUILDER
+            .comment("Random extra break-speed multiplier added on top of the minimum (final = min + random(0..max)).")
+            .defineInRange("507_the_roots_break_speed_max_bonus", 1.0D, 0.0D, 10.0D);
+
+    private static final ModConfigSpec.DoubleValue TOTEM_OF_PAIN_PROC_CHANCE = BUILDER
+            .comment("Chance (0.0–1.0) to apply Curse of Pain on hit with Totem of Pain.")
+            .defineInRange("508_totem_of_pain_proc_chance", 0.25D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.IntValue TOTEM_OF_PAIN_CURSE_DURATION_SECONDS = BUILDER
+            .comment("Duration in seconds for Curse of Pain applied by Totem of Pain.")
+            .defineInRange("509_totem_of_pain_curse_duration_seconds", 30, 1, 3600);
+
+    private static final ModConfigSpec.DoubleValue RITUAL_GAUNTLET_CRIT_CHANCE = BUILDER
+            .comment("Chance (0.0–1.0) for Ritual Gauntlet critical damage bonus.")
+            .defineInRange("510_ritual_gauntlet_crit_chance", 0.15D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue RITUAL_GAUNTLET_CRIT_DAMAGE_MULTIPLIER = BUILDER
+            .comment("Damage multiplier on Ritual Gauntlet crit (1.15 = +15% damage).")
+            .defineInRange("511_ritual_gauntlet_crit_damage_multiplier", 1.15D, 1.0D, 10.0D);
+
+    private static final ModConfigSpec.DoubleValue BUSTED_CROWN_HP_PER_CURSED_RELIC = BUILDER
+            .comment("Max health bonus per cursed relic worn with Busted Crown.")
+            .defineInRange("512_busted_crown_hp_per_cursed_relic", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue CURSE_OF_PAIN_DAMAGE_PER_LEVEL = BUILDER
+            .comment("Incoming damage multiplier per Curse of Pain level (0.10 = +10% per level).")
+            .defineInRange("513_curse_of_pain_damage_per_level", 0.10D, 0.0D, 10.0D);
+
+    private static final ModConfigSpec.IntValue THE_DECEPTION_ABSORPTION_DURATION_SECONDS = BUILDER
+            .comment("Absorption duration in seconds after eating with The Deception equipped.")
+            .defineInRange("514_the_deception_absorption_duration_seconds", 30, 1, 3600);
+
+    private static final ModConfigSpec.DoubleValue NECROTIC_CRYSTAL_HEART_HP_COST_PER_SAVE = BUILDER
+            .comment("Max health removed each time Necrotic Crystal Heart prevents lethal damage (2.0 = one heart).")
+            .defineInRange("515_necrotic_crystal_heart_hp_cost_per_save", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue NECROTIC_CRYSTAL_HEART_MIN_MAX_HEALTH = BUILDER
+            .comment("Minimum max health before Necrotic Crystal Heart stops saving the player.")
+            .defineInRange("516_necrotic_crystal_heart_min_max_health", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue NECROTIC_CRYSTAL_HEART_BASE_HEALTH = BUILDER
+            .comment("Base max health used by Necrotic Crystal Heart hex tracking.")
+            .defineInRange("517_necrotic_crystal_heart_base_health", 20.0D, 1.0D, 1000.0D);
+
+    private static final ModConfigSpec.IntValue ICE_DIAMOND_REPAIR_INTERVAL_TICKS = BUILDER
+            .comment("Ticks between Ice Diamond repair attempts while equipped.")
+            .defineInRange("518_ice_diamond_repair_interval_ticks", 20, 1, 1200);
+
+    private static final ModConfigSpec.DoubleValue ICE_DIAMOND_COLD_BIOME_MAX_TEMP = BUILDER
+            .comment("Biomes at or below this temperature cost no Ice Diamond durability per repair.")
+            .defineInRange("519_ice_diamond_cold_biome_max_temp", 0.15D, -1.0D, 2.0D);
+
+    private static final ModConfigSpec.DoubleValue ICE_DIAMOND_HOT_BIOME_MIN_TEMP = BUILDER
+            .comment("Biomes at or above this temperature use the hot repair durability cost.")
+            .defineInRange("520_ice_diamond_hot_biome_min_temp", 1.5D, -1.0D, 3.0D);
+
+    private static final ModConfigSpec.IntValue ICE_DIAMOND_COLD_REPAIR_COST = BUILDER
+            .comment("Ice Diamond durability cost per repair in cold biomes.")
+            .defineInRange("521_ice_diamond_cold_repair_cost", 0, 0, 100);
+
+    private static final ModConfigSpec.IntValue ICE_DIAMOND_TEMPERATE_REPAIR_COST = BUILDER
+            .comment("Ice Diamond durability cost per repair in temperate biomes.")
+            .defineInRange("522_ice_diamond_temperate_repair_cost", 1, 0, 100);
+
+    private static final ModConfigSpec.IntValue ICE_DIAMOND_HOT_REPAIR_COST = BUILDER
+            .comment("Ice Diamond durability cost per repair in hot biomes.")
+            .defineInRange("523_ice_diamond_hot_repair_cost", 5, 0, 100);
+
     private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_BLOCK_CHANCE = BUILDER
             .comment("Chance for Greedy Shield to completely block damage (0.0 to 1.0)",
                     "Default: 0.3 (30%)")
@@ -574,13 +590,9 @@ public class Config {
             .comment("Negate fall damage while wearing entropic boots.")
             .define("030_boots_negate_fall_damage", true);
 
-    private static final ModConfigSpec.DoubleValue ENTROPIC_PICKAXE_BONUS_FORTUNE_CHANCE = BUILDER
-            .comment("Chance for an extra loot roll when breaking blocks with entropic pickaxe or paxel (stacks with Fortune enchant).")
-            .defineInRange("040_pickaxe_bonus_fortune_chance", 0.3D, 0.0D, 1.0D);
-
     private static final ModConfigSpec.IntValue ENTROPIC_PICKAXE_BONUS_FORTUNE_LEVELS = BUILDER
-            .comment("Extra Fortune levels applied only on the bonus loot roll (added on top of the tool's Fortune enchant).")
-            .defineInRange("041_pickaxe_bonus_fortune_levels", 1, 0, 10);
+            .comment("Extra Fortune levels on block drops for entropic pickaxe and paxel (added on top of Fortune enchant). Disabled while Silk Touch is on the tool. Set 0 to turn off.")
+            .defineInRange("040_pickaxe_bonus_fortune_levels", 1, 0, 10);
 
     private static final ModConfigSpec.DoubleValue ENTROPIC_ARMOR_PEN_CHANCE = BUILDER
             .comment("Chance for entropic sword/axe/spear to partially ignore armor and toughness.")
@@ -1029,6 +1041,10 @@ public class Config {
     public static int structurePlacerMachineEnergyConsume;
     public static int structurePlacerMachineEnergyBuffer;
     public static int factoryEnergyBuffer;
+    public static int ancientTableMaxFuel;
+    public static int ancientTableCraftTicks;
+    public static int ancientTableIoSlots;
+    public static int ancientTableFuelPerDrop;
     public static boolean factoryStonecutterEnabled;
     public static int factoryStonecutterEnergyPerOp;
     public static int soundMufflerRangeMax;
@@ -1057,7 +1073,6 @@ public class Config {
     public static double entropicLeggingsMissingHpPerStep;
     public static double entropicLeggingsArmorBonusPerStep;
     public static boolean entropicBootsNegateFallDamage;
-    public static double entropicPickaxeBonusFortuneChance;
     public static int entropicPickaxeBonusFortuneLevels;
     public static double entropicArmorPenChance;
     public static double entropicArmorPenIgnoreFraction;
@@ -1175,6 +1190,10 @@ public class Config {
         structurePlacerMachineEnergyConsume = STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME.get();
         structurePlacerMachineEnergyBuffer = STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER.get();
         factoryEnergyBuffer = FACTORY_ENERGY_BUFFER.get();
+        ancientTableMaxFuel = ANCIENT_TABLE_MAX_FUEL.get();
+        ancientTableCraftTicks = ANCIENT_TABLE_CRAFT_TICKS.get();
+        ancientTableIoSlots = ANCIENT_TABLE_IO_SLOTS.get();
+        ancientTableFuelPerDrop = ANCIENT_TABLE_FUEL_PER_DROP.get();
         factoryStonecutterEnabled = FACTORY_STONECUTTER_ENABLED.get();
         factoryStonecutterEnergyPerOp = FACTORY_STONECUTTER_ENERGY_PER_OPERATION.get();
         soundMufflerRangeMax = SOUND_MUFFLER_RANGE_MAX.get();
@@ -1226,7 +1245,6 @@ public class Config {
         entropicLeggingsMissingHpPerStep = ENTROPIC_LEGGINGS_MISSING_HP_PER_STEP.get();
         entropicLeggingsArmorBonusPerStep = ENTROPIC_LEGGINGS_ARMOR_BONUS_PER_STEP.get();
         entropicBootsNegateFallDamage = ENTROPIC_BOOTS_NEGATE_FALL.get();
-        entropicPickaxeBonusFortuneChance = ENTROPIC_PICKAXE_BONUS_FORTUNE_CHANCE.get();
         entropicPickaxeBonusFortuneLevels = ENTROPIC_PICKAXE_BONUS_FORTUNE_LEVELS.get();
         entropicArmorPenChance = ENTROPIC_ARMOR_PEN_CHANCE.get();
         entropicArmorPenIgnoreFraction = ENTROPIC_ARMOR_PEN_IGNORE.get();

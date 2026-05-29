@@ -121,6 +121,10 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("factory",
                     () -> new BlockEntityType<>(FactoryBlockEntity::new, ModBlocks.FACTORY.get()));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AncientTableBlockEntity>> ANCIENT_TABLE_BE =
+            BLOCK_ENTITIES.register("ancient_table",
+                    () -> new BlockEntityType<>(AncientTableBlockEntity::new, ModBlocks.ANCIENT_TABLE.get()));
+
     // Fan Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FanBlockEntity>> FAN_BE =
             BLOCK_ENTITIES.register("fan",
@@ -283,6 +287,12 @@ public class ModBlockEntities {
                     FACTORY_BE.get(),
                     (blockEntity, ctx) -> blockEntity instanceof FactoryBlockEntity be ? be.getItemTransferHandler() : null
             );
+
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    ANCIENT_TABLE_BE.get(),
+                    (blockEntity, ctx) ->
+                            blockEntity instanceof AncientTableBlockEntity table ? table.getItemTransferHandler() : null);
         }
     }
 } 
