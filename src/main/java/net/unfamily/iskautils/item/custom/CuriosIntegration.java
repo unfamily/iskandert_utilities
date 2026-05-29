@@ -6,6 +6,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
 import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
+import net.unfamily.iskautils.item.custom.relic.TheDeceptionItem;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +71,7 @@ public class CuriosIntegration {
                 }
                 try {
                     ItemStack stack = (ItemStack) getStackMethod.invoke(event);
-                    if (stack.getItem() instanceof CursedRelicItem) {
+                    if (stack.getItem() instanceof CursedRelicItem || stack.getItem() instanceof TheDeceptionItem) {
                         setResultMethod.invoke(event, allowUnequip);
                     }
                 } catch (ReflectiveOperationException e) {

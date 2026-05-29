@@ -532,6 +532,16 @@ public class ModBlocks {
     public static final DeferredBlock<DeepDrawerExtenderBlock> DEEP_DRAWER_EXTENDER = BLOCKS.register("deep_drawer_extender",
             () -> new DeepDrawerExtenderBlock(DEEP_DRAWERS_PROPERTIES));
 
+    // ===== THE DECEPTION BLOCK =====
+    private static final BlockBehaviour.Properties THE_DECEPTION_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.TERRACOTTA_BROWN)
+            .strength(2.0f, 3.0f)
+            .sound(SoundType.WOOD)
+            .noOcclusion();
+
+    public static final DeferredBlock<TheDeceptionBlock> THE_DECEPTION = BLOCKS.register("the_deception",
+            () -> new TheDeceptionBlock(THE_DECEPTION_PROPERTIES));
+
     // ===== GIFT BLOCK =====
     private static final BlockBehaviour.Properties GIFT_PROPERTIES = BlockBehaviour.Properties.of()
             .noCollission()

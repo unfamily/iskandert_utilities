@@ -290,7 +290,8 @@ public class ModItems {
     public static final DeferredItem<Item> RITUAL_GAUNTLET = ITEMS.register("ritual_gauntlet",
             () -> new CursedRelicItem(new Item.Properties()));
     public static final DeferredItem<Item> THE_DECEPTION = ITEMS.register("the_deception",
-            () -> new CursedRelicItem(new Item.Properties()));
+            () -> new net.unfamily.iskautils.item.custom.relic.TheDeceptionItem(
+                    ModBlocks.THE_DECEPTION.get(), new Item.Properties().stacksTo(1)));
 
     // Rubber chunk item created from rubber
     public static final DeferredItem<Item> RUBBER_CHUNK = ITEMS.register("rubber_chunk",

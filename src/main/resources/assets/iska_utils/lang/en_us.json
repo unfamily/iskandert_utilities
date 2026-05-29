@@ -635,6 +635,7 @@
   "item.iska_utils.temporal_overclocker_chip.no_block_entity": "Target block must have a BlockEntity.",
   "item.iska_utils.temporal_overclocker_chip.overclocker_removed": "Temporal Overclocker no longer exists. Linking cancelled.",
   "item.iska_utils.the_deception": "The Deception",
+  "block.iska_utils.the_deception": "The Deception",
   "item.iska_utils.the_roots": "The Roots",
   "item.iska_utils.the_roots.unix": "The Root",
   "item.iska_utils.totem_of_pain": "Totem of Pain",

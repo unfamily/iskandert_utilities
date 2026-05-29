@@ -716,6 +716,7 @@
   "tooltip.iska_utils.ritual_gauntlet.desc2": "Al colpo (%s): +%s danno critico",
   "tooltip.iska_utils.ritual_gauntlet.desc3": "se hai almeno un effetto benefico attivo.",
   "item.iska_utils.the_deception": "L'Inganno",
+  "block.iska_utils.the_deception": "L'Inganno",
   "tooltip.iska_utils.the_deception.cursed": "§5§lArtefatto maledetto",
   "tooltip.iska_utils.the_deception.desc0": "Ti senti confuso:",
   "tooltip.iska_utils.the_deception.desc1": "non sai se sederti o mangiare.",
