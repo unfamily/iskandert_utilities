@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "EDE",
+    " C "
+  ],
+  "key": {
+    "C": "iska_utils:entropy_crystal",
+    "D": "iska_utils:drop_of_entropy",
+    "E": "iska_utils:unstable_entropy_catalyst"
+  },
+  "result": {
+    "id": "iska_utils:entropic_smithing_template",
+    "count": 1
+  }
+}

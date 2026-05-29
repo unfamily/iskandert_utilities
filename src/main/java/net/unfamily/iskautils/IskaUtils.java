@@ -249,6 +249,8 @@ public class IskaUtils {
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.NETHERITE_BARS.get(), RenderType.cutoutMipped());
                 // Aggiungi RenderType cutout per il redstone_activator_signal
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get(), RenderType.cutout());
+
+                net.unfamily.iskautils.client.entropic.EntropicAnimatedArmorTextures.register();
                 
                 // Register item property functions for dolly filled state
                 ItemProperties.register(

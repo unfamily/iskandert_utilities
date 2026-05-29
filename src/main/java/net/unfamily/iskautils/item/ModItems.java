@@ -229,6 +229,45 @@ public class ModItems {
     public static final DeferredItem<Item> ENTROPY_CRYSTAL = ITEMS.register("entropy_crystal",
             () -> new Item(ITEM_PROPERTIES));
 
+    // ===== ENTROPIC GEAR (indestructible) =====
+    public static final DeferredItem<Item> ENTROPIC_SMITHING_TEMPLATE = ITEMS.register("entropic_smithing_template",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicSmithingTemplateItem(
+                    net.unfamily.iskautils.item.entropic.EntropicSmithingTemplateItem.defaultProperties()));
+
+    public static final DeferredItem<Item> ENTROPIC_SWORD = ITEMS.register("entropic_sword",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicSwordItem(net.unfamily.iskautils.item.entropic.EntropicGear.swordProperties()));
+
+    public static final DeferredItem<Item> ENTROPIC_PICKAXE = ITEMS.register("entropic_pickaxe",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicPickaxeItem(net.unfamily.iskautils.item.entropic.EntropicGear.pickaxeProperties()));
+
+    public static final DeferredItem<Item> ENTROPIC_AXE = ITEMS.register("entropic_axe",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicAxeItem(net.unfamily.iskautils.item.entropic.EntropicGear.axeProperties()));
+
+    public static final DeferredItem<Item> ENTROPIC_SHOVEL = ITEMS.register("entropic_shovel",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicShovelItem(net.unfamily.iskautils.item.entropic.EntropicGear.shovelProperties()));
+
+    public static final DeferredItem<Item> ENTROPIC_HOE = ITEMS.register("entropic_hoe",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicHoeItem(net.unfamily.iskautils.item.entropic.EntropicGear.hoeProperties()));
+
+    public static final DeferredItem<Item> ENTROPIC_PAXEL = ITEMS.register("entropic_paxel",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicPaxelItem(net.unfamily.iskautils.item.entropic.EntropicGear.baseProperties()));
+
+    public static final DeferredItem<Item> DURABLE_SHEARS = ITEMS.register("durable_shears",
+            () -> new net.unfamily.iskautils.item.custom.DurableShearsItem(
+                    new Item.Properties().stacksTo(1).durability(net.unfamily.iskautils.item.custom.DurableShearsItem.MAX_DURABILITY)));
+
+    public static final DeferredItem<Item> ENTROPIC_HELMET = ITEMS.register("entropic_helmet",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicArmorItem(net.minecraft.world.item.ArmorItem.Type.HELMET, net.unfamily.iskautils.item.entropic.EntropicGear.armorProperties()));
+
+    public static final DeferredItem<Item> ENTROPIC_CHESTPLATE = ITEMS.register("entropic_chestplate",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicArmorItem(net.minecraft.world.item.ArmorItem.Type.CHESTPLATE, net.unfamily.iskautils.item.entropic.EntropicGear.armorProperties()));
+
+    public static final DeferredItem<Item> ENTROPIC_LEGGINGS = ITEMS.register("entropic_leggings",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicArmorItem(net.minecraft.world.item.ArmorItem.Type.LEGGINGS, net.unfamily.iskautils.item.entropic.EntropicGear.armorProperties()));
+
+    public static final DeferredItem<Item> ENTROPIC_BOOTS = ITEMS.register("entropic_boots",
+            () -> new net.unfamily.iskautils.item.entropic.EntropicArmorItem(net.minecraft.world.item.ArmorItem.Type.BOOTS, net.unfamily.iskautils.item.entropic.EntropicGear.armorProperties()));
+
     // ===== RELICS (reliquie) =====
     public static final DeferredItem<Item> OLD_BRICK = ITEMS.register("old_brick",
             () -> new OldBrickItem(new Item.Properties()));

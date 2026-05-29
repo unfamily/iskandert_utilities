@@ -219,7 +219,19 @@ public class ModCreativeModeTabs {
                                 // Delivery-related items (after all artifacts)
                                 pOutput.accept(ModItems.DROP_OF_ENTROPY.get());
                                 pOutput.accept(ModItems.ANCIENT_TABLET.get());
+                                pOutput.accept(ModItems.DURABLE_SHEARS.get());
                                 pOutput.accept(ModItems.ENTROPY_CRYSTAL.get());
+                                pOutput.accept(ModItems.ENTROPIC_SMITHING_TEMPLATE.get());
+                                pOutput.accept(ModItems.ENTROPIC_SWORD.get());
+                                pOutput.accept(ModItems.ENTROPIC_PICKAXE.get());
+                                pOutput.accept(ModItems.ENTROPIC_AXE.get());
+                                pOutput.accept(ModItems.ENTROPIC_SHOVEL.get());
+                                pOutput.accept(ModItems.ENTROPIC_HOE.get());
+                                pOutput.accept(ModItems.ENTROPIC_PAXEL.get());
+                                pOutput.accept(ModItems.ENTROPIC_HELMET.get());
+                                pOutput.accept(ModItems.ENTROPIC_CHESTPLATE.get());
+                                pOutput.accept(ModItems.ENTROPIC_LEGGINGS.get());
+                                pOutput.accept(ModItems.ENTROPIC_BOOTS.get());
                                 pOutput.accept(ModItems.UNSTABLE_ENTROPY_CATALYST.get());
                                 pOutput.accept(ModItems.ENTROPY_TNT.get());
 

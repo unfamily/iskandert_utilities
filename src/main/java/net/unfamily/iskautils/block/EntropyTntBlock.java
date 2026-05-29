@@ -68,7 +68,7 @@ public class EntropyTntBlock extends Block {
             pos,
             250,  // horizontal radius
             50,   // vertical radius
-            10,   // tick interval (cambiato da 1 a 10)
+            1,    // tick interval
             1000.0f, // damage
             true  // break unbreakable
         );
