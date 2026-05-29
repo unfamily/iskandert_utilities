@@ -27,3 +27,7 @@ Relics such as the Mining Equitizer or Necrotic Crystal Heart are **not** obtain
 ## Luck and misfortune
 
 While opening a parcel, **Luck** (Fortune potion effect) nudges outcomes toward rarer or “better” rewards. **Bad Luck** (Misfortune) does the opposite. The effect strength matters — a short sip helps a little; a strong brew helps more.
+
+## Recycling into entropy
+
+You do not have to open every parcel. An **unopened Suspicious Delivery**, and most **relics obtained from opened deliveries**, can be recycled into **Drop of Entropy** in a crafting table or **Factory**. See **Drop of Entropy** under **Entropy materials** for details.

@@ -96,6 +96,7 @@ public class IskaUtils {
 
             // Register menu screens (client-only, MOD bus)
             modEventBus.addListener(ClientModEvents::registerMenuScreens);
+            modEventBus.addListener(ClientModEvents::registerEntityRenderers);
 
         }
 
@@ -149,6 +150,7 @@ public class IskaUtils {
         ModItems.register(modEventBus);
         ModMobEffects.register(modEventBus);
         ModBlockEntities.register(modEventBus);
+        net.unfamily.iskautils.entity.ModEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
         
         // Register dynamic potion plate blocks and items
@@ -319,9 +321,14 @@ public class IskaUtils {
             // No-op for now.
         }
 
-        // Custom geometry loaders removed for 26.x baseline.
-        
-        
+        @SubscribeEvent
+        public static void registerEntityRenderers(
+                net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
+            event.registerEntityRenderer(
+                    net.unfamily.iskautils.entity.ModEntities.DECEPTION_SEAT.get(),
+                    net.unfamily.iskautils.client.renderer.DeceptionSeatRenderer::new);
+        }
+
         @SubscribeEvent
         public static void registerMenuScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_PLACER_MENU.get(),

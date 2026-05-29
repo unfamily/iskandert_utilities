@@ -97,14 +97,11 @@ public final class RelicTickEffects {
     }
 
     private static void applyIceDiamond(ServerPlayer player) {
-        if (!StageRegistry.playerHasStage(player, RelicEquipStages.ICE_DIAMOND)) {
-            return;
-        }
         if ((player.tickCount % Config.iceDiamondRepairIntervalTicks) != 0) {
             return;
         }
-        ItemStack iceDiamond = findEquippedStack(player, IceDiamondItem.class);
-        if (iceDiamond == null || iceDiamond.getDamageValue() >= iceDiamond.getMaxDamage()) {
+        ItemStack iceDiamond = findIceDiamondStack(player);
+        if (iceDiamond == null) {
             return;
         }
 
@@ -118,6 +115,40 @@ public final class RelicTickEffects {
         if (cost > 0) {
             iceDiamond.setDamageValue(Math.min(iceDiamond.getMaxDamage(), iceDiamond.getDamageValue() + cost));
         }
+    }
+
+    /** Ice Diamond is active in inventory, hands, or Curios (not Curios-only). */
+    private static ItemStack findIceDiamondStack(ServerPlayer player) {
+        ItemStack main = player.getMainHandItem();
+        if (isUsableIceDiamond(main)) {
+            return main;
+        }
+        ItemStack off = player.getOffhandItem();
+        if (isUsableIceDiamond(off)) {
+            return off;
+        }
+        ItemStack[] found = new ItemStack[1];
+        CurioEquipUtil.forEachEquippedCurioStack(player, stack -> {
+            if (found[0] == null && isUsableIceDiamond(stack)) {
+                found[0] = stack;
+            }
+        });
+        if (found[0] != null) {
+            return found[0];
+        }
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (isUsableIceDiamond(stack)) {
+                return stack;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isUsableIceDiamond(ItemStack stack) {
+        return !stack.isEmpty()
+                && stack.getItem() instanceof IceDiamondItem
+                && stack.getDamageValue() < stack.getMaxDamage();
     }
 
     private static ItemStack findEquippedStack(ServerPlayer player, Class<?> itemClass) {

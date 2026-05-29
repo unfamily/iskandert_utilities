@@ -1,14 +1,23 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    " C ",
-    "EDE",
-    " C "
+    "ADA",
+    "BCB",
+    "AAA"
   ],
   "key": {
-    "C": "iska_utils:entropy_crystal",
-    "D": "iska_utils:drop_of_entropy",
-    "E": "iska_utils:unstable_entropy_catalyst"
+    "A": {
+      "item": "iska_utils:wither_proof_block"
+    },
+    "B": {
+      "item": "iska_utils:entropy_crystal"
+    },
+    "C": {
+      "item": "iska_utils:unstable_entropy_catalyst"
+    },
+    "D": {
+      "item": "iska_utils:drop_of_entropy"
+    }
   },
   "result": {
     "id": "iska_utils:entropic_smithing_template",

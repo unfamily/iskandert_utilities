@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 
 /**
  * Ice Diamond relic.
- * Repairs items over time while consuming its own durability (via stage-driven tick handler).
+ * Repairs items over time while consuming its own durability when carried in inventory, hands, or Curios.
  */
 public class IceDiamondItem extends Item {
     public IceDiamondItem(Properties properties) {

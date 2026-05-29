@@ -6,10 +6,16 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemInstance;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.common.ItemAbilities;
 import net.neoforged.neoforge.common.ItemAbility;
 import net.minecraft.world.item.component.Tool;
@@ -46,6 +52,17 @@ public class EntropicPaxelItem extends Item {
     }
 
     @Override
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
+        return EntropicInteractions.onAxeUse(level, player, hand);
+    }
+
+    @Override
+    public InteractionResult useOn(UseOnContext context) {
+        InteractionResult result = EntropicInteractions.onShovelUseOn(context);
+        return result != InteractionResult.PASS ? result : super.useOn(context);
+    }
+
+    @Override
     public boolean canPerformAction(ItemInstance stack, ItemAbility ability) {
         return ItemAbilities.DEFAULT_AXE_ACTIONS.contains(ability)
                 || ItemAbilities.DEFAULT_SHOVEL_ACTIONS.contains(ability);
@@ -59,6 +76,6 @@ public class EntropicPaxelItem extends Item {
             Consumer<Component> tooltip,
             TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
-        tooltip.accept(Component.translatable("tooltip.iska_utils.entropic.unbreakable"));
+        EntropicTooltip.appendToolLines(tooltip, "entropic_paxel");
     }
 }

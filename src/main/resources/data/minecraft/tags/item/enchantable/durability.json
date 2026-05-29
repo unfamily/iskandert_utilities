@@ -4,7 +4,15 @@
     "iska_utils:dolly",
     "iska_utils:dolly_hard",
     "iska_utils:burning_brazier",
-    "iska_utils:rubber_boots"
+    "iska_utils:rubber_boots",
+
+    "-iska_utils:entropic_sword",
+    "-iska_utils:entropic_pickaxe",
+    "-iska_utils:entropic_axe",
+    "-iska_utils:entropic_shovel",
+    "-iska_utils:entropic_hoe",
+    "-iska_utils:entropic_paxel",
+    "-iska_utils:entropic_spear"
   ]
 }
 

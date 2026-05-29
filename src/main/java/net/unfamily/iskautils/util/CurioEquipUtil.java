@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
 import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
 import net.unfamily.iskautils.item.custom.relic.TheDeceptionItem;
@@ -165,7 +166,10 @@ public final class CurioEquipUtil {
     }
 
     private static boolean isCursedArtifactItem(Item item) {
-        return item instanceof CursedRelicItem || item instanceof CursedCandleItem || item instanceof TheDeceptionItem;
+        return item instanceof CursedRelicItem
+                || item instanceof CursedCandleItem
+                || item instanceof TheDeceptionItem
+                || item instanceof NecroticCrystalHeartItem;
     }
 
     private static boolean isInCuriosSlots(Player player, Item item) {

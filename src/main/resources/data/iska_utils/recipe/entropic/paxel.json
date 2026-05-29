@@ -1,9 +1,36 @@
 {
-  "type": "minecraft:smithing_transform",
-  "template": "iska_utils:entropic_smithing_template",
-  "base": "minecraft:netherite_pickaxe",
-  "addition": "iska_utils:entropy_crystal",
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "iska_utils:entropic_shovel"
+    },
+    {
+      "item": "iska_utils:entropic_axe"
+    },
+    {
+      "item": "iska_utils:entropic_pickaxe"
+    },
+    {
+      "tag": "c:bars/netherite"
+    },
+    {
+      "tag": "c:bars/netherite"
+    },
+    {
+      "tag": "c:bars/netherite"
+    },
+    {
+      "tag": "c:bars/netherite"
+    },
+    {
+      "tag": "c:bars/netherite"
+    },
+    {
+      "tag": "c:bars/netherite"
+    }
+  ],
   "result": {
-    "id": "iska_utils:entropic_paxel"
+    "id": "iska_utils:entropic_paxel",
+    "count": 1
   }
 }

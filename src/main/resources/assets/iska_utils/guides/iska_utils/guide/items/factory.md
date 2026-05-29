@@ -33,7 +33,7 @@ In **JEI**, open the **Stonecutter** recipe category: the Factory can appear as 
 
 ## Mod-only recipes
 
-Some recipes exist **only** on the Factory (not on the Stonecutter) — for example dye berries into dyes, or recycling **Suspicious Delivery** loot into **Drop of Entropy**. Check **JEI** under the Factory category, or **Suspicious Delivery** in this guide, for those inputs and outputs.
+Some recipes exist **only** on the Factory (not on the Stonecutter) — for example dye berries into dyes, or recycling **unopened Suspicious Delivery** parcels and **delivery rewards** into **Drop of Entropy**. Check **JEI** under the Factory category, or **Drop of Entropy** in **Entropy materials**, for those inputs and outputs.
 
 ## Tips
 

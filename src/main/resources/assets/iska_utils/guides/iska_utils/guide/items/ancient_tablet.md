@@ -30,7 +30,7 @@ Hold the tablet in your **main hand**. It stores up to **64** ingredients (one i
 
 ## Outputs
 
-The tablet is used to craft **Entropy Crystal** and **Unstable Entropy Catalyst** (see the other pages in **Entropy materials**). Recipes use **Drop of Entropy** — see that page for how to obtain it. Other delivery relics can be recycled into drops of entropy in a **crafting table** or **Factory**.
+The tablet is used to craft **Entropy Crystal** and **Unstable Entropy Catalyst** (see the other pages in **Entropy materials**). Recipes use **Drop of Entropy** — see that page for how to obtain it (opening deliveries, recycling unopened parcels, or recycling unwanted delivery rewards).
 
 ## Obtaining the tablet
 

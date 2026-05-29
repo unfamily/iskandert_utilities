@@ -18,7 +18,6 @@ import java.util.Map;
 public final class RelicEquipStages {
     public static final String OLD_BRICK = "iska_utils_internal-old_brick_equip";
     public static final String CHOSEN_CHEESE = "iska_utils_internal-chosen_cheese_equip";
-    public static final String ICE_DIAMOND = "iska_utils_internal-ice_diamond_equip";
     public static final String SHARPENED_BONE = "iska_utils_internal-sharpened_bone_equip";
     public static final String THE_ROOTS = "iska_utils_internal-the_roots_equip";
     public static final String MINING_EQUITIZER = "iska_utils_internal-mining_equitizer_equip";
@@ -32,7 +31,6 @@ public final class RelicEquipStages {
     private static final List<String> ALL_STAGES = List.of(
             OLD_BRICK,
             CHOSEN_CHEESE,
-            ICE_DIAMOND,
             SHARPENED_BONE,
             THE_ROOTS,
             MINING_EQUITIZER,
@@ -67,7 +65,6 @@ public final class RelicEquipStages {
         Map<Item, String> map = new HashMap<>();
         map.put(ModItems.OLD_BRICK.get(), OLD_BRICK);
         map.put(ModItems.CHOSEN_CHEESE.get(), CHOSEN_CHEESE);
-        map.put(ModItems.ICE_DIAMOND.get(), ICE_DIAMOND);
         map.put(ModItems.SHARPENED_BONE.get(), SHARPENED_BONE);
         map.put(ModItems.THE_ROOTS.get(), THE_ROOTS);
         map.put(ModItems.MINING_EQUITIZER.get(), MINING_EQUITIZER);

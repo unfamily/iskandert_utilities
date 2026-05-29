@@ -233,17 +233,9 @@ public class Config {
             .comment("Armor bonus from Old Brick while equipped in Curios.")
             .defineInRange("502_old_brick_armor_bonus", 2.0D, 0.0D, 100.0D);
 
-    private static final ModConfigSpec.DoubleValue SHARPENED_BONE_BONUS_DAMAGE = BUILDER
-            .comment("Flat bonus melee damage while Sharpened Bone is active.")
-            .defineInRange("503_sharpened_bone_bonus_damage", 1.0D, 0.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue SHARPENED_BONE_PROC_CHANCE = BUILDER
-            .comment("Chance (0.0–1.0) for Sharpened Bone extra hit effect.")
-            .defineInRange("504_sharpened_bone_proc_chance", 0.25D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.DoubleValue SHARPENED_BONE_PROC_BONUS_DAMAGE = BUILDER
-            .comment("Extra damage on Sharpened Bone proc.")
-            .defineInRange("505_sharpened_bone_proc_bonus_damage", 2.0D, 0.0D, 100.0D);
+    private static final ModConfigSpec.DoubleValue SHARPENED_BONE_ARMOR_IGNORE_CHANCE = BUILDER
+            .comment("Chance (0.0–1.0) to fully ignore target armor on hit (toughness still applies).")
+            .defineInRange("503_sharpened_bone_armor_ignore_chance", 0.25D, 0.0D, 1.0D);
 
     private static final ModConfigSpec.DoubleValue THE_ROOTS_BREAK_SPEED_MIN_MULTIPLIER = BUILDER
             .comment("Minimum break-speed multiplier for The Roots (1.0 = no bonus).")
@@ -550,8 +542,78 @@ public class Config {
 
     static {
         BUILDER.pop(); // End of artifacts_settings category
+
+        BUILDER.comment("Entropic Gear").push("entropic_gear");
+    }
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_HELMET_BASE_HP = BUILDER
+            .comment("Base max health bonus while wearing entropic helmet.")
+            .defineInRange("000_helmet_base_hp", 4.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_HELMET_HP_PER_PIECE = BUILDER
+            .comment("Extra max HP per other entropic armor piece worn (excludes helmet itself).")
+            .defineInRange("001_helmet_hp_per_entropic_piece", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_CHEST_MISSING_HP_PER_STEP = BUILDER
+            .comment("Missing health points required per toughness bonus step (e.g. 50 missing HP / 7 -> 7 steps).")
+            .defineInRange("010_chestplate_missing_hp_per_step", 7.0D, 1.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_CHEST_TOUGHNESS_BONUS_PER_STEP = BUILDER
+            .comment("Armor toughness added per step while wearing entropic chestplate.")
+            .defineInRange("011_chestplate_toughness_bonus_per_step", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_LEGGINGS_MISSING_HP_PER_STEP = BUILDER
+            .comment("Missing health points required per armor bonus step (e.g. 50 missing HP / 3 -> 16 steps).")
+            .defineInRange("020_leggings_missing_hp_per_step", 3.0D, 1.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_LEGGINGS_ARMOR_BONUS_PER_STEP = BUILDER
+            .comment("Armor added per step while wearing entropic leggings.")
+            .defineInRange("021_leggings_armor_bonus_per_step", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_BOOTS_NEGATE_FALL = BUILDER
+            .comment("Negate fall damage while wearing entropic boots.")
+            .define("030_boots_negate_fall_damage", true);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_PICKAXE_BONUS_FORTUNE_CHANCE = BUILDER
+            .comment("Chance for an extra loot roll when breaking blocks with entropic pickaxe or paxel (stacks with Fortune enchant).")
+            .defineInRange("040_pickaxe_bonus_fortune_chance", 0.3D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_PICKAXE_BONUS_FORTUNE_LEVELS = BUILDER
+            .comment("Extra Fortune levels applied only on the bonus loot roll (added on top of the tool's Fortune enchant).")
+            .defineInRange("041_pickaxe_bonus_fortune_levels", 1, 0, 10);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_ARMOR_PEN_CHANCE = BUILDER
+            .comment("Chance for entropic sword/axe/spear to partially ignore armor and toughness.")
+            .defineInRange("050_armor_pen_chance", 0.3D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_ARMOR_PEN_IGNORE = BUILDER
+            .comment("Fraction of armor and toughness ignored on proc (0.8 = 80%). Power off if chance or this is 0.")
+            .defineInRange("051_armor_pen_ignore_fraction", 0.8D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_HOE_CROP_ENABLED = BUILDER
+            .comment("Enable crop reset power on entropic hoe.")
+            .define("060_hoe_crop_power_enabled", true);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_HOE_REQUIRE_MATURE = BUILDER
+            .comment("Require mature crop for hoe reset; if false, immature crops reset to age 0.")
+            .define("061_hoe_require_mature_crop", true);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_AXE_STRIP_ENABLED = BUILDER
+            .comment("Enable log stripping on entropic axe and paxel (off-hand strip, sneak + inventory strip).")
+            .define("070_axe_strip_enabled", true);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_SHOVEL_BRUSH_ENABLED = BUILDER
+            .comment("Enable instant brush on entropic shovel and paxel.")
+            .define("071_shovel_brush_enabled", true);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SHOVEL_BRUSH_TICKS = BUILDER
+            .comment("Brush simulation ticks per use (higher = faster completion on tough blocks).")
+            .defineInRange("072_shovel_brush_ticks", 12, 1, 100);
+
+    static {
+        BUILDER.pop(); // End of entropic_gear category
         BUILDER.pop(); // End of general_utilities category
-        
+
         // Category for Fan Configuration
         BUILDER.comment("Fan Configuration").push("fan");
     }
@@ -987,9 +1049,23 @@ public class Config {
     public static int chosenCheeseMax;
     public static double chosenCheeseHpPerLevel;
     public static double oldBrickArmorBonus;
-    public static double sharpenedBoneBonusDamage;
-    public static double sharpenedBoneProcChance;
-    public static double sharpenedBoneProcBonusDamage;
+    public static double sharpenedBoneArmorIgnoreChance;
+    public static double entropicHelmetBaseHp;
+    public static double entropicHelmetHpPerEntropicPiece;
+    public static double entropicChestplateMissingHpPerStep;
+    public static double entropicChestplateToughnessBonusPerStep;
+    public static double entropicLeggingsMissingHpPerStep;
+    public static double entropicLeggingsArmorBonusPerStep;
+    public static boolean entropicBootsNegateFallDamage;
+    public static double entropicPickaxeBonusFortuneChance;
+    public static int entropicPickaxeBonusFortuneLevels;
+    public static double entropicArmorPenChance;
+    public static double entropicArmorPenIgnoreFraction;
+    public static boolean entropicHoeCropPowerEnabled;
+    public static boolean entropicHoeRequireMatureCrop;
+    public static boolean entropicAxeStripEnabled;
+    public static boolean entropicShovelBrushEnabled;
+    public static int entropicShovelBrushTicks;
     public static double theRootsBreakSpeedMinMultiplier;
     public static double theRootsBreakSpeedMaxBonus;
     public static double totemOfPainProcChance;
@@ -1142,9 +1218,23 @@ public class Config {
         chosenCheeseMax = CHOSEN_CHEESE_MAX.get();
         chosenCheeseHpPerLevel = CHOSEN_CHEESE_HP_PER_LEVEL.get();
         oldBrickArmorBonus = OLD_BRICK_ARMOR_BONUS.get();
-        sharpenedBoneBonusDamage = SHARPENED_BONE_BONUS_DAMAGE.get();
-        sharpenedBoneProcChance = SHARPENED_BONE_PROC_CHANCE.get();
-        sharpenedBoneProcBonusDamage = SHARPENED_BONE_PROC_BONUS_DAMAGE.get();
+        sharpenedBoneArmorIgnoreChance = SHARPENED_BONE_ARMOR_IGNORE_CHANCE.get();
+        entropicHelmetBaseHp = ENTROPIC_HELMET_BASE_HP.get();
+        entropicHelmetHpPerEntropicPiece = ENTROPIC_HELMET_HP_PER_PIECE.get();
+        entropicChestplateMissingHpPerStep = ENTROPIC_CHEST_MISSING_HP_PER_STEP.get();
+        entropicChestplateToughnessBonusPerStep = ENTROPIC_CHEST_TOUGHNESS_BONUS_PER_STEP.get();
+        entropicLeggingsMissingHpPerStep = ENTROPIC_LEGGINGS_MISSING_HP_PER_STEP.get();
+        entropicLeggingsArmorBonusPerStep = ENTROPIC_LEGGINGS_ARMOR_BONUS_PER_STEP.get();
+        entropicBootsNegateFallDamage = ENTROPIC_BOOTS_NEGATE_FALL.get();
+        entropicPickaxeBonusFortuneChance = ENTROPIC_PICKAXE_BONUS_FORTUNE_CHANCE.get();
+        entropicPickaxeBonusFortuneLevels = ENTROPIC_PICKAXE_BONUS_FORTUNE_LEVELS.get();
+        entropicArmorPenChance = ENTROPIC_ARMOR_PEN_CHANCE.get();
+        entropicArmorPenIgnoreFraction = ENTROPIC_ARMOR_PEN_IGNORE.get();
+        entropicHoeCropPowerEnabled = ENTROPIC_HOE_CROP_ENABLED.get();
+        entropicHoeRequireMatureCrop = ENTROPIC_HOE_REQUIRE_MATURE.get();
+        entropicAxeStripEnabled = ENTROPIC_AXE_STRIP_ENABLED.get();
+        entropicShovelBrushEnabled = ENTROPIC_SHOVEL_BRUSH_ENABLED.get();
+        entropicShovelBrushTicks = ENTROPIC_SHOVEL_BRUSH_TICKS.get();
         theRootsBreakSpeedMinMultiplier = THE_ROOTS_BREAK_SPEED_MIN_MULTIPLIER.get();
         theRootsBreakSpeedMaxBonus = THE_ROOTS_BREAK_SPEED_MAX_BONUS.get();
         totemOfPainProcChance = TOTEM_OF_PAIN_PROC_CHANCE.get();

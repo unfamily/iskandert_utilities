@@ -79,7 +79,7 @@ public final class EntropicGear {
     }
 
     public static Item.Properties axeProperties() {
-        return TIER.applyToolProperties(baseProperties(), BlockTags.MINEABLE_WITH_AXE, 5.0F, -3.0F, 5.0F);
+        return TIER.applyToolProperties(baseProperties(), BlockTags.MINEABLE_WITH_AXE, 7.0F, -3.0F, 5.0F);
     }
 
     public static Item.Properties shovelProperties() {
@@ -90,9 +90,17 @@ public final class EntropicGear {
         return TIER.applySwordProperties(baseProperties(), 5.0F, -2.4F);
     }
 
-    /** Same tuning as {@link net.minecraft.world.item.Items#NETHERITE_SPEAR}. */
+    /** Netherite spear tuning with +1 attack damage from {@link #SPEAR_TIER}. */
+    private static final ToolMaterial SPEAR_TIER = new ToolMaterial(
+            BlockTags.INCORRECT_FOR_NETHERITE_TOOL,
+            0,
+            10.0F,
+            6.0F,
+            15,
+            NO_REPAIR);
+
     public static Item.Properties spearProperties() {
-        return baseProperties().spear(TIER, 1.15F, 1.2F, 0.4F, 2.5F, 9.0F, 5.5F, 5.1F, 8.75F, 4.6F);
+        return baseProperties().spear(SPEAR_TIER, 1.15F, 1.2F, 0.4F, 2.5F, 9.0F, 5.5F, 5.1F, 8.75F, 4.6F);
     }
 
 

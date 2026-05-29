@@ -54,10 +54,12 @@ public class TheDeceptionBlock extends HorizontalDirectionalBlock {
     @Override
     protected InteractionResult useWithoutItem(
             BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (TheDeceptionSeatUtil.trySit(state, level, pos, player)) {
-            return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
         }
-        return InteractionResult.PASS;
+        return TheDeceptionSeatUtil.trySit(state, level, pos, player)
+                ? InteractionResult.SUCCESS_SERVER
+                : InteractionResult.PASS;
     }
 
     @Override
@@ -69,15 +71,17 @@ public class TheDeceptionBlock extends HorizontalDirectionalBlock {
             Player player,
             InteractionHand hand,
             BlockHitResult hitResult) {
-        if (TheDeceptionSeatUtil.trySit(state, level, pos, player)) {
-            return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
         }
-        return InteractionResult.PASS;
+        return TheDeceptionSeatUtil.trySit(state, level, pos, player)
+                ? InteractionResult.SUCCESS_SERVER
+                : InteractionResult.PASS;
     }
 
     @Override
     protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {
-        TheDeceptionSeatUtil.removeSeat(level, pos);
+        TheDeceptionSeatUtil.stopSitAt(level, pos);
         super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 
@@ -109,7 +113,7 @@ public class TheDeceptionBlock extends HorizontalDirectionalBlock {
                 element(11, 0, 11, 13, 7, 13, facing),
                 element(11, 0, 3, 13, 7, 5, facing),
                 element(3, 8, 14, 4, 14, 15, facing),
-                element(11, 8, 14, 12, 14, 15, facing),
+                element(12, 8, 14, 13, 14, 15, facing),
                 element(1.5, 13.5, 13.5, 13.5, 23.5, 15.5, facing));
     }
 
