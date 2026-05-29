@@ -65,6 +65,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     private PushType pushType = PushType.MOBS_ONLY; // Default: only mobs
     private int redstoneMode = 0; // Redstone mode (0=NONE, 1=LOW, 2=HIGH, 3=PULSE, 4=DISABLED)
     private boolean isPull = false; // false = push, true = pull
+    private boolean showAreaEnabled = false;
     // Redstone pulse mode tracking
     private boolean previousRedstoneState = false; // For PULSE mode
     private int pulseIgnoreTimer = 0; // Timer to ignore redstone after pulse
@@ -340,6 +341,17 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
     
+    public boolean isShowAreaEnabled() {
+        return showAreaEnabled;
+    }
+
+    public void setShowAreaEnabled(boolean showAreaEnabled) {
+        if (this.showAreaEnabled != showAreaEnabled) {
+            this.showAreaEnabled = showAreaEnabled;
+            setChanged();
+        }
+    }
+
     public void cycleRedstoneMode() {
         // Cycle through 0->1->2->4->0 (skip PULSE mode 3)
         int nextMode = (this.redstoneMode + 1) % 5;
@@ -417,6 +429,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
             redstoneMode = 4; // Convert old PULSE mode to DISABLED
         }
         isPull = tag.contains("IsPull") ? tag.getBoolean("IsPull") : false; // Default: push
+        showAreaEnabled = tag.getBoolean("ShowAreaEnabled");
         previousRedstoneState = tag.contains("PreviousRedstoneState") ? tag.getBoolean("PreviousRedstoneState") : false;
         pulseIgnoreTimer = tag.contains("PulseIgnoreTimer") ? tag.getInt("PulseIgnoreTimer") : 0;
         hasShownBackMessage = tag.contains("HasShownBackMessage") ? tag.getBoolean("HasShownBackMessage") : false;
@@ -440,6 +453,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         tag.putInt("PushType", pushType.getId());
         tag.putInt("RedstoneMode", redstoneMode);
         tag.putBoolean("IsPull", isPull);
+        tag.putBoolean("ShowAreaEnabled", showAreaEnabled);
         tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
         tag.putInt("PulseIgnoreTimer", pulseIgnoreTimer);
         tag.putBoolean("HasShownBackMessage", hasShownBackMessage);

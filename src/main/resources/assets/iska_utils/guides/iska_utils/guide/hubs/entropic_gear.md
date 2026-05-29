@@ -10,19 +10,19 @@ categories:
 ---
 # Entropic gear
 
-Endgame **netherite upgrades** infused with **Entropy Crystal**. Every piece is **indestructible** and grants special powers while you wear or use it.
+<ItemImage id="iska_utils:entropic_chestplate" />
+
+Endgame **netherite upgrades** infused with <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal**. Every piece is **indestructible** and grants special powers while worn or held.
 
 ## Progression
 
-1. Obtain **Drop of Entropy** and craft **Entropy Crystal** on the **Ancient Tablet** (see earlier pages in **Entropy materials**).
-2. Craft an **Entropic Smithing Template** (uses crystal, drops, and **Unstable Entropy Catalyst**).
-3. At a **smithing table**: template + **netherite** item + **Entropy Crystal** → matching entropic gear.
-
-Exact recipes are in **JEI** → Smithing.
+1. Obtain <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** and forge <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal** on the <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet**.
+2. Obtain an <ItemImage id="iska_utils:entropic_smithing_template" /> **Entropic Smithing Template** (uses crystal, drops, and <ItemImage id="iska_utils:unstable_entropy_catalyst" /> **Unstable Entropy Catalyst**).
+3. At a **smithing table**: template + **netherite** item + <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal** → matching entropic gear.
 
 ## Set overview
 
-- **Armor** — scaling bonuses on helmet, chestplate, leggings, and boots (see **Entropic armor**).
-- **Tools & weapons** — mining, combat, and utility powers (see **Entropic tools**). The **Paxel** combines pickaxe, axe, and shovel abilities.
+- **Armor** — <ItemImage id="iska_utils:entropic_helmet" /> helmet, <ItemImage id="iska_utils:entropic_chestplate" /> chestplate, <ItemImage id="iska_utils:entropic_leggings" /> leggings, <ItemImage id="iska_utils:entropic_boots" /> boots (see **Entropic armor**).
+- **Tools & weapons** — sword, pickaxe, axe, shovel, hoe, paxel (see **Entropic tools**). The <ItemImage id="iska_utils:entropic_paxel" /> **Paxel** combines pickaxe, axe, and shovel powers.
 
 <SubPages icons={true} alphabetical={false} />

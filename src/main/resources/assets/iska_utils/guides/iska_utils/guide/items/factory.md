@@ -29,11 +29,9 @@ Your last chosen variant is remembered for each type of input.
 
 If you insert a block you would use in a **Stonecutter** (stone into bricks, stairs, walls, and similar shapes), the Factory shows the **same cutting options** and produces them automatically — you do not need to open a Stonecutter block.
 
-In **JEI**, open the **Stonecutter** recipe category: the Factory can appear as an **alternative workstation** next to the Stonecutter block. Those cutting recipes are **not** duplicated in the mod’s own Factory JEI page (that page lists only special mod mappings).
+## Mod-only processing
 
-## Mod-only recipes
-
-Some recipes exist **only** on the Factory (not on the Stonecutter) — for example dye berries into dyes, or recycling **unopened Suspicious Delivery** parcels and **delivery rewards** into **Drop of Entropy**. Check **JEI** under the Factory category, or **Drop of Entropy** in **Entropy materials**, for those inputs and outputs.
+Some actions exist **only** on the Factory — for example dye berries into dyes, or recycling <ItemImage id="iska_utils:suspicious_delivery" /> **Suspicious Delivery** parcels and delivery relics into <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**. See **Drop of Entropy** under **Entropy materials** for the full recyclable list.
 
 ## Tips
 

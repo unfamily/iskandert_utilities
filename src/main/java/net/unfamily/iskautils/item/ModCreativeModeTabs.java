@@ -218,7 +218,9 @@ public class ModCreativeModeTabs {
 
                                 // Delivery-related items (after all artifacts)
                                 pOutput.accept(ModItems.DROP_OF_ENTROPY.get());
-                                pOutput.accept(ModItems.ANCIENT_TABLET.get());
+                                pOutput.accept(new ItemStack(ModItems.DROP_OF_ENTROPY.get()));
+                                pOutput.accept(new ItemStack(ModItems.ANCIENT_TABLET.get()));
+                                pOutput.accept(ModItems.ANCIENT_TABLE.get());
                                 pOutput.accept(ModItems.DURABLE_SHEARS.get());
                                 pOutput.accept(ModItems.ENTROPY_CRYSTAL.get());
                                 pOutput.accept(ModItems.ENTROPIC_SMITHING_TEMPLATE.get());

@@ -15,25 +15,33 @@ categories:
 ---
 # Entropic armor
 
-Four **indestructible** netherite-tier pieces upgraded at a smithing table (see **Entropic Smithing Template**). Wear the piece to activate its bonus.
+Four **indestructible** netherite-tier pieces upgraded at a smithing table with <ItemImage id="iska_utils:entropic_smithing_template" /> **Entropic Smithing Template** and <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal**. Wear a piece to activate its bonus.
 
 ## Helmet
 
-Increases **max health** while worn: a **base bonus** plus extra max HP for **each other entropic armor piece** you wear (boots, chestplate, leggings — not the helmet itself).
+<ItemImage id="iska_utils:entropic_helmet" />
+
+Increases **max health**: a **base bonus** plus extra max HP for **each other entropic armor piece** worn (not the helmet itself).
 
 ## Chestplate
 
-Grants **armor toughness** from **missing health**: divide how much HP you are missing by a step size (default **7**), then add toughness per step (default **+1**). At 50/100 HP → 50 missing → 50÷7 ≈ **7** toughness.
+<ItemImage id="iska_utils:entropic_chestplate" />
+
+Grants **armor toughness** from **missing health**: divide HP you are missing by a step size (default **7**), then add toughness per step (default **+1**). At 50/100 HP → 50 missing → 50÷7 ≈ **7** toughness.
 
 ## Leggings
 
-Grants **armor** from **missing health** the same way, with a smaller step size (default **3**). At 50/100 HP → 50÷3 ≈ **16** armor.
+<ItemImage id="iska_utils:entropic_leggings" />
+
+Grants **armor** from **missing health** with a smaller step (default **3**). At 50/100 HP → 50÷3 ≈ **16** armor.
 
 ## Boots
+
+<ItemImage id="iska_utils:entropic_boots" />
 
 **Negates fall damage** while worn (no bounce effect).
 
 ## Tips
 
-- Chestplate and leggings reward staying hurt: the lower your current HP, the stronger their defensive bonus.
+- Chestplate and leggings reward staying hurt: lower current HP → stronger bonus.
 - Full set plus helmet pairs well with high-HP builds.

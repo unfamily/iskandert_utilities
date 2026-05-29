@@ -188,7 +188,17 @@ public class ModBlocks {
 
     public static final DeferredBlock<net.unfamily.iskautils.block.custom.FactoryBlock> FACTORY =
             BLOCKS.register("factory", () -> new net.unfamily.iskautils.block.custom.FactoryBlock(FACTORY_PROPERTIES));
-    
+
+    private static final BlockBehaviour.Properties ANCIENT_TABLE_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.STONE)
+            .strength(3.0f, 6.0f)
+            .sound(SoundType.STONE)
+            .requiresCorrectToolForDrops();
+
+    public static final DeferredBlock<net.unfamily.iskautils.block.custom.AncientTableBlock> ANCIENT_TABLE =
+            BLOCKS.register("ancient_table",
+                    () -> new net.unfamily.iskautils.block.custom.AncientTableBlock(ANCIENT_TABLE_PROPERTIES));
+
     // Smart Timer (emits redstone signal periodically)
     private static final BlockBehaviour.Properties SMART_TIMER_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.STONE)

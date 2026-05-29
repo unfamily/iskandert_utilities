@@ -34,7 +34,8 @@ public final class AncientTabletJeiRecipes {
                     groupedStacks(entry.require()),
                     groupedStacks(entry.produce()),
                     entry.mustOrdered(),
-                    entry.destroyIfWrong()));
+                    entry.destroyIfWrong(),
+                    entry.fuelCost()));
         }
         return List.copyOf(out);
     }

@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.item.entropic;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.RelicBalanceFormat;
@@ -16,7 +17,7 @@ public final class EntropicTooltip {
             return;
         }
 
-        tooltip.add(Component.translatable("tooltip.iska_utils.entropic.unbreakable"));
+        appendUnbreakable(tooltip);
         switch (path) {
             case "entropic_helmet" -> {
                 tooltip.add(Component.translatable(
@@ -47,13 +48,27 @@ public final class EntropicTooltip {
         }
     }
 
+    private static void appendUnbreakable(List<Component> tooltip) {
+        tooltip.add(Component.translatable("tooltip.iska_utils.entropic.unbreakable")
+                .withStyle(ChatFormatting.YELLOW));
+    }
+
     private static void appendPaxelLines(List<Component> tooltip) {
+        appendUnbreakable(tooltip);
         tooltip.add(Component.translatable("tooltip.iska_utils.entropic.paxel.combo"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.entropic.unbreakable"));
+        appendPickaxeFortune(tooltip);
         appendAxeStrip(tooltip);
         appendArmorPen(tooltip);
-        appendPickaxeFortune(tooltip);
         appendShovelBrush(tooltip);
+    }
+
+    private static void appendPickaxeFortune(List<Component> tooltip) {
+        if (Config.entropicPickaxeBonusFortuneLevels <= 0) {
+            return;
+        }
+        tooltip.add(Component.translatable(
+                "tooltip.iska_utils.entropic.pickaxe.fortune",
+                RelicBalanceFormat.flatBonus(Config.entropicPickaxeBonusFortuneLevels)));
     }
 
     private static void appendAxeStrip(List<Component> tooltip) {
@@ -68,16 +83,6 @@ public final class EntropicTooltip {
             return;
         }
         tooltip.add(Component.translatable("tooltip.iska_utils.entropic.shovel.brush"));
-    }
-
-    private static void appendPickaxeFortune(List<Component> tooltip) {
-        if (Config.entropicPickaxeBonusFortuneChance <= 0.0D) {
-            return;
-        }
-        tooltip.add(Component.translatable(
-                "tooltip.iska_utils.entropic.pickaxe.fortune",
-                RelicBalanceFormat.percent(Config.entropicPickaxeBonusFortuneChance),
-                String.valueOf(Config.entropicPickaxeBonusFortuneLevels)));
     }
 
     private static void appendArmorPen(List<Component> tooltip) {

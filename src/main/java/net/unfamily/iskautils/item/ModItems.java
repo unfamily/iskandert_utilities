@@ -346,6 +346,9 @@ public class ModItems {
     // Dye Extractor machine block item
     public static final DeferredItem<Item> FACTORY = ITEMS.register("factory",
             () -> new BlockItem(ModBlocks.FACTORY.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> ANCIENT_TABLE = ITEMS.register("ancient_table",
+            () -> new BlockItem(ModBlocks.ANCIENT_TABLE.get(), ITEM_PROPERTIES));
             
     public static final DeferredItem<Item> RUBBER_SAPLING = ITEMS.register("rubber_sapling",
             () -> new BlockItem(ModBlocks.RUBBER_SAPLING.get(), ITEM_PROPERTIES));

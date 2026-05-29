@@ -22,6 +22,9 @@ import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.block.entity.DyeBushEmptyBlockEntity;
+import net.unfamily.iskautils.item.ModItems;
 
 import java.util.Optional;
 
@@ -114,27 +117,50 @@ public final class EntropicInteractions {
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
         BlockState state = level.getBlockState(pos);
-        if (!(state.getBlock() instanceof CropBlock crop)) {
-            return InteractionResult.PASS;
+        if (state.getBlock() instanceof CropBlock crop) {
+            return resetCrop(level, pos, state, crop);
         }
+        if (state.is(ModBlocks.DYE_BUSH_FILLED.get()) || state.is(ModBlocks.DYE_BUSH_EMPTY.get())) {
+            return resetDyeBush(level, pos, state);
+        }
+        return InteractionResult.PASS;
+    }
+
+    private static InteractionResult resetCrop(Level level, BlockPos pos, BlockState state, CropBlock crop) {
         if (Config.entropicHoeRequireMatureCrop && !crop.isMaxAge(state)) {
             return InteractionResult.PASS;
         }
-
         if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
-
-        Player player = context.getPlayer();
-        if (player == null) {
-            return InteractionResult.PASS;
-        }
-
         ItemStack seed = crop.getCloneItemStack(level, pos, crop.getStateForAge(0));
         if (!seed.isEmpty()) {
             Block.popResource(level, pos, seed.copyWithCount(1));
         }
         level.setBlock(pos, crop.getStateForAge(0), 2);
+        level.playSound(null, pos, SoundEvents.HOE_TILL, SoundSource.BLOCKS, 1.0F, 1.0F);
+        return InteractionResult.SUCCESS;
+    }
+
+    private static InteractionResult resetDyeBush(Level level, BlockPos pos, BlockState state) {
+        boolean filled = state.is(ModBlocks.DYE_BUSH_FILLED.get());
+        if (Config.entropicHoeRequireMatureCrop && !filled) {
+            return InteractionResult.PASS;
+        }
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return InteractionResult.PASS;
+        }
+
+        Block.popResource(level, pos, new ItemStack(ModItems.DYE_BUSH_EMPTY.get()));
+        serverLevel.setBlock(pos, ModBlocks.DYE_BUSH_EMPTY.get().defaultBlockState(), Block.UPDATE_ALL);
+        if (serverLevel.getBlockEntity(pos) instanceof DyeBushEmptyBlockEntity blockEntity) {
+            int min = Config.MIN_DYE_BUSH_REFILL_TIME.get();
+            int max = Config.MAX_DYE_BUSH_REFILL_TIME.get();
+            blockEntity.setRefillTime(min + serverLevel.getRandom().nextInt(Math.max(1, max - min)));
+        }
         level.playSound(null, pos, SoundEvents.HOE_TILL, SoundSource.BLOCKS, 1.0F, 1.0F);
         return InteractionResult.SUCCESS;
     }

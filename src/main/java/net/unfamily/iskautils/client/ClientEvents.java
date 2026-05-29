@@ -121,6 +121,14 @@ public class ClientEvents {
     public static void handleAddBillboard(BlockPos pos, int color, int durationTicks) {
         MarkRenderer.getInstance().addBillboardMarker(pos, color, durationTicks);
     }
+
+    public static void handleAddOwnedBillboard(BlockPos owner, BlockPos pos, int color, int durationTicks) {
+        MarkRenderer.getInstance().addBillboardMarker(owner, pos, color, durationTicks);
+    }
+
+    public static void handleClearPreviewForOwner(BlockPos owner) {
+        MarkRenderer.getInstance().clearBillboardMarkersForOwner(owner);
+    }
     
     /**
      * Handles adding a billboard marker with name from the server

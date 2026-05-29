@@ -34,7 +34,8 @@ public class FanMenu extends AbstractContainerMenu {
     private static final int BLOCK_POS_X_INDEX = 9;
     private static final int BLOCK_POS_Y_INDEX = 10;
     private static final int BLOCK_POS_Z_INDEX = 11;
-    private static final int DATA_COUNT = 12;
+    private static final int SHOW_AREA_ENABLED_INDEX = 12;
+    private static final int DATA_COUNT = 13;
     
     // Module slot positions (GUI coordinates)
     private static final int MODULE_SLOTS_X = 7;
@@ -71,6 +72,7 @@ public class FanMenu extends AbstractContainerMenu {
                     case BLOCK_POS_X_INDEX -> blockPos.getX();
                     case BLOCK_POS_Y_INDEX -> blockPos.getY();
                     case BLOCK_POS_Z_INDEX -> blockPos.getZ();
+                    case SHOW_AREA_ENABLED_INDEX -> blockEntity.isShowAreaEnabled() ? 1 : 0;
                     default -> 0;
                 };
             }
@@ -245,5 +247,9 @@ public class FanMenu extends AbstractContainerMenu {
             }
             return new BlockPos(x, y, z);
         }
+    }
+
+    public boolean isShowAreaEnabled() {
+        return containerData.get(SHOW_AREA_ENABLED_INDEX) != 0;
     }
 }

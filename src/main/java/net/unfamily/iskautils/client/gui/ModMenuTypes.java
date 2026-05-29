@@ -62,5 +62,8 @@ public class ModMenuTypes {
 
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<FactoryMenu>> FACTORY_MENU =
         MENUS.register("factory_menu", () -> new MenuType<>(FactoryMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
-    
+
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<AncientTableMenu>> ANCIENT_TABLE_MENU =
+        MENUS.register("ancient_table_menu", () -> new MenuType<>(AncientTableMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+
 } 

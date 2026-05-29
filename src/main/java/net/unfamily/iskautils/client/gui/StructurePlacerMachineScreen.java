@@ -9,9 +9,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.core.BlockPos;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
-// import net.unfamily.iskautils.client.gui.StructurePlacerScreen;
-// import net.neoforged.neoforge.network.PacketDistributor;
-// import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
+import net.unfamily.iskautils.client.MarkRenderer;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -38,6 +38,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     // Button references
     private Button structureSelectButton;  // Top left
     private Button showButton;            // Top right (aligned with title end) - renamed from applyButton
+    private boolean previewButtonShowsHide;
     private Button rotateButton;          // Bottom left
     private Button setInventoryButton;    // Bottom right
     private Button closeButton;           // Close button
@@ -72,6 +73,8 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         
         // Initialize buttons in X layout
         initializeButtons();
+        previewButtonShowsHide = menu.isShowPreview();
+        updatePreviewButtonLabel();
         
         // Close button - top left with ✕ symbol
         closeButton = Button.builder(Component.literal("✕"), 
@@ -97,9 +100,11 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
      * Updates button states and text based on current synced data
      */
     private void updateButtonStates() {
-        // Aggiorniamo solo il testo del pulsante di rotazione
-        // Il pulsante "Show" mantiene il testo fisso
-        
+        if (menu.isShowPreview() != previewButtonShowsHide) {
+            previewButtonShowsHide = menu.isShowPreview();
+            updatePreviewButtonLabel();
+        }
+
         if (this.rotateButton != null) {
             // Update rotate button text to show current rotation
             int rotation = this.menu.getRotation();
@@ -145,7 +150,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         int showButtonX = this.leftPos + titleEndX - buttonWidth;
         this.showButton = Button.builder(
                 Component.translatable("gui.iska_utils.generic.show"),
-                button -> onShowPressed()
+                button -> togglePreview()
         ).bounds(showButtonX, topRowY, buttonWidth, buttonHeight).build();
         this.addRenderableWidget(this.showButton);
         
@@ -218,22 +223,39 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         }
     }
     
-    private void onShowPressed() {
-        // Get the machine position from the menu (synced from server)
-        BlockPos machinePos = this.menu.getSyncedBlockPos();
-        
+    private void togglePreview() {
+        BlockPos machinePos = resolveMachinePos();
+        if (machinePos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        playButtonSound();
+        boolean enabling = !menu.isShowPreview();
+        MarkRenderer.getInstance().clearBillboardMarkersForOwner(machinePos);
+        PacketDistributor.sendToServer(new StructurePlacerMachineTogglePreviewC2SPacket(machinePos, enabling));
+        previewButtonShowsHide = enabling;
+        updatePreviewButtonLabel();
+    }
+
+    private BlockPos resolveMachinePos() {
+        BlockPos machinePos = menu.getSyncedBlockPos();
         if (!machinePos.equals(BlockPos.ZERO)) {
-            // Send show packet to toggle preview mode
-            net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineShowPacket(machinePos);
-        } else {
-            // Try to get position from block entity as fallback
-            if (this.minecraft != null && this.minecraft.level != null) {
-                StructurePlacerMachineBlockEntity blockEntity = this.menu.getBlockEntityFromLevel(this.minecraft.level);
-                if (blockEntity != null) {
-                    BlockPos actualPos = blockEntity.getBlockPos();
-                    net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineShowPacket(actualPos);
-                }
+            return machinePos;
+        }
+        if (minecraft != null && minecraft.level != null) {
+            StructurePlacerMachineBlockEntity blockEntity = menu.getBlockEntityFromLevel(minecraft.level);
+            if (blockEntity != null) {
+                return blockEntity.getBlockPos();
             }
+        }
+        return BlockPos.ZERO;
+    }
+
+    private void updatePreviewButtonLabel() {
+        if (showButton != null) {
+            showButton.setMessage(Component.translatable(
+                    previewButtonShowsHide
+                            ? "gui.iska_utils.generic.hide"
+                            : "gui.iska_utils.generic.show"));
         }
     }
     

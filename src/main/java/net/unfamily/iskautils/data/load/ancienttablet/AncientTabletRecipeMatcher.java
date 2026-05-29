@@ -56,7 +56,7 @@ public final class AncientTabletRecipeMatcher {
         return new MatchOutcome(MatchResult.SUCCESS, used);
     }
 
-    private static MatchOutcome matchUnordered(AncientTabletRecipeEntry recipe, List<AncientTabletContents.SlotView> slots) {
+    public static MatchOutcome matchUnordered(AncientTabletRecipeEntry recipe, List<AncientTabletContents.SlotView> slots) {
         List<AncientTabletRequirement> needed = new ArrayList<>(recipe.require());
         List<Integer> usedIndices = new ArrayList<>();
         boolean[] used = new boolean[slots.size()];

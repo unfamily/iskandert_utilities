@@ -19,7 +19,11 @@ import net.unfamily.iskautils.client.ClientEvents;
 import net.unfamily.iskautils.client.MarkRenderer;
 import net.unfamily.iskautils.network.packet.VectorCharmC2SPacket;
 import net.unfamily.iskautils.network.packet.PortableDislocatorC2SPacket;
+import net.unfamily.iskautils.network.packet.ClearPreviewForOwnerS2CPayload;
+import net.unfamily.iskautils.network.packet.PreviewMarkerS2CPayload;
+import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
 import net.unfamily.iskautils.network.packet.TemporalOverclockerHighlightBlockC2SPacket;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.structure.StructureDefinition;
 import net.unfamily.iskautils.structure.StructureLoader;
 import net.unfamily.iskautils.util.ModUtils;
@@ -193,8 +197,38 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket::handle
         );
-        
-        LOGGER.info("Registered {} networking packets", 8);
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AncientTableRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AncientTableRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AncientTableRedstoneModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            StructurePlacerMachineTogglePreviewC2SPacket.TYPE,
+            StructurePlacerMachineTogglePreviewC2SPacket.STREAM_CODEC,
+            StructurePlacerMachineTogglePreviewC2SPacket::handle
+        );
+
+        registrar.playToClient(
+            PreviewMarkerS2CPayload.TYPE,
+            PreviewMarkerS2CPayload.STREAM_CODEC,
+            PreviewMarkerS2CPayload::handle
+        );
+
+        registrar.playToClient(
+            ClearPreviewForOwnerS2CPayload.TYPE,
+            ClearPreviewForOwnerS2CPayload.STREAM_CODEC,
+            ClearPreviewForOwnerS2CPayload::handle
+        );
+
+        LOGGER.info("Registered preview networking packets for {}", IskaUtils.MOD_ID);
     }
     
     /**
@@ -291,6 +325,60 @@ public class ModMessages {
         }
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
     }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendAncientTableScroll(net.minecraft.core.BlockPos pos, int side, int offset) {
+        var packet = new net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket(pos, side, offset);
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc != null && mc.getSingleplayerServer() != null) {
+                mc.getSingleplayerServer().execute(() -> {
+                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()
+                            ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.AncientTableBlockEntity table) {
+                            if (side == net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket.SIDE_OUTPUT) {
+                                table.setOutputScrollOffset(offset);
+                            } else {
+                                table.setInputScrollOffset(offset);
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendAncientTableRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
+        var packet = new net.unfamily.iskautils.network.packet.AncientTableRedstoneModeC2SPacket(pos, backward);
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc != null && mc.getSingleplayerServer() != null) {
+                mc.getSingleplayerServer().execute(() -> {
+                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()
+                            ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.AncientTableBlockEntity table) {
+                            if (backward) {
+                                table.cycleRedstoneModeBackward();
+                            } else {
+                                table.cycleRedstoneMode();
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+    }
     
     /**
      * Sends a Structure Undo packet to the server
@@ -329,66 +417,48 @@ public class ModMessages {
      * in single player mode, but would use actual packets in multiplayer
      */
     public static void sendAddHighlightPacket(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
-        // In a real implementation, this would send a packet to the client
-        // For now, we'll use a direct call for single player compatibility
-        // This is a simplified approach that works in both single player and dedicated server
         try {
-            // This will be executed on the client side
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 ClientEvents.handleAddHighlight(pos, color, durationTicks);
             });
-        } catch (Exception e) {
-            // Ignore errors when running on dedicated server
+        } catch (Exception ignored) {
         }
     }
-    
-    /**
-     * Sends a packet to add a highlighted block with a name
-     */
+
     public static void sendAddHighlightWithNamePacket(ServerPlayer player, BlockPos pos, int color, int durationTicks, String name) {
-        // In a real implementation, this would send a packet to the client
-        // For now, we'll use a direct call for single player compatibility
         try {
-            // This will be executed on the client side
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 ClientEvents.handleAddHighlightWithName(pos, color, durationTicks, name);
             });
-        } catch (Exception e) {
-            // Ignore errors when running on dedicated server
+        } catch (Exception ignored) {
         }
     }
-    
-    /**
-     * Sends a packet to add a billboard marker
-     * This is a simplified implementation that directly calls the client handler
-     * in single player mode, but would use actual packets in multiplayer
-     */
+
+    /** S2C: footprint preview marker owned by a machine block (toggle only). */
+    public static void sendPreviewMarker(ServerPlayer player, BlockPos builderOrigin, BlockPos pos, int color, int durationTicks) {
+        PacketDistributor.sendToPlayer(player, new PreviewMarkerS2CPayload(builderOrigin, pos, color, durationTicks));
+    }
+
+    /** S2C: clear footprint preview markers for one builder (toggle off only). */
+    public static void clearPreviewForBuilder(ServerPlayer player, BlockPos builderOrigin) {
+        PacketDistributor.sendToPlayer(player, new ClearPreviewForOwnerS2CPayload(builderOrigin));
+    }
+
     public static void sendAddBillboardPacket(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
-        // In a real implementation, this would send a packet to the client
-        // For now, we'll use a direct call for single player compatibility
         try {
-            // This will be executed on the client side
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 ClientEvents.handleAddBillboard(pos, color, durationTicks);
             });
-        } catch (Exception e) {
-            // Ignore errors when running on dedicated server
+        } catch (Exception ignored) {
         }
     }
-    
-    /**
-     * Sends a packet to add a billboard marker with a name
-     */
+
     public static void sendAddBillboardWithNamePacket(ServerPlayer player, BlockPos pos, int color, int durationTicks, String name) {
-        // In a real implementation, this would send a packet to the client
-        // For now, we'll use a direct call for single player compatibility
         try {
-            // This will be executed on the client side
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
                 ClientEvents.handleAddBillboardWithName(pos, color, durationTicks, name);
             });
-        } catch (Exception e) {
-            // Ignore errors when running on dedicated server
+        } catch (Exception ignored) {
         }
     }
     
@@ -520,68 +590,6 @@ public class ModMessages {
         }
     }
     
-    /**
-     * Sends a Structure Placer Machine show packet to toggle preview mode
-     */
-    @OnlyIn(Dist.CLIENT)
-    public static void sendStructurePlacerMachineShowPacket(BlockPos machinePos) {
-        try {
-            // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
-            if (server == null) {
-                LOGGER.error("Server is null - cannot send Structure Placer Machine show packet");
-                return;
-            }
-            
-            // Create and handle the packet on server thread
-            server.execute(() -> {
-                try {
-                    ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player == null) {
-                        LOGGER.error("Player is null while handling Structure Placer Machine show packet");
-                        return;
-                    }
-                    
-                    ServerLevel level = (ServerLevel) player.level();
-                    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
-                    
-                    if (!(blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity)) {
-                        LOGGER.error("BlockEntity at {} is not a StructurePlacerMachineBlockEntity", machinePos);
-                        return;
-                    }
-                    
-                    String selectedStructure = machineEntity.getSelectedStructure();
-                    if (selectedStructure.isEmpty()) {
-                        player.displayClientMessage(net.minecraft.network.chat.Component.literal("§cNo structure selected!"), true);
-                        return;
-                    }
-                    
-                    // Load structure definition
-                    net.unfamily.iskautils.structure.StructureDefinition structure = 
-                        net.unfamily.iskautils.structure.StructureLoader.getStructure(selectedStructure);
-                    if (structure == null) {
-                        player.displayClientMessage(net.minecraft.network.chat.Component.literal("§cStructure not found: " + selectedStructure), true);
-                        return;
-                    }
-                    
-                    // Show preview (always show, don't toggle)
-                    machineEntity.setShowPreview(true);
-                    
-                    // Always show the preview
-                    showStructurePreview(level, machinePos, player, structure, machineEntity.getRotation());
-                    
-                    String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-                    player.displayClientMessage(net.minecraft.network.chat.Component.literal("§bShowing preview: §f" + structureName), true);
-                    
-                } catch (Exception e) {
-                    LOGGER.error("Error executing packet on server thread: {}", e.getMessage());
-                }
-            });
-            
-        } catch (Exception e) {
-            LOGGER.error("Could not send Structure Placer Machine show packet: {}", e.getMessage());
-        }
-    }
     
     /**
      * Sends a Structure Placer Machine Rotate packet to the server
@@ -616,6 +624,9 @@ public class ModMessages {
                                 int currentRotation = machine.getRotation();
                                 int newRotation = (currentRotation + 90) % 360;
                                 machine.setRotation(newRotation);
+                                if (machine.isShowPreview()) {
+                                    sendStructurePlacerMachineFootprint(player, player.serverLevel(), machinePos, machine);
+                                }
                                 
                                 // Get translated direction text
                                 String rotationText = switch (newRotation) {
@@ -823,20 +834,34 @@ public class ModMessages {
     }
     
     /**
-     * Shows structure preview using billboard markers
+     * Sends structure footprint preview markers to the opening player (persistent until toggled off).
      */
-    private static void showStructurePreview(ServerLevel world, BlockPos machinePos, net.minecraft.server.level.ServerPlayer player, StructureDefinition structure, int rotation) {
-        if (structure == null) {
+    public static void sendStructurePlacerMachineFootprint(
+            ServerPlayer player,
+            ServerLevel world,
+            BlockPos machinePos,
+            StructurePlacerMachineBlockEntity machine) {
+        String selectedStructure = machine.getSelectedStructure();
+        if (selectedStructure == null || selectedStructure.isEmpty()) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.literal("§cNo structure selected!"), true);
             return;
         }
+        StructureDefinition structure = StructureLoader.getStructure(selectedStructure);
+        if (structure == null) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.literal("§cStructure not found: " + selectedStructure), true);
+            return;
+        }
+        showStructurePreview(world, machinePos, player, structure, machine.getRotation());
+        String structureName = structure.getName() != null ? structure.getName() : structure.getId();
+        player.displayClientMessage(net.minecraft.network.chat.Component.literal("§bShowing preview: §f" + structureName), true);
+    }
 
-        // First remove previous markers for this machine
-        try {
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                ClientEvents.handleClearHighlights();
-            });
-        } catch (Exception e) {
-            // Ignore client-side errors in single player
+    /**
+     * Shows structure preview using billboard markers owned by the machine block.
+     */
+    private static void showStructurePreview(ServerLevel world, BlockPos machinePos, ServerPlayer player, StructureDefinition structure, int rotation) {
+        if (structure == null) {
+            return;
         }
 
         String[][][][] pattern = structure.getPattern();
@@ -848,7 +873,7 @@ public class ModMessages {
         BlockPos center = structure.findCenter();
         if (center == null) center = new BlockPos(0, 0, 0);
 
-        int duration = 300; // 15 seconds (300 ticks)
+        int duration = 0; // no expiry until preview is toggled off
 
         // Iterate through structure pattern [Y][X][Z][characters]
         for (int y = 0; y < pattern.length; y++) {
@@ -893,11 +918,7 @@ public class ModMessages {
                             // Use colors for markers: same colors as items
                             int markerColor = hasConflict ? 0x80FF4444 : 0x804444FF; // Red and blue like items
                             
-                            try {
-                                sendAddBillboardPacket(player, finalPos, markerColor, duration);
-                            } catch (Exception e) {
-                                // Ignore marker creation errors
-                            }
+                            sendPreviewMarker(player, machinePos, finalPos, markerColor, duration);
                         }
                     }
                 }
@@ -2237,140 +2258,6 @@ public class ModMessages {
             });
         } catch (Exception e) {
             LOGGER.error("Could not send Fan push type packet: {}", e.getMessage(), e);
-        }
-    }
-    
-    /**
-     * Sends Fan Show Area packet to the server
-     */
-    @OnlyIn(Dist.CLIENT)
-    public static void sendFanShowAreaPacket(BlockPos pos) {
-        try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-            if (server == null) return;
-            
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
-                            // Get fan facing direction
-                            var state = level.getBlockState(pos);
-                            if (!(state.getBlock() instanceof net.unfamily.iskautils.block.FanBlock)) return;
-                            var facing = state.getValue(net.unfamily.iskautils.block.FanBlock.FACING);
-                            
-                            // Check if ghost module is installed
-                            boolean hasGhostModule = fan.hasGhostModule();
-                            
-                            // Calculate the push area AABB
-                            var aabb = net.unfamily.iskautils.block.entity.FanBlockEntity.calculatePushArea(pos, facing, fan);
-                            
-                            // Get bounds
-                            int minX = (int) Math.floor(aabb.minX);
-                            int minY = (int) Math.floor(aabb.minY);
-                            int minZ = (int) Math.floor(aabb.minZ);
-                            int maxX = (int) Math.floor(aabb.maxX);
-                            int maxY = (int) Math.floor(aabb.maxY);
-                            int maxZ = (int) Math.floor(aabb.maxZ);
-                            
-                            // Purple color for border markers when air (ARGB: 0x80FF00FF = 50% transparent purple)
-                            int purpleColor = 0x80FF00FF;
-                            // Red color for border markers when block (ARGB: 0x80FF0000 = 50% transparent red, same transparency)
-                            int redColor = 0x80FF0000;
-                            int durationTicks = 200; // 10 seconds
-                            
-                            // Add billboard markers only at the edges of the area (not inside faces)
-                            // Purple if air, red if block (same transparency)
-                            
-                            // Top and bottom faces - only edges (x or z at boundary)
-                            for (int x = minX; x < maxX; x++) {
-                                for (int z = minZ; z < maxZ; z++) {
-                                    // Only place marker if on edge (x or z at boundary)
-                                    boolean isOnEdge = (x == minX || x == maxX - 1 || z == minZ || z == maxZ - 1);
-                                    if (isOnEdge) {
-                                        // Top face
-                                        net.minecraft.core.BlockPos topPos = new net.minecraft.core.BlockPos(x, maxY - 1, z);
-                                        boolean topIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, topPos, hasGhostModule);
-                                        int topColor = topIsObstacle ? redColor : purpleColor;
-                                        sendAddBillboardPacket(player, topPos, topColor, durationTicks);
-                                        
-                                        // Bottom face
-                                        net.minecraft.core.BlockPos bottomPos = new net.minecraft.core.BlockPos(x, minY, z);
-                                        boolean bottomIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, bottomPos, hasGhostModule);
-                                        int bottomColor = bottomIsObstacle ? redColor : purpleColor;
-                                        sendAddBillboardPacket(player, bottomPos, bottomColor, durationTicks);
-                                    }
-                                }
-                            }
-                            
-                            // Front and back faces (Z faces) - only edges (x or y at boundary)
-                            for (int x = minX; x < maxX; x++) {
-                                for (int y = minY; y < maxY; y++) {
-                                    // Only place marker if on edge (x or y at boundary)
-                                    boolean isOnEdge = (x == minX || x == maxX - 1 || y == minY || y == maxY - 1);
-                                    if (isOnEdge) {
-                                        // Min Z face
-                                        net.minecraft.core.BlockPos minZPos = new net.minecraft.core.BlockPos(x, y, minZ);
-                                        boolean minZIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, minZPos, hasGhostModule);
-                                        int minZColor = minZIsObstacle ? redColor : purpleColor;
-                                        sendAddBillboardPacket(player, minZPos, minZColor, durationTicks);
-                                        
-                                        // Max Z face
-                                        net.minecraft.core.BlockPos maxZPos = new net.minecraft.core.BlockPos(x, y, maxZ - 1);
-                                        boolean maxZIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, maxZPos, hasGhostModule);
-                                        int maxZColor = maxZIsObstacle ? redColor : purpleColor;
-                                        sendAddBillboardPacket(player, maxZPos, maxZColor, durationTicks);
-                                    }
-                                }
-                            }
-                            
-                            // Left and right faces (X faces) - only edges (z or y at boundary)
-                            for (int z = minZ; z < maxZ; z++) {
-                                for (int y = minY; y < maxY; y++) {
-                                    // Only place marker if on edge (z or y at boundary)
-                                    boolean isOnEdge = (z == minZ || z == maxZ - 1 || y == minY || y == maxY - 1);
-                                    if (isOnEdge) {
-                                        // Min X face
-                                        net.minecraft.core.BlockPos minXPos = new net.minecraft.core.BlockPos(minX, y, z);
-                                        boolean minXIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, minXPos, hasGhostModule);
-                                        int minXColor = minXIsObstacle ? redColor : purpleColor;
-                                        sendAddBillboardPacket(player, minXPos, minXColor, durationTicks);
-                                        
-                                        // Max X face
-                                        net.minecraft.core.BlockPos maxXPos = new net.minecraft.core.BlockPos(maxX - 1, y, z);
-                                        boolean maxXIsObstacle = net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, maxXPos, hasGhostModule);
-                                        int maxXColor = maxXIsObstacle ? redColor : purpleColor;
-                                        sendAddBillboardPacket(player, maxXPos, maxXColor, durationTicks);
-                                    }
-                                }
-                            }
-                            
-                            // Add red markers inside the area for blocks (obstacles)
-                            // Only highlight blocks that actually block airflow (considering ghost module)
-                            for (int x = minX; x < maxX; x++) {
-                                for (int y = minY; y < maxY; y++) {
-                                    for (int z = minZ; z < maxZ; z++) {
-                                        net.minecraft.core.BlockPos blockPos = new net.minecraft.core.BlockPos(x, y, z);
-                                        // Only place marker if block is an obstacle (considering ghost module)
-                                        if (net.unfamily.iskautils.block.entity.FanBlockEntity.isBlockObstacle(level, blockPos, hasGhostModule)) {
-                                            sendAddBillboardPacket(player, blockPos, redColor, durationTicks);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Fan show area packet: {}", e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.error("Could not send Fan show area packet: {}", e.getMessage(), e);
         }
     }
     

@@ -35,6 +35,7 @@ public class MarkRenderer {
     private static final MarkRenderer INSTANCE = new MarkRenderer();
     private final Map<BlockPos, MarkBlockData> highlightedBlocks = new ConcurrentHashMap<>();
     private final Map<BlockPos, MarkBlockData> billboardMarkers = new ConcurrentHashMap<>();
+    private final Map<BlockPos, Map<BlockPos, MarkBlockData>> billboardMarkersByOwner = new ConcurrentHashMap<>();
     
     private MarkRenderer() {}
     
@@ -84,8 +85,7 @@ public class MarkRenderer {
                 }
             });
         } else {
-            long currentTime = mc.level.getGameTime();
-            billboardMarkers.put(pos, new MarkBlockData(color, currentTime + durationTicks, true));
+            billboardMarkers.put(pos, new MarkBlockData(color, expirationTime(mc, durationTicks), true));
         }
     }
     
@@ -97,8 +97,59 @@ public class MarkRenderer {
      * @param text Optional text to display when looking at the marker
      */
     public void addBillboardMarker(BlockPos pos, int color, int durationTicks, String text) {
-        // Add the marker to the map with text
-        billboardMarkers.put(pos, new MarkBlockData(color, Minecraft.getInstance().level.getGameTime() + durationTicks, true, text));
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        long expire = expirationTime(mc, durationTicks);
+        billboardMarkers.put(pos, new MarkBlockData(color, expire, true, text));
+    }
+
+    public void clearBillboardMarkersForOwner(BlockPos owner) {
+        if (owner != null) {
+            billboardMarkersByOwner.remove(owner.immutable());
+        }
+    }
+
+    public void addBillboardMarker(BlockPos owner, BlockPos pos, int color, int durationTicks) {
+        if (owner == null || owner.equals(BlockPos.ZERO)) {
+            addBillboardMarker(pos, color, durationTicks);
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        Runnable add = () -> {
+            if (mc.level == null) {
+                return;
+            }
+            long expire = expirationTime(mc, durationTicks);
+            billboardMarkersByOwner
+                    .computeIfAbsent(owner.immutable(), k -> new ConcurrentHashMap<>())
+                    .put(pos.immutable(), new MarkBlockData(color, expire, true));
+        };
+        if (mc.level == null) {
+            mc.execute(add);
+        } else {
+            add.run();
+        }
+    }
+
+    public void addBillboardMarker(BlockPos owner, BlockPos pos, int color, int durationTicks, String text) {
+        if (owner == null || owner.equals(BlockPos.ZERO)) {
+            addBillboardMarker(pos, color, durationTicks, text);
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        long expire = expirationTime(mc, durationTicks);
+        billboardMarkersByOwner
+                .computeIfAbsent(owner.immutable(), k -> new ConcurrentHashMap<>())
+                .put(pos.immutable(), new MarkBlockData(color, expire, true, text));
+    }
+
+    private static long expirationTime(Minecraft mc, int durationTicks) {
+        return durationTicks > 0 ? mc.level.getGameTime() + durationTicks : Long.MAX_VALUE;
     }
     
     /**
@@ -121,6 +172,7 @@ public class MarkRenderer {
     public void clearHighlightedBlocks() {
         highlightedBlocks.clear();
         billboardMarkers.clear();
+        billboardMarkersByOwner.clear();
     }
     
     /**
@@ -313,7 +365,7 @@ public class MarkRenderer {
      * Render all highlighted blocks and markers
      */
     public void render(PoseStack poseStack, float partialTick) {
-        if (highlightedBlocks.isEmpty() && billboardMarkers.isEmpty()) {
+        if (highlightedBlocks.isEmpty() && billboardMarkers.isEmpty() && billboardMarkersByOwner.isEmpty()) {
             return;
         }
         
@@ -329,8 +381,11 @@ public class MarkRenderer {
         
         // Remove expired billboard markers - usando removeIf che è thread-safe su ConcurrentHashMap
         billboardMarkers.entrySet().removeIf(entry -> entry.getValue().expirationTime <= currentTime);
+        billboardMarkersByOwner.values().forEach(map ->
+                map.entrySet().removeIf(entry -> entry.getValue().expirationTime <= currentTime));
+        billboardMarkersByOwner.entrySet().removeIf(e -> e.getValue().isEmpty());
         
-        if (highlightedBlocks.isEmpty() && billboardMarkers.isEmpty()) {
+        if (highlightedBlocks.isEmpty() && billboardMarkers.isEmpty() && billboardMarkersByOwner.isEmpty()) {
             return;
         }
         
@@ -349,6 +404,36 @@ public class MarkRenderer {
         if (!billboardMarkers.isEmpty()) {
             renderBillboardMarkers(poseStack, mc, cameraPos, currentTime);
         }
+
+        if (!billboardMarkersByOwner.isEmpty()) {
+            renderOwnedBillboardMarkers(poseStack, mc, cameraPos);
+        }
+    }
+
+    private void renderOwnedBillboardMarkers(PoseStack poseStack, Minecraft mc, Vec3 cameraPos) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        Matrix4f matrix = poseStack.last().pose();
+        boolean hasVertices = false;
+
+        for (Map<BlockPos, MarkBlockData> worldMarkers : billboardMarkersByOwner.values()) {
+            for (Map.Entry<BlockPos, MarkBlockData> entry : worldMarkers.entrySet()) {
+                drawSmallCube(bufferBuilder, matrix, entry.getKey(), cameraPos, entry.getValue().color);
+                hasVertices = true;
+            }
+        }
+
+        if (hasVertices) {
+            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        }
+
+        RenderSystem.enableDepthTest();
+        RenderSystem.disableBlend();
     }
     
     /**

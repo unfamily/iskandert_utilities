@@ -62,6 +62,9 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(
                 new ItemStack(ModItems.ANCIENT_TABLET.get()),
                 AncientTabletRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(
+                new ItemStack(ModItems.ANCIENT_TABLE.get()),
+                AncientTabletRecipeCategory.RECIPE_TYPE);
     }
 
     @Override
