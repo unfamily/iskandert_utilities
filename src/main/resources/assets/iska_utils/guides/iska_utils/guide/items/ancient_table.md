@@ -6,7 +6,6 @@ navigation:
   position: 12
 item_ids:
   - iska_utils:ancient_table
-  - iska_utils:drop_of_entropy
 categories:
   - Entropy materials
 ---

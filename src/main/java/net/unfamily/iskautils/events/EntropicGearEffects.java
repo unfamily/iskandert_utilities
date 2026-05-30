@@ -29,9 +29,10 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskautils.util.ArtifactEquipStages;
+import net.unfamily.iskautils.util.AttributeSyncGrace;
 import net.unfamily.iskautils.util.DamageArmorBypassUtil;
 import net.unfamily.iskautils.util.EntropicGearUtil;
-import net.unfamily.iskautils.util.RelicEquipStages;
 
 @EventBusSubscriber
 public final class EntropicGearEffects {
@@ -131,7 +132,7 @@ public final class EntropicGearEffects {
         if (Config.sharpenedBoneArmorIgnoreChance <= 0.0D) {
             return;
         }
-        if (!StageRegistry.playerHasStage(player, RelicEquipStages.SHARPENED_BONE)) {
+        if (!StageRegistry.playerHasStage(player, ArtifactEquipStages.SHARPENED_BONE)) {
             return;
         }
         if (player.getRandom().nextDouble() >= Config.sharpenedBoneArmorIgnoreChance) {
@@ -179,8 +180,10 @@ public final class EntropicGearEffects {
             return;
         }
         if (!EntropicGearUtil.isWearing(player, ModItems.ENTROPIC_HELMET.get())) {
-            removeModifier(maxHealth, HELMET_HP_ID);
-            clampHealth(player);
+            if (!AttributeSyncGrace.shouldDeferRemoval(player)) {
+                removeModifier(maxHealth, HELMET_HP_ID);
+                clampHealth(player);
+            }
             return;
         }
 

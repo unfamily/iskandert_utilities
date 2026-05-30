@@ -3,7 +3,7 @@ package net.unfamily.iskautils.item.entropic;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.util.RelicBalanceFormat;
+import net.unfamily.iskautils.util.ArtifactBalanceFormat;
 
 import java.util.List;
 
@@ -22,19 +22,19 @@ public final class EntropicTooltip {
             case "entropic_helmet" -> {
                 tooltip.add(Component.translatable(
                         "tooltip.iska_utils.entropic.helmet.hp",
-                        RelicBalanceFormat.flatBonus(Config.entropicHelmetBaseHp)));
+                        ArtifactBalanceFormat.flatBonus(Config.entropicHelmetBaseHp)));
                 tooltip.add(Component.translatable(
                         "tooltip.iska_utils.entropic.helmet.hp_per_piece",
-                        RelicBalanceFormat.flatBonus(Config.entropicHelmetHpPerEntropicPiece)));
+                        ArtifactBalanceFormat.flatBonus(Config.entropicHelmetHpPerEntropicPiece)));
             }
             case "entropic_chestplate" -> tooltip.add(Component.translatable(
                     "tooltip.iska_utils.entropic.chestplate.toughness",
-                    RelicBalanceFormat.flatBonus(Config.entropicChestplateToughnessBonusPerStep),
-                    RelicBalanceFormat.flatBonus(Config.entropicChestplateMissingHpPerStep)));
+                    ArtifactBalanceFormat.flatBonus(Config.entropicChestplateToughnessBonusPerStep),
+                    ArtifactBalanceFormat.flatBonus(Config.entropicChestplateMissingHpPerStep)));
             case "entropic_leggings" -> tooltip.add(Component.translatable(
                     "tooltip.iska_utils.entropic.leggings.armor",
-                    RelicBalanceFormat.flatBonus(Config.entropicLeggingsArmorBonusPerStep),
-                    RelicBalanceFormat.flatBonus(Config.entropicLeggingsMissingHpPerStep)));
+                    ArtifactBalanceFormat.flatBonus(Config.entropicLeggingsArmorBonusPerStep),
+                    ArtifactBalanceFormat.flatBonus(Config.entropicLeggingsMissingHpPerStep)));
             case "entropic_boots" -> tooltip.add(Component.translatable("tooltip.iska_utils.entropic.boots.fall"));
             case "entropic_axe" -> {
                 appendAxeStrip(tooltip);
@@ -68,7 +68,7 @@ public final class EntropicTooltip {
         }
         tooltip.add(Component.translatable(
                 "tooltip.iska_utils.entropic.pickaxe.fortune",
-                RelicBalanceFormat.flatBonus(Config.entropicPickaxeBonusFortuneLevels)));
+                ArtifactBalanceFormat.flatBonus(Config.entropicPickaxeBonusFortuneLevels)));
     }
 
     private static void appendAxeStrip(List<Component> tooltip) {
@@ -91,7 +91,7 @@ public final class EntropicTooltip {
         }
         tooltip.add(Component.translatable(
                 "tooltip.iska_utils.entropic.armor_pen",
-                RelicBalanceFormat.percent(Config.entropicArmorPenChance),
-                RelicBalanceFormat.percent(Config.entropicArmorPenIgnoreFraction)));
+                ArtifactBalanceFormat.percent(Config.entropicArmorPenChance),
+                ArtifactBalanceFormat.percent(Config.entropicArmorPenIgnoreFraction)));
     }
 }

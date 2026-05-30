@@ -15,7 +15,7 @@ categories:
 
 ## What it does
 
-A relic of stubborn builders. While worn in **Curios**, it adds **extra armor**.
+An artifact from stubborn builders. While worn in **Curios**, it adds **extra armor**.
 
 ## How to obtain
 

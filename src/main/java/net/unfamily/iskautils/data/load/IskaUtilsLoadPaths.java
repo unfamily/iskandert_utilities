@@ -32,6 +32,7 @@ public final class IskaUtilsLoadPaths {
     public static final String TYPE_STRUCTURE = "iska_utils:structure";
     public static final String TYPE_SUSPICIOUS_DELIVERY = "iska_utils:suspicious_delivery";
     public static final String TYPE_ANCIENT_TAB = "iska_utils:ancient_tab";
+    public static final String TYPE_ARCANE_DICTIONARY = "iska_utils:arcane_dictionary";
 
     public static final String COMMAND_ITEMS = "iska_utils_command_items";
     public static final String PLATES = "iska_utils_plates";
@@ -44,6 +45,8 @@ public final class IskaUtilsLoadPaths {
     public static final String STRUCTURE_DEFINITIONS = "iska_utils_structure_definitions";
     /** Suspicious Delivery loot table JSON ({@code iska_utils:suspicious_delivery}). */
     public static final String SUSPICIOUS_DELIVERY = "iska_utils_suspicious_delivery";
+    /** Arcane Dictionary trait pool ({@code iska_utils:arcane_dictionary}). */
+    public static final String ARCANE_DICTIONARY = "iska_utils_arcane_dictionary";
 
     private static final Map<String, Set<String>> TYPES_BY_SUBDIR = Map.of(
             COMMAND_ITEMS, Set.of(TYPE_COMMAND_ITEM),
@@ -54,7 +57,8 @@ public final class IskaUtilsLoadPaths {
             STAGE_ACTIONS, Set.of(TYPE_STAGE_ACTIONS),
             STAGE_ITEMS, Set.of(TYPE_STAGE_ITEM),
             STRUCTURE_DEFINITIONS, Set.of(TYPE_STRUCTURE),
-            SUSPICIOUS_DELIVERY, Set.of(TYPE_SUSPICIOUS_DELIVERY)
+            SUSPICIOUS_DELIVERY, Set.of(TYPE_SUSPICIOUS_DELIVERY),
+            ARCANE_DICTIONARY, Set.of(TYPE_ARCANE_DICTIONARY)
     );
 
     public static String loadSubdirPrefix(String subdir) {
@@ -64,6 +68,26 @@ public final class IskaUtilsLoadPaths {
     public static boolean isJsonUnderLoadSubdir(ResourceLocation id, String subdir) {
         String p = id.getPath();
         return p.startsWith(loadSubdirPrefix(subdir)) && p.endsWith(".json");
+    }
+
+    /** Any JSON under {@code load/} (subfolders or flat {@code load/*.json}). */
+    public static boolean isJsonUnderLoadTree(ResourceLocation id) {
+        String p = id.getPath();
+        if (!p.startsWith(LOAD_FOLDER + "/") || !p.endsWith(".json")) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean jsonMatchesType(JsonElement element, String jsonType) {
+        if (element == null || !element.isJsonObject()) {
+            return false;
+        }
+        JsonObject obj = element.getAsJsonObject();
+        if (!obj.has("type") || !obj.get("type").isJsonPrimitive()) {
+            return false;
+        }
+        return jsonType.equals(obj.get("type").getAsString());
     }
 
     /** {@code data/<namespace>/load/<file>.json} (not under a load subfolder). */

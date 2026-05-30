@@ -15,6 +15,7 @@
     "iska_utils:old_brick",
     "iska_utils:the_roots",
     "iska_utils:mining_equitizer",
-    "iska_utils:cursed_candle"
+    "iska_utils:cursed_candle",
+    "iska_utils:arcane_dictionary"
   ]
 }

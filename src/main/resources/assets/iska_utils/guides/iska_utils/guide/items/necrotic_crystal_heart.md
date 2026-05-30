@@ -15,10 +15,10 @@ categories:
 
 ## What it does
 
-A **cursed** crystal relic. Worn in **Curios**, it can stop a hit that would **kill** you, but each time it does your **maximum health** shrinks a little.
+A **cursed** crystal artifact. Worn in **Curios**, it can stop a hit that would **kill** you, but each time it does your **maximum health** shrinks a little.
 
 When your health is already too low, it can no longer save you. The penalty **resets after death** or after you **sleep**.
 
 ## How to obtain
 
-From opening **Suspicious Delivery** (see that entry for how to get the parcel).
+From opening **Suspicious Delivery** (see that hub for how to obtain one).

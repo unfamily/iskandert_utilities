@@ -9,7 +9,7 @@ categories:
 ---
 # Combat and travel
 
-Braziers, climbing gauntlet, portable dislocator, and related gear. For **Necrotic Crystal Heart** and delivery relics see **Suspicious Delivery**.
+Braziers, climbing gauntlet, portable dislocator, and related gear. For **Necrotic Crystal Heart** and delivery artifacts see **Suspicious Delivery**.
 
 
 <SubPages icons={true} alphabetical={true} />

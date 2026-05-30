@@ -20,7 +20,7 @@ import java.util.Objects;
 
 public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
     private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/factory.png");
+            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/factory.png");
 
     private static final int GUI_WIDTH = 176;
     private static final int GUI_HEIGHT = 190;

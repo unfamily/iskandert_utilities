@@ -1,0 +1,116 @@
+{
+  "type": "iska_utils:arcane_dictionary",
+  "entries": [
+    {
+      "weight": 25,
+      "luck": -10,
+      "enchant": "iska_utils:glass_skin",
+      "ent_cha": 3,
+      "color": "FF8844"
+    },
+    {
+      "weight": 40,
+      "luck": 15,
+      "enchant": "iska_utils:lucky",
+      "cat": ["#c:gems/lapis:12"],
+      "ent_cha": 0,
+      "only_curio": false,
+      "color": "55FF55"
+    },
+    {
+      "weight": 40,
+      "luck": -15,
+      "enchant": "iska_utils:unlucky",
+      "cat": ["minecraft:poisonous_potato:12"],
+      "ent_cha": 0,
+      "color": "FF3333"
+    },
+    {
+      "weight": 25,
+      "luck": 0,
+      "enchant": "iska_utils:stone_skin",
+      "ent_cha": 5,
+      "color": "55AAFF"
+    },
+    {
+      "weight": 12,
+      "luck": 0,
+      "enchant": "iska_utils:entropy_shell",
+      "ent_cha": 5,
+      "color": "FFAA44"
+    },
+    {
+      "weight": 40,
+      "luck": 8,
+      "enchant": "iska_utils:agility",
+      "ent_cha": 2,
+      "color": "66FF88"
+    },
+    {
+      "weight": 25,
+      "luck": -5,
+      "enchant": "iska_utils:blood_ledger",
+      "cat": ["minecraft:golden_apple:10"],
+      "ent_cha": 6,
+      "color": "FFAA00"
+    },
+    {
+      "weight": 25,
+      "luck": -10,
+      "enchant": "iska_utils:void_thorns",
+      "ent_cha": 4,
+      "color": "FF9955"
+    },
+    {
+      "weight": 12,
+      "luck": 10,
+      "enchant": "iska_utils:execution_line",
+      "ent_cha": 5,
+      "color": "88FF55"
+    },
+    {
+      "weight": 12,
+      "luck": 12,
+      "enchant": "iska_utils:entropy_blade",
+      "ent_cha": 7,
+      "color": "55FFCC"
+    },
+    {
+      "weight": 12,
+      "luck": -15,
+      "enchant": "iska_utils:martyr_script",
+      "ent_cha": 7,
+      "color": "DD2222"
+    },
+    {
+      "weight": 25,
+      "luck": 12,
+      "enchant": "iska_utils:recall_of_knowledge",
+      "cat": ["minecraft:experience_bottle:10"],
+      "ent_cha": 3,
+      "color": "55FFFF"
+    },
+    {
+      "weight": 12,
+      "luck": 15,
+      "enchant": "iska_utils:phase_mismatch",
+      "cat": ["#c:ender_pearls:4", "minecraft:phantom_membrane:8"],
+      "ent_cha": 8,
+      "color": "77DDFF"
+    },
+    {
+      "weight": 6,
+      "luck": 15,
+      "enchant": "iska_utils:shifting_power",
+      "ent_cha": 0,
+      "color": "BB88FF"
+    },
+    {
+      "weight": 10,
+      "luck": -20,
+      "enchant": "iska_utils:entropy_overflow",
+      "ent_cha": 0,
+      "color": "AA1111"
+    }
+  ]
+}

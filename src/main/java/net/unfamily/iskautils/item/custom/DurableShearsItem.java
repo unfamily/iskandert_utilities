@@ -8,7 +8,7 @@ import net.minecraft.world.item.ShearsItem;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.unfamily.iskautils.util.RelicTooltipUtil;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 
 import java.util.List;
 
@@ -36,6 +36,6 @@ public class DurableShearsItem extends ShearsItem {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        RelicTooltipUtil.appendDescLines(tooltip, "durable_shears");
+        ArtifactTooltipUtil.appendDescLines(tooltip, "durable_shears", 0);
     }
 }

@@ -48,13 +48,14 @@ import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.AncientTabletItem;
 import net.unfamily.iskautils.item.custom.UnstableEntropyCatalystItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
-import net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem;
-import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
-import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
-import net.unfamily.iskautils.item.custom.relic.IceDiamondItem;
-import net.unfamily.iskautils.item.custom.relic.OldBrickItem;
-import net.unfamily.iskautils.item.custom.relic.SharpenedBoneItem;
-import net.unfamily.iskautils.item.custom.relic.TheRootsItem;
+import net.unfamily.iskautils.item.custom.artifact.ArcaneDictionaryItem;
+import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
+import net.unfamily.iskautils.item.custom.artifact.CursedCandleItem;
+import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
+import net.unfamily.iskautils.item.custom.artifact.IceDiamondItem;
+import net.unfamily.iskautils.item.custom.artifact.OldBrickItem;
+import net.unfamily.iskautils.item.custom.artifact.SharpenedBoneItem;
+import net.unfamily.iskautils.item.custom.artifact.TheRootsItem;
 
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
@@ -280,18 +281,20 @@ public class ModItems {
     public static final DeferredItem<Item> THE_ROOTS = ITEMS.register("the_roots",
             () -> new TheRootsItem(new Item.Properties()));
 
-    // Cursed relic set
+    // Cursed artifact set
     public static final DeferredItem<Item> TOTEM_OF_PAIN = ITEMS.register("totem_of_pain",
-            () -> new CursedRelicItem(new Item.Properties()));
+            () -> new CursedArtifactItem(new Item.Properties()));
     public static final DeferredItem<Item> CURSED_CANDLE = ITEMS.register("cursed_candle",
             () -> new CursedCandleItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> BUSTED_CROWN = ITEMS.register("busted_crown",
-            () -> new CursedRelicItem(new Item.Properties()));
+            () -> new CursedArtifactItem(new Item.Properties()));
     public static final DeferredItem<Item> RITUAL_GAUNTLET = ITEMS.register("ritual_gauntlet",
-            () -> new CursedRelicItem(new Item.Properties()));
+            () -> new CursedArtifactItem(new Item.Properties()));
     public static final DeferredItem<Item> THE_DECEPTION = ITEMS.register("the_deception",
-            () -> new net.unfamily.iskautils.item.custom.relic.TheDeceptionItem(
+            () -> new net.unfamily.iskautils.item.custom.artifact.TheDeceptionItem(
                     ModBlocks.THE_DECEPTION.get(), new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<Item> ARCANE_DICTIONARY = ITEMS.register("arcane_dictionary",
+            () -> new ArcaneDictionaryItem(new Item.Properties()));
 
     // Rubber chunk item created from rubber
     public static final DeferredItem<Item> RUBBER_CHUNK = ITEMS.register("rubber_chunk",

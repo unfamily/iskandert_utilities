@@ -15,6 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.BundleContents;
 import net.unfamily.iskautils.item.component.AncientTabletContents;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 import java.util.List;
 
 public class AncientTabletItem extends BundleItem {
@@ -46,7 +47,11 @@ public class AncientTabletItem extends BundleItem {
                 && c.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t
                 && "item.minecraft.bundle.fullness".equals(t.getKey()));
         int n = AncientTabletContents.occupiedCount(stack);
-        tooltip.add(Component.translatable("tooltip.iska_utils.ancient_tablet.contents", n, AncientTabletContents.MAX_SLOTS));
+        ArtifactTooltipUtil.addLoreLine(tooltip::add, "tooltip.iska_utils.ancient_tablet.desc0");
+        ArtifactTooltipUtil.addLoreLine(tooltip::add, "tooltip.iska_utils.ancient_tablet.desc1");
+        ArtifactTooltipUtil.addTechLine(tooltip::add,
+                "tooltip.iska_utils.ancient_tablet.contents", n, AncientTabletContents.MAX_SLOTS);
+        ArtifactTooltipUtil.appendDescLinesFrom(tooltip::add, "ancient_tablet", 2, 0, -1);
     }
 
     @Override

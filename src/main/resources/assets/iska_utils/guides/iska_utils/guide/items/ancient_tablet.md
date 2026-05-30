@@ -32,7 +32,7 @@ Hold the tablet in your **main hand**. It stores up to **64** ingredients (one i
 
 ## Outputs
 
-The tablet forges <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal** and <ItemImage id="iska_utils:unstable_entropy_catalyst" /> **Unstable Entropy Catalyst**. Both need <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** — see that page for how to get drops (parcels and recycling).
+The tablet forges <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal** and <ItemImage id="iska_utils:unstable_entropy_catalyst" /> **Unstable Entropy Catalyst**. Both need <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** — see that page for how to get drops (**Suspicious Delivery** and recycling).
 
 ## Obtaining the tablet
 

@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.data.BurningBrazierData;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.stage.StageRegistry;
 import net.neoforged.api.distmarker.Dist;
@@ -184,10 +185,10 @@ public class BurningBrazierItem extends Item {
     }
 
     public static void appendFlamesTooltip(java.util.function.Consumer<Component> tooltip, String desc0Key, String desc2Key) {
-        tooltip.accept(Component.translatable(desc0Key));
+        tooltip.accept(ArtifactTooltipUtil.loreLine(desc0Key));
         String keybindName = KeyBindings.BURNING_BRAZIER_TOGGLE_KEY.getTranslatedKeyMessage().getString();
-        tooltip.accept(Component.translatable("tooltip.iska_utils.burning_flames.desc1", keybindName));
-        tooltip.accept(Component.translatable(desc2Key));
+        tooltip.accept(ArtifactTooltipUtil.techLine("tooltip.iska_utils.burning_flames.desc1", keybindName));
+        tooltip.accept(ArtifactTooltipUtil.techLine(desc2Key));
     }
 
     @Override

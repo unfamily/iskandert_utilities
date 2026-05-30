@@ -8,10 +8,11 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskautils.util.ArtifactTickIntervals;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
-import net.unfamily.iskautils.util.RelicActivationUtil;
-import net.unfamily.iskautils.util.RelicEquipStages;
+import net.unfamily.iskautils.util.ArtifactActivationUtil;
+import net.unfamily.iskautils.util.ArtifactEquipStages;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -33,7 +34,11 @@ public final class CurioEquipStageSync {
             return;
         }
 
-        for (String stageId : RelicEquipStages.allStages()) {
+        if (!ArtifactTickIntervals.isDue(sp.level().getGameTime(), ArtifactTickIntervals.FAST_TICKS)) {
+            return;
+        }
+
+        for (String stageId : ArtifactEquipStages.allStages()) {
             StageRegistry.removePlayerStage(sp, stageId, true);
         }
 
@@ -52,14 +57,14 @@ public final class CurioEquipStageSync {
         if (ModUtils.isStackInVanillaPlayerInventory(player, stack)) {
             return;
         }
-        if (RelicActivationUtil.isStackInHands(player, stack)) {
+        if (ArtifactActivationUtil.isStackInHands(player, stack)) {
             return;
         }
 
         Item item = stack.getItem();
-        String stageId = RelicEquipStages.stageForItem(item);
+        String stageId = ArtifactEquipStages.stageForItem(item);
         if (stageId == null) {
-            stageId = RelicEquipStages.stageForCursedRelic(item);
+            stageId = ArtifactEquipStages.stageForCursedArtifact(item);
         }
         if (stageId == null || applied.contains(stageId)) {
             return;

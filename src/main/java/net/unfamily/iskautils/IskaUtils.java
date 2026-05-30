@@ -180,6 +180,9 @@ public class IskaUtils {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("IskaUtils common setup");
+
+        net.unfamily.iskautils.arcane.ArcaneDictionaryEffectsInit.registerBuiltins();
+        net.unfamily.iskautils.arcane.ArcaneDictionaryLoader.loadAllBootstrap();
         
         // Register network messages
         ModMessages.register();
@@ -302,7 +305,7 @@ public class IskaUtils {
                     ModItems.CHOSEN_CHEESE.get(),
                     ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "chosen_cheese_full"),
                     (stack, level, entity, seed) -> {
-                        int y = net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem.getLevel(stack);
+                        int y = net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem.getLevel(stack);
                         int x = Config.chosenCheeseMax;
                         return (y >= x) ? 1.0F : 0.0F;
                     }
@@ -312,7 +315,7 @@ public class IskaUtils {
                     ModItems.THE_ROOTS.get(),
                     ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "unix_root"),
                     (stack, level, entity, seed) ->
-                            net.unfamily.iskautils.item.custom.relic.TheRootsItem.isUnixLike() ? 1.0F : 0.0F
+                            net.unfamily.iskautils.item.custom.artifact.TheRootsItem.isUnixLike() ? 1.0F : 0.0F
                 );
 
             });

@@ -106,6 +106,21 @@ public final class IskaUtilsLoadJson {
     }
 
     /**
+     * Merged JSON from every {@code load/} subtree whose root {@code type} field matches {@code jsonType}.
+     */
+    public static Map<ResourceLocation, JsonElement> collectMergedJsonForType(
+            ResourceManager resourceManager,
+            String jsonType) {
+        Map<ResourceLocation, JsonElement> out = new LinkedHashMap<>();
+        for (var e : collectMergedJson(resourceManager, IskaUtilsLoadPaths::isJsonUnderLoadTree).entrySet()) {
+            if (IskaUtilsLoadPaths.jsonMatchesType(e.getValue(), jsonType)) {
+                out.put(e.getKey(), e.getValue());
+            }
+        }
+        return out;
+    }
+
+    /**
      * Order: built-in {@code iska_utils} namespace first, then other namespaces (string order),
      * so datapacks typically override mod defaults for the same logical ids inside JSON.
      */
@@ -191,6 +206,63 @@ public final class IskaUtilsLoadJson {
         int externalFiles = IskaUtilsFilesystemBootstrap.mergeInto(out, subdirUnderLoad);
         if (externalFiles > 0) {
             LOGGER.info("Bootstrap load/{}: merged {} file(s) from kubejs/datapacks on disk", subdirUnderLoad, externalFiles);
+        }
+        return out;
+    }
+
+    /**
+     * Bootstrap from mod jar / resources for every {@code load/} JSON whose {@code type} matches {@code jsonType}.
+     */
+    public static Map<ResourceLocation, JsonElement> collectFromModJarOnlyForType(String jsonType) {
+        Map<ResourceLocation, JsonElement> out = new LinkedHashMap<>();
+        String loadRoot = "data/" + IskaUtils.MOD_ID + "/" + IskaUtilsLoadPaths.LOAD_FOLDER;
+        LOGGER.info("Bootstrap loading type {} from: {}", jsonType, loadRoot);
+        ModList.get().getModContainerById(IskaUtils.MOD_ID).ifPresentOrElse(
+                container -> {
+                    var modFileInfo = container.getModInfo().getOwningFile();
+                    if (modFileInfo == null) {
+                        LOGGER.warn("No mod jar file for {}, cannot bootstrap load/ for type {}", IskaUtils.MOD_ID, jsonType);
+                        return;
+                    }
+                    Path root = modFileInfo.getFile().getFilePath();
+                    try {
+                        if (Files.isDirectory(root)) {
+                            Path buildDir = root.getParent().getParent().getParent();
+                            Path resourcesFolder = buildDir.resolve("resources").resolve("main");
+                            Path base = Files.exists(resourcesFolder) ? resourcesFolder.resolve(loadRoot) : root.resolve(loadRoot);
+                            if (Files.exists(base)) {
+                                try (Stream<Path> walk = Files.walk(base)) {
+                                    walk.filter(Files::isRegularFile)
+                                            .filter(p -> p.toString().endsWith(".json"))
+                                            .sorted()
+                                            .forEach(file -> readOneLoadTreeJsonFile(out, base, file, jsonType));
+                                }
+                            } else {
+                                LOGGER.warn("Directory does not exist: {}", base);
+                            }
+                        } else {
+                            try (var fs = FileSystems.newFileSystem(root, Map.of())) {
+                                Path base = fs.getPath(loadRoot);
+                                if (Files.exists(base)) {
+                                    try (Stream<Path> walk = Files.walk(base)) {
+                                        walk.filter(Files::isRegularFile)
+                                                .filter(p -> p.toString().endsWith(".json"))
+                                                .sorted()
+                                                .forEach(file -> readOneLoadTreeJsonFile(out, base, file, jsonType));
+                                    }
+                                } else {
+                                    LOGGER.warn("Directory does not exist in JAR: {}", base);
+                                }
+                            }
+                        }
+                    } catch (IOException ex) {
+                        LOGGER.error("Failed walking mod load path {}: {}", loadRoot, ex.getMessage());
+                    }
+                },
+                () -> LOGGER.warn("Mod container not found for {} during bootstrap type {}", IskaUtils.MOD_ID, jsonType));
+        int externalFiles = IskaUtilsFilesystemBootstrap.mergeIntoForType(out, jsonType);
+        if (externalFiles > 0) {
+            LOGGER.info("Bootstrap load type {}: merged {} file(s) from kubejs/datapacks on disk", jsonType, externalFiles);
         }
         return out;
     }
@@ -286,6 +358,30 @@ public final class IskaUtilsLoadJson {
                 if (parsed != null) {
                     out.put(id, parsed);
                 }
+            }
+        } catch (Exception ex) {
+            LOGGER.error("Failed reading {}: {}", file, ex.getMessage());
+        }
+    }
+
+    private static void readOneLoadTreeJsonFile(
+            Map<ResourceLocation, JsonElement> out,
+            Path loadBase,
+            Path file,
+            String jsonTypeFilter) {
+        try {
+            String rel = loadBase.relativize(file).toString().replace('\\', '/');
+            String pathPart = IskaUtilsLoadPaths.LOAD_FOLDER + "/" + rel;
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, pathPart);
+            try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
+                if (parsed == null) {
+                    return;
+                }
+                if (jsonTypeFilter != null && !IskaUtilsLoadPaths.jsonMatchesType(parsed, jsonTypeFilter)) {
+                    return;
+                }
+                out.put(id, parsed);
             }
         } catch (Exception ex) {
             LOGGER.error("Failed reading {}: {}", file, ex.getMessage());

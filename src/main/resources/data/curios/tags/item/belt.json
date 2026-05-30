@@ -1,6 +1,7 @@
 {
     "replace": false,
     "values": [
-      "iska_utils:necrotic_crystal_heart"
+      "iska_utils:necrotic_crystal_heart",
+      "iska_utils:arcane_dictionary"
     ]
   }

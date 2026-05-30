@@ -201,21 +201,223 @@ public class Config
                     "Per-operation cost is set per recipe in data (energy_per_operation); default 1 RF when omitted.")
             .defineInRange("303_factoryEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
 
-    private static final ModConfigSpec.IntValue ANCIENT_TABLE_MAX_FUEL = BUILDER
-            .comment("Maximum internal fuel stored by the Ancient Table (absorbed from Drop of Entropy in the fuel slot)")
-            .defineInRange("304_ancientTableMaxFuel", 10000, 1, Integer.MAX_VALUE);
+    static {
+        BUILDER.comment("Entropy internal charges (Drop of Entropy)").push("entropy");
+    }
 
-    private static final ModConfigSpec.IntValue ANCIENT_TABLE_FUEL_PER_DROP = BUILDER
-            .comment("Internal fuel gained per one Drop of Entropy consumed from the fuel slot")
-            .defineInRange("307_ancientTableFuelPerDrop", 1000, 1, Integer.MAX_VALUE);
+    private static final ModConfigSpec.IntValue ENTROPY_CHARGE_PER_DROP = BUILDER
+            .comment("Internal entropy charges per Drop of Entropy (Ancient Table and Arcane Dictionary)")
+            .defineInRange("000_charge_per_drop", 1000, 1, Integer.MAX_VALUE);
+
+    static {
+        BUILDER.comment("Ancient Table").push("ancient_table");
+    }
+
+    private static final ModConfigSpec.IntValue ENTROPY_ANCIENT_TABLE_MAX_STORED = BUILDER
+            .comment("Maximum internal entropy stored by the Ancient Table fuel buffer")
+            .defineInRange("100_max_stored", 10000, 1, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue ANCIENT_TABLE_CRAFT_TICKS = BUILDER
             .comment("Ticks per Ancient Table craft operation")
-            .defineInRange("305_ancientTableCraftTicks", 10, 1, 72000);
+            .defineInRange("101_craft_ticks", 10, 1, 72000);
 
     private static final ModConfigSpec.IntValue ANCIENT_TABLE_IO_SLOTS = BUILDER
             .comment("Logical input and output slot count per side on the Ancient Table")
-            .defineInRange("306_ancientTableIoSlots", 63, 9, 63);
+            .defineInRange("102_io_slots", 63, 9, 63);
+
+    static {
+        BUILDER.pop();
+        BUILDER.comment("Arcane Dictionary — 100–199: item/reroll; 200+: per-trait tuning").push("arcane_dictionary");
+    }
+
+    private static final ModConfigSpec.IntValue ARCANE_DICTIONARY_MAX_STORED = BUILDER
+            .comment("Maximum internal entropy stored on an Arcane Dictionary stack")
+            .defineInRange("100_max_stored", 10000000, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue ARCANE_DICTIONARY_MIN_TRAITS = BUILDER
+            .defineInRange("101_min_traits", 1, 1, 5);
+
+    private static final ModConfigSpec.IntValue ARCANE_DICTIONARY_MAX_TRAITS = BUILDER
+            .defineInRange("102_max_traits", 5, 1, 5);
+
+    private static final ModConfigSpec.IntValue ARCANE_DICTIONARY_MIN_LEVEL = BUILDER
+            .defineInRange("103_min_level", 1, 1, 5);
+
+    private static final ModConfigSpec.IntValue ARCANE_DICTIONARY_MAX_LEVEL = BUILDER
+            .defineInRange("104_max_level", 5, 1, 5);
+
+    private static final ModConfigSpec.IntValue ARCANE_DICTIONARY_MAX_ROLL_LEVELS = BUILDER
+            .comment("Maximum player levels worth of XP consumed per reroll (vanilla curve; excess XP is kept)")
+            .defineInRange("105_max_roll_levels", 100, 1, 1000);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_DICTIONARY_ROLL_COUNT_EXPONENT = BUILDER
+            .comment("Trait count ceiling curve: lower exponent fills max traits faster (default 0.4)")
+            .defineInRange("106_roll_count_exponent", 0.4D, 0.05D, 5.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_DICTIONARY_ROLL_LEVEL_EXPONENT = BUILDER
+            .comment("Trait level ceiling curve: higher exponent makes high levels harder (default 1.8)")
+            .defineInRange("107_roll_level_exponent", 1.8D, 0.05D, 10.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_GLASS_SKIN_REFLECT_MULT = BUILDER
+            .comment("Glass Skin: magic damage dealt back to attacker per level")
+            .defineInRange("200_glass_skin_reflect_mult_per_level", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_GLASS_SKIN_SELF_DAMAGE = BUILDER
+            .comment("Glass Skin: self damage per level when hit")
+            .defineInRange("201_glass_skin_self_damage_per_level", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_STONE_SKIN_ARMOR = BUILDER
+            .comment("Stone Skin: flat armor bonus per level")
+            .defineInRange("202_stone_skin_armor_per_level", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_ENTROPY_SHELL_TOUGHNESS = BUILDER
+            .comment("Entropy Shell: armor toughness bonus per level")
+            .defineInRange("203_entropy_shell_toughness_per_level", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_ENTROPY_SHELL_HP_PENALTY = BUILDER
+            .comment("Entropy Shell: max health penalty per level (stored positive, applied as negative)")
+            .defineInRange("204_entropy_shell_hp_penalty_per_level", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_AGILITY_SPEED_MULT = BUILDER
+            .comment("Agility: movement speed multiplier added per level (0.05 = +5% per level)")
+            .defineInRange("205_agility_speed_mult_per_level", 0.05D, 0.0D, 5.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_BLOOD_LEDGER_LOW_HP_RATIO = BUILDER
+            .comment("Blood Ledger: max health ratio below which Regeneration is applied (0.30 = 30%)")
+            .defineInRange("206_blood_ledger_low_hp_ratio", 0.30D, 0.01D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_EXECUTION_LINE_HP_THRESHOLD = BUILDER
+            .comment("Execution Line: target max HP ratio threshold for bonus damage (0.20 = 20%)")
+            .defineInRange("207_execution_line_hp_threshold", 0.20D, 0.01D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_EXECUTION_LINE_BONUS_MULT = BUILDER
+            .comment("Execution Line: bonus damage fraction of hit damage per level (0.05 = +5% per level)")
+            .defineInRange("208_execution_line_bonus_damage_mult", 0.05D, 0.0D, 5.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_ENTROPY_BLADE_BYPASS = BUILDER
+            .comment("Entropy Blade: armor bypass fraction per level on your hits")
+            .defineInRange("209_entropy_blade_armor_bypass_per_level", 0.05D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_MARTYR_SCRIPT_DEALT = BUILDER
+            .comment("Martyr Script: extra dealt damage multiplier per level (0.15 = +15% per level)")
+            .defineInRange("210_martyr_script_dealt_mult_per_level", 0.15D, 0.0D, 5.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_MARTYR_SCRIPT_TAKEN = BUILDER
+            .comment("Martyr Script: extra taken damage multiplier per level (0.10 = +10% per level)")
+            .defineInRange("211_martyr_script_taken_mult_per_level", 0.10D, 0.0D, 5.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_RECALL_XP_MULT = BUILDER
+            .comment("Recall of Knowledge: bonus XP multiplier per level from orbs (0.05 = +5% per level)")
+            .defineInRange("212_recall_of_knowledge_xp_mult_per_level", 0.05D, 0.0D, 5.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_PHASE_MISMATCH_DODGE = BUILDER
+            .comment("Phase Mismatch: chance per level to negate incoming hit (0.05 = 5% per level)")
+            .defineInRange("213_phase_mismatch_dodge_chance_per_level", 0.05D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.IntValue ARCANE_SHIFTING_POWER_MIMIC_SECONDS = BUILDER
+            .comment("Shifting Power: seconds each mimicked trait lasts before rotating")
+            .defineInRange("214_shifting_power_mimic_duration_seconds", 30, 1, 600);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_ENTROPY_OVERFLOW_UPKEEP_REDUCTION = BUILDER
+            .comment("Entropy Overflow: upkeep reduction per level on other traits (0.10 = 10% per level)")
+            .defineInRange("215_entropy_overflow_upkeep_reduction_per_level", 0.10D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_ENTROPY_OVERFLOW_HP_PENALTY = BUILDER
+            .comment("Entropy Overflow: max health penalty per level (stored positive, applied as negative)")
+            .defineInRange("216_entropy_overflow_hp_penalty_per_level", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_VOID_THORNS_DAMAGE = BUILDER
+            .comment("Void Thorns: magic damage dealt to attacker per level when you are hit")
+            .defineInRange("217_void_thorns_damage_per_level", 1.0D, 0.0D, 100.0D);
+
+    static {
+        BUILDER.pop(); // arcane_dictionary
+        BUILDER.comment("Entropic Gear").push("entropic_gear");
+    }
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_HELMET_BASE_HP = BUILDER
+            .comment("Base max health bonus while wearing entropic helmet.")
+            .defineInRange("000_helmet_base_hp", 4.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_HELMET_HP_PER_PIECE = BUILDER
+            .comment("Extra max HP per other entropic armor piece worn (excludes helmet itself).")
+            .defineInRange("001_helmet_hp_per_entropic_piece", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_CHEST_MISSING_HP_PER_STEP = BUILDER
+            .comment("Missing health points required per toughness bonus step (e.g. 50 missing HP / 7 -> 7 steps).")
+            .defineInRange("010_chestplate_missing_hp_per_step", 7.0D, 1.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_CHEST_TOUGHNESS_BONUS_PER_STEP = BUILDER
+            .comment("Armor toughness added per step while wearing entropic chestplate.")
+            .defineInRange("011_chestplate_toughness_bonus_per_step", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_LEGGINGS_MISSING_HP_PER_STEP = BUILDER
+            .comment("Missing health points required per armor bonus step (e.g. 50 missing HP / 3 -> 16 steps).")
+            .defineInRange("020_leggings_missing_hp_per_step", 3.0D, 1.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_LEGGINGS_ARMOR_BONUS_PER_STEP = BUILDER
+            .comment("Armor added per step while wearing entropic leggings.")
+            .defineInRange("021_leggings_armor_bonus_per_step", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_BOOTS_NEGATE_FALL = BUILDER
+            .comment("Negate fall damage while wearing entropic boots.")
+            .define("030_boots_negate_fall_damage", true);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_PICKAXE_BONUS_FORTUNE_LEVELS = BUILDER
+            .comment("Extra Fortune levels on block drops for entropic pickaxe and paxel (added on top of Fortune enchant). Disabled while Silk Touch is on the tool. Set 0 to turn off.")
+            .defineInRange("040_pickaxe_bonus_fortune_levels", 1, 0, 10);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_ARMOR_PEN_CHANCE = BUILDER
+            .comment("Chance for entropic sword/axe/spear to partially ignore armor and toughness.")
+            .defineInRange("050_armor_pen_chance", 0.3D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_ARMOR_PEN_IGNORE = BUILDER
+            .comment("Fraction of armor and toughness ignored on proc (0.8 = 80%). Power off if chance or this is 0.")
+            .defineInRange("051_armor_pen_ignore_fraction", 0.8D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_HOE_CROP_ENABLED = BUILDER
+            .comment("Enable crop reset power on entropic hoe.")
+            .define("060_hoe_crop_power_enabled", true);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_HOE_REQUIRE_MATURE = BUILDER
+            .comment("Require mature crop for hoe reset; if false, immature crops reset to age 0.")
+            .define("061_hoe_require_mature_crop", true);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_AXE_STRIP_ENABLED = BUILDER
+            .comment("Enable log stripping on entropic axe and paxel (off-hand strip, sneak + inventory strip).")
+            .define("070_axe_strip_enabled", true);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_SHOVEL_BRUSH_ENABLED = BUILDER
+            .comment("Enable instant brush on entropic shovel and paxel.")
+            .define("071_shovel_brush_enabled", true);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SHOVEL_BRUSH_TICKS = BUILDER
+            .comment("Brush simulation ticks per use (higher = faster completion on tough blocks).")
+            .defineInRange("072_shovel_brush_ticks", 12, 1, 100);
+
+    static {
+        BUILDER.pop(); // entropic_gear
+        BUILDER.comment("Unstable Entropy Catalyst").push("unstable_entropy_catalyst");
+    }
+
+    private static final ModConfigSpec.BooleanValue UNSTABLE_ENTROPY_CATALYST_DECAY_KILLS_PLAYER = BUILDER
+            .comment("If true, the player dies when an unstable_entropy_catalyst fully decays in their inventory.")
+            .define("200_unstable_entropy_catalyst_decay_kills_player", false);
+
+    private static final ModConfigSpec.IntValue UNSTABLE_ENTROPY_CATALYST_DECAY_TICKS = BUILDER
+            .comment("Ticks until unstable_entropy_catalyst decays in player inventory (0 = disabled). Default 600 = 30 seconds.")
+            .defineInRange("110_unstable_entropy_catalyst_decay_ticks", 600, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.ConfigValue<String> UNSTABLE_ENTROPY_CATALYST_DECAY_TINTS = BUILDER
+            .comment("Color ramp used by unstable_entropy_catalyst as it decays (semicolon-separated).",
+                    "Format: #RRGGBB;#RRGGBB;... (spaces allowed).",
+                    "Default: pink -> red.")
+            .define("111_unstable_entropy_catalyst_decay_tints", "#FFFFFF;#FF77AA;#FF3355;#FF0000");
+
+    static {
+        BUILDER.pop(); // unstable_entropy_catalyst
+        BUILDER.pop(); // entropy
+    }
 
     private static final ModConfigSpec.IntValue SOUND_MUFFLER_RANGE_MAX = BUILDER
             .comment("Maximum range (blocks) for Sound Muffler effect. Minimum is always 8. Allowed values in GUI: 8, 16, 32, and up to this max (default 500).")
@@ -450,7 +652,7 @@ public class Config
             .comment("If false not desplay where obtain the artifacts or mod dependecy required for obtain it (only for lootable artifacts)")
             .define("900_artifacts_info", true);
 
-    // Relics configuration (starts at 500)
+    // Artifacts configuration (starts at 500)
     private static final ModConfigSpec.IntValue CHOSEN_CHEESE_MAX = BUILDER
             .comment("Maximum cheese level (X in tooltip Y/X). Effective bonus uses min(Y, X) levels.")
             .defineInRange("500_chosen_cheese_max", 10, 0, 200);
@@ -487,20 +689,24 @@ public class Config
             .comment("Chance (0.0–1.0) for Ritual Gauntlet critical damage bonus.")
             .defineInRange("510_ritual_gauntlet_crit_chance", 0.15D, 0.0D, 1.0D);
 
-    private static final ModConfigSpec.DoubleValue RITUAL_GAUNTLET_CRIT_DAMAGE_MULTIPLIER = BUILDER
-            .comment("Damage multiplier on Ritual Gauntlet crit (1.15 = +15% damage).")
-            .defineInRange("511_ritual_gauntlet_crit_damage_multiplier", 1.15D, 1.0D, 10.0D);
+    private static final ModConfigSpec.DoubleValue RITUAL_GAUNTLET_CRIT_DAMAGE_BENEFICIAL_NEUTRAL = BUILDER
+            .comment("Damage multiplier on Ritual Gauntlet crit with a beneficial or neutral effect (1.15 = +15% damage).")
+            .defineInRange("511_ritual_gauntlet_crit_damage_beneficial_neutral", 1.15D, 1.0D, 10.0D);
 
-    private static final ModConfigSpec.DoubleValue BUSTED_CROWN_HP_PER_CURSED_RELIC = BUILDER
-            .comment("Max health bonus per cursed relic worn with Busted Crown.")
-            .defineInRange("512_busted_crown_hp_per_cursed_relic", 2.0D, 0.0D, 100.0D);
+    private static final ModConfigSpec.DoubleValue RITUAL_GAUNTLET_CRIT_DAMAGE_HARMFUL = BUILDER
+            .comment("Damage multiplier on Ritual Gauntlet crit with a harmful effect (1.30 = +30% damage).")
+            .defineInRange("515_ritual_gauntlet_crit_damage_harmful", 1.30D, 1.0D, 10.0D);
+
+    private static final ModConfigSpec.DoubleValue BUSTED_CROWN_HP_PER_CURSED_ARTIFACT = BUILDER
+            .comment("Max health bonus per cursed artifact worn with Busted Crown.")
+            .defineInRange("512_busted_crown_hp_per_cursed_artifact", 2.0D, 0.0D, 100.0D);
 
     private static final ModConfigSpec.DoubleValue CURSE_OF_PAIN_DAMAGE_PER_LEVEL = BUILDER
             .comment("Incoming damage multiplier per Curse of Pain level (0.10 = +10% per level).")
             .defineInRange("513_curse_of_pain_damage_per_level", 0.10D, 0.0D, 10.0D);
 
     private static final ModConfigSpec.IntValue THE_DECEPTION_ABSORPTION_DURATION_SECONDS = BUILDER
-            .comment("Absorption duration in seconds after eating with The Deception equipped.")
+            .comment("Deceived effect duration in seconds after eating with The Deception equipped.")
             .defineInRange("514_the_deception_absorption_duration_seconds", 30, 1, 3600);
 
     private static final ModConfigSpec.DoubleValue NECROTIC_CRYSTAL_HEART_HP_COST_PER_SAVE = BUILDER
@@ -565,72 +771,6 @@ public class Config
 
     static {
         BUILDER.pop(); // End of artifacts_settings category
-
-        BUILDER.comment("Entropic Gear").push("entropic_gear");
-    }
-
-    private static final ModConfigSpec.DoubleValue ENTROPIC_HELMET_BASE_HP = BUILDER
-            .comment("Base max health bonus while wearing entropic helmet.")
-            .defineInRange("000_helmet_base_hp", 4.0D, 0.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue ENTROPIC_HELMET_HP_PER_PIECE = BUILDER
-            .comment("Extra max HP per other entropic armor piece worn (excludes helmet itself).")
-            .defineInRange("001_helmet_hp_per_entropic_piece", 2.0D, 0.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue ENTROPIC_CHEST_MISSING_HP_PER_STEP = BUILDER
-            .comment("Missing health points required per toughness bonus step (e.g. 50 missing HP / 7 -> 7 steps).")
-            .defineInRange("010_chestplate_missing_hp_per_step", 7.0D, 1.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue ENTROPIC_CHEST_TOUGHNESS_BONUS_PER_STEP = BUILDER
-            .comment("Armor toughness added per step while wearing entropic chestplate.")
-            .defineInRange("011_chestplate_toughness_bonus_per_step", 1.0D, 0.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue ENTROPIC_LEGGINGS_MISSING_HP_PER_STEP = BUILDER
-            .comment("Missing health points required per armor bonus step (e.g. 50 missing HP / 3 -> 16 steps).")
-            .defineInRange("020_leggings_missing_hp_per_step", 3.0D, 1.0D, 100.0D);
-
-    private static final ModConfigSpec.DoubleValue ENTROPIC_LEGGINGS_ARMOR_BONUS_PER_STEP = BUILDER
-            .comment("Armor added per step while wearing entropic leggings.")
-            .defineInRange("021_leggings_armor_bonus_per_step", 1.0D, 0.0D, 100.0D);
-
-    private static final ModConfigSpec.BooleanValue ENTROPIC_BOOTS_NEGATE_FALL = BUILDER
-            .comment("Negate fall damage while wearing entropic boots.")
-            .define("030_boots_negate_fall_damage", true);
-
-    private static final ModConfigSpec.IntValue ENTROPIC_PICKAXE_BONUS_FORTUNE_LEVELS = BUILDER
-            .comment("Extra Fortune levels on block drops for entropic pickaxe and paxel (added on top of Fortune enchant). Disabled while Silk Touch is on the tool. Set 0 to turn off.")
-            .defineInRange("040_pickaxe_bonus_fortune_levels", 1, 0, 10);
-
-    private static final ModConfigSpec.DoubleValue ENTROPIC_ARMOR_PEN_CHANCE = BUILDER
-            .comment("Chance for entropic sword/axe/spear to partially ignore armor and toughness.")
-            .defineInRange("050_armor_pen_chance", 0.3D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.DoubleValue ENTROPIC_ARMOR_PEN_IGNORE = BUILDER
-            .comment("Fraction of armor and toughness ignored on proc (0.8 = 80%). Power off if chance or this is 0.")
-            .defineInRange("051_armor_pen_ignore_fraction", 0.8D, 0.0D, 1.0D);
-
-    private static final ModConfigSpec.BooleanValue ENTROPIC_HOE_CROP_ENABLED = BUILDER
-            .comment("Enable crop reset power on entropic hoe.")
-            .define("060_hoe_crop_power_enabled", true);
-
-    private static final ModConfigSpec.BooleanValue ENTROPIC_HOE_REQUIRE_MATURE = BUILDER
-            .comment("Require mature crop for hoe reset; if false, immature crops reset to age 0.")
-            .define("061_hoe_require_mature_crop", true);
-
-    private static final ModConfigSpec.BooleanValue ENTROPIC_AXE_STRIP_ENABLED = BUILDER
-            .comment("Enable log stripping on entropic axe and paxel (off-hand strip, sneak + inventory strip).")
-            .define("070_axe_strip_enabled", true);
-
-    private static final ModConfigSpec.BooleanValue ENTROPIC_SHOVEL_BRUSH_ENABLED = BUILDER
-            .comment("Enable instant brush on entropic shovel and paxel.")
-            .define("071_shovel_brush_enabled", true);
-
-    private static final ModConfigSpec.IntValue ENTROPIC_SHOVEL_BRUSH_TICKS = BUILDER
-            .comment("Brush simulation ticks per use (higher = faster completion on tough blocks).")
-            .defineInRange("072_shovel_brush_ticks", 12, 1, 100);
-
-    static {
-        BUILDER.pop(); // End of entropic_gear category
         BUILDER.pop(); // End of general_utilities category
 
         // Category for Fan Configuration
@@ -966,27 +1106,8 @@ public class Config
                     "Hard Ice is indestructible and cannot be broken")
             .define("100_gift_place_hard_ice", true);
 
-    private static final ModConfigSpec.BooleanValue UNSTABLE_ENTROPY_CATALYST_DECAY_KILLS_PLAYER = BUILDER
-            .comment("If true, the player dies when an unstable_entropy_catalyst fully decays in their inventory.")
-            .define("200_unstable_entropy_catalyst_decay_kills_player", false);
-
     static {
         BUILDER.pop(); // End of evil_things category
-        BUILDER.comment("Unstable Entropy Catalyst Configuration").push("unstable_entropy_catalyst");
-    }
-
-    private static final ModConfigSpec.IntValue UNSTABLE_ENTROPY_CATALYST_DECAY_TICKS = BUILDER
-            .comment("Ticks until unstable_entropy_catalyst decays in player inventory (0 = disabled). Default 600 = 30 seconds.")
-            .defineInRange("110_unstable_entropy_catalyst_decay_ticks", 600, 0, Integer.MAX_VALUE);
-
-    private static final ModConfigSpec.ConfigValue<String> UNSTABLE_ENTROPY_CATALYST_DECAY_TINTS = BUILDER
-            .comment("Color ramp used by unstable_entropy_catalyst as it decays (semicolon-separated).",
-                    "Format: #RRGGBB;#RRGGBB;... (spaces allowed).",
-                    "Default: pink -> red.")
-            .define("111_unstable_entropy_catalyst_decay_tints", "#FFFFFF;#FF77AA;#FF3355;#FF0000");
-
-    static {
-        BUILDER.pop(); // End of general_utilities.unstable_entropy_catalyst
     }
 
     static final ModConfigSpec SPEC = BUILDER.build();
@@ -1049,10 +1170,38 @@ public class Config
     public static int structurePlacerMachineEnergyConsume;
     public static int structurePlacerMachineEnergyBuffer;
     public static int factoryEnergyBuffer;
+    public static int entropyChargePerDrop;
+    public static int entropyAncientTableMaxStored;
     public static int ancientTableMaxFuel;
     public static int ancientTableFuelPerDrop;
     public static int ancientTableCraftTicks;
     public static int ancientTableIoSlots;
+    public static int arcaneDictionaryMaxStored;
+    public static int arcaneDictionaryMinTraits;
+    public static int arcaneDictionaryMaxTraits;
+    public static int arcaneDictionaryMinLevel;
+    public static int arcaneDictionaryMaxLevel;
+    public static int arcaneDictionaryMaxRollLevels;
+    public static double arcaneDictionaryRollCountExponent;
+    public static double arcaneDictionaryRollLevelExponent;
+    public static double arcaneGlassSkinReflectMultPerLevel;
+    public static double arcaneGlassSkinSelfDamagePerLevel;
+    public static double arcaneStoneSkinArmorPerLevel;
+    public static double arcaneEntropyShellToughnessPerLevel;
+    public static double arcaneEntropyShellHpPenaltyPerLevel;
+    public static double arcaneAgilitySpeedMultPerLevel;
+    public static double arcaneBloodLedgerLowHpRatio;
+    public static double arcaneExecutionLineHpThreshold;
+    public static double arcaneExecutionLineBonusDamageMult;
+    public static double arcaneEntropyBladeArmorBypassPerLevel;
+    public static double arcaneMartyrScriptDealtMultPerLevel;
+    public static double arcaneMartyrScriptTakenMultPerLevel;
+    public static double arcaneRecallOfKnowledgeXpMultPerLevel;
+    public static double arcanePhaseMismatchDodgeChancePerLevel;
+    public static int arcaneShiftingPowerMimicDurationSeconds;
+    public static double arcaneEntropyOverflowUpkeepReductionPerLevel;
+    public static double arcaneEntropyOverflowHpPenaltyPerLevel;
+    public static double arcaneVoidThornsDamagePerLevel;
     public static boolean factoryStonecutterEnabled;
     public static int factoryStonecutterEnergyPerOp;
     public static int soundMufflerRangeMax;
@@ -1095,8 +1244,9 @@ public class Config
     public static double totemOfPainProcChance;
     public static int totemOfPainCurseDurationSeconds;
     public static double ritualGauntletCritChance;
-    public static double ritualGauntletCritDamageMultiplier;
-    public static double bustedCrownHpPerCursedRelic;
+    public static double ritualGauntletCritDamageBeneficialNeutral;
+    public static double ritualGauntletCritDamageHarmful;
+    public static double bustedCrownHpPerCursedArtifact;
     public static double curseOfPainDamagePerLevel;
     public static int theDeceptionAbsorptionDurationSeconds;
     public static double necroticCrystalHeartHpCostPerSave;
@@ -1192,10 +1342,38 @@ public class Config
         structurePlacerMachineEnergyConsume = STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME.get();
         structurePlacerMachineEnergyBuffer = STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER.get();
         factoryEnergyBuffer = FACTORY_ENERGY_BUFFER.get();
-        ancientTableMaxFuel = ANCIENT_TABLE_MAX_FUEL.get();
-        ancientTableFuelPerDrop = ANCIENT_TABLE_FUEL_PER_DROP.get();
+        entropyChargePerDrop = ENTROPY_CHARGE_PER_DROP.get();
+        entropyAncientTableMaxStored = ENTROPY_ANCIENT_TABLE_MAX_STORED.get();
+        ancientTableMaxFuel = entropyAncientTableMaxStored;
+        ancientTableFuelPerDrop = entropyChargePerDrop;
         ancientTableCraftTicks = ANCIENT_TABLE_CRAFT_TICKS.get();
         ancientTableIoSlots = ANCIENT_TABLE_IO_SLOTS.get();
+        arcaneDictionaryMaxStored = ARCANE_DICTIONARY_MAX_STORED.get();
+        arcaneDictionaryMinTraits = ARCANE_DICTIONARY_MIN_TRAITS.get();
+        arcaneDictionaryMaxTraits = ARCANE_DICTIONARY_MAX_TRAITS.get();
+        arcaneDictionaryMinLevel = ARCANE_DICTIONARY_MIN_LEVEL.get();
+        arcaneDictionaryMaxLevel = ARCANE_DICTIONARY_MAX_LEVEL.get();
+        arcaneDictionaryMaxRollLevels = ARCANE_DICTIONARY_MAX_ROLL_LEVELS.get();
+        arcaneDictionaryRollCountExponent = ARCANE_DICTIONARY_ROLL_COUNT_EXPONENT.get();
+        arcaneDictionaryRollLevelExponent = ARCANE_DICTIONARY_ROLL_LEVEL_EXPONENT.get();
+        arcaneGlassSkinReflectMultPerLevel = ARCANE_GLASS_SKIN_REFLECT_MULT.get();
+        arcaneGlassSkinSelfDamagePerLevel = ARCANE_GLASS_SKIN_SELF_DAMAGE.get();
+        arcaneStoneSkinArmorPerLevel = ARCANE_STONE_SKIN_ARMOR.get();
+        arcaneEntropyShellToughnessPerLevel = ARCANE_ENTROPY_SHELL_TOUGHNESS.get();
+        arcaneEntropyShellHpPenaltyPerLevel = ARCANE_ENTROPY_SHELL_HP_PENALTY.get();
+        arcaneAgilitySpeedMultPerLevel = ARCANE_AGILITY_SPEED_MULT.get();
+        arcaneBloodLedgerLowHpRatio = ARCANE_BLOOD_LEDGER_LOW_HP_RATIO.get();
+        arcaneExecutionLineHpThreshold = ARCANE_EXECUTION_LINE_HP_THRESHOLD.get();
+        arcaneExecutionLineBonusDamageMult = ARCANE_EXECUTION_LINE_BONUS_MULT.get();
+        arcaneEntropyBladeArmorBypassPerLevel = ARCANE_ENTROPY_BLADE_BYPASS.get();
+        arcaneMartyrScriptDealtMultPerLevel = ARCANE_MARTYR_SCRIPT_DEALT.get();
+        arcaneMartyrScriptTakenMultPerLevel = ARCANE_MARTYR_SCRIPT_TAKEN.get();
+        arcaneRecallOfKnowledgeXpMultPerLevel = ARCANE_RECALL_XP_MULT.get();
+        arcanePhaseMismatchDodgeChancePerLevel = ARCANE_PHASE_MISMATCH_DODGE.get();
+        arcaneShiftingPowerMimicDurationSeconds = ARCANE_SHIFTING_POWER_MIMIC_SECONDS.get();
+        arcaneEntropyOverflowUpkeepReductionPerLevel = ARCANE_ENTROPY_OVERFLOW_UPKEEP_REDUCTION.get();
+        arcaneEntropyOverflowHpPenaltyPerLevel = ARCANE_ENTROPY_OVERFLOW_HP_PENALTY.get();
+        arcaneVoidThornsDamagePerLevel = ARCANE_VOID_THORNS_DAMAGE.get();
         factoryStonecutterEnabled = FACTORY_STONECUTTER_ENABLED.get();
         factoryStonecutterEnergyPerOp = FACTORY_STONECUTTER_ENERGY_PER_OPERATION.get();
         soundMufflerRangeMax = SOUND_MUFFLER_RANGE_MAX.get();
@@ -1261,8 +1439,9 @@ public class Config
         totemOfPainProcChance = TOTEM_OF_PAIN_PROC_CHANCE.get();
         totemOfPainCurseDurationSeconds = TOTEM_OF_PAIN_CURSE_DURATION_SECONDS.get();
         ritualGauntletCritChance = RITUAL_GAUNTLET_CRIT_CHANCE.get();
-        ritualGauntletCritDamageMultiplier = RITUAL_GAUNTLET_CRIT_DAMAGE_MULTIPLIER.get();
-        bustedCrownHpPerCursedRelic = BUSTED_CROWN_HP_PER_CURSED_RELIC.get();
+        ritualGauntletCritDamageBeneficialNeutral = RITUAL_GAUNTLET_CRIT_DAMAGE_BENEFICIAL_NEUTRAL.get();
+        ritualGauntletCritDamageHarmful = RITUAL_GAUNTLET_CRIT_DAMAGE_HARMFUL.get();
+        bustedCrownHpPerCursedArtifact = BUSTED_CROWN_HP_PER_CURSED_ARTIFACT.get();
         curseOfPainDamagePerLevel = CURSE_OF_PAIN_DAMAGE_PER_LEVEL.get();
         theDeceptionAbsorptionDurationSeconds = THE_DECEPTION_ABSORPTION_DURATION_SECONDS.get();
         necroticCrystalHeartHpCostPerSave = NECROTIC_CRYSTAL_HEART_HP_COST_PER_SAVE.get();

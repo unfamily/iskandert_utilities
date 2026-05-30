@@ -19,7 +19,7 @@ A rare **resource** — not worn on the body. Used on the <ItemImage id="iska_ut
 
 ## How to obtain
 
-**From opening a parcel**
+**From opening a Suspicious Delivery**
 
 - Reward when you open a **Suspicious Delivery** (uncommon).
 
@@ -27,7 +27,7 @@ A rare **resource** — not worn on the body. Used on the <ItemImage id="iska_ut
 
 - Crafting table (shapeless) or <ItemImage id="iska_utils:factory" /> **Factory**: one eligible item → one Drop of Entropy.
 - **Unopened** <ItemImage id="iska_utils:suspicious_delivery" /> **Suspicious Delivery**
-- Most **delivery relics** you do not need, for example:
+- Most **delivery artifacts** you do not need, for example:
   - <ItemImage id="iska_utils:ancient_tablet" /> Ancient Tablet
   - <ItemImage id="iska_utils:durable_shears" /> Durable Shears
   - <ItemImage id="iska_utils:chosen_cheese" /> Chosen Cheese
