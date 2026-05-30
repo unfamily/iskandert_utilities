@@ -260,7 +260,7 @@ public class CommandItem extends Item {
             // Special case for IF actions
             if (action.getType() == CommandItemAction.ActionType.IF) {
                 // Check if conditions are met based on the indices
-                boolean conditionsMet = action.checkConditionsByIndices(player, getDefinition());
+                boolean conditionsMet = action.checkIfConditions(player, getDefinition());
                 LOGGER.debug("IF condition check result for conditions {}: {}", 
                     action.getConditionIndices(), conditionsMet);
                     
@@ -514,7 +514,7 @@ public class CommandItem extends Item {
                 // Recheck conditions to ensure they are still valid
                 // This is important especially for consecutive actions that might
                 // modify the same stages
-                boolean conditionsMet = action.checkConditionsByIndices(player, getDefinition());
+                boolean conditionsMet = action.checkIfConditions(player, getDefinition());
                 LOGGER.debug("Checking IF action at index {} with conditions {}: {}", 
                     actionIndex, action.getConditionIndices(), conditionsMet);
                 
@@ -613,7 +613,7 @@ public class CommandItem extends Item {
                 
             case IF:
                 // Check if conditions are met based on the indices
-                boolean conditionsMet = action.checkConditionsByIndices(player, getDefinition());
+                boolean conditionsMet = action.checkIfConditions(player, getDefinition());
                 LOGGER.debug("Checking IF condition: {} = {}", action.getConditionIndices(), conditionsMet);
                 
                 if (conditionsMet) {

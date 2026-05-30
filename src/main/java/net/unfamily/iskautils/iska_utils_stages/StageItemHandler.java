@@ -15,8 +15,12 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
+import net.unfamily.iskautils.script.LoadActionParser;
+import net.unfamily.iskautils.script.LoadModCondition;
+import net.unfamily.iskautils.script.LoadModGate;
 import net.unfamily.iskautils.stage.StageRegistry;
 import net.unfamily.iskautils.util.ResourceUtil;
 import org.slf4j.Logger;
@@ -199,7 +203,7 @@ public class StageItemHandler {
             // Check conditions based on specific subconditions in "if"
             if (rule.ifConditions != null && !rule.ifConditions.isEmpty()) {
                 for (StageItemIfRule ifRule : rule.ifConditions) {
-                    if (checkIfRuleConditions(ifRule, rule.stages, player, level)) {
+                    if (checkIfRuleConditions(ifRule, rule, player, level)) {
                         return true;
                     }
                 }
@@ -211,7 +215,7 @@ public class StageItemHandler {
             if (rule.ifConditions != null && !rule.ifConditions.isEmpty()) {
                 boolean allValid = true;
                 for (StageItemIfRule ifRule : rule.ifConditions) {
-                    if (!checkIfRuleConditions(ifRule, rule.stages, player, level)) {
+                    if (!checkIfRuleConditions(ifRule, rule, player, level)) {
                         allValid = false;
                         break;
                     }
@@ -242,32 +246,27 @@ public class StageItemHandler {
     /**
      * Checks conditions of an if rule
      */
-    private static boolean checkIfRuleConditions(StageItemIfRule ifRule, List<StageCondition> allStages, ServerPlayer player, Level level) {
-        // If no conditions specified, rule is always valid
-        if (ifRule.conditions.isEmpty()) {
-            return true;
-        }
-        
-        // Check each condition index
-        for (int conditionIndex : ifRule.conditions) {
-            if (conditionIndex < 0 || conditionIndex >= allStages.size()) {
-                // Invalid condition index
-                LOGGER.warn("Invalid condition index: {} (max: {})", conditionIndex, allStages.size() - 1);
-                return false;
-            }
-            
-            // Check if condition is satisfied based on "is" value
-            StageCondition condition = allStages.get(conditionIndex);
-            boolean hasStage = checkSingleStageCondition(condition, player, level);
-            
-            // If condition is not satisfied, rule is not valid
-            if (hasStage != condition.is) {
-                return false;
+    private static boolean checkIfRuleConditions(StageItemIfRule ifRule, StageItemRule rule, ServerPlayer player, Level level) {
+        boolean stageOk = true;
+        if (!ifRule.conditions.isEmpty()) {
+            List<StageCondition> allStages = rule.stages;
+            for (int conditionIndex : ifRule.conditions) {
+                if (conditionIndex < 0 || conditionIndex >= allStages.size()) {
+                    LOGGER.warn("Invalid condition index: {} (max: {})", conditionIndex, allStages.size() - 1);
+                    return false;
+                }
+                StageCondition condition = allStages.get(conditionIndex);
+                boolean hasStage = checkSingleStageCondition(condition, player, level);
+                if (hasStage != condition.is) {
+                    stageOk = false;
+                    break;
+                }
             }
         }
-        
-        // All conditions are valid
-        return true;
+
+        boolean modOk = ifRule.modConditions.isEmpty()
+                || LoadModGate.checkModIndices(rule.mods, rule.modsLogic, ifRule.modConditions);
+        return stageOk && modOk;
     }
     
     /**
@@ -374,10 +373,15 @@ public class StageItemHandler {
             for (JsonElement element : json.getAsJsonArray("restrictions")) {
                 if (element.isJsonObject()) {
                     JsonObject ruleObj = element.getAsJsonObject();
+                    if (!LoadModGate.shouldIncludeAtLoad(ruleObj, LOGGER, "stage_item_rule")) {
+                        continue;
+                    }
                     StageItemRule rule = new StageItemRule();
                     
                     // Parse stage logic
                     rule.stagesLogic = ruleObj.has("stages_logic") ? ruleObj.get("stages_logic").getAsString() : "AND";
+                    rule.mods.addAll(LoadActionParser.parseMods(ruleObj));
+                    rule.modsLogic = LoadActionParser.parseModsLogic(ruleObj);
                     
                     // Parse stage conditions
                     if (ruleObj.has("stages") && ruleObj.get("stages").isJsonArray()) {
@@ -446,6 +450,14 @@ public class StageItemHandler {
                                         if (condElement.isJsonPrimitive()) {
                                             int conditionIndex = condElement.getAsInt();
                                             ifRule.conditions.add(conditionIndex);
+                                        }
+                                    }
+                                }
+
+                                if (ifObj.has("mod_conditions") && ifObj.get("mod_conditions").isJsonArray()) {
+                                    for (JsonElement condElement : ifObj.getAsJsonArray("mod_conditions")) {
+                                        if (condElement.isJsonPrimitive()) {
+                                            ifRule.modConditions.add(condElement.getAsInt());
                                         }
                                     }
                                 }
@@ -670,7 +682,7 @@ public class StageItemHandler {
                     for (StageItemIfRule ifRule : rule.ifConditions) {
                         if (ifRule.otherCase.contains(otherCaseType)) {
                             // Check if conditions are met
-                            if (checkIfRuleConditions(ifRule, rule.stages, player, level)) {
+                            if (checkIfRuleConditions(ifRule, rule, player, level)) {
                                 // Check if item is affected
                                 if (isItemAffected(item, ifRule.items, ifRule.exclude)) {
                                     return ifRule.consequence;
@@ -743,6 +755,8 @@ public class StageItemHandler {
     public static class StageItemRule {
         public String stagesLogic = "AND";
         public List<StageCondition> stages = new ArrayList<>();
+        public List<LoadModCondition> mods = new ArrayList<>();
+        public CommandItemDefinition.StagesLogic modsLogic = CommandItemDefinition.StagesLogic.DEF_AND;
         public boolean containersWhitelist = true;
         public List<String> containersList = new ArrayList<>();
         public List<String> items = new ArrayList<>();
@@ -758,6 +772,7 @@ public class StageItemHandler {
      */
     public static class StageItemIfRule {
         public List<Integer> conditions = new ArrayList<>();
+        public List<Integer> modConditions = new ArrayList<>();
         public List<String> containersList = new ArrayList<>();
         public List<String> items = new ArrayList<>();
         /** Exempt items: same format as items. Default empty. */

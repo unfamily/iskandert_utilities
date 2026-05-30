@@ -8,11 +8,16 @@
       "stack_size": 1,
       "is_foil": false,
       "stages_logic": "DEF_AND",
+      "mods_logic": "DEF_AND",
       "cooldown": 10,
       "stages": [
           {"stage_type": "world", "stage": "initializing", "is": false},
           {"stage_type": "world", "stage": "initialized", "is": false},
           {"stage_type": "world", "stage": "initialized", "is": true}
+      ],
+      "mods": [
+          {"mod": "kubejs", "is": true},
+          {"mod": "custommachinery", "is": true}
       ],
       "do": [
         {
@@ -23,10 +28,13 @@
                 {"message": {"target":"@a","color":"#FF0000","in":"action_bar","text":"message.iska_utils.world_init.stand_still"}},
                 {"message": {"target":"@a","color":"#FF0000","in":"action_bar","text":"message.iska_utils.world_init.initializing"}},
                 {"delay": 160},
-                {"execute": "kubejs reload server-scripts"},
+                {"if": [
+                    {"mod_conditions": [0, 1]},
+                    {"execute": "kubejs reload server-scripts"},
+                    {"execute": "custommachinery reload"}
+                ]},
                 {"execute": "reload"},
                 {"delay": 20},
-                {"execute": "custommachinery reload"},
                 {"message": {"target":"@a","color":"#00FF00","in":"action_bar","text":"message.iska_utils.world_init.completed"}},
                 {"execute": "iska_utils_stage add world initialized true"},
                 {"execute": "iska_utils_stage remove world initializing true"},
@@ -42,4 +50,3 @@
     }
   ]
 }
-

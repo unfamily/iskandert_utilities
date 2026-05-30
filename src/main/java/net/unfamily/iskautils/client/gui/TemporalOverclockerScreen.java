@@ -6,6 +6,11 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
+import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.item.ModItems;
 import net.minecraft.core.BlockPos;
 
 /**
@@ -21,19 +26,19 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
     private static final ResourceLocation SINGLE_SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
     
-    // GUI dimensions (based on temporal_overclocker.png: 200x200)
-    private static final int GUI_WIDTH = 200;
-    private static final int GUI_HEIGHT = 200;
+    // GUI dimensions (based on temporal_overclocker.png: 200x260)
+    private static final int GUI_WIDTH = TemporalOverclockerMenu.GUI_WIDTH;
+    private static final int GUI_HEIGHT = TemporalOverclockerMenu.GUI_HEIGHT;
     
     // Energy bar dimensions
     private static final int ENERGY_BAR_WIDTH = 8;
-    private static final int ENERGY_BAR_HEIGHT = 32;
+    private static final int ENERGY_BAR_HEIGHT = TemporalOverclockerMenu.ENERGY_BAR_HEIGHT;
     
     // Entry dimensions (entry_wide is 140x24)
     private static final int ENTRY_WIDTH = 140;
     private static final int ENTRY_HEIGHT = 24; // entry_wide is 24px high
     private static final int ENTRIES_START_X = (GUI_WIDTH - ENTRY_WIDTH) / 2; // Centered: (200-140)/2 = 30
-    private static final int ENTRIES_START_Y = 30;
+    private static final int ENTRIES_START_Y = TemporalOverclockerMenu.LINKED_ENTRIES_START_Y;
     // Calculate max entries: GUI_HEIGHT (200) - ENTRIES_START_Y (30) - button height (20) - spacing (5) - bottom margin (5) = 140px
     // With entry height 24px: 140 / 24 = 5.83, so max 5 entries
     private static final int VISIBLE_ENTRIES = 5;
@@ -53,13 +58,9 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
     
-    // Custom redstone mode button
-    private int redstoneModeButtonX, redstoneModeButtonY;
-    private static final int REDSTONE_BUTTON_SIZE = 16;
-    
-    // Custom persistent mode button
-    private int persistentModeButtonX, persistentModeButtonY;
-    private static final int PERSISTENT_BUTTON_SIZE = 16;
+    // Custom redstone / persistent mode buttons (positions derived from imageHeight)
+    private static final int REDSTONE_BUTTON_SIZE = TemporalOverclockerMenu.SIDE_BUTTON_SIZE;
+    private static final int PERSISTENT_BUTTON_SIZE = TemporalOverclockerMenu.SIDE_BUTTON_SIZE;
     
     // Acceleration factor button (vanilla button)
     private Button accelerationButton;
@@ -84,6 +85,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         
         this.imageWidth = GUI_WIDTH;
         this.imageHeight = GUI_HEIGHT;
+        this.inventoryLabelY = 10000;
     }
     
     @Override
@@ -105,32 +107,10 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                            .build();
         addRenderableWidget(closeButton);
         
-        // Redstone mode button position (right side, centered in the space between entries end and right edge)
-        // Entries end at: ENTRIES_START_X + ENTRY_WIDTH = 30 + 140 = 170
-        // Available space on right: GUI_WIDTH - 170 = 200 - 170 = 30px
-        int entriesEndX = ENTRIES_START_X + ENTRY_WIDTH; // 170px
-        int rightSpace = GUI_WIDTH - entriesEndX; // 30px
-        
-        // Center the two buttons vertically with 2px spacing between them
-        int totalButtonsHeight = REDSTONE_BUTTON_SIZE + 2 + PERSISTENT_BUTTON_SIZE; // 16 + 2 + 16 = 34px
-        int buttonsStartY = this.topPos + (GUI_HEIGHT - totalButtonsHeight) / 2;
-        
-        // Redstone mode button (top)
-        this.redstoneModeButtonX = this.leftPos + entriesEndX + (rightSpace - REDSTONE_BUTTON_SIZE) / 2;
-        this.redstoneModeButtonY = buttonsStartY;
-        
-        // Persistent mode button (bottom, 2px below redstone)
-        this.persistentModeButtonX = this.leftPos + entriesEndX + (rightSpace - PERSISTENT_BUTTON_SIZE) / 2;
-        this.persistentModeButtonY = buttonsStartY + REDSTONE_BUTTON_SIZE + 2;
-        
-        // Acceleration button position (below entries, centered)
-        int entriesEndY = ENTRIES_START_Y + (VISIBLE_ENTRIES * ENTRY_HEIGHT);
-        int accelerationButtonY = entriesEndY + 5; // 5 pixel spacing below entries
-        // Button will end at: accelerationButtonY + 20 = entriesEndY + 25
-        // With 5 entries: 30 + (5 * 24) + 25 = 30 + 120 + 25 = 175, leaving 25px margin from bottom (200 - 175)
-        int accelerationButtonWidth = 100;
-        int accelerationButtonHeight = 20;
-        // Center button horizontally with entries
+        // Acceleration button position (below entries, centered; Y shared with machine slots)
+        int accelerationButtonY = TemporalOverclockerMenu.ACCELERATION_BUTTON_Y;
+        int accelerationButtonWidth = TemporalOverclockerMenu.ACCELERATION_BUTTON_WIDTH;
+        int accelerationButtonHeight = TemporalOverclockerMenu.ACCELERATION_BUTTON_HEIGHT;
         int accelerationButtonX = ENTRIES_START_X + (ENTRY_WIDTH - accelerationButtonWidth) / 2;
         
         // Create vanilla button with text
@@ -172,9 +152,10 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         // Aggiorna il testo del pulsante accelerazione
         if (this.accelerationButton != null) {
             int accelerationFactor = this.menu.getAccelerationFactor();
-            int percentage = accelerationFactor * 100; // 20 = 2000%
-            String text = String.format("Overclock: %d%%", percentage);
-            this.accelerationButton.setMessage(Component.literal(text));
+            int percentage = accelerationFactor * 100;
+            boolean entropic = accelerationFactor > Config.temporalOverclockerAccelerationFactorMax;
+            String pct = entropic ? "§5" + percentage + "§r" : String.valueOf(percentage);
+            this.accelerationButton.setMessage(Component.literal("Overclock: " + pct + "%"));
         }
         
         // Update entry buttons SOLO se necessario (evita lampeggiamento tooltip)
@@ -266,13 +247,115 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         if (linkedBlocks.size() > VISIBLE_ENTRIES) {
             renderScrollbar(guiGraphics, mouseX, mouseY);
         }
+        renderMachineSlots(guiGraphics);
+    }
+
+    private void renderMachineSlots(GuiGraphics guiGraphics) {
+        renderSlotBackground(guiGraphics, TemporalOverclockerMenu.UPGRADE_SLOT_X, TemporalOverclockerMenu.ENTROPY_ROW_Y);
+        renderSlotBackground(guiGraphics, TemporalOverclockerMenu.FUEL_SLOT_X, TemporalOverclockerMenu.ENTROPY_ROW_Y);
+    }
+
+    private static ItemStack machineSlotGhost(Slot slot) {
+        if (slot.index == TemporalOverclockerMenu.UPGRADE_SLOT_INDEX) {
+            return new ItemStack(ModItems.ENTROPIC_CLOCK.get());
+        }
+        if (slot.index == TemporalOverclockerMenu.FUEL_SLOT_INDEX) {
+            return new ItemStack(ModItems.DROP_OF_ENTROPY.get());
+        }
+        return ItemStack.EMPTY;
+    }
+
+    private void renderMachineSlotItem(GuiGraphics guiGraphics, int x, int y, ItemStack stack, @Nullable String itemCount) {
+        int seed = x + y * this.imageWidth;
+        guiGraphics.renderItem(stack, x, y, seed);
+        guiGraphics.renderItemDecorations(this.font, stack, x, y, itemCount);
+    }
+
+    private void renderMachineSlotGhost(GuiGraphics guiGraphics, int x, int y, ItemStack stack) {
+        guiGraphics.renderItem(stack, x, y);
+        guiGraphics.fill(
+                x,
+                y,
+                x + TemporalOverclockerMenu.SLOT_ITEM_RENDER_SIZE,
+                y + TemporalOverclockerMenu.SLOT_ITEM_RENDER_SIZE,
+                0x80000000);
+    }
+
+    private void renderSlotBackground(GuiGraphics guiGraphics, int slotX, int slotY) {
+        guiGraphics.blit(
+                SINGLE_SLOT_TEXTURE,
+                this.leftPos + slotX,
+                this.topPos + slotY,
+                0,
+                0,
+                18,
+                18,
+                18,
+                18);
+    }
+
+    private static boolean isMachineSlot(Slot slot) {
+        return slot.index == TemporalOverclockerMenu.UPGRADE_SLOT_INDEX
+                || slot.index == TemporalOverclockerMenu.FUEL_SLOT_INDEX;
+    }
+
+    @Override
+    protected void renderSlotContents(GuiGraphics guiGraphics, ItemStack itemStack, Slot slot, @Nullable String itemCount) {
+        if (!isMachineSlot(slot)) {
+            super.renderSlotContents(guiGraphics, itemStack, slot, itemCount);
+            return;
+        }
+        int x = TemporalOverclockerMenu.machineSlotItemX(slot.x);
+        int y = TemporalOverclockerMenu.machineSlotItemY(slot.y);
+        if (itemStack.isEmpty()) {
+            ItemStack ghost = machineSlotGhost(slot);
+            if (!ghost.isEmpty()) {
+                renderMachineSlotGhost(guiGraphics, x, y, ghost);
+            }
+            return;
+        }
+        renderMachineSlotItem(guiGraphics, x, y, itemStack, itemCount);
+    }
+
+    @Override
+    protected void renderSlotHighlight(GuiGraphics guiGraphics, Slot slot, int mouseX, int mouseY, float partialTick) {
+        if (isMachineSlot(slot)) {
+            AbstractContainerScreen.renderSlotHighlight(
+                    guiGraphics,
+                    TemporalOverclockerMenu.machineSlotItemX(slot.x),
+                    TemporalOverclockerMenu.machineSlotItemY(slot.y),
+                    0,
+                    getSlotColor(slot.index));
+            return;
+        }
+        super.renderSlotHighlight(guiGraphics, slot, mouseX, mouseY, partialTick);
+    }
+
+    private int sideButtonsScreenX() {
+        return this.leftPos + TemporalOverclockerMenu.sideButtonsX(ENTRIES_START_X, ENTRY_WIDTH);
+    }
+
+    private int energyBarScreenY() {
+        return this.topPos + TemporalOverclockerMenu.energyBarY(this.imageHeight);
+    }
+
+    private int sideButtonsStartScreenY() {
+        return this.topPos + TemporalOverclockerMenu.sideButtonsStartY(this.imageHeight);
+    }
+
+    private int redstoneButtonScreenY() {
+        return sideButtonsStartScreenY();
+    }
+
+    private int persistentButtonScreenY() {
+        return sideButtonsStartScreenY() + REDSTONE_BUTTON_SIZE + TemporalOverclockerMenu.SIDE_BUTTONS_GAP;
     }
     
     private void renderEnergyBar(GuiGraphics guiGraphics) {
         // Position energy bar on the left side, centered in the space between left edge and entries start
         // ENTRIES_START_X is the space available (30px), center the bar in that space
         int energyBarX = this.leftPos + (ENTRIES_START_X - ENERGY_BAR_WIDTH) / 2;
-        int energyBarY = this.topPos + (GUI_HEIGHT / 2) - (ENERGY_BAR_HEIGHT / 2);
+        int energyBarY = energyBarScreenY();
         
         // Always draw empty energy bar background
         guiGraphics.blit(ENERGY_BAR, energyBarX, energyBarY, 
@@ -371,12 +454,12 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
      */
     private void renderPersistentModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the button
-        boolean isHovered = mouseX >= this.persistentModeButtonX && mouseX <= this.persistentModeButtonX + PERSISTENT_BUTTON_SIZE &&
-                           mouseY >= this.persistentModeButtonY && mouseY <= this.persistentModeButtonY + PERSISTENT_BUTTON_SIZE;
+        boolean isHovered = mouseX >= sideButtonsScreenX() && mouseX <= sideButtonsScreenX() + PERSISTENT_BUTTON_SIZE &&
+                           mouseY >= persistentButtonScreenY() && mouseY <= persistentButtonScreenY() + PERSISTENT_BUTTON_SIZE;
         
         // Draw button background (normal or highlighted)
         int textureY = isHovered ? 16 : 0; // Highlighted version is below the normal one
-        guiGraphics.blit(MEDIUM_BUTTONS, this.persistentModeButtonX, this.persistentModeButtonY, 
+        guiGraphics.blit(MEDIUM_BUTTONS, sideButtonsScreenX(), persistentButtonScreenY(), 
                         0, textureY, PERSISTENT_BUTTON_SIZE, PERSISTENT_BUTTON_SIZE, 
                         96, 96); // Correct texture size: 96x96
         
@@ -384,8 +467,8 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         boolean isPersistent = this.menu.isPersistentMode();
         
         // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
-        int iconX = this.persistentModeButtonX + 2; // Center: (16-12)/2 = 2
-        int iconY = this.persistentModeButtonY + 2; // Center: (16-12)/2 = 2
+        int iconX = sideButtonsScreenX() + 2; // Center: (16-12)/2 = 2
+        int iconY = persistentButtonScreenY() + 2; // Center: (16-12)/2 = 2
         int iconSize = 12;
         
         if (isPersistent) {
@@ -401,12 +484,12 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     
     private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         // Check if mouse is over the button
-        boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                           mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
+        boolean isHovered = mouseX >= sideButtonsScreenX() && mouseX <= sideButtonsScreenX() + REDSTONE_BUTTON_SIZE &&
+                           mouseY >= redstoneButtonScreenY() && mouseY <= redstoneButtonScreenY() + REDSTONE_BUTTON_SIZE;
         
         // Draw button background (normal or highlighted)
         int textureY = isHovered ? 16 : 0; // Highlighted version is below the normal one
-        guiGraphics.blit(MEDIUM_BUTTONS, this.redstoneModeButtonX, this.redstoneModeButtonY, 
+        guiGraphics.blit(MEDIUM_BUTTONS, sideButtonsScreenX(), redstoneButtonScreenY(), 
                         0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
                         96, 96); // Correct texture size: 96x96
         
@@ -417,8 +500,8 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         }
         
         // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
-        int iconX = this.redstoneModeButtonX + 2; // Center: (16-12)/2 = 2
-        int iconY = this.redstoneModeButtonY + 2; // Center: (16-12)/2 = 2
+        int iconX = sideButtonsScreenX() + 2; // Center: (16-12)/2 = 2
+        int iconY = redstoneButtonScreenY() + 2; // Center: (16-12)/2 = 2
         int iconSize = 12;
         
         switch (redstoneMode) {
@@ -577,16 +660,16 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
             // Entry buttons remove sono gestiti da vanilla Button widgets
             
             // Handle persistent mode button click
-            if (mouseX >= this.persistentModeButtonX && mouseX <= this.persistentModeButtonX + PERSISTENT_BUTTON_SIZE &&
-                mouseY >= this.persistentModeButtonY && mouseY <= this.persistentModeButtonY + PERSISTENT_BUTTON_SIZE) {
+            if (mouseX >= sideButtonsScreenX() && mouseX <= sideButtonsScreenX() + PERSISTENT_BUTTON_SIZE &&
+                mouseY >= persistentButtonScreenY() && mouseY <= persistentButtonScreenY() + PERSISTENT_BUTTON_SIZE) {
                 onPersistentModePressed();
                 return true;
             }
         }
 
         if ((button == 0 || button == 1)
-                && mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE
-                && mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
+                && mouseX >= sideButtonsScreenX() && mouseX <= sideButtonsScreenX() + REDSTONE_BUTTON_SIZE
+                && mouseY >= redstoneButtonScreenY() && mouseY <= redstoneButtonScreenY() + REDSTONE_BUTTON_SIZE) {
             onRedstoneModePressed(button == 1);
             return true;
         }
@@ -805,11 +888,19 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         String title = titleComponent.getString();
         int titleX = (this.imageWidth - this.font.width(title)) / 2;
         guiGraphics.drawString(this.font, title, titleX, 6, 0x404040, false);
+
+        int max = menu.getMaxStoredEntropy();
+        if (max > 0) {
+            int pct = (int) Math.floor(100.0 * menu.getStoredEntropy() / max);
+            String text = pct + "%";
+            int tx = TemporalOverclockerMenu.machineSlotLabelX(TemporalOverclockerMenu.FUEL_SLOT_X, font.width(text));
+            guiGraphics.drawString(font, text, tx, TemporalOverclockerMenu.machineSlotLabelY(TemporalOverclockerMenu.ENTROPY_ROW_Y), 0x404040, false);
+        }
     }
     
     private void renderEnergyTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         int energyBarX = this.leftPos + (ENTRIES_START_X - ENERGY_BAR_WIDTH) / 2;
-        int energyBarY = this.topPos + (GUI_HEIGHT / 2) - (ENERGY_BAR_HEIGHT / 2);
+        int energyBarY = energyBarScreenY();
         
         if (mouseX >= energyBarX && mouseX <= energyBarX + ENERGY_BAR_WIDTH &&
             mouseY >= energyBarY && mouseY <= energyBarY + ENERGY_BAR_HEIGHT) {
@@ -823,8 +914,8 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     }
     
     private void renderPersistentModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        boolean isHovered = mouseX >= this.persistentModeButtonX && mouseX <= this.persistentModeButtonX + PERSISTENT_BUTTON_SIZE &&
-                           mouseY >= this.persistentModeButtonY && mouseY <= this.persistentModeButtonY + PERSISTENT_BUTTON_SIZE;
+        boolean isHovered = mouseX >= sideButtonsScreenX() && mouseX <= sideButtonsScreenX() + PERSISTENT_BUTTON_SIZE &&
+                           mouseY >= persistentButtonScreenY() && mouseY <= persistentButtonScreenY() + PERSISTENT_BUTTON_SIZE;
         
         if (isHovered) {
             boolean isPersistent = this.menu.isPersistentMode();
@@ -842,8 +933,8 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     }
     
     private void renderRedstoneModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                           mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
+        boolean isHovered = mouseX >= sideButtonsScreenX() && mouseX <= sideButtonsScreenX() + REDSTONE_BUTTON_SIZE &&
+                           mouseY >= redstoneButtonScreenY() && mouseY <= redstoneButtonScreenY() + REDSTONE_BUTTON_SIZE;
         
         if (isHovered) {
             int redstoneMode = this.menu.getRedstoneMode();

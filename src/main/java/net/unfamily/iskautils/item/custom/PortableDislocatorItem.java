@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -133,8 +134,11 @@ public class PortableDislocatorItem extends Item {
         
         // Get the keybind name
         String keybindName = KeyBindings.PORTABLE_DISLOCATOR_KEY.getTranslatedKeyMessage().getString();
-        
-        tooltipComponents.add(Component.translatable("item.iska_utils.portable_dislocator.tooltip.main", keybindName));
+
+        tooltipComponents.add(Component.translatable("item.iska_utils.portable_dislocator.tooltip.main", keybindName)
+                .withStyle(ArtifactTooltipUtil.loreStyle()));
+        tooltipComponents.add(Component.translatable("item.iska_utils.portable_dislocator.tooltip.compasses")
+                .withStyle(ArtifactTooltipUtil.loreStyle()));
 
         // Energy information
         if (canStoreEnergy()) {
@@ -144,25 +148,25 @@ public class PortableDislocatorItem extends Item {
             
             String energyString = String.format("%,d / %,d RF (%.1f%%)", energy, maxEnergy, percentage);
             Component energyText = Component.translatable("item.iska_utils.portable_dislocator.tooltip.energy")
-                .withStyle(style -> style.withColor(ChatFormatting.RED))
-                .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
+                .withStyle(ArtifactTooltipUtil.techStyle())
+                .append(Component.literal(energyString).withStyle(ArtifactTooltipUtil.techStyle()));
             
             tooltipComponents.add(energyText);
             
             // If energy is enabled but we also have XP consumption as backup
             if (Config.portableDislocatorXpConsume > 0) {
                 Component xpBackupText = Component.translatable(
-                    "item.iska_utils.portable_dislocator.tooltip.xp_backup", 
+                    "item.iska_utils.portable_dislocator.tooltip.xp_backup",
                     Config.portableDislocatorXpConsume)
-                    .withStyle(style -> style.withColor(ChatFormatting.GREEN));
+                    .withStyle(ArtifactTooltipUtil.techStyle());
                 tooltipComponents.add(xpBackupText);
             }
         } else if (Config.portableDislocatorXpConsume > 0) {
             // Energy is disabled but XP consumption is enabled
             Component xpText = Component.translatable(
-                "item.iska_utils.portable_dislocator.tooltip.consumes_xp", 
+                "item.iska_utils.portable_dislocator.tooltip.consumes_xp",
                 Config.portableDislocatorXpConsume)
-                .withStyle(style -> style.withColor(ChatFormatting.GREEN));
+                .withStyle(ArtifactTooltipUtil.techStyle());
             tooltipComponents.add(xpText);
         }
     }

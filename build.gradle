@@ -25,6 +25,27 @@ repositories {
         name = "Maven Central"
         url = "https://repo1.maven.org/maven2"
     }
+    maven {
+        name = "BlameJared"
+        url = "https://maven.blamejared.com"
+        content {
+            includeGroup "vazkii.patchouli"
+        }
+    }
+    maven {
+        name = "Shadows of Fire"
+        url = "https://maven.shadowsoffire.dev/releases"
+        content {
+            includeGroup "dev.shadowsoffire"
+        }
+    }
+    maven {
+        name = "Curios"
+        url = "https://maven.theillusivec4.top"
+        content {
+            includeGroup "top.theillusivec4.curios"
+        }
+    }
 }
 
 base {
@@ -210,6 +231,20 @@ dependencies {
         compileOnly "curse.maven:emi-580555:6420931"
     }
     
+    // Apotheosis integration (optional at runtime; full stack for IDE autocomplete and dev client)
+    def apotheosisStack = { String scope ->
+        dependencies.add(scope, "dev.shadowsoffire:Placebo:${minecraft_version}-${placebo_version}")
+        dependencies.add(scope, "dev.shadowsoffire:ApothicAttributes:${minecraft_version}-${apothic_attributes_version}")
+        dependencies.add(scope, "dev.shadowsoffire:ApothicEnchanting:${minecraft_version}-${apothic_enchanting_version}")
+        dependencies.add(scope, "dev.shadowsoffire:ApothicSpawners:${minecraft_version}-${apothic_spawners_version}")
+        dependencies.add(scope, "vazkii.patchouli:${patchouli_artifact}:${patchouli_version}")
+        dependencies.add(scope, "dev.shadowsoffire:Apotheosis:${minecraft_version}-${apotheosis_version}")
+    }
+    apotheosisStack('compileOnly')
+    apotheosisStack('localRuntime')
+    // Apotheosis requires Curios at dev runtime (optional for published mod)
+    localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+
     // Verify that the value of runtime_itemlist_mod is valid
     if (project.hasProperty('runtime_itemlist_mod') && 
         !(project.runtime_itemlist_mod in ["jei", "rei", "emi", "curios", "none"])) {

@@ -48,10 +48,15 @@ import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.AncientTabletItem;
 import net.unfamily.iskautils.item.custom.UnstableEntropyCatalystItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
+import net.unfamily.iskautils.item.custom.artifact.AncientStarItem;
 import net.unfamily.iskautils.item.custom.artifact.ArcaneDictionaryItem;
 import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
+import net.unfamily.iskautils.item.custom.artifact.CoarselyForgedRingItem;
 import net.unfamily.iskautils.item.custom.artifact.CursedCandleItem;
 import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
+import net.unfamily.iskautils.item.custom.artifact.EntropicClockItem;
+import net.unfamily.iskautils.item.custom.artifact.EntropicRingItem;
+import net.unfamily.iskautils.item.custom.artifact.RunicDiceItem;
 import net.unfamily.iskautils.item.custom.artifact.IceDiamondItem;
 import net.unfamily.iskautils.item.custom.artifact.OldBrickItem;
 import net.unfamily.iskautils.item.custom.artifact.SharpenedBoneItem;
@@ -280,6 +285,16 @@ public class ModItems {
             () -> new SharpenedBoneItem(new Item.Properties()));
     public static final DeferredItem<Item> THE_ROOTS = ITEMS.register("the_roots",
             () -> new TheRootsItem(new Item.Properties()));
+    public static final DeferredItem<Item> COARSELY_FORGED_RING = ITEMS.register("coarsely_forged_ring",
+            () -> new CoarselyForgedRingItem(new Item.Properties()));
+    public static final DeferredItem<Item> ENTROPIC_RING = ITEMS.register("entropic_ring",
+            () -> new EntropicRingItem(new Item.Properties()));
+    public static final DeferredItem<Item> ENTROPIC_CLOCK = ITEMS.register("entropic_clock",
+            () -> new EntropicClockItem(new Item.Properties()));
+    public static final DeferredItem<Item> ANCIENT_STAR = ITEMS.register("ancient_star",
+            () -> new AncientStarItem(new Item.Properties()));
+    public static final DeferredItem<Item> RUNIC_DICE = ITEMS.register("runic_dice",
+            () -> new RunicDiceItem(new Item.Properties()));
 
     // Cursed artifact set
     public static final DeferredItem<Item> TOTEM_OF_PAIN = ITEMS.register("totem_of_pain",

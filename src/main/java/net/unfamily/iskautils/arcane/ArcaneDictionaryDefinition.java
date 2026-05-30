@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
+import net.unfamily.iskautils.script.LoadModGate;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -39,6 +40,9 @@ public final class ArcaneDictionaryDefinition {
                 continue;
             }
             JsonObject obj = el.getAsJsonObject();
+            if (!LoadModGate.shouldIncludeAtLoad(obj, logger, contextId)) {
+                continue;
+            }
             if (!obj.has("enchant")) {
                 logger.warn("Arcane dictionary entry in {} missing enchant", contextId);
                 continue;

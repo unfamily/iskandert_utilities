@@ -8,6 +8,7 @@
     "iska_utils:totem_of_pain",
     "iska_utils:necrotic_crystal_heart",
     "iska_utils:sharpened_bone",
+    "iska_utils:runic_dice",
     "iska_utils:ritual_gauntlet",
     "iska_utils:busted_crown",
     "iska_utils:the_deception",
@@ -16,6 +17,10 @@
     "iska_utils:the_roots",
     "iska_utils:mining_equitizer",
     "iska_utils:cursed_candle",
-    "iska_utils:arcane_dictionary"
+    "iska_utils:arcane_dictionary",
+    "iska_utils:coarsely_forged_ring",
+    "iska_utils:entropic_ring",
+    "iska_utils:entropic_clock",
+    "iska_utils:ancient_star"
   ]
 }

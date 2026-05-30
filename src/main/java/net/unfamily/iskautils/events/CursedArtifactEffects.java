@@ -19,6 +19,7 @@ import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.effect.ModMobEffects;
+import net.unfamily.iskautils.integration.apotheosis.ApotheosisCompat;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.stage.StageRegistry;
 import net.unfamily.iskautils.util.ArtifactTickIntervals;
@@ -36,6 +37,7 @@ public final class CursedArtifactEffects {
     private static final String TOTEM_OF_PAIN_STAGE = "iska_utils_internal-totem_of_pain_equip";
     private static final String RITUAL_GAUNTLET_STAGE = "iska_utils_internal-ritual_gauntlet_equip";
     private static final String THE_DECEPTION_STAGE = "iska_utils_internal-the_deception_equip";
+    private static final String ENTROPIC_RING_STAGE = "iska_utils_internal-entropic_ring_equip";
 
     private CursedArtifactEffects() {}
 
@@ -105,6 +107,27 @@ public final class CursedArtifactEffects {
                 event.setAmount(event.getAmount() * critMultiplier);
             }
         }
+
+        applyEntropicRingBonus(event, player, target);
+    }
+
+    private static void applyEntropicRingBonus(LivingIncomingDamageEvent event, Player player, LivingEntity target) {
+        if (Config.entropicRingDamagePer100Hp <= 0.0D) {
+            return;
+        }
+        if (!StageRegistry.playerHasStage(player, ENTROPIC_RING_STAGE)) {
+            return;
+        }
+        if (player.getHealth() >= target.getHealth()) {
+            return;
+        }
+        double hpGap = target.getHealth() - player.getHealth();
+        double flatBonus = Math.floor(hpGap / 100.0D) * Config.entropicRingDamagePer100Hp;
+        if (flatBonus <= 0.0D) {
+            return;
+        }
+        float finalBonus = (float) (flatBonus * ApotheosisCompat.getWorldTierMultiplier(player));
+        event.setAmount(event.getAmount() + finalBonus);
     }
 
     @SubscribeEvent

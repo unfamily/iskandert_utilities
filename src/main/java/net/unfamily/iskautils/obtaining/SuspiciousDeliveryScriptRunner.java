@@ -83,7 +83,7 @@ public final class SuspiciousDeliveryScriptRunner {
                 return;
             }
             if (action.getType() == CommandItemAction.ActionType.IF) {
-                if (action.checkConditionsByIndices(player, stageAdapter)) {
+                if (action.checkIfConditions(player, stageAdapter)) {
                     runImmediate(player, action.getSubActions(), 0, stageHost);
                 }
                 continue;

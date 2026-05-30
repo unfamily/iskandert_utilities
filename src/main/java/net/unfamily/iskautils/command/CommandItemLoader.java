@@ -446,6 +446,9 @@ public class CommandItemLoader {
             }
             
             String itemId = itemJson.get("id").getAsString();
+            if (!net.unfamily.iskautils.script.LoadModGate.shouldIncludeAtLoad(itemJson, LOGGER, itemId)) {
+                return;
+            }
             
             // Create item definition
             CommandItemDefinition definition = new CommandItemDefinition(itemId);
@@ -505,6 +508,9 @@ public class CommandItemLoader {
                     }
                 }
             }
+
+            definition.setMods(LoadActionParser.parseMods(itemJson));
+            definition.setModsLogic(LoadActionParser.parseModsLogic(itemJson));
             
             // Parse cooldown
             if (itemJson.has("cooldown")) {

@@ -45,17 +45,15 @@ public final class SuspiciousDeliveryObtainingEvents {
     public static void onWandererTrades(WandererTradesEvent event) {
         // Wandering trader picks exactly one trade from the rare pool; generic is left untouched so vanilla trades stay visible.
         BasicItemListing[] listings = new BasicItemListing[] {
-                new BasicItemListing(new ItemStack(net.minecraft.world.item.Items.EMERALD, 12), new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1), 8, 1, 0.05f),
-                new BasicItemListing(new ItemStack(net.minecraft.world.item.Items.EMERALD, 13), new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1), 8, 1, 0.05f),
-                new BasicItemListing(new ItemStack(net.minecraft.world.item.Items.EMERALD, 14), new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1), 8, 1, 0.05f),
-                new BasicItemListing(new ItemStack(net.minecraft.world.item.Items.EMERALD, 15), new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1), 8, 1, 0.05f),
-                new BasicItemListing(new ItemStack(net.minecraft.world.item.Items.EMERALD, 16), new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1), 8, 1, 0.05f)
+                new BasicItemListing(new ItemStack(net.minecraft.world.item.Items.EMERALD, 12), new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1), 1, 1, 0.05f),
+                new BasicItemListing(new ItemStack(net.minecraft.world.item.Items.EMERALD, 13), new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1), 1, 1, 0.05f),
+                new BasicItemListing(new ItemStack(net.minecraft.world.item.Items.EMERALD, 14), new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1), 1, 1, 0.05f),
+                new BasicItemListing(new ItemStack(net.minecraft.world.item.Items.EMERALD, 15), new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1), 1, 1, 0.05f),
+                new BasicItemListing(new ItemStack(net.minecraft.world.item.Items.EMERALD, 16), new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1), 1, 1, 0.05f)
         };
 
         for (BasicItemListing listing : listings) {
-            for (int i = 0; i < 128; i++) {
-                event.getRareTrades().add(listing);
-            }
+            event.getRareTrades().add(listing);
         }
     }
 

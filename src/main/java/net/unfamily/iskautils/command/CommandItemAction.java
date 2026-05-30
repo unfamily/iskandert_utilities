@@ -58,6 +58,7 @@ public class CommandItemAction {
     
     // For IF action type
     private List<Integer> conditionIndices = new ArrayList<>();
+    private List<Integer> modConditionIndices = new ArrayList<>();
     private List<CommandItemAction> subActions = new ArrayList<>();
     
     /**
@@ -172,6 +173,14 @@ public class CommandItemAction {
      */
     public List<Integer> getConditionIndices() {
         return conditionIndices;
+    }
+
+    public void setModConditionIndices(List<Integer> indices) {
+        this.modConditionIndices = indices != null ? indices : new ArrayList<>();
+    }
+
+    public List<Integer> getModConditionIndices() {
+        return modConditionIndices;
     }
     
     /**
@@ -404,4 +413,16 @@ public class CommandItemAction {
         com.mojang.logging.LogUtils.getLogger().debug("Default AND final result for conditions {}: {}", conditionIndices, allMatch);
         return allMatch;
     }
-} 
+
+    public boolean checkModConditionsByIndices(CommandItemDefinition definition) {
+        return net.unfamily.iskautils.script.LoadModGate.checkModIndices(
+                definition.getMods(),
+                definition.getModsLogic(),
+                modConditionIndices);
+    }
+
+    public boolean checkIfConditions(net.minecraft.server.level.ServerPlayer player, CommandItemDefinition definition) {
+        return checkConditionsByIndices(player, definition)
+                && checkModConditionsByIndices(definition);
+    }
+}

@@ -19,6 +19,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
+import net.unfamily.iskautils.script.LoadModGate;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -604,6 +605,9 @@ public class MacroLoader {
             }
             
             String macroId = json.get("command").getAsString();
+            if (!LoadModGate.shouldIncludeAtLoad(json, LOGGER, "macro:" + macroId)) {
+                return;
+            }
             
             // Check if this macro is protected (defined in a non-overwritable file)
             if (PROTECTED_MACROS.containsKey(macroId) && PROTECTED_MACROS.get(macroId)) {

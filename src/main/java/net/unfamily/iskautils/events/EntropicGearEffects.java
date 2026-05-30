@@ -45,7 +45,7 @@ public final class EntropicGearEffects {
 
     private EntropicGearEffects() {}
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOW)
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player player = event.getEntity();
         if (player.level().isClientSide() || !(player instanceof ServerPlayer sp)) {
@@ -180,13 +180,14 @@ public final class EntropicGearEffects {
             return;
         }
         if (!EntropicGearUtil.isWearing(player, ModItems.ENTROPIC_HELMET.get())) {
-            if (!AttributeSyncGrace.shouldDeferRemoval(player)) {
+            if (AttributeSyncGrace.shouldRemoveEquippedBonus(player, HELMET_HP_ID, false)) {
                 removeModifier(maxHealth, HELMET_HP_ID);
                 clampHealth(player);
             }
             return;
         }
 
+        AttributeSyncGrace.shouldRemoveEquippedBonus(player, HELMET_HP_ID, true);
         double bonus = Config.entropicHelmetBaseHp
                 + Config.entropicHelmetHpPerEntropicPiece
                         * EntropicGearUtil.countEntropicArmorPieces(player, EquipmentSlot.HEAD);
@@ -200,9 +201,12 @@ public final class EntropicGearEffects {
             return;
         }
         if (!EntropicGearUtil.isWearing(player, ModItems.ENTROPIC_CHESTPLATE.get())) {
-            removeModifier(toughness, CHEST_TOUGHNESS_ID);
+            if (AttributeSyncGrace.shouldRemoveEquippedBonus(player, CHEST_TOUGHNESS_ID, false)) {
+                removeModifier(toughness, CHEST_TOUGHNESS_ID);
+            }
             return;
         }
+        AttributeSyncGrace.shouldRemoveEquippedBonus(player, CHEST_TOUGHNESS_ID, true);
         if (Config.entropicChestplateMissingHpPerStep <= 0.0D) {
             removeModifier(toughness, CHEST_TOUGHNESS_ID);
             return;
@@ -220,9 +224,12 @@ public final class EntropicGearEffects {
             return;
         }
         if (!EntropicGearUtil.isWearing(player, ModItems.ENTROPIC_LEGGINGS.get())) {
-            removeModifier(armor, LEGGINGS_ARMOR_ID);
+            if (AttributeSyncGrace.shouldRemoveEquippedBonus(player, LEGGINGS_ARMOR_ID, false)) {
+                removeModifier(armor, LEGGINGS_ARMOR_ID);
+            }
             return;
         }
+        AttributeSyncGrace.shouldRemoveEquippedBonus(player, LEGGINGS_ARMOR_ID, true);
         if (Config.entropicLeggingsMissingHpPerStep <= 0.0D) {
             removeModifier(armor, LEGGINGS_ARMOR_ID);
             return;

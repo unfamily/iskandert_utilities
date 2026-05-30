@@ -69,7 +69,7 @@ public final class ArtifactTooltipUtil {
             int loreLineCount,
             int formattedDescIndex,
             Object... formatArgs) {
-        appendDescLinesFrom(tooltip, path, 0, loreLineCount, formattedDescIndex, -1, formatArgs);
+        appendDescLinesFrom(tooltip, path, 0, loreLineCount, formattedDescIndex, formatArgs);
     }
 
     public static void appendDescLinesFrom(
@@ -78,22 +78,8 @@ public final class ArtifactTooltipUtil {
             int startIndex,
             int loreLineCount,
             int formattedDescIndex,
-            Object... formatArgs) {
-        appendDescLinesFrom(tooltip, path, startIndex, loreLineCount, formattedDescIndex, -1, formatArgs);
-    }
-
-    public static void appendDescLinesFrom(
-            Consumer<Component> tooltip,
-            String path,
-            int startIndex,
-            int loreLineCount,
-            int formattedDescIndex,
-            int exclusiveEndIndex,
             Object... formatArgs) {
         for (int i = startIndex; i < MAX_DESC_LINES; i++) {
-            if (exclusiveEndIndex >= 0 && i >= exclusiveEndIndex) {
-                break;
-            }
             String key = "tooltip.iska_utils." + path + ".desc" + i;
             if (!hasTranslation(key)) {
                 break;
