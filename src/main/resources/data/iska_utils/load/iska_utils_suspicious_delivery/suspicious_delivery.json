@@ -81,7 +81,11 @@
     { "weight": 100, "luck": 600, "jeimode": "show", "do": [{ "drop": "iska_utils:the_deception" }] },
     { "weight": 100, "luck": 500, "jeimode": "show", "do": [{ "drop": "iska_utils:ice_diamond" }] },
     { "weight": 100, "luck": 400, "jeimode": "show", "do": [{ "drop": "iska_utils:old_brick" }] },
+    { "weight": 100, "luck": 350, "jeimode": "show", "do": [{ "drop": "iska_utils:coarsely_forged_ring" }] },
     { "weight": 100, "luck": 300, "jeimode": "show", "do": [{ "drop": "iska_utils:the_roots" }] },
+    { "weight": 30, "luck": 10000, "jeimode": "show", "do": [{ "drop": "iska_utils:entropic_clock" }] },
+    { "weight": 75, "luck": 100, "jeimode": "show", "do": [{ "drop": "iska_utils:ancient_star" }] },
+    { "weight": 100, "luck": 850, "jeimode": "show", "do": [{ "drop": "iska_utils:runic_dice" }] },
     { "weight": 50, "luck": 30, "jeimode": "show", "do": [{ "drop": "iska_utils:arcane_dictionary" }] },
     { "weight": 100, "luck": 200, "jeimode": "show", "do": [{ "drop": "iska_utils:mining_equitizer" }] },
     { "weight": 75, "luck": 100, "jeimode": "show", "do": [{ "drop": "iska_utils:cursed_candle" }] }

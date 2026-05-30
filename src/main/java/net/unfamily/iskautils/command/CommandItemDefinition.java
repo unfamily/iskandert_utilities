@@ -3,6 +3,8 @@ package net.unfamily.iskautils.command;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.unfamily.iskautils.script.LoadModCondition;
+
 /**
  * Definition of a command item that can perform actions
  */
@@ -25,6 +27,8 @@ public class CommandItemDefinition {
     
     private final List<StageCondition> stages = new ArrayList<>();
     private StagesLogic stagesLogic = StagesLogic.AND;
+    private final List<LoadModCondition> mods = new ArrayList<>();
+    private StagesLogic modsLogic = StagesLogic.AND;
     
     /**
      * Logic for evaluating stages
@@ -272,6 +276,25 @@ public class CommandItemDefinition {
      */
     public StagesLogic getStagesLogic() {
         return stagesLogic;
+    }
+
+    public void setMods(List<LoadModCondition> mods) {
+        this.mods.clear();
+        if (mods != null) {
+            this.mods.addAll(mods);
+        }
+    }
+
+    public List<LoadModCondition> getMods() {
+        return mods;
+    }
+
+    public void setModsLogic(StagesLogic logic) {
+        this.modsLogic = logic != null ? logic : StagesLogic.AND;
+    }
+
+    public StagesLogic getModsLogic() {
+        return modsLogic;
     }
     
     /**

@@ -90,6 +90,15 @@ public final class LoadActionParser {
                         }
                         action.setConditionIndices(indices);
                     }
+                    if (conditionsObj.has("mod_conditions") && conditionsObj.get("mod_conditions").isJsonArray()) {
+                        List<Integer> modIndices = new ArrayList<>();
+                        for (JsonElement indexElement : conditionsObj.getAsJsonArray("mod_conditions")) {
+                            if (indexElement.isJsonPrimitive()) {
+                                modIndices.add(indexElement.getAsInt());
+                            }
+                        }
+                        action.setModConditionIndices(modIndices);
+                    }
                 }
                 for (int i = 1; i < ifArray.size(); i++) {
                     if (ifArray.get(i).isJsonObject()) {
@@ -155,9 +164,20 @@ public final class LoadActionParser {
         }
         return switch (raw.toUpperCase()) {
             case "OR" -> CommandItemDefinition.StagesLogic.OR;
-            case "DEF_AND" -> CommandItemDefinition.StagesLogic.DEF_AND;
+            case "DEF_AND", "DEF" -> CommandItemDefinition.StagesLogic.DEF_AND;
             case "DEF_OR" -> CommandItemDefinition.StagesLogic.DEF_OR;
             default -> CommandItemDefinition.StagesLogic.AND;
         };
+    }
+
+    public static List<LoadModCondition> parseMods(JsonObject obj) {
+        return LoadModGate.parseMods(obj, "mods");
+    }
+
+    public static CommandItemDefinition.StagesLogic parseModsLogic(JsonObject obj) {
+        if (obj == null || !obj.has("mods_logic")) {
+            return CommandItemDefinition.StagesLogic.AND;
+        }
+        return LoadModGate.parseModsLogic(obj.get("mods_logic").getAsString());
     }
 }

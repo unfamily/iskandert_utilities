@@ -10,12 +10,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.artifact.IceDiamondItem;
+import net.unfamily.iskautils.item.custom.artifact.RunicDiceItem;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ArtifactEquipStages;
 import net.unfamily.iskautils.util.ArtifactTickIntervals;
@@ -29,10 +33,13 @@ import net.unfamily.iskautils.util.CurioEquipUtil;
 public final class ArtifactTickEffects {
     private static final Identifier OLD_BRICK_ARMOR_ID = Identifier.fromNamespaceAndPath("iska_utils", "old_brick_armor");
     private static final Identifier CHOSEN_CHEESE_HP_ID = Identifier.fromNamespaceAndPath("iska_utils", "chosen_cheese_hp");
+    private static final Identifier ANCIENT_STAR_ARMOR_ID = Identifier.fromNamespaceAndPath("iska_utils", "ancient_star_armor");
+    private static final Identifier ANCIENT_STAR_TOUGHNESS_ID = Identifier.fromNamespaceAndPath("iska_utils", "ancient_star_toughness");
+    private static final Identifier RUNIC_DICE_ATTACK_SPEED_ID = Identifier.fromNamespaceAndPath("iska_utils", "runic_dice_attack_speed");
 
     private ArtifactTickEffects() {}
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOW)
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player player = event.getEntity();
         if (player.level().isClientSide()) {
@@ -43,11 +50,35 @@ public final class ArtifactTickEffects {
         }
 
         long gameTime = sp.level().getGameTime();
-        if (ArtifactTickIntervals.isDue(gameTime, ArtifactTickIntervals.FAST_TICKS)) {
+        applyChosenCheese(sp);
+        if (AttributeSyncGrace.shouldRunAttributePass(sp, gameTime, ArtifactTickIntervals.FAST_TICKS)) {
             applyOldBrick(sp);
-            applyChosenCheese(sp);
+            applyAncientStarAttributes(sp);
+            applyRunicDice(sp, gameTime);
         }
         applyIceDiamond(sp);
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onAncientStarDamage(LivingIncomingDamageEvent event) {
+        if (!(event.getSource().getEntity() instanceof Player player)) {
+            return;
+        }
+        if (Config.ancientStarDamageBonus <= 0.0D || Config.ancientStarHighHpRatio <= 0.0D) {
+            return;
+        }
+        if (!StageRegistry.playerHasStage(player, ArtifactEquipStages.ANCIENT_STAR)) {
+            return;
+        }
+        float maxHp = player.getMaxHealth();
+        if (maxHp <= 0.0F) {
+            return;
+        }
+        float ratio = player.getHealth() / maxHp;
+        if (ratio < Config.ancientStarHighHpRatio) {
+            return;
+        }
+        event.setAmount(event.getAmount() + (float) Config.ancientStarDamageBonus);
     }
 
     private static void applyOldBrick(ServerPlayer player) {
@@ -61,8 +92,111 @@ public final class ArtifactTickEffects {
                 armor.addTransientModifier(new AttributeModifier(
                         OLD_BRICK_ARMOR_ID, Config.oldBrickArmorBonus, AttributeModifier.Operation.ADD_VALUE));
             }
-        } else if (existing != null) {
+            AttributeSyncGrace.shouldRemoveEquippedBonus(player, OLD_BRICK_ARMOR_ID, true);
+        } else if (existing != null && AttributeSyncGrace.shouldRemoveEquippedBonus(player, OLD_BRICK_ARMOR_ID, false)) {
             armor.removeModifier(OLD_BRICK_ARMOR_ID);
+        }
+    }
+
+    private static void applyRunicDice(ServerPlayer player, long gameTime) {
+        AttributeInstance attackSpeed = player.getAttribute(Attributes.ATTACK_SPEED);
+        if (attackSpeed == null) {
+            return;
+        }
+
+        if (!StageRegistry.playerHasStage(player, ArtifactEquipStages.RUNIC_DICE)) {
+            removeTransientModifier(attackSpeed, RUNIC_DICE_ATTACK_SPEED_ID, player);
+            return;
+        }
+
+        ItemStack dice = CurioEquipUtil.findActiveStack(player, ModItems.RUNIC_DICE.get());
+        if (dice.isEmpty()) {
+            removeTransientModifier(attackSpeed, RUNIC_DICE_ATTACK_SPEED_ID, player);
+            return;
+        }
+
+        int rerollTicks = Math.max(1, Config.runicDiceRerollTicks);
+        if (gameTime % rerollTicks == 0) {
+            RunicDiceItem.reroll(dice, player.getRandom());
+        } else {
+            RunicDiceItem.ensureRoll(dice, player.getRandom());
+        }
+
+        double bonus = RunicDiceItem.getStoredBonus(dice);
+        if (bonus <= 0.0D) {
+            removeTransientModifier(attackSpeed, RUNIC_DICE_ATTACK_SPEED_ID, player);
+            return;
+        }
+
+        AttributeModifier existing = attackSpeed.getModifier(RUNIC_DICE_ATTACK_SPEED_ID);
+        if (existing != null && existing.amount() == bonus && existing.operation() == AttributeModifier.Operation.ADD_MULTIPLIED_BASE) {
+            AttributeSyncGrace.shouldRemoveEquippedBonus(player, RUNIC_DICE_ATTACK_SPEED_ID, true);
+            return;
+        }
+        if (existing != null) {
+            attackSpeed.removeModifier(RUNIC_DICE_ATTACK_SPEED_ID);
+        }
+        attackSpeed.addTransientModifier(new AttributeModifier(
+                RUNIC_DICE_ATTACK_SPEED_ID, bonus, AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+        AttributeSyncGrace.shouldRemoveEquippedBonus(player, RUNIC_DICE_ATTACK_SPEED_ID, true);
+    }
+
+    private static void applyAncientStarAttributes(ServerPlayer player) {
+        AttributeInstance armor = player.getAttribute(Attributes.ARMOR);
+        AttributeInstance toughness = player.getAttribute(Attributes.ARMOR_TOUGHNESS);
+        if (armor == null || toughness == null) {
+            return;
+        }
+
+        boolean equipped = StageRegistry.playerHasStage(player, ArtifactEquipStages.ANCIENT_STAR);
+        if (!equipped) {
+            removeTransientModifier(armor, ANCIENT_STAR_ARMOR_ID, player);
+            removeTransientModifier(toughness, ANCIENT_STAR_TOUGHNESS_ID, player);
+            return;
+        }
+
+        float maxHp = player.getMaxHealth();
+        float ratio = maxHp > 0.0F ? player.getHealth() / maxHp : 0.0F;
+        boolean lowHp = ratio < Config.ancientStarLowHpRatio;
+
+        applyTransientModifier(armor, ANCIENT_STAR_ARMOR_ID, Config.ancientStarArmorBonus, player, true);
+        if (lowHp && Config.ancientStarToughnessBonus > 0.0D) {
+            applyTransientModifier(toughness, ANCIENT_STAR_TOUGHNESS_ID, Config.ancientStarToughnessBonus, player, true);
+        } else {
+            removeTransientModifier(toughness, ANCIENT_STAR_TOUGHNESS_ID, player);
+        }
+    }
+
+    private static void applyTransientModifier(
+            AttributeInstance attribute,
+            Identifier id,
+            double amount,
+            ServerPlayer player,
+            boolean equipped) {
+        AttributeModifier existing = attribute.getModifier(id);
+        if (amount <= 0.0D) {
+            removeTransientModifier(attribute, id, player);
+            return;
+        }
+        if (existing != null && existing.amount() == amount) {
+            if (equipped) {
+                AttributeSyncGrace.shouldRemoveEquippedBonus(player, id, true);
+            }
+            return;
+        }
+        if (existing != null) {
+            attribute.removeModifier(id);
+        }
+        attribute.addTransientModifier(new AttributeModifier(id, amount, AttributeModifier.Operation.ADD_VALUE));
+        if (equipped) {
+            AttributeSyncGrace.shouldRemoveEquippedBonus(player, id, true);
+        }
+    }
+
+    private static void removeTransientModifier(AttributeInstance attribute, Identifier id, ServerPlayer player) {
+        if (attribute.getModifier(id) != null
+                && AttributeSyncGrace.shouldRemoveEquippedBonus(player, id, false)) {
+            attribute.removeModifier(id);
         }
     }
 
@@ -71,8 +205,13 @@ public final class ArtifactTickEffects {
         if (maxHealth == null) {
             return;
         }
-        if (!StageRegistry.playerHasStage(player, ArtifactEquipStages.CHOSEN_CHEESE)) {
-            if (!AttributeSyncGrace.shouldDeferRemoval(player)
+
+        ItemStack cheese = findEquippedStack(player, ChosenCheeseItem.class);
+        boolean active = StageRegistry.playerHasStage(player, ArtifactEquipStages.CHOSEN_CHEESE)
+                || !cheese.isEmpty();
+
+        if (!active) {
+            if (AttributeSyncGrace.shouldRemoveEquippedBonus(player, CHOSEN_CHEESE_HP_ID, false)
                     && maxHealth.getModifier(CHOSEN_CHEESE_HP_ID) != null) {
                 maxHealth.removeModifier(CHOSEN_CHEESE_HP_ID);
                 clampHealth(player);
@@ -80,26 +219,30 @@ public final class ArtifactTickEffects {
             return;
         }
 
-        ItemStack cheese = findEquippedStack(player, ChosenCheeseItem.class);
-        if (cheese != null) {
+        if (!cheese.isEmpty()) {
             ChosenCheeseItem.syncDisplayModel(cheese);
         }
-        int effective = cheese != null
+        AttributeSyncGrace.shouldRemoveEquippedBonus(player, CHOSEN_CHEESE_HP_ID, true);
+        int effective = !cheese.isEmpty()
                 ? Math.min(ChosenCheeseItem.getLevel(cheese), Config.chosenCheeseMax)
                 : 0;
         double bonus = effective * Config.chosenCheeseHpPerLevel;
         AttributeModifier existing = maxHealth.getModifier(CHOSEN_CHEESE_HP_ID);
+        if (bonus <= 0.0D) {
+            if (existing != null) {
+                return;
+            }
+            return;
+        }
         if (existing != null && existing.amount() == bonus) {
             return;
         }
         if (existing != null) {
             maxHealth.removeModifier(CHOSEN_CHEESE_HP_ID);
         }
-        if (bonus > 0) {
-            maxHealth.addTransientModifier(new AttributeModifier(
-                    CHOSEN_CHEESE_HP_ID, bonus, AttributeModifier.Operation.ADD_VALUE));
-            clampHealth(player);
-        }
+        maxHealth.addTransientModifier(new AttributeModifier(
+                CHOSEN_CHEESE_HP_ID, bonus, AttributeModifier.Operation.ADD_VALUE));
+        clampHealth(player);
     }
 
     private static void applyIceDiamond(ServerPlayer player) {
@@ -164,7 +307,7 @@ public final class ArtifactTickEffects {
                 found[0] = stack;
             }
         });
-        return found[0];
+        return found[0] != null ? found[0] : ItemStack.EMPTY;
     }
 
     private static ItemStack findRepairTarget(Player player) {

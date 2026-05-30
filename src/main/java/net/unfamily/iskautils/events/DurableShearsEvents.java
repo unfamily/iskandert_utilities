@@ -15,7 +15,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 import net.unfamily.iskautils.item.custom.DurableShearsItem;
 
 import java.util.List;
@@ -43,7 +43,7 @@ public final class DurableShearsEvents {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+    public static void onBlockBreak(BreakBlockEvent event) {
         if (!(event.getPlayer() instanceof Player player)) {
             return;
         }

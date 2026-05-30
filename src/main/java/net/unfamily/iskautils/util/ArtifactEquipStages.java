@@ -27,6 +27,8 @@ public final class ArtifactEquipStages {
     public static final String THE_DECEPTION = "iska_utils_internal-the_deception_equip";
     public static final String GREEDY_SHIELD = GreedyShieldItem.EQUIP_STAGE;
     public static final String NECRO_CRYSTAL_HEART = LivingIncomingDamageEventHandler.NECRO_CRYSTAL_HEART_EQUIP_STAGE;
+    public static final String ANCIENT_STAR = "iska_utils_internal-ancient_star_equip";
+    public static final String RUNIC_DICE = "iska_utils_internal-runic_dice_equip";
 
     private static final List<String> ALL_STAGES = List.of(
             OLD_BRICK,
@@ -39,7 +41,9 @@ public final class ArtifactEquipStages {
             RITUAL_GAUNTLET,
             THE_DECEPTION,
             GREEDY_SHIELD,
-            NECRO_CRYSTAL_HEART
+            NECRO_CRYSTAL_HEART,
+            ANCIENT_STAR,
+            RUNIC_DICE
     );
 
     private static final Map<Item, String> STAGE_BY_ITEM = buildStageMap();
@@ -74,6 +78,8 @@ public final class ArtifactEquipStages {
         map.put(ModItems.THE_DECEPTION.get(), THE_DECEPTION);
         map.put(ModItems.GREEDY_SHIELD.get(), GREEDY_SHIELD);
         map.put(ModItems.NECROTIC_CRYSTAL_HEART.get(), NECRO_CRYSTAL_HEART);
+        map.put(ModItems.ANCIENT_STAR.get(), ANCIENT_STAR);
+        map.put(ModItems.RUNIC_DICE.get(), RUNIC_DICE);
         return Collections.unmodifiableMap(map);
     }
 }

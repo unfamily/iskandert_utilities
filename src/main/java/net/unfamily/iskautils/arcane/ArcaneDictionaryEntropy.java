@@ -14,7 +14,7 @@ public final class ArcaneDictionaryEntropy {
     private ArcaneDictionaryEntropy() {}
 
     public static int maxStored() {
-        return Math.max(1, Config.arcaneDictionaryMaxStored);
+        return Math.max(0, Config.arcaneDictionaryMaxStored);
     }
 
     /** Each fast tick: absorb drops into the single dictionary equipped in Curios (no waste past cap). */

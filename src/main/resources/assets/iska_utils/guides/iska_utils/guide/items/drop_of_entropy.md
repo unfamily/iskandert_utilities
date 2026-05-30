@@ -34,6 +34,7 @@ A rare **resource** — not worn on the body. Used on the <ItemImage id="iska_ut
   - <ItemImage id="iska_utils:totem_of_pain" /> Totem of Pain
   - <ItemImage id="iska_utils:necrotic_crystal_heart" /> Necrotic Crystal Heart
   - <ItemImage id="iska_utils:sharpened_bone" /> Sharpened Bone
+  - <ItemImage id="iska_utils:runic_dice" /> Runic Dice
   - <ItemImage id="iska_utils:ritual_gauntlet" /> Ritual Gauntlet
   - <ItemImage id="iska_utils:busted_crown" /> Busted Crown
   - <ItemImage id="iska_utils:the_deception" /> The Deception

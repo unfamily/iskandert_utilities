@@ -44,10 +44,15 @@ public final class CurioEquipUtil {
         if (player == null || consumer == null || !ModUtils.isCuriosLoaded()) {
             return;
         }
-        if (forEachViaCuriosInventory(player, consumer)) {
-            return;
+        int[] found = {0};
+        Consumer<ItemStack> counter = stack -> {
+            found[0]++;
+            consumer.accept(stack);
+        };
+        boolean inventoryScanned = forEachViaCuriosInventory(player, counter);
+        if (!inventoryScanned || found[0] == 0) {
+            forEachViaCuriosHelper(player, consumer);
         }
-        forEachViaCuriosHelper(player, consumer);
     }
 
     private static boolean forEachViaCuriosInventory(Player player, Consumer<ItemStack> consumer) {

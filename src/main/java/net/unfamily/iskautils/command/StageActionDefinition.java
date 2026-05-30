@@ -5,6 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskalib.stage.StageRegistry;
+import net.unfamily.iskautils.script.LoadActionParser;
+import net.unfamily.iskautils.script.LoadModCondition;
+import net.unfamily.iskautils.script.LoadModGate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,12 +23,16 @@ public class StageActionDefinition {
     private final boolean onAdd;
     private final boolean onRemove;
     private final String stagesLogic;
+    private final String modsLogic;
     private final List<StageCondition> stages = new ArrayList<>();
+    private final List<LoadModCondition> mods = new ArrayList<>();
     private final List<StageAction> doActions = new ArrayList<>();
     private final List<IfBranch> ifBranches = new ArrayList<>();
 
     public StageActionDefinition(String id, boolean onCall, boolean onAdd, boolean onRemove, String stagesLogic,
+                                 String modsLogic,
                                  List<StageCondition> stages,
+                                 List<LoadModCondition> mods,
                                  List<StageAction> doActions,
                                  List<IfBranch> ifBranches) {
         this.id = id != null ? id : "";
@@ -33,8 +40,12 @@ public class StageActionDefinition {
         this.onAdd = onAdd;
         this.onRemove = onRemove;
         this.stagesLogic = stagesLogic != null ? stagesLogic : "AND";
+        this.modsLogic = modsLogic != null ? modsLogic : "DEF_AND";
         if (stages != null) {
             this.stages.addAll(stages);
+        }
+        if (mods != null) {
+            this.mods.addAll(mods);
         }
         if (doActions != null) {
             this.doActions.addAll(doActions);
@@ -62,6 +73,14 @@ public class StageActionDefinition {
 
     public String getStagesLogic() {
         return stagesLogic;
+    }
+
+    public String getModsLogic() {
+        return modsLogic;
+    }
+
+    public List<LoadModCondition> getMods() {
+        return mods;
     }
 
     public List<StageCondition> getStages() {
@@ -166,6 +185,18 @@ public class StageActionDefinition {
         }
     }
 
+    public boolean checkModConditionsByIndices(List<Integer> modConditionIndices) {
+        return LoadModGate.checkModIndices(
+                mods,
+                LoadActionParser.parseStagesLogic(modsLogic),
+                modConditionIndices);
+    }
+
+    public boolean checkIfConditions(ServerPlayer player, List<Integer> stageConditionIndices, List<Integer> modConditionIndices) {
+        return checkConditionsByIndices(player, stageConditionIndices)
+                && checkModConditionsByIndices(modConditionIndices);
+    }
+
     public static class StageCondition {
         public final String stageType;
         public final String stage;
@@ -196,10 +227,12 @@ public class StageActionDefinition {
      */
     public static class IfBranch {
         public final List<Integer> conditions;
+        public final List<Integer> modConditions;
         public final List<StageAction> doActions;
 
-        public IfBranch(List<Integer> conditions, List<StageAction> doActions) {
+        public IfBranch(List<Integer> conditions, List<Integer> modConditions, List<StageAction> doActions) {
             this.conditions = conditions != null ? conditions : new ArrayList<>();
+            this.modConditions = modConditions != null ? modConditions : new ArrayList<>();
             this.doActions = doActions != null ? doActions : new ArrayList<>();
         }
     }
@@ -219,8 +252,10 @@ public class StageActionDefinition {
         boolean onAdd = !json.has("onAdd") || json.get("onAdd").getAsBoolean();
         boolean onRemove = !json.has("onRemove") || json.get("onRemove").getAsBoolean();
         String stagesLogic = json.has("stages_logic") ? json.get("stages_logic").getAsString() : "AND";
+        String modsLogic = json.has("mods_logic") ? json.get("mods_logic").getAsString() : "DEF_AND";
 
         List<StageCondition> stages = parseStages(json);
+        List<LoadModCondition> mods = LoadActionParser.parseMods(json);
         List<StageAction> doActions = new ArrayList<>();
         List<IfBranch> ifBranches = new ArrayList<>();
 
@@ -231,7 +266,7 @@ public class StageActionDefinition {
             ifBranches = parseIfBranches(json.getAsJsonArray("if"));
         }
 
-        return new StageActionDefinition(id, onCall, onAdd, onRemove, stagesLogic, stages, doActions, ifBranches);
+        return new StageActionDefinition(id, onCall, onAdd, onRemove, stagesLogic, modsLogic, stages, mods, doActions, ifBranches);
     }
 
     private static List<StageCondition> parseStages(JsonObject json) {
@@ -273,11 +308,19 @@ public class StageActionDefinition {
                     }
                 }
             }
+            List<Integer> modConditions = new ArrayList<>();
+            if (obj.has("mod_conditions") && obj.get("mod_conditions").isJsonArray()) {
+                for (JsonElement c : obj.getAsJsonArray("mod_conditions")) {
+                    if (c.isJsonPrimitive() && c.getAsJsonPrimitive().isNumber()) {
+                        modConditions.add(c.getAsInt());
+                    }
+                }
+            }
             List<StageAction> doActions = new ArrayList<>();
             if (obj.has("do") && obj.get("do").isJsonArray()) {
                 doActions = parseDoActions(obj.getAsJsonArray("do"));
             }
-            result.add(new IfBranch(conditions, doActions));
+            result.add(new IfBranch(conditions, modConditions, doActions));
         }
         return result;
     }

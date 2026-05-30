@@ -51,12 +51,17 @@ import net.unfamily.iskautils.item.custom.LogicModuleItem;
 import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
+import net.unfamily.iskautils.item.custom.artifact.AncientStarItem;
+import net.unfamily.iskautils.item.custom.artifact.ArcaneDictionaryItem;
 import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
+import net.unfamily.iskautils.item.custom.artifact.CoarselyForgedRingItem;
 import net.unfamily.iskautils.item.custom.artifact.CursedCandleItem;
 import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
-import net.unfamily.iskautils.item.custom.artifact.ArcaneDictionaryItem;
+import net.unfamily.iskautils.item.custom.artifact.EntropicClockItem;
+import net.unfamily.iskautils.item.custom.artifact.EntropicRingItem;
 import net.unfamily.iskautils.item.custom.artifact.IceDiamondItem;
 import net.unfamily.iskautils.item.custom.artifact.OldBrickItem;
+import net.unfamily.iskautils.item.custom.artifact.RunicDiceItem;
 import net.unfamily.iskautils.item.custom.artifact.SharpenedBoneItem;
 import net.unfamily.iskautils.item.custom.artifact.TheRootsItem;
 
@@ -228,6 +233,16 @@ public class ModItems {
     public static final DeferredItem<Item> ICE_DIAMOND = ITEMS.registerItem("ice_diamond", IceDiamondItem::new, p -> p.stacksTo(1).durability(1024));
     public static final DeferredItem<Item> SHARPENED_BONE = ITEMS.registerItem("sharpened_bone", SharpenedBoneItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> THE_ROOTS = ITEMS.registerItem("the_roots", TheRootsItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> COARSELY_FORGED_RING = ITEMS.registerItem(
+            "coarsely_forged_ring", CoarselyForgedRingItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> ENTROPIC_RING = ITEMS.registerItem(
+            "entropic_ring", EntropicRingItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> ENTROPIC_CLOCK = ITEMS.registerItem(
+            "entropic_clock", EntropicClockItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> ANCIENT_STAR = ITEMS.registerItem(
+            "ancient_star", AncientStarItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> RUNIC_DICE = ITEMS.registerItem(
+            "runic_dice", RunicDiceItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<Item> TOTEM_OF_PAIN = ITEMS.registerItem("totem_of_pain", CursedArtifactItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> CURSED_CANDLE = ITEMS.registerItem("cursed_candle", CursedCandleItem::new, p -> p.stacksTo(1));

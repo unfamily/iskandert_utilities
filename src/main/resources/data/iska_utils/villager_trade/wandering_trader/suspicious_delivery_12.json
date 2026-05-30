@@ -1,7 +1,7 @@
 {
   "wants": { "id": "minecraft:emerald", "count": 12 },
   "gives": { "id": "iska_utils:suspicious_delivery", "count": 1 },
-  "max_uses": 8,
+  "max_uses": 1,
   "reputation_discount": 0.05,
   "xp": 1
 }

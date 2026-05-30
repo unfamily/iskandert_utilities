@@ -2,21 +2,28 @@ package net.unfamily.iskautils.obtaining;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.command.CommandItemDefinition;
+import net.unfamily.iskautils.script.LoadModCondition;
 
 import java.util.List;
 
 /**
- * Stage evaluation for a suspicious delivery entry (same rules as command items).
+ * Stage and mod evaluation for a suspicious delivery entry (same rules as command items).
  */
 public final class SuspiciousDeliveryStageHost {
     private final List<CommandItemDefinition.StageCondition> stages;
     private final CommandItemDefinition.StagesLogic stagesLogic;
+    private final List<LoadModCondition> mods;
+    private final CommandItemDefinition.StagesLogic modsLogic;
 
     public SuspiciousDeliveryStageHost(
             List<CommandItemDefinition.StageCondition> stages,
-            CommandItemDefinition.StagesLogic stagesLogic) {
+            CommandItemDefinition.StagesLogic stagesLogic,
+            List<LoadModCondition> mods,
+            CommandItemDefinition.StagesLogic modsLogic) {
         this.stages = List.copyOf(stages);
         this.stagesLogic = stagesLogic;
+        this.mods = mods != null ? List.copyOf(mods) : List.of();
+        this.modsLogic = modsLogic != null ? modsLogic : CommandItemDefinition.StagesLogic.AND;
     }
 
     public List<CommandItemDefinition.StageCondition> getStages() {
@@ -25,6 +32,18 @@ public final class SuspiciousDeliveryStageHost {
 
     public CommandItemDefinition.StagesLogic getStagesLogic() {
         return stagesLogic;
+    }
+
+    public List<LoadModCondition> getMods() {
+        return mods;
+    }
+
+    public CommandItemDefinition.StagesLogic getModsLogic() {
+        return modsLogic;
+    }
+
+    public boolean isEligible(ServerPlayer player) {
+        return checkAllStages(player);
     }
 
     public boolean checkAllStages(ServerPlayer player) {
@@ -65,13 +84,15 @@ public final class SuspiciousDeliveryStageHost {
         };
     }
 
-    /** Adapter so {@link net.unfamily.iskautils.command.CommandItemAction} IF blocks can resolve stage indices. */
+    /** Adapter so {@link net.unfamily.iskautils.command.CommandItemAction} IF blocks can resolve stage/mod indices. */
     public CommandItemDefinition asDefinitionAdapter() {
         CommandItemDefinition def = new CommandItemDefinition("suspicious_delivery_stage_host");
         def.setStagesLogic(stagesLogic);
         for (CommandItemDefinition.StageCondition stage : stages) {
             def.addStage(stage);
         }
+        def.setMods(mods);
+        def.setModsLogic(modsLogic);
         return def;
     }
 }

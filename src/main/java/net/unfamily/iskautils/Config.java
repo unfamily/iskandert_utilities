@@ -168,6 +168,18 @@ public class Config {
             .comment("Maximum distance in blocks for linking blocks to the Temporal Overclocker")
             .comment("Blocks beyond this range cannot be linked")
             .defineInRange("236_temporalOverclockerLinkRange", 16, 1, 256);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_CLOCK_MAX_FACTOR_MULTIPLIER = BUILDER
+            .comment("Max acceleration factor multiplier when an Entropic Clock upgrade is installed")
+            .defineInRange("237_entropicClockMaxFactorMultiplier", 2.0D, 1.0D, 10.0D);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_CLOCK_ENTROPY_PER_TICK = BUILDER
+            .comment("Entropy consumed per acceleration tick while the Entropic Clock upgrade is active")
+            .defineInRange("238_entropicClockEntropyPerTick", 10, 0, 100000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_CLOCK_MAX_STORED = BUILDER
+            .comment("Maximum stored entropy buffer for the Entropic Clock upgrade (0 uses Ancient Table max)")
+            .defineInRange("239_entropicClockMaxStored", 0, 0, 1000000);
             
     // Portable Dislocator resource priority configuration
     private static final ModConfigSpec.BooleanValue PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY = BUILDER
@@ -228,8 +240,8 @@ public class Config {
     }
 
     private static final ModConfigSpec.IntValue ARCANE_DICTIONARY_MAX_STORED = BUILDER
-            .comment("Maximum internal entropy stored on an Arcane Dictionary stack")
-            .defineInRange("100_max_stored", 10000000, 1, Integer.MAX_VALUE);
+            .comment("Maximum internal entropy stored on an Arcane Dictionary stack (0 = cannot store entropy)")
+            .defineInRange("100_max_stored", 0, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue ARCANE_DICTIONARY_MIN_TRAITS = BUILDER
             .defineInRange("101_min_traits", 1, 1, 5);
@@ -737,6 +749,62 @@ public class Config {
     private static final ModConfigSpec.IntValue ICE_DIAMOND_HOT_REPAIR_COST = BUILDER
             .comment("Ice Diamond durability cost per repair in hot biomes.")
             .defineInRange("523_ice_diamond_hot_repair_cost", 5, 0, 100);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_RING_DAMAGE_PER_100_HP = BUILDER
+            .comment("Flat outgoing damage bonus per 100 HP the target has above the attacker (Entropic Ring).")
+            .defineInRange("524_entropic_ring_damage_per_100_hp", 5.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ANCIENT_STAR_ARMOR_BONUS = BUILDER
+            .comment("Armor bonus while Ancient Star is equipped in Curios.")
+            .defineInRange("525_ancient_star_armor_bonus", 5.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ANCIENT_STAR_DAMAGE_BONUS = BUILDER
+            .comment("Flat outgoing damage bonus while attacker HP is at or above the high threshold.")
+            .defineInRange("526_ancient_star_damage_bonus", 5.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ANCIENT_STAR_TOUGHNESS_BONUS = BUILDER
+            .comment("Armor toughness bonus while attacker HP is below the low threshold.")
+            .defineInRange("527_ancient_star_toughness_bonus", 5.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ANCIENT_STAR_HIGH_HP_RATIO = BUILDER
+            .comment("HP ratio (0–1) at or above which Ancient Star grants bonus damage.")
+            .defineInRange("528_ancient_star_high_hp_ratio", 0.91D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ANCIENT_STAR_LOW_HP_RATIO = BUILDER
+            .comment("HP ratio (0–1) below which Ancient Star grants bonus toughness.")
+            .defineInRange("529_ancient_star_low_hp_ratio", 0.50D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue RUNIC_DICE_ATTACK_SPEED_MIN = BUILDER
+            .comment("Minimum attack-speed bonus fraction for Runic Dice (0.30 = +30%).")
+            .defineInRange("540_runic_dice_attack_speed_min", 0.30D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue RUNIC_DICE_ATTACK_SPEED_MAX = BUILDER
+            .comment("Maximum attack-speed bonus fraction for Runic Dice (0.50 = +50%).")
+            .defineInRange("541_runic_dice_attack_speed_max", 0.50D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.IntValue RUNIC_DICE_REROLL_TICKS = BUILDER
+            .comment("Ticks between Runic Dice attack-speed re-rolls while equipped.")
+            .defineInRange("542_runic_dice_reroll_ticks", 60, 1, 72000);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_RING_APOTHEOSIS_HAVEN_MULT = BUILDER
+            .comment("Entropic Ring damage multiplier at Apotheosis WorldTier Haven.")
+            .defineInRange("530_entropic_ring_apotheosis_haven_mult", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_RING_APOTHEOSIS_FRONTIER_MULT = BUILDER
+            .comment("Entropic Ring damage multiplier at Apotheosis WorldTier Frontier.")
+            .defineInRange("531_entropic_ring_apotheosis_frontier_mult", 2.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_RING_APOTHEOSIS_ASCENT_MULT = BUILDER
+            .comment("Entropic Ring damage multiplier at Apotheosis WorldTier Ascent.")
+            .defineInRange("532_entropic_ring_apotheosis_ascent_mult", 3.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_RING_APOTHEOSIS_SUMMIT_MULT = BUILDER
+            .comment("Entropic Ring damage multiplier at Apotheosis WorldTier Summit.")
+            .defineInRange("533_entropic_ring_apotheosis_summit_mult", 4.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_RING_APOTHEOSIS_PINNACLE_MULT = BUILDER
+            .comment("Entropic Ring damage multiplier at Apotheosis WorldTier Pinnacle.")
+            .defineInRange("534_entropic_ring_apotheosis_pinnacle_mult", 5.0D, 0.0D, 100.0D);
 
     private static final ModConfigSpec.DoubleValue GREEDY_SHIELD_BLOCK_CHANCE = BUILDER
             .comment("Chance for Greedy Shield to completely block damage (0.0 to 1.0)",
@@ -1249,6 +1317,23 @@ public class Config {
     public static int iceDiamondColdRepairCost;
     public static int iceDiamondTemperateRepairCost;
     public static int iceDiamondHotRepairCost;
+    public static double entropicRingDamagePer100Hp;
+    public static double entropicRingApotheosisHavenMult;
+    public static double entropicRingApotheosisFrontierMult;
+    public static double entropicRingApotheosisAscentMult;
+    public static double entropicRingApotheosisSummitMult;
+    public static double entropicRingApotheosisPinnacleMult;
+    public static double ancientStarArmorBonus;
+    public static double ancientStarDamageBonus;
+    public static double ancientStarToughnessBonus;
+    public static double ancientStarHighHpRatio;
+    public static double ancientStarLowHpRatio;
+    public static double runicDiceAttackSpeedMin;
+    public static double runicDiceAttackSpeedMax;
+    public static int runicDiceRerollTicks;
+    public static double entropicClockMaxFactorMultiplier;
+    public static int entropicClockEntropyPerTick;
+    public static int entropicClockMaxStored;
 
     // Fan configuration
     public static int fanRangeHorizontalMax;
@@ -1450,6 +1535,20 @@ public class Config {
         iceDiamondColdRepairCost = ICE_DIAMOND_COLD_REPAIR_COST.get();
         iceDiamondTemperateRepairCost = ICE_DIAMOND_TEMPERATE_REPAIR_COST.get();
         iceDiamondHotRepairCost = ICE_DIAMOND_HOT_REPAIR_COST.get();
+        entropicRingDamagePer100Hp = ENTROPIC_RING_DAMAGE_PER_100_HP.get();
+        entropicRingApotheosisHavenMult = ENTROPIC_RING_APOTHEOSIS_HAVEN_MULT.get();
+        entropicRingApotheosisFrontierMult = ENTROPIC_RING_APOTHEOSIS_FRONTIER_MULT.get();
+        entropicRingApotheosisAscentMult = ENTROPIC_RING_APOTHEOSIS_ASCENT_MULT.get();
+        entropicRingApotheosisSummitMult = ENTROPIC_RING_APOTHEOSIS_SUMMIT_MULT.get();
+        entropicRingApotheosisPinnacleMult = ENTROPIC_RING_APOTHEOSIS_PINNACLE_MULT.get();
+        ancientStarArmorBonus = ANCIENT_STAR_ARMOR_BONUS.get();
+        ancientStarDamageBonus = ANCIENT_STAR_DAMAGE_BONUS.get();
+        ancientStarToughnessBonus = ANCIENT_STAR_TOUGHNESS_BONUS.get();
+        ancientStarHighHpRatio = ANCIENT_STAR_HIGH_HP_RATIO.get();
+        ancientStarLowHpRatio = ANCIENT_STAR_LOW_HP_RATIO.get();
+        runicDiceAttackSpeedMin = RUNIC_DICE_ATTACK_SPEED_MIN.get();
+        runicDiceAttackSpeedMax = RUNIC_DICE_ATTACK_SPEED_MAX.get();
+        runicDiceRerollTicks = RUNIC_DICE_REROLL_TICKS.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         ftbTeamsSyncEnabled = FTB_TEAMS_SYNC_ENABLED.get();
@@ -1593,6 +1692,12 @@ public class Config {
         temporalOverclockerAccelerationFactorMax = TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR_MAX.get();
         temporalOverclockerAccelerationFactor = TEMPORAL_OVERCLOCKER_ACCELERATION_FACTOR.get();
         temporalOverclockerLinkRange = TEMPORAL_OVERCLOCKER_LINK_RANGE.get();
+        entropicClockMaxFactorMultiplier = ENTROPIC_CLOCK_MAX_FACTOR_MULTIPLIER.get();
+        entropicClockEntropyPerTick = ENTROPIC_CLOCK_ENTROPY_PER_TICK.get();
+        entropicClockMaxStored = ENTROPIC_CLOCK_MAX_STORED.get();
+        if (entropicClockMaxStored <= 0) {
+            entropicClockMaxStored = entropyAncientTableMaxStored;
+        }
 
         // If the energy per acceleration is 0, the energy stored is 0 automatically
         if (temporalOverclockerEnergyPerAcceleration <= 0) {

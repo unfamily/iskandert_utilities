@@ -4,6 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
@@ -13,6 +14,7 @@ import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ArtifactActivationUtil;
 import net.unfamily.iskautils.util.ArtifactEquipStages;
+import net.unfamily.iskautils.util.AttributeSyncGrace;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +26,7 @@ import java.util.Set;
 public final class CurioEquipStageSync {
     private CurioEquipStageSync() {}
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player player = event.getEntity();
         if (player.level().isClientSide()) {
@@ -34,7 +36,8 @@ public final class CurioEquipStageSync {
             return;
         }
 
-        if (!ArtifactTickIntervals.isDue(sp.level().getGameTime(), ArtifactTickIntervals.FAST_TICKS)) {
+        if (!AttributeSyncGrace.inGracePeriod(sp)
+                && !ArtifactTickIntervals.isDue(sp.level().getGameTime(), ArtifactTickIntervals.FAST_TICKS)) {
             return;
         }
 

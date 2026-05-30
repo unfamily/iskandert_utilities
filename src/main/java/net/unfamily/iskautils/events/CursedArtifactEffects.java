@@ -12,6 +12,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -19,9 +20,10 @@ import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.effect.ModMobEffects;
+import net.unfamily.iskautils.integration.apotheosis.ApotheosisCompat;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskalib.stage.StageRegistry;
-import net.unfamily.iskautils.util.ArtifactTickIntervals;
+import net.unfamily.iskautils.util.ArtifactEquipStages;
 import net.unfamily.iskautils.util.AttributeSyncGrace;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
@@ -33,32 +35,32 @@ public final class CursedArtifactEffects {
     private static final Logger LOGGER = LoggerFactory.getLogger(CursedArtifactEffects.class);
 
     private static final Identifier BUSTED_CROWN_HP_ID = Identifier.fromNamespaceAndPath("iska_utils", "busted_crown_hp");
+    private static final Identifier BUSTED_CROWN_CURSED_ZERO_ID =
+            Identifier.fromNamespaceAndPath("iska_utils", "busted_crown_cursed_zero");
     private static final String TOTEM_OF_PAIN_STAGE = "iska_utils_internal-totem_of_pain_equip";
     private static final String RITUAL_GAUNTLET_STAGE = "iska_utils_internal-ritual_gauntlet_equip";
     private static final String THE_DECEPTION_STAGE = "iska_utils_internal-the_deception_equip";
+    private static final String ENTROPIC_RING_STAGE = "iska_utils_internal-entropic_ring_equip";
 
     private CursedArtifactEffects() {}
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOW)
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player player = event.getEntity();
         if (player.level().isClientSide()) return;
         if (!(player instanceof ServerPlayer sp)) return;
 
-        // Busted Crown: bonus HP per cursed artifact (Curios); Cursed Candle also counts in inventory/hands.
-        if (!hasBustedCrownEquipped(sp)) {
-            if (!AttributeSyncGrace.shouldDeferRemoval(sp)) {
+        boolean crownEquipped = hasBustedCrownEquipped(sp);
+        if (!crownEquipped) {
+            if (AttributeSyncGrace.shouldRemoveEquippedBonus(sp, BUSTED_CROWN_HP_ID, false)) {
                 removeBustedCrownModifier(sp);
             }
             return;
         }
 
-        if (!ArtifactTickIntervals.isDue(sp.level().getGameTime(), ArtifactTickIntervals.FAST_TICKS)) {
-            return;
-        }
-
         int cursedCount = countEquippedCursedArtifacts(sp);
         applyBustedCrownModifier(sp, cursedCount);
+        AttributeSyncGrace.shouldRemoveEquippedBonus(sp, BUSTED_CROWN_HP_ID, true);
     }
 
     @SubscribeEvent
@@ -103,6 +105,30 @@ public final class CursedArtifactEffects {
                 event.setAmount(event.getAmount() * critMultiplier);
             }
         }
+
+        applyEntropicRingBonus(event, player, target);
+    }
+
+    private static void applyEntropicRingBonus(LivingIncomingDamageEvent event, Player player, LivingEntity target) {
+        if (Config.entropicRingDamagePer100Hp <= 0.0D) {
+            return;
+        }
+        if (!StageRegistry.playerHasStage(player, ENTROPIC_RING_STAGE)) {
+            return;
+        }
+        float attackerHp = player.getHealth();
+        float targetHp = target.getHealth();
+        if (attackerHp >= targetHp) {
+            return;
+        }
+        double hpGap = targetHp - attackerHp;
+        double flatBonus = Math.floor(hpGap / 100.0D) * Config.entropicRingDamagePer100Hp;
+        if (flatBonus <= 0.0D) {
+            return;
+        }
+        double tierMult = ApotheosisCompat.getWorldTierMultiplier(player);
+        float finalBonus = (float) (flatBonus * tierMult);
+        event.setAmount(event.getAmount() + finalBonus);
     }
 
     @SubscribeEvent
@@ -144,6 +170,9 @@ public final class CursedArtifactEffects {
     }
 
     private static boolean hasBustedCrownEquipped(ServerPlayer player) {
+        if (StageRegistry.playerHasStage(player, ArtifactEquipStages.BUSTED_CROWN)) {
+            return true;
+        }
         if (!ModUtils.isCuriosLoaded()) {
             return false;
         }
@@ -167,9 +196,27 @@ public final class CursedArtifactEffects {
         AttributeModifier existing = maxHealth.getModifier(BUSTED_CROWN_HP_ID);
         double amount = Config.bustedCrownHpPerCursedArtifact * Math.max(0, cursedCount);
 
+        if (cursedCount <= 0) {
+            if (existing != null && existing.amount() > 0.0D) {
+                if (!AttributeSyncGrace.shouldRemoveEquippedBonus(player, BUSTED_CROWN_CURSED_ZERO_ID, false)) {
+                    return;
+                }
+            } else {
+                AttributeSyncGrace.shouldRemoveEquippedBonus(player, BUSTED_CROWN_CURSED_ZERO_ID, true);
+                return;
+            }
+        } else {
+            AttributeSyncGrace.shouldRemoveEquippedBonus(player, BUSTED_CROWN_CURSED_ZERO_ID, true);
+        }
+
         if (existing != null) {
-            if (existing.amount() == amount) return;
+            if (existing.amount() == amount) {
+                return;
+            }
             maxHealth.removeModifier(BUSTED_CROWN_HP_ID);
+        }
+        if (amount <= 0.0D) {
+            return;
         }
         maxHealth.addTransientModifier(new AttributeModifier(BUSTED_CROWN_HP_ID, amount, AttributeModifier.Operation.ADD_VALUE));
         if (player.getHealth() > player.getMaxHealth()) {

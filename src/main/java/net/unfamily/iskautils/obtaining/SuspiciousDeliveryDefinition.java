@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.command.CommandItemAction;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.script.LoadActionParser;
+import net.unfamily.iskautils.script.LoadModGate;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -52,6 +53,9 @@ public final class SuspiciousDeliveryDefinition {
                 continue;
             }
             JsonObject obj = e.getAsJsonObject();
+            if (!LoadModGate.shouldIncludeAtLoad(obj, logger, contextId)) {
+                continue;
+            }
             int weight = obj.has("weight") ? obj.get("weight").getAsInt() : 0;
             int luck = obj.has("luck") ? obj.get("luck").getAsInt() : 0;
             SuspiciousDeliveryJeiMode jeiMode = SuspiciousDeliveryJeiMode.fromString(
@@ -75,7 +79,11 @@ public final class SuspiciousDeliveryDefinition {
                     Math.max(0, weight),
                     luck,
                     jeiMode,
-                    new SuspiciousDeliveryStageHost(stages, stagesLogic),
+                    new SuspiciousDeliveryStageHost(
+                            stages,
+                            stagesLogic,
+                            LoadActionParser.parseMods(obj),
+                            LoadActionParser.parseModsLogic(obj)),
                     actions));
         }
         return new SuspiciousDeliveryDefinition(out);

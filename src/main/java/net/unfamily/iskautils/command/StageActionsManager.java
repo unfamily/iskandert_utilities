@@ -85,7 +85,7 @@ public class StageActionsManager {
 
                 if (def.hasIfBranches()) {
                     for (StageActionDefinition.IfBranch branch : def.getIfBranches()) {
-                        if (def.checkConditionsByIndices(player, branch.conditions)) {
+                        if (def.checkIfConditions(player, branch.conditions, branch.modConditions)) {
                             toExecute = branch.doActions;
                             break;
                         }
@@ -177,7 +177,7 @@ public class StageActionsManager {
                 List<StageActionDefinition.StageAction> toExecute = null;
                 if (def.hasIfBranches()) {
                     for (StageActionDefinition.IfBranch branch : def.getIfBranches()) {
-                        if (def.checkConditionsByIndices(player, branch.conditions)) {
+                        if (def.checkIfConditions(player, branch.conditions, branch.modConditions)) {
                             toExecute = branch.doActions;
                             break;
                         }

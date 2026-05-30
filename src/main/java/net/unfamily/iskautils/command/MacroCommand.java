@@ -22,6 +22,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionLevel;
 import net.unfamily.iskalib.stage.StageRegistry;
+import net.unfamily.iskautils.script.LoadActionParser;
+import net.unfamily.iskautils.script.LoadModCondition;
+import net.unfamily.iskautils.script.LoadModGate;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -1095,13 +1098,13 @@ public class MacroCommand {
      */
     private static boolean checkIfConditions(ServerPlayer player, MacroAction action, MacroDefinition macro) {
         List<Integer> conditionIndices = action.getConditionIndices();
-        
-        if (conditionIndices == null || conditionIndices.isEmpty()) {
-            // No conditions specified, so they're "met" by default
-            return true;
-        }
-        
-        return checkDeferredStageConditions(player, conditionIndices, macro);
+        List<Integer> modConditionIndices = action.getModConditionIndices();
+
+        boolean stageOk = conditionIndices == null || conditionIndices.isEmpty()
+                || checkDeferredStageConditions(player, conditionIndices, macro);
+        boolean modOk = modConditionIndices == null || modConditionIndices.isEmpty()
+                || action.checkModConditionsByIndices(macro);
+        return stageOk && modOk;
     }
     
     /**
@@ -1132,18 +1135,31 @@ public class MacroCommand {
         private final int level;
         private final List<StageRequirement> requiredStages;
         private final StagesLogic stagesLogic;
+        private final List<LoadModCondition> mods;
+        private final CommandItemDefinition.StagesLogic modsLogic;
         
         /**
          * Complete constructor with all fields
          */
         public MacroDefinition(String id, List<MacroAction> actions, List<ParameterDefinition> parameters, 
-                              int level, List<StageRequirement> requiredStages, StagesLogic stagesLogic) {
+                              int level, List<StageRequirement> requiredStages, StagesLogic stagesLogic,
+                              List<LoadModCondition> mods, CommandItemDefinition.StagesLogic modsLogic) {
             this.id = id;
             this.actions = actions;
             this.parameters = parameters != null ? parameters : new ArrayList<>();
             this.level = level;
             this.requiredStages = requiredStages != null ? requiredStages : new ArrayList<>();
             this.stagesLogic = stagesLogic != null ? stagesLogic : StagesLogic.AND;
+            this.mods = mods != null ? mods : List.of();
+            this.modsLogic = modsLogic != null ? modsLogic : CommandItemDefinition.StagesLogic.DEF_AND;
+        }
+        
+        /**
+         * Complete constructor without mod fields (defaults)
+         */
+        public MacroDefinition(String id, List<MacroAction> actions, List<ParameterDefinition> parameters, 
+                              int level, List<StageRequirement> requiredStages, StagesLogic stagesLogic) {
+            this(id, actions, parameters, level, requiredStages, stagesLogic, List.of(), CommandItemDefinition.StagesLogic.DEF_AND);
         }
         
         /**
@@ -1211,6 +1227,9 @@ public class MacroCommand {
                     }
                 }
             }
+            
+            List<LoadModCondition> mods = LoadActionParser.parseMods(json);
+            CommandItemDefinition.StagesLogic modsLogic = LoadActionParser.parseModsLogic(json);
             
             // Extract parameters
             List<ParameterDefinition> parameters = new ArrayList<>();
@@ -1303,6 +1322,15 @@ public class MacroCommand {
                                         }
                                     }
                                 }
+
+                                List<Integer> modConditionIndices = new ArrayList<>();
+                                if (conditionObj.has("mod_conditions") && conditionObj.get("mod_conditions").isJsonArray()) {
+                                    for (JsonElement indexElement : conditionObj.getAsJsonArray("mod_conditions")) {
+                                        if (indexElement.isJsonPrimitive()) {
+                                            modConditionIndices.add(indexElement.getAsInt());
+                                        }
+                                    }
+                                }
                                 
                                 // Extract sub-actions
                                 List<MacroAction> subActions = new ArrayList<>();
@@ -1331,6 +1359,7 @@ public class MacroCommand {
                                         0,
                                         actionStages,
                                         conditionIndices,
+                                        modConditionIndices,
                                         subActions
                                     );
                                     actions.add(ifAction);
@@ -1343,7 +1372,7 @@ public class MacroCommand {
                 }
             }
             
-            return new MacroDefinition(id, actions, parameters, level, requiredStages, stagesLogic);
+            return new MacroDefinition(id, actions, parameters, level, requiredStages, stagesLogic, mods, modsLogic);
         }
         
         public String getId() {
@@ -1368,6 +1397,14 @@ public class MacroCommand {
         
         public StagesLogic getStagesLogic() {
             return stagesLogic;
+        }
+
+        public List<LoadModCondition> getMods() {
+            return mods;
+        }
+
+        public CommandItemDefinition.StagesLogic getModsLogic() {
+            return modsLogic;
         }
         
         public boolean hasStageRequirements() {
@@ -1571,24 +1608,34 @@ public class MacroCommand {
         
         // For IF actions
         private final List<Integer> conditionIndices;
+        private final List<Integer> modConditionIndices;
         private final List<MacroAction> subActions;
         
         public MacroAction(MacroActionType type, String command, int delayTicks, List<StageRequirement> stageRequirements) {
-            this(type, command, delayTicks, stageRequirements, null, null);
+            this(type, command, delayTicks, stageRequirements, null, null, null);
         }
         
         public MacroAction(MacroActionType type, String command, int delayTicks) {
-            this(type, command, delayTicks, null, null, null);
+            this(type, command, delayTicks, null, null, null, null);
         }
         
         public MacroAction(MacroActionType type, String command, int delayTicks, 
                           List<StageRequirement> stageRequirements,
                           List<Integer> conditionIndices, List<MacroAction> subActions) {
+            this(type, command, delayTicks, stageRequirements, conditionIndices, null, subActions);
+        }
+
+        public MacroAction(MacroActionType type, String command, int delayTicks,
+                          List<StageRequirement> stageRequirements,
+                          List<Integer> conditionIndices,
+                          List<Integer> modConditionIndices,
+                          List<MacroAction> subActions) {
             this.type = type;
             this.command = command;
             this.delayTicks = delayTicks;
             this.stageRequirements = stageRequirements != null ? stageRequirements : new ArrayList<>();
             this.conditionIndices = conditionIndices != null ? conditionIndices : new ArrayList<>();
+            this.modConditionIndices = modConditionIndices != null ? modConditionIndices : new ArrayList<>();
             this.subActions = subActions != null ? subActions : new ArrayList<>();
         }
         
@@ -1614,6 +1661,10 @@ public class MacroCommand {
         
         public List<Integer> getConditionIndices() {
             return conditionIndices;
+        }
+
+        public List<Integer> getModConditionIndices() {
+            return modConditionIndices;
         }
         
         public List<MacroAction> getSubActions() {
@@ -1690,6 +1741,13 @@ public class MacroCommand {
             // Unsupported logic type
             LOGGER.warn("Unsupported stages logic for deferred conditions: {}", macro.getStagesLogic());
             return false;
+        }
+
+        public boolean checkModConditionsByIndices(MacroDefinition macro) {
+            return LoadModGate.checkModIndices(
+                    macro.getMods(),
+                    macro.getModsLogic(),
+                    modConditionIndices);
         }
     }
     

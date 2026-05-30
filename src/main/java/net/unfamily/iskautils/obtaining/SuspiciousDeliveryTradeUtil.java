@@ -13,6 +13,7 @@ import net.unfamily.iskautils.item.ModItems;
  * Wandering trader trade helpers for Suspicious Delivery.
  */
 public final class SuspiciousDeliveryTradeUtil {
+    private static final int MAX_TRADE_USES = 1;
     /** Roll when datapack pools miss; keeps the trade common without allowing duplicates. */
     private static final float INJECT_IF_MISSING_CHANCE = 1.0f;
     /** Wandering traders offer nine trades; replace a common slot when injecting. */
@@ -38,9 +39,23 @@ public final class SuspiciousDeliveryTradeUtil {
         return new MerchantOffer(
                 new ItemCost(Items.EMERALD, emeraldCost),
                 new ItemStack(ModItems.SUSPICIOUS_DELIVERY.get(), 1),
-                8,
+                MAX_TRADE_USES,
                 1,
                 0.05f);
+    }
+
+    private static MerchantOffer toSingleUseOffer(MerchantOffer source) {
+        if (source.getMaxUses() == MAX_TRADE_USES) {
+            return source;
+        }
+        return new MerchantOffer(
+                source.getItemCostA(),
+                source.getItemCostB(),
+                source.getResult(),
+                source.getUses(),
+                MAX_TRADE_USES,
+                source.getXp(),
+                source.getPriceMultiplier());
     }
 
     /**
@@ -57,6 +72,9 @@ public final class SuspiciousDeliveryTradeUtil {
                     i--;
                 }
             }
+        }
+        if (keepIndex >= 0) {
+            offers.set(keepIndex, toSingleUseOffer(offers.get(keepIndex)));
         }
     }
 

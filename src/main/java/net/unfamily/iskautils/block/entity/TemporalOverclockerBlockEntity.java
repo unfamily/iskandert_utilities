@@ -4,6 +4,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -15,6 +18,9 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.util.AncientTableFuel;
+import net.unfamily.iskautils.util.EntropyCharges;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +32,19 @@ import java.util.List;
 public class TemporalOverclockerBlockEntity extends BlockEntity {
     private static final String ENERGY_TAG = "Energy";
     private static final String LINKED_BLOCKS_TAG = "LinkedBlocks";
+    private static final String UPGRADE_STACK_TAG = "UpgradeStack";
+    private static final String FUEL_STACK_TAG = "FuelStack";
+    private static final String STORED_ENTROPY_TAG = "StoredEntropy";
+
+    public static final int UPGRADE_SLOT_INDEX = 0;
+    public static final int FUEL_SLOT_INDEX = 1;
+    private static final int MACHINE_SLOT_COUNT = 2;
     
     // List of linked block positions
     private final List<BlockPos> linkedBlocks = new ArrayList<>();
+    
+    private final SimpleContainer machineItems = new SimpleContainer(MACHINE_SLOT_COUNT);
+    private int storedEntropy;
     
     // Energy storage
     private final EnergyStorageImpl energyStorage;
@@ -209,6 +225,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         }
         
         blockEntity.tickCounter++;
+        blockEntity.tryAbsorbFuelSlot();
         
         // Every ACCELERATION_INTERVAL ticks, check for broken blocks and accelerate linked blocks
         if (blockEntity.tickCounter >= ACCELERATION_INTERVAL) {
@@ -255,6 +272,10 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
             // Accelerate each linked block
             if (!blockEntity.linkedBlocks.isEmpty() && level instanceof ServerLevel serverLevel) {
                 if (!blockEntity.redstoneAllowsAcceleration(level)) {
+                    return;
+                }
+                if (blockEntity.hasEntropicClockUpgrade()
+                        && blockEntity.storedEntropy < Config.entropicClockEntropyPerTick) {
                     return;
                 }
                 int accelerationFactor = blockEntity.accelerationFactor;
@@ -333,7 +354,115 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
                     blockEntity.energyStorage.extractEnergy(totalEnergyNeeded, false);
                     blockEntity.setChanged();
                 }
+                if (blockEntity.hasEntropicClockUpgrade() && Config.entropicClockEntropyPerTick > 0) {
+                    blockEntity.storedEntropy = EntropyCharges.consume(
+                            blockEntity.storedEntropy, Config.entropicClockEntropyPerTick);
+                    blockEntity.setChanged();
+                }
             }
+        }
+    }
+
+    public SimpleContainer getMachineItems() {
+        return machineItems;
+    }
+
+    public ItemStack getUpgradeStack() {
+        return machineItems.getItem(UPGRADE_SLOT_INDEX).copy();
+    }
+
+    public void setUpgradeStack(ItemStack stack) {
+        if (stack.isEmpty()) {
+            machineItems.setItem(UPGRADE_SLOT_INDEX, ItemStack.EMPTY);
+        } else if (stack.is(ModItems.ENTROPIC_CLOCK.get())) {
+            machineItems.setItem(UPGRADE_SLOT_INDEX, stack.copyWithCount(1));
+        } else {
+            return;
+        }
+        onUpgradeSlotChanged();
+    }
+
+    public void onMachineSlotChanged(int slot) {
+        if (slot == UPGRADE_SLOT_INDEX) {
+            onUpgradeSlotChanged();
+        } else if (slot == FUEL_SLOT_INDEX) {
+            tryAbsorbFuelSlot();
+        }
+    }
+
+    private void onUpgradeSlotChanged() {
+        ItemStack inSlot = machineItems.getItem(UPGRADE_SLOT_INDEX);
+        if (!inSlot.isEmpty()) {
+            if (!inSlot.is(ModItems.ENTROPIC_CLOCK.get())) {
+                machineItems.setItem(UPGRADE_SLOT_INDEX, ItemStack.EMPTY);
+            } else if (inSlot.getCount() > 1) {
+                machineItems.setItem(UPGRADE_SLOT_INDEX, inSlot.copyWithCount(1));
+            }
+        }
+        clampAccelerationFactor();
+        setChanged();
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    public int getStoredEntropy() {
+        return storedEntropy;
+    }
+
+    public void setStoredEntropy(int value) {
+        this.storedEntropy = Mth.clamp(value, 0, getMaxStoredEntropy());
+        setChanged();
+    }
+
+    public boolean hasEntropicClockUpgrade() {
+        ItemStack upgrade = machineItems.getItem(UPGRADE_SLOT_INDEX);
+        return !upgrade.isEmpty() && upgrade.is(ModItems.ENTROPIC_CLOCK.get());
+    }
+
+    public int getEffectiveAccelerationFactorMax() {
+        int baseMax = Config.temporalOverclockerAccelerationFactorMax;
+        if (!hasEntropicClockUpgrade()) {
+            return baseMax;
+        }
+        return (int) Math.min(Integer.MAX_VALUE, Math.round(baseMax * Config.entropicClockMaxFactorMultiplier));
+    }
+
+    public int getMaxStoredEntropy() {
+        return Math.max(1, Config.entropicClockMaxStored);
+    }
+
+    public void tryAbsorbFuelSlot() {
+        if (level == null || level.isClientSide() || !hasEntropicClockUpgrade()) {
+            return;
+        }
+        int max = getMaxStoredEntropy();
+        boolean changed = false;
+        while (true) {
+            ItemStack fuel = machineItems.getItem(FUEL_SLOT_INDEX);
+            if (!AncientTableFuel.isEntropyFuel(fuel)) {
+                break;
+            }
+            if (!EntropyCharges.canAbsorbOneMore(storedEntropy, max)) {
+                break;
+            }
+            fuel.shrink(1);
+            storedEntropy = EntropyCharges.absorbOneDrop(storedEntropy, max);
+            machineItems.setItem(FUEL_SLOT_INDEX, fuel.isEmpty() ? ItemStack.EMPTY : fuel);
+            changed = true;
+        }
+        if (changed) {
+            setChanged();
+        }
+    }
+
+    private void clampAccelerationFactor() {
+        int min = Config.temporalOverclockerAccelerationFactorMin;
+        int max = getEffectiveAccelerationFactorMax();
+        if (accelerationFactor > max) {
+            accelerationFactor = max;
+        } else {
+            accelerationFactor = Math.max(min, accelerationFactor);
         }
     }
     
@@ -348,10 +477,8 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
      * Sets the acceleration factor
      */
     public void setAccelerationFactor(int factor) {
-        // Limit between min and max from config
         int min = Config.temporalOverclockerAccelerationFactorMin;
-        int max = Config.temporalOverclockerAccelerationFactorMax;
-        // If exceeds maximum, set to maximum
+        int max = getEffectiveAccelerationFactorMax();
         if (factor > max) {
             this.accelerationFactor = max;
         } else {
@@ -364,8 +491,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
      * Increases the acceleration factor by 1
      */
     public void increaseAccelerationFactor() {
-        int max = Config.temporalOverclockerAccelerationFactorMax;
-        setAccelerationFactor(Math.min(this.accelerationFactor + 1, max));
+        setAccelerationFactor(Math.min(this.accelerationFactor + 1, getEffectiveAccelerationFactorMax()));
     }
     
     /**
@@ -380,8 +506,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
      * Increases the acceleration factor by 5
      */
     public void increaseAccelerationFactorBy5() {
-        int max = Config.temporalOverclockerAccelerationFactorMax;
-        setAccelerationFactor(Math.min(this.accelerationFactor + 5, max));
+        setAccelerationFactor(Math.min(this.accelerationFactor + 5, getEffectiveAccelerationFactorMax()));
     }
     
     /**
@@ -396,7 +521,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
      * Sets the acceleration factor to maximum
      */
     public void setAccelerationFactorToMax() {
-        setAccelerationFactor(Config.temporalOverclockerAccelerationFactorMax);
+        setAccelerationFactor(getEffectiveAccelerationFactorMax());
     }
     
     /**
@@ -431,6 +556,15 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         output.putInt("redstoneMode", redstoneMode);
         output.putInt("accelerationFactor", accelerationFactor);
         output.putBoolean("persistentMode", persistentMode);
+        output.putInt(STORED_ENTROPY_TAG, storedEntropy);
+        ItemStack upgrade = machineItems.getItem(UPGRADE_SLOT_INDEX);
+        if (!upgrade.isEmpty()) {
+            output.store(UPGRADE_STACK_TAG, ItemStack.CODEC, upgrade);
+        }
+        ItemStack fuel = machineItems.getItem(FUEL_SLOT_INDEX);
+        if (!fuel.isEmpty()) {
+            output.store(FUEL_STACK_TAG, ItemStack.CODEC, fuel);
+        }
         ValueOutput.TypedOutputList<BlockPos> linked = output.list(LINKED_BLOCKS_TAG, BlockPos.CODEC);
         for (BlockPos linkedPos : linkedBlocks) linked.add(linkedPos);
         if (linked.isEmpty()) output.discard(LINKED_BLOCKS_TAG);
@@ -448,19 +582,24 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
 
         if (input.getInt("accelerationFactor").isPresent()) {
             this.accelerationFactor = input.getIntOr("accelerationFactor", Config.temporalOverclockerAccelerationFactor);
-            // Ensure it's in the valid range from config
-            int min = Config.temporalOverclockerAccelerationFactorMin;
-            int max = Config.temporalOverclockerAccelerationFactorMax;
-            // If exceeds maximum, set to maximum (as requested)
-            if (this.accelerationFactor > max) {
-                this.accelerationFactor = max;
-            } else {
-                this.accelerationFactor = Math.max(min, this.accelerationFactor);
-            }
+            clampAccelerationFactor();
         } else {
-            // Default from config
             this.accelerationFactor = Config.temporalOverclockerAccelerationFactor;
         }
+        
+        this.storedEntropy = input.getIntOr(STORED_ENTROPY_TAG, 0);
+        ItemStack loadedUpgrade = input.read(UPGRADE_STACK_TAG, ItemStack.CODEC).orElse(ItemStack.EMPTY);
+        if (!loadedUpgrade.isEmpty() && !loadedUpgrade.is(ModItems.ENTROPIC_CLOCK.get())) {
+            loadedUpgrade = ItemStack.EMPTY;
+        }
+        machineItems.setItem(UPGRADE_SLOT_INDEX, loadedUpgrade.isEmpty() ? ItemStack.EMPTY : loadedUpgrade.copyWithCount(1));
+        ItemStack loadedFuel = input.read(FUEL_STACK_TAG, ItemStack.CODEC).orElse(ItemStack.EMPTY);
+        if (!loadedFuel.isEmpty() && !AncientTableFuel.isEntropyFuel(loadedFuel)) {
+            loadedFuel = ItemStack.EMPTY;
+        }
+        machineItems.setItem(FUEL_SLOT_INDEX, loadedFuel);
+        this.storedEntropy = Mth.clamp(this.storedEntropy, 0, getMaxStoredEntropy());
+        clampAccelerationFactor();
         
         // Load persistent mode
         this.persistentMode = input.getBooleanOr("persistentMode", this.persistentMode);

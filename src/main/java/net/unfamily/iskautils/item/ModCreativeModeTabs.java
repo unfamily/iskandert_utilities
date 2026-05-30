@@ -206,6 +206,11 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.MINING_EQUITIZER.get());
 
                                 pOutput.accept(ModItems.OLD_BRICK.get());
+                                pOutput.accept(ModItems.COARSELY_FORGED_RING.get());
+                                pOutput.accept(ModItems.ENTROPIC_RING.get());
+                                pOutput.accept(ModItems.ENTROPIC_CLOCK.get());
+                                pOutput.accept(ModItems.ANCIENT_STAR.get());
+                                pOutput.accept(ModItems.RUNIC_DICE.get());
                                 pOutput.accept(ModItems.CHOSEN_CHEESE.get());
                                 pOutput.accept(ModItems.ICE_DIAMOND.get());
                                 pOutput.accept(ModItems.SHARPENED_BONE.get());

@@ -11,6 +11,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
+import net.unfamily.iskautils.script.LoadModGate;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -74,8 +75,12 @@ public class StageActionsLoader {
             for (int i = 0; i < actionsArray.size(); i++) {
                 JsonElement elem = actionsArray.get(i);
                 if (elem.isJsonObject()) {
+                    JsonObject actionObj = elem.getAsJsonObject();
+                    if (!LoadModGate.shouldIncludeAtLoad(actionObj, LOGGER, filePath + "#" + i)) {
+                        continue;
+                    }
                     try {
-                        StageActionDefinition def = StageActionDefinition.fromJson(elem.getAsJsonObject());
+                        StageActionDefinition def = StageActionDefinition.fromJson(actionObj);
                         LOADED_ACTIONS.add(def);
                         if (LOGGER.isDebugEnabled()) {
                             LOGGER.debug("Loaded stage action {} (id={}) from file {}", i, def.getId(), filePath);
