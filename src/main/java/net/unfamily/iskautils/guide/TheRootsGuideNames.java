@@ -1,7 +1,7 @@
 package net.unfamily.iskautils.guide;
 
 import net.minecraft.network.chat.Component;
-import net.unfamily.iskautils.item.custom.relic.TheRootsItem;
+import net.unfamily.iskautils.item.custom.artifact.TheRootsItem;
 
 /**
  * Display names for The Roots guide pages, matching {@link TheRootsItem#getName(net.minecraft.world.item.ItemStack)}.

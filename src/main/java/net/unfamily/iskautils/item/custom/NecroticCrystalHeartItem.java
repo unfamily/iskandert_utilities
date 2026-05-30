@@ -19,7 +19,7 @@ import net.unfamily.iskalib.stage.StageRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.neoforged.fml.ModList;
-import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
+import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
 import java.lang.reflect.Method;
 
 import java.util.List;
@@ -45,7 +45,7 @@ public class NecroticCrystalHeartItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltipComponents, tooltipFlag);
         
-        CursedRelicItem.appendCursedArtifactTooltip(tooltipComponents, "necrotic_crystal_heart");
+        CursedArtifactItem.appendCursedArtifactTooltip(tooltipComponents, "necrotic_crystal_heart");
     }
     
     /**

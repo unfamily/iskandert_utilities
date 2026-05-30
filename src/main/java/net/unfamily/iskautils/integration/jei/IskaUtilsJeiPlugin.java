@@ -18,7 +18,8 @@ import net.unfamily.iskautils.item.ModItems;
 @JeiPlugin
 public final class IskaUtilsJeiPlugin implements IModPlugin {
 
-    private static final Identifier PLUGIN_ID = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "jei_plugin");
+    private static final Identifier PLUGIN_ID =
+        Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "jei_plugin");
 
     @Override
     public Identifier getPluginUid() {
@@ -31,7 +32,8 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         registration.addRecipeCategories(
                 new FactoryRecipeCategory(helper),
                 new SuspiciousDeliveryRecipeCategory(helper),
-                new AncientTabletRecipeCategory(helper));
+                new AncientTabletRecipeCategory(helper),
+                new ArcaneDictionaryRecipeCategory(helper));
     }
 
     @Override
@@ -41,12 +43,14 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
             FactoryJeiRecipes.reloadForClient(mc);
             SuspiciousDeliveryJeiRecipes.reloadForClient(mc);
             AncientTabletJeiRecipes.reloadForClient(mc);
+            ArcaneDictionaryJeiRecipes.reloadForClient(mc);
         }
         registration.addRecipes(FactoryRecipeCategory.RECIPE_TYPE, FactoryJeiRecipes.buildAll());
         registration.addRecipes(
                 SuspiciousDeliveryRecipeCategory.RECIPE_TYPE,
                 SuspiciousDeliveryJeiRecipes.buildAll());
         registration.addRecipes(AncientTabletRecipeCategory.RECIPE_TYPE, AncientTabletJeiRecipes.cached());
+        registration.addRecipes(ArcaneDictionaryRecipeCategory.RECIPE_TYPE, ArcaneDictionaryJeiRecipes.cached());
     }
 
     @Override
@@ -64,6 +68,9 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(
                 new ItemStack(ModItems.ANCIENT_TABLE.get()),
                 AncientTabletRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(
+                new ItemStack(ModItems.ARCANE_DICTIONARY.get()),
+                ArcaneDictionaryRecipeCategory.RECIPE_TYPE);
     }
 
     @Override

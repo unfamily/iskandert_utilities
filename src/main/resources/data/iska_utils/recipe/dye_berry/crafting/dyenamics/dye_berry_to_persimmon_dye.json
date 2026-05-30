@@ -1,26 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
-  "conditions": [
-    {
-      "type": "neoforge:mod_loaded",
-      "modid": "dyenamics"
-    }
-  ],
   "pattern": [
     " VB",
     "   ",
     "BB "
   ],
   "key": {
-    "B": {
-      "item": "iska_utils:dye_berry"
-    },
-    "V": {
-      "item": "minecraft:orange_dye"
-    }
+    "B": "iska_utils:dye_berry",
+    "V": "minecraft:orange_dye"
   },
   "result": {
     "id": "dyenamics:persimmon_dye",
     "count": 5
-  }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "dyenamics"
+    }
+  ]
 }

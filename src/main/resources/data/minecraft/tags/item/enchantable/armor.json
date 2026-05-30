@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "iska_utils:entropic_helmet",
+    "iska_utils:entropic_chestplate",
+    "iska_utils:entropic_leggings",
+    "iska_utils:entropic_boots"
+  ]
+}

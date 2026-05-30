@@ -13,6 +13,7 @@ import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.structure.StructureMonouseLoader;
 import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeLoader;
+import net.unfamily.iskautils.arcane.ArcaneDictionaryLoader;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryLoader;
 import org.slf4j.Logger;
 
@@ -42,5 +43,6 @@ public final class IskaUtilsDataReload {
         FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), rm);
         SuspiciousDeliveryLoader.loadAll(rm);
         AncientTabletRecipeLoader.loadAll(rm);
+        ArcaneDictionaryLoader.loadAll(rm);
     }
 }

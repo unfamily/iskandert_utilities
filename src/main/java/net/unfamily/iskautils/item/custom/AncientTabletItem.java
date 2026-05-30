@@ -16,6 +16,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.unfamily.iskautils.item.component.AncientTabletContents;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 
 import java.util.function.Consumer;
 
@@ -138,6 +139,10 @@ public class AncientTabletItem extends BundleItem {
         };
         super.appendHoverText(stack, context, display, filtered, flag);
         int n = AncientTabletContents.occupiedCount(stack);
-        tooltip.accept(Component.translatable("tooltip.iska_utils.ancient_tablet.contents", n, AncientTabletContents.MAX_SLOTS));
+        ArtifactTooltipUtil.addLoreLine(tooltip, "tooltip.iska_utils.ancient_tablet.desc0");
+        ArtifactTooltipUtil.addLoreLine(tooltip, "tooltip.iska_utils.ancient_tablet.desc1");
+        ArtifactTooltipUtil.addTechLine(tooltip,
+                "tooltip.iska_utils.ancient_tablet.contents", n, AncientTabletContents.MAX_SLOTS);
+        ArtifactTooltipUtil.appendDescLinesFrom(tooltip, "ancient_tablet", 2, 0, -1);
     }
 }

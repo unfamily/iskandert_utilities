@@ -6,18 +6,10 @@
     "DDD"
   ],
   "key": {
-    "A": {
-      "item": "iska_utils:ancient_tablet"
-    },
-    "B": {
-      "tag": "minecraft:planks"
-    },
-    "C": {
-      "item": "iska_utils:unstable_entropy_catalyst"
-    },
-    "D": {
-      "tag": "c:cobblestones"
-    }
+    "A": "iska_utils:ancient_tablet",
+    "B": "#minecraft:planks",
+    "C": "iska_utils:unstable_entropy_catalyst",
+    "D": "#c:cobblestones"
   },
   "result": {
     "id": "iska_utils:ancient_table",

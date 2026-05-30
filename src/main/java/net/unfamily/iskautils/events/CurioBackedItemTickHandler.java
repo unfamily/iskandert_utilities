@@ -13,6 +13,7 @@ import net.unfamily.iskautils.item.custom.FanpackItem;
 import net.unfamily.iskautils.item.custom.GauntletOfClimbingItem;
 import net.unfamily.iskautils.item.custom.GhostBrazierItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
+import net.unfamily.iskautils.util.ArtifactTickIntervals;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 
 /**
@@ -33,6 +34,10 @@ public final class CurioBackedItemTickHandler {
             return;
         }
         if (!(player.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        if (!ArtifactTickIntervals.isDue(level.getGameTime(), ArtifactTickIntervals.FAST_TICKS)) {
             return;
         }
 

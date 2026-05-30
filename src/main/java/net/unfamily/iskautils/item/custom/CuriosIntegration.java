@@ -5,8 +5,8 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
-import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
-import net.unfamily.iskautils.item.custom.relic.TheDeceptionItem;
+import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
+import net.unfamily.iskautils.item.custom.artifact.TheDeceptionItem;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,13 +50,13 @@ public class CuriosIntegration {
         // Register Fanpack as curio
         FanpackCurioHandler.register();
 
-        registerCursedRelicUnequipAllowance();
+        registerCursedArtifactUnequipAllowance();
     }
 
     /**
-     * Cursed relics must always be removable from Curios (no lock-on-equip behavior).
+     * Cursed artifacts must always be removable from Curios (no lock-on-equip behavior).
      */
-    private static void registerCursedRelicUnequipAllowance() {
+    private static void registerCursedArtifactUnequipAllowance() {
         try {
             Class<?> eventClass = Class.forName("top.theillusivec4.curios.api.event.CurioCanUnequipEvent");
             Class<?> triStateClass = Class.forName("net.neoforged.neoforge.common.util.TriState");
@@ -71,15 +71,15 @@ public class CuriosIntegration {
                 }
                 try {
                     ItemStack stack = (ItemStack) getStackMethod.invoke(event);
-                    if (stack.getItem() instanceof CursedRelicItem || stack.getItem() instanceof TheDeceptionItem) {
+                    if (stack.getItem() instanceof CursedArtifactItem || stack.getItem() instanceof TheDeceptionItem) {
                         setResultMethod.invoke(event, allowUnequip);
                     }
                 } catch (ReflectiveOperationException e) {
-                    LOGGER.debug("Cursed relic curio unequip handler failed: {}", e.toString());
+                    LOGGER.debug("Cursed artifact curio unequip handler failed: {}", e.toString());
                 }
             });
         } catch (ReflectiveOperationException e) {
-            LOGGER.warn("Could not register cursed relic curio unequip handler", e);
+            LOGGER.warn("Could not register cursed artifact curio unequip handler", e);
         }
     }
 } 

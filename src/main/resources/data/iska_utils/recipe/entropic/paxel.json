@@ -1,33 +1,15 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {
-      "item": "iska_utils:entropic_shovel"
-    },
-    {
-      "item": "iska_utils:entropic_axe"
-    },
-    {
-      "item": "iska_utils:entropic_pickaxe"
-    },
-    {
-      "tag": "c:bars/netherite"
-    },
-    {
-      "tag": "c:bars/netherite"
-    },
-    {
-      "tag": "c:bars/netherite"
-    },
-    {
-      "tag": "c:bars/netherite"
-    },
-    {
-      "tag": "c:bars/netherite"
-    },
-    {
-      "tag": "c:bars/netherite"
-    }
+    "iska_utils:entropic_shovel",
+    "iska_utils:entropic_axe",
+    "iska_utils:entropic_pickaxe",
+    "#c:bars/netherite",
+    "#c:bars/netherite",
+    "#c:bars/netherite",
+    "#c:bars/netherite",
+    "#c:bars/netherite",
+    "#c:bars/netherite"
   ],
   "result": {
     "id": "iska_utils:entropic_paxel",

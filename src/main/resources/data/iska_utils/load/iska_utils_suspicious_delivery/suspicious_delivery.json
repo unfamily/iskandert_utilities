@@ -82,6 +82,7 @@
     { "weight": 100, "luck": 500, "jeimode": "show", "do": [{ "drop": "iska_utils:ice_diamond" }] },
     { "weight": 100, "luck": 400, "jeimode": "show", "do": [{ "drop": "iska_utils:old_brick" }] },
     { "weight": 100, "luck": 300, "jeimode": "show", "do": [{ "drop": "iska_utils:the_roots" }] },
+    { "weight": 50, "luck": 30, "jeimode": "show", "do": [{ "drop": "iska_utils:arcane_dictionary" }] },
     { "weight": 100, "luck": 200, "jeimode": "show", "do": [{ "drop": "iska_utils:mining_equitizer" }] },
     { "weight": 75, "luck": 100, "jeimode": "show", "do": [{ "drop": "iska_utils:cursed_candle" }] }
   ]

@@ -21,7 +21,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
- * Cursed relic chair block for The Deception.
+ * Cursed artifact chair block for The Deception.
  */
 public class TheDeceptionBlock extends HorizontalDirectionalBlock {
     public static final MapCodec<TheDeceptionBlock> CODEC = simpleCodec(TheDeceptionBlock::new);

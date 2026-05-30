@@ -1,26 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
-  "conditions": [
-    {
-      "type": "neoforge:mod_loaded",
-      "modid": "dyenamics"
-    }
-  ],
   "pattern": [
     "  B",
     "VB ",
     " B "
   ],
   "key": {
-    "B": {
-      "item": "iska_utils:dye_berry"
-    },
-    "V": {
-      "item": "minecraft:red_dye"
-    }
+    "B": "iska_utils:dye_berry",
+    "V": "minecraft:red_dye"
   },
   "result": {
     "id": "dyenamics:rose_dye",
     "count": 5
-  }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "dyenamics"
+    }
+  ]
 }

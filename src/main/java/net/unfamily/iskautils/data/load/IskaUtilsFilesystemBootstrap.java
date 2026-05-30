@@ -38,6 +38,70 @@ public final class IskaUtilsFilesystemBootstrap {
         return count;
     }
 
+    /** Merges every external {@code load/} JSON whose {@code type} matches {@code jsonType}. */
+    public static int mergeIntoForType(Map<Identifier, JsonElement> target, String jsonType) {
+        Path gameDir = FMLPaths.GAMEDIR.get();
+        int count = 0;
+        count += scanDataRootForType(gameDir.resolve("kubejs/data"), jsonType, target);
+        count += scanDatapackRootsForType(gameDir.resolve("datapacks"), jsonType, target);
+        return count;
+    }
+
+    private static int scanDatapackRootsForType(Path datapacksDir, String jsonType, Map<Identifier, JsonElement> target) {
+        if (!Files.isDirectory(datapacksDir)) {
+            return 0;
+        }
+        int count = 0;
+        try (Stream<Path> packs = Files.list(datapacksDir)) {
+            for (Path pack : packs.toList()) {
+                if (Files.isDirectory(pack)) {
+                    count += scanDataRootForType(pack.resolve("data"), jsonType, target);
+                }
+            }
+        } catch (IOException ex) {
+            LOGGER.debug("Could not list datapacks: {}", ex.getMessage());
+        }
+        return count;
+    }
+
+    private static int scanDataRootForType(Path dataRoot, String jsonType, Map<Identifier, JsonElement> target) {
+        if (!Files.isDirectory(dataRoot)) {
+            return 0;
+        }
+        String loadSegment = "/" + IskaUtilsLoadPaths.LOAD_FOLDER + "/";
+        int count = 0;
+        try (Stream<Path> walk = Files.walk(dataRoot)) {
+            for (Path file : walk.filter(Files::isRegularFile).filter(p -> p.toString().endsWith(".json")).toList()) {
+                String normalized = file.toString().replace('\\', '/');
+                Path rel = dataRoot.relativize(file);
+                if (rel.getNameCount() < 3) {
+                    continue;
+                }
+                boolean underLoad = normalized.contains(loadSegment);
+                boolean flatUnderLoad = isFlatUnderLoad(rel);
+                if (!underLoad && !flatUnderLoad) {
+                    continue;
+                }
+                String namespace = rel.getName(0).toString();
+                String pathPart = rel.toString().replace('\\', '/');
+                Identifier id = Identifier.fromNamespaceAndPath(namespace, pathPart);
+                try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                    JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
+                    if (parsed == null || !IskaUtilsLoadPaths.jsonMatchesType(parsed, jsonType)) {
+                        continue;
+                    }
+                    target.put(id, parsed);
+                    count++;
+                } catch (IOException | JsonParseException ex) {
+                    LOGGER.warn("Failed to read external load JSON {}: {}", file, ex.getMessage());
+                }
+            }
+        } catch (IOException ex) {
+            LOGGER.debug("Could not walk {}: {}", dataRoot, ex.getMessage());
+        }
+        return count;
+    }
+
     private static int scanDatapackRoots(Path datapacksDir, String subdirUnderLoad, Map<Identifier, JsonElement> target) {
         if (!Files.isDirectory(datapacksDir)) {
             return 0;

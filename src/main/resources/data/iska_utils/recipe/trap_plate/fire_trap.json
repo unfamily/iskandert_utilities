@@ -1,11 +1,5 @@
 {
   "type": "minecraft:crafting_shaped",
-  "conditions": [
-    {
-      "type": "neoforge:item_exists",
-      "item": "iska_utils:iska_utils_fire"
-    }
-  ],
   "pattern": [
     " C ",
     "CAC",
@@ -19,5 +13,11 @@
   "result": {
     "id": "iska_utils:iska_utils_fire",
     "count": 1
-  }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "iska_utils:iska_utils_fire"
+    }
+  ]
 }

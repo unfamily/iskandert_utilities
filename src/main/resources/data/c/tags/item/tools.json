@@ -4,6 +4,11 @@
     "iska_utils:treetap",
     "iska_utils:electric_treetap",
     "iska_utils:swiss_wrench",
+    "iska_utils:entropic_shovel",
+    "iska_utils:entropic_pickaxe",
+    "iska_utils:entropic_axe",
+    "iska_utils:entropic_sword",
+    "iska_utils:entropic_spear",
     "#c:tools/paxel"
   ]
 } 

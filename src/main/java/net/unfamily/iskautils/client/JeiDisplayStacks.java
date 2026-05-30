@@ -3,7 +3,7 @@ package net.unfamily.iskautils.client;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.item.custom.relic.TheRootsItem;
+import net.unfamily.iskautils.item.custom.artifact.TheRootsItem;
 
 /**
  * Item stacks prepared for JEI / client UI (custom model data, etc.).

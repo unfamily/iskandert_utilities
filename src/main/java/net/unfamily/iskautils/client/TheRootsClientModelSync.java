@@ -8,7 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.item.custom.relic.TheRootsItem;
+import net.unfamily.iskautils.item.custom.artifact.TheRootsItem;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 
 /**

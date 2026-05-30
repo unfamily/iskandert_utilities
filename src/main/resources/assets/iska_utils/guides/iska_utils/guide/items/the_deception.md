@@ -15,7 +15,7 @@ categories:
 
 ## What it does
 
-**Cursed artifact.** You feel confused: sit down or eat? When in doubt, you eat. After eating, you gain **absorption** (temporary extra hearts).
+**Cursed artifact.** You feel confused: sit down or eat? When in doubt, you eat. After eating, you gain **Deceived** — extra absorption shown as a **golden heart** (see the item tooltip).
 
 Wear in **Curios**.
 

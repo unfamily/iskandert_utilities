@@ -9,11 +9,13 @@ import org.slf4j.LoggerFactory;
 
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
-import net.unfamily.iskautils.item.custom.relic.CursedCandleItem;
-import net.unfamily.iskautils.item.custom.relic.CursedRelicItem;
-import net.unfamily.iskautils.item.custom.relic.TheDeceptionItem;
+import net.unfamily.iskautils.item.custom.artifact.CursedCandleItem;
+import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
+import net.unfamily.iskautils.item.custom.artifact.TheDeceptionItem;
 
 import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -132,20 +134,36 @@ public final class CurioEquipUtil {
     }
 
     /**
-     * Cursed artifacts counted for {@link net.unfamily.iskautils.events.CursedRelicEffects} (Busted Crown).
-     * Most relics must be in Curios; {@link ModItems#CURSED_CANDLE} also counts from inventory or hands.
+     * Counts distinct {@link Item} types in Curios matching {@code itemPredicate}.
+     * Duplicate stacks of the same item (e.g. two Busted Crowns) count once.
      */
-    public static int countEquippedCursedRelics(Player player) {
+    public static int countDistinctEquippedCurioItems(Player player, Predicate<Item> itemPredicate) {
+        if (player == null || itemPredicate == null || !ModUtils.isCuriosLoaded()) {
+            return 0;
+        }
+        Set<Item> seen = new HashSet<>();
+        forEachEquippedCurioStack(player, stack -> {
+            Item item = stack.getItem();
+            if (itemPredicate.test(item)) {
+                seen.add(item);
+            }
+        });
+        return seen.size();
+    }
+
+    /**
+     * Cursed artifacts counted for {@link net.unfamily.iskautils.events.CursedArtifactEffects} (Busted Crown).
+     * Each cursed artifact type counts at most once in Curios; {@link ModItems#CURSED_CANDLE} also counts from inventory or hands.
+     */
+    public static int countEquippedCursedArtifacts(Player player) {
         if (player == null) {
             return 0;
         }
         int count = ModUtils.isCuriosLoaded()
-                ? countEquippedCurioStacks(player, stack -> isCursedArtifactItem(stack.getItem()))
+                ? countDistinctEquippedCurioItems(player, CurioEquipUtil::isCursedArtifactItem)
                 : 0;
         if (!findActiveStack(player, ModItems.CURSED_CANDLE.get()).isEmpty()) {
-            boolean candleInCurios = ModUtils.isCuriosLoaded()
-                    && countEquippedCurioStacks(player, stack -> stack.is(ModItems.CURSED_CANDLE.get())) > 0;
-            if (!candleInCurios) {
+            if (!ModUtils.isCuriosLoaded() || !isInCuriosSlots(player, ModItems.CURSED_CANDLE.get())) {
                 count++;
             }
         }
@@ -166,7 +184,7 @@ public final class CurioEquipUtil {
     }
 
     private static boolean isCursedArtifactItem(Item item) {
-        return item instanceof CursedRelicItem
+        return item instanceof CursedArtifactItem
                 || item instanceof CursedCandleItem
                 || item instanceof TheDeceptionItem
                 || item instanceof NecroticCrystalHeartItem;

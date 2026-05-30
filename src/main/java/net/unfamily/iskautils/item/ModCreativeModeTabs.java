@@ -211,7 +211,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SHARPENED_BONE.get());
                                 {
                                     var roots = new net.minecraft.world.item.ItemStack(ModItems.THE_ROOTS.get());
-                                    net.unfamily.iskautils.item.custom.relic.TheRootsItem.syncClientCustomModelData(roots);
+                                    net.unfamily.iskautils.item.custom.artifact.TheRootsItem.syncClientCustomModelData(roots);
                                     pOutput.accept(roots);
                                 }
                                 pOutput.accept(ModItems.TOTEM_OF_PAIN.get());
@@ -219,6 +219,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.BUSTED_CROWN.get());
                                 pOutput.accept(ModItems.RITUAL_GAUNTLET.get());
                                 pOutput.accept(ModItems.THE_DECEPTION.get());
+                                pOutput.accept(ModItems.ARCANE_DICTIONARY.get());
 
                                 // Delivery-related items (after all artifacts)
                                 pOutput.accept(ModItems.DROP_OF_ENTROPY.get());

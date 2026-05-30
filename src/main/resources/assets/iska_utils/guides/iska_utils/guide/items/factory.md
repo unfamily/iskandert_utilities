@@ -31,7 +31,7 @@ If you insert a block you would use in a **Stonecutter** (stone into bricks, sta
 
 ## Mod-only processing
 
-Some actions exist **only** on the Factory — for example dye berries into dyes, or recycling <ItemImage id="iska_utils:suspicious_delivery" /> **Suspicious Delivery** parcels and delivery relics into <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**. See **Drop of Entropy** under **Entropy materials** for the full recyclable list.
+Some actions exist **only** on the Factory — for example dye berries into dyes, or recycling unopened <ItemImage id="iska_utils:suspicious_delivery" /> **Suspicious Delivery** and delivery artifacts into <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**. See **Drop of Entropy** under **Entropy materials** for the full recyclable list.
 
 ## Tips
 

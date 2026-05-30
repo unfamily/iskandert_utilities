@@ -45,7 +45,8 @@ public final class IskaUtilsLoadJson {
             Predicate<Identifier> locationFilter) {
         Map<Identifier, JsonElement> out = new LinkedHashMap<>();
         Map<Identifier, List<Resource>> stacks =
-                resourceManager.listResourceStacks(IskaUtilsLoadPaths.LOAD_FOLDER, id -> id.getPath().endsWith(".json") && locationFilter.test(id));
+                resourceManager.listResourceStacks(IskaUtilsLoadPaths.LOAD_FOLDER,
+                        id -> id.getPath().endsWith(".json") && locationFilter.test(id));
         for (Map.Entry<Identifier, List<Resource>> entry : stacks.entrySet()) {
             List<Resource> stack = entry.getValue();
             if (stack.isEmpty()) {
@@ -59,6 +60,29 @@ public final class IskaUtilsLoadJson {
                 }
             } catch (IOException | JsonParseException ex) {
                 LOGGER.error("Failed to read load JSON {}: {}", entry.getKey(), ex.getMessage());
+            }
+        }
+        return out;
+    }
+
+    public static Map<Identifier, JsonElement> collectMergedJsonUnderDirectory(
+            ResourceManager resourceManager, String directoryUnderDataNamespace, Predicate<Identifier> locationFilter) {
+        Map<Identifier, JsonElement> out = new LinkedHashMap<>();
+        Map<Identifier, List<Resource>> stacks =
+                resourceManager.listResourceStacks(directoryUnderDataNamespace, id -> id.getPath().endsWith(".json") && locationFilter.test(id));
+        for (Map.Entry<Identifier, List<Resource>> entry : stacks.entrySet()) {
+            List<Resource> stack = entry.getValue();
+            if (stack.isEmpty()) {
+                continue;
+            }
+            Resource top = stack.getLast();
+            try (var reader = new BufferedReader(new InputStreamReader(top.open(), StandardCharsets.UTF_8))) {
+                JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
+                if (parsed != null) {
+                    out.put(entry.getKey(), parsed);
+                }
+            } catch (IOException | JsonParseException ex) {
+                LOGGER.error("Failed to read JSON {}: {}", entry.getKey(), ex.getMessage());
             }
         }
         return out;
@@ -82,26 +106,15 @@ public final class IskaUtilsLoadJson {
     }
 
     /**
-     * Merged JSON under {@code data/<namespace>/<directory>/...} (stack tail), filtered by full location id.
+     * Merged JSON from every {@code load/} subtree whose root {@code type} field matches {@code jsonType}.
      */
-    public static Map<Identifier, JsonElement> collectMergedJsonUnderDirectory(
-            ResourceManager resourceManager, String directoryUnderDataNamespace, Predicate<Identifier> locationFilter) {
+    public static Map<Identifier, JsonElement> collectMergedJsonForType(
+            ResourceManager resourceManager,
+            String jsonType) {
         Map<Identifier, JsonElement> out = new LinkedHashMap<>();
-        Map<Identifier, List<Resource>> stacks =
-                resourceManager.listResourceStacks(directoryUnderDataNamespace, id -> id.getPath().endsWith(".json") && locationFilter.test(id));
-        for (Map.Entry<Identifier, List<Resource>> entry : stacks.entrySet()) {
-            List<Resource> stack = entry.getValue();
-            if (stack.isEmpty()) {
-                continue;
-            }
-            Resource top = stack.getLast();
-            try (var reader = new BufferedReader(new InputStreamReader(top.open(), StandardCharsets.UTF_8))) {
-                JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
-                if (parsed != null) {
-                    out.put(entry.getKey(), parsed);
-                }
-            } catch (IOException | JsonParseException ex) {
-                LOGGER.error("Failed to read JSON {}: {}", entry.getKey(), ex.getMessage());
+        for (var e : collectMergedJson(resourceManager, IskaUtilsLoadPaths::isJsonUnderLoadTree).entrySet()) {
+            if (IskaUtilsLoadPaths.jsonMatchesType(e.getValue(), jsonType)) {
+                out.put(e.getKey(), e.getValue());
             }
         }
         return out;
@@ -135,18 +148,15 @@ public final class IskaUtilsLoadJson {
                     }
                     Path root = modFileInfo.getFile().getFilePath();
                     try {
-                        if (java.nio.file.Files.isDirectory(root)) {
-                            // DEV mode: classes folder (build/classes/java/main)
-                            // Need to navigate up 3 levels: main -> java -> classes
-                            // Then go to resources/main at the same level as classes
+                        if (Files.isDirectory(root)) {
                             Path buildDir = root.getParent().getParent().getParent(); // build/
                             Path resourcesFolder = buildDir.resolve("resources").resolve("main");
-                            
-                            if (java.nio.file.Files.exists(resourcesFolder)) {
+
+                            if (Files.exists(resourcesFolder)) {
                                 Path base = resourcesFolder.resolve(dirInRoot);
-                                if (java.nio.file.Files.exists(base)) {
-                                    try (Stream<Path> walk = java.nio.file.Files.walk(base)) {
-                                        walk.filter(java.nio.file.Files::isRegularFile)
+                                if (Files.exists(base)) {
+                                    try (Stream<Path> walk = Files.walk(base)) {
+                                        walk.filter(Files::isRegularFile)
                                                 .filter(p -> p.toString().endsWith(".json"))
                                                 .sorted()
                                                 .forEach(file -> readOneJsonFile(out, base, file));
@@ -157,9 +167,9 @@ public final class IskaUtilsLoadJson {
                             } else {
                                 // Fallback to standard directory mode (in case resources folder doesn't exist where we expect)
                                 Path base = root.resolve(dirInRoot);
-                                if (java.nio.file.Files.exists(base)) {
-                                    try (Stream<Path> walk = java.nio.file.Files.walk(base)) {
-                                        walk.filter(java.nio.file.Files::isRegularFile)
+                                if (Files.exists(base)) {
+                                    try (Stream<Path> walk = Files.walk(base)) {
+                                        walk.filter(Files::isRegularFile)
                                                 .filter(p -> p.toString().endsWith(".json"))
                                                 .sorted()
                                                 .forEach(file -> readOneJsonFile(out, base, file));
@@ -171,9 +181,9 @@ public final class IskaUtilsLoadJson {
                         } else {
                             try (var fs = FileSystems.newFileSystem(root, Map.of())) {
                                 Path base = fs.getPath(dirInRoot);
-                                if (java.nio.file.Files.exists(base)) {
-                                    try (Stream<Path> walk = java.nio.file.Files.walk(base)) {
-                                        walk.filter(java.nio.file.Files::isRegularFile)
+                                if (Files.exists(base)) {
+                                    try (Stream<Path> walk = Files.walk(base)) {
+                                        walk.filter(Files::isRegularFile)
                                                 .filter(p -> p.toString().endsWith(".json"))
                                                 .sorted()
                                                 .forEach(file -> readOneJsonFile(out, base, file));
@@ -188,12 +198,71 @@ public final class IskaUtilsLoadJson {
                     }
                 },
                 () -> {
-                    LOGGER.error("Mod container not found for {} during bootstrap! ModList: {}", IskaUtils.MOD_ID, ModList.get().getMods().stream().map(m -> m.getModId()).toList());
+                    LOGGER.error("Mod container not found for {} during bootstrap! ModList: {}",
+                            IskaUtils.MOD_ID,
+                            ModList.get().getMods().stream().map(m -> m.getModId()).toList());
                     LOGGER.warn("Mod file not found for {}, cannot bootstrap load/{}", IskaUtils.MOD_ID, subdirUnderLoad);
                 });
         int externalFiles = IskaUtilsFilesystemBootstrap.mergeInto(out, subdirUnderLoad);
         if (externalFiles > 0) {
             LOGGER.info("Bootstrap load/{}: merged {} file(s) from kubejs/datapacks on disk", subdirUnderLoad, externalFiles);
+        }
+        return out;
+    }
+
+    /**
+     * Bootstrap from mod jar / resources for every {@code load/} JSON whose {@code type} matches {@code jsonType}.
+     */
+    public static Map<Identifier, JsonElement> collectFromModJarOnlyForType(String jsonType) {
+        Map<Identifier, JsonElement> out = new LinkedHashMap<>();
+        String loadRoot = "data/" + IskaUtils.MOD_ID + "/" + IskaUtilsLoadPaths.LOAD_FOLDER;
+        LOGGER.info("Bootstrap loading type {} from: {}", jsonType, loadRoot);
+        ModList.get().getModContainerById(IskaUtils.MOD_ID).ifPresentOrElse(
+                container -> {
+                    var modFileInfo = container.getModInfo().getOwningFile();
+                    if (modFileInfo == null) {
+                        LOGGER.warn("No mod jar file for {}, cannot bootstrap load/ for type {}", IskaUtils.MOD_ID, jsonType);
+                        return;
+                    }
+                    Path root = modFileInfo.getFile().getFilePath();
+                    try {
+                        if (Files.isDirectory(root)) {
+                            Path buildDir = root.getParent().getParent().getParent();
+                            Path resourcesFolder = buildDir.resolve("resources").resolve("main");
+                            Path base = Files.exists(resourcesFolder) ? resourcesFolder.resolve(loadRoot) : root.resolve(loadRoot);
+                            if (Files.exists(base)) {
+                                try (Stream<Path> walk = Files.walk(base)) {
+                                    walk.filter(Files::isRegularFile)
+                                            .filter(p -> p.toString().endsWith(".json"))
+                                            .sorted()
+                                            .forEach(file -> readOneLoadTreeJsonFile(out, base, file, jsonType));
+                                }
+                            } else {
+                                LOGGER.warn("Directory does not exist: {}", base);
+                            }
+                        } else {
+                            try (var fs = FileSystems.newFileSystem(root, Map.of())) {
+                                Path base = fs.getPath(loadRoot);
+                                if (Files.exists(base)) {
+                                    try (Stream<Path> walk = Files.walk(base)) {
+                                        walk.filter(Files::isRegularFile)
+                                                .filter(p -> p.toString().endsWith(".json"))
+                                                .sorted()
+                                                .forEach(file -> readOneLoadTreeJsonFile(out, base, file, jsonType));
+                                    }
+                                } else {
+                                    LOGGER.warn("Directory does not exist in JAR: {}", base);
+                                }
+                            }
+                        }
+                    } catch (IOException ex) {
+                        LOGGER.error("Failed walking mod load path {}: {}", loadRoot, ex.getMessage());
+                    }
+                },
+                () -> LOGGER.warn("Mod container not found for {} during bootstrap type {}", IskaUtils.MOD_ID, jsonType));
+        int externalFiles = IskaUtilsFilesystemBootstrap.mergeIntoForType(out, jsonType);
+        if (externalFiles > 0) {
+            LOGGER.info("Bootstrap load type {}: merged {} file(s) from kubejs/datapacks on disk", jsonType, externalFiles);
         }
         return out;
     }
@@ -262,6 +331,8 @@ public final class IskaUtilsLoadJson {
         try {
             String rel = base.relativize(file).toString().replace('\\', '/');
             Identifier id = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, base.getFileName() + "/" + rel);
+            // base.getFileName() is the last path segment of directoryUnderDataNamespace, e.g. "recipe"
+            // so id becomes "iska_utils:recipe/<...>.json" which matches ResourceManager ids.
             if (!locationFilter.test(id)) {
                 return;
             }
@@ -281,14 +352,36 @@ public final class IskaUtilsLoadJson {
             String subdir = base.getFileName().toString();
             String rel = base.relativize(file).toString().replace('\\', '/');
             String pathPart = IskaUtilsLoadPaths.LOAD_FOLDER + "/" + subdir + "/" + rel;
-            LOGGER.info("Reading JSON: base={}, subdir={}, rel={}, pathPart={}", base, subdir, rel, pathPart);
             Identifier id = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, pathPart);
-            LOGGER.info("Created identifier: {}", id);
             try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                 JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
                 if (parsed != null) {
                     out.put(id, parsed);
                 }
+            }
+        } catch (Exception ex) {
+            LOGGER.error("Failed reading {}: {}", file, ex.getMessage());
+        }
+    }
+
+    private static void readOneLoadTreeJsonFile(
+            Map<Identifier, JsonElement> out,
+            Path loadBase,
+            Path file,
+            String jsonTypeFilter) {
+        try {
+            String rel = loadBase.relativize(file).toString().replace('\\', '/');
+            String pathPart = IskaUtilsLoadPaths.LOAD_FOLDER + "/" + rel;
+            Identifier id = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, pathPart);
+            try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
+                if (parsed == null) {
+                    return;
+                }
+                if (jsonTypeFilter != null && !IskaUtilsLoadPaths.jsonMatchesType(parsed, jsonTypeFilter)) {
+                    return;
+                }
+                out.put(id, parsed);
             }
         } catch (Exception ex) {
             LOGGER.error("Failed reading {}: {}", file, ex.getMessage());
@@ -305,3 +398,4 @@ public final class IskaUtilsLoadJson {
         return file;
     }
 }
+

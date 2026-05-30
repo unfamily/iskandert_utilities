@@ -19,4 +19,4 @@ An artifact for mining in harsh conditions. While worn in **Curios**, it removes
 
 ## How to obtain
 
-From opening **Suspicious Delivery** (see that entry for how to get the parcel).
+From opening **Suspicious Delivery** (see that hub for how to obtain one).

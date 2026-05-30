@@ -7,7 +7,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.item.custom.relic.ChosenCheeseItem;
+import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 
 /**

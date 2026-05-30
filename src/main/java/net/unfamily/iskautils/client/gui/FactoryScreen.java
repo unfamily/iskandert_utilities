@@ -24,7 +24,7 @@ import java.util.Objects;
 
 public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
     private static final Identifier TEXTURE =
-            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/factory.png");
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/factory.png");
 
     private static final Identifier SCROLLBAR_TEXTURE =
             Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");

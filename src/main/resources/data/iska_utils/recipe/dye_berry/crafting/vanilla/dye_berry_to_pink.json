@@ -6,9 +6,7 @@
     "E E"
   ],
   "key": {
-    "E": {
-      "item": "iska_utils:dye_berry"
-    }
+    "E": "iska_utils:dye_berry"
   },
   "result": {
     "id": "minecraft:pink_dye",

@@ -15,32 +15,32 @@ categories:
 
 ## What it does
 
-A wrapped parcel tied to **Wandering Traders**. **Use** it to receive **one random** outcome. The package is **consumed** when opened.
+A **Suspicious Delivery** from **Wandering Traders**. **Use** it to receive **one random** outcome. The package is **consumed** when opened.
 
 ## How to obtain
 
 - **Wandering Trader** — **trade** (emeralds) or **defeat** the trader for a chance at a drop (tooltip lines in-game).
-- **Optional:** with the **Artifacts** mod, the **Mimic** may rarely drop this parcel (not the relics inside).
+- **Optional:** with the **Artifacts** mod, the **Mimic** may rarely drop **Suspicious Delivery** (not the artifacts inside).
 
-Relics such as <ItemImage id="iska_utils:mining_equitizer" /> **Mining Equitizer** or <ItemImage id="iska_utils:necrotic_crystal_heart" /> **Necrotic Crystal Heart** come from **opening** the parcel, not directly from the Mimic.
+Artifacts such as <ItemImage id="iska_utils:mining_equitizer" /> **Mining Equitizer** or <ItemImage id="iska_utils:necrotic_crystal_heart" /> **Necrotic Crystal Heart** come from opening one, not directly from the Mimic.
 
-## Luck and misfortune
+## Luck and Bad Luck
 
-While opening, **Luck** (Fortune) nudges outcomes toward rarer rewards. **Bad Luck** (Misfortune) does the opposite. Stronger effects matter more than a brief sip.
+While opening, the vanilla **Luck** effect nudges outcomes toward rarer rewards. **Bad Luck** does the opposite. Stronger effects matter more than a brief sip.
 
 ## Possible rewards (examples)
 
 - <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**
-- Delivery relics — see the other pages under **Suspicious Delivery**
+- delivery artifacts — see the other pages under **Suspicious Delivery** (including <ItemImage id="iska_utils:arcane_dictionary" /> **Arcane Dictionary**)
 - <ItemImage id="iska_utils:durable_shears" /> **Durable Shears**
-- Another **Suspicious Delivery** (nested parcel)
+- Another **Suspicious Delivery**
 - Joke outcomes (for example a **clock** after a fake bomb scare) — usually **not** recyclable
 
 ## Recycling
 
-You do not have to open every parcel.
+You do not have to open every **Suspicious Delivery**.
 
-- **Unopened** parcels and most **delivery relics** → one <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** each (crafting table shapeless or **Factory**).
+- **Unopened** **Suspicious Delivery** and most **delivery artifacts** → one <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** each (crafting table shapeless or **Factory**).
 - **Drop of Entropy** cannot be recycled into more drops.
 
-Recyclable delivery items include the parcel itself, <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet**, <ItemImage id="iska_utils:durable_shears" /> **Durable Shears**, and the relics listed in the hub (Cheese, Totem, Heart, Bone, Gauntlet, Crown, Deception, Ice Diamond, Old Brick, Roots, Equitizer, Candle). Details on the **Drop of Entropy** page.
+Recyclable delivery items include **Suspicious Delivery** itself, <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet**, <ItemImage id="iska_utils:durable_shears" /> **Durable Shears**, <ItemImage id="iska_utils:arcane_dictionary" /> **Arcane Dictionary**, and the artifacts listed in the hub (Cheese, Totem, Heart, Bone, Gauntlet, Crown, Deception, Ice Diamond, Old Brick, Roots, Equitizer, Candle). Details on the **Drop of Entropy** page.
