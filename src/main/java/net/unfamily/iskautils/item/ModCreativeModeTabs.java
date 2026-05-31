@@ -12,6 +12,7 @@ import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.unfamily.iskautils.fluid.ModFluids;
 import net.unfamily.iskautils.integration.artifacts.ArtifactsCompat;
 import net.unfamily.iskautils.item.ModItems;
 
@@ -86,6 +87,12 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.LOGIC_MODULE.get());
                                 pOutput.accept(ModItems.PRODUCTION_MODULE.get());
                                 pOutput.accept(ModItems.CAPACITOR_MODULE.get());
+                                pOutput.accept(ModItems.NORMAL_DAMAGE_MODULE.get());
+                                pOutput.accept(ModItems.LETHAL_DAMAGE_MODULE.get());
+                                pOutput.accept(ModItems.ENCHANT_MODULE.get());
+                                pOutput.accept(ModItems.BEHEADING_MODULE.get());
+                                pOutput.accept(ModItems.LUCK_MODULE.get());
+                                pOutput.accept(ModItems.EXPERIENCE_MODULE.get());
                                 // Modules (follow vector tier)
                                 pOutput.accept(ModItems.SLOW_MODULE.get());
                                 pOutput.accept(ModItems.MODERATE_MODULE.get());
@@ -166,6 +173,11 @@ public class ModCreativeModeTabs {
                                 }
                                 
                                 // 6. General utility items
+                                pOutput.accept(ModItems.MOB_REAPER.get());
+                                pOutput.accept(ModItems.COLLECTING_CRATE.get());
+                                if (ModFluids.CONDENSED_KNOWLEDGE != null) {
+                                    pOutput.accept(ModFluids.CONDENSED_KNOWLEDGE.getBucket());
+                                }
                                 pOutput.accept(ModItems.ANGEL_BLOCK.get());
                                 pOutput.accept(ModItems.RAFT.get());
                                 pOutput.accept(ModItems.SCANNER.get());

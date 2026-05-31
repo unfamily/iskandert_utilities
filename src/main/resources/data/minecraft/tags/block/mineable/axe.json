@@ -25,6 +25,7 @@
     "iska_utils:sacred_rubber_sapling",
     "iska_utils:rubber_log_sacred",
     "iska_utils:raft",
-    "iska_utils:raft_no_drop"
+    "iska_utils:raft_no_drop",
+    "iska_utils:collecting_crate"
   ]
 } 

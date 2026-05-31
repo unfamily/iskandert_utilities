@@ -4,6 +4,7 @@
     "iska_utils:entropic_axe",
     "iska_utils:entropic_sword",
     "iska_utils:entropic_spear",
-    "iska_utils:entropic_paxel"
+    "iska_utils:entropic_paxel",
+    "iska_utils:enchant_module"
   ]
 }

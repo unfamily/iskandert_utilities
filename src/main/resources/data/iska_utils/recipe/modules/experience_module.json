@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " E ",
+    "EBE",
+    " E "
+  ],
+  "key": {
+    "E": "minecraft:experience_bottle",
+    "B": "iska_utils:base_module"
+  },
+  "result": {
+    "id": "iska_utils:experience_module",
+    "count": 1
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " L ",
+    "LBL",
+    " E "
+  ],
+  "key": {
+    "L": "#c:gems/lapis",
+    "B": "iska_utils:base_module",
+    "E": "minecraft:enchanting_table"
+  },
+  "result": {
+    "id": "iska_utils:enchant_module",
+    "count": 1
+  }
+}

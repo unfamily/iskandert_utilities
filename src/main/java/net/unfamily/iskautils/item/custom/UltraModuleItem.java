@@ -1,23 +1,17 @@
 package net.unfamily.iskautils.item.custom;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.neoforged.fml.ModList;
-import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.integration.PatternCrafterTooltipHelper;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-/**
- * Custom Item for Ultra Module with tooltip showing max installable count
- * (Modular Fan and Pattern Crafter when present).
- */
 public class UltraModuleItem extends Item {
 
     public UltraModuleItem(Properties properties) {
@@ -30,16 +24,20 @@ public class UltraModuleItem extends Item {
             TooltipContext context,
             TooltipDisplay tooltipDisplay,
             Consumer<Component> tooltip,
-            TooltipFlag flag
-    ) {
+            TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
+        if (flag.hasShiftDown()) {
+            FanModuleTooltipHelper.appendSpeedModuleLines(tooltip, FanModuleTooltipHelper.POWER_ULTRA);
+            appendPatternCrafterLines(tooltip, "ultra");
+        } else {
+            FanModuleTooltipHelper.appendShiftHint(tooltip);
+        }
+    }
 
-        tooltip.accept(Component.translatable("tooltip.iska_utils.fan_module.modular_fan_max", Config.fanAccelerationUpgradeMax)
-                .withStyle(ChatFormatting.GRAY));
-
+    private static void appendPatternCrafterLines(Consumer<Component> tooltip, String tier) {
         if (ModList.get().isLoaded("pattern_crafter")) {
             List<Component> tmp = new ArrayList<>();
-            PatternCrafterTooltipHelper.addSpeedModuleTooltip(tmp, "ultra");
+            PatternCrafterTooltipHelper.addSpeedModuleTooltip(tmp, tier);
             tmp.forEach(tooltip);
         }
     }

@@ -25,37 +25,36 @@ import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.FanBlock;
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.util.MachineTargetType;
 
 public class FanBlockEntity extends BlockEntity implements MenuProvider {
-    // Enum for push type
+    /** @deprecated Use {@link MachineTargetType} instead. */
+    @Deprecated
     public enum PushType {
-        MOBS_ONLY(0, "mobs_only"),
-        MOBS_AND_PLAYERS(1, "mobs_and_players"),
-        PLAYERS_ONLY(2, "players_only");
-        
-        private final int id;
-        private final String name;
-        
-        PushType(int id, String name) {
-            this.id = id;
-            this.name = name;
+        MOBS_ONLY, MOBS_AND_PLAYERS, PLAYERS_ONLY;
+
+        public MachineTargetType toMachineTargetType() {
+            return MachineTargetType.valueOf(name());
         }
-        
-        public int getId() { return id; }
-        public String getName() { return name; }
-        
+
+        public static PushType from(MachineTargetType type) {
+            return valueOf(type.name());
+        }
+
+        public int getId() {
+            return toMachineTargetType().getId();
+        }
+
+        public String getName() {
+            return toMachineTargetType().getName();
+        }
+
         public static PushType fromId(int id) {
-            for (PushType type : values()) {
-                if (type.id == id) return type;
-            }
-            return MOBS_ONLY; // Default
+            return from(MachineTargetType.fromId(id));
         }
-        
+
         public static PushType fromName(String name) {
-            for (PushType type : values()) {
-                if (type.name.equals(name)) return type;
-            }
-            return MOBS_ONLY; // Default
+            return from(MachineTargetType.fromName(name));
         }
     }
     
@@ -66,7 +65,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     private int rangeLeft = 0;
     private int rangeFront = 5;
     private double fanPower = 0.3;
-    private PushType pushType = PushType.MOBS_ONLY; // Default: only mobs
+    private MachineTargetType pushType = MachineTargetType.MOBS_ONLY;
     private int redstoneMode = 0; // Redstone mode (0=NONE, 1=LOW, 2=HIGH, 3=PULSE, 4=DISABLED)
     private boolean isPull = false; // false = push, true = pull
     private boolean showAreaEnabled = false;
@@ -324,9 +323,9 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         setChanged();
     }
 
-    public PushType getPushType() { return pushType; }
-    public void setPushType(PushType value) { 
-        this.pushType = value != null ? value : PushType.MOBS_ONLY; 
+    public MachineTargetType getPushType() { return pushType; }
+    public void setPushType(MachineTargetType value) {
+        this.pushType = value != null ? value : MachineTargetType.MOBS_ONLY;
         setChanged();
     }
     
@@ -382,6 +381,14 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         };
         setRedstoneMode(prev);
     }
+
+    public void cyclePushPull(boolean backward) {
+        setPull(!isPull);
+    }
+
+    public void cyclePushType(boolean backward) {
+        setPushType(pushType.cycle(backward));
+    }
     
     public boolean isPull() { return isPull; }
     public void setPull(boolean value) { 
@@ -432,7 +439,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         rangeLeft = input.getIntOr("RangeLeft", 0);
         rangeFront = input.getIntOr("RangeFront", 5); // Default 5 (inspired by vanilla water)
         fanPower = input.getDoubleOr("FanPower", 0.3); // Default 0.3
-        pushType = PushType.fromId(input.getIntOr("PushType", PushType.MOBS_ONLY.getId())); // Default: only mobs
+        pushType = MachineTargetType.fromId(input.getIntOr("PushType", MachineTargetType.MOBS_ONLY.getId()));
         redstoneMode = input.getIntOr("RedstoneMode", 0); // Default: NONE
         // Ensure redstoneMode is valid (skip PULSE mode 3)
         if (redstoneMode == 3) {
@@ -539,31 +546,23 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
 
         // Get the facing direction
         Direction facing = state.getValue(FanBlock.FACING);
-        
-        // Calculate the AABB for the push area based on ranges
-        AABB pushArea = calculatePushArea(pos, facing, blockEntity);
-        
-        // Get all entities in the area
-        var entities = level.getEntitiesOfClass(Entity.class, pushArea, 
+
+        // Contact-only: affect entities in the block immediately in front of the fan
+        AABB contactArea = calculateContactArea(pos, facing);
+        var entities = level.getEntitiesOfClass(Entity.class, contactArea,
             entity -> entity instanceof LivingEntity && !entity.isSpectator());
-        
-        // Check if ghost module is installed (bypasses block obstruction)
-        boolean hasGhostModule = !blockEntity.moduleHandler.getStackInSlot(1).isEmpty() && 
-                                 blockEntity.moduleHandler.getStackInSlot(1).is(ModItems.GHOST_MODULE.get());
-        
-        // Push each entity based on push type (use effective power)
+
         double effectivePower = blockEntity.getEffectivePower();
         for (Entity entity : entities) {
             if (shouldPushEntity(entity, blockEntity.pushType)) {
-                // Check if there's a blocking block between fan and entity
-                if (!hasGhostModule && isBlockedByObstacle(level, pos, facing, entity, false)) {
-                    continue; // Skip this entity if blocked and no ghost module
-                } else if (hasGhostModule && isBlockedByObstacle(level, pos, facing, entity, true)) {
-                    continue; // Skip this entity if blocked (even with ghost module, if config doesn't allow unbreakable bypass)
-                }
-                pushEntity(entity, facing, effectivePower, blockEntity.isPull);
+                moveEntityOnContact(entity, facing, effectivePower, blockEntity.isPull);
             }
         }
+    }
+
+    /** Single-block contact zone in front of the fan (no wireless range push). */
+    private static AABB calculateContactArea(BlockPos pos, Direction facing) {
+        return new AABB(pos.relative(facing));
     }
 
     // Calculate the AABB for the push area
@@ -655,7 +654,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     // Check if entity should be pushed based on push type
-    private static boolean shouldPushEntity(Entity entity, PushType pushType) {
+    private static boolean shouldPushEntity(Entity entity, MachineTargetType pushType) {
         boolean isPlayer = entity instanceof Player;
         
         return switch (pushType) {
@@ -792,29 +791,23 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         return true;
     }
     
-    // Push an entity in the facing direction (or pull if isPull is true)
-    private static void pushEntity(Entity entity, Direction facing, double power, boolean isPull) {
-        Vec3 currentMotion = entity.getDeltaMovement();
-        Vec3 pushVector = Vec3.ZERO;
-        
-        // Determine direction: if pull, reverse the facing direction
-        Direction effectiveDirection = isPull ? facing.getOpposite() : facing;
-        
-        switch (effectiveDirection) {
-            case NORTH -> pushVector = new Vec3(0, 0, -power);
-            case SOUTH -> pushVector = new Vec3(0, 0, power);
-            case WEST -> pushVector = new Vec3(-power, 0, 0);
-            case EAST -> pushVector = new Vec3(power, 0, 0);
-            case UP -> pushVector = new Vec3(0, power, 0);
-            case DOWN -> pushVector = new Vec3(0, -power, 0);
-        }
-        
-        // Apply push with some acceleration factor (similar to vector blocks)
-        double accelerationFactor = 0.3;
-        Vec3 newMotion = currentMotion.scale(1.0 - accelerationFactor)
-            .add(pushVector.scale(accelerationFactor));
-        
-        entity.setDeltaMovement(newMotion);
-        entity.hurtMarked = true; // Mark for physics update
+    // Move an entity on contact without knockback (position step, not velocity impulse)
+    private static void moveEntityOnContact(Entity entity, Direction facing, double power, boolean isPull) {
+        Direction moveDir = isPull ? facing.getOpposite() : facing;
+        double stepSize = power * 0.08;
+        entity.move(net.minecraft.world.entity.MoverType.SELF, new Vec3(
+                moveDir.getStepX() * stepSize,
+                moveDir.getStepY() * stepSize,
+                moveDir.getStepZ() * stepSize
+        ));
+
+        Vec3 motion = entity.getDeltaMovement();
+        Vec3 damped = switch (moveDir.getAxis()) {
+            case X -> new Vec3(0.0, motion.y, motion.z);
+            case Y -> new Vec3(motion.x, 0.0, motion.z);
+            case Z -> new Vec3(motion.x, motion.y, 0.0);
+        };
+        entity.setDeltaMovement(damped);
+        entity.hurtMarked = true;
     }
 }

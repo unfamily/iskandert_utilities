@@ -1,0 +1,72 @@
+{
+  "variants": {
+    "vertical=false,facing=north,powered=false": {
+      "model": "iska_utils:block/mob_reaper"
+    },
+    "vertical=false,facing=east,powered=false": {
+      "model": "iska_utils:block/mob_reaper",
+      "y": 90
+    },
+    "vertical=false,facing=south,powered=false": {
+      "model": "iska_utils:block/mob_reaper",
+      "y": 180
+    },
+    "vertical=false,facing=west,powered=false": {
+      "model": "iska_utils:block/mob_reaper",
+      "y": 270
+    },
+    "vertical=true,facing=north,powered=false": {
+      "model": "iska_utils:block/mob_reaper",
+      "x": 90
+    },
+    "vertical=true,facing=east,powered=false": {
+      "model": "iska_utils:block/mob_reaper",
+      "x": 90,
+      "y": 90
+    },
+    "vertical=true,facing=south,powered=false": {
+      "model": "iska_utils:block/mob_reaper",
+      "x": 90,
+      "y": 180
+    },
+    "vertical=true,facing=west,powered=false": {
+      "model": "iska_utils:block/mob_reaper",
+      "x": 90,
+      "y": 270
+    },
+    "vertical=false,facing=north,powered=true": {
+      "model": "iska_utils:block/mob_reaper_base"
+    },
+    "vertical=false,facing=east,powered=true": {
+      "model": "iska_utils:block/mob_reaper_base",
+      "y": 90
+    },
+    "vertical=false,facing=south,powered=true": {
+      "model": "iska_utils:block/mob_reaper_base",
+      "y": 180
+    },
+    "vertical=false,facing=west,powered=true": {
+      "model": "iska_utils:block/mob_reaper_base",
+      "y": 270
+    },
+    "vertical=true,facing=north,powered=true": {
+      "model": "iska_utils:block/mob_reaper_base",
+      "x": 90
+    },
+    "vertical=true,facing=east,powered=true": {
+      "model": "iska_utils:block/mob_reaper_base",
+      "x": 90,
+      "y": 90
+    },
+    "vertical=true,facing=south,powered=true": {
+      "model": "iska_utils:block/mob_reaper_base",
+      "x": 90,
+      "y": 180
+    },
+    "vertical=true,facing=west,powered=true": {
+      "model": "iska_utils:block/mob_reaper_base",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

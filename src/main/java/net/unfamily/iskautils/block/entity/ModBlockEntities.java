@@ -129,6 +129,14 @@ public class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FanBlockEntity>> FAN_BE =
             BLOCK_ENTITIES.register("fan",
                     () -> new BlockEntityType<>(FanBlockEntity::new, ModBlocks.FAN.get()));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MobReaperBlockEntity>> MOB_REAPER_BE =
+            BLOCK_ENTITIES.register("mob_reaper",
+                    () -> new BlockEntityType<>(MobReaperBlockEntity::new, ModBlocks.MOB_REAPER.get()));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CollectingCrateBlockEntity>> COLLECTING_CRATE_BE =
+            BLOCK_ENTITIES.register("collecting_crate",
+                    () -> new BlockEntityType<>(CollectingCrateBlockEntity::new, ModBlocks.COLLECTING_CRATE.get()));
     
     // Sacred Rubber Sapling Block Entity
     // BlockEntity for RubberLogSacredBlock (stores root coordinates)
@@ -295,6 +303,24 @@ public class ModBlockEntities {
                     Capabilities.Item.BLOCK,
                     FAN_BE.get(),
                     (blockEntity, ctx) -> blockEntity instanceof FanBlockEntity be ? be.getItemTransferHandler() : null
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    MOB_REAPER_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof MobReaperBlockEntity be ? be.getItemTransferHandler() : null
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    COLLECTING_CRATE_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof CollectingCrateBlockEntity be ? be.getItemTransferHandler() : null
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.Fluid.BLOCK,
+                    COLLECTING_CRATE_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof CollectingCrateBlockEntity be ? be.getFluidTransferHandler() : null
             );
 
             // Factory: automation (insert input only, extract output only)

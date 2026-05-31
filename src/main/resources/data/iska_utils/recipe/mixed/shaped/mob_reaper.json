@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IBI",
+    "IRI",
+    "ISI"
+  ],
+  "key": {
+    "I": "#c:ingots/iron",
+    "B": "#c:storage_blocks/iron",
+    "R": "#c:storage_blocks/redstone",
+    "S": "minecraft:iron_sword"
+  },
+  "result": {
+    "id": "iska_utils:mob_reaper",
+    "count": 1
+  }
+}

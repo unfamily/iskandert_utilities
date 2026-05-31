@@ -76,7 +76,8 @@ public class ModBlocks {
             .mapColor(MapColor.STONE)
             .strength(1.5f, 6.0f)
             .sound(SoundType.METAL)
-            .requiresCorrectToolForDrops();
+            .requiresCorrectToolForDrops()
+            .noOcclusion();
 
     // Properties for Rubber Sap Extractor
     private static final UnaryOperator<BlockBehaviour.Properties> RUBBER_SAP_EXTRACTOR_PROPERTIES = p -> p
@@ -183,6 +184,9 @@ public class ModBlocks {
     public static final DeferredBlock<FanBlock> FAN = BLOCKS.register("fan",
             key -> new FanBlock(assignBlockId(key, FAN_PROPERTIES)));
 
+    public static final DeferredBlock<MobReaperBlock> MOB_REAPER = BLOCKS.register("mob_reaper",
+            key -> new MobReaperBlock(assignBlockId(key, FAN_PROPERTIES)));
+
     public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",
             key -> new RubberSapExtractorBlock(assignBlockId(key, RUBBER_SAP_EXTRACTOR_PROPERTIES)));
 
@@ -204,6 +208,15 @@ public class ModBlocks {
     public static final DeferredBlock<net.unfamily.iskautils.block.custom.AncientTableBlock> ANCIENT_TABLE =
             BLOCKS.register("ancient_table",
                     key -> new net.unfamily.iskautils.block.custom.AncientTableBlock(assignBlockId(key, ANCIENT_TABLE_PROPERTIES)));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> COLLECTING_CRATE_PROPERTIES = p -> p
+            .mapColor(MapColor.WOOD)
+            .strength(3.0f, 6.0f)
+            .sound(SoundType.WOOD)
+            .requiresCorrectToolForDrops();
+
+    public static final DeferredBlock<CollectingCrateBlock> COLLECTING_CRATE = BLOCKS.register("collecting_crate",
+            key -> new CollectingCrateBlock(assignBlockId(key, COLLECTING_CRATE_PROPERTIES)));
 
     private static final UnaryOperator<BlockBehaviour.Properties> SMART_TIMER_PROPERTIES = p -> p
             .mapColor(MapColor.STONE)

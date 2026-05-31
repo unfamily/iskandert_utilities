@@ -179,8 +179,8 @@ dependencies {
     }
 
     // Iskandert Library: local 1.5.0.0.0 when built, otherwise CurseForge 1.4.0.0.1
-    if (file('libs/iska_lib-1.5.0.0.0.jar').exists()) {
-        implementation files('libs/iska_lib-1.5.0.0.0.jar')
+    if (file('libs/iska_lib-1.6.0.0.0.jar').exists()) {
+        implementation files('libs/iska_lib-1.6.0.0.0.jar')
     } else {
         implementation "curse.maven:iskanderts-library-1516512:8146529"
     }

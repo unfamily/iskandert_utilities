@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "iska_utils:entropic_sword"
+    "iska_utils:entropic_sword",
+    "iska_utils:enchant_module"
   ]
 }

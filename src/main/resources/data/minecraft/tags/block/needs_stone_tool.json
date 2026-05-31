@@ -7,6 +7,8 @@
     "iska_utils:smooth_blackstone_wall",
     "iska_utils:hellfire_igniter",
     "iska_utils:fan",
+    "iska_utils:mob_reaper",
+    "iska_utils:collecting_crate",
     "iska_utils:rubber_sap_extractor",
     "iska_utils:structure_placer_machine",
     "iska_utils:structure_saver_machine",

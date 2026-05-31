@@ -48,6 +48,12 @@ import net.unfamily.iskautils.item.custom.ModerateModuleItem;
 import net.unfamily.iskautils.item.custom.FastModuleItem;
 import net.unfamily.iskautils.item.custom.ExtremeModuleItem;
 import net.unfamily.iskautils.item.custom.UltraModuleItem;
+import net.unfamily.iskautils.item.custom.NormalDamageModuleItem;
+import net.unfamily.iskautils.item.custom.LethalDamageModuleItem;
+import net.unfamily.iskautils.item.custom.EnchantModuleItem;
+import net.unfamily.iskautils.item.custom.BeheadingModuleItem;
+import net.unfamily.iskautils.item.custom.LuckModuleItem;
+import net.unfamily.iskautils.item.custom.ExperienceModuleItem;
 import net.unfamily.iskautils.item.custom.LogicModuleItem;
 import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
@@ -354,6 +360,10 @@ public class ModItems {
     public static final DeferredItem<Item> FAN = ITEMS.registerItem("fan",
             props -> new FanBlockItem(ModBlocks.FAN.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
+    public static final DeferredItem<BlockItem> MOB_REAPER = ITEMS.registerSimpleBlockItem(ModBlocks.MOB_REAPER);
+
+    public static final DeferredItem<BlockItem> COLLECTING_CRATE = ITEMS.registerSimpleBlockItem(ModBlocks.COLLECTING_CRATE);
+
     public static final DeferredItem<Item> RANGE_MODULE = ITEMS.registerItem("range_module", RangeModuleItem::new, UnaryOperator.identity());
 
     public static final DeferredItem<Item> GHOST_MODULE = ITEMS.registerItem("ghost_module", GhostModuleItem::new, UnaryOperator.identity());
@@ -363,6 +373,14 @@ public class ModItems {
     public static final DeferredItem<Item> PRODUCTION_MODULE = ITEMS.registerItem("production_module", ProductionModuleItem::new, UnaryOperator.identity());
 
     public static final DeferredItem<Item> CAPACITOR_MODULE = ITEMS.registerSimpleItem("capacitor_module");
+
+    public static final DeferredItem<Item> NORMAL_DAMAGE_MODULE = ITEMS.registerItem("normal_damage_module", NormalDamageModuleItem::new, p -> p.stacksTo(64));
+    public static final DeferredItem<Item> LETHAL_DAMAGE_MODULE = ITEMS.registerItem("lethal_damage_module", LethalDamageModuleItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> ENCHANT_MODULE = ITEMS.registerItem("enchant_module", EnchantModuleItem::new,
+            p -> p.stacksTo(1).enchantable(15));
+    public static final DeferredItem<Item> BEHEADING_MODULE = ITEMS.registerItem("beheading_module", BeheadingModuleItem::new, p -> p.stacksTo(64));
+    public static final DeferredItem<Item> LUCK_MODULE = ITEMS.registerItem("luck_module", LuckModuleItem::new, p -> p.stacksTo(64));
+    public static final DeferredItem<Item> EXPERIENCE_MODULE = ITEMS.registerItem("experience_module", ExperienceModuleItem::new, p -> p.stacksTo(64));
 
     public static final DeferredItem<BlockItem> SMOOTH_BLACKSTONE = ITEMS.registerSimpleBlockItem(ModBlocks.SMOOTH_BLACKSTONE);
     public static final DeferredItem<BlockItem> SMOOTH_BLACKSTONE_SLAB = ITEMS.registerSimpleBlockItem(ModBlocks.SMOOTH_BLACKSTONE_SLAB);

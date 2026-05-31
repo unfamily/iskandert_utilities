@@ -1,20 +1,15 @@
 package net.unfamily.iskautils.item.custom;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
-import net.unfamily.iskautils.Config;
 
 import java.util.function.Consumer;
 
-/**
- * Custom Item for Ghost Module with tooltip showing max installable count
- */
 public class GhostModuleItem extends Item {
-    
+
     public GhostModuleItem(Properties properties) {
         super(properties);
     }
@@ -25,11 +20,12 @@ public class GhostModuleItem extends Item {
             TooltipContext context,
             TooltipDisplay tooltipDisplay,
             Consumer<Component> tooltip,
-            TooltipFlag flag
-    ) {
+            TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
-
-        tooltip.accept(Component.translatable("tooltip.iska_utils.fan_module.modular_fan_max", Config.fanAccelerationUpgradeMax)
-                .withStyle(ChatFormatting.GRAY));
+        if (flag.hasShiftDown()) {
+            FanModuleTooltipHelper.appendGhostModuleLines(tooltip);
+        } else {
+            FanModuleTooltipHelper.appendShiftHint(tooltip);
+        }
     }
 }

@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:block",
+  "random_sequence": "iska_utils:blocks/mob_reaper",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "iska_utils:mob_reaper"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        },
+        {
+          "condition": "minecraft:match_tool",
+          "predicate": {
+            "items": "#minecraft:pickaxes"
+          }
+        }
+      ]
+    }
+  ]
+}
