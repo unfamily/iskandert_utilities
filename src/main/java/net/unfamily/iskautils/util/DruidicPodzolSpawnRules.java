@@ -7,9 +7,10 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.Difficulty;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.Biome;
@@ -124,13 +125,15 @@ public final class DruidicPodzolSpawnRules {
     }
 
     public static boolean isValidSpawnContext(ServerLevel level, EntityType<?> type, BlockPos spawnPos, BlockPos soilPos) {
-        if (level.getDifficulty() == Difficulty.PEACEFUL || isBlockedByDeny(level, soilPos, type)) {
+        if (isBlockedByDeny(level, soilPos, type)) {
             return false;
         }
         if (!isAnimal(type)) {
             return false;
         }
-        if (!DruidicPodzolUtil.isDruidicPodzol(level.getBlockState(soilPos))
+        BlockState soilState = level.getBlockState(soilPos);
+        if (!DruidicPodzolUtil.isDruidicPodzol(soilState)
+                || !soilState.is(BlockTags.ANIMALS_SPAWNABLE_ON)
                 || !DruidicPodzolUtil.isIlluminated(level, soilPos)
                 || DruidicPodzolUtil.hasSolidCoverAbove(level, soilPos)) {
             return false;

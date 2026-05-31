@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " A ",
+    "IBI",
+    " A "
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:iron_axe"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "item": "iska_utils:base_module"
+    }
+  },
+  "result": {
+    "id": "iska_utils:beheading_module",
+    "count": 1
+  }
+}

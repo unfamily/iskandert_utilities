@@ -788,7 +788,13 @@ public class Config
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DRUIDIC_PODZOL_SPAWN_ALLOW = BUILDER
             .comment("Extra allow entries merged with biome animal spawn tables. Deny list always wins.",
                     "Format: biome_or_#tag;entity_id")
-            .defineList("153_druidic_podzol_spawn_allow", java.util.Collections.emptyList(), obj -> obj instanceof String);
+            .defineList("153_druidic_podzol_spawn_allow",
+                    java.util.Arrays.asList(
+                            "#minecraft:is_overworld;minecraft:cow",
+                            "#minecraft:is_overworld;minecraft:pig",
+                            "#minecraft:is_overworld;minecraft:sheep",
+                            "#minecraft:is_overworld;minecraft:chicken"),
+                    obj -> obj instanceof String);
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DRUIDIC_PODZOL_SPAWN_DENY = BUILDER
             .comment("Deny list for druidic podzol spawns (wins over allow). Same format as allow.")
@@ -1000,6 +1006,108 @@ public class Config
 
     static {
         BUILDER.pop(); // End of artifacts_settings category
+
+        // Category for Mob Reaper Configuration (under general_utilities)
+        BUILDER.comment("Mob Reaper Configuration").push("reaper");
+    }
+
+    private static final ModConfigSpec.DoubleValue REAPER_DEFAULT_DAMAGE = BUILDER
+            .comment("Base damage dealt per attack tick cycle",
+                    "NOTE: This parameter is WITHOUT upgrades")
+            .defineInRange("000_reaperDefaultDamage", 10.0D, 0.0D, 10000.0D);
+
+    private static final ModConfigSpec.IntValue REAPER_ATTACK_INTERVAL_TICKS = BUILDER
+            .comment("Ticks between damage applications")
+            .defineInRange("001_reaperAttackIntervalTicks", 10, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue REAPER_HIT_DEPTH = BUILDER
+            .comment("Extended hit depth in blocks along FACING only; other valid faces hit the adjacent block")
+            .defineInRange("002_reaperHitDepth", 5, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue REAPER_NORMAL_UPGRADE_MAX = BUILDER
+            .comment("Maximum normal damage modules in slot 0")
+            .defineInRange("100_reaperNormalUpgradeMax", 10, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue REAPER_NORMAL_BONUS_PER_MODULE = BUILDER
+            .comment("Bonus damage per normal module stack")
+            .defineInRange("101_reaperNormalBonusPerModule", 5.0D, 0.0D, 10000.0D);
+
+    private static final ModConfigSpec.IntValue REAPER_LETHAL_UPGRADE_MAX = BUILDER
+            .comment("Maximum lethal damage modules in slot 0 (mutually exclusive with normal)")
+            .defineInRange("102_reaperLethalUpgradeMax", 1, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue REAPER_LETHAL_DAMAGE = BUILDER
+            .comment("Fixed damage when lethal module is installed (overrides normal calculation)")
+            .defineInRange("103_reaperLethalDamage", 500.0D, 0.0D, 100000.0D);
+
+    private static final ModConfigSpec.IntValue REAPER_ENCHANT_UPGRADE_MAX = BUILDER
+            .comment("Maximum enchant modules in slot 1")
+            .defineInRange("104_reaperEnchantUpgradeMax", 1, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue REAPER_BEHEADING_UPGRADE_MAX = BUILDER
+            .comment("Maximum beheading modules in slot 2")
+            .defineInRange("105_reaperBeheadingUpgradeMax", 10, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue REAPER_BEHEADING_CHANCE_PER_LEVEL = BUILDER
+            .comment("Skull drop chance added per beheading module stack (0.10 = 10%)")
+            .defineInRange("106_reaperBeheadingChancePerLevel", 0.10D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.IntValue REAPER_LUCK_UPGRADE_MAX = BUILDER
+            .comment("Maximum luck modules in slot 3")
+            .defineInRange("107_reaperLuckUpgradeMax", 3, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue REAPER_EXPERIENCE_UPGRADE_MAX = BUILDER
+            .comment("Maximum experience modules in slot 4")
+            .defineInRange("108_reaperExperienceUpgradeMax", 10, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue REAPER_EXPERIENCE_BONUS_PER_LEVEL = BUILDER
+            .comment("Experience multiplier bonus per experience module stack (0.10 = +10%)")
+            .defineInRange("109_reaperExperienceBonusPerLevel", 0.10D, 0.0D, 10.0D);
+
+    private static final ModConfigSpec.DoubleValue REAPER_BLADE_MAX_DEG_PER_TICK = BUILDER
+            .comment("Client blade rotation speed in degrees per tick (used by BER)")
+            .defineInRange("003_reaperBladeMaxDegPerTick", 12.0D, 0.0D, 360.0D);
+
+    static {
+        BUILDER.pop(); // End of reaper category
+
+        BUILDER.comment("Collecting Crate").push("collecting_crate");
+    }
+
+    private static final ModConfigSpec.IntValue COLLECTING_CRATE_XP_CAPACITY_LEVELS = BUILDER
+            .comment("Internal XP tank capacity expressed in experience levels (converted to mB at runtime)")
+            .defineInRange("000_collectingCrateXpCapacityLevels", 5000, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue COLLECTING_CRATE_XP_MB_PER_POINT = BUILDER
+            .comment("Millibuckets of liquid experience per vanilla XP point (standard modpack value: 20)")
+            .defineInRange("001_collectingCrateXpMbPerPoint", 20, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue COLLECTING_CRATE_BASE_RANGE = BUILDER
+            .comment("Base cubic collection radius in blocks without range modules")
+            .defineInRange("002_collectingCrateBaseRange", 4, 1, 64);
+
+    private static final ModConfigSpec.IntValue COLLECTING_CRATE_MAX_RANGE = BUILDER
+            .comment("Maximum cubic collection radius with range modules installed")
+            .defineInRange("003_collectingCrateMaxRange", 16, 1, 64);
+
+    private static final ModConfigSpec.IntValue COLLECTING_CRATE_MAX_INSERTIONS_PER_TICK = BUILDER
+            .comment("Maximum item entities absorbed per collection tick (0 = unlimited)")
+            .defineInRange("004_collectingCrateMaxInsertionsPerTick", 20, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue COLLECTING_CRATE_COLLECTION_INTERVAL_TICKS = BUILDER
+            .comment("Server ticks between collection scans")
+            .defineInRange("005_collectingCrateCollectionIntervalTicks", 1, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue COLLECTING_CRATE_STORAGE_SLOTS = BUILDER
+            .comment("Internal item storage slot count")
+            .defineInRange("006_collectingCrateStorageSlots", 27, 1, 256);
+
+    private static final ModConfigSpec.IntValue COLLECTING_CRATE_RANGE_UPGRADE_MAX = BUILDER
+            .comment("Maximum stack size of range modules in the upgrade slot")
+            .defineInRange("105_collectingCrateRangeUpgradeMax", 8, 1, 64);
+
+    static {
+        BUILDER.pop(); // End of collecting_crate category
         BUILDER.pop(); // End of general_utilities category
 
         // Category for Fan Configuration
@@ -1556,6 +1664,31 @@ public class Config
     public static boolean fanGhostModuleBypassUnbreakable;
     public static int fanpackEnergyCapacity;
     public static int fanpackFlightEnergyConsume;
+
+    // Mob Reaper configuration
+    public static double reaperDefaultDamage;
+    public static int reaperAttackIntervalTicks;
+    public static int reaperHitDepth;
+    public static int reaperNormalUpgradeMax;
+    public static double reaperNormalBonusPerModule;
+    public static int reaperLethalUpgradeMax;
+    public static double reaperLethalDamage;
+    public static int reaperEnchantUpgradeMax;
+    public static int reaperBeheadingUpgradeMax;
+    public static double reaperBeheadingChancePerLevel;
+    public static int reaperLuckUpgradeMax;
+    public static int reaperExperienceUpgradeMax;
+    public static double reaperExperienceBonusPerLevel;
+    public static double reaperBladeMaxDegPerTick;
+
+    public static int collectingCrateXpCapacityLevels;
+    public static int collectingCrateXpMbPerPoint;
+    public static int collectingCrateBaseRange;
+    public static int collectingCrateMaxRange;
+    public static int collectingCrateMaxInsertionsPerTick;
+    public static int collectingCrateCollectionIntervalTicks;
+    public static int collectingCrateStorageSlots;
+    public static int collectingCrateRangeUpgradeMax;
     
     public static java.util.List<String> deepDrawersAllow;
     public static java.util.List<String> deepDrawersDeny;
@@ -1707,6 +1840,31 @@ public class Config
         // Fanpack configuration
         fanpackEnergyCapacity = FANPACK_ENERGY_CAPACITY.get();
         fanpackFlightEnergyConsume = FANPACK_FLIGHT_ENERGY_CONSUME.get();
+
+        // Mob Reaper configuration
+        reaperDefaultDamage = REAPER_DEFAULT_DAMAGE.get();
+        reaperAttackIntervalTicks = REAPER_ATTACK_INTERVAL_TICKS.get();
+        reaperHitDepth = REAPER_HIT_DEPTH.get();
+        reaperNormalUpgradeMax = REAPER_NORMAL_UPGRADE_MAX.get();
+        reaperNormalBonusPerModule = REAPER_NORMAL_BONUS_PER_MODULE.get();
+        reaperLethalUpgradeMax = REAPER_LETHAL_UPGRADE_MAX.get();
+        reaperLethalDamage = REAPER_LETHAL_DAMAGE.get();
+        reaperEnchantUpgradeMax = REAPER_ENCHANT_UPGRADE_MAX.get();
+        reaperBeheadingUpgradeMax = REAPER_BEHEADING_UPGRADE_MAX.get();
+        reaperBeheadingChancePerLevel = REAPER_BEHEADING_CHANCE_PER_LEVEL.get();
+        reaperLuckUpgradeMax = REAPER_LUCK_UPGRADE_MAX.get();
+        reaperExperienceUpgradeMax = REAPER_EXPERIENCE_UPGRADE_MAX.get();
+        reaperExperienceBonusPerLevel = REAPER_EXPERIENCE_BONUS_PER_LEVEL.get();
+        reaperBladeMaxDegPerTick = REAPER_BLADE_MAX_DEG_PER_TICK.get();
+
+        collectingCrateXpCapacityLevels = COLLECTING_CRATE_XP_CAPACITY_LEVELS.get();
+        collectingCrateXpMbPerPoint = COLLECTING_CRATE_XP_MB_PER_POINT.get();
+        collectingCrateBaseRange = COLLECTING_CRATE_BASE_RANGE.get();
+        collectingCrateMaxRange = COLLECTING_CRATE_MAX_RANGE.get();
+        collectingCrateMaxInsertionsPerTick = COLLECTING_CRATE_MAX_INSERTIONS_PER_TICK.get();
+        collectingCrateCollectionIntervalTicks = COLLECTING_CRATE_COLLECTION_INTERVAL_TICKS.get();
+        collectingCrateStorageSlots = COLLECTING_CRATE_STORAGE_SLOTS.get();
+        collectingCrateRangeUpgradeMax = COLLECTING_CRATE_RANGE_UPGRADE_MAX.get();
         
         // Deep Drawers configuration
         deepDrawersAllow = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOW.get());

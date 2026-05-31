@@ -152,6 +152,16 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("fan",
                     () -> BlockEntityType.Builder.of(FanBlockEntity::new, ModBlocks.FAN.get())
                             .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MobReaperBlockEntity>> MOB_REAPER_BE =
+            BLOCK_ENTITIES.register("mob_reaper",
+                    () -> BlockEntityType.Builder.of(MobReaperBlockEntity::new, ModBlocks.MOB_REAPER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CollectingCrateBlockEntity>> COLLECTING_CRATE =
+            BLOCK_ENTITIES.register("collecting_crate",
+                    () -> BlockEntityType.Builder.of(CollectingCrateBlockEntity::new, ModBlocks.COLLECTING_CRATE.get())
+                            .build(null));
     
     // Sacred Rubber Sapling Block Entity
     // BlockEntity for RubberLogSacredBlock (stores root coordinates)
@@ -393,6 +403,24 @@ public class ModBlockEntities {
                     ANCIENT_TABLE_BE.get(),
                     (blockEntity, context) ->
                             blockEntity instanceof AncientTableBlockEntity table ? table.getItemHandler() : null);
+
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    MOB_REAPER_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof MobReaperBlockEntity reaper ? reaper.getModuleHandler() : null);
+
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    COLLECTING_CRATE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof CollectingCrateBlockEntity crate ? crate.getAutomationItemHandler() : null);
+
+            event.registerBlockEntity(
+                    Capabilities.FluidHandler.BLOCK,
+                    COLLECTING_CRATE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof CollectingCrateBlockEntity crate ? crate.getExperienceTank() : null);
         }
     }
 } 

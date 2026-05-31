@@ -5,13 +5,10 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -60,13 +57,11 @@ public class DruidicPodzolBlockEntity extends BlockEntity {
         }
 
         boolean spawnAllowed = Config.druidicPodzolSpawnEnabled
-                && level.getDifficulty() != Difficulty.PEACEFUL
                 && DruidicPodzolUtil.hasAnyLitSpawnCandidate(level, component);
 
         if (!redstoneAccelerating
                 && Config.druidicPodzolRedstoneAccelEnabled
-                && Config.druidicPodzolSpawnEnabled
-                && level.getDifficulty() != Difficulty.PEACEFUL) {
+                && Config.druidicPodzolSpawnEnabled) {
             if (redstoneCheckCooldown <= 0) {
                 redstoneCheckCooldown = REDSTONE_CHECK_INTERVAL;
                 if (DruidicPodzolUtil.hasRedstoneSignal(level, component)) {
@@ -136,9 +131,10 @@ public class DruidicPodzolBlockEntity extends BlockEntity {
             if (!mob.checkSpawnObstruction(level)) {
                 continue;
             }
-            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), MobSpawnType.MOB_SUMMONED, null);
+            if (mob instanceof AgeableMob ageableMob) {
+                ageableMob.setAge(0);
+            }
             if (level.addFreshEntity(mob)) {
-                level.playSound(null, spawnPos, SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.NEUTRAL, 0.5F, 1.2F);
                 level.sendParticles(ParticleTypes.HAPPY_VILLAGER, spawnPos.getX() + 0.5D, spawnPos.getY() + 0.2D, spawnPos.getZ() + 0.5D,
                         6, 0.25D, 0.1D, 0.25D, 0.01D);
                 return;

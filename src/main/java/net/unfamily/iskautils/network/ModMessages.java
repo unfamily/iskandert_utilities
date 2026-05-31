@@ -112,6 +112,51 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket::handle
         );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FanPushPullSetC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FanPushPullSetC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FanPushPullSetC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FanTargetTypeSetC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FanTargetTypeSetC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FanTargetTypeSetC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.MobReaperTargetTypeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.MobReaperTargetTypeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.MobReaperTargetTypeC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.CollectingCrateRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.CollectingCrateRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.CollectingCrateRedstoneModeC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.CollectingCrateXpCollectC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.CollectingCrateXpCollectC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.CollectingCrateXpCollectC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.CollectingCrateXpDepositC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.CollectingCrateXpDepositC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.CollectingCrateXpDepositC2SPacket::handle
+        );
         
         // Register Smart Timer Redstone Mode C2S Packet (Client to Server)
         registrar.playToServer(
@@ -2177,88 +2222,70 @@ public class ModMessages {
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
     }
 
+    @OnlyIn(Dist.CLIENT)
+    public static void sendFanPushPullSetPacket(BlockPos pos, boolean pull) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.FanPushPullSetC2SPacket(pos, pull));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendFanTargetTypeSetPacket(BlockPos pos, int typeId) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.FanTargetTypeSetC2SPacket(pos, typeId));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendMobReaperTargetTypePacket(BlockPos pos, boolean backward) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.MobReaperTargetTypeC2SPacket(pos, backward));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendMobReaperRedstoneModePacket(BlockPos pos, boolean backward) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket(pos, backward));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendCollectingCrateModePacket(BlockPos pos, boolean backward) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket(pos, backward));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendCollectingCrateRedstoneModePacket(BlockPos pos, boolean backward) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.CollectingCrateRedstoneModeC2SPacket(pos, backward));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendCollectingCrateXpCollectPacket(BlockPos pos) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.CollectingCrateXpCollectC2SPacket(pos));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendCollectingCrateXpDepositPacket(BlockPos pos) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.CollectingCrateXpDepositC2SPacket(pos));
+    }
+
     /**
      * Sends Fan Push/Pull packet to the server
      */
     @OnlyIn(Dist.CLIENT)
-    public static void sendFanPushPullPacket(BlockPos pos) {
-        try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-            if (server == null) return;
-            
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
-                            // Toggle push/pull
-                            fan.setPull(!fan.isPull());
-                            
-                            // Play click sound
-                            level.playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
-                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                            
-                            // Mark the block entity as changed
-                            fan.setChanged();
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Fan push/pull packet: {}", e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.error("Could not send Fan push/pull packet: {}", e.getMessage(), e);
-        }
+    public static void sendFanPushPullPacket(BlockPos pos, boolean backward) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.FanPushPullC2SPacket(pos, backward));
     }
-    
+
     /**
      * Sends Fan Push Type packet to the server
      */
     @OnlyIn(Dist.CLIENT)
-    public static void sendFanPushTypePacket(BlockPos pos) {
-        try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-            if (server == null) return;
-            
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.FanBlockEntity fan) {
-                            // Cycle to next push type
-                            net.unfamily.iskautils.block.entity.FanBlockEntity.PushType currentType = fan.getPushType();
-                            net.unfamily.iskautils.block.entity.FanBlockEntity.PushType nextType = switch (currentType) {
-                                case MOBS_ONLY -> net.unfamily.iskautils.block.entity.FanBlockEntity.PushType.MOBS_AND_PLAYERS;
-                                case MOBS_AND_PLAYERS -> net.unfamily.iskautils.block.entity.FanBlockEntity.PushType.PLAYERS_ONLY;
-                                case PLAYERS_ONLY -> net.unfamily.iskautils.block.entity.FanBlockEntity.PushType.MOBS_ONLY;
-                            };
-                            fan.setPushType(nextType);
-                            
-                            // Play click sound
-                            level.playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
-                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                            
-                            // Mark the block entity as changed
-                            fan.setChanged();
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Fan push type packet: {}", e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.error("Could not send Fan push type packet: {}", e.getMessage(), e);
-        }
+    public static void sendFanPushTypePacket(BlockPos pos, boolean backward) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket(pos, backward));
     }
-    
+
 } 

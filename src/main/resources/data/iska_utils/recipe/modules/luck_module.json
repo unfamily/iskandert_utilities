@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GFG",
+    "FBF",
+    "GFG"
+  ],
+  "key": {
+    "G": {
+      "tag": "c:ingots/gold"
+    },
+    "F": {
+      "item": "minecraft:rabbit_foot"
+    },
+    "B": {
+      "item": "iska_utils:base_module"
+    }
+  },
+  "result": {
+    "id": "iska_utils:luck_module",
+    "count": 1
+  }
+}

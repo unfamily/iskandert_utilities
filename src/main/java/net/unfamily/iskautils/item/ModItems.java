@@ -1,7 +1,9 @@
 package net.unfamily.iskautils.item;
 
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.food.FoodProperties;
 import net.neoforged.bus.api.IEventBus;
@@ -9,6 +11,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.fluid.ModFluids;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
 import net.unfamily.iskautils.item.custom.GauntletOfClimbingItem;
@@ -37,6 +40,12 @@ import net.unfamily.iskautils.item.custom.RubberSapExtractorBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerMachineBlockItem;
 import net.unfamily.iskautils.item.custom.StructureSaverMachineBlockItem;
 import net.unfamily.iskautils.item.custom.RangeModuleItem;
+import net.unfamily.iskautils.item.custom.NormalDamageModuleItem;
+import net.unfamily.iskautils.item.custom.LethalDamageModuleItem;
+import net.unfamily.iskautils.item.custom.EnchantModuleItem;
+import net.unfamily.iskautils.item.custom.BeheadingModuleItem;
+import net.unfamily.iskautils.item.custom.LuckModuleItem;
+import net.unfamily.iskautils.item.custom.ExperienceModuleItem;
 import net.unfamily.iskautils.item.custom.GhostModuleItem;
 import net.unfamily.iskautils.item.custom.SlowModuleItem;
 import net.unfamily.iskautils.item.custom.ModerateModuleItem;
@@ -77,6 +86,7 @@ public class ModItems {
 
     // Common properties for all items
     private static final Item.Properties ITEM_PROPERTIES = new Item.Properties();
+    private static final Item.Properties REAPER_STACKABLE_MODULE = ITEM_PROPERTIES.stacksTo(64);
 
     // ===== WITHER PROOF BLOCKS =====
     
@@ -471,14 +481,24 @@ public class ModItems {
     // Item for the Fan
     public static final DeferredItem<Item> FAN = ITEMS.register("fan",
             () -> new FanBlockItem(ModBlocks.FAN.get(), ITEM_PROPERTIES));
-    
+
+    public static final DeferredItem<Item> MOB_REAPER = ITEMS.register("mob_reaper",
+            () -> new BlockItem(ModBlocks.MOB_REAPER.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> COLLECTING_CRATE = ITEMS.register("collecting_crate",
+            () -> new BlockItem(ModBlocks.COLLECTING_CRATE.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> CONDENSED_KNOWLEDGE_BUCKET = ITEMS.register("condensed_knowledge_bucket",
+            () -> new BucketItem(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(),
+                    new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1)));
+
     // Fan upgrade modules
     public static final DeferredItem<Item> RANGE_MODULE = ITEMS.register("range_module",
             () -> new RangeModuleItem(ITEM_PROPERTIES));
-    
+
     public static final DeferredItem<Item> GHOST_MODULE = ITEMS.register("ghost_module",
             () -> new GhostModuleItem(ITEM_PROPERTIES));
-    
+
     public static final DeferredItem<Item> LOGIC_MODULE = ITEMS.register("logic_module",
             () -> new LogicModuleItem(ITEM_PROPERTIES));
 
@@ -487,6 +507,20 @@ public class ModItems {
 
     public static final DeferredItem<Item> CAPACITOR_MODULE = ITEMS.register("capacitor_module",
             () -> new Item(ITEM_PROPERTIES));
+
+    // Mob Reaper modules
+    public static final DeferredItem<Item> NORMAL_DAMAGE_MODULE = ITEMS.register("normal_damage_module",
+            () -> new NormalDamageModuleItem(REAPER_STACKABLE_MODULE));
+    public static final DeferredItem<Item> LETHAL_DAMAGE_MODULE = ITEMS.register("lethal_damage_module",
+            () -> new LethalDamageModuleItem(ITEM_PROPERTIES.stacksTo(1)));
+    public static final DeferredItem<Item> ENCHANT_MODULE = ITEMS.register("enchant_module",
+            () -> new EnchantModuleItem(ITEM_PROPERTIES.stacksTo(1)));
+    public static final DeferredItem<Item> BEHEADING_MODULE = ITEMS.register("beheading_module",
+            () -> new BeheadingModuleItem(REAPER_STACKABLE_MODULE));
+    public static final DeferredItem<Item> LUCK_MODULE = ITEMS.register("luck_module",
+            () -> new LuckModuleItem(REAPER_STACKABLE_MODULE));
+    public static final DeferredItem<Item> EXPERIENCE_MODULE = ITEMS.register("experience_module",
+            () -> new ExperienceModuleItem(REAPER_STACKABLE_MODULE));
 
     public static final DeferredItem<Item> SMOOTH_BLACKSTONE = ITEMS.register("smooth_blackstone",
             () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE.get(), ITEM_PROPERTIES));

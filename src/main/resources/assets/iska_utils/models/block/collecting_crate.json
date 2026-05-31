@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "iska_utils:block/collecting_crate/side",
+    "down": "iska_utils:block/collecting_crate/side",
+    "up": "iska_utils:block/collecting_crate/side",
+    "north": "iska_utils:block/collecting_crate/front",
+    "south": "iska_utils:block/collecting_crate/back",
+    "east": "iska_utils:block/collecting_crate/side",
+    "west": "iska_utils:block/collecting_crate/side"
+  }
+}

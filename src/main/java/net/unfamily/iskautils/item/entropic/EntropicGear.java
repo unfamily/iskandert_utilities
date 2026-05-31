@@ -1,11 +1,14 @@
 package net.unfamily.iskautils.item.entropic;
 
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.HoeItem;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.ShovelItem;
@@ -13,6 +16,7 @@ import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.Tool;
 import net.minecraft.world.item.component.Unbreakable;
+import net.unfamily.iskautils.IskaUtils;
 
 import java.util.List;
 
@@ -20,6 +24,10 @@ import java.util.List;
  * Shared item properties for entropic gear (1.21.1).
  */
 public final class EntropicGear {
+    public static final TagKey<Item> NO_REPAIR = TagKey.create(
+            Registries.ITEM,
+            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "entropic_no_repair"));
+
     private EntropicGear() {}
 
     public static Item.Properties baseProperties() {

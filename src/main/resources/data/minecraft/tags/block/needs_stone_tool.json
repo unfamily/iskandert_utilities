@@ -5,6 +5,8 @@
     "iska_utils:wither_proof_stairs",
     "iska_utils:wither_proof_slab",
     "iska_utils:wither_proof_wall",
-    "iska_utils:ancient_table"
+    "iska_utils:ancient_table",
+    "iska_utils:mob_reaper",
+    "iska_utils:collecting_crate"
   ]
 } 

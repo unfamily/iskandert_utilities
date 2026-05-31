@@ -27,6 +27,8 @@ import net.unfamily.iskautils.block.custom.DruidicPodzolBlock;
 import net.unfamily.iskautils.block.custom.EntropicDirtBlock;
 import net.unfamily.iskautils.block.custom.EntropicSoilBlock;
 import net.unfamily.iskautils.block.custom.GraveyardSoilBlock;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.unfamily.iskautils.fluid.ModFluids;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -56,7 +58,8 @@ public class ModBlocks {
             .mapColor(MapColor.STONE)
             .strength(1.5f, 6.0f)
             .sound(SoundType.METAL)
-            .requiresCorrectToolForDrops();
+            .requiresCorrectToolForDrops()
+            .noOcclusion();
     
     // Properties for Rubber Sap Extractor
     private static final BlockBehaviour.Properties RUBBER_SAP_EXTRACTOR_PROPERTIES = BlockBehaviour.Properties.of()
@@ -178,7 +181,10 @@ public class ModBlocks {
     // Fan (directional block with 6 directions placement)
     public static final DeferredBlock<FanBlock> FAN = BLOCKS.register("fan",
             () -> new FanBlock(FAN_PROPERTIES));
-            
+
+    public static final DeferredBlock<MobReaperBlock> MOB_REAPER = BLOCKS.register("mob_reaper",
+            () -> new MobReaperBlock(FAN_PROPERTIES));
+
     // Rubber Sap Extractor (automatically extracts sap from rubber logs)
     public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",
             () -> new RubberSapExtractorBlock(RUBBER_SAP_EXTRACTOR_PROPERTIES));
@@ -202,6 +208,22 @@ public class ModBlocks {
     public static final DeferredBlock<net.unfamily.iskautils.block.custom.AncientTableBlock> ANCIENT_TABLE =
             BLOCKS.register("ancient_table",
                     () -> new net.unfamily.iskautils.block.custom.AncientTableBlock(ANCIENT_TABLE_PROPERTIES));
+
+    private static final BlockBehaviour.Properties COLLECTING_CRATE_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
+            .strength(3.0f, 6.0f)
+            .sound(SoundType.WOOD)
+            .requiresCorrectToolForDrops();
+
+    public static final DeferredBlock<CollectingCrateBlock> COLLECTING_CRATE = BLOCKS.register("collecting_crate",
+            () -> new CollectingCrateBlock(COLLECTING_CRATE_PROPERTIES));
+
+    public static final DeferredBlock<LiquidBlock> CONDENSED_KNOWLEDGE_BLOCK = BLOCKS.register("condensed_knowledge",
+            () -> new LiquidBlock(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_GREEN)
+                    .noCollission()
+                    .strength(100.0f)
+                    .noLootTable()));
 
     // Smart Timer (emits redstone signal periodically)
     private static final BlockBehaviour.Properties SMART_TIMER_PROPERTIES = BlockBehaviour.Properties.of()

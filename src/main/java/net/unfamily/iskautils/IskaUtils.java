@@ -123,6 +123,7 @@ public class IskaUtils {
         
         // Register blocks and items
         ModBlocks.register(modEventBus);
+        net.unfamily.iskautils.fluid.ModFluids.register(modEventBus);
         net.unfamily.iskautils.worldgen.ModBiomeModifierSerializers.register(modEventBus);
         ModFactoryRecipes.register(modEventBus);
         ModItems.register(modEventBus);
@@ -338,6 +339,11 @@ public class IskaUtils {
         public static void registerGeometryLoaders(net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders event) {
             event.register(DynamicPotionPlateModelLoader.ID, DynamicPotionPlateModelLoader.INSTANCE);
         }
+
+        @SubscribeEvent
+        public static void registerClientExtensions(net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent event) {
+            net.unfamily.iskautils.client.fluid.ModFluidClient.registerClientExtensions(event);
+        }
         
         
         @SubscribeEvent
@@ -364,12 +370,16 @@ public class IskaUtils {
                 net.unfamily.iskautils.client.gui.TemporalOverclockerScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FAN_MENU.get(),
                 net.unfamily.iskautils.client.gui.FanScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.MOB_REAPER_MENU.get(),
+                net.unfamily.iskautils.client.gui.MobReaperScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SOUND_MUFFLER_MENU.get(),
                 net.unfamily.iskautils.client.gui.SoundMufflerScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FACTORY_MENU.get(),
                 net.unfamily.iskautils.client.gui.FactoryScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.ANCIENT_TABLE_MENU.get(),
                 net.unfamily.iskautils.client.gui.AncientTableScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.COLLECTING_CRATE_MENU.get(),
+                net.unfamily.iskautils.client.gui.CollectingCrateScreen::new);
         }
     }
 

@@ -1,0 +1,38 @@
+{
+  "type": "minecraft:block",
+  "random_sequence": "iska_utils:blocks/collecting_crate",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "iska_utils:collecting_crate"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        },
+        {
+          "condition": "minecraft:any_of",
+          "terms": [
+            {
+              "condition": "minecraft:match_tool",
+              "predicate": {
+                "tag": "minecraft:tools/pickaxes"
+              }
+            },
+            {
+              "condition": "minecraft:match_tool",
+              "predicate": {
+                "tag": "minecraft:tools/axes"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

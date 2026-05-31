@@ -12,10 +12,10 @@
     {
       "fuel_cost": 10,
       "require": [
-        { "id": "#c:ingots/copper", "count": 16 },
-        { "id": "iska_utils:drop_of_entropy", "count": 8 },
-        { "id": "#c:nether_stars", "count": 4 },
-        "minecraft:dragon_breath"
+        { "id": "#c:ingots/copper", "count": 8 },
+        { "id": "#c:gems/diamond", "count": 2 },
+        { "id": "iska_utils:entropic_agglomeration", "count": 1 },
+        { "id": "#c:nether_stars", "count": 1 }
       ],
       "produce": [ "iska_utils:unstable_entropy_catalyst" ]
     }

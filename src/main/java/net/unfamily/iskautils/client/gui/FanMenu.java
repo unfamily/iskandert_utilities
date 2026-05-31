@@ -66,7 +66,7 @@ public class FanMenu extends AbstractContainerMenu {
                     case RANGE_LEFT_INDEX -> blockEntity.getRangeLeft();
                     case RANGE_FRONT_INDEX -> blockEntity.getRangeFront();
                     case FAN_POWER_INDEX -> (int)(blockEntity.getFanPower() * 1000); // Store as int (multiply by 1000)
-                    case PUSH_TYPE_INDEX -> blockEntity.getPushType().getId();
+                    case PUSH_TYPE_INDEX -> blockEntity.getTargetType().getId();
                     case REDSTONE_MODE_INDEX -> blockEntity.getRedstoneMode();
                     case IS_PULL_INDEX -> blockEntity.isPull() ? 1 : 0;
                     case BLOCK_POS_X_INDEX -> blockPos.getX();

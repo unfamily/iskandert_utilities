@@ -9,6 +9,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -22,6 +23,7 @@ import net.unfamily.iskautils.network.ModMessages;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.network.packet.FanRangeUpdateC2SPacket;
 import net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket;
+import net.unfamily.iskautils.util.MachineTargetType;
 
 public class FanScreen extends AbstractContainerScreen<FanMenu> {
     
@@ -75,7 +77,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     private static final int CLOSE_BUTTON_Y = 5;
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
-    
+
     public FanScreen(FanMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         
@@ -94,7 +96,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     private boolean previewButtonShowsHide;
     private int redstoneModeButtonX, redstoneModeButtonY; // Redstone mode button position
     private int pushPullButtonX, pushPullButtonY; // Push/Pull button position
-    private int pushTypeButtonX, pushTypeButtonY; // Push type button position
+    private int pushTypeButtonX, pushTypeButtonY;
     
     @Override
     protected void init() {
@@ -243,11 +245,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         
         // Render main background
         guiGraphics.blit(BACKGROUND, guiX, guiY, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
-        
-        // Render range grid visualization
         renderRangeGrid(guiGraphics);
-        
-        // Render right side buttons
         renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
         renderPushPullButton(guiGraphics, mouseX, mouseY);
         renderPushTypeButton(guiGraphics, mouseX, mouseY);
@@ -523,6 +521,35 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         renderButtonTooltips(guiGraphics, mouseX, mouseY);
     }
     
+    @Override
+    protected void renderTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        super.renderTooltip(guiGraphics, mouseX, mouseY);
+        renderEmptyModuleSlotTooltips(guiGraphics, mouseX, mouseY);
+    }
+
+    private void renderEmptyModuleSlotTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        Slot rangeSlot = menu.getSlot(0);
+        if (rangeSlot.getItem().isEmpty() && isMouseOverSlot(rangeSlot, mouseX, mouseY)) {
+            guiGraphics.renderTooltip(this.font, GHOST_RANGE_MODULE.getHoverName(), mouseX, mouseY);
+            return;
+        }
+        Slot ghostSlot = menu.getSlot(1);
+        if (ghostSlot.getItem().isEmpty() && isMouseOverSlot(ghostSlot, mouseX, mouseY)) {
+            guiGraphics.renderTooltip(this.font, GHOST_GHOST_MODULE.getHoverName(), mouseX, mouseY);
+            return;
+        }
+        Slot speedSlot = menu.getSlot(2);
+        if (speedSlot.getItem().isEmpty() && isMouseOverSlot(speedSlot, mouseX, mouseY)) {
+            guiGraphics.renderTooltip(this.font, SPEED_MODULES[speedModuleCycleIndex].getHoverName(), mouseX, mouseY);
+        }
+    }
+
+    private boolean isMouseOverSlot(Slot slot, int mouseX, int mouseY) {
+        int x = this.leftPos + slot.x;
+        int y = this.topPos + slot.y;
+        return mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16;
+    }
+    
     private void renderButtonTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         // Redstone mode button tooltip
         if (mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
@@ -553,10 +580,8 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         // Push type button tooltip
         if (mouseX >= pushTypeButtonX && mouseX <= pushTypeButtonX + REDSTONE_BUTTON_SIZE &&
             mouseY >= pushTypeButtonY && mouseY <= pushTypeButtonY + REDSTONE_BUTTON_SIZE) {
-            int pushTypeId = menu.getPushType();
-            net.unfamily.iskautils.block.entity.FanBlockEntity.PushType pushType = 
-                net.unfamily.iskautils.block.entity.FanBlockEntity.PushType.fromId(pushTypeId);
-            Component tooltip = Component.translatable("gui.iska_utils.fan.push_type." + pushType.getName());
+            MachineTargetType targetType = MachineTargetType.fromId(menu.getPushType());
+            Component tooltip = Component.translatable("gui.iska_utils.fan.push_type." + targetType.getName());
             guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
         }
         
@@ -760,16 +785,13 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
                         96, 96);
         
         // Get current push type
-        int pushTypeId = menu.getPushType();
-        net.unfamily.iskautils.block.entity.FanBlockEntity.PushType pushType = 
-            net.unfamily.iskautils.block.entity.FanBlockEntity.PushType.fromId(pushTypeId);
-        
-        // Draw icon based on push type
+        MachineTargetType targetType = MachineTargetType.fromId(menu.getPushType());
+
         int iconX = pushTypeButtonX + 2;
         int iconY = pushTypeButtonY + 2;
         int iconSize = 12;
         
-        switch (pushType) {
+        switch (targetType) {
             case MOBS_ONLY -> {
                 // Mobs only: creeper head
                 ItemStack creeperHead = new ItemStack(net.minecraft.world.item.Items.CREEPER_HEAD);
@@ -814,54 +836,53 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (handleMouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0 || button == 1) {
             if (mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
+                    mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
                 onRedstoneModePressed(button == 1);
                 return true;
             }
-        }
-        if (button == 0) { // Left click
-            // Check push/pull button
             if (mouseX >= pushPullButtonX && mouseX <= pushPullButtonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= pushPullButtonY && mouseY <= pushPullButtonY + REDSTONE_BUTTON_SIZE) {
-                onPushPullPressed();
+                    mouseY >= pushPullButtonY && mouseY <= pushPullButtonY + REDSTONE_BUTTON_SIZE) {
+                onPushPullPressed(button == 1);
                 return true;
             }
-            
-            // Check push type button
             if (mouseX >= pushTypeButtonX && mouseX <= pushTypeButtonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= pushTypeButtonY && mouseY <= pushTypeButtonY + REDSTONE_BUTTON_SIZE) {
-                onPushTypePressed();
+                    mouseY >= pushTypeButtonY && mouseY <= pushTypeButtonY + REDSTONE_BUTTON_SIZE) {
+                onPushTypePressed(button == 1);
                 return true;
             }
-            
-            // Show button is handled by vanilla Button widget
         }
-        
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
+    }
+
+    private void onPushPullPressed(boolean backward) {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (!pos.equals(BlockPos.ZERO)) {
+            ModMessages.sendFanPushPullPacket(pos, backward);
+            playButtonSound();
+        }
+    }
+
+    private void onPushTypePressed(boolean backward) {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (!pos.equals(BlockPos.ZERO)) {
+            ModMessages.sendFanPushTypePacket(pos, backward);
+            playButtonSound();
+        }
     }
     
     private void onRedstoneModePressed(boolean backward) {
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(BlockPos.ZERO)) {
             ModMessages.sendFanRedstoneModePacket(pos, backward);
-            playButtonSound();
-        }
-    }
-    
-    private void onPushPullPressed() {
-        BlockPos pos = menu.getSyncedBlockPos();
-        if (!pos.equals(BlockPos.ZERO)) {
-            ModMessages.sendFanPushPullPacket(pos);
-            playButtonSound();
-        }
-    }
-    
-    private void onPushTypePressed() {
-        BlockPos pos = menu.getSyncedBlockPos();
-        if (!pos.equals(BlockPos.ZERO)) {
-            ModMessages.sendFanPushTypePacket(pos);
             playButtonSound();
         }
     }
@@ -890,11 +911,9 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Render title centered (title is already translatable via FanBlockEntity.getDisplayName())
-        Component titleComponent = this.title;
-        int titleWidth = this.font.width(titleComponent);
+        int titleWidth = this.font.width(this.title);
         int titleX = (this.imageWidth - titleWidth) / 2;
-        guiGraphics.drawString(this.font, titleComponent, titleX, 8, 0x404040, false);
+        guiGraphics.drawString(this.font, this.title, titleX, 8, 0x404040, false);
     }
 }
 

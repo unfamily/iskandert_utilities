@@ -292,6 +292,9 @@ public final class DruidicPodzolUtil {
             if (!isIlluminated(level, soilPos) || hasSolidCoverAbove(level, soilPos)) {
                 continue;
             }
+            if (findMobSpawnPos(level, soilPos) == null) {
+                continue;
+            }
             return true;
         }
         return false;

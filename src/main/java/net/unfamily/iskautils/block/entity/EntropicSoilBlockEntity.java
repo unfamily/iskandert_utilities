@@ -5,8 +5,6 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -181,7 +179,6 @@ public class EntropicSoilBlockEntity extends BlockEntity {
                     true,
                     true));
             if (level.addFreshEntity(mob)) {
-                level.playSound(null, spawnPos, SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.HOSTILE, 0.6F, 0.8F);
                 level.sendParticles(ParticleTypes.SMOKE, spawnPos.getX() + 0.5D, spawnPos.getY() + 0.2D, spawnPos.getZ() + 0.5D,
                         8, 0.25D, 0.1D, 0.25D, 0.01D);
                 return;

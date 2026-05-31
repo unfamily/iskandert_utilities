@@ -54,6 +54,9 @@ public class ModMenuTypes {
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<FanMenu>> FAN_MENU =
         MENUS.register("fan_menu", () -> new MenuType<>(FanMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
 
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<MobReaperMenu>> MOB_REAPER_MENU =
+        MENUS.register("mob_reaper_menu", () -> new MenuType<>(MobReaperMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<SoundMufflerMenu>> SOUND_MUFFLER_MENU =
         MENUS.register("sound_muffler_menu", () -> new MenuType<>(SoundMufflerMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
 
@@ -65,5 +68,8 @@ public class ModMenuTypes {
 
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<AncientTableMenu>> ANCIENT_TABLE_MENU =
         MENUS.register("ancient_table_menu", () -> new MenuType<>(AncientTableMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<CollectingCrateMenu>> COLLECTING_CRATE_MENU =
+        MENUS.register("collecting_crate_menu", () -> new MenuType<>(CollectingCrateMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
 
 } 

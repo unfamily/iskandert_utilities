@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NDN",
+    "DLD",
+    "NDN"
+  ],
+  "key": {
+    "N": {
+      "tag": "c:ingots/netherite"
+    },
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "L": {
+      "item": "iska_utils:normal_damage_module"
+    }
+  },
+  "result": {
+    "id": "iska_utils:lethal_damage_module",
+    "count": 1
+  }
+}

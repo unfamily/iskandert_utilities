@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BIB",
+    "ACA",
+    "BIB"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "item": "minecraft:cobbled_deepslate_slab"
+    },
+    "C": {
+      "item": "iska_utils:fan"
+    },
+    "I": {
+      "item": "minecraft:iron_sword"
+    }
+  },
+  "result": {
+    "id": "iska_utils:mob_reaper",
+    "count": 1
+  }
+}

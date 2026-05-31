@@ -86,6 +86,12 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.LOGIC_MODULE.get());
                                 pOutput.accept(ModItems.PRODUCTION_MODULE.get());
                                 pOutput.accept(ModItems.CAPACITOR_MODULE.get());
+                                pOutput.accept(ModItems.NORMAL_DAMAGE_MODULE.get());
+                                pOutput.accept(ModItems.LETHAL_DAMAGE_MODULE.get());
+                                pOutput.accept(ModItems.ENCHANT_MODULE.get());
+                                pOutput.accept(ModItems.BEHEADING_MODULE.get());
+                                pOutput.accept(ModItems.LUCK_MODULE.get());
+                                pOutput.accept(ModItems.EXPERIENCE_MODULE.get());
                                 // Modules (follow vector tier)
                                 pOutput.accept(ModItems.SLOW_MODULE.get());
                                 pOutput.accept(ModItems.MODERATE_MODULE.get());
@@ -166,6 +172,9 @@ public class ModCreativeModeTabs {
                                 }
                                 
                                 // 6. General utility items
+                                pOutput.accept(ModItems.MOB_REAPER.get());
+                                pOutput.accept(ModItems.COLLECTING_CRATE.get());
+                                pOutput.accept(ModItems.CONDENSED_KNOWLEDGE_BUCKET.get());
                                 pOutput.accept(ModItems.ANGEL_BLOCK.get());
                                 pOutput.accept(ModItems.RAFT.get());
                                 pOutput.accept(ModItems.SCANNER.get());
