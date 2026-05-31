@@ -22,9 +22,9 @@ public class ModFluids {
             DeferredRegister.create(NeoForgeRegistries.FLUID_TYPES, IskaUtils.MOD_ID);
 
     public static final ResourceLocation STILL_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "block/condensed_knowledge/still");
+            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "block/fluid/still");
     public static final ResourceLocation FLOWING_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "block/condensed_knowledge/flowing");
+            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "block/fluid/flow");
 
     public static final DeferredHolder<FluidType, FluidType> CONDENSED_KNOWLEDGE_TYPE =
             FLUID_TYPES.register("condensed_knowledge", () -> new FluidType(FluidType.Properties.create()
