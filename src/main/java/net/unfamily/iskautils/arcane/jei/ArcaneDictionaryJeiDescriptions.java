@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.arcane.jei;
 
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
@@ -35,7 +36,14 @@ public final class ArcaneDictionaryJeiDescriptions {
     }
 
     public static List<Component> buildLines(Identifier traitId, ArcaneDictionaryDefinition.Entry entry) {
-        ArcaneDictionaryJeiContext ctx = ArcaneDictionaryJeiContext.of(traitId, entry);
+        return buildLines(traitId, entry, Minecraft.getInstance());
+    }
+
+    public static List<Component> buildLines(
+            Identifier traitId,
+            ArcaneDictionaryDefinition.Entry entry,
+            Minecraft mc) {
+        ArcaneDictionaryJeiContext ctx = ArcaneDictionaryJeiContext.of(traitId, entry, mc);
         List<Component> lines = new ArrayList<>();
         ArcaneDictionaryJeiLines.appendLevelHeader(ctx, lines);
 

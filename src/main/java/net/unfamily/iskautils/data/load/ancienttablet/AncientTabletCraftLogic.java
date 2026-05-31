@@ -1,11 +1,12 @@
 package net.unfamily.iskautils.data.load.ancienttablet;
 
-import net.minecraft.core.HolderLookup;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.item.component.AncientTabletContents;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,7 +19,7 @@ import java.util.Optional;
  */
 public final class AncientTabletCraftLogic {
 
-    public record CraftSuccess(AncientTabletRecipeEntry recipe, List<Integer> consumedSlotIndices) {}
+    public record CraftSuccess(AncientTabletRecipeEntry entry, AncientTabletRecipeEntry.ResolvedCraft resolved, List<Integer> consumedSlotIndices) {}
 
     private AncientTabletCraftLogic() {}
 
@@ -40,7 +41,7 @@ public final class AncientTabletCraftLogic {
     }
 
     public static List<AncientTabletContents.SlotView> expandTabletSlots(
-            ItemStack tablet, HolderLookup.Provider provider) {
+            ItemStack tablet, net.minecraft.core.HolderLookup.Provider provider) {
         return AncientTabletContents.expandForMatching(tablet, provider);
     }
 
@@ -70,24 +71,73 @@ public final class AncientTabletCraftLogic {
     }
 
     public static void consumeTabletAtIndices(
-            ItemStack tablet, HolderLookup.Provider provider, List<Integer> indices) {
+            ItemStack tablet, net.minecraft.core.HolderLookup.Provider provider, List<Integer> indices) {
         AncientTabletContents.consumeSlotsAtIndices(tablet, provider, indices);
     }
 
     /** First unordered match wins (Ancient Table). */
     public static Optional<CraftSuccess> tryCraftUnordered(
-            List<AncientTabletContents.SlotView> views, List<AncientTabletRecipeEntry> entries) {
+            List<AncientTabletContents.SlotView> views,
+            List<AncientTabletRecipeEntry> entries,
+            @Nullable ServerPlayer player) {
         if (views.isEmpty()) {
             return Optional.empty();
         }
-        for (AncientTabletRecipeEntry recipe : entries) {
+        for (AncientTabletRecipeEntry entry : entries) {
+            Optional<AncientTabletRecipeEntry.ResolvedCraft> resolved = entry.resolveForPlayer(player);
+            if (resolved.isEmpty()) {
+                continue;
+            }
             AncientTabletRecipeMatcher.MatchOutcome outcome =
-                    AncientTabletRecipeMatcher.matchUnordered(recipe, views);
+                    AncientTabletRecipeMatcher.tryMatchResolved(resolved.get(), views);
             if (outcome.result() == AncientTabletRecipeMatcher.MatchResult.SUCCESS) {
-                return Optional.of(new CraftSuccess(recipe, outcome.consumedSlotIndices()));
+                return Optional.of(new CraftSuccess(entry, resolved.get(), outcome.consumedSlotIndices()));
             }
         }
         return Optional.empty();
+    }
+
+    public static Optional<CraftSuccess> tryCraftTablet(
+            List<AncientTabletContents.SlotView> views,
+            List<AncientTabletRecipeEntry> entries,
+            ServerPlayer player) {
+        if (views.isEmpty()) {
+            return Optional.empty();
+        }
+        for (AncientTabletRecipeEntry entry : entries) {
+            Optional<AncientTabletRecipeEntry.ResolvedCraft> resolved = entry.resolveForPlayer(player);
+            if (resolved.isEmpty()) {
+                continue;
+            }
+            AncientTabletRecipeMatcher.MatchOutcome outcome =
+                    AncientTabletRecipeMatcher.tryMatchResolved(resolved.get(), views);
+            if (outcome.result() == AncientTabletRecipeMatcher.MatchResult.SUCCESS) {
+                return Optional.of(new CraftSuccess(entry, resolved.get(), outcome.consumedSlotIndices()));
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<AncientTabletRecipeEntry> findWrongOrderMatch(
+            List<AncientTabletContents.SlotView> views,
+            List<AncientTabletRecipeEntry> entries,
+            ServerPlayer player) {
+        for (AncientTabletRecipeEntry entry : entries) {
+            Optional<AncientTabletRecipeEntry.ResolvedCraft> resolved = entry.resolveForPlayer(player);
+            if (resolved.isEmpty() || !resolved.get().mustOrdered()) {
+                continue;
+            }
+            AncientTabletRecipeMatcher.MatchOutcome outcome =
+                    AncientTabletRecipeMatcher.tryMatchResolved(resolved.get(), views);
+            if (outcome.result() == AncientTabletRecipeMatcher.MatchResult.WRONG_ORDER) {
+                return Optional.of(entry);
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static List<ItemStack> outputStacks(AncientTabletRecipeEntry.ResolvedCraft resolved) {
+        return AncientTabletRecipeMatcher.expandToExampleStacks(resolved.produce());
     }
 
     public static List<ItemStack> outputStacks(AncientTabletRecipeEntry recipe) {

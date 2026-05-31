@@ -41,7 +41,7 @@ public final class ArcaneDictionaryActivation {
             return new Context(curio, Scope.CURIO);
         }
         ItemStack carried = resolveCarriedDictionary(player);
-        if (carried != null && hasOffCurioTrait(carried)) {
+        if (carried != null && hasOffCurioTrait(player, carried)) {
             return new Context(carried, Scope.OFF_CURIO);
         }
         return null;
@@ -87,8 +87,11 @@ public final class ArcaneDictionaryActivation {
         return ArcaneDictionaryContents.hasTraits(only) ? only : null;
     }
 
-    private static boolean hasOffCurioTrait(ItemStack dictionary) {
+    private static boolean hasOffCurioTrait(ServerPlayer player, ItemStack dictionary) {
         for (ArcaneDictionaryContents.TraitSlot trait : ArcaneDictionaryContents.getTraits(dictionary)) {
+            if (!ArcaneDictionaryEntryGate.traitActive(player, trait.id())) {
+                continue;
+            }
             if (traitApplies(trait.id(), Scope.OFF_CURIO)) {
                 return true;
             }

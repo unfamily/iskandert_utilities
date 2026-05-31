@@ -2,6 +2,9 @@
   "replace": false,
   "values": [
     "iska_utils:tar_slime_block",
-    "iska_utils:sap_block"
+    "iska_utils:entropic_soil",
+    "iska_utils:entropic_dirt",
+    "iska_utils:graveyard_soil",
+    "iska_utils:druidic_podzol"
   ]
-} 
+}

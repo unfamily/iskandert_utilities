@@ -19,6 +19,13 @@ public final class ArcaneDictionaryTraitIds {
     public static final Identifier RECALL_OF_KNOWLEDGE = id("recall_of_knowledge");
     public static final Identifier SHIFTING_POWER = id("shifting_power");
     public static final Identifier ENTROPY_OVERFLOW = id("entropy_overflow");
+    public static final Identifier LIFE_SIPHON = id("life_siphon");
+    public static final Identifier IRON_ROOT = id("iron_root");
+    public static final Identifier QUICK_HANDS = id("quick_hands");
+    public static final Identifier ENTROPY_FUNNEL = id("entropy_funnel");
+    public static final Identifier LAST_STAND = id("last_stand");
+    public static final Identifier GRAVE_DEBT = id("grave_debt");
+    public static final Identifier TIER_RESONANCE = id("tier_resonance");
 
     private ArcaneDictionaryTraitIds() {}
 

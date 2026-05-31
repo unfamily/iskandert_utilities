@@ -8,9 +8,11 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.unfamily.iskautils.integration.artifacts.ArtifactsCompat;
 import net.unfamily.iskautils.item.ModItems;
 
 import java.util.Map;
@@ -228,6 +230,11 @@ public class ModCreativeModeTabs {
 
                                 // Delivery-related items (after all artifacts)
                                 pOutput.accept(ModItems.DROP_OF_ENTROPY.get());
+                                if (ArtifactsCompat.isLoaded()) {
+                                    pOutput.accept(ModItems.CURSED_KEY.get());
+                                }
+                                pOutput.accept(ModItems.ENTROPIC_AGGLOMERATION.get());
+                                pOutput.accept(ModItems.DRUIDIC_AGGLOMERATION.get());
                                 pOutput.accept(new ItemStack(ModItems.DROP_OF_ENTROPY.get()));
                                 pOutput.accept(new ItemStack(ModItems.ANCIENT_TABLET.get()));
                                 pOutput.accept(ModItems.ANCIENT_TABLE.get());
@@ -247,6 +254,10 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.ENTROPIC_LEGGINGS.get());
                                 pOutput.accept(ModItems.ENTROPIC_BOOTS.get());
                                 pOutput.accept(ModItems.ENTROPY_TNT.get());
+                                pOutput.accept(ModItems.ENTROPIC_SOIL.get());
+                                pOutput.accept(ModItems.ENTROPIC_DIRT.get());
+                                pOutput.accept(ModItems.GRAVEYARD_SOIL.get());
+                                pOutput.accept(ModItems.DRUIDIC_PODZOL.get());
 
                             }).build());
 

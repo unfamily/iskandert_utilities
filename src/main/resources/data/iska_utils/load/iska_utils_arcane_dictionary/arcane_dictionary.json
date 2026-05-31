@@ -3,7 +3,7 @@
   "entries": [
     {
       "weight": 25,
-      "luck": -10,
+      "luck": 0,
       "enchant": "iska_utils:glass_skin",
       "ent_cha": 3,
       "color": "FF8844"
@@ -48,7 +48,7 @@
     },
     {
       "weight": 25,
-      "luck": -5,
+      "luck": 8,
       "enchant": "iska_utils:blood_ledger",
       "cat": ["minecraft:golden_apple:10"],
       "ent_cha": 6,
@@ -56,7 +56,7 @@
     },
     {
       "weight": 25,
-      "luck": -10,
+      "luck": 8,
       "enchant": "iska_utils:void_thorns",
       "ent_cha": 4,
       "color": "FF9955"
@@ -77,7 +77,7 @@
     },
     {
       "weight": 12,
-      "luck": -15,
+      "luck": 0,
       "enchant": "iska_utils:martyr_script",
       "ent_cha": 7,
       "color": "DD2222"
@@ -111,6 +111,56 @@
       "enchant": "iska_utils:entropy_overflow",
       "ent_cha": 0,
       "color": "AA1111"
+    },
+    {
+      "weight": 30,
+      "luck": 10,
+      "enchant": "iska_utils:life_siphon",
+      "ent_cha": 4,
+      "color": "FF6688"
+    },
+    {
+      "weight": 25,
+      "luck": 0,
+      "enchant": "iska_utils:iron_root",
+      "ent_cha": 3,
+      "color": "888866"
+    },
+    {
+      "weight": 30,
+      "luck": 8,
+      "enchant": "iska_utils:quick_hands",
+      "ent_cha": 3,
+      "color": "FFCC66"
+    },
+    {
+      "weight": 25,
+      "luck": 5,
+      "enchant": "iska_utils:entropy_funnel",
+      "ent_cha": 2,
+      "color": "66CCAA"
+    },
+    {
+      "weight": 25,
+      "luck": 5,
+      "enchant": "iska_utils:last_stand",
+      "ent_cha": 5,
+      "color": "CCAA44"
+    },
+    {
+      "weight": 35,
+      "luck": -12,
+      "enchant": "iska_utils:grave_debt",
+      "ent_cha": 0,
+      "color": "553333"
+    },
+    {
+      "weight": 15,
+      "luck": 12,
+      "enchant": "iska_utils:tier_resonance",
+      "ent_cha": 6,
+      "color": "AA66FF",
+      "mods": [{ "mod": "apotheosis", "is": true }]
     }
   ]
 }

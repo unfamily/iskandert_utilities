@@ -5,6 +5,7 @@
       "weight": 30,
       "luck": 10000,
       "jeimode": "show",
+      "mods": [{ "mod": "artifacts", "is": false }],
       "do": [
         {
           "message": {
@@ -15,6 +16,23 @@
           }
         },
         { "drop": "iska_utils:drop_of_entropy" }
+      ]
+    },
+    {
+      "weight": 30,
+      "luck": 10000,
+      "jeimode": "show",
+      "mods": [{ "mod": "artifacts", "is": true }],
+      "do": [
+        {
+          "message": {
+            "target": "@s",
+            "in": "action_bar",
+            "color": "#C040FF",
+            "text": "message.iska_utils.suspicious_delivery.cursed_key"
+          }
+        },
+        { "drop": "iska_utils:cursed_key" }
       ]
     },
     {

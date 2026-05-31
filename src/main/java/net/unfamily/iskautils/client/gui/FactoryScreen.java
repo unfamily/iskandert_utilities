@@ -13,6 +13,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.block.entity.FactoryBlockEntity;
 import net.unfamily.iskautils.client.FactoryClientSourcesBootstrap;
 import net.unfamily.iskautils.data.load.FactoryLoader;
 import net.unfamily.iskautils.integration.jei.FactoryJeiRecipes;
@@ -291,6 +292,7 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         if (minecraft != null) {
             FactoryJeiRecipes.reloadForClient(minecraft);
             FactoryClientSourcesBootstrap.ensureLoaded();
+            net.unfamily.iskautils.integration.jei.IskaUtilsJeiDynamicRefresh.scheduleRefresh(minecraft);
         }
         super.init();
         this.scrollOffset = menu.getScrollOffset();
@@ -374,7 +376,18 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         if (input.isEmpty()) {
             return List.of();
         }
-        return FactoryLoader.previewOutputs(input, minecraft.level);
+        net.minecraft.server.level.ServerPlayer gatePlayer = null;
+        FactoryBlockEntity be = menu.getBlockEntityOrNull();
+        if (be != null) {
+            gatePlayer = be.resolveOwnerPlayer();
+        }
+        if (gatePlayer == null
+                && minecraft != null
+                && minecraft.getSingleplayerServer() != null
+                && minecraft.player != null) {
+            gatePlayer = minecraft.getSingleplayerServer().getPlayerList().getPlayer(minecraft.player.getUUID());
+        }
+        return FactoryLoader.previewOutputs(input, minecraft.level, gatePlayer);
     }
 
     private int getMaxScrollOffset(int totalEntries) {

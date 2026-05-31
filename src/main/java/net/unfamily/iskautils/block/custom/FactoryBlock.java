@@ -121,6 +121,7 @@ public class FactoryBlock extends BaseEntityBlock {
         }
 
         if (player instanceof ServerPlayer serverPlayer) {
+            factory.claimOwner(serverPlayer);
             serverPlayer.openMenu(new MenuProvider() {
                 @Override
                 public Component getDisplayName() {

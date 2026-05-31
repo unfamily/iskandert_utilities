@@ -21,6 +21,11 @@ import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.player.*;
+import net.unfamily.iskautils.block.custom.DruidicPodzolBlock;
+import net.unfamily.iskautils.block.custom.DruidicPodzolBlock;
+import net.unfamily.iskautils.block.custom.EntropicDirtBlock;
+import net.unfamily.iskautils.block.custom.EntropicSoilBlock;
+import net.unfamily.iskautils.block.custom.GraveyardSoilBlock;
 import net.unfamily.iskautils.block.standard.*;
 
 public class ModBlocks {
@@ -518,6 +523,39 @@ public class ModBlocks {
 
     public static final DeferredBlock<HardIceBlock> HARD_ICE = BLOCKS.register("hard_ice",
             key -> new HardIceBlock(assignBlockId(key, HARD_ICE_PROPERTIES)));
+
+    // ===== ENTROPIC SOILS =====
+    private static final UnaryOperator<BlockBehaviour.Properties> ENTROPIC_SOIL_PROPERTIES = p -> p
+            .mapColor(MapColor.PLANT)
+            .strength(0.6F)
+            .sound(SoundType.GRASS);
+
+    private static final UnaryOperator<BlockBehaviour.Properties> ENTROPIC_DIRT_PROPERTIES = p -> p
+            .mapColor(MapColor.DIRT)
+            .strength(0.5F)
+            .sound(SoundType.GRAVEL);
+
+    private static final UnaryOperator<BlockBehaviour.Properties> GRAVEYARD_SOIL_PROPERTIES = p -> p
+            .mapColor(MapColor.TERRACOTTA_BLACK)
+            .strength(0.6F)
+            .sound(SoundType.SOUL_SOIL);
+
+    private static final UnaryOperator<BlockBehaviour.Properties> DRUIDIC_PODZOL_PROPERTIES = p -> p
+            .mapColor(MapColor.PLANT)
+            .strength(0.6F)
+            .sound(SoundType.GRASS);
+
+    public static final DeferredBlock<EntropicSoilBlock> ENTROPIC_SOIL = BLOCKS.register("entropic_soil",
+            key -> new EntropicSoilBlock(assignBlockId(key, ENTROPIC_SOIL_PROPERTIES)));
+
+    public static final DeferredBlock<EntropicDirtBlock> ENTROPIC_DIRT = BLOCKS.register("entropic_dirt",
+            key -> new EntropicDirtBlock(assignBlockId(key, ENTROPIC_DIRT_PROPERTIES)));
+
+    public static final DeferredBlock<GraveyardSoilBlock> GRAVEYARD_SOIL = BLOCKS.register("graveyard_soil",
+            key -> new GraveyardSoilBlock(assignBlockId(key, GRAVEYARD_SOIL_PROPERTIES)));
+
+    public static final DeferredBlock<DruidicPodzolBlock> DRUIDIC_PODZOL = BLOCKS.register("druidic_podzol",
+            key -> new DruidicPodzolBlock(assignBlockId(key, DRUIDIC_PODZOL_PROPERTIES)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

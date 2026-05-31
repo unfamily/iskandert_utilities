@@ -18,8 +18,8 @@
   },
   "neoforge:conditions": [
     {
-      "type": "neoforge:item_exists",
-      "item": "iska_utils:iska_utils_wither_grinder"
+      "type": "neoforge:registered",
+      "value": "iska_utils:iska_utils_wither_grinder"
     }
   ]
 }

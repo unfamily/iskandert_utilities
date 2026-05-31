@@ -16,8 +16,8 @@
   },
   "neoforge:conditions": [
     {
-      "type": "neoforge:item_exists",
-      "item": "iska_utils:iska_utils_weakness"
+      "type": "neoforge:registered",
+      "value": "iska_utils:iska_utils_weakness"
     }
   ]
 }

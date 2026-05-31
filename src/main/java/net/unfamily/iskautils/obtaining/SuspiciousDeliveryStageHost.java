@@ -3,6 +3,7 @@ package net.unfamily.iskautils.obtaining;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.script.LoadModCondition;
+import net.unfamily.iskautils.script.LoadModGate;
 
 import java.util.List;
 
@@ -44,6 +45,41 @@ public final class SuspiciousDeliveryStageHost {
 
     public boolean isEligible(ServerPlayer player) {
         return checkAllStages(player);
+    }
+
+    public boolean isFullyEligible(ServerPlayer player) {
+        return checkAllMods() && checkAllStages(player);
+    }
+
+    public boolean isPoolEligible(ServerPlayer player) {
+        return isFullyEligible(player);
+    }
+
+    public boolean isEmpty() {
+        return stages.isEmpty() && mods.isEmpty();
+    }
+
+    public boolean checkAllMods() {
+        if (LoadModGate.isDeferredLogic(modsLogic)) {
+            return true;
+        }
+        if (mods.isEmpty()) {
+            return true;
+        }
+        if (modsLogic == CommandItemDefinition.StagesLogic.AND) {
+            for (LoadModCondition condition : mods) {
+                if (!condition.matches()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        for (LoadModCondition condition : mods) {
+            if (condition.matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean checkAllStages(ServerPlayer player) {

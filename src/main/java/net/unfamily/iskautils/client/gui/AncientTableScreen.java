@@ -83,6 +83,9 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
     @Override
     protected void init() {
         super.init();
+        if (minecraft != null) {
+            net.unfamily.iskautils.integration.jei.IskaUtilsJeiDynamicRefresh.scheduleRefresh(minecraft);
+        }
         int titleWidth = font.width(MACHINE_TITLE);
         titleLabelX = (imageWidth - titleWidth) / 2;
         titleLabelY = TITLE_Y;

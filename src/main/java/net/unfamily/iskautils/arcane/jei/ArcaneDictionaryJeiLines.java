@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.arcane.jei;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
@@ -7,14 +8,16 @@ import net.unfamily.iskautils.arcane.ArcaneDictionaryCatalystBoost;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryCatalystSpec;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryDefinition;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryLoader;
+import net.unfamily.iskautils.arcane.ArcaneDictionaryPools;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryTraitStyle;
+import net.unfamily.iskautils.command.CommandItemDefinition;
+import net.unfamily.iskautils.script.LoadModCondition;
 import net.unfamily.iskautils.util.RomanNumerals;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.DoubleUnaryOperator;
+import java.util.stream.Collectors;
 
 public final class ArcaneDictionaryJeiLines {
     private ArcaneDictionaryJeiLines() {}
@@ -37,6 +40,7 @@ public final class ArcaneDictionaryJeiLines {
         lines.add(Component.translatable(
                 "jei.iska_utils.arcane_trait.meta.luck",
                 ctx.poolEntry().luck()));
+        appendGateMeta(ctx.poolEntry(), lines);
         if (ctx.poolEntry().catalysts() != null && !ctx.poolEntry().catalysts().isEmpty()) {
             int total = poolTotalWeight();
             lines.add(Component.translatable(
@@ -46,20 +50,34 @@ public final class ArcaneDictionaryJeiLines {
         }
     }
 
-    public static int poolTotalWeight() {
-        Map<Identifier, ArcaneDictionaryDefinition.Entry> unique = new LinkedHashMap<>();
-        for (ArcaneDictionaryDefinition.Entry entry : ArcaneDictionaryLoader.getEntries()) {
-            unique.putIfAbsent(entry.enchant(), entry);
+    public static void appendGateMeta(ArcaneDictionaryDefinition.Entry entry, List<Component> lines) {
+        List<LoadModCondition> mods = entry.gateHost().getMods();
+        if (!mods.isEmpty()) {
+            String modList = mods.stream()
+                    .map(LoadModCondition::modId)
+                    .collect(Collectors.joining(", "));
+            lines.add(Component.translatable("jei.iska_utils.arcane_trait.meta.requires_mod", modList));
         }
-        return unique.values().stream().mapToInt(e -> Math.max(0, e.weight())).sum();
+        List<CommandItemDefinition.StageCondition> stages = entry.gateHost().getStages();
+        if (!stages.isEmpty()) {
+            String stageList = stages.stream()
+                    .map(stage -> stage.getStageType() + ":" + stage.getStage())
+                    .collect(Collectors.joining(", "));
+            lines.add(Component.translatable("jei.iska_utils.arcane_trait.meta.requires_stage", stageList));
+        }
+    }
+
+    public static int poolTotalWeight() {
+        return ArcaneDictionaryPools.poolTotalWeight(eligiblePool());
     }
 
     public static double chancePercent(ArcaneDictionaryDefinition.Entry entry) {
-        int total = poolTotalWeight();
-        if (total <= 0) {
-            return 0.0D;
-        }
-        return 100.0D * Math.max(0, entry.weight()) / total;
+        List<ArcaneDictionaryDefinition.Entry> pool = eligiblePool();
+        return ArcaneDictionaryPools.chancePercent(entry, pool);
+    }
+
+    private static List<ArcaneDictionaryDefinition.Entry> eligiblePool() {
+        return ArcaneDictionaryPools.eligibleForJei(Minecraft.getInstance());
     }
 
     public static void appendLine(List<Component> lines, String translationKey, Object... args) {

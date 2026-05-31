@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "iska_utils:entropic_agglomeration" },
+    { "item": "minecraft:glowstone_dust" },
+    { "item": "iska_utils:green_sludge" }
+  ],
+  "result": {
+    "id": "iska_utils:druidic_agglomeration",
+    "count": 1
+  }
+}

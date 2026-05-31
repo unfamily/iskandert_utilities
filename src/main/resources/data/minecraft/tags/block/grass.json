@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "iska_utils:entropic_soil",
+    "iska_utils:graveyard_soil"
+  ]
+}

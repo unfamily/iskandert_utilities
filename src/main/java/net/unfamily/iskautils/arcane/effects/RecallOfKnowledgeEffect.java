@@ -17,7 +17,7 @@ public final class RecallOfKnowledgeEffect implements ArcaneDictionaryEffect {
     }
 
     @Override
-    public int defaultUpkeepPerLevel() {
+    public int defaultConsumePerLevel() {
         return 3;
     }
 

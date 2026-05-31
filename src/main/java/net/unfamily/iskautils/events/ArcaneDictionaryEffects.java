@@ -15,7 +15,7 @@ import net.unfamily.iskautils.arcane.ArcaneDictionaryEntropy;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryPassiveCleanup;
 import net.unfamily.iskautils.arcane.ArcaneDictionarySession;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryTraitDispatcher;
-import net.unfamily.iskautils.arcane.ArcaneDictionaryUpkeep;
+import net.unfamily.iskautils.arcane.ArcaneDictionaryConsume;
 import net.unfamily.iskautils.util.ArtifactTickIntervals;
 
 @EventBusSubscriber
@@ -47,8 +47,8 @@ public final class ArcaneDictionaryEffects {
         }
         boolean curioFull = activation.curioFull();
         ItemStack dictionary = activation.dictionary();
-        int upkeep = ArcaneDictionaryUpkeep.computeTotalUpkeep(dictionary, gameTime, curioFull);
-        if (upkeep > 0 && !ArcaneDictionaryEntropy.tickEffectUpkeep(dictionary, upkeep, gameTime)) {
+        int periodConsume = ArcaneDictionaryConsume.computeTotalConsume(dictionary, gameTime, curioFull, player);
+        if (periodConsume > 0 && !ArcaneDictionaryEntropy.tickEffectConsume(dictionary, periodConsume, gameTime)) {
             ArcaneDictionaryPassiveCleanup.clear(player);
             return;
         }
@@ -120,10 +120,10 @@ public final class ArcaneDictionaryEffects {
             return true;
         }
         long gameTime = player.level().getGameTime();
-        int upkeep = ArcaneDictionaryUpkeep.computeTotalUpkeep(
-                activation.dictionary(), gameTime, activation.curioFull());
-        return upkeep <= 0
-                || ArcaneDictionaryEntropy.canAffordUpkeep(activation.dictionary(), upkeep, gameTime);
+        int periodConsume = ArcaneDictionaryConsume.computeTotalConsume(
+                activation.dictionary(), gameTime, activation.curioFull(), player);
+        return periodConsume <= 0
+                || ArcaneDictionaryEntropy.canAffordConsume(activation.dictionary(), periodConsume, gameTime);
     }
 
     private static ArcaneDictionaryActivation.Context resolveForEffects(ServerPlayer player) {

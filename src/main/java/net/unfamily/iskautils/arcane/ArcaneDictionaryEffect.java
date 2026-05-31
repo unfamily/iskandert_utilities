@@ -11,7 +11,7 @@ public interface ArcaneDictionaryEffect {
     Identifier id();
 
     /** Fallback entropy charge per level when JSON omits {@code ent_cha}. */
-    default int defaultUpkeepPerLevel() {
+    default int defaultConsumePerLevel() {
         return 0;
     }
 

@@ -30,7 +30,7 @@ Tooltip layout: **grey** flavor lines, **lime** mechanical lines, **purple** cur
 
 Separate from XP rerolling. With **exactly one** dictionary in **Curios**, it **automatically absorbs** <ItemImage id="iska_utils:drop_of_entropy" /> **Drops of Entropy** from your **inventory** (not from Curios slots), up to a large internal buffer. Dictionaries only in inventory do not absorb.
 
-When traits are **active**, stored entropy is **drained over time** based on each trait’s upkeep (datapack `ent_cha`; some traits cost nothing). If the buffer runs out, effects turn off until more drops are absorbed.
+When traits are **active**, stored entropy is **drained over time** based on each trait’s entropy consume (datapack `ent_cha`; some traits cost nothing). If the buffer runs out, effects turn off until more drops are absorbed.
 
 ## Rerolling traits (XP only)
 
@@ -53,7 +53,24 @@ Datapacks can tag entries with how lucky or unlucky they are; pack authors decid
 
 ## Arcane traits
 
-Each reroll draws from the trait pool in the datapack. With **JEI** installed, look up the **Arcane Dictionary** to see every trait: effects at levels I–V, pool weight, luck, entropy upkeep, and reroll catalysts.
+Each reroll draws from the trait pool in the datapack. With **JEI** installed, look up the **Arcane Dictionary** to see every trait: effects at levels I–V, pool weight, luck, entropy consume, and reroll catalysts.
+
+Pack authors can gate entries with **`mods`** and **`stages`** (same syntax as Suspicious Delivery and command items). Use **`mods_logic`** / **`stages_logic`** with **`AND`** or **`OR`** only. The reroll pool **excludes** traits you cannot obtain; **chance percentages in JEI** are normalized to your current obtainable pool (mods always; stages when the game can read your progress). Traits gated by a **missing mod** are **hidden in JEI**. Stage-gated traits stay visible but show **0% chance** until you meet the stage. A trait already on your dictionary **does nothing** (no effects, no entropy consume) while its gates are not satisfied.
+
+**Apotheosis-only traits** (e.g. `tier_resonance`) use `"mods": [{ "mod": "apotheosis", "is": true }]` on the pool entry — they do not roll or appear in JEI without Apotheosis loaded.
+
+Example entry fields:
+
+```json
+{
+  "weight": 20,
+  "enchant": "modid:trait_id",
+  "mods": [{ "mod": "create", "is": true }],
+  "mods_logic": "AND",
+  "stages": [{ "stage_type": "player", "stage": "chapter_2", "is": true }],
+  "stages_logic": "OR"
+}
+```
 
 ## Tips
 

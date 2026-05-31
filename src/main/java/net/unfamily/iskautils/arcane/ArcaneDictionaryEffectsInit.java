@@ -3,6 +3,13 @@ package net.unfamily.iskautils.arcane;
 import net.unfamily.iskautils.arcane.effects.AgilityEffect;
 import net.unfamily.iskautils.arcane.effects.BloodLedgerEffect;
 import net.unfamily.iskautils.arcane.effects.EntropyBladeEffect;
+import net.unfamily.iskautils.arcane.effects.EntropyFunnelEffect;
+import net.unfamily.iskautils.arcane.effects.GraveDebtEffect;
+import net.unfamily.iskautils.arcane.effects.IronRootEffect;
+import net.unfamily.iskautils.arcane.effects.LastStandEffect;
+import net.unfamily.iskautils.arcane.effects.LifeSiphonEffect;
+import net.unfamily.iskautils.arcane.effects.QuickHandsEffect;
+import net.unfamily.iskautils.arcane.effects.TierResonanceEffect;
 import net.unfamily.iskautils.arcane.effects.EntropyOverflowEffect;
 import net.unfamily.iskautils.arcane.effects.EntropyShellEffect;
 import net.unfamily.iskautils.arcane.effects.ExecutionLineEffect;
@@ -35,6 +42,13 @@ public final class ArcaneDictionaryEffectsInit {
         register(new PhaseMismatchEffect());
         register(new EntropyOverflowEffect());
         register(new ShiftingPowerEffect());
+        register(new LifeSiphonEffect());
+        register(new IronRootEffect());
+        register(new QuickHandsEffect());
+        register(new EntropyFunnelEffect());
+        register(new LastStandEffect());
+        register(new GraveDebtEffect());
+        register(new TierResonanceEffect());
     }
 
     private static void register(ArcaneDictionaryEffect effect) {

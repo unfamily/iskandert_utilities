@@ -33,6 +33,7 @@ import net.unfamily.iskautils.item.custom.BlueprintItem;
 import net.unfamily.iskautils.item.custom.AutoShopItem;
 import net.unfamily.iskautils.item.custom.GiftItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerChipsetItem;
+import net.unfamily.iskautils.item.custom.TranslatedTooltipBlockItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerBlockItem;
 import net.unfamily.iskautils.item.custom.FanBlockItem;
 import net.unfamily.iskautils.item.custom.ShopBlockItem;
@@ -75,6 +76,7 @@ import net.unfamily.iskautils.item.entropic.EntropicGear;
 import net.unfamily.iskautils.item.entropic.EntropicHoeItem;
 import net.unfamily.iskautils.item.entropic.EntropicPaxelItem;
 import net.unfamily.iskautils.item.custom.DurableShearsItem;
+import net.unfamily.iskautils.item.custom.DropOfEntropyItem;
 import net.unfamily.iskautils.item.entropic.EntropicSmithingTemplateItem;
 import net.unfamily.iskautils.item.entropic.EntropicToolItem;
 import net.minecraft.world.item.equipment.ArmorType;
@@ -178,7 +180,17 @@ public class ModItems {
     public static final DeferredItem<Item> SUSPICIOUS_DELIVERY_UNDEFINED =
             ITEMS.registerSimpleItem("suspicious_delivery_undefined");
 
-    public static final DeferredItem<Item> DROP_OF_ENTROPY = ITEMS.registerSimpleItem("drop_of_entropy");
+    public static final DeferredItem<Item> DROP_OF_ENTROPY = ITEMS.registerItem(
+            "drop_of_entropy", DropOfEntropyItem::new, UnaryOperator.identity());
+
+    public static final DeferredItem<Item> CURSED_KEY = ITEMS.registerItem(
+            "cursed_key", net.unfamily.iskautils.item.custom.CursedKeyItem::new, UnaryOperator.identity());
+
+    public static final DeferredItem<Item> ENTROPIC_AGGLOMERATION = ITEMS.registerItem(
+            "entropic_agglomeration", net.unfamily.iskautils.item.custom.EntropicAgglomerationItem::new, UnaryOperator.identity());
+
+    public static final DeferredItem<Item> DRUIDIC_AGGLOMERATION = ITEMS.registerItem(
+            "druidic_agglomeration", net.unfamily.iskautils.item.custom.DruidicAgglomerationItem::new, UnaryOperator.identity());
 
     public static final DeferredItem<Item> ANCIENT_TABLET = ITEMS.registerItem("ancient_tablet", AncientTabletItem::new, p -> p.stacksTo(1));
 
@@ -441,6 +453,42 @@ public class ModItems {
             props -> new GiftItem(ModBlocks.GIFT.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> HARD_ICE = ITEMS.registerSimpleBlockItem(ModBlocks.HARD_ICE);
+
+    public static final DeferredItem<BlockItem> ENTROPIC_SOIL = ITEMS.registerItem(
+            "entropic_soil",
+            props -> new TranslatedTooltipBlockItem(
+                    ModBlocks.ENTROPIC_SOIL.get(),
+                    props,
+                    "tooltip.iska_utils.entropic_soil.desc0",
+                    "tooltip.iska_utils.entropic_soil.desc1"),
+            UnaryOperator.identity());
+
+    public static final DeferredItem<BlockItem> ENTROPIC_DIRT = ITEMS.registerItem(
+            "entropic_dirt",
+            props -> new TranslatedTooltipBlockItem(
+                    ModBlocks.ENTROPIC_DIRT.get(),
+                    props,
+                    "tooltip.iska_utils.entropic_dirt.desc0",
+                    "tooltip.iska_utils.entropic_dirt.desc1"),
+            UnaryOperator.identity());
+
+    public static final DeferredItem<BlockItem> GRAVEYARD_SOIL = ITEMS.registerItem(
+            "graveyard_soil",
+            props -> new TranslatedTooltipBlockItem(
+                    ModBlocks.GRAVEYARD_SOIL.get(),
+                    props,
+                    "tooltip.iska_utils.graveyard_soil.desc0",
+                    "tooltip.iska_utils.graveyard_soil.desc1"),
+            UnaryOperator.identity());
+
+    public static final DeferredItem<BlockItem> DRUIDIC_PODZOL = ITEMS.registerItem(
+            "druidic_podzol",
+            props -> new TranslatedTooltipBlockItem(
+                    ModBlocks.DRUIDIC_PODZOL.get(),
+                    props,
+                    "tooltip.iska_utils.druidic_podzol.desc0",
+                    "tooltip.iska_utils.druidic_podzol.desc1"),
+            UnaryOperator.identity());
 
     public static final DeferredItem<Item> LAPIS_ICE_CREAM = ITEMS.registerItem("lapis_ice_cream", Item::new, p -> p.food(ModFoodProperties.LAPIS_ICE_CREAM));
 

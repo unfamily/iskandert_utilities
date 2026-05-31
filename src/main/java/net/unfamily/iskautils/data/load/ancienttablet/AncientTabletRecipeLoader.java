@@ -79,12 +79,52 @@ public final class AncientTabletRecipeLoader {
                     AncientTabletRequirementParser.parseArray(ctx, e.get("require"), true);
             List<AncientTabletRequirement> produce =
                     AncientTabletRequirementParser.parseArray(ctx, e.get("produce"), false);
-            if (require.isEmpty() || produce.isEmpty()) {
+
+            net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost gateHost =
+                    net.unfamily.iskautils.script.LoadEntryIfParser.parseGateHost(e);
+            List<AncientTabIfVariant> ifVariants = parseIfVariants(e, ctx, fileId);
+
+            if (!ifVariants.isEmpty() && (!require.isEmpty() || !produce.isEmpty())) {
+                LOGGER.warn(
+                        "Ancient Tablet entry in {} has both flat require/produce and if[]; using if[] only",
+                        fileId);
+                require = List.of();
+                produce = List.of();
+            }
+
+            if (ifVariants.isEmpty() && (require.isEmpty() || produce.isEmpty())) {
                 LOGGER.warn("Ancient Tablet entry in {} skipped (empty require or produce)", fileId);
                 continue;
             }
-            out.add(new AncientTabletRecipeEntry(fileId, mustOrdered, destroyIfWrong, fuelCost, require, produce));
+            out.add(new AncientTabletRecipeEntry(
+                    fileId, mustOrdered, destroyIfWrong, fuelCost, gateHost, require, produce, ifVariants));
         }
+    }
+
+    private static List<AncientTabIfVariant> parseIfVariants(JsonObject e, String ctx, Identifier fileId) {
+        if (!e.has("if") || !e.get("if").isJsonArray()) {
+            return List.of();
+        }
+        JsonArray ifArray = e.getAsJsonArray("if");
+        List<AncientTabIfVariant> variants = new ArrayList<>();
+        for (JsonElement branchEl : ifArray) {
+            var branchOpt = net.unfamily.iskautils.script.LoadEntryIfParser.parseTopLevelIfBranch(branchEl, ctx);
+            var payloadOpt = net.unfamily.iskautils.script.LoadEntryIfParser.payloadObject(branchEl, ctx);
+            if (branchOpt.isEmpty() || payloadOpt.isEmpty()) {
+                continue;
+            }
+            JsonObject payload = payloadOpt.get();
+            List<AncientTabletRequirement> req =
+                    AncientTabletRequirementParser.parseArray(ctx, payload.get("require"), true);
+            List<AncientTabletRequirement> prod =
+                    AncientTabletRequirementParser.parseArray(ctx, payload.get("produce"), false);
+            if (req.isEmpty() || prod.isEmpty()) {
+                LOGGER.warn("Ancient Tablet if branch in {} skipped (empty require or produce)", fileId);
+                continue;
+            }
+            variants.add(new AncientTabIfVariant(branchOpt.get(), req, prod));
+        }
+        return List.copyOf(variants);
     }
 
     public static List<ItemStack> exampleInputsForJei(AncientTabletRecipeEntry entry) {

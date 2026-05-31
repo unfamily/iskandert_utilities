@@ -54,6 +54,11 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
     }
 
     @Override
+    public void onRuntimeAvailable(mezz.jei.api.runtime.IJeiRuntime jeiRuntime) {
+        IskaUtilsJeiDynamicRefresh.setRuntime(jeiRuntime);
+    }
+
+    @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
         if (net.unfamily.iskautils.Config.factoryStonecutterEnabled) {
             registration.addRecipeCatalyst(new ItemStack(ModItems.FACTORY.get()), RecipeTypes.STONECUTTING);

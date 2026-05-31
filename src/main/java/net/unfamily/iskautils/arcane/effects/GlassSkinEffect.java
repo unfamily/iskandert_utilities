@@ -27,7 +27,7 @@ public final class GlassSkinEffect implements ArcaneDictionaryEffect {
     }
 
     @Override
-    public int defaultUpkeepPerLevel() {
+    public int defaultConsumePerLevel() {
         return 3;
     }
 

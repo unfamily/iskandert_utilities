@@ -240,8 +240,8 @@ public class Config {
     }
 
     private static final ModConfigSpec.IntValue ARCANE_DICTIONARY_MAX_STORED = BUILDER
-            .comment("Maximum internal entropy stored on an Arcane Dictionary stack (0 = cannot store entropy)")
-            .defineInRange("100_max_stored", 0, 0, Integer.MAX_VALUE);
+            .comment("Maximum internal entropy stored on an Arcane Dictionary stack (default one order of magnitude below Ancient Table)")
+            .defineInRange("100_max_stored", 500000, 1, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue ARCANE_DICTIONARY_MIN_TRAITS = BUILDER
             .defineInRange("101_min_traits", 1, 1, 5);
@@ -284,8 +284,8 @@ public class Config {
             .defineInRange("203_entropy_shell_toughness_per_level", 1.0D, 0.0D, 100.0D);
 
     private static final ModConfigSpec.DoubleValue ARCANE_ENTROPY_SHELL_HP_PENALTY = BUILDER
-            .comment("Entropy Shell: max health penalty per level (stored positive, applied as negative)")
-            .defineInRange("204_entropy_shell_hp_penalty_per_level", 2.0D, 0.0D, 100.0D);
+            .comment("Entropy Shell: flat max health penalty (stored positive, applied as negative; not per trait level)")
+            .defineInRange("204_entropy_shell_hp_penalty", 2.0D, 0.0D, 100.0D);
 
     private static final ModConfigSpec.DoubleValue ARCANE_AGILITY_SPEED_MULT = BUILDER
             .comment("Agility: movement speed multiplier added per level (0.05 = +5% per level)")
@@ -327,9 +327,9 @@ public class Config {
             .comment("Shifting Power: seconds each mimicked trait lasts before rotating")
             .defineInRange("214_shifting_power_mimic_duration_seconds", 30, 1, 600);
 
-    private static final ModConfigSpec.DoubleValue ARCANE_ENTROPY_OVERFLOW_UPKEEP_REDUCTION = BUILDER
-            .comment("Entropy Overflow: upkeep reduction per level on other traits (0.10 = 10% per level)")
-            .defineInRange("215_entropy_overflow_upkeep_reduction_per_level", 0.10D, 0.0D, 1.0D);
+    private static final ModConfigSpec.DoubleValue ARCANE_ENTROPY_OVERFLOW_CONSUME_REDUCTION = BUILDER
+            .comment("Entropy Overflow: entropy consume reduction per level on other traits (0.10 = 10% per level)")
+            .defineInRange("215_entropy_overflow_consume_reduction_per_level", 0.10D, 0.0D, 1.0D);
 
     private static final ModConfigSpec.DoubleValue ARCANE_ENTROPY_OVERFLOW_HP_PENALTY = BUILDER
             .comment("Entropy Overflow: max health penalty per level (stored positive, applied as negative)")
@@ -338,6 +338,46 @@ public class Config {
     private static final ModConfigSpec.DoubleValue ARCANE_VOID_THORNS_DAMAGE = BUILDER
             .comment("Void Thorns: magic damage dealt to attacker per level when you are hit")
             .defineInRange("217_void_thorns_damage_per_level", 1.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_LIFE_SIPHON_HEAL_FRACTION = BUILDER
+            .comment("Life Siphon: fraction of dealt damage healed per level (0.05 = 5% per level)")
+            .defineInRange("218_life_siphon_heal_fraction_per_level", 0.05D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_LIFE_SIPHON_HEAL_CAP = BUILDER
+            .comment("Life Siphon: maximum HP healed per hit")
+            .defineInRange("219_life_siphon_heal_cap", 4.0D, 0.0D, 100.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_IRON_ROOT_KNOCKBACK_RESIST = BUILDER
+            .comment("Iron Root: knockback resistance added per level (0.10 = +10% per level)")
+            .defineInRange("220_iron_root_knockback_resist_per_level", 0.10D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_QUICK_HANDS_ATTACK_SPEED = BUILDER
+            .comment("Quick Hands: attack speed multiplier added per level (0.05 = +5% per level)")
+            .defineInRange("221_quick_hands_attack_speed_per_level", 0.05D, 0.0D, 5.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_ENTROPY_FUNNEL_BONUS_CHARGES = BUILDER
+            .comment("Entropy Funnel: extra entropy charges absorbed per drop per level (beyond the base drop charge)")
+            .defineInRange("222_entropy_funnel_bonus_charges_per_level", 1.0D, 0.0D, 1000.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_LAST_STAND_HP_RATIO = BUILDER
+            .comment("Last Stand: max HP ratio at or below which Resistance is applied (0.30 = 30%)")
+            .defineInRange("223_last_stand_hp_ratio", 0.30D, 0.01D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_GRAVE_DEBT_HIGH_HP_RATIO = BUILDER
+            .comment("Grave Debt: max HP ratio above which Slowness is applied (0.70 = 70%)")
+            .defineInRange("224_grave_debt_high_hp_ratio", 0.70D, 0.01D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_GRAVE_DEBT_LOW_HP_RATIO = BUILDER
+            .comment("Grave Debt: max HP ratio below which bonus movement speed is applied (0.30 = 30%)")
+            .defineInRange("225_grave_debt_low_hp_ratio", 0.30D, 0.01D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_GRAVE_DEBT_SPEED_MULT = BUILDER
+            .comment("Grave Debt: movement speed multiplier added per level when below low HP ratio")
+            .defineInRange("226_grave_debt_speed_mult_per_level", 0.03D, 0.0D, 5.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_TIER_RESONANCE_CONSUME_REDUCTION = BUILDER
+            .comment("Tier Resonance (Apotheosis): entropy consume reduction per world tier step per level (0.02 = 2% per tier per level)")
+            .defineInRange("227_tier_resonance_consume_reduction_per_tier_per_level", 0.02D, 0.0D, 1.0D);
 
     static {
         BUILDER.pop(); // arcane_dictionary
@@ -648,6 +688,127 @@ public class Config {
 
     static {
         BUILDER.pop(); // End of dye_bush category
+
+        BUILDER.comment("Entropic & Graveyard Soils").push("soils");
+    }
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_SOIL_SPAWN_ENABLED = BUILDER
+            .comment("If true, entropic soil networks can spawn mobs in darkness.")
+            .define("000_entropic_soil_spawn_enabled", true);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_SPAWN_INTERVAL_MIN = BUILDER
+            .comment("Minimum ticks between entropic soil spawn attempts (random range).")
+            .defineInRange("001_entropic_soil_spawn_interval_min_ticks", 300, 1, 720000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_SPAWN_INTERVAL_MAX = BUILDER
+            .comment("Maximum ticks between entropic soil spawn attempts (random range).")
+            .defineInRange("002_entropic_soil_spawn_interval_max_ticks", 600, 1, 720000);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> ENTROPIC_SOIL_SPAWN_ALLOW = BUILDER
+            .comment("Extra allow entries merged with biome spawn tables (does not restrict other biome mobs).",
+                    "Deny list always wins. Format: biome_or_#tag;entity_id",
+                    "Example: #minecraft:is_overworld;minecraft:slime")
+            .defineList("003_entropic_soil_spawn_allow",
+                    java.util.Arrays.asList(
+                            "#minecraft:is_overworld;minecraft:slime",
+                            "#minecraft:is_overworld;minecraft:phantom"),
+                    obj -> obj instanceof String);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> ENTROPIC_SOIL_SPAWN_DENY = BUILDER
+            .comment("Deny list for entropic soil spawns (wins over allow). Same format as allow.")
+            .defineList("004_entropic_soil_spawn_deny", java.util.Collections.emptyList(), obj -> obj instanceof String);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_SOIL_REDSTONE_ACCEL_ENABLED = BUILDER
+            .comment("If true, redstone signal on a connected entropic soil network accelerates the next spawn once per cycle.")
+            .define("005_entropic_soil_redstone_accel_enabled", true);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_REDSTONE_ACCEL_MIN = BUILDER
+            .comment("Minimum accelerated spawn countdown when redstone triggers (random range).")
+            .defineInRange("006_entropic_soil_redstone_accel_min_ticks", 1, 1, 720000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_REDSTONE_ACCEL_MAX = BUILDER
+            .comment("Maximum accelerated spawn countdown when redstone triggers (random range).")
+            .defineInRange("007_entropic_soil_redstone_accel_max_ticks", 5, 1, 720000);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_EMPOWERMENT_DAMAGE_BONUS = BUILDER
+            .comment("Bonus outgoing damage fraction for mobs with Entropic Empowerment (0.25 = +25%).")
+            .defineInRange("010_entropic_empowerment_damage_bonus", 0.25D, 0.0D, 10.0D);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_EMPOWERMENT_DAMAGE_REDUCTION = BUILDER
+            .comment("Incoming damage reduction fraction for empowered mobs (0.20 = -20% damage taken).")
+            .defineInRange("011_entropic_empowerment_damage_reduction", 0.20D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_SLOW_SPREAD_CHANCE = BUILDER
+            .comment("Random-tick spread denominator for entropic soil onto vanilla grass/dirt (1/N chance per random tick, grass uses ~24).")
+            .defineInRange("020_entropic_soil_slow_spread_chance", 24, 1, 1000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_TO_DIRT_MIN = BUILDER
+            .comment("Minimum ticks in light before entropic soil turns into entropic dirt (random per block, 20 = 1s).")
+            .defineInRange("022_entropic_soil_to_dirt_min_ticks", 20, 1, 720000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_TO_DIRT_MAX = BUILDER
+            .comment("Maximum ticks in light before entropic soil turns into entropic dirt (random per block, 100 = 5s).")
+            .defineInRange("023_entropic_soil_to_dirt_max_ticks", 100, 1, 720000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_AGGLOMERATION_SPREAD_INTERVAL = BUILDER
+            .comment("Ticks between each circular ring when spreading entropic agglomeration.")
+            .defineInRange("024_entropic_agglomeration_spread_ring_ticks", 15, 1, 720000);
+
+    private static final ModConfigSpec.IntValue GRAVEYARD_SOIL_HEAL_INTERVAL_MIN = BUILDER
+            .comment("Minimum ticks between graveyard soil undead heals (random range).")
+            .defineInRange("100_graveyard_soil_heal_interval_min_ticks", 20, 1, 720000);
+
+    private static final ModConfigSpec.IntValue GRAVEYARD_SOIL_HEAL_INTERVAL_MAX = BUILDER
+            .comment("Maximum ticks between graveyard soil undead heals (random range).")
+            .defineInRange("101_graveyard_soil_heal_interval_max_ticks", 40, 1, 720000);
+
+    private static final ModConfigSpec.DoubleValue GRAVEYARD_SOIL_HEAL_AMOUNT = BUILDER
+            .comment("HP healed per graveyard soil tick cycle for undead standing on the block.")
+            .defineInRange("102_graveyard_soil_heal_amount", 3.0D, 0.0D, 1000.0D);
+
+    private static final ModConfigSpec.BooleanValue DRUIDIC_PODZOL_SPAWN_ENABLED = BUILDER
+            .comment("If true, druidic podzol networks can spawn biome animals in light.")
+            .define("150_druidic_podzol_spawn_enabled", true);
+
+    private static final ModConfigSpec.IntValue DRUIDIC_PODZOL_SPAWN_INTERVAL_MIN = BUILDER
+            .comment("Minimum ticks between druidic podzol spawn attempts (random range).")
+            .defineInRange("151_druidic_podzol_spawn_interval_min_ticks", 300, 1, 720000);
+
+    private static final ModConfigSpec.IntValue DRUIDIC_PODZOL_SPAWN_INTERVAL_MAX = BUILDER
+            .comment("Maximum ticks between druidic podzol spawn attempts (random range).")
+            .defineInRange("152_druidic_podzol_spawn_interval_max_ticks", 600, 1, 720000);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DRUIDIC_PODZOL_SPAWN_ALLOW = BUILDER
+            .comment("Extra allow entries merged with biome animal spawn tables. Deny list always wins.",
+                    "Format: biome_or_#tag;entity_id")
+            .defineList("153_druidic_podzol_spawn_allow", java.util.Collections.emptyList(), obj -> obj instanceof String);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DRUIDIC_PODZOL_SPAWN_DENY = BUILDER
+            .comment("Deny list for druidic podzol spawns (wins over allow). Same format as allow.")
+            .defineList("154_druidic_podzol_spawn_deny", java.util.Collections.emptyList(), obj -> obj instanceof String);
+
+    private static final ModConfigSpec.BooleanValue DRUIDIC_PODZOL_REDSTONE_ACCEL_ENABLED = BUILDER
+            .comment("If true, redstone signal on a connected druidic podzol network accelerates the next spawn once per cycle.")
+            .define("155_druidic_podzol_redstone_accel_enabled", true);
+
+    private static final ModConfigSpec.IntValue DRUIDIC_PODZOL_REDSTONE_ACCEL_MIN = BUILDER
+            .comment("Minimum accelerated spawn countdown when redstone triggers (random range).")
+            .defineInRange("156_druidic_podzol_redstone_accel_min_ticks", 1, 1, 720000);
+
+    private static final ModConfigSpec.IntValue DRUIDIC_PODZOL_REDSTONE_ACCEL_MAX = BUILDER
+            .comment("Maximum accelerated spawn countdown when redstone triggers (random range).")
+            .defineInRange("157_druidic_podzol_redstone_accel_max_ticks", 5, 1, 720000);
+
+    private static final ModConfigSpec.IntValue DRUIDIC_PODZOL_SLOW_SPREAD_CHANCE = BUILDER
+            .comment("Random-tick spread denominator for druidic podzol onto vanilla grass/dirt/podzol (1/N chance per random tick).")
+            .defineInRange("170_druidic_podzol_slow_spread_chance", 24, 1, 1000);
+
+    private static final ModConfigSpec.IntValue DRUIDIC_AGGLOMERATION_SPREAD_INTERVAL = BUILDER
+            .comment("Ticks between each circular ring when spreading druidic agglomeration.")
+            .defineInRange("171_druidic_agglomeration_spread_ring_ticks", 15, 1, 720000);
+
+    static {
+        BUILDER.pop(); // End of soils category
         
         // Category for Artifacts Settings (under general_utilities)
         BUILDER.comment("Artifacts Settings").push("artifacts_settings");
@@ -1248,7 +1409,7 @@ public class Config {
     public static double arcaneGlassSkinSelfDamagePerLevel;
     public static double arcaneStoneSkinArmorPerLevel;
     public static double arcaneEntropyShellToughnessPerLevel;
-    public static double arcaneEntropyShellHpPenaltyPerLevel;
+    public static double arcaneEntropyShellHpPenalty;
     public static double arcaneAgilitySpeedMultPerLevel;
     public static double arcaneBloodLedgerLowHpRatio;
     public static double arcaneExecutionLineHpThreshold;
@@ -1259,9 +1420,19 @@ public class Config {
     public static double arcaneRecallOfKnowledgeXpMultPerLevel;
     public static double arcanePhaseMismatchDodgeChancePerLevel;
     public static int arcaneShiftingPowerMimicDurationSeconds;
-    public static double arcaneEntropyOverflowUpkeepReductionPerLevel;
+    public static double arcaneEntropyOverflowConsumeReductionPerLevel;
     public static double arcaneEntropyOverflowHpPenaltyPerLevel;
     public static double arcaneVoidThornsDamagePerLevel;
+    public static double arcaneLifeSiphonHealFractionPerLevel;
+    public static double arcaneLifeSiphonHealCap;
+    public static double arcaneIronRootKnockbackResistPerLevel;
+    public static double arcaneQuickHandsAttackSpeedPerLevel;
+    public static double arcaneEntropyFunnelBonusChargesPerLevel;
+    public static double arcaneLastStandHpRatio;
+    public static double arcaneGraveDebtHighHpRatio;
+    public static double arcaneGraveDebtLowHpRatio;
+    public static double arcaneGraveDebtSpeedMultPerLevel;
+    public static double arcaneTierResonanceConsumeReductionPerTierPerLevel;
     public static boolean factoryStonecutterEnabled;
     public static int factoryStonecutterEnergyPerOp;
     public static int soundMufflerRangeMax;
@@ -1334,6 +1505,36 @@ public class Config {
     public static double entropicClockMaxFactorMultiplier;
     public static int entropicClockEntropyPerTick;
     public static int entropicClockMaxStored;
+
+    // Entropic & graveyard soils
+    public static boolean entropicSoilSpawnEnabled;
+    public static int entropicSoilSpawnIntervalMinTicks;
+    public static int entropicSoilSpawnIntervalMaxTicks;
+    public static java.util.List<String> entropicSoilSpawnAllow;
+    public static java.util.List<String> entropicSoilSpawnDeny;
+    public static boolean entropicSoilRedstoneAccelEnabled;
+    public static int entropicSoilRedstoneAccelMinTicks;
+    public static int entropicSoilRedstoneAccelMaxTicks;
+    public static double entropicEmpowermentDamageBonus;
+    public static double entropicEmpowermentDamageReduction;
+    public static int entropicSoilSlowSpreadChance;
+    public static int entropicSoilToDirtMinTicks;
+    public static int entropicSoilToDirtMaxTicks;
+    public static int entropicAgglomerationSpreadIntervalTicks;
+    public static int graveyardSoilHealIntervalMinTicks;
+    public static int graveyardSoilHealIntervalMaxTicks;
+    public static double graveyardSoilHealAmount;
+
+    public static boolean druidicPodzolSpawnEnabled;
+    public static int druidicPodzolSpawnIntervalMinTicks;
+    public static int druidicPodzolSpawnIntervalMaxTicks;
+    public static java.util.List<String> druidicPodzolSpawnAllow;
+    public static java.util.List<String> druidicPodzolSpawnDeny;
+    public static boolean druidicPodzolRedstoneAccelEnabled;
+    public static int druidicPodzolRedstoneAccelMinTicks;
+    public static int druidicPodzolRedstoneAccelMaxTicks;
+    public static int druidicPodzolSlowSpreadChance;
+    public static int druidicAgglomerationSpreadIntervalTicks;
 
     // Fan configuration
     public static int fanRangeHorizontalMax;
@@ -1443,7 +1644,7 @@ public class Config {
         arcaneGlassSkinSelfDamagePerLevel = ARCANE_GLASS_SKIN_SELF_DAMAGE.get();
         arcaneStoneSkinArmorPerLevel = ARCANE_STONE_SKIN_ARMOR.get();
         arcaneEntropyShellToughnessPerLevel = ARCANE_ENTROPY_SHELL_TOUGHNESS.get();
-        arcaneEntropyShellHpPenaltyPerLevel = ARCANE_ENTROPY_SHELL_HP_PENALTY.get();
+        arcaneEntropyShellHpPenalty = ARCANE_ENTROPY_SHELL_HP_PENALTY.get();
         arcaneAgilitySpeedMultPerLevel = ARCANE_AGILITY_SPEED_MULT.get();
         arcaneBloodLedgerLowHpRatio = ARCANE_BLOOD_LEDGER_LOW_HP_RATIO.get();
         arcaneExecutionLineHpThreshold = ARCANE_EXECUTION_LINE_HP_THRESHOLD.get();
@@ -1454,9 +1655,19 @@ public class Config {
         arcaneRecallOfKnowledgeXpMultPerLevel = ARCANE_RECALL_XP_MULT.get();
         arcanePhaseMismatchDodgeChancePerLevel = ARCANE_PHASE_MISMATCH_DODGE.get();
         arcaneShiftingPowerMimicDurationSeconds = ARCANE_SHIFTING_POWER_MIMIC_SECONDS.get();
-        arcaneEntropyOverflowUpkeepReductionPerLevel = ARCANE_ENTROPY_OVERFLOW_UPKEEP_REDUCTION.get();
+        arcaneEntropyOverflowConsumeReductionPerLevel = ARCANE_ENTROPY_OVERFLOW_CONSUME_REDUCTION.get();
         arcaneEntropyOverflowHpPenaltyPerLevel = ARCANE_ENTROPY_OVERFLOW_HP_PENALTY.get();
         arcaneVoidThornsDamagePerLevel = ARCANE_VOID_THORNS_DAMAGE.get();
+        arcaneLifeSiphonHealFractionPerLevel = ARCANE_LIFE_SIPHON_HEAL_FRACTION.get();
+        arcaneLifeSiphonHealCap = ARCANE_LIFE_SIPHON_HEAL_CAP.get();
+        arcaneIronRootKnockbackResistPerLevel = ARCANE_IRON_ROOT_KNOCKBACK_RESIST.get();
+        arcaneQuickHandsAttackSpeedPerLevel = ARCANE_QUICK_HANDS_ATTACK_SPEED.get();
+        arcaneEntropyFunnelBonusChargesPerLevel = ARCANE_ENTROPY_FUNNEL_BONUS_CHARGES.get();
+        arcaneLastStandHpRatio = ARCANE_LAST_STAND_HP_RATIO.get();
+        arcaneGraveDebtHighHpRatio = ARCANE_GRAVE_DEBT_HIGH_HP_RATIO.get();
+        arcaneGraveDebtLowHpRatio = ARCANE_GRAVE_DEBT_LOW_HP_RATIO.get();
+        arcaneGraveDebtSpeedMultPerLevel = ARCANE_GRAVE_DEBT_SPEED_MULT.get();
+        arcaneTierResonanceConsumeReductionPerTierPerLevel = ARCANE_TIER_RESONANCE_CONSUME_REDUCTION.get();
         factoryStonecutterEnabled = FACTORY_STONECUTTER_ENABLED.get();
         factoryStonecutterEnergyPerOp = FACTORY_STONECUTTER_ENERGY_PER_OPERATION.get();
         soundMufflerRangeMax = SOUND_MUFFLER_RANGE_MAX.get();
@@ -1698,6 +1909,53 @@ public class Config {
         if (entropicClockMaxStored <= 0) {
             entropicClockMaxStored = entropyAncientTableMaxStored;
         }
+
+        entropicSoilSpawnEnabled = ENTROPIC_SOIL_SPAWN_ENABLED.get();
+        entropicSoilSpawnIntervalMinTicks = ENTROPIC_SOIL_SPAWN_INTERVAL_MIN.get();
+        entropicSoilSpawnIntervalMaxTicks = ENTROPIC_SOIL_SPAWN_INTERVAL_MAX.get();
+        if (entropicSoilSpawnIntervalMaxTicks < entropicSoilSpawnIntervalMinTicks) {
+            entropicSoilSpawnIntervalMaxTicks = entropicSoilSpawnIntervalMinTicks;
+        }
+        entropicSoilSpawnAllow = new java.util.ArrayList<>(ENTROPIC_SOIL_SPAWN_ALLOW.get());
+        entropicSoilSpawnDeny = new java.util.ArrayList<>(ENTROPIC_SOIL_SPAWN_DENY.get());
+        entropicSoilRedstoneAccelEnabled = ENTROPIC_SOIL_REDSTONE_ACCEL_ENABLED.get();
+        entropicSoilRedstoneAccelMinTicks = ENTROPIC_SOIL_REDSTONE_ACCEL_MIN.get();
+        entropicSoilRedstoneAccelMaxTicks = ENTROPIC_SOIL_REDSTONE_ACCEL_MAX.get();
+        if (entropicSoilRedstoneAccelMaxTicks < entropicSoilRedstoneAccelMinTicks) {
+            entropicSoilRedstoneAccelMaxTicks = entropicSoilRedstoneAccelMinTicks;
+        }
+        entropicEmpowermentDamageBonus = ENTROPIC_EMPOWERMENT_DAMAGE_BONUS.get();
+        entropicEmpowermentDamageReduction = ENTROPIC_EMPOWERMENT_DAMAGE_REDUCTION.get();
+        entropicSoilSlowSpreadChance = ENTROPIC_SOIL_SLOW_SPREAD_CHANCE.get();
+        entropicSoilToDirtMinTicks = ENTROPIC_SOIL_TO_DIRT_MIN.get();
+        entropicSoilToDirtMaxTicks = ENTROPIC_SOIL_TO_DIRT_MAX.get();
+        if (entropicSoilToDirtMaxTicks < entropicSoilToDirtMinTicks) {
+            entropicSoilToDirtMaxTicks = entropicSoilToDirtMinTicks;
+        }
+        entropicAgglomerationSpreadIntervalTicks = ENTROPIC_AGGLOMERATION_SPREAD_INTERVAL.get();
+        graveyardSoilHealIntervalMinTicks = GRAVEYARD_SOIL_HEAL_INTERVAL_MIN.get();
+        graveyardSoilHealIntervalMaxTicks = GRAVEYARD_SOIL_HEAL_INTERVAL_MAX.get();
+        if (graveyardSoilHealIntervalMaxTicks < graveyardSoilHealIntervalMinTicks) {
+            graveyardSoilHealIntervalMaxTicks = graveyardSoilHealIntervalMinTicks;
+        }
+        graveyardSoilHealAmount = GRAVEYARD_SOIL_HEAL_AMOUNT.get();
+
+        druidicPodzolSpawnEnabled = DRUIDIC_PODZOL_SPAWN_ENABLED.get();
+        druidicPodzolSpawnIntervalMinTicks = DRUIDIC_PODZOL_SPAWN_INTERVAL_MIN.get();
+        druidicPodzolSpawnIntervalMaxTicks = DRUIDIC_PODZOL_SPAWN_INTERVAL_MAX.get();
+        if (druidicPodzolSpawnIntervalMaxTicks < druidicPodzolSpawnIntervalMinTicks) {
+            druidicPodzolSpawnIntervalMaxTicks = druidicPodzolSpawnIntervalMinTicks;
+        }
+        druidicPodzolSpawnAllow = new java.util.ArrayList<>(DRUIDIC_PODZOL_SPAWN_ALLOW.get());
+        druidicPodzolSpawnDeny = new java.util.ArrayList<>(DRUIDIC_PODZOL_SPAWN_DENY.get());
+        druidicPodzolRedstoneAccelEnabled = DRUIDIC_PODZOL_REDSTONE_ACCEL_ENABLED.get();
+        druidicPodzolRedstoneAccelMinTicks = DRUIDIC_PODZOL_REDSTONE_ACCEL_MIN.get();
+        druidicPodzolRedstoneAccelMaxTicks = DRUIDIC_PODZOL_REDSTONE_ACCEL_MAX.get();
+        if (druidicPodzolRedstoneAccelMaxTicks < druidicPodzolRedstoneAccelMinTicks) {
+            druidicPodzolRedstoneAccelMaxTicks = druidicPodzolRedstoneAccelMinTicks;
+        }
+        druidicPodzolSlowSpreadChance = DRUIDIC_PODZOL_SLOW_SPREAD_CHANCE.get();
+        druidicAgglomerationSpreadIntervalTicks = DRUIDIC_AGGLOMERATION_SPREAD_INTERVAL.get();
 
         // If the energy per acceleration is 0, the energy stored is 0 automatically
         if (temporalOverclockerEnergyPerAcceleration <= 0) {

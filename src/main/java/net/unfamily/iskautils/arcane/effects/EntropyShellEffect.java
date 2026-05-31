@@ -26,7 +26,7 @@ public final class EntropyShellEffect implements ArcaneDictionaryEffect {
     }
 
     @Override
-    public int defaultUpkeepPerLevel() {
+    public int defaultConsumePerLevel() {
         return 5;
     }
 
@@ -37,7 +37,7 @@ public final class EntropyShellEffect implements ArcaneDictionaryEffect {
         ArcaneDictionaryAttributes.applyTransient(
                 toughness, TOUGHNESS_ID, Config.arcaneEntropyShellToughnessPerLevel * ctx.level());
         ArcaneDictionaryAttributes.applyTransient(
-                maxHealth, HP_ID, -Config.arcaneEntropyShellHpPenaltyPerLevel * ctx.level());
+                maxHealth, HP_ID, -Config.arcaneEntropyShellHpPenalty);
         ArcaneDictionaryAttributes.clampHealth(ctx.player());
     }
 
@@ -45,7 +45,7 @@ public final class EntropyShellEffect implements ArcaneDictionaryEffect {
     public void appendJeiDescription(ArcaneDictionaryJeiContext ctx, List<Component> lines) {
         ArcaneDictionaryJeiLines.appendScaled(
                 ctx, lines, "toughness", level -> level * Config.arcaneEntropyShellToughnessPerLevel);
-        ArcaneDictionaryJeiLines.appendScaled(
-                ctx, lines, "health", level -> -level * Config.arcaneEntropyShellHpPenaltyPerLevel);
+        ArcaneDictionaryJeiLines.appendTraitLine(
+                ctx, lines, "health", ctx.formatNumber(Config.arcaneEntropyShellHpPenalty));
     }
 }

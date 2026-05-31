@@ -161,7 +161,10 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
             int accelerationFactor = this.menu.getAccelerationFactor();
             int percentage = accelerationFactor * 100;
             boolean entropic = accelerationFactor > Config.temporalOverclockerAccelerationFactorMax;
-            String pct = entropic ? "§5" + percentage + "§r" : String.valueOf(percentage);
+            boolean depowered = entropic && this.menu.isAccelerationDepowered();
+            String pct = entropic
+                    ? (depowered ? "§5" + percentage + "§7*" : "§5" + percentage) + "§r"
+                    : String.valueOf(percentage);
             this.accelerationButton.setMessage(Component.literal("Overclock: " + pct + "%"));
         }
         
@@ -356,11 +359,11 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     }
 
     private int energyBarScreenY() {
-        return this.topPos + TemporalOverclockerMenu.energyBarY(this.imageHeight);
+        return this.topPos + TemporalOverclockerMenu.energyBarY();
     }
 
     private int sideButtonsStartScreenY() {
-        return this.topPos + TemporalOverclockerMenu.sideButtonsStartY(this.imageHeight);
+        return this.topPos + TemporalOverclockerMenu.sideButtonsStartY();
     }
 
     private int redstoneButtonScreenY() {

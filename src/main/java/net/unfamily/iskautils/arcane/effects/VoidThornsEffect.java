@@ -21,7 +21,7 @@ public final class VoidThornsEffect implements ArcaneDictionaryEffect {
     }
 
     @Override
-    public int defaultUpkeepPerLevel() {
+    public int defaultConsumePerLevel() {
         return 4;
     }
 

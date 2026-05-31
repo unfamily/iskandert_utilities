@@ -12,6 +12,7 @@ import java.util.Optional;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -19,6 +20,9 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.crafting.FactorySourcesRecipe;
+import net.unfamily.iskautils.command.CommandItemDefinition;
+import net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost;
+import net.unfamily.iskautils.script.LoadEntryIfParser;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -31,9 +35,88 @@ public final class FactoryLoader {
     private static final String FACTORY_TYPE = "iska_utils:factory";
     private static final String FACTORY_SOURCES_TYPE = "iska_utils:factory_sources";
 
-    public record Output(Identifier id, int amount) {}
+    private static final SuspiciousDeliveryStageHost NO_GATE =
+            new SuspiciousDeliveryStageHost(
+                    List.of(),
+                    CommandItemDefinition.StagesLogic.AND,
+                    List.of(),
+                    CommandItemDefinition.StagesLogic.AND);
 
-    public record Source(Selector selector, int inputAmount, List<Output> outputs, int energyPerOperation) {}
+    public record Output(Identifier id, int amount, SuspiciousDeliveryStageHost gateHost) {
+        public Output(Identifier id, int amount) {
+            this(id, amount, NO_GATE);
+        }
+
+        public Output {
+            gateHost = gateHost != null ? gateHost : NO_GATE;
+        }
+    }
+
+    public record Source(
+            Selector selector,
+            int inputAmount,
+            List<Output> flatOutputs,
+            int energyPerOperation,
+            SuspiciousDeliveryStageHost gateHost,
+            List<FactoryIfBranch> ifBranches) {
+
+        public Source {
+            flatOutputs = flatOutputs != null ? List.copyOf(flatOutputs) : List.of();
+            gateHost = gateHost != null ? gateHost : NO_GATE;
+            ifBranches = ifBranches != null ? List.copyOf(ifBranches) : List.of();
+        }
+
+        /** Legacy accessor. */
+        public List<Output> outputs() {
+            return flatOutputs;
+        }
+
+        public boolean hasIfBranches() {
+            return !ifBranches.isEmpty();
+        }
+
+        public boolean hasGate() {
+            return !gateHost.isEmpty() || hasIfBranches()
+                    || flatOutputs.stream().anyMatch(o -> !o.gateHost().isEmpty());
+        }
+
+        public List<Output> resolveOutputs(@Nullable ServerPlayer player) {
+            if (hasIfBranches()) {
+                if (player == null) {
+                    return List.of();
+                }
+                for (FactoryIfBranch branch : ifBranches) {
+                    if (branch.matches(player, gateHost)) {
+                        return filterOutputGates(branch.outputs(), player);
+                    }
+                }
+                return List.of();
+            }
+            return filterOutputGates(flatOutputs, player);
+        }
+
+        private static List<Output> filterOutputGates(List<Output> outputs, @Nullable ServerPlayer player) {
+            if (outputs == null || outputs.isEmpty()) {
+                return List.of();
+            }
+            if (player == null) {
+                List<Output> out = new ArrayList<>();
+                for (Output o : outputs) {
+                    if (o.gateHost().isEmpty()) {
+                        out.add(o);
+                    }
+                }
+                return List.copyOf(out);
+            }
+            List<Output> eligible = new ArrayList<>();
+            for (Output o : outputs) {
+                if (o.gateHost().isEmpty() || o.gateHost().isFullyEligible(player)) {
+                    eligible.add(o);
+                }
+            }
+            return List.copyOf(eligible);
+        }
+    }
 
     public sealed interface Selector permits Selector.ItemSelector, Selector.TagSelector {
         boolean matches(ItemStack stack);
@@ -87,21 +170,43 @@ public final class FactoryLoader {
         LOGGER.info("Loaded {} Factory sources from merged recipe datapacks", SOURCES.size());
     }
 
-    public static Optional<Source> tryCompileSource(Identifier logId, String input, int amount, List<Output> colors, int energyPerOperation) {
-        if (colors == null || colors.isEmpty()) {
+    public static Optional<Source> tryCompileSource(
+            Identifier logId,
+            String input,
+            int amount,
+            List<Output> flatOutputs,
+            int energyPerOperation,
+            SuspiciousDeliveryStageHost gateHost,
+            List<FactoryIfBranch> ifBranches) {
+        if ((flatOutputs == null || flatOutputs.isEmpty()) && (ifBranches == null || ifBranches.isEmpty())) {
             LOGGER.warn("Factory source in {} has no outputs for input {}", logId, input);
             return Optional.empty();
         }
-        List<Output> presentOnly = filterToExistingOutputItems(logId, input, colors);
-        if (presentOnly.isEmpty()) {
-            LOGGER.warn("Factory source in {} has no registered output items for input {} (all ids missing from registry)", logId, input);
+        List<Output> presentFlat = filterToExistingOutputItems(logId, input, flatOutputs != null ? flatOutputs : List.of());
+        List<FactoryIfBranch> presentBranches = filterBranchesToExisting(logId, input, ifBranches);
+        if (presentFlat.isEmpty() && presentBranches.isEmpty()) {
+            LOGGER.warn(
+                    "Factory source in {} has no registered output items for input {} (all ids missing from registry)",
+                    logId,
+                    input);
             return Optional.empty();
         }
         Selector selector = parseSelector(logId, input);
         if (selector == null) {
             return Optional.empty();
         }
-        return Optional.of(new Source(selector, Math.max(1, amount), List.copyOf(presentOnly), Math.max(0, energyPerOperation)));
+        return Optional.of(new Source(
+                selector,
+                Math.max(1, amount),
+                List.copyOf(presentFlat),
+                Math.max(0, energyPerOperation),
+                gateHost != null ? gateHost : NO_GATE,
+                List.copyOf(presentBranches)));
+    }
+
+    public static Optional<Source> tryCompileSource(
+            Identifier logId, String input, int amount, List<Output> colors, int energyPerOperation) {
+        return tryCompileSource(logId, input, amount, colors, energyPerOperation, NO_GATE, List.of());
     }
 
     private static List<Output> filterToExistingOutputItems(Identifier contextId, String inputContext, List<Output> colors) {
@@ -148,9 +253,15 @@ public final class FactoryLoader {
     public static int sourcePreferenceKey(Source s) {
         int h = 31 * s.inputAmount();
         h = 31 * h + Integer.hashCode(s.energyPerOperation());
-        for (Output o : s.outputs()) {
+        for (Output o : s.flatOutputs()) {
             h = 31 * h + o.id().hashCode();
             h = 31 * h + o.amount();
+        }
+        for (FactoryIfBranch branch : s.ifBranches()) {
+            for (Output o : branch.outputs()) {
+                h = 31 * h + o.id().hashCode();
+                h = 31 * h + o.amount();
+            }
         }
         return switch (s.selector()) {
             case Selector.ItemSelector is -> 31 * h + Integer.hashCode(BuiltInRegistries.ITEM.getId(is.item()));
@@ -182,8 +293,13 @@ public final class FactoryLoader {
     }
 
     public static List<ItemStack> previewOutputs(ItemStack heldInput, @Nullable Level level) {
+        return previewOutputs(heldInput, level, null);
+    }
+
+    public static List<ItemStack> previewOutputs(
+            ItemStack heldInput, @Nullable Level level, @Nullable ServerPlayer player) {
         return findSource(heldInput, level)
-                .map(src -> src.outputs().stream()
+                .map(src -> src.resolveOutputs(player).stream()
                         .map(FactoryLoader::resolveOutputStack)
                         .flatMap(Optional::stream)
                         .toList())
@@ -221,25 +337,95 @@ public final class FactoryLoader {
             }
 
             List<Output> outputs = new ArrayList<>();
-            if (r.has("select") && r.get("select").isJsonArray()) {
-                for (JsonElement se : r.getAsJsonArray("select")) {
-                    if (!se.isJsonObject()) continue;
-                    JsonObject s = se.getAsJsonObject();
-                    String outId = s.has("output") ? s.get("output").getAsString() : "";
-                    int outAmt = s.has("amount") ? Math.max(1, s.get("amount").getAsInt()) : 1;
-                    Identifier rl = Identifier.tryParse(outId);
-                    if (rl == null) continue;
-                    outputs.add(new Output(rl, outAmt));
-                }
+            List<FactoryIfBranch> ifBranches = List.of();
+            SuspiciousDeliveryStageHost gateHost = NO_GATE;
+
+            boolean hasIf = r.has("if") && r.get("if").isJsonArray();
+            boolean hasSelect = r.has("select") && r.get("select").isJsonArray();
+            if (hasIf && hasSelect) {
+                LOGGER.warn("Factory recipe in {} has both select and if[]; using if[] only", fileId);
+            }
+            if (hasIf) {
+                gateHost = LoadEntryIfParser.parseGateHost(r);
+                ifBranches = parseIfBranches(r.getAsJsonArray("if"), gateHost, fileId, input);
+            } else if (hasSelect) {
+                outputs.addAll(parseSelectArray(r.getAsJsonArray("select"), fileId, input));
             }
 
-            List<Output> presentOutputs = filterToExistingOutputItems(fileId, input, outputs);
-            if (presentOutputs.isEmpty()) {
-                LOGGER.warn("Factory recipe in {} has no registered outputs for input {}", fileId, input);
+            if (ifBranches.isEmpty()) {
+                List<Output> presentOutputs = filterToExistingOutputItems(fileId, input, outputs);
+                if (presentOutputs.isEmpty()) {
+                    LOGGER.warn("Factory recipe in {} has no registered outputs for input {}", fileId, input);
+                    continue;
+                }
+                tryCompileSource(fileId, input, amount, presentOutputs, energyOp, gateHost, List.of())
+                        .ifPresent(out::add);
+            } else {
+                tryCompileSource(fileId, input, amount, List.of(), energyOp, gateHost, ifBranches)
+                        .ifPresent(out::add);
+            }
+        }
+    }
+
+    private static List<FactoryIfBranch> parseIfBranches(
+            JsonArray ifArray,
+            SuspiciousDeliveryStageHost gateHost,
+            Identifier fileId,
+            String input) {
+        List<FactoryIfBranch> branches = new ArrayList<>();
+        String ctx = fileId + " input=" + input;
+        for (JsonElement branchEl : ifArray) {
+            var branchOpt = LoadEntryIfParser.parseTopLevelIfBranch(branchEl, ctx);
+            var payloadOpt = LoadEntryIfParser.payloadObject(branchEl, ctx);
+            if (branchOpt.isEmpty() || payloadOpt.isEmpty()) {
                 continue;
             }
-            tryCompileSource(fileId, input, amount, presentOutputs, energyOp).ifPresent(out::add);
+            JsonObject payload = payloadOpt.get();
+            if (!payload.has("select") || !payload.get("select").isJsonArray()) {
+                LOGGER.warn("Factory if branch in {} missing select array", fileId);
+                continue;
+            }
+            List<Output> branchOutputs = parseSelectArray(payload.getAsJsonArray("select"), fileId, input);
+            if (branchOutputs.isEmpty()) {
+                continue;
+            }
+            branches.add(new FactoryIfBranch(branchOpt.get(), branchOutputs));
         }
+        return List.copyOf(branches);
+    }
+
+    private static List<Output> parseSelectArray(JsonArray selectArray, Identifier fileId, String inputContext) {
+        List<Output> outputs = new ArrayList<>();
+        for (JsonElement se : selectArray) {
+            if (!se.isJsonObject()) {
+                continue;
+            }
+            JsonObject s = se.getAsJsonObject();
+            String outId = s.has("output") ? s.get("output").getAsString() : s.has("id") ? s.get("id").getAsString() : "";
+            int outAmt = s.has("amount") ? Math.max(1, s.get("amount").getAsInt()) : 1;
+            Identifier rl = Identifier.tryParse(outId);
+            if (rl == null) {
+                continue;
+            }
+            SuspiciousDeliveryStageHost rowGate = LoadEntryIfParser.parseGateHost(s);
+            outputs.add(new Output(rl, outAmt, rowGate));
+        }
+        return outputs;
+    }
+
+    private static List<FactoryIfBranch> filterBranchesToExisting(
+            Identifier contextId, String inputContext, List<FactoryIfBranch> branches) {
+        if (branches == null || branches.isEmpty()) {
+            return List.of();
+        }
+        List<FactoryIfBranch> out = new ArrayList<>();
+        for (FactoryIfBranch branch : branches) {
+            List<Output> filtered = filterToExistingOutputItems(contextId, inputContext, branch.outputs());
+            if (!filtered.isEmpty()) {
+                out.add(new FactoryIfBranch(branch.branch(), filtered));
+            }
+        }
+        return List.copyOf(out);
     }
 
     private static void parseSourcesArray(Identifier fileId, JsonArray sources, List<Source> out) {

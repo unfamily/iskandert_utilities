@@ -13,11 +13,11 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletCraftLogic;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeEntry;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeLoader;
-import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeMatcher;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket;
 
 import java.util.List;
+import java.util.Optional;
 
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public final class AncientTabletCraftHandler {
@@ -53,29 +53,29 @@ public final class AncientTabletCraftHandler {
             return;
         }
 
-        for (AncientTabletRecipeEntry recipe : AncientTabletRecipeLoader.getEntries()) {
-            AncientTabletRecipeMatcher.MatchOutcome outcome =
-                    AncientTabletRecipeMatcher.tryMatch(recipe, slots);
-            switch (outcome.result()) {
-                case SUCCESS -> {
-                    applySuccess(serverPlayer, level, tablet, recipe, outcome.consumedSlotIndices());
-                    return;
-                }
-                case WRONG_ORDER -> {
-                    handleWrongOrder(serverPlayer, tablet, recipe);
-                    return;
-                }
-                case NO_MATCH -> {
-                }
-            }
+        Optional<AncientTabletCraftLogic.CraftSuccess> success =
+                AncientTabletCraftLogic.tryCraftTablet(slots, AncientTabletRecipeLoader.getEntries(), serverPlayer);
+        if (success.isPresent()) {
+            applySuccess(
+                    serverPlayer,
+                    level,
+                    tablet,
+                    success.get().resolved(),
+                    success.get().consumedSlotIndices());
+            return;
         }
+
+        Optional<AncientTabletRecipeEntry> wrongOrder =
+                AncientTabletCraftLogic.findWrongOrderMatch(
+                        slots, AncientTabletRecipeLoader.getEntries(), serverPlayer);
+        wrongOrder.ifPresent(entry -> handleWrongOrder(serverPlayer, tablet, entry));
     }
 
     private static void applySuccess(
             ServerPlayer player,
             Level level,
             ItemStack tablet,
-            AncientTabletRecipeEntry recipe,
+            AncientTabletRecipeEntry.ResolvedCraft recipe,
             List<Integer> consumedIndices) {
         AncientTabletCraftLogic.consumeTabletAtIndices(tablet, player.registryAccess(), consumedIndices);
         AncientTabletCraftLogic.giveOutputsToPlayer(

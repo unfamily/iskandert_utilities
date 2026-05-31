@@ -18,7 +18,7 @@ public final class MartyrScriptEffect implements ArcaneDictionaryEffect {
     }
 
     @Override
-    public int defaultUpkeepPerLevel() {
+    public int defaultConsumePerLevel() {
         return 7;
     }
 

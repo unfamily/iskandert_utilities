@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.context.ContextMap;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -16,6 +17,7 @@ import net.minecraft.world.item.crafting.StonecutterRecipe;
 import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.IskaUtils;
 
 /**
  * Runtime stonecutter recipe resolution for the Factory (not added to {@link FactoryLoader#SOURCES} or JEI).
@@ -48,11 +50,12 @@ public final class FactoryStonecutterSupport {
             return Optional.empty();
         }
         List<FactoryLoader.Output> outputs = new ArrayList<>(outputsById.values());
-        return Optional.of(new FactoryLoader.Source(
-                new FactoryLoader.Selector.ItemSelector(input.getItem()),
+        return FactoryLoader.tryCompileSource(
+                Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "factory_stonecutter"),
+                BuiltInRegistries.ITEM.getKey(input.getItem()).toString(),
                 1,
-                List.copyOf(outputs),
-                Math.max(0, Config.factoryStonecutterEnergyPerOp)));
+                outputs,
+                Math.max(0, Config.factoryStonecutterEnergyPerOp));
     }
 
     /**

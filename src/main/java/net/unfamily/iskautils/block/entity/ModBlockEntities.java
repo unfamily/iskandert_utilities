@@ -140,6 +140,22 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("sacred_rubber_sapling",
                     () -> new BlockEntityType<>(SacredRubberSaplingBlockEntity::new, ModBlocks.SACRED_RUBBER_SAPLING.get()));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropicSoilBlockEntity>> ENTROPIC_SOIL_BE =
+            BLOCK_ENTITIES.register("entropic_soil",
+                    () -> new BlockEntityType<>(EntropicSoilBlockEntity::new, ModBlocks.ENTROPIC_SOIL.get()));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropicDirtBlockEntity>> ENTROPIC_DIRT_BE =
+            BLOCK_ENTITIES.register("entropic_dirt",
+                    () -> new BlockEntityType<>(EntropicDirtBlockEntity::new, ModBlocks.ENTROPIC_DIRT.get()));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GraveyardSoilBlockEntity>> GRAVEYARD_SOIL_BE =
+            BLOCK_ENTITIES.register("graveyard_soil",
+                    () -> new BlockEntityType<>(GraveyardSoilBlockEntity::new, ModBlocks.GRAVEYARD_SOIL.get()));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DruidicPodzolBlockEntity>> DRUIDIC_PODZOL_BE =
+            BLOCK_ENTITIES.register("druidic_podzol",
+                    () -> new BlockEntityType<>(DruidicPodzolBlockEntity::new, ModBlocks.DRUIDIC_PODZOL.get()));
+
     /**
      * Registra tutte le entità blocco
      */

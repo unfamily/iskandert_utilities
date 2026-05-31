@@ -20,6 +20,8 @@ public final class ArcaneDictionaryShiftingState {
     private static final Set<Identifier> EXCLUDED_MIMIC = Set.of(
             ArcaneDictionaryTraitIds.SHIFTING_POWER,
             ArcaneDictionaryTraitIds.ENTROPY_OVERFLOW,
+            ArcaneDictionaryTraitIds.TIER_RESONANCE,
+            ArcaneDictionaryTraitIds.ENTROPY_FUNNEL,
             ArcaneDictionaryTraitIds.UNLUCKY,
             ArcaneDictionaryTraitIds.MARTYR_SCRIPT,
             ArcaneDictionaryTraitIds.GLASS_SKIN);
