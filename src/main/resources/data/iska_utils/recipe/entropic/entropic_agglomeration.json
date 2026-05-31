@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "tag": "c:dusts/redstone" },
+    { "item": "iska_utils:drop_of_entropy" },
+    { "item": "iska_utils:drop_of_entropy" },
+    { "item": "iska_utils:drop_of_entropy" },
+    { "item": "iska_utils:drop_of_entropy" }
+  ],
+  "result": {
+    "id": "iska_utils:entropic_agglomeration",
+    "count": 1
+  }
+}

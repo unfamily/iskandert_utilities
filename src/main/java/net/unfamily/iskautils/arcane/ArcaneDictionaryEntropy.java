@@ -8,8 +8,8 @@ import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.EntropyCharges;
 
 public final class ArcaneDictionaryEntropy {
-    /** Entropy upkeep is charged once per interval (5 seconds at 20 TPS). */
-    public static final int UPKEEP_PERIOD_TICKS = 100;
+    /** Entropy consume is charged once per interval (5 seconds at 20 TPS). */
+    public static final int CONSUME_PERIOD_TICKS = 100;
 
     private ArcaneDictionaryEntropy() {}
 
@@ -38,27 +38,27 @@ public final class ArcaneDictionaryEntropy {
         return true;
     }
 
-    public static int computeTotalUpkeep(ItemStack dictionary) {
-        return ArcaneDictionaryContents.computeTotalUpkeep(dictionary);
+    public static int computeTotalConsume(ItemStack dictionary) {
+        return ArcaneDictionaryContents.computeTotalConsume(dictionary);
     }
 
-    /** Consumes stored entropy on upkeep interval ticks; between payments, traits stay active while any charge remains. */
-    public static boolean tickEffectUpkeep(ItemStack dictionary, int upkeep, long gameTime) {
-        if (upkeep <= 0) {
+    /** Consumes stored entropy on consume interval ticks; between payments, traits stay active while any charge remains. */
+    public static boolean tickEffectConsume(ItemStack dictionary, int periodConsume, long gameTime) {
+        if (periodConsume <= 0) {
             return true;
         }
-        if (gameTime % UPKEEP_PERIOD_TICKS == 0) {
-            return consume(dictionary, upkeep);
+        if (gameTime % CONSUME_PERIOD_TICKS == 0) {
+            return consume(dictionary, periodConsume);
         }
         return ArcaneDictionaryContents.getStoredEntropy(dictionary) > 0;
     }
 
-    public static boolean canAffordUpkeep(ItemStack dictionary, int upkeep, long gameTime) {
-        if (upkeep <= 0) {
+    public static boolean canAffordConsume(ItemStack dictionary, int periodConsume, long gameTime) {
+        if (periodConsume <= 0) {
             return true;
         }
-        if (gameTime % UPKEEP_PERIOD_TICKS == 0) {
-            return hasStoredCharges(dictionary, upkeep);
+        if (gameTime % CONSUME_PERIOD_TICKS == 0) {
+            return hasStoredCharges(dictionary, periodConsume);
         }
         return ArcaneDictionaryContents.getStoredEntropy(dictionary) > 0;
     }
@@ -70,6 +70,7 @@ public final class ArcaneDictionaryEntropy {
     private static void tryAbsorbDrops(ItemStack dictionary, ServerPlayer player) {
         int stored = ArcaneDictionaryContents.getStoredEntropy(dictionary);
         int max = maxStored();
+        int funnelLevel = entropyFunnelLevel(dictionary, player);
         boolean changed = false;
         while (EntropyCharges.canAbsorbOneMore(stored, max)) {
             ItemStack drop = findEntropyDropInInventory(player);
@@ -78,11 +79,28 @@ public final class ArcaneDictionaryEntropy {
             }
             drop.shrink(1);
             stored = EntropyCharges.absorbOneDrop(stored, max);
+            if (funnelLevel > 0) {
+                int bonus = (int) Math.floor(Config.arcaneEntropyFunnelBonusChargesPerLevel * funnelLevel);
+                stored = Math.min(max, stored + bonus);
+            }
             changed = true;
         }
         if (changed) {
             ArcaneDictionaryContents.setStoredEntropy(dictionary, stored);
         }
+    }
+
+    private static int entropyFunnelLevel(ItemStack dictionary, ServerPlayer player) {
+        for (ArcaneDictionaryContents.TraitSlot trait : ArcaneDictionaryContents.getTraits(dictionary)) {
+            if (!ArcaneDictionaryTraitIds.ENTROPY_FUNNEL.equals(trait.id())) {
+                continue;
+            }
+            if (!ArcaneDictionaryEntryGate.traitActive(player, trait.id())) {
+                return 0;
+            }
+            return trait.level();
+        }
+        return 0;
     }
 
     private static ItemStack findEntropyDropInInventory(ServerPlayer player) {

@@ -232,11 +232,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
                 if (!blockEntity.redstoneAllowsAcceleration(level)) {
                     return;
                 }
-                if (blockEntity.hasEntropicClockUpgrade()
-                        && blockEntity.storedEntropy < Config.entropicClockEntropyPerTick) {
-                    return;
-                }
-                int accelerationFactor = blockEntity.accelerationFactor;
+                int accelerationFactor = blockEntity.getRuntimeAccelerationFactor();
                 
                 // Count only non-air blocks for energy calculation
                 int validBlockCount = 0;
@@ -312,7 +308,10 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
                     blockEntity.energyStorage.extractEnergy(totalEnergyNeeded, false);
                     blockEntity.setChanged();
                 }
-                if (blockEntity.hasEntropicClockUpgrade() && Config.entropicClockEntropyPerTick > 0) {
+                if (blockEntity.hasEntropicClockUpgrade()
+                        && Config.entropicClockEntropyPerTick > 0
+                        && blockEntity.hasExtendedAccelerationFuel()
+                        && blockEntity.accelerationFactor > Config.temporalOverclockerAccelerationFactorMax) {
                     blockEntity.storedEntropy = EntropyCharges.consume(
                             blockEntity.storedEntropy, Config.entropicClockEntropyPerTick);
                     blockEntity.setChanged();
@@ -323,6 +322,18 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
 
     public SimpleContainer getMachineItems() {
         return machineItems;
+    }
+
+    /** Drops upgrade/fuel slots and recoverable internal entropy when the block is broken. */
+    public void drops() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        net.unfamily.iskautils.util.MachineBreakDrops.dropContainerContents(level, worldPosition, machineItems);
+        int entropy = storedEntropy;
+        storedEntropy = 0;
+        net.unfamily.iskautils.util.MachineBreakDrops.dropStoredEntropyCharge(level, worldPosition, entropy);
+        setChanged();
     }
 
     public ItemStack getUpgradeStack() {
@@ -376,6 +387,33 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     public boolean hasEntropicClockUpgrade() {
         ItemStack upgrade = machineItems.getItem(UPGRADE_SLOT_INDEX);
         return !upgrade.isEmpty() && upgrade.is(ModItems.ENTROPIC_CLOCK.get());
+    }
+
+    /** True when configured above normal max but entropy fuel is unavailable (runs at normal max). */
+    public boolean hasExtendedAccelerationFuel() {
+        if (!hasEntropicClockUpgrade()) {
+            return false;
+        }
+        if (Config.entropicClockEntropyPerTick <= 0) {
+            return true;
+        }
+        if (storedEntropy >= Config.entropicClockEntropyPerTick) {
+            return true;
+        }
+        return AncientTableFuel.isEntropyFuel(machineItems.getItem(FUEL_SLOT_INDEX));
+    }
+
+    public boolean isAccelerationDepowered() {
+        return accelerationFactor > Config.temporalOverclockerAccelerationFactorMax
+                && !hasExtendedAccelerationFuel();
+    }
+
+    public int getRuntimeAccelerationFactor() {
+        int baseMax = Config.temporalOverclockerAccelerationFactorMax;
+        if (accelerationFactor <= baseMax || hasExtendedAccelerationFuel()) {
+            return accelerationFactor;
+        }
+        return baseMax;
     }
 
     public int getEffectiveAccelerationFactorMax() {

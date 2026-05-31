@@ -14,6 +14,12 @@ public final class ArcaneDictionaryPassiveCleanup {
             ResourceLocation.fromNamespaceAndPath("iska_utils", "arcane/entropy_shell_hp");
     private static final ResourceLocation AGILITY_SPEED =
             ResourceLocation.fromNamespaceAndPath("iska_utils", "arcane/agility_speed");
+    private static final ResourceLocation QUICK_HANDS_ATTACK_SPEED =
+            ResourceLocation.fromNamespaceAndPath("iska_utils", "arcane/quick_hands_attack_speed");
+    private static final ResourceLocation IRON_ROOT_KNOCKBACK =
+            ResourceLocation.fromNamespaceAndPath("iska_utils", "arcane/iron_root_knockback");
+    private static final ResourceLocation GRAVE_DEBT_SPEED =
+            ResourceLocation.fromNamespaceAndPath("iska_utils", "arcane/grave_debt_speed");
     private static final ResourceLocation ENTROPY_OVERFLOW_HP =
             ResourceLocation.fromNamespaceAndPath("iska_utils", "arcane/entropy_overflow_hp");
 
@@ -25,6 +31,9 @@ public final class ArcaneDictionaryPassiveCleanup {
         remove(player.getAttribute(Attributes.MAX_HEALTH), ENTROPY_SHELL_HP);
         remove(player.getAttribute(Attributes.MAX_HEALTH), ENTROPY_OVERFLOW_HP);
         remove(player.getAttribute(Attributes.MOVEMENT_SPEED), AGILITY_SPEED);
+        remove(player.getAttribute(Attributes.MOVEMENT_SPEED), GRAVE_DEBT_SPEED);
+        remove(player.getAttribute(Attributes.ATTACK_SPEED), QUICK_HANDS_ATTACK_SPEED);
+        remove(player.getAttribute(Attributes.KNOCKBACK_RESISTANCE), IRON_ROOT_KNOCKBACK);
         ArcaneDictionaryAttributes.clampHealth(player);
     }
 

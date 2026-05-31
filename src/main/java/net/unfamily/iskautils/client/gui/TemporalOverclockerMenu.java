@@ -11,6 +11,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity;
 import net.unfamily.iskautils.item.ModItems;
@@ -83,17 +84,30 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
         return slotY + SLOT_SIZE + 2;
     }
 
-    /** Vertically center a side-column widget within the full GUI texture height. */
-    public static int sideColumnElementY(int elementHeight, int guiHeight) {
-        return (guiHeight - elementHeight) / 2;
+    /** Side widgets align with the bottom rows of the visible entry list (scrollbar at the top). */
+    public static final int LINKED_ENTRIES_SIDEBAR_ALIGN_COUNT = 3;
+
+    public static int linkedEntriesSidebarAlignStartY() {
+        int skippedRows = LINKED_ENTRIES_VISIBLE - LINKED_ENTRIES_SIDEBAR_ALIGN_COUNT;
+        return LINKED_ENTRIES_START_Y + skippedRows * LINKED_ENTRY_HEIGHT;
     }
 
-    public static int energyBarY(int guiHeight) {
-        return sideColumnElementY(ENERGY_BAR_HEIGHT, guiHeight);
+    public static int linkedEntriesSidebarAlignBlockHeight() {
+        return LINKED_ENTRIES_SIDEBAR_ALIGN_COUNT * LINKED_ENTRY_HEIGHT;
     }
 
-    public static int sideButtonsStartY(int guiHeight) {
-        return sideColumnElementY(SIDE_BUTTONS_STACK_HEIGHT, guiHeight);
+    /** Vertically center a side-column widget within the bottom linked-entry rows. */
+    public static int linkedEntriesSidebarAlignElementY(int elementHeight) {
+        return linkedEntriesSidebarAlignStartY()
+                + (linkedEntriesSidebarAlignBlockHeight() - elementHeight) / 2;
+    }
+
+    public static int energyBarY() {
+        return linkedEntriesSidebarAlignElementY(ENERGY_BAR_HEIGHT);
+    }
+
+    public static int sideButtonsStartY() {
+        return linkedEntriesSidebarAlignElementY(SIDE_BUTTONS_STACK_HEIGHT);
     }
 
     public static int sideButtonsX(int entriesStartX, int entryWidth) {
@@ -294,6 +308,26 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
 
     public int getAccelerationFactor() {
         return this.containerData.get(ACCELERATION_FACTOR_INDEX);
+    }
+
+    public boolean isAccelerationDepowered() {
+        if (blockEntity != null) {
+            return blockEntity.isAccelerationDepowered();
+        }
+        int factor = getAccelerationFactor();
+        if (factor <= Config.temporalOverclockerAccelerationFactorMax) {
+            return false;
+        }
+        if (!getSlot(UPGRADE_SLOT_INDEX).getItem().is(ModItems.ENTROPIC_CLOCK.get())) {
+            return true;
+        }
+        if (Config.entropicClockEntropyPerTick <= 0) {
+            return false;
+        }
+        if (getStoredEntropy() >= Config.entropicClockEntropyPerTick) {
+            return false;
+        }
+        return !AncientTableFuel.isEntropyFuel(getSlot(FUEL_SLOT_INDEX).getItem());
     }
 
     public int getStoredEntropy() {

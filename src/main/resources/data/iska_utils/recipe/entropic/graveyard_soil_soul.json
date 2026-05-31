@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "tag": "minecraft:dirt" },
+    { "tag": "minecraft:soul_fire_base_blocks" },
+    { "item": "minecraft:bone" },
+    { "item": "minecraft:rotten_flesh" },
+    { "item": "iska_utils:entropic_agglomeration" }
+  ],
+  "result": {
+    "id": "iska_utils:graveyard_soil",
+    "count": 3
+  }
+}

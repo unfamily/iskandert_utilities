@@ -34,7 +34,7 @@ public final class EntropyOverflowEffect implements ArcaneDictionaryEffect {
     @Override
     public void appendJeiDescription(ArcaneDictionaryJeiContext ctx, List<Component> lines) {
         ArcaneDictionaryJeiLines.appendScaledPercent(
-                ctx, lines, "other_traits", Config.arcaneEntropyOverflowUpkeepReductionPerLevel);
+                ctx, lines, "other_traits", Config.arcaneEntropyOverflowConsumeReductionPerLevel);
         ArcaneDictionaryJeiLines.appendScaled(
                 ctx, lines, "health", level -> -level * Config.arcaneEntropyOverflowHpPenaltyPerLevel);
     }

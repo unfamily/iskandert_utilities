@@ -25,13 +25,25 @@ public final class AncientTabletRecipeMatcher {
             return new MatchOutcome(MatchResult.NO_MATCH, List.of());
         }
         if (recipe.mustOrdered()) {
-            return matchOrdered(recipe, tabletSlots);
+            return matchOrdered(recipe.require(), tabletSlots);
         }
-        return matchUnordered(recipe, tabletSlots);
+        return matchUnordered(recipe.require(), tabletSlots);
     }
 
-    private static MatchOutcome matchOrdered(AncientTabletRecipeEntry recipe, List<AncientTabletContents.SlotView> slots) {
-        List<AncientTabletRequirement> req = recipe.require();
+    public static MatchOutcome tryMatchResolved(
+            AncientTabletRecipeEntry.ResolvedCraft recipe,
+            List<AncientTabletContents.SlotView> tabletSlots) {
+        if (recipe.require().isEmpty()) {
+            return new MatchOutcome(MatchResult.NO_MATCH, List.of());
+        }
+        if (recipe.mustOrdered()) {
+            return matchOrdered(recipe.require(), tabletSlots);
+        }
+        return matchUnordered(recipe.require(), tabletSlots);
+    }
+
+    private static MatchOutcome matchOrdered(
+            List<AncientTabletRequirement> req, List<AncientTabletContents.SlotView> slots) {
         if (slots.size() < req.size()) {
             return new MatchOutcome(MatchResult.NO_MATCH, List.of());
         }
@@ -56,11 +68,12 @@ public final class AncientTabletRecipeMatcher {
         return new MatchOutcome(MatchResult.SUCCESS, used);
     }
 
-    public static MatchOutcome matchUnordered(AncientTabletRecipeEntry recipe, List<AncientTabletContents.SlotView> slots) {
-        List<AncientTabletRequirement> needed = new ArrayList<>(recipe.require());
+    public static MatchOutcome matchUnordered(
+            List<AncientTabletRequirement> needed, List<AncientTabletContents.SlotView> slots) {
+        List<AncientTabletRequirement> requirements = new ArrayList<>(needed);
         List<Integer> usedIndices = new ArrayList<>();
         boolean[] used = new boolean[slots.size()];
-        for (AncientTabletRequirement req : needed) {
+        for (AncientTabletRequirement req : requirements) {
             boolean found = false;
             for (int i = 0; i < slots.size(); i++) {
                 if (used[i]) {
@@ -81,17 +94,19 @@ public final class AncientTabletRecipeMatcher {
         return new MatchOutcome(MatchResult.SUCCESS, usedIndices);
     }
 
+    public static ItemStack exampleStackFromTag(AncientTabletRequirement.TagRequirement tr) {
+        return BuiltInRegistries.ITEM.getTag(tr.tag())
+                .flatMap(named -> named.stream().findFirst())
+                .map(h -> new ItemStack(h.value()))
+                .orElse(ItemStack.EMPTY);
+    }
+
     public static List<ItemStack> expandToExampleStacks(List<AncientTabletRequirement> requirements) {
         List<ItemStack> out = new ArrayList<>();
         for (AncientTabletRequirement req : requirements) {
             switch (req) {
                 case AncientTabletRequirement.ItemRequirement ir -> out.add(new ItemStack(ir.item()));
-                case AncientTabletRequirement.TagRequirement tr ->
-                        BuiltInRegistries.ITEM.getTag(tr.tag())
-                                .map(named -> named.stream().findFirst()
-                                        .map(h -> new ItemStack(h.value()))
-                                        .orElse(ItemStack.EMPTY))
-                                .orElse(ItemStack.EMPTY);
+                case AncientTabletRequirement.TagRequirement tr -> exampleStackFromTag(tr);
             }
         }
         return out;

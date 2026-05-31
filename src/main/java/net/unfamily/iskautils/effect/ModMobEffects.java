@@ -18,6 +18,9 @@ public final class ModMobEffects {
     public static final DeferredHolder<MobEffect, MobEffect> DECEIVED =
             MOB_EFFECTS.register("deceived", DeceivedMobEffect::new);
 
+    public static final DeferredHolder<MobEffect, MobEffect> ENTROPIC_EMPOWERMENT =
+            MOB_EFFECTS.register("entropic_empowerment", EntropicEmpowermentMobEffect::new);
+
     private ModMobEffects() {}
 
     public static void register(IEventBus bus) {

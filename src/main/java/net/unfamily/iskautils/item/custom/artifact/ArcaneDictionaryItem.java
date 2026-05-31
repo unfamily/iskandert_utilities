@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.item.custom.artifact;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -10,11 +11,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryContents;
+import net.unfamily.iskautils.arcane.ArcaneDictionaryLoader;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryReroll;
+import org.slf4j.Logger;
 
 import java.util.List;
 
 public class ArcaneDictionaryItem extends CursedArtifactItem {
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneDictionaryItem(Properties properties) {
         super(properties);
@@ -41,11 +45,21 @@ public class ArcaneDictionaryItem extends CursedArtifactItem {
     }
 
     private static void tryRollInitialTraits(Level level, Player player, ItemStack stack) {
-        if (level.isClientSide() || !ArcaneDictionaryContents.isTraitless(stack)) {
+        if (level.isClientSide() || !ArcaneDictionaryContents.needsInitialTraitRoll(stack)) {
             return;
         }
-        if (player instanceof ServerPlayer serverPlayer) {
+        if (ArcaneDictionaryLoader.getEntries().isEmpty()) {
+            return;
+        }
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+        try {
             ArcaneDictionaryReroll.rollInitialTraits(serverPlayer, stack);
+        } catch (Throwable t) {
+            LOGGER.error("Failed to roll initial Arcane Dictionary traits for {}", player.getName().getString(), t);
+        } finally {
+            ArcaneDictionaryContents.markInitialRollAttempted(stack);
         }
     }
 

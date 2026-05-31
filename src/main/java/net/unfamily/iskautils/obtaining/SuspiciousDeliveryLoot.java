@@ -2,6 +2,7 @@ package net.unfamily.iskautils.obtaining;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.unfamily.iskautils.data.load.CraftingEntryPools;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,13 +14,7 @@ public final class SuspiciousDeliveryLoot {
     public static List<SuspiciousDeliveryDefinition.Entry> eligiblePool(
             ServerPlayer player,
             SuspiciousDeliveryDefinition definition) {
-        List<SuspiciousDeliveryDefinition.Entry> pool = new ArrayList<>();
-        for (SuspiciousDeliveryDefinition.Entry entry : definition.entries()) {
-            if (entry.isEligible(player)) {
-                pool.add(entry);
-            }
-        }
-        return pool;
+        return CraftingEntryPools.eligibleDeliveryPool(player, definition);
     }
 
     public static SuspiciousDeliveryDefinition.Entry pick(ServerPlayer player, RandomSource random) {
@@ -57,10 +52,10 @@ public final class SuspiciousDeliveryLoot {
     }
 
     public static int totalWeight(SuspiciousDeliveryDefinition definition) {
-        int total = 0;
-        for (SuspiciousDeliveryDefinition.Entry entry : definition.entries()) {
-            total += Math.max(0, entry.weight());
-        }
-        return total;
+        return totalWeight(definition, null);
+    }
+
+    public static int totalWeight(SuspiciousDeliveryDefinition definition, ServerPlayer player) {
+        return CraftingEntryPools.deliveryPoolTotalWeight(eligiblePool(player, definition));
     }
 }

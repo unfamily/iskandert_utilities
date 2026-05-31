@@ -165,6 +165,26 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(SacredRubberSaplingBlockEntity::new, ModBlocks.SACRED_RUBBER_SAPLING.get())
                             .build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropicSoilBlockEntity>> ENTROPIC_SOIL_BE =
+            BLOCK_ENTITIES.register("entropic_soil",
+                    () -> BlockEntityType.Builder.of(EntropicSoilBlockEntity::new, ModBlocks.ENTROPIC_SOIL.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropicDirtBlockEntity>> ENTROPIC_DIRT_BE =
+            BLOCK_ENTITIES.register("entropic_dirt",
+                    () -> BlockEntityType.Builder.of(EntropicDirtBlockEntity::new, ModBlocks.ENTROPIC_DIRT.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GraveyardSoilBlockEntity>> GRAVEYARD_SOIL_BE =
+            BLOCK_ENTITIES.register("graveyard_soil",
+                    () -> BlockEntityType.Builder.of(GraveyardSoilBlockEntity::new, ModBlocks.GRAVEYARD_SOIL.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DruidicPodzolBlockEntity>> DRUIDIC_PODZOL_BE =
+            BLOCK_ENTITIES.register("druidic_podzol",
+                    () -> BlockEntityType.Builder.of(DruidicPodzolBlockEntity::new, ModBlocks.DRUIDIC_PODZOL.get())
+                            .build(null));
+
     /**
      * Registra tutte le entità blocco
      */

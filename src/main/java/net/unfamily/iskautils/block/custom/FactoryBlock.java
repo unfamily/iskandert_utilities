@@ -48,7 +48,7 @@ public class FactoryBlock extends BaseEntityBlock {
     }
 
     @Override
-    public MapCodec<FactoryBlock> codec() {
+    protected MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
     }
 
@@ -68,13 +68,13 @@ public class FactoryBlock extends BaseEntityBlock {
     }
 
     @Override
-    public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
-        return true;
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
     @Override
-    public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.MODEL;
+    public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
+        return direction != null;
     }
 
     @Nullable
@@ -86,7 +86,7 @@ public class FactoryBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return null;
         }
         return createTickerHelper(blockEntityType, ModBlockEntities.FACTORY_BE.get(), FactoryBlockEntity::tickServer);
@@ -94,7 +94,7 @@ public class FactoryBlock extends BaseEntityBlock {
 
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide && !player.isCreative()) {
+        if (!level.isClientSide() && !player.isCreative()) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof FactoryBlockEntity factory) {
                 for (int i = 0; i < FactoryBlockEntity.SLOT_COUNT; i++) {
@@ -111,7 +111,7 @@ public class FactoryBlock extends BaseEntityBlock {
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
 
@@ -121,6 +121,7 @@ public class FactoryBlock extends BaseEntityBlock {
         }
 
         if (player instanceof ServerPlayer serverPlayer) {
+            factory.claimOwner(serverPlayer);
             serverPlayer.openMenu(new MenuProvider() {
                 @Override
                 public Component getDisplayName() {

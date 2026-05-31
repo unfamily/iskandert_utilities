@@ -63,4 +63,12 @@ public final class ApotheosisCompat {
     }
 
     public record WorldTierInfo(Component displayName, double ringPowerMultiplier) {}
+
+    /** Haven = 0 … Pinnacle = 4. Returns 0 when Apotheosis is absent. */
+    public static int getWorldTierIndex(Player player) {
+        if (!isLoaded() || player == null) {
+            return 0;
+        }
+        return WorldTier.getTier(player).ordinal();
+    }
 }

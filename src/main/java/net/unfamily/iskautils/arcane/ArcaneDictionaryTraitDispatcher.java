@@ -10,7 +10,7 @@ public final class ArcaneDictionaryTraitDispatcher {
     public static void dispatchPlayerTick(ServerPlayer player, ItemStack dictionary, boolean curioFull) {
         long gameTime = player.level().getGameTime();
         for (ArcaneDictionaryContents.TraitSlot trait : ArcaneDictionaryContents.getTraits(dictionary)) {
-            if (!traitApplies(trait, curioFull)) {
+            if (!traitApplies(player, trait, curioFull)) {
                 continue;
             }
             ArcaneDictionaryEffect effect = ArcaneDictionaryEffectRegistry.get(trait.id());
@@ -34,7 +34,7 @@ public final class ArcaneDictionaryTraitDispatcher {
             ServerPlayer player, ItemStack dictionary, LivingIncomingDamageEvent event, boolean curioFull) {
         long gameTime = player.level().getGameTime();
         for (ArcaneDictionaryContents.TraitSlot trait : ArcaneDictionaryContents.getTraits(dictionary)) {
-            if (!traitApplies(trait, curioFull)) {
+            if (!traitApplies(player, trait, curioFull)) {
                 continue;
             }
             ArcaneDictionaryEffect effect = ArcaneDictionaryEffectRegistry.get(trait.id());
@@ -58,7 +58,7 @@ public final class ArcaneDictionaryTraitDispatcher {
             ServerPlayer player, ItemStack dictionary, LivingIncomingDamageEvent event, boolean curioFull) {
         long gameTime = player.level().getGameTime();
         for (ArcaneDictionaryContents.TraitSlot trait : ArcaneDictionaryContents.getTraits(dictionary)) {
-            if (!traitApplies(trait, curioFull)) {
+            if (!traitApplies(player, trait, curioFull)) {
                 continue;
             }
             ArcaneDictionaryEffect effect = ArcaneDictionaryEffectRegistry.get(trait.id());
@@ -85,7 +85,7 @@ public final class ArcaneDictionaryTraitDispatcher {
         long gameTime = player.level().getGameTime();
         int adjusted = xp;
         for (ArcaneDictionaryContents.TraitSlot trait : ArcaneDictionaryContents.getTraits(dictionary)) {
-            if (!traitApplies(trait, curioFull)) {
+            if (!traitApplies(player, trait, curioFull)) {
                 continue;
             }
             ArcaneDictionaryEffect effect = ArcaneDictionaryEffectRegistry.get(trait.id());
@@ -106,7 +106,13 @@ public final class ArcaneDictionaryTraitDispatcher {
         return adjustExperiencePickup(player, dictionary, xp, true);
     }
 
-    private static boolean traitApplies(ArcaneDictionaryContents.TraitSlot trait, boolean curioFull) {
+    private static boolean traitApplies(
+            ServerPlayer player,
+            ArcaneDictionaryContents.TraitSlot trait,
+            boolean curioFull) {
+        if (!ArcaneDictionaryEntryGate.traitActive(player, trait.id())) {
+            return false;
+        }
         if (curioFull) {
             return true;
         }
@@ -166,6 +172,9 @@ public final class ArcaneDictionaryTraitDispatcher {
         }
         ArcaneDictionaryShiftingState.MimicState state = ArcaneDictionaryShiftingState.read(dictionary);
         if (state == null) {
+            return null;
+        }
+        if (!ArcaneDictionaryEntryGate.traitActive(player, state.traitId())) {
             return null;
         }
         ArcaneDictionaryEffect effect = ArcaneDictionaryEffectRegistry.get(state.traitId());

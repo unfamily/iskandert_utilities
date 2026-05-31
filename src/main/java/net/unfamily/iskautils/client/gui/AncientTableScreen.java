@@ -13,6 +13,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.integration.jei.IskaUtilsJeiDynamicRefresh;
 import net.unfamily.iskautils.block.entity.AncientTableBlockEntity;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.ModMessages;
@@ -83,6 +84,9 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
     @Override
     protected void init() {
         super.init();
+        if (minecraft != null) {
+            IskaUtilsJeiDynamicRefresh.scheduleRefresh(minecraft);
+        }
         int titleWidth = font.width(MACHINE_TITLE);
         titleLabelX = (imageWidth - titleWidth) / 2;
         titleLabelY = TITLE_Y;

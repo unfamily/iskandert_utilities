@@ -3,11 +3,13 @@ package net.unfamily.iskautils.block.entity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Player;
@@ -23,9 +25,10 @@ import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeEntry;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeLoader;
 import net.unfamily.iskautils.item.component.AncientTabletContents;
 import net.unfamily.iskautils.util.AncientTableFuel;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 import org.jetbrains.annotations.Nullable;
 
-public class AncientTableBlockEntity extends BlockEntity implements WorldlyContainer {
+public class AncientTableBlockEntity extends BlockEntity implements WorldlyContainer, BlockCraftOwner.BlockCraftOwnerHolder {
     public static final int VISIBLE_GRID_SLOTS = 9;
 
     private final int inputCount;
@@ -44,6 +47,8 @@ public class AncientTableBlockEntity extends BlockEntity implements WorldlyConta
     private int storedFuel;
     private boolean pulsePreviousRedstone;
     private boolean pulseEdgeAllowsCraft;
+    @Nullable
+    private UUID ownerPlayerUuid;
 
     public AncientTableBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ANCIENT_TABLE_BE.get(), pos, state);
@@ -57,6 +62,39 @@ public class AncientTableBlockEntity extends BlockEntity implements WorldlyConta
 
     public net.minecraft.world.SimpleContainer getItems() {
         return items;
+    }
+
+    /** Drops all slot contents and recoverable internal fuel when the block is broken. */
+    public void drops() {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        BlockCraftOwner.clear(this);
+        net.unfamily.iskautils.util.MachineBreakDrops.dropContainerContents(level, worldPosition, items);
+        int fuel = storedFuel;
+        storedFuel = 0;
+        net.unfamily.iskautils.util.MachineBreakDrops.dropStoredEntropyCharge(level, worldPosition, fuel);
+        setChanged();
+    }
+
+    @Override
+    @Nullable
+    public UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@Nullable UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(ServerPlayer player) {
+        BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    @Nullable
+    public ServerPlayer resolveOwnerPlayer() {
+        return BlockCraftOwner.resolve(level, ownerPlayerUuid);
     }
 
     public IItemHandler getItemHandler() {
@@ -221,11 +259,11 @@ public class AncientTableBlockEntity extends BlockEntity implements WorldlyConta
         if (match.isEmpty()) {
             return;
         }
-        AncientTabletRecipeEntry recipe = match.get().recipe();
-        if (be.storedFuel < recipe.fuelCost()) {
+        AncientTabletRecipeEntry.ResolvedCraft resolved = match.get().resolved();
+        if (be.storedFuel < resolved.fuelCost()) {
             return;
         }
-        if (!be.canFitOutputs(recipe)) {
+        if (!be.canFitOutputs(resolved)) {
             return;
         }
         be.craftProgress = 1;
@@ -243,11 +281,12 @@ public class AncientTableBlockEntity extends BlockEntity implements WorldlyConta
         if (views.isEmpty()) {
             return Optional.empty();
         }
-        return AncientTabletCraftLogic.tryCraftUnordered(views, AncientTabletRecipeLoader.getEntries());
+        return AncientTabletCraftLogic.tryCraftUnordered(
+                views, AncientTabletRecipeLoader.getEntries(), resolveOwnerPlayer());
     }
 
-    private boolean canFitOutputs(AncientTabletRecipeEntry recipe) {
-        List<ItemStack> outputs = AncientTabletCraftLogic.outputStacks(recipe);
+    private boolean canFitOutputs(AncientTabletRecipeEntry.ResolvedCraft resolved) {
+        List<ItemStack> outputs = AncientTabletCraftLogic.outputStacks(resolved);
         for (ItemStack out : outputs) {
             if (out.isEmpty()) {
                 continue;
@@ -277,8 +316,8 @@ public class AncientTableBlockEntity extends BlockEntity implements WorldlyConta
         if (match.isEmpty()) {
             return;
         }
-        AncientTabletRecipeEntry recipe = match.get().recipe();
-        if (storedFuel < recipe.fuelCost()) {
+        AncientTabletRecipeEntry.ResolvedCraft resolved = match.get().resolved();
+        if (storedFuel < resolved.fuelCost()) {
             return;
         }
 
@@ -293,9 +332,9 @@ public class AncientTableBlockEntity extends BlockEntity implements WorldlyConta
         }
         items.setItem(fuelSlotIndex, inputList.get(inputCount));
 
-        storedFuel -= recipe.fuelCost();
+        storedFuel -= resolved.fuelCost();
 
-        for (ItemStack out : AncientTabletCraftLogic.outputStacks(recipe)) {
+        for (ItemStack out : AncientTabletCraftLogic.outputStacks(resolved)) {
             insertOutput(out);
         }
         setChangedAndSync();
@@ -576,6 +615,7 @@ public class AncientTableBlockEntity extends BlockEntity implements WorldlyConta
         tag.putInt("CraftProgress", craftProgress);
         tag.putInt("StoredFuel", storedFuel);
         tag.putBoolean("PulsePreviousRedstone", pulsePreviousRedstone);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         // Save storage using ListTag format (like ItemStackHandler does internally).
         ListTag inv = new ListTag();
         for (int i = 0; i < totalSlots; i++) {
@@ -606,6 +646,7 @@ public class AncientTableBlockEntity extends BlockEntity implements WorldlyConta
         craftProgress = tag.getInt("CraftProgress");
         storedFuel = Mth.clamp(tag.getInt("StoredFuel"), 0, AncientTableFuel.maxStored());
         pulsePreviousRedstone = tag.getBoolean("PulsePreviousRedstone");
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         for (int i = 0; i < totalSlots; i++) {
             items.setItem(i, ItemStack.EMPTY);
         }

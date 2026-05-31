@@ -21,6 +21,7 @@ public final class ArcaneDictionaryContents {
     public static final String NBT_TRAITS = "arcane_traits";
     public static final String NBT_TRAIT_ID = "id";
     public static final String NBT_TRAIT_LEVEL = "level";
+    public static final String NBT_INITIAL_ROLL_DONE = "initial_roll_done";
 
     private ArcaneDictionaryContents() {}
 
@@ -32,6 +33,20 @@ public final class ArcaneDictionaryContents {
 
     public static boolean isTraitless(ItemStack stack) {
         return !hasTraits(stack);
+    }
+
+    public static boolean needsInitialTraitRoll(ItemStack stack) {
+        return isTraitless(stack) && !isInitialRollAttempted(stack);
+    }
+
+    public static boolean isInitialRollAttempted(ItemStack stack) {
+        return root(stack).getBoolean(NBT_INITIAL_ROLL_DONE);
+    }
+
+    public static void markInitialRollAttempted(ItemStack stack) {
+        CompoundTag tag = root(stack);
+        tag.putBoolean(NBT_INITIAL_ROLL_DONE, true);
+        write(stack, tag);
     }
 
     public static int getStoredEntropy(ItemStack stack) {
@@ -80,10 +95,10 @@ public final class ArcaneDictionaryContents {
         write(stack, tag);
     }
 
-    public static int computeTotalUpkeep(ItemStack stack) {
+    public static int computeTotalConsume(ItemStack stack) {
         ArcaneDictionaryShiftingState.MimicState mimic = ArcaneDictionaryShiftingState.read(stack);
         long gameTime = mimic != null ? mimic.untilTick() - 1 : 0L;
-        return ArcaneDictionaryUpkeep.computeTotalUpkeep(stack, gameTime);
+        return ArcaneDictionaryConsume.computeTotalConsume(stack, gameTime);
     }
 
     public static void appendTooltip(ItemStack stack, TooltipFlag flag, java.util.function.Consumer<Component> add) {
@@ -117,8 +132,8 @@ public final class ArcaneDictionaryContents {
                 Config.arcaneDictionaryMaxStored));
         if (hasTraits(stack)) {
             add.accept(ArtifactTooltipUtil.techLine(
-                    "tooltip.iska_utils.arcane_dictionary.entropy_upkeep",
-                    computeTotalUpkeep(stack)));
+                    "tooltip.iska_utils.arcane_dictionary.entropy_consume",
+                    computeTotalConsume(stack)));
         }
     }
 

@@ -6,14 +6,13 @@ import net.minecraft.server.MinecraftServer;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryDefinition;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryLoader;
+import net.unfamily.iskautils.arcane.ArcaneDictionaryPools;
 import net.unfamily.iskautils.arcane.jei.ArcaneDictionaryJeiDescriptions;
 import net.unfamily.iskautils.arcane.jei.ArcaneDictionaryJeiLines;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 public final class ArcaneDictionaryJeiRecipes {
     private static final int MAX_CATALYST_SLOTS = 3;
@@ -34,19 +33,17 @@ public final class ArcaneDictionaryJeiRecipes {
 
     public static List<ArcaneDictionaryJeiRecipe> buildAll(Minecraft mc) {
         ensureLoaded();
-        Map<ResourceLocation, ArcaneDictionaryDefinition.Entry> unique = new LinkedHashMap<>();
-        for (ArcaneDictionaryDefinition.Entry entry : ArcaneDictionaryLoader.getEntries()) {
-            unique.putIfAbsent(entry.enchant(), entry);
-        }
-        List<ArcaneDictionaryDefinition.Entry> sorted = new ArrayList<>(unique.values());
-        sortForJei(sorted);
+        List<ArcaneDictionaryDefinition.Entry> visible = ArcaneDictionaryPools.visibleForJei(
+                ArcaneDictionaryLoader.getEntries());
+        List<ArcaneDictionaryDefinition.Entry> sorted = new ArrayList<>(visible);
+        sortForJei(sorted, mc);
 
         var font = mc != null ? mc.font : null;
         List<ArcaneDictionaryJeiRecipe> out = new ArrayList<>();
         int maxHeight = ArcaneDictionaryJeiDescriptions.MIN_HEIGHT;
         for (ArcaneDictionaryDefinition.Entry entry : sorted) {
             ResourceLocation traitId = entry.enchant();
-            var lines = ArcaneDictionaryJeiDescriptions.buildLines(traitId, entry);
+            var lines = ArcaneDictionaryJeiDescriptions.buildLines(traitId, entry, mc);
             var wrapped = font != null
                     ? ArcaneDictionaryJeiDescriptions.wrapLines(font, lines)
                     : ArcaneDictionaryJeiDescriptions.wrapLinesWithoutFont(lines);
@@ -88,14 +85,16 @@ public final class ArcaneDictionaryJeiRecipes {
     }
 
     /** Same order as {@link SuspiciousDeliveryJeiRecipes}: rarest first, then highest luck. */
-    private static void sortForJei(List<ArcaneDictionaryDefinition.Entry> entries) {
-        int total = ArcaneDictionaryJeiLines.poolTotalWeight();
+    private static void sortForJei(List<ArcaneDictionaryDefinition.Entry> entries, Minecraft mc) {
+        List<ArcaneDictionaryDefinition.Entry> eligible = ArcaneDictionaryPools.eligibleForJei(mc);
+        int total = ArcaneDictionaryPools.poolTotalWeight(eligible);
         if (total <= 0) {
             entries.sort(Comparator.comparingInt(ArcaneDictionaryDefinition.Entry::luck).reversed());
             return;
         }
         entries.sort(Comparator
-                .comparingDouble((ArcaneDictionaryDefinition.Entry entry) -> 100.0 * entry.weight() / total)
+                .comparingDouble((ArcaneDictionaryDefinition.Entry entry) ->
+                        ArcaneDictionaryPools.chancePercent(entry, eligible))
                 .thenComparing(Comparator.comparingInt(ArcaneDictionaryDefinition.Entry::luck).reversed()));
     }
 }

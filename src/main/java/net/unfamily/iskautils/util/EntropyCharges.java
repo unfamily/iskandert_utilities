@@ -31,6 +31,14 @@ public final class EntropyCharges {
     }
 
     /** Drops needed to cover {@code deficit} without exceeding {@code maxStored}. */
+    /** Whole drops recoverable from internal stored charge (remainder charge is lost). */
+    public static int wholeDropsFromStored(int stored) {
+        if (stored <= 0) {
+            return 0;
+        }
+        return stored / chargePerDrop();
+    }
+
     public static int dropsNeededForDeficit(int stored, int maxStored, int deficit) {
         if (deficit <= 0) {
             return 0;

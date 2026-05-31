@@ -31,7 +31,7 @@ public final class ArcaneDictionaryReroll {
 
     /** Rolls traits on a traitless dictionary as a free level-1 reroll when first obtained. */
     public static boolean rollInitialTraits(ServerPlayer player, ItemStack dictionary) {
-        if (!ArcaneDictionaryContents.isTraitless(dictionary)) {
+        if (!ArcaneDictionaryContents.needsInitialTraitRoll(dictionary)) {
             return false;
         }
         return applyRoll(player, dictionary, ArcaneDictionaryXpRoll.qualityForRollLevels(1), false);
@@ -81,7 +81,8 @@ public final class ArcaneDictionaryReroll {
             ItemStack catalyst) {
         List<ArcaneDictionaryDefinition.Entry> validPool = new ArrayList<>();
         for (ArcaneDictionaryDefinition.Entry entry : pool) {
-            if (ArcaneDictionaryEffectRegistry.get(entry.enchant()) != null) {
+            if (ArcaneDictionaryEffectRegistry.get(entry.enchant()) != null
+                    && entry.isFullyEligible(player)) {
                 validPool.add(entry);
             }
         }

@@ -1,8 +1,10 @@
 package net.unfamily.iskautils.block.entity;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Direction;
@@ -10,6 +12,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Player;
@@ -23,9 +26,10 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.data.load.FactoryLoader;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 import org.jetbrains.annotations.Nullable;
 
-public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer {
+public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer, BlockCraftOwner.BlockCraftOwnerHolder {
     public static final int SLOT_INPUT = 0;
     public static final int SLOT_OUTPUT = 1;
     public static final int SLOT_COUNT = 2;
@@ -50,6 +54,8 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
     private boolean pulsePreviousRedstone = false;
     /** Set at tick start when mode==3: craft allowed only if true (rising edge). */
     private boolean pulseEdgeAllowsCraft = false;
+    @Nullable
+    private UUID ownerPlayerUuid;
 
     public FactoryBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.FACTORY_BE.get(), pos, state);
@@ -64,6 +70,30 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
 
     public IItemHandler getItemHandler() {
         return itemHandler;
+    }
+
+    @Override
+    @Nullable
+    public UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@Nullable UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(ServerPlayer player) {
+        BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    @Nullable
+    public ServerPlayer resolveOwnerPlayer() {
+        return BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
+    public List<FactoryLoader.Output> activeOutputs(FactoryLoader.Source source) {
+        return source.resolveOutputs(resolveOwnerPlayer());
     }
 
     public int getSelectedColorIndex() {
@@ -84,7 +114,7 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
             setChangedAndSync();
             return;
         }
-        int max = src.get().outputs().size() - 1;
+        int max = Math.max(0, activeOutputs(src.get()).size() - 1);
         this.selectedColorIndex = Math.min(Math.max(0, selectedColorIndex), max);
         rememberedOutputBySource.put(FactoryLoader.sourcePreferenceKey(src.get()), this.selectedColorIndex);
         setChangedAndSync();
@@ -202,9 +232,10 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
                 be.selectedColorIndex = -1;
             } else {
                 var src = srcOpt.get();
+                List<FactoryLoader.Output> active = be.activeOutputs(src);
                 Integer remembered = be.rememberedOutputBySource.get(FactoryLoader.sourcePreferenceKey(src));
-                if (remembered != null) {
-                    int max = src.outputs().size() - 1;
+                if (remembered != null && !active.isEmpty()) {
+                    int max = active.size() - 1;
                     be.selectedColorIndex = Math.min(Math.max(0, remembered), max);
                 } else {
                     be.selectedColorIndex = -1;
@@ -216,8 +247,9 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
         var sourceOpt = FactoryLoader.findSource(in, level);
         if (sourceOpt.isEmpty()) return;
         var source = sourceOpt.get();
+        List<FactoryLoader.Output> activeOutputs = be.activeOutputs(source);
 
-        if (source.outputs().isEmpty()) {
+        if (activeOutputs.isEmpty()) {
             return;
         }
 
@@ -225,9 +257,9 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
             return;
         }
 
-        int selected = Math.min(Math.max(0, be.selectedColorIndex), source.outputs().size() - 1);
+        int selected = Math.min(Math.max(0, be.selectedColorIndex), activeOutputs.size() - 1);
 
-        var outDef = source.outputs().get(selected);
+        var outDef = activeOutputs.get(selected);
         var outStackOpt = FactoryLoader.resolveOutputStack(outDef);
         if (outStackOpt.isEmpty()) return;
         ItemStack producedPerOp = outStackOpt.get();
@@ -490,6 +522,7 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
         tag.putInt("ScrollOffset", scrollOffset);
         tag.putInt("RedstoneMode", redstoneMode);
         tag.putBoolean("PulsePreviousRedstone", pulsePreviousRedstone);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         if (effectiveEnergyCapacity > 0) {
             tag.putInt("Energy", energyStorage.getEnergyStored());
         }
@@ -527,6 +560,7 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer 
         scrollOffset = Math.max(0, tag.getInt("ScrollOffset"));
         redstoneMode = tag.contains("RedstoneMode") ? tag.getInt("RedstoneMode") : 0;
         pulsePreviousRedstone = tag.contains("PulsePreviousRedstone") && tag.getBoolean("PulsePreviousRedstone");
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         if (effectiveEnergyCapacity > 0) {
             energyStorage.setEnergy(tag.contains("Energy") ? tag.getInt("Energy") : 0);
         }

@@ -1,28 +1,29 @@
 package net.unfamily.iskautils.arcane.jei;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
-import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryDefinition;
-import net.unfamily.iskautils.arcane.ArcaneDictionaryEffectRegistry;
+import net.unfamily.iskautils.arcane.ArcaneDictionaryPools;
 
 import java.util.Locale;
 
 public record ArcaneDictionaryJeiContext(
         ResourceLocation traitId,
         ArcaneDictionaryDefinition.Entry poolEntry,
-        int resolvedUpkeep,
+        int resolvedConsume,
         int minLevel,
         int maxLevel,
         double poolChancePercent) {
 
     public static ArcaneDictionaryJeiContext of(ResourceLocation traitId, ArcaneDictionaryDefinition.Entry entry) {
-        return new ArcaneDictionaryJeiContext(
-                traitId,
-                entry,
-                ArcaneDictionaryEffectRegistry.resolveUpkeepPerLevel(traitId),
-                Config.arcaneDictionaryMinLevel,
-                Config.arcaneDictionaryMaxLevel,
-                ArcaneDictionaryJeiLines.chancePercent(entry));
+        return of(traitId, entry, Minecraft.getInstance());
+    }
+
+    public static ArcaneDictionaryJeiContext of(
+            ResourceLocation traitId,
+            ArcaneDictionaryDefinition.Entry entry,
+            Minecraft mc) {
+        return ArcaneDictionaryPools.jeiContext(traitId, entry, mc);
     }
 
     public int level(int level) {

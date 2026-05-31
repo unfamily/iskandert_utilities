@@ -13,7 +13,9 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
+import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.IskaUtils;
 
 /**
  * Runtime stonecutter recipe resolution for the Factory (not added to {@link FactoryLoader#SOURCES} or JEI).
@@ -21,6 +23,13 @@ import net.unfamily.iskautils.Config;
 public final class FactoryStonecutterSupport {
 
     private FactoryStonecutterSupport() {}
+
+    public static Optional<FactoryLoader.Source> resolve(ItemStack input, Level level) {
+        if (input.isEmpty() || !Config.factoryStonecutterEnabled || level == null) {
+            return Optional.empty();
+        }
+        return resolve(input, level.getRecipeManager(), level.registryAccess());
+    }
 
     public static Optional<FactoryLoader.Source> resolve(
             ItemStack input, RecipeManager recipeManager, HolderLookup.Provider registries) {
@@ -47,10 +56,11 @@ public final class FactoryStonecutterSupport {
             return Optional.empty();
         }
         List<FactoryLoader.Output> outputs = new ArrayList<>(outputsById.values());
-        return Optional.of(new FactoryLoader.Source(
-                new FactoryLoader.Selector.ItemSelector(input.getItem()),
+        return FactoryLoader.tryCompileSource(
+                ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "factory_stonecutter"),
+                BuiltInRegistries.ITEM.getKey(input.getItem()).toString(),
                 1,
-                List.copyOf(outputs),
-                Math.max(0, Config.factoryStonecutterEnergyPerOp)));
+                outputs,
+                Math.max(0, Config.factoryStonecutterEnergyPerOp));
     }
 }

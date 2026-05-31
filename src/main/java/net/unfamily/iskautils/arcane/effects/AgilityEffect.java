@@ -24,7 +24,7 @@ public final class AgilityEffect implements ArcaneDictionaryEffect {
     }
 
     @Override
-    public int defaultUpkeepPerLevel() {
+    public int defaultConsumePerLevel() {
         return 2;
     }
 

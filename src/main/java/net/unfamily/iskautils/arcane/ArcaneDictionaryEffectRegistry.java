@@ -29,13 +29,13 @@ public final class ArcaneDictionaryEffectRegistry {
         return Collections.unmodifiableMap(EFFECTS);
     }
 
-    public static int resolveUpkeepPerLevel(ResourceLocation enchantId) {
+    public static int resolveConsumePerLevel(ResourceLocation enchantId) {
         ArcaneDictionaryDefinition.Entry entry = ArcaneDictionaryLoader.findEntry(enchantId);
-        if (entry != null && entry.upkeepPerLevel() >= 0) {
-            return entry.upkeepPerLevel();
+        if (entry != null && entry.consumePerLevel() >= 0) {
+            return entry.consumePerLevel();
         }
         ArcaneDictionaryEffect effect = get(enchantId);
-        return effect != null ? effect.defaultUpkeepPerLevel() : 0;
+        return effect != null ? effect.defaultConsumePerLevel() : 0;
     }
 
     public static void warnUnknown(ResourceLocation id) {

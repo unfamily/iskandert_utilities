@@ -3,6 +3,7 @@ package net.unfamily.iskautils.obtaining;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.script.LoadModCondition;
+import net.unfamily.iskautils.script.LoadModGate;
 
 import java.util.List;
 
@@ -46,6 +47,41 @@ public final class SuspiciousDeliveryStageHost {
         return checkAllStages(player);
     }
 
+    public boolean isFullyEligible(ServerPlayer player) {
+        return checkAllMods() && checkAllStages(player);
+    }
+
+    public boolean isPoolEligible(ServerPlayer player) {
+        return isFullyEligible(player);
+    }
+
+    public boolean isEmpty() {
+        return stages.isEmpty() && mods.isEmpty();
+    }
+
+    public boolean checkAllMods() {
+        if (LoadModGate.isDeferredLogic(modsLogic)) {
+            return true;
+        }
+        if (mods.isEmpty()) {
+            return true;
+        }
+        if (modsLogic == CommandItemDefinition.StagesLogic.AND) {
+            for (LoadModCondition condition : mods) {
+                if (!condition.matches()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        for (LoadModCondition condition : mods) {
+            if (condition.matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean checkAllStages(ServerPlayer player) {
         if (stagesLogic == CommandItemDefinition.StagesLogic.DEF_AND
                 || stagesLogic == CommandItemDefinition.StagesLogic.DEF_OR) {
@@ -73,7 +109,8 @@ public final class SuspiciousDeliveryStageHost {
     public boolean checkSingleStage(ServerPlayer player, CommandItemDefinition.StageCondition condition) {
         String stageId = condition.getStage();
         boolean shouldBeSet = condition.shouldBeSet();
-        var registry = net.unfamily.iskautils.stage.StageRegistry.getInstance(player.getServer());
+        net.unfamily.iskautils.stage.StageRegistry registry =
+                net.unfamily.iskautils.stage.StageRegistry.getInstance(player.getServer());
         return switch (condition.getStageType().toLowerCase()) {
             case "player" -> registry.hasPlayerStage(player, stageId) == shouldBeSet;
             case "world" -> registry.hasWorldStage(stageId) == shouldBeSet;

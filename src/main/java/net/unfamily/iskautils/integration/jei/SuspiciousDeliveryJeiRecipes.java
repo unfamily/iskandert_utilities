@@ -3,15 +3,18 @@ package net.unfamily.iskautils.integration.jei;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.command.CommandItemAction;
+import net.unfamily.iskautils.data.load.CraftingEntryPools;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryDefinition;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryJeiMode;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryLoader;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryLoot;
+import net.unfamily.iskautils.script.LoadModGate;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,8 +37,12 @@ public final class SuspiciousDeliveryJeiRecipes {
     }
 
     public static List<SuspiciousDeliveryJeiRecipe> buildAll() {
+        Minecraft mc = Minecraft.getInstance();
+        ServerPlayer player = CraftingEntryPools.resolveJeiPlayer(mc);
         SuspiciousDeliveryDefinition def = SuspiciousDeliveryLoader.get();
-        int total = SuspiciousDeliveryLoot.totalWeight(def);
+        List<SuspiciousDeliveryDefinition.Entry> pool =
+                player != null ? SuspiciousDeliveryLoot.eligiblePool(player, def) : def.entries();
+        int total = CraftingEntryPools.deliveryPoolTotalWeight(pool);
         if (total <= 0) {
             return List.of();
         }
@@ -47,11 +54,19 @@ public final class SuspiciousDeliveryJeiRecipes {
             if (entry.jeiMode() == SuspiciousDeliveryJeiMode.HIDDEN) {
                 continue;
             }
+            if (!entry.checkAllMods()) {
+                continue;
+            }
+            if (player != null && !entry.isPoolEligible(player)
+                    && !LoadModGate.isDeferredLogic(entry.stageHost().getStagesLogic())
+                    && !LoadModGate.isDeferredLogic(entry.stageHost().getModsLogic())) {
+                continue;
+            }
             List<ItemStack> stacks = resolveDisplayStacks(entry, mask);
             if (stacks.isEmpty()) {
                 continue;
             }
-            double pct = 100.0 * entry.weight() / total;
+            double pct = CraftingEntryPools.deliveryChancePercent(entry, pool);
             slots.add(new SuspiciousDeliveryJeiEntry(pct, stacks, entry.luck()));
         }
 
@@ -59,7 +74,6 @@ public final class SuspiciousDeliveryJeiRecipes {
             return List.of();
         }
 
-        // Sort for JEI: from most unlikely to most likely; within same chance, most lucky to least lucky.
         slots.sort(Comparator
                 .comparingDouble(SuspiciousDeliveryJeiEntry::weightPercent)
                 .thenComparing(Comparator.comparingInt(SuspiciousDeliveryJeiEntry::entryLuck).reversed()));
@@ -72,9 +86,6 @@ public final class SuspiciousDeliveryJeiRecipes {
         return pages;
     }
 
-    /**
-     * Mask wins over drops; multiple drops cycle in the same JEI slot via {@code addItemStacks}.
-     */
     private static List<ItemStack> resolveDisplayStacks(
             SuspiciousDeliveryDefinition.Entry entry,
             ItemStack mask) {

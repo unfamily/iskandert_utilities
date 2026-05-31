@@ -29,6 +29,7 @@ import net.unfamily.iskautils.item.custom.AutoShopItem;
 import net.unfamily.iskautils.item.custom.GiftItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerChipsetItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerBlockItem;
+import net.unfamily.iskautils.item.custom.TranslatedTooltipBlockItem;
 import net.unfamily.iskautils.item.custom.FanBlockItem;
 import net.unfamily.iskautils.item.custom.ShopBlockItem;
 import net.unfamily.iskautils.item.custom.HellfireIgniterBlockItem;
@@ -224,7 +225,16 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
 
     public static final DeferredItem<Item> DROP_OF_ENTROPY = ITEMS.register("drop_of_entropy",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new net.unfamily.iskautils.item.custom.DropOfEntropyItem(ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> CURSED_KEY = ITEMS.register("cursed_key",
+            () -> new net.unfamily.iskautils.item.custom.CursedKeyItem(ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> ENTROPIC_AGGLOMERATION = ITEMS.register("entropic_agglomeration",
+            () -> new net.unfamily.iskautils.item.custom.EntropicAgglomerationItem(ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> DRUIDIC_AGGLOMERATION = ITEMS.register("druidic_agglomeration",
+            () -> new net.unfamily.iskautils.item.custom.DruidicAgglomerationItem(ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> ANCIENT_TABLET = ITEMS.register("ancient_tablet",
             () -> new AncientTabletItem(new Item.Properties()));
@@ -565,6 +575,34 @@ public class ModItems {
     // Entropy TNT Block
     public static final DeferredItem<Item> ENTROPY_TNT = ITEMS.register("entropy_tnt",
             () -> new BlockItem(ModBlocks.ENTROPY_TNT.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> ENTROPIC_SOIL = ITEMS.register("entropic_soil",
+            () -> new TranslatedTooltipBlockItem(
+                    ModBlocks.ENTROPIC_SOIL.get(),
+                    ITEM_PROPERTIES,
+                    "tooltip.iska_utils.entropic_soil.desc0",
+                    "tooltip.iska_utils.entropic_soil.desc1"));
+
+    public static final DeferredItem<Item> ENTROPIC_DIRT = ITEMS.register("entropic_dirt",
+            () -> new TranslatedTooltipBlockItem(
+                    ModBlocks.ENTROPIC_DIRT.get(),
+                    ITEM_PROPERTIES,
+                    "tooltip.iska_utils.entropic_dirt.desc0",
+                    "tooltip.iska_utils.entropic_dirt.desc1"));
+
+    public static final DeferredItem<Item> GRAVEYARD_SOIL = ITEMS.register("graveyard_soil",
+            () -> new TranslatedTooltipBlockItem(
+                    ModBlocks.GRAVEYARD_SOIL.get(),
+                    ITEM_PROPERTIES,
+                    "tooltip.iska_utils.graveyard_soil.desc0",
+                    "tooltip.iska_utils.graveyard_soil.desc1"));
+
+    public static final DeferredItem<Item> DRUIDIC_PODZOL = ITEMS.register("druidic_podzol",
+            () -> new TranslatedTooltipBlockItem(
+                    ModBlocks.DRUIDIC_PODZOL.get(),
+                    ITEM_PROPERTIES,
+                    "tooltip.iska_utils.druidic_podzol.desc0",
+                    "tooltip.iska_utils.druidic_podzol.desc1"));
 
     // ===== BURNING BRAZIER ITEM =====
 
