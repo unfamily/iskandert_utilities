@@ -17,12 +17,14 @@ import net.unfamily.iskautils.block.entity.CollectingCrateBlockEntity;
 import net.unfamily.iskautils.item.ModItems;
 
 public class CollectingCrateMenu extends AbstractContainerMenu {
+    /** Top-left of each slot group in {@code textures/gui/backgrounds/collecting_crate.png} (176x230). */
     public static final int STORAGE_SLOTS_X = 8;
-    public static final int STORAGE_SLOTS_Y = 18;
-    public static final int MODULE_SLOT_X = 8;
+    public static final int STORAGE_SLOTS_Y = 22;
+    public static final int MODULE_SLOT_X = 6;
     public static final int MODULE_SLOT_Y = 86;
     public static final int PLAYER_INVENTORY_X = 8;
-    public static final int PLAYER_INVENTORY_Y = 118;
+    public static final int PLAYER_INVENTORY_Y = 148;
+    public static final int PLAYER_HOTBAR_Y = PLAYER_INVENTORY_Y + 58;
 
     private static final int STORAGE_SLOT_COUNT = 27;
     public static final int MODULE_SLOT_INDEX = 27;
@@ -104,14 +106,14 @@ public class CollectingCrateMenu extends AbstractContainerMenu {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = col + row * 9;
                 addSlot(new SlotItemHandler(storageHandler, slotIndex,
-                        STORAGE_SLOTS_X + 1 + col * 18,
-                        STORAGE_SLOTS_Y + 1 + row * 18));
+                        STORAGE_SLOTS_X + col * 18,
+                        STORAGE_SLOTS_Y + row * 18));
             }
         }
     }
 
     private void addModuleSlot(IItemHandler moduleHandler) {
-        addSlot(new SlotItemHandler(moduleHandler, 0, MODULE_SLOT_X + 1, MODULE_SLOT_Y + 1) {
+        addSlot(new SlotItemHandler(moduleHandler, 0, MODULE_SLOT_X, MODULE_SLOT_Y) {
             @Override
             public int getMaxStackSize() {
                 return moduleHandler.getSlotLimit(0);
@@ -129,8 +131,8 @@ public class CollectingCrateMenu extends AbstractContainerMenu {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = col + row * 9 + 9;
                 addSlot(new Slot(playerInventory, slotIndex,
-                        PLAYER_INVENTORY_X + 1 + col * 18,
-                        PLAYER_INVENTORY_Y + 1 + row * 18));
+                        PLAYER_INVENTORY_X + col * 18,
+                        PLAYER_INVENTORY_Y + row * 18));
             }
         }
     }
@@ -138,8 +140,8 @@ public class CollectingCrateMenu extends AbstractContainerMenu {
     private void addPlayerHotbar(Inventory playerInventory) {
         for (int col = 0; col < 9; col++) {
             addSlot(new Slot(playerInventory, col,
-                    PLAYER_INVENTORY_X + 1 + col * 18,
-                    PLAYER_INVENTORY_Y + 1 + 3 * 18 + 4));
+                    PLAYER_INVENTORY_X + col * 18,
+                    PLAYER_HOTBAR_Y));
         }
     }
 

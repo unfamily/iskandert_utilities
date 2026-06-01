@@ -1,12 +1,23 @@
 {
-  "parent": "block/cube",
+  "parent": "minecraft:block/block",
   "textures": {
     "particle": "iska_utils:block/collecting_crate/side",
-    "down": "iska_utils:block/collecting_crate/side",
-    "up": "iska_utils:block/collecting_crate/side",
-    "north": "iska_utils:block/collecting_crate/front",
-    "south": "iska_utils:block/collecting_crate/back",
-    "east": "iska_utils:block/collecting_crate/side",
-    "west": "iska_utils:block/collecting_crate/side"
-  }
+    "side": "iska_utils:block/collecting_crate/side",
+    "front": "iska_utils:block/collecting_crate/front",
+    "back": "iska_utils:block/collecting_crate/back"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 16, 16],
+      "faces": {
+        "down": { "texture": "#side", "cullface": "down" },
+        "up": { "texture": "#side", "cullface": "up" },
+        "north": { "texture": "#front", "cullface": "north" },
+        "south": { "texture": "#back", "cullface": "south" },
+        "east": { "texture": "#side", "rotation": 90, "cullface": "east" },
+        "west": { "texture": "#side", "rotation": 90, "cullface": "west" }
+      }
+    }
+  ]
 }
