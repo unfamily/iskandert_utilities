@@ -104,8 +104,10 @@ public class CollectingCrateBlock extends BaseEntityBlock {
         if (!state.is(newState.getBlock())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof CollectingCrateBlockEntity crate) {
+                crate.setPreviewEnabled(false);
                 crate.drops();
             }
+            net.unfamily.iskautils.util.PreviewAreaSupport.onPreviewOwnerBlockRemoved(level, pos, state, newState);
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }

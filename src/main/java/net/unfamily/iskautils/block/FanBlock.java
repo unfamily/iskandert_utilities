@@ -101,6 +101,18 @@ public class FanBlock extends DirectionalBlock implements EntityBlock {
     }
 
     @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (!state.is(newState.getBlock())) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof FanBlockEntity fan) {
+                fan.setShowAreaEnabled(false);
+            }
+            net.unfamily.iskautils.util.PreviewAreaSupport.onPreviewOwnerBlockRemoved(level, pos, state, newState);
+        }
+        super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
         // Don't update POWERED state here - it's handled in tick based on advanced redstone logic
         // This prevents conflicts between primitive and advanced redstone logic

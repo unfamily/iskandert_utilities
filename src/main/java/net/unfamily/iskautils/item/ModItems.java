@@ -86,7 +86,7 @@ public class ModItems {
 
     // Common properties for all items
     private static final Item.Properties ITEM_PROPERTIES = new Item.Properties();
-    private static final Item.Properties REAPER_STACKABLE_MODULE = ITEM_PROPERTIES.stacksTo(64);
+    private static final Item.Properties REAPER_STACKABLE_MODULE = new Item.Properties().stacksTo(64);
 
     // ===== WITHER PROOF BLOCKS =====
     
@@ -513,9 +513,9 @@ public class ModItems {
     public static final DeferredItem<Item> NORMAL_DAMAGE_MODULE = ITEMS.register("normal_damage_module",
             () -> new NormalDamageModuleItem(REAPER_STACKABLE_MODULE));
     public static final DeferredItem<Item> LETHAL_DAMAGE_MODULE = ITEMS.register("lethal_damage_module",
-            () -> new LethalDamageModuleItem(ITEM_PROPERTIES.stacksTo(1)));
+            () -> new LethalDamageModuleItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> ENCHANT_MODULE = ITEMS.register("enchant_module",
-            () -> new EnchantModuleItem(ITEM_PROPERTIES.stacksTo(1)));
+            () -> new EnchantModuleItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> BEHEADING_MODULE = ITEMS.register("beheading_module",
             () -> new BeheadingModuleItem(REAPER_STACKABLE_MODULE));
     public static final DeferredItem<Item> LUCK_MODULE = ITEMS.register("luck_module",
@@ -572,11 +572,11 @@ public class ModItems {
     
     // Temporal Overclocker
     public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER = ITEMS.register("temporal_overclocker",
-            () -> new TemporalOverclockerBlockItem(ModBlocks.TEMPORAL_OVERCLOCKER.get(), ITEM_PROPERTIES));
+            () -> new TemporalOverclockerBlockItem(ModBlocks.TEMPORAL_OVERCLOCKER.get(), new Item.Properties().stacksTo(64)));
     
     // Temporal Overclocker Chipset
     public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER_CHIPSET = ITEMS.register("temporal_overclocker_chip",
-            () -> new TemporalOverclockerChipsetItem(ITEM_PROPERTIES));
+            () -> new TemporalOverclockerChipsetItem(new Item.Properties().stacksTo(1)));
 
     // ===== ANGEL BLOCK =====
     public static final DeferredItem<Item> ANGEL_BLOCK = ITEMS.register("angel_block",

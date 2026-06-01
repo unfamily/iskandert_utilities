@@ -7,10 +7,10 @@
   ],
   "key": {
     "A": {
-      "tag": "c:ingots/iron"
+      "tag": "c:gems/diamond"
     },
     "B": {
-      "tag": "c:gems/diamond"
+      "tag": "c:ingots/iron"
     },
     "C": {
       "tag": "c:storage_blocks/iron"

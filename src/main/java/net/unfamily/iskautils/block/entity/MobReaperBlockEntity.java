@@ -29,6 +29,7 @@ import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.MobReaperBlock;
+import net.unfamily.iskautils.damage.ModDamageTypes;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.MachineTargetType;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -369,7 +370,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        DamageSource damageSource = level.damageSources().playerAttack(fakePlayer);
+        DamageSource damageSource = level.damageSources().source(ModDamageTypes.MOB_REAPER, fakePlayer);
         if (!weapon.isEmpty() && EnchantmentHelper.hasAnyEnchantments(weapon)) {
             damage = EnchantmentHelper.modifyDamage(level, weapon, target, damageSource, damage);
         }

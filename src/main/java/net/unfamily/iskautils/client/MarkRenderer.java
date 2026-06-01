@@ -375,6 +375,9 @@ public class MarkRenderer {
         }
         
         long currentTime = mc.level.getGameTime();
+
+        billboardMarkersByOwner.entrySet().removeIf(entry ->
+                !net.unfamily.iskautils.util.PreviewAreaSupport.isPreviewOwnerBlock(mc.level.getBlockState(entry.getKey())));
         
         // Remove expired blocks - usando removeIf che è thread-safe su ConcurrentHashMap
         highlightedBlocks.entrySet().removeIf(entry -> entry.getValue().expirationTime <= currentTime);

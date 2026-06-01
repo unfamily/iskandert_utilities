@@ -541,22 +541,22 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         // Get the facing direction
         Direction facing = state.getValue(FanBlock.FACING);
 
-        // Contact-only: affect entities in the block immediately in front of the fan
-        AABB contactArea = calculateContactArea(pos, facing);
-        var entities = level.getEntitiesOfClass(Entity.class, contactArea,
+        AABB pushArea = calculatePushArea(pos, facing, blockEntity);
+        var entities = level.getEntitiesOfClass(Entity.class, pushArea,
             entity -> entity instanceof LivingEntity && !entity.isSpectator());
 
+        boolean hasGhostModule = blockEntity.hasGhostModule();
         double effectivePower = blockEntity.getEffectivePower();
         for (Entity entity : entities) {
             if (shouldPushEntity(entity, blockEntity.targetType)) {
-                moveEntityOnContact(entity, facing, effectivePower, blockEntity.isPull);
+                if (!hasGhostModule && isBlockedByObstacle(level, pos, facing, entity, false)) {
+                    continue;
+                } else if (hasGhostModule && isBlockedByObstacle(level, pos, facing, entity, true)) {
+                    continue;
+                }
+                pushEntity(entity, facing, effectivePower, blockEntity.isPull);
             }
         }
-    }
-
-    /** Single-block contact zone in front of the fan (no wireless range push). */
-    private static AABB calculateContactArea(BlockPos pos, Direction facing) {
-        return new AABB(pos.relative(facing));
     }
 
     // Calculate the AABB for the push area
@@ -784,23 +784,24 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         return true;
     }
     
-    // Move an entity on contact without knockback (position step, not velocity impulse)
-    private static void moveEntityOnContact(Entity entity, Direction facing, double power, boolean isPull) {
-        Direction moveDir = isPull ? facing.getOpposite() : facing;
-        double stepSize = power * 0.08;
-        entity.move(net.minecraft.world.entity.MoverType.SELF, new Vec3(
-                moveDir.getStepX() * stepSize,
-                moveDir.getStepY() * stepSize,
-                moveDir.getStepZ() * stepSize
-        ));
+    private static void pushEntity(Entity entity, Direction facing, double power, boolean isPull) {
+        Vec3 currentMotion = entity.getDeltaMovement();
+        Vec3 pushVector = Vec3.ZERO;
+        Direction effectiveDirection = isPull ? facing.getOpposite() : facing;
 
-        Vec3 motion = entity.getDeltaMovement();
-        Vec3 damped = switch (moveDir.getAxis()) {
-            case X -> new Vec3(0.0, motion.y, motion.z);
-            case Y -> new Vec3(motion.x, 0.0, motion.z);
-            case Z -> new Vec3(motion.x, motion.y, 0.0);
-        };
-        entity.setDeltaMovement(damped);
+        switch (effectiveDirection) {
+            case NORTH -> pushVector = new Vec3(0, 0, -power);
+            case SOUTH -> pushVector = new Vec3(0, 0, power);
+            case WEST -> pushVector = new Vec3(-power, 0, 0);
+            case EAST -> pushVector = new Vec3(power, 0, 0);
+            case UP -> pushVector = new Vec3(0, power, 0);
+            case DOWN -> pushVector = new Vec3(0, -power, 0);
+        }
+
+        double accelerationFactor = 0.3;
+        Vec3 newMotion = currentMotion.scale(1.0 - accelerationFactor)
+                .add(pushVector.scale(accelerationFactor));
+        entity.setDeltaMovement(newMotion);
         entity.hurtMarked = true;
     }
 }

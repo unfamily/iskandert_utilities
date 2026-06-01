@@ -110,8 +110,10 @@ public class StructurePlacerMachineBlock extends BaseEntityBlock {
         if (!state.is(newState.getBlock())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
+                machineEntity.setShowPreview(false);
                 machineEntity.drops();
             }
+            net.unfamily.iskautils.util.PreviewAreaSupport.onPreviewOwnerBlockRemoved(level, pos, state, newState);
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
