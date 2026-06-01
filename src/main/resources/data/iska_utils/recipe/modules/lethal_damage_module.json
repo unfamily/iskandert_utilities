@@ -1,19 +1,16 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "NDN",
-    "DLD",
-    "NDN"
+    "AAA",
+    "ABA",
+    "AAA"
   ],
   "key": {
-    "N": {
-      "tag": "c:ingots/netherite"
-    },
-    "D": {
-      "item": "minecraft:diamond"
-    },
-    "L": {
+    "A": {
       "item": "iska_utils:normal_damage_module"
+    },
+    "B": {
+      "tag": "iska_utils:lethal_trap_core"
     }
   },
   "result": {

@@ -1,13 +1,13 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    " E ",
-    "EBE",
-    " E "
+    " A ",
+    "ABA",
+    " A "
   ],
   "key": {
-    "E": {
-      "item": "minecraft:experience_bottle"
+    "A": {
+      "item": "minecraft:book"
     },
     "B": {
       "item": "iska_utils:base_module"

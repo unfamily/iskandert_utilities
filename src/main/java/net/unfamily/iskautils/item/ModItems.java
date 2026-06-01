@@ -486,7 +486,8 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.MOB_REAPER.get(), ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> COLLECTING_CRATE = ITEMS.register("collecting_crate",
-            () -> new BlockItem(ModBlocks.COLLECTING_CRATE.get(), ITEM_PROPERTIES));
+            () -> new net.unfamily.iskautils.item.custom.CollectingCrateBlockItem(
+                    ModBlocks.COLLECTING_CRATE.get(), ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> CONDENSED_KNOWLEDGE_BUCKET = ITEMS.register("condensed_knowledge_bucket",
             () -> new BucketItem(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(),

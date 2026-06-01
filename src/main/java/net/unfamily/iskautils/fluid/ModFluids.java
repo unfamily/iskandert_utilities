@@ -21,10 +21,13 @@ public class ModFluids {
     public static final DeferredRegister<FluidType> FLUID_TYPES =
             DeferredRegister.create(NeoForgeRegistries.FLUID_TYPES, IskaUtils.MOD_ID);
 
+    /** Thin liquid style: vanilla water sprites + tint (Colossal gelid breezium convention). */
     public static final ResourceLocation STILL_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "block/fluid/still");
+            ResourceLocation.withDefaultNamespace("block/water_still");
     public static final ResourceLocation FLOWING_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "block/fluid/flow");
+            ResourceLocation.withDefaultNamespace("block/water_flow");
+    public static final ResourceLocation OVERLAY_TEXTURE =
+            ResourceLocation.withDefaultNamespace("block/water_overlay");
 
     public static final DeferredHolder<FluidType, FluidType> CONDENSED_KNOWLEDGE_TYPE =
             FLUID_TYPES.register("condensed_knowledge", () -> new FluidType(FluidType.Properties.create()

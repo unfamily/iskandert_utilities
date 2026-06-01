@@ -1,6 +1,9 @@
 package net.unfamily.iskautils.client.fluid;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.material.FluidState;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import net.unfamily.iskautils.fluid.ModFluids;
@@ -23,7 +26,17 @@ public final class ModFluidClient {
             }
 
             @Override
+            public ResourceLocation getOverlayTexture() {
+                return ModFluids.OVERLAY_TEXTURE;
+            }
+
+            @Override
             public int getTintColor() {
+                return CONDENSED_KNOWLEDGE_TINT;
+            }
+
+            @Override
+            public int getTintColor(FluidState state, BlockAndTintGetter getter, BlockPos pos) {
                 return CONDENSED_KNOWLEDGE_TINT;
             }
         }, ModFluids.CONDENSED_KNOWLEDGE_TYPE.get());

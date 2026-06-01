@@ -2,19 +2,19 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "OEO",
-    "OCO",
-    "OOO"
+    "ABA",
+    "ACA",
+    "ABA"
   ],
   "key": {
-    "O": {
-      "item": "minecraft:obsidian"
+    "A": {
+      "tag": "c:ingots/iron"
     },
-    "E": {
-      "item": "minecraft:ender_pearl"
+    "B": {
+      "tag": "minecraft:planks"
     },
     "C": {
-      "item": "minecraft:chest"
+      "item": "minecraft:ender_eye"
     }
   },
   "result": {
