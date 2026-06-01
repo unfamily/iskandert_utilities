@@ -23,20 +23,33 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
 
     private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/backgrounds/collecting_crate.png");
-    private static final Identifier SINGLE_SLOT_TEXTURE = Identifier.fromNamespaceAndPath(
-            IskaUtils.MOD_ID, "textures/gui/single_slot.png");
     private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/medium_buttons.png");
     private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/redstone_gui.png");
 
     private static final int GUI_WIDTH = 176;
-    private static final int GUI_HEIGHT = 200;
-    private static final int TITLE_COLOR = 0x404040;
+    private static final int GUI_HEIGHT = 230;
     private static final int BUTTON_SIZE = 16;
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
     private static final int CLOSE_BUTTON_Y = 5;
+
+    /** Free panel between storage grid and player inventory (GUI-relative). */
+    private static final int PANEL_LEFT = 28;
+    private static final int PANEL_RIGHT = 168;
+    private static final int PANEL_BOTTOM = 138;
+
+    private static final int XP_TEXT_Y = 80;
+    private static final int XP_BAR_Y = 92;
+    private static final int XP_BAR_W = 100;
+    private static final int XP_BAR_H = 5;
+    private static final int RANGE_TEXT_Y = 101;
+
+    private static final int BUTTON_GAP = 2;
+    /** Right column: four buttons stacked above the deposit (empty bottle) button. */
+    private static final int BUTTONS_X = PANEL_RIGHT - BUTTON_SIZE - 6;
+    private static final int BUTTONS_ANCHOR_BOTTOM = PANEL_BOTTOM - 4;
 
     private static final ItemStack GHOST_RANGE_MODULE = new ItemStack(ModItems.RANGE_MODULE.get());
 
@@ -67,17 +80,28 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
             }
         }).bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE).build();
         addRenderableWidget(closeButton);
+        layoutActionButtons();
+    }
 
-        int rightX = this.leftPos + this.imageWidth - 10 - BUTTON_SIZE;
-        int baseY = this.topPos + 72;
-        collectButtonX = rightX;
-        collectButtonY = baseY;
-        depositButtonX = rightX;
-        depositButtonY = baseY + BUTTON_SIZE + 2;
-        modeButtonX = rightX;
-        modeButtonY = baseY + (BUTTON_SIZE + 2) * 2;
-        redstoneButtonX = rightX;
-        redstoneButtonY = baseY + (BUTTON_SIZE + 2) * 3;
+    private void layoutActionButtons() {
+        int buttonX = this.leftPos + BUTTONS_X;
+        int y = this.topPos + BUTTONS_ANCHOR_BOTTOM - BUTTON_SIZE;
+
+        depositButtonX = buttonX;
+        depositButtonY = y;
+        y -= BUTTON_SIZE + BUTTON_GAP;
+        redstoneButtonX = buttonX;
+        redstoneButtonY = y;
+        y -= BUTTON_SIZE + BUTTON_GAP;
+        modeButtonX = buttonX;
+        modeButtonY = y;
+        y -= BUTTON_SIZE + BUTTON_GAP;
+        collectButtonX = buttonX;
+        collectButtonY = y;
+    }
+
+    private void drawCenteredText(GuiGraphicsExtractor guiGraphics, Component text, int centerX, int y, int color) {
+        guiGraphics.text(this.font, text, centerX - this.font.width(text) / 2, y, color, false);
     }
 
     @Override
@@ -85,10 +109,6 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, this.leftPos, this.topPos, 0.0F, 0.0F,
                 this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE,
-                this.leftPos + CollectingCrateMenu.MODULE_SLOT_X,
-                this.topPos + CollectingCrateMenu.MODULE_SLOT_Y,
-                0.0F, 0.0F, 18, 18, 18, 18);
         renderXpBar(guiGraphics);
         renderActionButtons(guiGraphics, mouseX, mouseY);
     }
@@ -105,24 +125,21 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         int levels = ExperienceFluidMath.displayLevelsFromMb(mb);
         double progress = ExperienceFluidMath.displayProgressFromMb(mb);
 
-        int barX = this.leftPos + 30;
-        int barY = this.topPos + 78;
-        int barWidth = 90;
-        int barHeight = 5;
+        int barX = this.leftPos + PANEL_LEFT;
+        int barY = this.topPos + XP_BAR_Y;
+        int barCenterX = barX + XP_BAR_W / 2;
 
         Component levelText = Component.translatable("gui.iska_utils.collecting_crate.xp_levels", levels);
-        int textX = this.leftPos + this.imageWidth / 2 - this.font.width(levelText) / 2;
-        guiGraphics.text(this.font, levelText, textX, this.topPos + 66, TITLE_COLOR, false);
+        drawCenteredText(guiGraphics, levelText, barCenterX, this.topPos + XP_TEXT_Y, GuiTextColors.TITLE);
 
-        guiGraphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF000000);
-        int fill = (int) (barWidth * progress);
+        guiGraphics.fill(barX, barY, barX + XP_BAR_W, barY + XP_BAR_H, 0xFF000000);
+        int fill = (int) (XP_BAR_W * progress);
         if (fill > 0) {
-            guiGraphics.fill(barX, barY, barX + fill, barY + barHeight, 0xFF80FF20);
+            guiGraphics.fill(barX, barY, barX + fill, barY + XP_BAR_H, 0xFF80FF20);
         }
 
         Component rangeText = Component.translatable("gui.iska_utils.collecting_crate.range", menu.getEffectiveRange());
-        int rangeX = this.leftPos + this.imageWidth / 2 - this.font.width(rangeText) / 2;
-        guiGraphics.text(this.font, rangeText, rangeX, this.topPos + 88, 0x606060, false);
+        drawCenteredText(guiGraphics, rangeText, barCenterX, this.topPos + RANGE_TEXT_Y, GuiTextColors.SECONDARY);
     }
 
     private void renderActionButtons(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
@@ -307,6 +324,6 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
     protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int titleWidth = this.font.width(this.title);
         int titleX = (this.imageWidth - titleWidth) / 2;
-        guiGraphics.text(this.font, this.title, titleX, 8, TITLE_COLOR, false);
+        guiGraphics.text(this.font, this.title, titleX, 8, GuiTextColors.TITLE, false);
     }
 }

@@ -30,6 +30,7 @@ import net.unfamily.iskautils.guide.TheRootsTitleTagCompiler;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.ClientEvents;
+import net.unfamily.iskautils.fluid.ModFluids;
 import net.unfamily.iskautils.command.CommandItemLoader;
 import net.unfamily.iskautils.data.VectorCharmData;
 import net.unfamily.iskautils.events.LootEvents;
@@ -97,6 +98,8 @@ public class IskaUtils {
             // Register menu screens (client-only, MOD bus)
             modEventBus.addListener(ClientModEvents::registerMenuScreens);
             modEventBus.addListener(ClientModEvents::registerEntityRenderers);
+            modEventBus.addListener(net.neoforged.neoforge.client.event.RegisterFluidModelsEvent.class,
+                    net.unfamily.iskautils.client.fluid.ModFluidClient::registerFluidModels);
 
         }
 
@@ -146,9 +149,10 @@ public class IskaUtils {
 
         // Register blocks and items
         ModBlocks.register(modEventBus);
-        net.unfamily.iskautils.fluid.ModFluids.register(modEventBus);
-        net.unfamily.iskautils.crafting.ModFactoryRecipes.register(modEventBus);
         ModItems.register(modEventBus);
+        ModFluids.FLUID_TYPES.register(modEventBus);
+        ModFluids.FLUIDS.register(modEventBus);
+        net.unfamily.iskautils.crafting.ModFactoryRecipes.register(modEventBus);
         ModMobEffects.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         net.unfamily.iskautils.entity.ModEntities.register(modEventBus);
