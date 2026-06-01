@@ -2,12 +2,11 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     " A ",
-    "IBI",
+    "ABA",
     " A "
   ],
   "key": {
-    "A": "minecraft:iron_axe",
-    "I": "#c:ingots/iron",
+    "A": "#c:gems/quartz",
     "B": "iska_utils:base_module"
   },
   "result": {

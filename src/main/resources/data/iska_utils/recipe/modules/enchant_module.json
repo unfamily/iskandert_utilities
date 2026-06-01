@@ -1,15 +1,10 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " L ",
-    "LBL",
-    " E "
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "iska_utils:base_module",
+    "minecraft:enchanting_table",
+    "iska_utils:entropic_agglomeration"
   ],
-  "key": {
-    "L": "#c:gems/lapis",
-    "B": "iska_utils:base_module",
-    "E": "minecraft:enchanting_table"
-  },
   "result": {
     "id": "iska_utils:enchant_module",
     "count": 1

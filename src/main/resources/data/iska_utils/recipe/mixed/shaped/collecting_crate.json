@@ -2,20 +2,14 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "OEO",
-    "OCO",
-    "OOO"
+    "ABA",
+    "ACA",
+    "ABA"
   ],
   "key": {
-    "O": {
-      "item": "minecraft:obsidian"
-    },
-    "E": {
-      "item": "minecraft:ender_pearl"
-    },
-    "C": {
-      "item": "minecraft:chest"
-    }
+    "A": "#c:ingots/iron",
+    "B": "#minecraft:planks",
+    "C": "minecraft:ender_eye"
   },
   "result": {
     "id": "iska_utils:collecting_crate",

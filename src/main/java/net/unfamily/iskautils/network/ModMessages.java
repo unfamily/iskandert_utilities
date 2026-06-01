@@ -156,6 +156,16 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.CollectingCrateXpDepositC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.CollectingCrateXpDepositC2SPacket::handle
         );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.CollectingCrateSizeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.CollectingCrateSizeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.CollectingCrateSizeC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.CollectingCratePreviewToggleC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.CollectingCratePreviewToggleC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.CollectingCratePreviewToggleC2SPacket::handle
+        );
         
         // Register Smart Timer Redstone Mode C2S Packet (Client to Server)
         registrar.playToServer(
@@ -2072,6 +2082,16 @@ public class ModMessages {
     public static void sendCollectingCrateXpDepositPacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.CollectingCrateXpDepositC2SPacket(pos));
+    }
+
+    public static void sendCollectingCrateSizePacket(BlockPos pos, int direction, boolean increment, int amount) {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.CollectingCrateSizeC2SPacket(pos, direction, increment, amount));
+    }
+
+    public static void sendCollectingCratePreviewTogglePacket(BlockPos pos, boolean enable) {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.CollectingCratePreviewToggleC2SPacket(pos, enable));
     }
     
 } 

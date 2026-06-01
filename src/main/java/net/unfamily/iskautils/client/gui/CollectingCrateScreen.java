@@ -1,7 +1,10 @@
 package net.unfamily.iskautils.client.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -13,11 +16,16 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskautils.network.packet.CollectingCratePreviewToggleC2SPacket;
+import net.unfamily.iskautils.network.packet.CollectingCrateSizeC2SPacket;
 import net.unfamily.iskautils.util.CollectingCrateMode;
 import net.unfamily.iskautils.util.ExperienceFluidMath;
+import org.lwjgl.glfw.GLFW;
 
 public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCrateMenu> {
 
@@ -35,25 +43,43 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
     private static final int CLOSE_BUTTON_Y = 5;
 
-    /** Free panel between storage grid and player inventory (GUI-relative). */
-    private static final int PANEL_LEFT = 28;
-    private static final int PANEL_RIGHT = 168;
-    private static final int PANEL_BOTTOM = 138;
-
+    /** XP bar + labels: right of module slot so text does not overlap it. */
+    private static final int XP_PANEL_X = CollectingCrateMenu.MODULE_SLOT_X + 16 + 12;
     private static final int XP_TEXT_Y = 80;
     private static final int XP_BAR_Y = 92;
     private static final int XP_BAR_W = 100;
     private static final int XP_BAR_H = 5;
-    private static final int RANGE_TEXT_Y = 101;
+    private static final int SIZE_LABEL_Y = 101;
 
-    private static final int BUTTON_GAP = 2;
-    /** Right column: four buttons stacked above the deposit (empty bottle) button. */
-    private static final int BUTTONS_X = PANEL_RIGHT - BUTTON_SIZE - 6;
-    private static final int BUTTONS_ANCHOR_BOTTOM = PANEL_BOTTOM - 4;
+    /** Area size buttons — preview left-aligned with slots; arrows to the right on the same row. */
+    private static final int BUTTON_W = 14;
+    private static final int BUTTON_H = 12;
+    private static final int GAP = 3;
+    private static final int ARROW_GROUP_WIDTH = 3 * BUTTON_W + 2 * GAP;
+    private static final int PREVIEW_BUTTON_X = CollectingCrateMenu.STORAGE_SLOTS_X;
+    private static final int PREVIEW_BUTTON_W = 46;
+    private static final int ARROW_GROUP_LEFT_X = PREVIEW_BUTTON_X + PREVIEW_BUTTON_W + GAP;
+    private static final int ROW1_Y = 114;
+    private static final int ROW2_Y = 130;
+    private static final int PREVIEW_BUTTON_Y = ROW2_Y;
+
+    private static final String TOOLTIP_LEFT_CLICK = "gui.iska_utils.collecting_crate.tooltip.left_click";
+    private static final String TOOLTIP_RIGHT_CLICK = "gui.iska_utils.collecting_crate.tooltip.right_click";
+    private static final String TOOLTIP_SHIFT_10 = "gui.iska_utils.collecting_crate.tooltip.shift_10";
+    private static final String TOOLTIP_ALT_CTRL_5 = "gui.iska_utils.collecting_crate.tooltip.alt_ctrl_5";
+
+    private static final int BUTTON_GAP = CollectingCrateMenu.ACTION_BUTTON_GAP;
 
     private static final ItemStack GHOST_RANGE_MODULE = new ItemStack(ModItems.RANGE_MODULE.get());
 
     private Button closeButton;
+    private Button buttonUp;
+    private Button buttonLeft;
+    private Button buttonRight;
+    private Button buttonDepth;
+    private Button buttonPreview;
+    private boolean previewButtonShowsHide;
+
     private int collectButtonX;
     private int collectButtonY;
     private int depositButtonX;
@@ -80,12 +106,84 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
             }
         }).bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE).build();
         addRenderableWidget(closeButton);
+
+        int upX = leftPos + ARROW_GROUP_LEFT_X + ARROW_GROUP_WIDTH / 2 - BUTTON_W / 2;
+        buttonUp = Button.builder(Component.literal("\u2191"), b -> sendSize(0, true))
+                .bounds(upX, topPos + ROW1_Y, BUTTON_W, BUTTON_H)
+                .build();
+        buttonLeft = Button.builder(Component.literal("\u2190"), b -> sendSize(1, true))
+                .bounds(leftPos + ARROW_GROUP_LEFT_X, topPos + ROW2_Y, BUTTON_W, BUTTON_H)
+                .build();
+        buttonDepth = Button.builder(Component.literal("-"), b -> sendSize(3, true))
+                .bounds(leftPos + ARROW_GROUP_LEFT_X + BUTTON_W + GAP, topPos + ROW2_Y, BUTTON_W, BUTTON_H)
+                .build();
+        buttonRight = Button.builder(Component.literal("\u2192"), b -> sendSize(2, true))
+                .bounds(leftPos + ARROW_GROUP_LEFT_X + 2 * (BUTTON_W + GAP), topPos + ROW2_Y, BUTTON_W, BUTTON_H)
+                .build();
+        addRenderableWidget(buttonUp);
+        addRenderableWidget(buttonLeft);
+        addRenderableWidget(buttonDepth);
+        addRenderableWidget(buttonRight);
+
+        buttonPreview = Button.builder(Component.translatable("gui.iska_utils.collecting_crate.preview"), b -> togglePreview())
+                .bounds(leftPos + PREVIEW_BUTTON_X, topPos + PREVIEW_BUTTON_Y, PREVIEW_BUTTON_W, BUTTON_H)
+                .build();
+        buttonPreview.setTooltip(Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.preview.tooltip")));
+        addRenderableWidget(buttonPreview);
+
         layoutActionButtons();
+        updateButtonTooltips();
+        previewButtonShowsHide = menu.isPreviewEnabled();
+        updatePreviewButtonLabel();
+        if (menu.isPreviewEnabled()) {
+            BlockPos pos = menu.getSyncedBlockPos();
+            if (!pos.equals(BlockPos.ZERO)) {
+                ClientPacketDistributor.sendToServer(new CollectingCratePreviewToggleC2SPacket(pos, true));
+            }
+        }
+    }
+
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        updateButtonTooltips();
+        if (menu.isPreviewEnabled() != previewButtonShowsHide) {
+            previewButtonShowsHide = menu.isPreviewEnabled();
+            updatePreviewButtonLabel();
+        }
+    }
+
+    private void updatePreviewButtonLabel() {
+        if (buttonPreview != null) {
+            buttonPreview.setMessage(Component.translatable(
+                    previewButtonShowsHide ? "gui.iska_utils.generic.hide" : "gui.iska_utils.collecting_crate.preview"));
+        }
+    }
+
+    private static Tooltip tooltipWithValue(String valueKey, int value) {
+        Component full = Component.translatable(valueKey, value)
+                .append(Component.literal("\n"))
+                .append(Component.translatable(TOOLTIP_LEFT_CLICK))
+                .append(Component.literal("\n"))
+                .append(Component.translatable(TOOLTIP_RIGHT_CLICK))
+                .append(Component.literal("\n"))
+                .append(Component.translatable(TOOLTIP_SHIFT_10))
+                .append(Component.literal("\n"))
+                .append(Component.translatable(TOOLTIP_ALT_CTRL_5));
+        return Tooltip.create(full);
+    }
+
+    private void updateButtonTooltips() {
+        buttonUp.setTooltip(tooltipWithValue("gui.iska_utils.collecting_crate.tooltip.up_value", menu.getAreaHeight()));
+        buttonLeft.setTooltip(tooltipWithValue("gui.iska_utils.collecting_crate.tooltip.left_value", menu.getSizeLeft()));
+        buttonRight.setTooltip(tooltipWithValue("gui.iska_utils.collecting_crate.tooltip.right_value", menu.getSizeRight()));
+        buttonDepth.setTooltip(tooltipWithValue("gui.iska_utils.collecting_crate.tooltip.behind_value", menu.getAreaDepth()));
     }
 
     private void layoutActionButtons() {
-        int buttonX = this.leftPos + BUTTONS_X;
-        int y = this.topPos + BUTTONS_ANCHOR_BOTTOM - BUTTON_SIZE;
+        int buttonX = this.leftPos + CollectingCrateMenu.actionButtonsColumnX();
+        int y = this.topPos + CollectingCrateMenu.actionButtonsColumnStartY()
+                + CollectingCrateMenu.ACTION_BUTTONS_STACK_HEIGHT - BUTTON_SIZE;
 
         depositButtonX = buttonX;
         depositButtonY = y;
@@ -98,6 +196,42 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         y -= BUTTON_SIZE + BUTTON_GAP;
         collectButtonX = buttonX;
         collectButtonY = y;
+    }
+
+    private int modifierStepAmount() {
+        if (minecraft == null || minecraft.getWindow() == null) {
+            return 1;
+        }
+        var window = minecraft.getWindow();
+        if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT)) {
+            return 10;
+        }
+        if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT)) {
+            return 5;
+        }
+        return 1;
+    }
+
+    private void sendSize(int direction, boolean increment) {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        ClientPacketDistributor.sendToServer(new CollectingCrateSizeC2SPacket(pos, direction, increment, modifierStepAmount()));
+    }
+
+    private void togglePreview() {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        playButtonSound();
+        boolean enabling = !menu.isPreviewEnabled();
+        MarkRenderer.getInstance().clearBillboardMarkersForOwner(pos);
+        ClientPacketDistributor.sendToServer(new CollectingCratePreviewToggleC2SPacket(pos, enabling));
+        previewButtonShowsHide = enabling;
+        updatePreviewButtonLabel();
     }
 
     private void drawCenteredText(GuiGraphicsExtractor guiGraphics, Component text, int centerX, int y, int color) {
@@ -125,21 +259,27 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         int levels = ExperienceFluidMath.displayLevelsFromMb(mb);
         double progress = ExperienceFluidMath.displayProgressFromMb(mb);
 
-        int barX = this.leftPos + PANEL_LEFT;
+        int panelX = this.leftPos + XP_PANEL_X;
         int barY = this.topPos + XP_BAR_Y;
-        int barCenterX = barX + XP_BAR_W / 2;
+        int barCenterX = panelX + XP_BAR_W / 2;
 
         Component levelText = Component.translatable("gui.iska_utils.collecting_crate.xp_levels", levels);
         drawCenteredText(guiGraphics, levelText, barCenterX, this.topPos + XP_TEXT_Y, GuiTextColors.TITLE);
 
-        guiGraphics.fill(barX, barY, barX + XP_BAR_W, barY + XP_BAR_H, 0xFF000000);
+        guiGraphics.fill(panelX, barY, panelX + XP_BAR_W, barY + XP_BAR_H, 0xFF000000);
         int fill = (int) (XP_BAR_W * progress);
         if (fill > 0) {
-            guiGraphics.fill(barX, barY, barX + fill, barY + XP_BAR_H, 0xFF80FF20);
+            guiGraphics.fill(panelX, barY, panelX + fill, barY + XP_BAR_H, 0xFF80FF20);
         }
 
-        Component rangeText = Component.translatable("gui.iska_utils.collecting_crate.range", menu.getEffectiveRange());
-        drawCenteredText(guiGraphics, rangeText, barCenterX, this.topPos + RANGE_TEXT_Y, GuiTextColors.SECONDARY);
+        Component sizeLabel = Component.translatable(
+                "gui.iska_utils.collecting_crate.size",
+                menu.getSizeLeft(),
+                menu.getSizeRight(),
+                menu.getAreaWidth(),
+                menu.getAreaHeight(),
+                menu.getAreaDepth());
+        drawCenteredText(guiGraphics, sizeLabel, barCenterX, this.topPos + SIZE_LABEL_Y, GuiTextColors.TITLE);
     }
 
     private void renderActionButtons(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
@@ -276,8 +416,43 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         return mouseX >= x && mouseX <= x + BUTTON_SIZE && mouseY >= y && mouseY <= y + BUTTON_SIZE;
     }
 
+    private static boolean isInArrowBounds(int x, int y, int left, int top) {
+        return x >= left && x < left + BUTTON_W && y >= top && y < top + BUTTON_H;
+    }
+
+    private void playGuiClickSound() {
+        if (minecraft != null && minecraft.getSoundManager() != null) {
+            AbstractWidget.playButtonClickSound(minecraft.getSoundManager());
+        }
+    }
+
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
+        if (event.button() == 1) {
+            int x = (int) event.x();
+            int y = (int) event.y();
+            int upX = leftPos + ARROW_GROUP_LEFT_X + ARROW_GROUP_WIDTH / 2 - BUTTON_W / 2;
+            if (isInArrowBounds(x, y, upX, topPos + ROW1_Y)) {
+                playGuiClickSound();
+                sendSize(0, false);
+                return true;
+            }
+            if (isInArrowBounds(x, y, leftPos + ARROW_GROUP_LEFT_X, topPos + ROW2_Y)) {
+                playGuiClickSound();
+                sendSize(1, false);
+                return true;
+            }
+            if (isInArrowBounds(x, y, leftPos + ARROW_GROUP_LEFT_X + BUTTON_W + GAP, topPos + ROW2_Y)) {
+                playGuiClickSound();
+                sendSize(3, false);
+                return true;
+            }
+            if (isInArrowBounds(x, y, leftPos + ARROW_GROUP_LEFT_X + 2 * (BUTTON_W + GAP), topPos + ROW2_Y)) {
+                playGuiClickSound();
+                sendSize(2, false);
+                return true;
+            }
+        }
         if (handleMouseClicked(event.x(), event.y(), event.button())) {
             return true;
         }

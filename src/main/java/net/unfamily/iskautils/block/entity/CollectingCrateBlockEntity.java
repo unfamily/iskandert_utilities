@@ -1,10 +1,12 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.ItemStackWithSlot;
 import net.minecraft.world.MenuProvider;
@@ -14,7 +16,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TypedEntityData;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
@@ -33,6 +37,7 @@ import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.fluid.ModFluids;
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.util.CollectingCrateAreaLogic;
 import net.unfamily.iskautils.util.CollectingCrateMode;
 import net.unfamily.iskautils.util.ExperienceFluidMath;
 
@@ -42,9 +47,16 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
     public static final TagKey<net.minecraft.world.level.material.Fluid> EXPERIENCE_FLUID_TAG =
             TagKey.create(Registries.FLUID, Identifier.fromNamespaceAndPath("c", "experience"));
 
+    private static final int MIN_HEIGHT_OR_DEPTH = 0;
+
     private CollectingCrateMode collectMode = CollectingCrateMode.BOTH;
     private int redstoneMode = 0;
     private int tickCounter = 0;
+    private int sizeLeft = 2;
+    private int sizeRight = 2;
+    private int sizeHeight = 4;
+    private int sizeDepth = 4;
+    private boolean previewEnabled = false;
 
     private final ItemStackHandler storageHandler;
     private final ItemStackHandler moduleHandler;
@@ -64,6 +76,7 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         this.moduleHandler = new ItemStackHandler(1) {
             @Override
             protected void onContentsChanged(int slot) {
+                clampSizesToMax();
                 setChanged();
             }
 
@@ -140,11 +153,98 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         return moduleHandler.getStackInSlot(0).getCount();
     }
 
-    public int getEffectiveRange() {
+    public int getSizeLeft() {
+        return sizeLeft;
+    }
+
+    public int getSizeRight() {
+        return sizeRight;
+    }
+
+    public int getSizeHeight() {
+        return sizeHeight;
+    }
+
+    public int getSizeDepth() {
+        return sizeDepth;
+    }
+
+    public boolean isPreviewEnabled() {
+        return previewEnabled;
+    }
+
+    public void setPreviewEnabled(boolean previewEnabled) {
+        if (this.previewEnabled != previewEnabled) {
+            this.previewEnabled = previewEnabled;
+            setChanged();
+        }
+    }
+
+    /** Max block count per axis (width/height/depth) from installed range modules. */
+    public int getMaxBlockCount() {
         int modules = Math.min(countRangeModules(), Config.collectingCrateRangeUpgradeMax);
         int base = Config.collectingCrateBaseRange;
-        int max = Config.collectingCrateMaxRange;
-        return Math.min(base + (modules * 3) / 2, max);
+        int cap = Config.collectingCrateMaxRange;
+        if (modules <= 0 || Config.collectingCrateRangeUpgradeMax <= 0) {
+            return base;
+        }
+        return base + (modules * (cap - base)) / Config.collectingCrateRangeUpgradeMax;
+    }
+
+    public int getMaxHeight() {
+        return Math.max(MIN_HEIGHT_OR_DEPTH, getMaxBlockCount() - 1);
+    }
+
+    public int getMaxDepth() {
+        return Math.max(MIN_HEIGHT_OR_DEPTH, getMaxBlockCount() - 1);
+    }
+
+    /** Max sum of left+right offsets (inclusive width = this + 1). */
+    public int getMaxWidth() {
+        return Math.max(MIN_HEIGHT_OR_DEPTH, getMaxBlockCount() - 1);
+    }
+
+    /** Direction: 0=up, 1=left, 2=right, 3=depth. amount=1,5,10. */
+    public void adjustSize(int direction, boolean increment, int amount) {
+        int delta = increment ? amount : -amount;
+        switch (direction) {
+            case 0 -> sizeHeight = Math.max(MIN_HEIGHT_OR_DEPTH, Math.min(getMaxHeight(), sizeHeight + delta));
+            case 1 -> {
+                int newR = Math.max(0, Math.min(getMaxWidth() - sizeLeft, sizeRight + delta));
+                sizeRight = newR;
+                if (sizeLeft + sizeRight < 0) {
+                    sizeLeft = 0;
+                    sizeRight = 0;
+                }
+            }
+            case 2 -> {
+                int newL = Math.max(0, Math.min(getMaxWidth() - sizeRight, sizeLeft + delta));
+                sizeLeft = newL;
+                if (sizeLeft + sizeRight < 0) {
+                    sizeLeft = 0;
+                    sizeRight = 0;
+                }
+            }
+            case 3 -> sizeDepth = Math.max(MIN_HEIGHT_OR_DEPTH, Math.min(getMaxDepth(), sizeDepth + delta));
+            default -> {}
+        }
+        setChanged();
+    }
+
+    public void clampSizesToMax() {
+        sizeLeft = Math.max(0, Math.min(getMaxWidth() - sizeRight, sizeLeft));
+        sizeRight = Math.max(0, Math.min(getMaxWidth() - sizeLeft, sizeRight));
+        sizeHeight = Math.max(MIN_HEIGHT_OR_DEPTH, Math.min(getMaxHeight(), sizeHeight));
+        sizeDepth = Math.max(MIN_HEIGHT_OR_DEPTH, Math.min(getMaxDepth(), sizeDepth));
+    }
+
+    public AABB getCollectionAABB() {
+        if (level == null) {
+            return new AABB(worldPosition);
+        }
+        Direction facing = level.getBlockState(worldPosition).getValue(HorizontalDirectionalBlock.FACING);
+        return CollectingCrateAreaLogic.getCollectionVolumeAABB(
+                worldPosition, facing, sizeLeft, sizeRight, sizeHeight, sizeDepth);
     }
 
     public int getStoredXpMb() {
@@ -193,18 +293,42 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
             return;
         }
         for (int i = 0; i < storageHandler.getSlots(); i++) {
-            Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(),
-                    storageHandler.getStackInSlot(i));
+            ItemStack stack = storageHandler.getStackInSlot(i);
+            if (!stack.isEmpty()) {
+                Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
+                storageHandler.setStackInSlot(i, ItemStack.EMPTY);
+            }
         }
         for (int i = 0; i < moduleHandler.getSlots(); i++) {
-            Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(),
-                    moduleHandler.getStackInSlot(i));
+            ItemStack stack = moduleHandler.getStackInSlot(i);
+            if (!stack.isEmpty()) {
+                Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
+                moduleHandler.setStackInSlot(i, ItemStack.EMPTY);
+            }
         }
-        int points = getStoredXpPoints();
-        if (points > 0) {
-            ExperienceOrb.award((ServerLevel) level, worldPosition.getCenter(), points);
-            experienceTank.setFluid(FluidStack.EMPTY);
+        setChanged();
+    }
+
+    /** Block item drop: keeps stored XP; inventory is dropped separately in {@link #drops()}. */
+    public ItemStack createDropStack(BlockState state) {
+        ItemStack stack = new ItemStack(state.getBlock());
+        int storedMb = experienceTank.getFluidAmount();
+        if (storedMb > 0) {
+            CompoundTag data = new CompoundTag();
+            data.putInt("StoredXpMb", storedMb);
+            stack.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(getType(), data));
         }
+        return stack;
+    }
+
+    /** Restores XP tank from a broken-crate item tag (NeoForge 26 {@code TypedEntityData} on place). */
+    public void loadStoredXpFromDropTag(CompoundTag tag) {
+        tag.getInt("StoredXpMb").ifPresent(mb -> {
+            if (mb > 0 && ModFluids.CONDENSED_KNOWLEDGE != null) {
+                experienceTank.setFluid(new FluidStack(ModFluids.CONDENSED_KNOWLEDGE.getSource(), mb));
+                setChanged();
+            }
+        });
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, CollectingCrateBlockEntity blockEntity) {
@@ -250,10 +374,7 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         if (experienceTank.getSpace() < ExperienceFluidMath.mbPerXpPoint()) {
             return;
         }
-        int range = getEffectiveRange();
-        AABB area = AABB.encapsulatingFullBlocks(
-                pos.offset(-range, -range, -range),
-                pos.offset(range, range, range));
+        AABB area = getCollectionAABB();
         List<ExperienceOrb> orbs = level.getEntitiesOfClass(ExperienceOrb.class, area);
         for (ExperienceOrb orb : orbs) {
             if (experienceTank.getSpace() < ExperienceFluidMath.mbPerXpPoint()) {
@@ -274,10 +395,7 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
     }
 
     private void collectItems(Level level, BlockPos pos) {
-        int range = getEffectiveRange();
-        AABB area = AABB.encapsulatingFullBlocks(
-                pos.offset(-range, -range, -range),
-                pos.offset(range, range, range));
+        AABB area = getCollectionAABB();
         List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class, area);
         if (items.isEmpty()) {
             return;
@@ -330,6 +448,11 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         if (redstoneMode == 3) {
             redstoneMode = 4;
         }
+        sizeLeft = input.getIntOr("SizeLeft", sizeLeft);
+        sizeRight = input.getIntOr("SizeRight", sizeRight);
+        sizeHeight = input.getIntOr("SizeHeight", sizeHeight);
+        sizeDepth = input.getIntOr("SizeDepth", sizeDepth);
+        previewEnabled = input.getBooleanOr("PreviewEnabled", false);
         for (ItemStackWithSlot entry : input.listOrEmpty("Storage", ItemStackWithSlot.CODEC)) {
             if (entry.slot() >= 0 && entry.slot() < storageHandler.getSlots()) {
                 storageHandler.setStackInSlot(entry.slot(), entry.stack());
@@ -340,6 +463,7 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
                 moduleHandler.setStackInSlot(0, entry.stack());
             }
         }
+        clampSizesToMax();
         int mb = input.getIntOr("StoredXpMb", 0);
         if (mb > 0 && ModFluids.CONDENSED_KNOWLEDGE != null) {
             experienceTank.setFluid(new FluidStack(ModFluids.CONDENSED_KNOWLEDGE.getSource(), mb));
@@ -362,6 +486,11 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         output.putInt("CollectMode", collectMode.getId());
         output.putInt("RedstoneMode", redstoneMode);
         output.putInt("StoredXpMb", experienceTank.getFluidAmount());
+        output.putInt("SizeLeft", sizeLeft);
+        output.putInt("SizeRight", sizeRight);
+        output.putInt("SizeHeight", sizeHeight);
+        output.putInt("SizeDepth", sizeDepth);
+        output.putBoolean("PreviewEnabled", previewEnabled);
 
         ValueOutput.TypedOutputList<ItemStackWithSlot> storageList = output.list("Storage", ItemStackWithSlot.CODEC);
         for (int i = 0; i < storageHandler.getSlots(); i++) {

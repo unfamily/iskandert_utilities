@@ -1,13 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "GFG",
-    "FBF",
-    "GFG"
+    " A ",
+    "ABA",
+    " A "
   ],
   "key": {
-    "G": "#c:ingots/gold",
-    "F": "minecraft:rabbit_foot",
+    "A": "#c:gems/lapis",
     "B": "iska_utils:base_module"
   },
   "result": {

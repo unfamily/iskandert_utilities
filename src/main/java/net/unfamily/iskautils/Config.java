@@ -1077,7 +1077,7 @@ public class Config {
 
     private static final ModConfigSpec.IntValue COLLECTING_CRATE_BASE_RANGE = BUILDER
             .comment("Base cubic collection radius in blocks without range modules")
-            .defineInRange("002_collectingCrateBaseRange", 4, 1, 64);
+            .defineInRange("002_collectingCrateBaseRange", 5, 1, 64);
 
     private static final ModConfigSpec.IntValue COLLECTING_CRATE_MAX_RANGE = BUILDER
             .comment("Maximum cubic collection radius with range modules installed")
