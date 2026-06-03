@@ -15,5 +15,6 @@ Ground blocks for mob-farming setups (Mob Grinding Utils–style):
 - **Druidic Podzol** — blessed; light animal spawns; natural spread on dirt/podzol only; no decay in darkness.
 - **Graveyard Soil** — heals undead on top; separate from spread and agglomeration.
 - **Agglomerations** — instant patch conversion (radius 7); override natural rules and can replace the other mod soil types; graveyard soil blocks the patch.
+- **Entropic Egg** — use on a mob to collect its spawn egg; see that page.
 
 <SubPages icons={true} alphabetical={false} />

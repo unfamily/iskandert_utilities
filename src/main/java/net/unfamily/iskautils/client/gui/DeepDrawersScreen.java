@@ -44,7 +44,7 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     private static final int HANDLE_SIZE = 8;
 
     private static final int SCROLLBAR_X = 180;
-    private static final int BUTTON_UP_Y = DeepDrawersMenu.STORAGE_SLOTS_Y;
+    private static final int BUTTON_UP_Y = DeepDrawersMenu.STORAGE_SLOTS_VISIBLE_Y;
     private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE;
     private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
 
@@ -80,10 +80,9 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
                 topPos + DeepDrawersMenu.SEARCH_BAR_Y,
                 DeepDrawersMenu.SEARCH_BAR_WIDTH,
                 DeepDrawersMenu.SEARCH_BAR_HEIGHT,
-                Component.translatable("gui.iska_utils.deep_drawers.search"));
+                Component.empty());
         searchBox.setMaxLength(256);
         searchBox.setBordered(true);
-        searchBox.setHint(Component.translatable("gui.iska_utils.deep_drawers.search_hint"));
         searchBox.setResponder(text -> searchDebounceTicks = SEARCH_DEBOUNCE_TICKS);
         addRenderableWidget(searchBox);
 
@@ -99,11 +98,13 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     @Override
     public void containerTick() {
         super.containerTick();
-        if (!menu.isSearchFilterActive()) {
+        if (menu.isSearchFilterActive()) {
+            scrollOffset = menu.getEffectiveScrollOffset();
+        } else {
             int menuOffset = menu.getScrollOffset();
             if (menuOffset != this.scrollOffset) {
                 LOGGER.debug("DeepDrawersScreen.containerTick: Syncing scrollOffset from menu: {} -> {}", this.scrollOffset, menuOffset);
-                this.scrollOffset = menuOffset;
+                scrollOffset = menuOffset;
             }
         }
         if (searchDebounceTicks > 0) {
@@ -125,6 +126,15 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         }
         menu.applySearchFilter(query, registryAccess);
         scrollOffset = menu.getEffectiveScrollOffset();
+        syncSearchStateToServer();
+    }
+
+    private void syncSearchStateToServer() {
+        if (searchBox == null) {
+            return;
+        }
+        String query = searchBox.getValue() == null ? "" : searchBox.getValue();
+        ModMessages.sendDeepDrawersSearchStatePacket(menu.getBlockPos(), query, menu.getEffectiveScrollOffset());
     }
 
     @Override
@@ -136,10 +146,6 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     }
 
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        if (!shouldShowScrollbar()) {
-            return;
-        }
-
         int guiX = leftPos;
         int guiY = topPos;
 
@@ -156,15 +162,13 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
 
         int maxScrollOffset = menu.getMaxScrollOffset();
-        if (maxScrollOffset > 0) {
-            double scrollRatio = (double) scrollOffset / maxScrollOffset;
-            int handleY = guiY + SCROLLBAR_Y + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        double scrollRatio = maxScrollOffset > 0 ? (double) scrollOffset / maxScrollOffset : 0.0;
+        int handleY = guiY + SCROLLBAR_Y + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
 
-            boolean handleHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE
-                    && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-            int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-            guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        }
+        boolean handleHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE
+                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
+        int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
+        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
     }
 
     @Override
@@ -173,14 +177,19 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         int titleWidth = font.width(titleComponent);
         int titleX = (imageWidth - titleWidth) / 2;
         guiGraphics.drawString(font, titleComponent, titleX, 7, 0x404040, false);
+
+        Component capacity = Component.translatable(
+                "gui.iska_utils.deep_drawers.capacity",
+                menu.getDisplayedOccupiedCount(),
+                menu.getDisplayedMaxSlots());
+        int capacityWidth = font.width(capacity);
+        int capacityX = (imageWidth - capacityWidth) / 2;
+        guiGraphics.drawString(font, capacity, capacityX, DeepDrawersMenu.CAPACITY_LABEL_Y, 0x404040, false);
     }
 
     @Override
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        int menuOffset = menu.getScrollOffset();
-        if (menuOffset != scrollOffset) {
-            scrollOffset = menuOffset;
-        }
+        scrollOffset = menu.getEffectiveScrollOffset();
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         renderTooltip(guiGraphics, mouseX, mouseY);
     }
@@ -220,15 +229,7 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    private boolean shouldShowScrollbar() {
-        return menu.getScrollContentSize() > DeepDrawersMenu.VISIBLE_SLOTS;
-    }
-
     private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        if (!shouldShowScrollbar()) {
-            return false;
-        }
-
         int guiX = leftPos;
         int guiY = topPos;
 
@@ -248,34 +249,24 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     }
 
     private boolean handleHandleClick(double mouseX, double mouseY) {
-        if (!shouldShowScrollbar()) {
-            return false;
-        }
-
         int guiX = leftPos;
         int guiY = topPos;
         int maxScrollOffset = menu.getMaxScrollOffset();
-        if (maxScrollOffset > 0) {
-            double scrollRatio = (double) scrollOffset / maxScrollOffset;
-            int handleY = guiY + SCROLLBAR_Y + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        double scrollRatio = maxScrollOffset > 0 ? (double) scrollOffset / maxScrollOffset : 0.0;
+        int handleY = guiY + SCROLLBAR_Y + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
 
-            if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE
-                    && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
-                isDraggingHandle = true;
-                dragStartY = (int) mouseY;
-                dragStartScrollOffset = scrollOffset;
-                playButtonSound();
-                return true;
-            }
+        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE
+                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+            isDraggingHandle = true;
+            dragStartY = (int) mouseY;
+            dragStartScrollOffset = scrollOffset;
+            playButtonSound();
+            return true;
         }
         return false;
     }
 
     private boolean handleScrollbarClick(double mouseX, double mouseY) {
-        if (!shouldShowScrollbar()) {
-            return false;
-        }
-
         int guiX = leftPos;
         int guiY = topPos;
 
@@ -311,16 +302,13 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (button == 0 && isDraggingHandle && shouldShowScrollbar()) {
+        if (button == 0 && isDraggingHandle) {
             int deltaY = (int) mouseY - dragStartY;
             int maxScrollOffset = menu.getMaxScrollOffset();
-
-            if (maxScrollOffset > 0) {
-                float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
-                int newScrollOffset = dragStartScrollOffset + (int) (scrollRatio * maxScrollOffset);
-                newScrollOffset = Math.max(0, Math.min(maxScrollOffset, newScrollOffset));
-                setScrollOffset(newScrollOffset);
-            }
+            float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            int newScrollOffset = dragStartScrollOffset + (int) (scrollRatio * maxScrollOffset);
+            newScrollOffset = Math.max(0, Math.min(maxScrollOffset, newScrollOffset));
+            setScrollOffset(newScrollOffset);
             return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
@@ -349,7 +337,7 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     }
 
     private boolean scrollUpSilent() {
-        if (shouldShowScrollbar() && scrollOffset > 0) {
+        if (scrollOffset > 0) {
             int newOffset = Math.max(0, scrollOffset - DeepDrawersMenu.COLUMNS);
             setScrollOffset(newOffset);
             return true;
@@ -359,8 +347,7 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
 
     private boolean scrollDownSilent() {
         int maxScrollOffset = menu.getMaxScrollOffset();
-
-        if (shouldShowScrollbar() && scrollOffset < maxScrollOffset) {
+        if (scrollOffset < maxScrollOffset) {
             int newOffset = Math.min(maxScrollOffset, scrollOffset + DeepDrawersMenu.COLUMNS);
             setScrollOffset(newOffset);
             return true;
@@ -371,7 +358,8 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     private void setScrollOffset(int offset) {
         scrollOffset = offset;
         if (menu.isSearchFilterActive()) {
-            menu.setEffectiveScrollOffset(offset);
+            menu.setFilterScrollOffset(offset);
+            syncSearchStateToServer();
         } else {
             menu.setScrollOffset(offset);
             ModMessages.sendDeepDrawersScrollPacket(menu.getBlockPos(), offset);

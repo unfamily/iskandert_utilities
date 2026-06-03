@@ -15,6 +15,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.client.FlameVisibilityClient;
+import net.unfamily.iskautils.util.BlazingAltarFlamePlacement;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -31,6 +32,14 @@ public class BurningFlameBlock extends Block {
 
     public BurningFlameBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
+        if (BlazingAltarFlamePlacement.isBrazierFlameLightSuppressed(level, pos)) {
+            return 0;
+        }
+        return state.getLightEmission();
     }
 
     @Override

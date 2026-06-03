@@ -9,6 +9,8 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.BlazingAltarBlockEntity;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -16,10 +18,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Removes blazing-altar flames one chunk per server tick (nearest to farthest) to avoid stalls
- * when placement and removal compete on large radii.
+ * Removes blazing-altar flames one chunk per server tick (nearest to farthest).
+ * Jobs are tied to altar {@link BlazingAltarBlockEntity#getInstanceId()}, not position alone.
  */
 public final class BlazingAltarExtinguishJobs {
+    /** Break cleanup jobs never update a block entity (avoids ghost state on replace). */
+    public static final long NO_OWNER_INSTANCE = 0L;
+
     private static final Map<ServerLevel, List<Job>> JOBS_BY_LEVEL = new ConcurrentHashMap<>();
 
     public enum FinishMode {
@@ -30,17 +35,30 @@ public final class BlazingAltarExtinguishJobs {
     private BlazingAltarExtinguishJobs() {}
 
     public static void enqueueFromAltar(ServerLevel level, BlazingAltarBlockEntity altar, FinishMode finishMode) {
-        enqueue(level, altar.getBlockPos(), altar.getChunkRadius(), altar.isGroundOnly(), finishMode);
+        enqueue(
+                level,
+                altar.getBlockPos(),
+                altar.getChunkRadius(),
+                altar.isGroundOnly(),
+                finishMode,
+                altar.getInstanceId());
     }
 
-    public static boolean hasJob(ServerLevel level, BlockPos altarPos) {
+    public static void enqueueBreakCleanup(ServerLevel level, BlockPos altarPos, int chunkRadius, boolean groundOnly) {
+        enqueue(level, altarPos, chunkRadius, groundOnly, FinishMode.FLAMES_ONLY, NO_OWNER_INSTANCE);
+    }
+
+    public static boolean hasJob(ServerLevel level, BlockPos altarPos, long ownerInstanceId) {
+        if (ownerInstanceId == NO_OWNER_INSTANCE) {
+            return false;
+        }
         List<Job> jobs = JOBS_BY_LEVEL.get(level);
         if (jobs == null) {
             return false;
         }
         synchronized (jobs) {
             for (Job job : jobs) {
-                if (job.altarPos.equals(altarPos)) {
+                if (job.ownerInstanceId == ownerInstanceId && job.altarPos.equals(altarPos)) {
                     return true;
                 }
             }
@@ -48,35 +66,65 @@ public final class BlazingAltarExtinguishJobs {
         return false;
     }
 
-    public static void cancelForAltar(ServerLevel level, BlockPos altarPos) {
+    @org.jetbrains.annotations.Nullable
+    public static int[] getProgress(ServerLevel level, BlockPos altarPos, long ownerInstanceId) {
+        if (ownerInstanceId == NO_OWNER_INSTANCE) {
+            return null;
+        }
+        List<Job> jobs = JOBS_BY_LEVEL.get(level);
+        if (jobs == null) {
+            return null;
+        }
+        synchronized (jobs) {
+            for (Job job : jobs) {
+                if (job.ownerInstanceId == ownerInstanceId && job.altarPos.equals(altarPos)) {
+                    return new int[] {job.chunkIndex, job.chunks.size()};
+                }
+            }
+        }
+        return null;
+    }
+
+    public static void cancelForAltar(ServerLevel level, BlockPos altarPos, long ownerInstanceId) {
         List<Job> jobs = JOBS_BY_LEVEL.get(level);
         if (jobs == null) {
             return;
         }
         synchronized (jobs) {
-            jobs.removeIf(job -> job.altarPos.equals(altarPos));
+            jobs.removeIf(job -> job.altarPos.equals(altarPos)
+                    && (job.ownerInstanceId == ownerInstanceId || job.ownerInstanceId == NO_OWNER_INSTANCE));
             if (jobs.isEmpty()) {
                 JOBS_BY_LEVEL.remove(level, jobs);
             }
         }
     }
 
-    public static void enqueue(ServerLevel level, BlockPos altarPos, int chunkRadius, boolean groundOnly, FinishMode finishMode) {
+    public static void enqueue(
+            ServerLevel level,
+            BlockPos altarPos,
+            int chunkRadius,
+            boolean groundOnly,
+            FinishMode finishMode,
+            long ownerInstanceId) {
         List<ChunkPos> chunks = BlazingAltarChunks.collectOrdered(altarPos, chunkRadius);
         if (chunks.isEmpty()) {
-            if (finishMode == FinishMode.FINISH_ALTAR) {
-                applyAltarFinish(level, altarPos, 0);
+            if (finishMode == FinishMode.FINISH_ALTAR && ownerInstanceId != NO_OWNER_INSTANCE) {
+                applyAltarFinish(level, altarPos, ownerInstanceId, 0);
             }
             return;
         }
-        BlockEntity be = level.getBlockEntity(altarPos);
-        if (be instanceof BlazingAltarBlockEntity altar) {
+        BlazingAltarBlockEntity altar = resolveOwner(level, altarPos, ownerInstanceId);
+        if (altar != null) {
             altar.setExtinguishProgress(0, chunks.size());
         }
         List<Job> jobs = JOBS_BY_LEVEL.computeIfAbsent(level, ignored -> new ArrayList<>());
         synchronized (jobs) {
-            jobs.removeIf(job -> job.altarPos.equals(altarPos));
-            jobs.add(new Job(altarPos, chunks, groundOnly, finishMode));
+            if (ownerInstanceId != NO_OWNER_INSTANCE) {
+                jobs.removeIf(job -> job.altarPos.equals(altarPos) && job.ownerInstanceId == ownerInstanceId);
+            } else {
+                jobs.removeIf(job -> job.altarPos.equals(altarPos) && job.ownerInstanceId == NO_OWNER_INSTANCE);
+            }
+            jobs.add(new Job(altarPos, chunks, groundOnly, finishMode, ownerInstanceId));
         }
     }
 
@@ -101,9 +149,21 @@ public final class BlazingAltarExtinguishJobs {
         }
     }
 
-    private static void applyAltarFinish(ServerLevel level, BlockPos altarPos, int normalFlamesRemoved) {
+    @Nullable
+    private static BlazingAltarBlockEntity resolveOwner(ServerLevel level, BlockPos altarPos, long ownerInstanceId) {
+        if (ownerInstanceId == NO_OWNER_INSTANCE) {
+            return null;
+        }
         BlockEntity be = level.getBlockEntity(altarPos);
-        if (be instanceof BlazingAltarBlockEntity altar) {
+        if (be instanceof BlazingAltarBlockEntity altar && altar.getInstanceId() == ownerInstanceId) {
+            return altar;
+        }
+        return null;
+    }
+
+    private static void applyAltarFinish(ServerLevel level, BlockPos altarPos, long ownerInstanceId, int normalFlamesRemoved) {
+        BlazingAltarBlockEntity altar = resolveOwner(level, altarPos, ownerInstanceId);
+        if (altar != null) {
             altar.completeExtinguishJob(normalFlamesRemoved);
         }
     }
@@ -113,15 +173,22 @@ public final class BlazingAltarExtinguishJobs {
         private final List<ChunkPos> chunks;
         private final boolean groundOnly;
         private final FinishMode finishMode;
+        private final long ownerInstanceId;
 
         private int chunkIndex;
         private int normalFlamesRemoved;
 
-        private Job(BlockPos altarPos, List<ChunkPos> chunks, boolean groundOnly, FinishMode finishMode) {
+        private Job(
+                BlockPos altarPos,
+                List<ChunkPos> chunks,
+                boolean groundOnly,
+                FinishMode finishMode,
+                long ownerInstanceId) {
             this.altarPos = altarPos;
             this.chunks = chunks;
             this.groundOnly = groundOnly;
             this.finishMode = finishMode;
+            this.ownerInstanceId = ownerInstanceId;
         }
 
         private boolean isDone() {
@@ -146,8 +213,8 @@ public final class BlazingAltarExtinguishJobs {
                 }
             }
             chunkIndex++;
-            BlockEntity be = level.getBlockEntity(altarPos);
-            if (be instanceof BlazingAltarBlockEntity altar) {
+            BlazingAltarBlockEntity altar = resolveOwner(level, altarPos, ownerInstanceId);
+            if (altar != null) {
                 altar.setExtinguishProgress(chunkIndex, chunks.size());
             }
         }
@@ -170,8 +237,8 @@ public final class BlazingAltarExtinguishJobs {
         }
 
         private void finish(ServerLevel level) {
-            if (finishMode == FinishMode.FINISH_ALTAR) {
-                applyAltarFinish(level, altarPos, normalFlamesRemoved);
+            if (finishMode == FinishMode.FINISH_ALTAR && ownerInstanceId != NO_OWNER_INSTANCE) {
+                applyAltarFinish(level, altarPos, ownerInstanceId, normalFlamesRemoved);
             }
         }
     }

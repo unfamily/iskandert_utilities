@@ -243,6 +243,9 @@ public class ModItems {
     public static final DeferredItem<Item> ENTROPIC_AGGLOMERATION = ITEMS.register("entropic_agglomeration",
             () -> new net.unfamily.iskautils.item.custom.EntropicAgglomerationItem(ITEM_PROPERTIES));
 
+    public static final DeferredItem<Item> ENTROPIC_EGG = ITEMS.register("entropic_egg",
+            () -> new net.unfamily.iskautils.item.custom.EntropicEggItem(ITEM_PROPERTIES));
+
     public static final DeferredItem<Item> DRUIDIC_AGGLOMERATION = ITEMS.register("druidic_agglomeration",
             () -> new net.unfamily.iskautils.item.custom.DruidicAgglomerationItem(ITEM_PROPERTIES));
 

@@ -10,8 +10,12 @@
     "A": {
       "tag": "c:obsidians"
     },
-    "B": "iska_utils:drop_of_entropy",
-    "C": "minecraft:glowstone"
+    "B": {
+      "item": "iska_utils:drop_of_entropy"
+    },
+    "C": {
+      "item": "minecraft:glowstone"
+    }
   },
   "result": {
     "id": "iska_utils:blazing_altar",

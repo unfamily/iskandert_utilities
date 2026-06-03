@@ -1405,6 +1405,27 @@ public class ModMessages {
      * Updates the scroll offset for the Deep Drawers GUI
      */
     @OnlyIn(Dist.CLIENT)
+    public static void sendDeepDrawersSearchStatePacket(BlockPos pos, String query, int filterScrollOffset) {
+        try {
+            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) {
+                return;
+            }
+            server.execute(() -> {
+                try {
+                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        new net.unfamily.iskautils.network.packet.DeepDrawersSearchStateC2SPacket(
+                                pos, query, filterScrollOffset).handle(player);
+                    }
+                } catch (Exception ignored) {
+                }
+            });
+        } catch (Exception ignored) {
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawersScrollPacket(BlockPos pos, int scrollOffset) {
         LOGGER.info("Client: Sending DeepDrawersScrollPacket: pos={}, offset={}", pos, scrollOffset);
         // Simplified implementation for single player compatibility

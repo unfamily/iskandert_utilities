@@ -47,9 +47,14 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     public static final int SEARCH_BAR_HEIGHT = 18;
     public static final int SEARCH_BAR_WIDTH = COLUMNS * 18;
     
-    // Storage slots: 9 columns x 5 rows (same Y as before; only the 6th row was removed from the GUI)
+    // Storage slots: 9 columns x 5 rows; texture row 0 removed (search bar). Anchor Y unchanged.
     public static final int STORAGE_SLOTS_X = 15;
     public static final int STORAGE_SLOTS_Y = 31;
+    /** First visible row index in the texture grid (row 0 is gone). */
+    public static final int STORAGE_FIRST_VISIBLE_ROW = 1;
+    public static final int STORAGE_SLOTS_VISIBLE_Y = STORAGE_SLOTS_Y + STORAGE_FIRST_VISIBLE_ROW * 18;
+    /** Between last storage row and player inventory (menu-relative). */
+    public static final int CAPACITY_LABEL_Y = STORAGE_SLOTS_VISIBLE_Y + VISIBLE_ROWS * 18 + 4;
     
     // Player inventory: 9 columns x 3 rows + hotbar - texture moved 7px right, +2px down
     public static final int PLAYER_INVENTORY_X = 15;    // Original 8 + 7px right (texture change)
@@ -59,6 +64,7 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     private int scrollOffset = 0;
     private boolean searchFilterActive = false;
     private int filterScrollOffset = 0;
+    private String lastSearchQuery = "";
     private final java.util.List<Integer> filteredOccupiedIndices = new java.util.ArrayList<>();
     private final int totalSlots;
     
@@ -70,7 +76,9 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     private static final int BLOCK_POS_X_INDEX = 1;
     private static final int BLOCK_POS_Y_INDEX = 2;
     private static final int BLOCK_POS_Z_INDEX = 3;
-    private static final int DATA_COUNT = 4;
+    private static final int OCCUPIED_COUNT_INDEX = 4;
+    private static final int MAX_SLOTS_INDEX = 5;
+    private static final int DATA_COUNT = 6;
     
     // Flag to prevent client from reading stale containerData after local update
     private int ignoreContainerDataTicks = 0;
@@ -106,6 +114,8 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                     case BLOCK_POS_X_INDEX -> blockPos.getX();
                     case BLOCK_POS_Y_INDEX -> blockPos.getY();
                     case BLOCK_POS_Z_INDEX -> blockPos.getZ();
+                    case OCCUPIED_COUNT_INDEX -> blockEntity.getOccupiedSlotsCount();
+                    case MAX_SLOTS_INDEX -> blockEntity.getMaxSlots();
                     default -> 0;
                 };
             }
@@ -195,7 +205,7 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             for (int col = 0; col < COLUMNS; col++) {
                 int slotIndex = col + row * COLUMNS;
                 int xPos = STORAGE_SLOTS_X + col * 18;
-                int yPos = STORAGE_SLOTS_Y + row * 18;
+                int yPos = STORAGE_SLOTS_Y + (STORAGE_FIRST_VISIBLE_ROW + row) * 18;
                 // Create slot that reads from offsetItemHandler (automatically adds scrollOffset)
                 // Block insertion from GUI by overriding mayPlace
                 // Limit extraction to 1 item at a time by overriding remove
@@ -276,12 +286,15 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         ItemStack stackInSlot = clicked.getItem();
         ItemStack original = stackInSlot.copy();
 
-        // Storage grid (0..53): extract 1 directly into player inventory (no cursor).
+        // Storage grid: extract 1 directly into player inventory (no cursor).
         if (this.blockEntity != null
                 && this.blockEntity.getLevel() != null
                 && !this.blockEntity.getLevel().isClientSide()
                 && index >= 0
                 && index < VISIBLE_SLOTS) {
+            if (searchFilterActive && offsetItemHandler.getStackInSlot(index).isEmpty()) {
+                return ItemStack.EMPTY;
+            }
             ItemStack extracted = this.offsetItemHandler.extractItem(index, 1, false);
             if (extracted.isEmpty()) {
                 return ItemStack.EMPTY;
@@ -298,6 +311,7 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                 sendAllSlotsToClient(serverPlayer);
             }
+            refreshSearchFilterIfActive();
             return original;
         }
 
@@ -354,6 +368,16 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                     sendAllSlotsToClient(serverPlayer);
                 }
+                return;
+            }
+        }
+        if (searchFilterActive
+                && slotId >= 0
+                && slotId < VISIBLE_SLOTS
+                && offsetItemHandler.getStackInSlot(slotId).isEmpty()
+                && clickType == net.minecraft.world.inventory.ClickType.PICKUP) {
+            ItemStack carried = this.getCarried();
+            if (carried.isEmpty()) {
                 return;
             }
         }
@@ -518,7 +542,10 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
      * Called from both client (immediate update) and server (packet response)
      */
     public void setScrollOffset(int offset) {
-        int maxOffset = Math.max(0, totalSlots - VISIBLE_SLOTS);
+        if (searchFilterActive) {
+            return;
+        }
+        int maxOffset = getEffectiveMaxScrollOffset();
         int oldOffset = this.scrollOffset;
         this.scrollOffset = Math.max(0, Math.min(offset, maxOffset));
         
@@ -582,7 +609,7 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             // Only sync from containerData if we're not ignoring it AND if the server value is different
             // IMPORTANT: Never sync from server=0 to client non-zero value, as this would reset the scroll
             // The server should always have the correct value after the packet is processed
-            if (this.ignoreContainerDataTicks == 0) {
+            if (this.ignoreContainerDataTicks == 0 && !searchFilterActive) {
                 int serverOffset = this.containerData.get(SCROLL_OFFSET_INDEX);
                 // Only sync if server offset is different AND not a reset to 0 when we have a non-zero value
                 if (serverOffset != this.scrollOffset) {
@@ -765,6 +792,23 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     public int getTotalSlots() {
         return totalSlots;
     }
+
+    /** Occupied slot count for capacity label (same values as shift+click status). */
+    public int getDisplayedOccupiedCount() {
+        if (blockEntity != null) {
+            return blockEntity.getOccupiedSlotsCount();
+        }
+        return Math.max(0, containerData.get(OCCUPIED_COUNT_INDEX));
+    }
+
+    /** Max slot count for capacity label (same values as shift+click status). */
+    public int getDisplayedMaxSlots() {
+        if (blockEntity != null) {
+            return blockEntity.getMaxSlots();
+        }
+        int synced = containerData.get(MAX_SLOTS_INDEX);
+        return synced > 0 ? synced : DeepDrawersBlockEntity.DEFAULT_MAX_SLOTS;
+    }
     
     /**
      * Gets the maximum scroll offset
@@ -783,12 +827,19 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
 
     public void setEffectiveScrollOffset(int offset) {
         if (searchFilterActive) {
-            int max = getEffectiveMaxScrollOffset();
-            filterScrollOffset = Math.max(0, Math.min(offset, max));
-            refreshVisibleSlotsClient();
+            setFilterScrollOffset(offset);
         } else {
             setScrollOffset(offset);
         }
+    }
+
+    public void setFilterScrollOffset(int offset) {
+        if (!searchFilterActive) {
+            return;
+        }
+        int max = getEffectiveMaxScrollOffset();
+        filterScrollOffset = Math.max(0, Math.min(offset, max));
+        refreshVisibleSlots();
     }
 
     public int getScrollContentSize() {
@@ -808,13 +859,26 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     /**
      * Client-side name filter (case-insensitive): visible grid shows only matching occupied slots.
      */
+    private void refreshSearchFilterIfActive() {
+        if (!searchFilterActive || blockEntity == null || blockEntity.getLevel() == null) {
+            return;
+        }
+        int preserved = filterScrollOffset;
+        applySearchFilter(lastSearchQuery, blockEntity.getLevel().registryAccess());
+        setFilterScrollOffset(Math.min(preserved, getEffectiveMaxScrollOffset()));
+    }
+
     public void applySearchFilter(@NotNull String query, @NotNull HolderLookup.Provider registryAccess) {
         String trimmed = query == null ? "" : query.trim();
+        lastSearchQuery = trimmed;
         if (trimmed.isEmpty()) {
             searchFilterActive = false;
             filteredOccupiedIndices.clear();
             filterScrollOffset = 0;
-            refreshVisibleSlotsClient();
+            refreshVisibleSlots();
+            if (blockEntity != null && blockEntity.getLevel() != null && !blockEntity.getLevel().isClientSide()) {
+                updateViewHandler();
+            }
             return;
         }
         searchFilterActive = true;
@@ -831,13 +895,10 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 }
             }
         }
-        refreshVisibleSlotsClient();
+        refreshVisibleSlots();
     }
 
-    public void refreshVisibleSlotsClient() {
-        if (blockEntity != null && blockEntity.getLevel() != null && !blockEntity.getLevel().isClientSide()) {
-            return;
-        }
+    public void refreshVisibleSlots() {
         for (int i = 0; i < VISIBLE_SLOTS && i < slots.size(); i++) {
             Slot slot = slots.get(i);
             if (slot != null) {

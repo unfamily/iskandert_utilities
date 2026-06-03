@@ -6,9 +6,15 @@
     "AAA"
   ],
   "key": {
-    "A": "minecraft:tnt",
-    "B": "iska_utils:entropy_crystal",
-    "C": "iska_utils:unstable_entropy_catalyst"
+    "A": {
+      "item": "minecraft:tnt"
+    },
+    "B": {
+      "item": "iska_utils:entropy_crystal"
+    },
+    "C": {
+      "item": "iska_utils:unstable_entropy_catalyst"
+    }
   },
   "result": {
     "id": "iska_utils:entropy_tnt",

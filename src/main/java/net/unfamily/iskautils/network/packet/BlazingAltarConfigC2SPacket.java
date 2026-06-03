@@ -14,6 +14,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.BlazingAltarBlockEntity;
+import net.unfamily.iskautils.block.entity.BlazingAltarBlockSync;
 import net.unfamily.iskautils.client.gui.BlazingAltarMenu;
 import net.unfamily.iskautils.data.FlameVisionData;
 
@@ -67,7 +68,7 @@ public record BlazingAltarConfigC2SPacket(BlockPos pos, int action, boolean flam
                     return;
                 }
             }
-            altar.updateFlameVisual();
+            BlazingAltarBlockSync.sync(altar);
             player.serverLevel().playSound(
                     null,
                     altar.getBlockPos(),

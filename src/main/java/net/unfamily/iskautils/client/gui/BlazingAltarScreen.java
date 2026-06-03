@@ -16,6 +16,7 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.BlazingAltarSpawnMode;
+import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.client.FlameVisibilityClient;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket;
@@ -278,11 +279,20 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
                 && menu.getRedstoneMode() != 4
                 && menu.getPlacementChunkTotal() > 0) {
             int current = Math.min(menu.getPlacementChunkProgress() + 1, menu.getPlacementChunkTotal());
+            String progressKey = hasPlacerFuel()
+                    ? "gui.iska_utils.blazing_altar.placement_chunks_progress"
+                    : "gui.iska_utils.blazing_altar.spawn_prevention_chunks_progress";
             drawCenteredProgressLine(graphics, Component.translatable(
-                    "gui.iska_utils.blazing_altar.placement_chunks_progress",
+                    progressKey,
                     current,
                     menu.getPlacementChunkTotal()));
         }
+    }
+
+    private boolean hasPlacerFuel() {
+        ItemStack stack = menu.getSlot(BlazingAltarMenu.PLACER_SLOT_INDEX).getItem();
+        return !stack.isEmpty()
+                && (stack.is(ModItems.BURNING_BRAZIER.get()) || stack.is(ModItems.CURSED_CANDLE.get()));
     }
 
     private void drawCenteredProgressLine(GuiGraphics graphics, Component text) {
