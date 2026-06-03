@@ -6,8 +6,8 @@
     "ABA"
   ],
   "key": {
-    "A": "#c:ingots/iron",
-    "B": "#c:gems/diamond",
+    "A": "#c:gems/diamond",
+    "B": "#c:ingots/iron",
     "C": "#c:storage_blocks/iron"
   },
   "result": {

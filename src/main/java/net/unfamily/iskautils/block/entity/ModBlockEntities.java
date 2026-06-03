@@ -240,6 +240,15 @@ public class ModBlockEntities {
                         return null;
                     }
             );
+
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    TEMPORAL_OVERCLOCKER_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof TemporalOverclockerBlockEntity overclocker
+                                    ? overclocker.getItemTransferHandler()
+                                    : null);
+
             // Register energy capability for Structure Placer Machine
             event.registerBlockEntity(
                     Capabilities.Energy.BLOCK,

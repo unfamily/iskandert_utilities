@@ -189,6 +189,11 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
             }
 
             @Override
+            public int getMaxStackSize(ItemStack stack) {
+                return 1;
+            }
+
+            @Override
             public void setChanged() {
                 super.setChanged();
                 blockEntity.onMachineSlotChanged(UPGRADE_SLOT_INDEX);

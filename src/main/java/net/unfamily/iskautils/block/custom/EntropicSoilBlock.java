@@ -2,8 +2,12 @@ package net.unfamily.iskautils.block.custom;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -33,7 +37,13 @@ public class EntropicSoilBlock extends BaseEntityBlock {
 
     @Override
     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        EntropicSoilUtil.trySlowSpread(level, pos, random, Config.entropicSoilSlowSpreadChance);
+        EntropicSoilUtil.trySlowSpread(
+                level,
+                pos,
+                random,
+                Config.entropicSoilSlowSpreadChance,
+                Config.entropicSoilEdgeSpreadChance,
+                Config.entropicSoilDirtSpreadChance);
     }
 
     @Override
@@ -67,6 +77,31 @@ public class EntropicSoilBlock extends BaseEntityBlock {
         if (level instanceof ServerLevel server) {
             EntropicSoilBlockEntity.onSoilPlaced(server, pos);
         }
+    }
+
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block,
+                                   net.minecraft.world.level.redstone.Orientation orientation, boolean isMoving) {
+        super.neighborChanged(state, level, pos, block, orientation, isMoving);
+        if (level instanceof ServerLevel server) {
+            EntropicSoilBlockEntity.requestAcceleratedWave(server, pos);
+        }
+    }
+
+    @Override
+    protected BlockState updateShape(
+            BlockState state,
+            LevelReader level,
+            ScheduledTickAccess ticks,
+            BlockPos pos,
+            Direction directionToNeighbour,
+            BlockPos neighbourPos,
+            BlockState neighbourState,
+            RandomSource random) {
+        if (level instanceof ServerLevel server) {
+            EntropicSoilBlockEntity.requestAcceleratedWave(server, pos);
+        }
+        return super.updateShape(state, level, ticks, pos, directionToNeighbour, neighbourPos, neighbourState, random);
     }
 
     @Nullable

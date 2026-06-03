@@ -178,11 +178,12 @@ dependencies {
         compileOnly files('libs/pattern_crafter-1.0.0.0.0-neoforge-1.21.1.jar')
     }
 
-    // Iskandert Library: local 1.5.0.0.0 when built, otherwise CurseForge 1.4.0.0.1
-    if (file('libs/iska_lib-1.6.0.0.0.jar').exists()) {
-        implementation files('libs/iska_lib-1.6.0.0.0.jar')
+    // Iskandert Library: remote by default; for local lib work: -PiskaLibUseLocal=true (jar in libs/)
+    def iskaLibLocalJar = file('libs/iska_lib-1.6.0.0.0.jar')
+    if (project.findProperty('iskaLibUseLocal')?.toString()?.toBoolean() && iskaLibLocalJar.exists()) {
+        implementation files(iskaLibLocalJar)
     } else {
-        implementation "curse.maven:iskanderts-library-1516512:8146529"
+        implementation "curse.maven:iskanderts-library-1516512:8179862"
     }
 
     // MixinExtras for advanced mixin features

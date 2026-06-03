@@ -12,7 +12,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.util.random.Weighted;
 import net.minecraft.util.random.WeightedList;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
@@ -89,7 +91,8 @@ public final class EntropicSoilSpawnRules {
             for (Weighted<MobSpawnSettings.SpawnerData> weighted : biome.value().getMobSettings().getMobs(category).unwrap()) {
                 MobSpawnSettings.SpawnerData data = weighted.value();
                 EntityType<?> entityType = data.type();
-                if (entityType == null || !isHostile(entityType) || isBlockedByDeny(level, soilPos, entityType)) {
+                if (entityType == null || !isHostile(entityType) || isBlockedByDeny(level, soilPos, entityType)
+                        || !isWithinSpawnMaxHealth(entityType, level)) {
                     continue;
                 }
                 pool.add(data, weighted.weight());
@@ -101,7 +104,8 @@ public final class EntropicSoilSpawnRules {
                 continue;
             }
             EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(rule.entityId());
-            if (entityType == null || !isHostile(entityType) || isBlockedByDeny(level, soilPos, entityType)) {
+            if (entityType == null || !isHostile(entityType) || isBlockedByDeny(level, soilPos, entityType)
+                    || !isWithinSpawnMaxHealth(entityType, level)) {
                 continue;
             }
             pool.add(new MobSpawnSettings.SpawnerData(entityType, 1, 4), 100);
@@ -140,5 +144,24 @@ public final class EntropicSoilSpawnRules {
 
     private static boolean isHostile(EntityType<?> type) {
         return type.getCategory() == MobCategory.MONSTER;
+    }
+
+    /** Uses base entity max health before difficulty scaling; 0 config disables the cap. */
+    public static boolean isWithinSpawnMaxHealth(EntityType<?> type, ServerLevel level) {
+        int cap = Config.entropicSoilSpawnMaxHealth;
+        if (cap <= 0) {
+            return true;
+        }
+        if (!(type.create(level, EntitySpawnReason.MOB_SUMMONED) instanceof Mob mob)) {
+            return false;
+        }
+        float maxHp = mob.getMaxHealth();
+        mob.discard();
+        return maxHp <= cap;
+    }
+
+    public static boolean isWithinSpawnMaxHealth(Mob mob) {
+        int cap = Config.entropicSoilSpawnMaxHealth;
+        return cap <= 0 || mob.getMaxHealth() <= cap;
     }
 }

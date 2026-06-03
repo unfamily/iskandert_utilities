@@ -103,8 +103,10 @@ public class StructurePlacerMachineBlock extends BaseEntityBlock {
     protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
+            machineEntity.setShowPreview(false);
             machineEntity.drops();
         }
+        net.unfamily.iskautils.util.PreviewAreaSupport.onPreviewOwnerBlockBroken(level, pos, state);
         super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
     

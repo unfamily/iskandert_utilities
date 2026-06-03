@@ -2,19 +2,23 @@
 navigation:
   title: Entropic Agglomeration
   icon: iska_utils:entropic_agglomeration
-  parent: hubs/entropy_materials.md
-  position: 3
+  parent: hubs/mobfarm_soils.md
+  position: 4
 item_ids:
   - iska_utils:entropic_agglomeration
 categories:
-  - Entropy materials
+  - MobFarm Soils
 ---
 # Entropic Agglomeration
 
 <ItemImage id="iska_utils:entropic_agglomeration" />
 
-## What it does
+## Use
 
-Right-click **grass** or **dirt** to convert a connected patch into **Entropic Soil** (circular area, radius 7). Only blocks linked through valid grass/dirt on the same level are affected. Consumes one agglomeration per use.
+Right-click **connected ground** to convert a linked patch into **Entropic Soil** (circular area, radius 7). Consumes one agglomeration per use.
 
-See **Entropic terrain** → **Entropic Soil** for light, darkness spawns, and restoring entropic dirt with **Drop of Entropy**.
+## Effect
+
+- Ignores natural spread rules: converts vanilla grass/dirt and **existing entropic or druidic** mod soil in the patch.
+- **Graveyard Soil** is not part of the patch (blocks conversion through it).
+- For light, darkness spawns, redstone waves, and Entropic Dirt, see **Entropic Soil**.

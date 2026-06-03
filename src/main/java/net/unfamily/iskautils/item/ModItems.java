@@ -256,7 +256,7 @@ public class ModItems {
     public static final DeferredItem<Item> ENTROPIC_RING = ITEMS.registerItem(
             "entropic_ring", EntropicRingItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> ENTROPIC_CLOCK = ITEMS.registerItem(
-            "entropic_clock", EntropicClockItem::new, p -> p.stacksTo(1));
+            "entropic_clock", EntropicClockItem::new, p -> p.stacksTo(64));
     public static final DeferredItem<Item> ANCIENT_STAR = ITEMS.registerItem(
             "ancient_star", AncientStarItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> RUNIC_DICE = ITEMS.registerItem(
@@ -414,10 +414,11 @@ public class ModItems {
     public static final DeferredItem<BlockItem> TIME_ALTERER = ITEMS.registerSimpleBlockItem(ModBlocks.TIME_ALTERER);
 
     public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER = ITEMS.registerItem("temporal_overclocker",
-            props -> new TemporalOverclockerBlockItem(ModBlocks.TEMPORAL_OVERCLOCKER.get(), props), Item.Properties::useBlockDescriptionPrefix);
+            props -> new TemporalOverclockerBlockItem(ModBlocks.TEMPORAL_OVERCLOCKER.get(), props),
+            p -> p.useBlockDescriptionPrefix().stacksTo(64));
 
     public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER_CHIPSET = ITEMS.registerItem("temporal_overclocker_chip",
-            TemporalOverclockerChipsetItem::new, UnaryOperator.identity());
+            TemporalOverclockerChipsetItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<Item> ANGEL_BLOCK = ITEMS.registerItem("angel_block",
             props -> new AngelBlockItem(ModBlocks.ANGEL_BLOCK.get(), props), p -> p.useBlockDescriptionPrefix().stacksTo(64));
@@ -495,8 +496,7 @@ public class ModItems {
             props -> new TranslatedTooltipBlockItem(
                     ModBlocks.GRAVEYARD_SOIL.get(),
                     props,
-                    "tooltip.iska_utils.graveyard_soil.desc0",
-                    "tooltip.iska_utils.graveyard_soil.desc1"),
+                    "tooltip.iska_utils.graveyard_soil.desc0"),
             UnaryOperator.identity());
 
     public static final DeferredItem<BlockItem> DRUIDIC_PODZOL = ITEMS.registerItem(

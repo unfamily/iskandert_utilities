@@ -21,4 +21,4 @@ Use on a **chest** to destroy it and spawn a dormant **Mimic** (requires the **A
 
 **Suspicious Delivery** (only when **Artifacts** is installed): replaces the **Drop of Entropy** primitive reward in the same weight slot. Without Artifacts, you still receive **Drop of Entropy** instead.
 
-Not recyclable into entropy and not a delivery artifact.
+Can be recycled into **Drop of Entropy** at the Factory or in a crafting table (same tag as other delivery artifacts).

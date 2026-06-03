@@ -57,7 +57,7 @@ public final class DruidicAgglomerationSpreadHandler {
             List<BlockPos> ring = job.rings.poll();
             if (ring != null) {
                 for (BlockPos pos : ring) {
-                    if (DruidicPodzolUtil.convertToDruidicPodzol(level, pos)) {
+                    if (DruidicPodzolUtil.convertToDruidicPodzolForAgglomeration(level, pos)) {
                         level.sendParticles(
                                 ParticleTypes.HAPPY_VILLAGER,
                                 pos.getX() + 0.5D,

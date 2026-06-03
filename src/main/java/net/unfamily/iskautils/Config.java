@@ -429,8 +429,8 @@ public class Config {
             .define("060_hoe_crop_power_enabled", true);
 
     private static final ModConfigSpec.BooleanValue ENTROPIC_HOE_REQUIRE_MATURE = BUILDER
-            .comment("Require mature crop for hoe reset; if false, immature crops reset to age 0.")
-            .define("061_hoe_require_mature_crop", true);
+            .comment("If false, entropic hoe resets immature crops to age 0 (works alongside harvest mods). If true, only mature crops.")
+            .define("061_hoe_require_mature_crop", false);
 
     private static final ModConfigSpec.BooleanValue ENTROPIC_AXE_STRIP_ENABLED = BUILDER
             .comment("Enable log stripping on entropic axe and paxel (off-hand strip, sneak + inventory strip).")
@@ -716,19 +716,29 @@ public class Config {
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> ENTROPIC_SOIL_SPAWN_DENY = BUILDER
             .comment("Deny list for entropic soil spawns (wins over allow). Same format as allow.")
-            .defineList("004_entropic_soil_spawn_deny", java.util.Collections.emptyList(), obj -> obj instanceof String);
+            .defineList("004_entropic_soil_spawn_deny",
+                    java.util.Collections.singletonList("#minecraft:is_overworld;mowziesmobs:grottol"),
+                    obj -> obj instanceof String);
 
     private static final ModConfigSpec.BooleanValue ENTROPIC_SOIL_REDSTONE_ACCEL_ENABLED = BUILDER
-            .comment("If true, redstone signal on a connected entropic soil network accelerates the next spawn once per cycle.")
+            .comment("If true, redstone on the network uses fast per-block spawn waves (Mob Grinding Utils dreadful dirt style).")
             .define("005_entropic_soil_redstone_accel_enabled", true);
 
     private static final ModConfigSpec.IntValue ENTROPIC_SOIL_REDSTONE_ACCEL_MIN = BUILDER
-            .comment("Minimum accelerated spawn countdown when redstone triggers (random range).")
-            .defineInRange("006_entropic_soil_redstone_accel_min_ticks", 1, 1, 720000);
+            .comment("Minimum ticks between accelerated spawn waves while redstone is active (random range).")
+            .defineInRange("006_entropic_soil_redstone_accel_min_ticks", 20, 1, 720000);
 
     private static final ModConfigSpec.IntValue ENTROPIC_SOIL_REDSTONE_ACCEL_MAX = BUILDER
-            .comment("Maximum accelerated spawn countdown when redstone triggers (random range).")
-            .defineInRange("007_entropic_soil_redstone_accel_max_ticks", 5, 1, 720000);
+            .comment("Maximum ticks between accelerated spawn waves while redstone is active (random range).")
+            .defineInRange("007_entropic_soil_redstone_accel_max_ticks", 60, 1, 720000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_ACCEL_MOB_CAP = BUILDER
+            .comment("Max hostile mobs within 5 blocks (horizontal) and 2 vertical of each soil before that block skips a spawn try.")
+            .defineInRange("008_entropic_soil_accel_mob_cap", 8, 0, 64);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_SPAWN_MAX_HEALTH = BUILDER
+            .comment("Maximum max-health (HP) for mobs spawned on entropic soil. 0 disables the cap.")
+            .defineInRange("009_entropic_soil_spawn_max_health", 60, 0, 10000);
 
     private static final ModConfigSpec.DoubleValue ENTROPIC_EMPOWERMENT_DAMAGE_BONUS = BUILDER
             .comment("Bonus outgoing damage fraction for mobs with Entropic Empowerment (0.25 = +25%).")
@@ -739,8 +749,16 @@ public class Config {
             .defineInRange("011_entropic_empowerment_damage_reduction", 0.20D, 0.0D, 1.0D);
 
     private static final ModConfigSpec.IntValue ENTROPIC_SOIL_SLOW_SPREAD_CHANCE = BUILDER
-            .comment("Random-tick spread denominator for entropic soil onto vanilla grass/dirt (1/N chance per random tick, grass uses ~24).")
+            .comment("Random-tick spread denominator onto vanilla grass/dirt only (1/N per random tick). Not used by agglomeration.")
             .defineInRange("020_entropic_soil_slow_spread_chance", 24, 1, 1000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_EDGE_SPREAD_CHANCE = BUILDER
+            .comment("Random-tick spread denominator when target grass/dirt is adjacent to entropic soil (faster border creep). Not used by agglomeration.")
+            .defineInRange("021_entropic_soil_edge_spread_chance", 8, 1, 1000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SOIL_DIRT_SPREAD_CHANCE = BUILDER
+            .comment("Random-tick spread denominator when reclaiming adjacent Entropic Dirt back to Entropic Soil (1/N per random tick; lower = faster). Not used by agglomeration.")
+            .defineInRange("021a_entropic_soil_dirt_spread_chance", 3, 1, 1000);
 
     private static final ModConfigSpec.IntValue ENTROPIC_SOIL_TO_DIRT_MIN = BUILDER
             .comment("Minimum ticks in light before entropic soil turns into entropic dirt (random per block, 20 = 1s).")
@@ -749,6 +767,14 @@ public class Config {
     private static final ModConfigSpec.IntValue ENTROPIC_SOIL_TO_DIRT_MAX = BUILDER
             .comment("Maximum ticks in light before entropic soil turns into entropic dirt (random per block, 100 = 5s).")
             .defineInRange("023_entropic_soil_to_dirt_max_ticks", 100, 1, 720000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_DIRT_TO_VANILLA_MIN = BUILDER
+            .comment("Minimum ticks in light before entropic dirt reverts to vanilla dirt (random per block, 1200 = 1 min).")
+            .defineInRange("025_entropic_dirt_to_vanilla_min_ticks", 1200, 1, 720000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_DIRT_TO_VANILLA_MAX = BUILDER
+            .comment("Maximum ticks in light before entropic dirt reverts to vanilla dirt (random per block, 6000 = 5 min).")
+            .defineInRange("026_entropic_dirt_to_vanilla_max_ticks", 6000, 1, 720000);
 
     private static final ModConfigSpec.IntValue ENTROPIC_AGGLOMERATION_SPREAD_INTERVAL = BUILDER
             .comment("Ticks between each circular ring when spreading entropic agglomeration.")
@@ -794,19 +820,27 @@ public class Config {
             .defineList("154_druidic_podzol_spawn_deny", java.util.Collections.emptyList(), obj -> obj instanceof String);
 
     private static final ModConfigSpec.BooleanValue DRUIDIC_PODZOL_REDSTONE_ACCEL_ENABLED = BUILDER
-            .comment("If true, redstone signal on a connected druidic podzol network accelerates the next spawn once per cycle.")
+            .comment("If true, redstone on the network uses fast per-block spawn waves (Mob Grinding Utils delightful dirt style).")
             .define("155_druidic_podzol_redstone_accel_enabled", true);
 
     private static final ModConfigSpec.IntValue DRUIDIC_PODZOL_REDSTONE_ACCEL_MIN = BUILDER
-            .comment("Minimum accelerated spawn countdown when redstone triggers (random range).")
-            .defineInRange("156_druidic_podzol_redstone_accel_min_ticks", 1, 1, 720000);
+            .comment("Minimum ticks between accelerated spawn waves while redstone is active (random range).")
+            .defineInRange("156_druidic_podzol_redstone_accel_min_ticks", 20, 1, 720000);
 
     private static final ModConfigSpec.IntValue DRUIDIC_PODZOL_REDSTONE_ACCEL_MAX = BUILDER
-            .comment("Maximum accelerated spawn countdown when redstone triggers (random range).")
-            .defineInRange("157_druidic_podzol_redstone_accel_max_ticks", 5, 1, 720000);
+            .comment("Maximum ticks between accelerated spawn waves while redstone is active (random range).")
+            .defineInRange("157_druidic_podzol_redstone_accel_max_ticks", 60, 1, 720000);
+
+    private static final ModConfigSpec.IntValue DRUIDIC_PODZOL_ACCEL_MOB_CAP = BUILDER
+            .comment("Max passive animals within 5 blocks (horizontal) and 2 vertical of each podzol before that block skips a spawn try.")
+            .defineInRange("158_druidic_podzol_accel_mob_cap", 8, 0, 64);
+
+    private static final ModConfigSpec.IntValue DRUIDIC_PODZOL_SPAWN_MAX_HEALTH = BUILDER
+            .comment("Maximum max-health (HP) for animals spawned on druidic podzol. 0 disables the cap.")
+            .defineInRange("159_druidic_podzol_spawn_max_health", 60, 0, 10000);
 
     private static final ModConfigSpec.IntValue DRUIDIC_PODZOL_SLOW_SPREAD_CHANCE = BUILDER
-            .comment("Random-tick spread denominator for druidic podzol onto vanilla grass/dirt/podzol (1/N chance per random tick).")
+            .comment("Random-tick spread denominator onto vanilla dirt/podzol only (1/N per random tick). Not used by agglomeration.")
             .defineInRange("170_druidic_podzol_slow_spread_chance", 24, 1, 1000);
 
     private static final ModConfigSpec.IntValue DRUIDIC_AGGLOMERATION_SPREAD_INTERVAL = BUILDER
@@ -1264,6 +1298,14 @@ public class Config {
             .comment("Maximum number of blocks that can be scanned at once")
             .defineInRange("002_scannerMaxBlocks", 8192, 1, Integer.MAX_VALUE);
 
+    private static final ModConfigSpec.IntValue SCANNER_BLOCKS_PER_TICK = BUILDER
+            .comment("Block positions evaluated per server tick during an active scanner job (spreads large scans over multiple ticks)")
+            .defineInRange("002b_scannerBlocksPerTick", 2048, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue SCANNER_MARKERS_PER_TICK = BUILDER
+            .comment("Maximum highlight packets sent per server tick while a scanner job is running")
+            .defineInRange("002c_scannerMarkersPerTick", 32, 1, 10000);
+
     // Scanner energy configuration
     private static final ModConfigSpec.IntValue SCANNER_ENERGY_CONSUME = BUILDER
             .comment("Amount of energy consumed per scan operation by the Scanner")
@@ -1475,6 +1517,8 @@ public class Config {
     public static int scannerDefaultRange;
     public static int scannerScanDuration;
     public static int scannerMaxBlocks;
+    public static int scannerBlocksPerTick;
+    public static int scannerMarkersPerTick;
     public static int scannerEnergyConsume;
     public static int scannerEnergyBuffer;
     public static int weatherAltererEnergyBuffer;
@@ -1623,11 +1667,17 @@ public class Config {
     public static boolean entropicSoilRedstoneAccelEnabled;
     public static int entropicSoilRedstoneAccelMinTicks;
     public static int entropicSoilRedstoneAccelMaxTicks;
+    public static int entropicSoilAccelMobCap;
+    public static int entropicSoilSpawnMaxHealth;
     public static double entropicEmpowermentDamageBonus;
     public static double entropicEmpowermentDamageReduction;
     public static int entropicSoilSlowSpreadChance;
+    public static int entropicSoilEdgeSpreadChance;
+    public static int entropicSoilDirtSpreadChance;
     public static int entropicSoilToDirtMinTicks;
     public static int entropicSoilToDirtMaxTicks;
+    public static int entropicDirtToVanillaMinTicks;
+    public static int entropicDirtToVanillaMaxTicks;
     public static int entropicAgglomerationSpreadIntervalTicks;
     public static int graveyardSoilHealIntervalMinTicks;
     public static int graveyardSoilHealIntervalMaxTicks;
@@ -1641,6 +1691,8 @@ public class Config {
     public static boolean druidicPodzolRedstoneAccelEnabled;
     public static int druidicPodzolRedstoneAccelMinTicks;
     public static int druidicPodzolRedstoneAccelMaxTicks;
+    public static int druidicPodzolAccelMobCap;
+    public static int druidicPodzolSpawnMaxHealth;
     public static int druidicPodzolSlowSpreadChance;
     public static int druidicAgglomerationSpreadIntervalTicks;
 
@@ -1998,6 +2050,8 @@ public class Config {
         }
         scannerScanDuration = SCANNER_SCAN_DURATION.get();
         scannerMaxBlocks = SCANNER_MAX_BLOCKS.get();
+        scannerBlocksPerTick = SCANNER_BLOCKS_PER_TICK.get();
+        scannerMarkersPerTick = SCANNER_MARKERS_PER_TICK.get();
         scannerEnergyConsume = SCANNER_ENERGY_CONSUME.get();
         scannerEnergyBuffer = SCANNER_ENERGY_BUFFER.get();
         
@@ -2082,13 +2136,22 @@ public class Config {
         if (entropicSoilRedstoneAccelMaxTicks < entropicSoilRedstoneAccelMinTicks) {
             entropicSoilRedstoneAccelMaxTicks = entropicSoilRedstoneAccelMinTicks;
         }
+        entropicSoilAccelMobCap = ENTROPIC_SOIL_ACCEL_MOB_CAP.get();
+        entropicSoilSpawnMaxHealth = ENTROPIC_SOIL_SPAWN_MAX_HEALTH.get();
         entropicEmpowermentDamageBonus = ENTROPIC_EMPOWERMENT_DAMAGE_BONUS.get();
         entropicEmpowermentDamageReduction = ENTROPIC_EMPOWERMENT_DAMAGE_REDUCTION.get();
         entropicSoilSlowSpreadChance = ENTROPIC_SOIL_SLOW_SPREAD_CHANCE.get();
+        entropicSoilEdgeSpreadChance = ENTROPIC_SOIL_EDGE_SPREAD_CHANCE.get();
+        entropicSoilDirtSpreadChance = ENTROPIC_SOIL_DIRT_SPREAD_CHANCE.get();
         entropicSoilToDirtMinTicks = ENTROPIC_SOIL_TO_DIRT_MIN.get();
         entropicSoilToDirtMaxTicks = ENTROPIC_SOIL_TO_DIRT_MAX.get();
         if (entropicSoilToDirtMaxTicks < entropicSoilToDirtMinTicks) {
             entropicSoilToDirtMaxTicks = entropicSoilToDirtMinTicks;
+        }
+        entropicDirtToVanillaMinTicks = ENTROPIC_DIRT_TO_VANILLA_MIN.get();
+        entropicDirtToVanillaMaxTicks = ENTROPIC_DIRT_TO_VANILLA_MAX.get();
+        if (entropicDirtToVanillaMaxTicks < entropicDirtToVanillaMinTicks) {
+            entropicDirtToVanillaMaxTicks = entropicDirtToVanillaMinTicks;
         }
         entropicAgglomerationSpreadIntervalTicks = ENTROPIC_AGGLOMERATION_SPREAD_INTERVAL.get();
         graveyardSoilHealIntervalMinTicks = GRAVEYARD_SOIL_HEAL_INTERVAL_MIN.get();
@@ -2112,6 +2175,8 @@ public class Config {
         if (druidicPodzolRedstoneAccelMaxTicks < druidicPodzolRedstoneAccelMinTicks) {
             druidicPodzolRedstoneAccelMaxTicks = druidicPodzolRedstoneAccelMinTicks;
         }
+        druidicPodzolAccelMobCap = DRUIDIC_PODZOL_ACCEL_MOB_CAP.get();
+        druidicPodzolSpawnMaxHealth = DRUIDIC_PODZOL_SPAWN_MAX_HEALTH.get();
         druidicPodzolSlowSpreadChance = DRUIDIC_PODZOL_SLOW_SPREAD_CHANCE.get();
         druidicAgglomerationSpreadIntervalTicks = DRUIDIC_AGGLOMERATION_SPREAD_INTERVAL.get();
 

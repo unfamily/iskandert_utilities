@@ -32,6 +32,7 @@ import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.MobReaperBlock;
+import net.unfamily.iskautils.damage.ModDamageTypes;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.MachineTargetType;
 import net.minecraft.world.ItemStackWithSlot;
@@ -389,7 +390,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        DamageSource damageSource = level.damageSources().playerAttack(fakePlayer);
+        DamageSource damageSource = level.damageSources().source(ModDamageTypes.MOB_REAPER, fakePlayer);
         if (!weapon.isEmpty() && EnchantmentHelper.hasAnyEnchantments(weapon)) {
             damage = EnchantmentHelper.modifyDamage(level, weapon, target, damageSource, damage);
         }
@@ -398,7 +399,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         boolean wasAlive = target.isAlive();
-        target.hurt(damageSource, damage);
+        target.hurtServer(level, damageSource, damage);
         fakePlayer.setLastHurtMob(target);
         if (!weapon.isEmpty()) {
             EnchantmentHelper.doPostAttackEffectsWithItemSource(level, target, damageSource, weapon);

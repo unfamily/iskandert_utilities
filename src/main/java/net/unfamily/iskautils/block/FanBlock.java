@@ -42,6 +42,11 @@ public class FanBlock extends Block implements EntityBlock {
     }
 
     @Override
+    protected MapCodec<? extends Block> codec() {
+        return CODEC;
+    }
+
+    @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING, POWERED);
     }
@@ -78,15 +83,21 @@ public class FanBlock extends Block implements EntityBlock {
 
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide() && !player.isCreative()) {
+        if (!level.isClientSide()) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof FanBlockEntity fan) {
-                ItemStackHandler h = fan.getModuleHandler();
-                for (int i = 0; i < h.getSlots(); i++) {
-                    ItemStack s = h.getStackInSlot(i);
-                    if (!s.isEmpty()) {
-                        Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, s.copy());
-                        h.setStackInSlot(i, ItemStack.EMPTY);
+                fan.setShowAreaEnabled(false);
+                if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                    net.unfamily.iskautils.util.PreviewAreaSupport.onPreviewOwnerBlockBroken(serverLevel, pos, state);
+                }
+                if (!player.isCreative()) {
+                    ItemStackHandler h = fan.getModuleHandler();
+                    for (int i = 0; i < h.getSlots(); i++) {
+                        ItemStack s = h.getStackInSlot(i);
+                        if (!s.isEmpty()) {
+                            Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, s.copy());
+                            h.setStackInSlot(i, ItemStack.EMPTY);
+                        }
                     }
                 }
             }

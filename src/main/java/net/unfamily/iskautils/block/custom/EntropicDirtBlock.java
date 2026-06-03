@@ -12,10 +12,13 @@ import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.unfamily.iskautils.block.entity.EntropicDirtBlockEntity;
+import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.item.ModItems;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,6 +43,29 @@ public class EntropicDirtBlock extends BaseEntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new EntropicDirtBlockEntity(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        if (level.isClientSide()) {
+            return null;
+        }
+        return createTickerHelper(type, ModBlockEntities.ENTROPIC_DIRT_BE.get(), EntropicDirtBlockEntity::tickServer);
+    }
+
+    @Override
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (level instanceof ServerLevel server) {
+            EntropicDirtBlockEntity.onDirtPlaced(server, pos);
+        }
+    }
+
+    @Nullable
+    protected static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> createTickerHelper(
+            BlockEntityType<A> type, BlockEntityType<E> expectedType, BlockEntityTicker<? super E> ticker) {
+        return expectedType == type ? (BlockEntityTicker<A>) ticker : null;
     }
 
     @Override

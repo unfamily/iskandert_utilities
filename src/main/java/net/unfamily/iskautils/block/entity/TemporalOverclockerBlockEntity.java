@@ -17,6 +17,11 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.AncientTableFuel;
@@ -49,6 +54,9 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     // Energy storage
     private final EnergyStorageImpl energyStorage;
     private final net.neoforged.neoforge.transfer.energy.EnergyHandler energyHandler26;
+    private final OverclockerItemHandler itemHandler = new OverclockerItemHandler();
+    private final ResourceHandler<ItemResource> itemTransferHandler =
+            LegacyItemHandlerResourceHandler.wrap(itemHandler);
     
     // Counter to manage acceleration (accelerates every N ticks)
     private int tickCounter = 0;
@@ -364,6 +372,14 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
 
     public SimpleContainer getMachineItems() {
         return machineItems;
+    }
+
+    public IItemHandler getItemHandler() {
+        return itemHandler;
+    }
+
+    public ResourceHandler<ItemResource> getItemTransferHandler() {
+        return itemTransferHandler;
     }
 
     /** Drops upgrade/fuel slots and recoverable internal entropy when the block is broken. */
@@ -692,6 +708,120 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         setPersistentMode(!persistentMode);
     }
     
+    private final class OverclockerItemHandler implements IItemHandlerModifiable {
+        @Override
+        public int getSlots() {
+            return MACHINE_SLOT_COUNT;
+        }
+
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            return machineItems.getItem(slot);
+        }
+
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            if (stack.isEmpty() || slot < 0 || slot >= MACHINE_SLOT_COUNT) {
+                return stack;
+            }
+            if (slot == UPGRADE_SLOT_INDEX) {
+                if (!stack.is(ModItems.ENTROPIC_CLOCK.get())) {
+                    return stack;
+                }
+                if (!machineItems.getItem(UPGRADE_SLOT_INDEX).isEmpty()) {
+                    return stack;
+                }
+                if (!simulate) {
+                    machineItems.setItem(UPGRADE_SLOT_INDEX, stack.copyWithCount(1));
+                    onMachineSlotChanged(UPGRADE_SLOT_INDEX);
+                }
+                ItemStack rem = stack.copy();
+                rem.shrink(1);
+                return rem.isEmpty() ? ItemStack.EMPTY : rem;
+            }
+            if (slot == FUEL_SLOT_INDEX) {
+                if (!AncientTableFuel.isEntropyFuel(stack)) {
+                    return stack;
+                }
+                return insertFuelStack(stack, simulate);
+            }
+            return stack;
+        }
+
+        private ItemStack insertFuelStack(ItemStack stack, boolean simulate) {
+            ItemStack existing = machineItems.getItem(FUEL_SLOT_INDEX);
+            if (!existing.isEmpty() && !ItemStack.isSameItemSameComponents(existing, stack)) {
+                return stack;
+            }
+            int limit = 64;
+            int free = limit - (existing.isEmpty() ? 0 : existing.getCount());
+            if (free <= 0) {
+                return stack;
+            }
+            int toInsert = Math.min(free, stack.getCount());
+            if (!simulate) {
+                if (existing.isEmpty()) {
+                    ItemStack copy = stack.copy();
+                    copy.setCount(toInsert);
+                    machineItems.setItem(FUEL_SLOT_INDEX, copy);
+                } else {
+                    existing.grow(toInsert);
+                    machineItems.setItem(FUEL_SLOT_INDEX, existing);
+                }
+                tryAbsorbFuelSlot();
+            }
+            ItemStack rem = stack.copy();
+            rem.shrink(toInsert);
+            return rem.isEmpty() ? ItemStack.EMPTY : rem;
+        }
+
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (amount <= 0 || slot != FUEL_SLOT_INDEX) {
+                return ItemStack.EMPTY;
+            }
+            ItemStack existing = machineItems.getItem(FUEL_SLOT_INDEX);
+            if (existing.isEmpty()) {
+                return ItemStack.EMPTY;
+            }
+            int toExtract = Math.min(amount, existing.getCount());
+            ItemStack extracted = existing.copy();
+            extracted.setCount(toExtract);
+            if (!simulate) {
+                existing.shrink(toExtract);
+                machineItems.setItem(FUEL_SLOT_INDEX, existing.isEmpty() ? ItemStack.EMPTY : existing);
+                setChanged();
+            }
+            return extracted;
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return slot == UPGRADE_SLOT_INDEX ? 1 : 64;
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            if (stack.isEmpty()) {
+                return true;
+            }
+            return switch (slot) {
+                case UPGRADE_SLOT_INDEX -> stack.is(ModItems.ENTROPIC_CLOCK.get());
+                case FUEL_SLOT_INDEX -> AncientTableFuel.isEntropyFuel(stack);
+                default -> false;
+            };
+        }
+
+        @Override
+        public void setStackInSlot(int slot, ItemStack stack) {
+            if (slot < 0 || slot >= MACHINE_SLOT_COUNT) {
+                return;
+            }
+            machineItems.setItem(slot, stack.isEmpty() ? ItemStack.EMPTY : stack.copy());
+            onMachineSlotChanged(slot);
+        }
+    }
+
     /**
      * Custom EnergyStorage implementation
      */

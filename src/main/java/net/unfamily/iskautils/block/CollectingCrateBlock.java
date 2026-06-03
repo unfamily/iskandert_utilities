@@ -103,8 +103,10 @@ public class CollectingCrateBlock extends BaseEntityBlock {
     protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof CollectingCrateBlockEntity crate) {
+            crate.setPreviewEnabled(false);
             crate.drops();
         }
+        net.unfamily.iskautils.util.PreviewAreaSupport.onPreviewOwnerBlockBroken(level, pos, state);
         super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 }

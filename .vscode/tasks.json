@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "neoForge: Prepare IDE runs",
+      "type": "shell",
+      "command": "./gradlew prepareClientRun prepareClientDataRun prepareServerRun prepareGameTestServerRun --quiet",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

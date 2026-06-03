@@ -57,7 +57,7 @@ public final class EntropicAgglomerationSpreadHandler {
             List<BlockPos> ring = job.rings.poll();
             if (ring != null) {
                 for (BlockPos pos : ring) {
-                    if (EntropicSoilUtil.convertToEntropicSoil(level, pos)) {
+                    if (EntropicSoilUtil.convertToEntropicSoilForAgglomeration(level, pos)) {
                         level.sendParticles(
                                 ParticleTypes.WITCH,
                                 pos.getX() + 0.5D,

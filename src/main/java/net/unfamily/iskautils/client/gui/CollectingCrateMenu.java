@@ -62,7 +62,8 @@ public class CollectingCrateMenu extends AbstractContainerMenu {
 
     private static final int COLLECT_MODE_INDEX = 0;
     private static final int REDSTONE_MODE_INDEX = 1;
-    private static final int STORED_XP_MB_INDEX = 2;
+    private static final int STORED_XP_MB_LO_INDEX = 2;
+    private static final int STORED_XP_MB_HI_INDEX = 12;
     private static final int SIZE_LEFT_INDEX = 3;
     private static final int SIZE_RIGHT_INDEX = 4;
     private static final int SIZE_HEIGHT_INDEX = 5;
@@ -72,7 +73,7 @@ public class CollectingCrateMenu extends AbstractContainerMenu {
     private static final int BLOCK_POS_X_INDEX = 9;
     private static final int BLOCK_POS_Y_INDEX = 10;
     private static final int BLOCK_POS_Z_INDEX = 11;
-    private static final int DATA_COUNT = 12;
+    private static final int DATA_COUNT = 13;
 
     private final CollectingCrateBlockEntity blockEntity;
     private final ContainerLevelAccess levelAccess;
@@ -92,7 +93,8 @@ public class CollectingCrateMenu extends AbstractContainerMenu {
                 return switch (index) {
                     case COLLECT_MODE_INDEX -> blockEntity.getCollectMode().getId();
                     case REDSTONE_MODE_INDEX -> blockEntity.getRedstoneMode();
-                    case STORED_XP_MB_INDEX -> blockEntity.getStoredXpMb();
+                    case STORED_XP_MB_LO_INDEX -> (int) (blockEntity.getStoredXpMb() & 0xFFFFFFFFL);
+                    case STORED_XP_MB_HI_INDEX -> (int) (blockEntity.getStoredXpMb() >>> 32);
                     case SIZE_LEFT_INDEX -> blockEntity.getSizeLeft();
                     case SIZE_RIGHT_INDEX -> blockEntity.getSizeRight();
                     case SIZE_HEIGHT_INDEX -> blockEntity.getSizeHeight();
@@ -242,8 +244,9 @@ public class CollectingCrateMenu extends AbstractContainerMenu {
         return containerData.get(REDSTONE_MODE_INDEX);
     }
 
-    public int getStoredXpMb() {
-        return containerData.get(STORED_XP_MB_INDEX);
+    public long getStoredXpMb() {
+        return ((long) containerData.get(STORED_XP_MB_HI_INDEX) << 32)
+                | (containerData.get(STORED_XP_MB_LO_INDEX) & 0xFFFFFFFFL);
     }
 
     /** Display L/R swapped like Colossal Reactor Builder (left button adjusts entity sizeRight). */
