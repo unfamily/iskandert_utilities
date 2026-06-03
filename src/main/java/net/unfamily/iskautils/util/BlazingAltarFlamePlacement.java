@@ -203,6 +203,7 @@ public final class BlazingAltarFlamePlacement {
                 return true;
             }
         }
+
         return false;
     }
 
