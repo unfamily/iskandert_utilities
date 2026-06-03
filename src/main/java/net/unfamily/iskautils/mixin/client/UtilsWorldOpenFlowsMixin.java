@@ -8,6 +8,7 @@ import net.minecraft.world.level.storage.LevelSummary;
 import net.unfamily.iskalib.client.migration.WorldBackupGateClient;
 import net.unfamily.iskalib.migration.worldbackup.WorldBackupGate;
 import net.unfamily.iskalib.migration.worldbackup.WorldBackupGateConfig;
+import net.unfamily.iskalib.migration.worldbackup.WorldBackupGateStorage;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -40,11 +41,15 @@ public abstract class UtilsWorldOpenFlowsMixin {
             Dynamic<?> dynamic,
             Runnable onFail,
             CallbackInfo ci) {
-        if (!WorldBackupGate.isEnabled()) {
+        if (!WorldBackupGate.isEnabled() || !summary.isCompatible()) {
             return;
         }
         WorldBackupGateConfig config = WorldBackupGate.findPendingConfig(access);
         if (config == null) {
+            return;
+        }
+        // Re-check on disk (avoids repeat prompt if ack was written earlier in this session).
+        if (!WorldBackupGateStorage.requiresBackupPrompt(WorldBackupGateStorage.worldDataDir(access), config)) {
             return;
         }
 
