@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " C ",
+    "BAB",
+    "AAA"
+  ],
+  "key": {
+    "A": "#c:obsidians",
+    "B": "iska_utils:drop_of_entropy",
+    "C": "minecraft:glowstone"
+  },
+  "result": {
+    "id": "iska_utils:blazing_altar",
+    "count": 1
+  }
+}

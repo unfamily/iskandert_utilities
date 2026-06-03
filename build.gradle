@@ -179,7 +179,7 @@ dependencies {
     }
 
     // Iskandert Library: remote by default; for local lib work: -PiskaLibUseLocal=true (jar in libs/)
-    def iskaLibLocalJar = file('libs/iska_lib-1.6.0.0.0.jar')
+    def iskaLibLocalJar = file('libs/iska_lib-1.7.0.0.0.jar')
     if (project.findProperty('iskaLibUseLocal')?.toString()?.toBoolean() && iskaLibLocalJar.exists()) {
         implementation files(iskaLibLocalJar)
     } else {
