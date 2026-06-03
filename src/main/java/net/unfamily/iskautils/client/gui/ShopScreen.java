@@ -250,16 +250,19 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         if (event.button() == 0) { // Left click
             // Handle scrollbar clicks first
             if (handleScrollButtonClick(event.x(), event.y())) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Handle handle drag start
             if (handleHandleClick(event.x(), event.y())) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Handle scrollbar area clicks
             if (handleScrollbarClick(event.x(), event.y())) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
@@ -275,8 +278,22 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
     @Override
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
-        isDraggingHandle = false;
+        if (event.button() == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
+        }
         return super.mouseReleased(event);
+    }
+
+    @Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle)) {
+            return true;
+        }
+        return super.keyPressed(event);
     }
 
     @Override

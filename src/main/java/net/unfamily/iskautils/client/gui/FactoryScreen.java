@@ -385,9 +385,18 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             return true;
         }
         if (button != 0 && button != 1) return false;
-        if (handleScrollButtonClick(mouseX, mouseY)) return true;
-        if (handleHandleClick(mouseX, mouseY)) return true;
-        if (handleScrollbarClick(mouseX, mouseY)) return true;
+        if (handleScrollButtonClick(mouseX, mouseY)) {
+            MachineGuiInput.markScrollbarPressed();
+            return true;
+        }
+        if (handleHandleClick(mouseX, mouseY)) {
+            MachineGuiInput.markScrollbarPressed();
+            return true;
+        }
+        if (handleScrollbarClick(mouseX, mouseY)) {
+            MachineGuiInput.markScrollbarPressed();
+            return true;
+        }
         return false;
     }
 
@@ -483,11 +492,22 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (event.button() == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (event.button() == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(event);
+    }
+
+    @Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle)) {
+            return true;
+        }
+        return super.keyPressed(event);
     }
 
     @Override

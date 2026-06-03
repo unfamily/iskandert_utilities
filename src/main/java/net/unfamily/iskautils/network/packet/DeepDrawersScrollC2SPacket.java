@@ -52,8 +52,10 @@ public class DeepDrawersScrollC2SPacket {
             return;
         }
         
-        // Update the menu's scroll offset
-        // Note: We don't save to BlockEntity - scrollOffset resets to 0 when GUI opens
+        if (menu.isSearchFilterActive()) {
+            return;
+        }
+
         int oldOffset = menu.getScrollOffset();
         LOGGER.debug("DeepDrawersScrollC2SPacket.handle: Updating scrollOffset from {} to {}", oldOffset, scrollOffset);
         menu.setScrollOffset(scrollOffset);

@@ -360,16 +360,19 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
             
             // Verifica click sui pulsanti di scroll
             if (handleScrollButtonClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Verifica click sull'handle per il drag
             if (handleHandleClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Verifica click sulla scrollbar per il salto
             if (handleScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
@@ -559,11 +562,22 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (event.button() == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (event.button() == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(event);
+    }
+
+    @Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle)) {
+            return true;
+        }
+        return super.keyPressed(event);
     }
     
     @Override

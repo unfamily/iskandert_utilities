@@ -13,8 +13,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.ItemStackHandler;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -36,11 +34,11 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.block.BlazingAltarFlameVisual;
 import net.unfamily.iskautils.block.entity.BlazingAltarBlockEntity;
+import net.unfamily.iskautils.block.entity.BlazingAltarBlockSync;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.gui.BlazingAltarMenu;
 
 import javax.annotation.Nullable;
-import java.util.List;
 
 public class BlazingAltarBlock extends BaseEntityBlock {
     public static final MapCodec<BlazingAltarBlock> CODEC = simpleCodec(BlazingAltarBlock::new);
@@ -109,6 +107,7 @@ public class BlazingAltarBlock extends BaseEntityBlock {
         if (!level.isClientSide()) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof BlazingAltarBlockEntity altar) {
+                altar.prepareForRemoval();
                 if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
                     altar.enqueueFlameCleanupOnBreak(serverLevel);
                 }
@@ -139,16 +138,14 @@ public class BlazingAltarBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-        List<ItemStack> drops = super.getDrops(state, builder);
-        if (drops.isEmpty()) {
-            return drops;
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (!level.isClientSide() && !movedByPiston && !oldState.is(this)) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof BlazingAltarBlockEntity altar) {
+                altar.onPlaced();
+            }
         }
-        BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
-        if (blockEntity instanceof BlazingAltarBlockEntity altar) {
-            return List.of(altar.createDropStack(state));
-        }
-        return drops;
     }
 
     @Override
@@ -183,8 +180,7 @@ public class BlazingAltarBlock extends BaseEntityBlock {
         if (!level.isClientSide()) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof BlazingAltarBlockEntity altar) {
-                altar.updateFlameVisual();
-                altar.updatePoweredState();
+                BlazingAltarBlockSync.sync(altar);
             }
         }
     }

@@ -563,16 +563,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             
             // Handle scrollbar clicks first (they have priority)
             if (handleScrollButtonClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Handle handle drag start
             if (handleHandleClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Handle scrollbar area clicks
             if (handleScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
         }
@@ -1931,33 +1934,13 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     @Override
     public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
-        int keyCode = event.key();
-        boolean isEditBoxFocused = editingEditBox != null && editingEditBox.isFocused();
-        boolean isEditModeTextBoxFocused = editModeTextBox != null && editModeTextBox.isFocused();
-        boolean esc = keyCode == 256;
-        boolean inv = this.minecraft != null && this.minecraft.options.keyInventory.matches(event);
-
-        if (isEditBoxFocused && editingEditBox != null) {
-            if (editingEditBox.keyPressed(event)) {
-                return true;
-            }
-            if (keyCode == 257) {
-                stopEditingFilter();
-                return true;
-            }
-        }
-
-        if (isEditModeTextBoxFocused && editModeTextBox != null) {
-            if (editModeTextBox.keyPressed(event)) {
-                return true;
-            }
-        }
-
-        if (esc || inv) {
-            onClose();
+        if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle, editingEditBox, editModeTextBox)) {
             return true;
         }
-
+        if (editingEditBox != null && editingEditBox.isFocused() && event.key() == 257) {
+            stopEditingFilter();
+            return true;
+        }
         return super.keyPressed(event);
     }
     
@@ -1998,9 +1981,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     @Override
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
         int button = event.button();
-        if (button == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (button == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(event);
     }

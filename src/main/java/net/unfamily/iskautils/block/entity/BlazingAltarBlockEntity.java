@@ -1,11 +1,8 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.ItemStackWithSlot;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.TypedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.MenuProvider;
@@ -26,10 +23,7 @@ import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
-import net.unfamily.iskautils.block.BlazingAltarFlameVisual;
 import net.unfamily.iskautils.block.BlazingAltarSpawnMode;
-import net.unfamily.iskautils.block.ModBlocks;
-import net.unfamily.iskautils.block.custom.BlazingAltarBlock;
 import net.unfamily.iskautils.client.gui.BlazingAltarMenu;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.BurningBrazierItem;
@@ -45,11 +39,13 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
     public static final int PLACER_SLOT = 0;
     public static final int MODULE_SLOT = 0;
 
+    private final BlazingAltarConfig config = new BlazingAltarConfig();
+
     private final ItemStackHandler placerHandler = new ItemStackHandler(1) {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
-            updateFlameVisual();
+            BlazingAltarBlockSync.sync(BlazingAltarBlockEntity.this);
         }
 
         @Override
@@ -83,21 +79,18 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
 
     private final ResourceHandler<ItemResource> itemTransferHandler = LegacyItemHandlerResourceHandler.wrap(placerHandler);
 
-    private int chunkRadius = 1;
-    private boolean groundOnly = true;
-    private BlazingAltarSpawnMode spawnMode = BlazingAltarSpawnMode.HOSTILE;
-    private int redstoneMode = 0;
-    private int tickCounter;
-    /** Index into distance-sorted loaded chunks; advances one chunk per placement tick (nearest first). */
-    private int placementChunkIndex;
     private boolean extinguishing;
     private int extinguishChunkProgress;
     private int extinguishChunkTotal;
-    /** Redstone mode before GUI extinguish started; restored when the job is cancelled. */
     private int redstoneModeBeforeExtinguish = -1;
+    private boolean preventChunkSave;
 
     public BlazingAltarBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.BLAZING_ALTAR_BE.get(), pos, state);
+    }
+
+    public long getInstanceId() {
+        return config.getInstanceId();
     }
 
     public ItemStackHandler getPlacerHandler() {
@@ -123,125 +116,114 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
     }
 
     public int getChunkRadius() {
-        return chunkRadius;
+        return config.getChunkRadius();
     }
 
     public void setChunkRadius(int radius) {
-        this.chunkRadius = Math.max(1, Math.min(radius, getMaxChunkRadius()));
+        config.setChunkRadius(Math.max(1, Math.min(radius, getMaxChunkRadius())));
         resetPlacementProgress();
         setChanged();
     }
 
     private void clampChunkRadius() {
-        if (chunkRadius > getMaxChunkRadius()) {
+        if (config.getChunkRadius() > getMaxChunkRadius()) {
             setChunkRadius(getMaxChunkRadius());
         }
     }
 
     public void adjustChunkRadius(int delta) {
-        setChunkRadius(chunkRadius + delta);
+        setChunkRadius(config.getChunkRadius() + delta);
     }
 
     public boolean isGroundOnly() {
-        return groundOnly;
+        return config.isGroundOnly();
     }
 
     public void setGroundOnly(boolean groundOnly) {
-        this.groundOnly = groundOnly;
+        config.setGroundOnly(groundOnly);
         resetPlacementProgress();
         setChanged();
     }
 
     public void toggleGroundOnly() {
-        setGroundOnly(!groundOnly);
+        setGroundOnly(!config.isGroundOnly());
     }
 
     public BlazingAltarSpawnMode getSpawnMode() {
-        return spawnMode;
+        return config.getSpawnMode();
     }
 
     public void cycleSpawnMode() {
-        spawnMode = spawnMode.next();
+        config.setSpawnMode(config.getSpawnMode().next());
         setChanged();
     }
 
     public void cycleSpawnModeBackward() {
-        spawnMode = spawnMode.previous();
+        config.setSpawnMode(config.getSpawnMode().previous());
         setChanged();
     }
 
     public int getRedstoneMode() {
-        return redstoneMode;
+        return config.getRedstoneMode();
     }
 
     public void cycleRedstoneMode() {
-        int next = (redstoneMode + 1) % 5;
+        int next = (config.getRedstoneMode() + 1) % 5;
         if (next == 3) {
             next = 4;
         }
-        redstoneMode = next;
+        config.setRedstoneMode(next);
         setChanged();
-        updateFlameVisual();
+        BlazingAltarBlockSync.sync(this);
     }
 
     public void cycleRedstoneModeBackward() {
-        redstoneMode = switch (redstoneMode) {
+        int mode = switch (config.getRedstoneMode()) {
             case 0 -> 4;
             case 1 -> 0;
             case 2 -> 1;
             case 4 -> 2;
             default -> 4;
         };
+        config.setRedstoneMode(mode);
         setChanged();
-        updateFlameVisual();
+        BlazingAltarBlockSync.sync(this);
     }
 
-    /**
-     * Schedules progressive removal of mod flames in range (GUI extinguish).
-     * Disables the altar and repairs the brazier when the job completes.
-     */
-    /**
-     * Starts progressive flame removal (nearest chunk first), or cancels if already running.
-     */
     public void extinguishFlamesInRange(ServerLevel level) {
-        if (extinguishing || BlazingAltarExtinguishJobs.hasJob(level, worldPosition)) {
+        if (extinguishing || BlazingAltarExtinguishJobs.hasJob(level, worldPosition, getInstanceId())) {
             cancelExtinguishInRange(level);
             return;
         }
-        redstoneModeBeforeExtinguish = redstoneMode;
+        redstoneModeBeforeExtinguish = config.getRedstoneMode();
         extinguishing = true;
-        redstoneMode = 4;
+        config.setRedstoneMode(4);
         resetPlacementProgress();
         extinguishChunkProgress = 0;
-        extinguishChunkTotal = BlazingAltarChunks.countInRadius(chunkRadius);
+        extinguishChunkTotal = BlazingAltarChunks.countInRadius(config.getChunkRadius());
         setChanged();
-        updateFlameVisual();
+        BlazingAltarBlockSync.sync(this);
         BlazingAltarExtinguishJobs.enqueueFromAltar(level, this, BlazingAltarExtinguishJobs.FinishMode.FINISH_ALTAR);
     }
 
-    /** Interrupts GUI extinguish; keeps flames already removed, restores pre-job redstone mode. */
     public void cancelExtinguishInRange(ServerLevel level) {
-        BlazingAltarExtinguishJobs.cancelForAltar(level, worldPosition);
+        BlazingAltarExtinguishJobs.cancelForAltar(level, worldPosition, getInstanceId());
         extinguishing = false;
         extinguishChunkProgress = 0;
         extinguishChunkTotal = 0;
         if (redstoneModeBeforeExtinguish >= 0) {
-            redstoneMode = redstoneModeBeforeExtinguish;
-            if (redstoneMode == 3) {
-                redstoneMode = 4;
-            }
+            config.setRedstoneMode(redstoneModeBeforeExtinguish == 3 ? 4 : redstoneModeBeforeExtinguish);
             redstoneModeBeforeExtinguish = -1;
         }
         setChanged();
-        updateFlameVisual();
+        BlazingAltarBlockSync.sync(this);
     }
 
-    /** Schedules progressive flame cleanup when the altar block is broken. */
     public void enqueueFlameCleanupOnBreak(ServerLevel level) {
-        BlazingAltarExtinguishJobs.enqueueFromAltar(level, this, BlazingAltarExtinguishJobs.FinishMode.FLAMES_ONLY);
+        BlazingAltarExtinguishJobs.enqueueBreakCleanup(
+                level, worldPosition, config.getChunkRadius(), config.isGroundOnly());
     }
 
-    /** Called when a progressive extinguish job completes (GUI action). */
     public void completeExtinguishJob(int normalFlamesRemoved) {
         if (normalFlamesRemoved > 0) {
             ItemStack placer = placerHandler.getStackInSlot(PLACER_SLOT);
@@ -249,28 +231,56 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
                 placer.setDamageValue(Math.max(0, placer.getDamageValue() - normalFlamesRemoved));
             }
         }
-        redstoneMode = 4;
+        config.setRedstoneMode(4);
+        clearTransientState();
+        resetPlacementProgress();
+        setChanged();
+        BlazingAltarBlockSync.sync(this);
+    }
+
+    public void setExtinguishProgress(int chunksDone, int chunksTotal) {
+        extinguishChunkProgress = chunksDone;
+        extinguishChunkTotal = chunksTotal;
+        setChanged();
+    }
+
+    public void onPlaced() {
+        clearTransientState();
+        BlazingAltarBlockSync.sync(this);
+    }
+
+    public void attachToActiveJobIfAny(ServerLevel level) {
+        if (!BlazingAltarExtinguishJobs.hasJob(level, worldPosition, getInstanceId())) {
+            clearTransientState();
+            return;
+        }
+        int[] progress = BlazingAltarExtinguishJobs.getProgress(level, worldPosition, getInstanceId());
+        if (progress != null) {
+            setExtinguishProgress(progress[0], progress[1]);
+        } else if (extinguishChunkTotal <= 0) {
+            extinguishChunkTotal = BlazingAltarChunks.countInRadius(config.getChunkRadius());
+        }
+        extinguishing = true;
+        if (redstoneModeBeforeExtinguish < 0 && config.getRedstoneMode() != 4) {
+            redstoneModeBeforeExtinguish = config.getRedstoneMode();
+        }
+        config.setRedstoneMode(4);
+        setChanged();
+    }
+
+    public void clearTransientState() {
         extinguishing = false;
         extinguishChunkProgress = 0;
         extinguishChunkTotal = 0;
         redstoneModeBeforeExtinguish = -1;
-        resetPlacementProgress();
-        setChanged();
-        updateFlameVisual();
-    }
-
-    public void setExtinguishProgress(int chunksDone, int chunksTotal) {
-        this.extinguishChunkProgress = chunksDone;
-        this.extinguishChunkTotal = chunksTotal;
-        setChanged();
     }
 
     public int getPlacementChunkProgress() {
-        return placementChunkIndex;
+        return config.getPlacementChunkIndex();
     }
 
     public int getPlacementChunkTotal() {
-        return BlazingAltarChunks.countInRadius(chunkRadius);
+        return BlazingAltarChunks.countInRadius(config.getChunkRadius());
     }
 
     public int getExtinguishChunkProgress() {
@@ -286,10 +296,27 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
     }
 
     private void resetPlacementProgress() {
-        placementChunkIndex = 0;
+        config.setPlacementChunkIndex(0);
     }
 
-    /** Machine active when redstone rules allow (mode 4 = disabled, same as Fan). */
+    public void prepareForRemoval() {
+        if (preventChunkSave) {
+            return;
+        }
+        preventChunkSave = true;
+        if (level instanceof ServerLevel serverLevel) {
+            BlazingAltarExtinguishJobs.cancelForAltar(serverLevel, worldPosition, getInstanceId());
+        }
+    }
+
+    @Override
+    public void setChanged() {
+        if (preventChunkSave) {
+            return;
+        }
+        super.setChanged();
+    }
+
     public boolean isOperational() {
         if (level == null || level.isClientSide()) {
             return false;
@@ -297,7 +324,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         if (extinguishing) {
             return false;
         }
-        int mode = Math.max(0, Math.min(redstoneMode, 4));
+        int mode = Math.max(0, Math.min(config.getRedstoneMode(), 4));
         if (mode == 3) {
             mode = 4;
         }
@@ -316,73 +343,26 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         if (!isOperational()) {
             return false;
         }
-        return switch (spawnMode) {
+        return switch (config.getSpawnMode()) {
             case BOTH -> true;
             case HOSTILE -> category == net.minecraft.world.entity.MobCategory.MONSTER;
             case PASSIVE -> category != net.minecraft.world.entity.MobCategory.MONSTER;
         };
     }
 
-    public void updatePoweredState() {
-        if (level == null || level.isClientSide()) {
-            return;
-        }
-        BlockState state = getBlockState();
-        if (!(state.getBlock() instanceof BlazingAltarBlock)) {
-            return;
-        }
-        boolean powered = isOperational();
-        if (state.getValue(BlazingAltarBlock.POWERED) != powered) {
-            level.setBlock(worldPosition, state.setValue(BlazingAltarBlock.POWERED, powered), 3);
-        }
-    }
-
-    public void updateFlameVisual() {
-        if (level == null || level.isClientSide()) {
-            return;
-        }
-        BlockState state = getBlockState();
-        if (!(state.getBlock() instanceof BlazingAltarBlock)) {
-            return;
-        }
-        BlazingAltarFlameVisual visual = computeFlameVisual();
-        if (state.getValue(BlazingAltarBlock.FLAME_VISUAL) != visual) {
-            level.setBlock(worldPosition, state.setValue(BlazingAltarBlock.FLAME_VISUAL, visual), 2);
-            level.sendBlockUpdated(worldPosition, state, level.getBlockState(worldPosition), 3);
-        }
-        updatePoweredState();
-    }
-
-    private BlazingAltarFlameVisual computeFlameVisual() {
-        if (!isOperational()) {
-            return BlazingAltarFlameVisual.HIDDEN;
-        }
-        ItemStack placer = placerHandler.getStackInSlot(PLACER_SLOT);
-        if (placer.isEmpty()) {
-            return BlazingAltarFlameVisual.GLOW;
-        }
-        if (placer.is(ModItems.BURNING_BRAZIER.get())) {
-            return BlazingAltarFlameVisual.BURNING;
-        }
-        if (placer.is(ModItems.CURSED_CANDLE.get())) {
-            return BlazingAltarFlameVisual.CURSED;
-        }
-        return BlazingAltarFlameVisual.GLOW;
-    }
-
     public static void tickServer(Level level, BlockPos pos, BlockState state, BlazingAltarBlockEntity be) {
         if (level.isClientSide()) {
             return;
         }
-        be.tickCounter++;
+        be.config.setTickCounter(be.config.getTickCounter() + 1);
         int interval = Config.blazingAltarTickInterval;
-        if (be.tickCounter < interval) {
+        if (be.config.getTickCounter() < interval) {
             return;
         }
-        be.tickCounter = 0;
+        be.config.setTickCounter(0);
         if (!be.isOperational()) {
             be.resetPlacementProgress();
-            be.updateFlameVisual();
+            BlazingAltarBlockSync.sync(be);
             return;
         }
         be.tryPlaceFlames((ServerLevel) level);
@@ -390,7 +370,12 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
 
     private void tryPlaceFlames(ServerLevel level) {
         ItemStack placer = placerHandler.getStackInSlot(PLACER_SLOT);
+        List<ChunkPos> chunksByDistance = BlazingAltarChunks.collectLoadedOrdered(level, worldPosition, config.getChunkRadius());
+        if (chunksByDistance.isEmpty()) {
+            return;
+        }
         if (placer.isEmpty()) {
+            advancePlacementChunkIndex(chunksByDistance.size());
             return;
         }
         Block flameBlock = BlazingAltarFlamePlacement.flameBlockForPlacer(placer.getItem());
@@ -399,11 +384,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
             return;
         }
 
-        List<ChunkPos> chunksByDistance = BlazingAltarChunks.collectLoadedOrdered(level, worldPosition, chunkRadius);
-        if (chunksByDistance.isEmpty()) {
-            return;
-        }
-
+        int placementChunkIndex = config.getPlacementChunkIndex();
         if (placementChunkIndex >= chunksByDistance.size()) {
             placementChunkIndex = chunksByDistance.size() - 1;
         }
@@ -417,7 +398,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
             if (candidate == null) {
                 continue;
             }
-            if (!BlazingAltarFlamePlacement.canPlaceFlameAt(level, candidate, groundOnly, flameState)) {
+            if (!BlazingAltarFlamePlacement.canPlaceFlameAt(level, candidate, config.isGroundOnly(), flameState)) {
                 continue;
             }
             level.setBlock(candidate, flameState, 3);
@@ -432,8 +413,19 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
             }
         }
 
-        if (placementChunkIndex < chunksByDistance.size() - 1) {
-            placementChunkIndex++;
+        advancePlacementChunkIndex(chunksByDistance.size());
+    }
+
+    private void advancePlacementChunkIndex(int loadedChunkCount) {
+        if (loadedChunkCount <= 0) {
+            return;
+        }
+        int index = config.getPlacementChunkIndex();
+        if (index >= loadedChunkCount) {
+            index = loadedChunkCount - 1;
+        }
+        if (index < loadedChunkCount - 1) {
+            config.setPlacementChunkIndex(index + 1);
             setChanged();
         }
     }
@@ -446,8 +438,8 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         int baseZ = chunk.getMinBlockZ();
         int x = baseX + random.nextInt(16);
         int z = baseZ + random.nextInt(16);
-        if (groundOnly) {
-            int topY = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
+        if (config.isGroundOnly()) {
+            int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
             for (int y = topY; y >= level.getMinY(); y--) {
                 BlockPos ground = new BlockPos(x, y, z);
                 BlockPos above = ground.above();
@@ -473,15 +465,24 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
     @Override
     public void onLoad() {
         super.onLoad();
-        if (level != null && !level.isClientSide()) {
-            BlazingAltarSpatialIndex.add(level.dimension(), worldPosition);
-            updateFlameVisual();
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        BlazingAltarSpatialIndex.add(level.dimension(), worldPosition);
+        if (level instanceof ServerLevel serverLevel) {
+            attachToActiveJobIfAny(serverLevel);
+            BlazingAltarBlockSync.sync(this);
+            if (!isOperational()) {
+                BlazingAltarFlamePlacement.refreshBrazierFlameLightInRadius(
+                        serverLevel, worldPosition, config.getChunkRadius(), config.isGroundOnly());
+            }
         }
     }
 
     @Override
     public void setRemoved() {
         if (level != null && !level.isClientSide()) {
+            prepareForRemoval();
             BlazingAltarSpatialIndex.remove(level.dimension(), worldPosition);
         }
         super.setRemoved();
@@ -490,12 +491,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
-        output.putInt("ChunkRadius", chunkRadius);
-        output.putBoolean("GroundOnly", groundOnly);
-        output.putInt("SpawnMode", spawnMode.getId());
-        output.putInt("RedstoneMode", redstoneMode);
-        output.putInt("TickCounter", tickCounter);
-        output.putInt("PlacementChunkIndex", placementChunkIndex);
+        config.save(output);
         ItemStack placer = placerHandler.getStackInSlot(PLACER_SLOT);
         if (!placer.isEmpty()) {
             ValueOutput.TypedOutputList<ItemStackWithSlot> placerList = output.list("Placer", ItemStackWithSlot.CODEC);
@@ -515,18 +511,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
-        chunkRadius = input.getIntOr("ChunkRadius", 1);
-        if (chunkRadius < 1) {
-            chunkRadius = 1;
-        }
-        groundOnly = input.getBooleanOr("GroundOnly", true);
-        spawnMode = BlazingAltarSpawnMode.fromLegacyId(input.getIntOr("SpawnMode", BlazingAltarSpawnMode.HOSTILE.getId()));
-        redstoneMode = input.getIntOr("RedstoneMode", 0);
-        if (redstoneMode == 3) {
-            redstoneMode = 4;
-        }
-        tickCounter = input.getIntOr("TickCounter", 0);
-        placementChunkIndex = Math.max(0, input.getIntOr("PlacementChunkIndex", 0));
+        config.load(input);
         for (ItemStackWithSlot entry : input.listOrEmpty("Placer", ItemStackWithSlot.CODEC)) {
             if (entry.slot() == PLACER_SLOT) {
                 placerHandler.setStackInSlot(PLACER_SLOT, entry.stack());
@@ -537,33 +522,8 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
                 moduleHandler.setStackInSlot(MODULE_SLOT, entry.stack());
             }
         }
+        clearTransientState();
         clampChunkRadius();
-    }
-
-    /** Block item drop: altar settings only; slot contents are dropped in {@link net.unfamily.iskautils.block.custom.BlazingAltarBlock#playerWillDestroy}. */
-    public ItemStack createDropStack(BlockState state) {
-        ItemStack stack = new ItemStack(state.getBlock());
-        if (!hasConfigPersistedState()) {
-            return stack;
-        }
-        CompoundTag data = new CompoundTag();
-        data.putInt("ChunkRadius", chunkRadius);
-        data.putBoolean("GroundOnly", groundOnly);
-        data.putInt("SpawnMode", spawnMode.getId());
-        data.putInt("RedstoneMode", redstoneMode);
-        data.putInt("TickCounter", tickCounter);
-        data.putInt("PlacementChunkIndex", placementChunkIndex);
-        stack.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(getType(), data));
-        return stack;
-    }
-
-    private boolean hasConfigPersistedState() {
-        return chunkRadius != 1
-                || !groundOnly
-                || spawnMode != BlazingAltarSpawnMode.HOSTILE
-                || redstoneMode != 0
-                || tickCounter != 0
-                || placementChunkIndex != 0;
     }
 
     @Override

@@ -482,7 +482,7 @@ public class ModBlocks {
             .strength(1.5f, 6.0f)
             .requiresCorrectToolForDrops()
             .sound(SoundType.DEEPSLATE)
-            .lightLevel(state -> 15)
+            .lightLevel(state -> state.getValue(net.unfamily.iskautils.block.custom.BlazingAltarBlock.POWERED) ? 15 : 0)
             .noOcclusion();
 
     public static final DeferredBlock<BlazingAltarBlock> BLAZING_ALTAR = BLOCKS.register("blazing_altar",

@@ -172,15 +172,10 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
      */
     @Override
     public boolean keyPressed(KeyEvent event) {
-        if (searchBox != null && searchBox.isFocused()) {
-            if (searchBox.keyPressed(event)) {
-                return true;
-            }
-            if (minecraft != null && minecraft.options.keyInventory.matches(event)) {
-                return true;
-            }
+        if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle, searchBox)) {
+            return true;
         }
-        if (event.key() == 256) { // GLFW_KEY_ESCAPE
+        if (event.key() == 256) {
             handleCancel();
             return true;
         }
@@ -343,12 +338,14 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
                 if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= upButtonY && mouseY < upButtonY + HANDLE_SIZE) {
                     scrollUp();
                     playButtonSound();
+                    MachineGuiInput.markScrollbarPressed();
                     return true;
                 }
                 int downButtonY = topPos + BUTTON_DOWN_Y;
                 if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= downButtonY && mouseY < downButtonY + HANDLE_SIZE) {
                     scrollDown();
                     playButtonSound();
+                    MachineGuiInput.markScrollbarPressed();
                     return true;
                 }
             }
@@ -356,6 +353,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
                 isDraggingHandle = true;
                 dragStartY = (int) mouseY;
                 dragStartScrollOffset = scrollOffset;
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
         }
@@ -364,7 +362,10 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (event.button() == 0) isDraggingHandle = false;
+        if (event.button() == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            isDraggingHandle = false;
+        }
         return super.mouseReleased(event);
     }
 

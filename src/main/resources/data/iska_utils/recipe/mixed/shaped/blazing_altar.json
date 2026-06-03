@@ -7,9 +7,15 @@
     "AAA"
   ],
   "key": {
-    "A": "iska_utils:smooth_blackstone",
-    "B": "iska_utils:drop_of_entropy",
-    "C": "minecraft:glowstone"
+    "A": {
+      "item": "iska_utils:smooth_blackstone"
+    },
+    "B": {
+      "item": "iska_utils:drop_of_entropy"
+    },
+    "C": {
+      "item": "minecraft:glowstone"
+    }
   },
   "result": {
     "id": "iska_utils:blazing_altar",

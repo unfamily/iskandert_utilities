@@ -1520,6 +1520,14 @@ public class Config {
                     "Hard Ice is indestructible and cannot be broken")
             .define("100_gift_place_hard_ice", true);
 
+    private static final ModConfigSpec.BooleanValue ENTROPIC_EGG_ALWAYS_CONSUME = BUILDER
+            .comment("If true, using an Entropic Egg on a mob without a vanilla spawn egg still consumes one from the stack (no reward or buff). Valid mobs always consume one egg on use.")
+            .define("200_000_always_consume_egg", false);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_EGG_APPLY_BUFF = BUILDER
+            .comment("If true, a successful Entropic Egg use applies Entropic Empowerment to the mob.")
+            .define("200_001_apply_entropic_buff", true);
+
     static {
         BUILDER.pop(); // End of evil_things category
     }
@@ -1650,6 +1658,8 @@ public class Config {
     public static boolean greedyShieldInfo;
     public static boolean burningFlameSuperHot;
     public static boolean giftPlaceHardIce;
+    public static boolean entropicEggAlwaysConsume;
+    public static boolean entropicEggApplyBuff;
     public static int unstableEntropyCatalystDecayTicks;
     public static boolean unstableEntropyCatalystDecayKillsPlayer;
     public static java.util.List<Integer> unstableEntropyCatalystDecayTintColors;
@@ -1932,6 +1942,8 @@ public class Config {
         greedyShieldInfo = GREEDY_SHIELD_INFO.get();
         burningFlameSuperHot = BURNING_FLAME_SUPER_HOT.get();
         giftPlaceHardIce = GIFT_PLACE_HARD_ICE.get();
+        entropicEggAlwaysConsume = ENTROPIC_EGG_ALWAYS_CONSUME.get();
+        entropicEggApplyBuff = ENTROPIC_EGG_APPLY_BUFF.get();
         unstableEntropyCatalystDecayTicks = UNSTABLE_ENTROPY_CATALYST_DECAY_TICKS.get();
         unstableEntropyCatalystDecayTintColors = parseHexRgbList(UNSTABLE_ENTROPY_CATALYST_DECAY_TINTS.get(), java.util.List.of(0xFF0000));
         unstableEntropyCatalystDecayKillsPlayer = UNSTABLE_ENTROPY_CATALYST_DECAY_KILLS_PLAYER.get();

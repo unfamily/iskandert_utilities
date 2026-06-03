@@ -581,16 +581,19 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         if (button == 0) { // Left click
             // Handle scrollbar clicks
             if (handleScrollButtonClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Handle handle drag start
             if (handleHandleClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Handle scrollbar area clicks
             if (handleScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
@@ -751,11 +754,22 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (event.button() == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (event.button() == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(event);
+    }
+
+    @Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle)) {
+            return true;
+        }
+        return super.keyPressed(event);
     }
     
     @Override

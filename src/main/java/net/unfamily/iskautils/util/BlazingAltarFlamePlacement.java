@@ -6,20 +6,27 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.block.entity.BlazingAltarBlockEntity;
+import net.unfamily.iskautils.world.BlazingAltarSpatialIndex;
 
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /** Server-side flame placement rules for the Blazing Altar. */
 public final class BlazingAltarFlamePlacement {
@@ -223,5 +230,71 @@ public final class BlazingAltarFlamePlacement {
             return ModBlocks.BURNING_FLAME.get();
         }
         return ModBlocks.CURSED_BURNING_FLAME.get();
+    }
+
+    /** Brazier flames in range of a non-operational altar must not emit block light. */
+    public static boolean isBrazierFlameLightSuppressed(BlockGetter level, BlockPos flamePos) {
+        if (!(level instanceof Level world)) {
+            return false;
+        }
+        BlockState flameState = world.getBlockState(flamePos);
+        if (!flameState.is(ModBlocks.BURNING_FLAME.get())) {
+            return false;
+        }
+        int flameChunkX = flamePos.getX() >> 4;
+        int flameChunkZ = flamePos.getZ() >> 4;
+        int searchRadius = maxAltarChunkReach();
+        for (int dcx = -searchRadius; dcx <= searchRadius; dcx++) {
+            for (int dcz = -searchRadius; dcz <= searchRadius; dcz++) {
+                Set<BlockPos> altars = BlazingAltarSpatialIndex.getAltarsInChunk(
+                        world.dimension(), new ChunkPos(flameChunkX + dcx, flameChunkZ + dcz));
+                for (BlockPos altarPos : altars) {
+                    BlockEntity be = world.getBlockEntity(altarPos);
+                    if (!(be instanceof BlazingAltarBlockEntity altar) || altar.isOperational()) {
+                        continue;
+                    }
+                    if (BlazingAltarSpatialIndex.isWithinChunkRadius(altarPos, flamePos, altar.getChunkRadius())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Recomputes block light for brazier flames after altar operational state changes. */
+    public static void refreshBrazierFlameLightInRadius(ServerLevel level, BlockPos altarPos, int chunkRadius, boolean groundOnly) {
+        Block burningFlame = ModBlocks.BURNING_FLAME.get();
+        for (ChunkPos chunk : BlazingAltarChunks.collectOrdered(altarPos, chunkRadius)) {
+            BlockPos probe = new BlockPos(chunk.getMinBlockX(), altarPos.getY(), chunk.getMinBlockZ());
+            if (!level.isLoaded(probe)) {
+                continue;
+            }
+            int baseX = chunk.getMinBlockX();
+            int baseZ = chunk.getMinBlockZ();
+            for (int localX = 0; localX < 16; localX++) {
+                for (int localZ = 0; localZ < 16; localZ++) {
+                    int x = baseX + localX;
+                    int z = baseZ + localZ;
+                    int minY = level.getMinY();
+                    int maxY = groundOnly
+                            ? level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z) + 2
+                            : level.getMaxY();
+                    for (int y = minY; y <= maxY; y++) {
+                        BlockPos pos = new BlockPos(x, y, z);
+                        BlockState state = level.getBlockState(pos);
+                        if (!state.is(burningFlame)) {
+                            continue;
+                        }
+                        level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
+                    }
+                }
+            }
+        }
+    }
+
+    private static int maxAltarChunkReach() {
+        return Config.blazingAltarMaxChunkRadius
+                + Config.blazingAltarRangeUpgradeMax * Config.blazingAltarRangeModuleChunkBonus;
     }
 }

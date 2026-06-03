@@ -418,8 +418,11 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
             // Gestisci i vari click nell'ordine di priorità (IDENTICO alla StructurePlacerScreen)
             if (handleScrollButtonClick(mouseX, mouseY) ||
                 handleHandleClick(mouseX, mouseY) ||
-                handleScrollbarClick(mouseX, mouseY) ||
-                handleSaveCancelClick(mouseX, mouseY) ||
+                handleScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
+                return true;
+            }
+            if (handleSaveCancelClick(mouseX, mouseY) ||
                 handleEntryClick(mouseX, mouseY)) {
                 return true;
             }
@@ -605,11 +608,22 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (event.button() == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (event.button() == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(event);
+    }
+
+    @Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle)) {
+            return true;
+        }
+        return super.keyPressed(event);
     }
     
     @Override

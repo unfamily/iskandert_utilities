@@ -3,6 +3,7 @@ package net.unfamily.iskautils.block;
 import net.minecraft.client.Minecraft;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.client.FlameVisibilityClient;
+import net.unfamily.iskautils.util.BlazingAltarFlamePlacement;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -32,6 +33,14 @@ public class BurningFlameBlock extends Block {
 
     public BurningFlameBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
+        if (BlazingAltarFlamePlacement.isBrazierFlameLightSuppressed(level, pos)) {
+            return 0;
+        }
+        return state.getLightEmission();
     }
 
     @Override

@@ -408,9 +408,12 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (event.button() == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (event.button() == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(event);
     }
@@ -806,6 +809,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
              if (handleScrollButtonClick(mouseX, mouseY) ||
                  handleHandleClick(mouseX, mouseY) ||
                  handleScrollbarClick(mouseX, mouseY)) {
+                 MachineGuiInput.markScrollbarPressed();
                  return true;
              }
          }
@@ -912,30 +916,9 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
       */
      @Override
      public boolean keyPressed(KeyEvent event) {
-         // Check if an EditBox is focused (either name or id)
-         boolean isEditBoxFocused = (nameEditBox != null && nameEditBox.isFocused()) || 
-                                    (idEditBox != null && idEditBox.isFocused());
-         
-         if (isEditBoxFocused) {
-             // Let the focused EditBox handle the key first
-             if (nameEditBox != null && nameEditBox.isFocused()) {
-                 if (nameEditBox.keyPressed(event)) {
-                     return true;
-                 }
-             }
-             if (idEditBox != null && idEditBox.isFocused()) {
-                 if (idEditBox.keyPressed(event)) {
-                     return true;
-                 }
-             }
-             
-             // If inventory key is pressed while EditBox is focused, prevent closing
-             // This works even if the user has changed the inventory key binding
-             if (this.minecraft != null && this.minecraft.options.keyInventory.matches(event)) {
-                 return true; // Prevent closing
-             }
+         if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle, nameEditBox, idEditBox)) {
+             return true;
          }
-         
          return super.keyPressed(event);
      }
 } 

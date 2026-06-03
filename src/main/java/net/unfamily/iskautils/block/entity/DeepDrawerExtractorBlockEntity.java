@@ -661,66 +661,9 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      */
     private boolean matchesFilterEntry(ItemStack stack, Item item, net.minecraft.resources.Identifier itemId,
                                       String itemIdStr, String itemModId, String filter) {
-        if (filter == null || filter.isEmpty()) {
-            return false;
-        }
-        
-        // ID filter: -minecraft:diamond (cheapest - check first)
-        if (filter.startsWith("-")) {
-            String idFilter = filter.substring(1);
-            return itemIdStr.equals(idFilter);
-        }
-        
-        // Mod ID filter: @iska_utils (cheap - check second)
-        // Supports abbreviations, e.g., @meka matches mekanism, mekanismtools, etc.
-        if (filter.startsWith("@")) {
-            String modIdFilter = filter.substring(1);
-            // Check if mod ID starts with the filter (supports abbreviations)
-            return itemModId.startsWith(modIdFilter);
-        }
-        
-        // Macro filter: &enchanted, &damaged (cheap - check third)
-        if (filter.startsWith("&")) {
-            String macroFilter = filter.substring(1).toLowerCase();
-            return switch (macroFilter) {
-                case "enchanted" -> stack.isEnchanted();
-                case "damaged" -> stack.isDamaged();
-                default -> false;
-            };
-        }
-        
-        // Tag filter: #c:ingots (more expensive - check fourth)
-        if (filter.startsWith("#")) {
-            String tagFilter = filter.substring(1);
-            try {
-                net.minecraft.resources.Identifier tagId = net.minecraft.resources.Identifier.parse(tagFilter);
-                net.minecraft.tags.TagKey<Item> itemTag = net.minecraft.tags.ItemTags.create(tagId);
-                return item.builtInRegistryHolder().is(itemTag);
-            } catch (Exception e) {
-                // Invalid tag format, ignore
-                return false;
-            }
-        }
-        
-        // NBT filter: ?"apotheosis:rarity":"apotheosis:mythic" (most expensive - check last)
-        if (filter.startsWith("?")) {
-            String nbtFilter = filter.substring(1);
-            try {
-                if (level != null) {
-                    var ops = level.registryAccess()
-                        .createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
-                    net.minecraft.nbt.Tag encoded = ItemStack.CODEC.encodeStart(ops, stack).getOrThrow();
-                    String nbtString = encoded.toString();
-                    return nbtString.contains(nbtFilter);
-                }
-            } catch (Exception e) {
-                // Error reading NBT, consider not matching
-                return false;
-            }
-        }
-        
-        // Default: treat as direct ID match (without prefix)
-        return itemIdStr.equals(filter);
+        var registryAccess = level != null ? level.registryAccess() : null;
+        return net.unfamily.iskautils.util.DeepDrawerItemFilter.matchesFilterEntry(
+                stack, item, itemId, itemIdStr, itemModId, filter, registryAccess);
     }
     
     // ===== NBT Save/Load =====

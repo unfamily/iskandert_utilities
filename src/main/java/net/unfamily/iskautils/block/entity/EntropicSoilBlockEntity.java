@@ -5,7 +5,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -18,7 +17,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
-import net.unfamily.iskautils.effect.ModMobEffects;
+import net.unfamily.iskautils.util.EntropicEmpowermentUtil;
 import net.unfamily.iskautils.util.EntropicSoilSpawnRules;
 import net.unfamily.iskautils.util.EntropicSoilUtil;
 import net.unfamily.iskautils.util.SoilAcceleratedSpawn;
@@ -176,13 +175,7 @@ public class EntropicSoilBlockEntity extends BlockEntity {
             mob.discard();
             return false;
         }
-        mob.addEffect(new MobEffectInstance(
-                ModMobEffects.ENTROPIC_EMPOWERMENT,
-                MobEffectInstance.INFINITE_DURATION,
-                0,
-                true,
-                true,
-                true));
+        EntropicEmpowermentUtil.apply(mob);
         if (level.addFreshEntity(mob)) {
             level.sendParticles(ParticleTypes.SMOKE, spawnPos.getX() + 0.5D, spawnPos.getY() + 0.2D, spawnPos.getZ() + 0.5D,
                     8, 0.25D, 0.1D, 0.25D, 0.01D);

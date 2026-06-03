@@ -195,6 +195,9 @@ public class ModItems {
     public static final DeferredItem<Item> ENTROPIC_AGGLOMERATION = ITEMS.registerItem(
             "entropic_agglomeration", net.unfamily.iskautils.item.custom.EntropicAgglomerationItem::new, UnaryOperator.identity());
 
+    public static final DeferredItem<Item> ENTROPIC_EGG = ITEMS.registerItem(
+            "entropic_egg", net.unfamily.iskautils.item.custom.EntropicEggItem::new, UnaryOperator.identity());
+
     public static final DeferredItem<Item> DRUIDIC_AGGLOMERATION = ITEMS.registerItem(
             "druidic_agglomeration", net.unfamily.iskautils.item.custom.DruidicAgglomerationItem::new, UnaryOperator.identity());
 
@@ -455,7 +458,9 @@ public class ModItems {
 
     public static final DeferredItem<BlockItem> BURNING_FLAME = ITEMS.registerSimpleBlockItem(ModBlocks.BURNING_FLAME);
 
-    public static final DeferredItem<BlockItem> BLAZING_ALTAR = ITEMS.registerSimpleBlockItem(ModBlocks.BLAZING_ALTAR);
+    public static final DeferredItem<Item> BLAZING_ALTAR = ITEMS.registerItem("blazing_altar",
+            props -> new net.unfamily.iskautils.item.custom.BlazingAltarBlockItem(ModBlocks.BLAZING_ALTAR.get(), props),
+            Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<Item> GHOST_BRAZIER = ITEMS.registerItem("ghost_brazier", GhostBrazierItem::new, p -> p.stacksTo(1));
 
