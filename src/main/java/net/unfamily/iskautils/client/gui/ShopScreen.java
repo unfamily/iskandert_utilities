@@ -15,7 +15,7 @@ import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopCurrency;
-import net.unfamily.iskautils.shop.ItemConverter;
+import net.unfamily.iskalib.item.ItemConverter;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
 import java.util.*;
@@ -1250,8 +1250,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                     }
                     
                     if (serverPlayer != null) {
-                        net.unfamily.iskautils.stage.StageRegistry registry =
-                            net.unfamily.iskautils.stage.StageRegistry.getInstance(server);
+                        net.unfamily.iskalib.stage.StageRegistry registry =
+                            net.unfamily.iskalib.stage.StageRegistry.getInstance(server);
                         
                         for (net.unfamily.iskautils.shop.ShopStage stage : item.stages) {
                             boolean hasStage = false;

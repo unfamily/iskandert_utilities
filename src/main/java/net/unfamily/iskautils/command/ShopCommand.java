@@ -35,7 +35,7 @@ public class ShopCommand {
         
         // Register team commands
 
-        ShopTeamCommand.register(event.getDispatcher());
+        net.unfamily.iskalib.command.ShopTeamCommand.register(event.getDispatcher());
     }
     
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {

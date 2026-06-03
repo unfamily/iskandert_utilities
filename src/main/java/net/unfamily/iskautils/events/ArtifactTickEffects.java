@@ -20,7 +20,7 @@ import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.artifact.IceDiamondItem;
 import net.unfamily.iskautils.item.custom.artifact.RunicDiceItem;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ArtifactEquipStages;
 import net.unfamily.iskautils.util.ArtifactTickIntervals;
 import net.unfamily.iskautils.util.AttributeSyncGrace;

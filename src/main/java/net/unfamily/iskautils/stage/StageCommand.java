@@ -22,6 +22,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskalib.stage.StageRegistry;
+import net.unfamily.iskalib.team.ShopTeamManager;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -48,7 +50,7 @@ public class StageCommand {
     
     // Initialize usage messages
     static {
-        COMMAND_USAGE.put("list_all", "/iska_utils_stage list all [target player]");
+        COMMAND_USAGE.put("list_all", "/iska_utils_stage list all [target player] — world, player, and team stages for the player(s)");
         COMMAND_USAGE.put("list_player", "/iska_utils_stage list player [target player]");
         COMMAND_USAGE.put("list_world", "/iska_utils_stage list world");
         COMMAND_USAGE.put("list_team", "/iska_utils_stage list team <team_name>");
@@ -73,7 +75,7 @@ public class StageCommand {
         COMMAND_USAGE.put("clear_world", "/iska_utils_stage clear world [silent=false] [hide=false]");
         COMMAND_USAGE.put("clear_team", "/iska_utils_stage clear team <team_name> [silent=false] [hide=false]");
         COMMAND_USAGE.put("clear_team_player", "/iska_utils_stage clear team_player [target player] [silent=false] [hide=false]");
-        COMMAND_USAGE.put("clear_all", "/iska_utils_stage clear all [target player] [silent=false] [hide=false]");
+        COMMAND_USAGE.put("clear_all", "/iska_utils_stage clear all [target player] [silent=false] [hide=false] — player, world, and team stages for the player(s)");
 
         COMMAND_USAGE.put("call_action", "/iska_utils_stage call_action <target> <action_id> [force=false] [silent=false] [hide=false]");
     }
@@ -439,6 +441,26 @@ public class StageCommand {
         }
     }
 
+    private static void sendTeamStagesLine(CommandSourceStack source, StageRegistry registry, ServerPlayer player, String labelPrefix) {
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(player.serverLevel());
+        String teamName = teamManager.getPlayerTeam(player);
+        List<String> teamStages = registry.getPlayerTeamStages(player);
+        String teamStagesText = teamStages.isEmpty() ? "§7(none)" : "§b" + String.join(", ", teamStages);
+        String teamLabel = teamName != null ? teamName : "§7(no team)";
+        source.sendSuccess(() -> Component.literal(labelPrefix + " (team " + teamLabel + "): " + teamStagesText), false);
+    }
+
+    private static int clearTeamStagesForPlayer(StageRegistry registry, ServerPlayer player) {
+        List<String> teamStages = new ArrayList<>(registry.getPlayerTeamStages(player));
+        int cleared = 0;
+        for (String stage : teamStages) {
+            if (registry.setPlayerTeamStage(player, stage, false)) {
+                cleared++;
+            }
+        }
+        return cleared;
+    }
+
     /**
      * Lists all stages
      */
@@ -460,6 +482,7 @@ public class StageCommand {
                 List<String> playerStages = registry.getPlayerStages(player);
                 String playerStagesText = playerStages.isEmpty() ? "§7(none)" : "§a" + String.join(", ", playerStages);
                 source.sendSuccess(() -> Component.literal("§dPlayer Stages (for you): " + playerStagesText), false);
+                sendTeamStagesLine(source, registry, player, "§bTeam Stages (for you)");
             } catch (CommandSyntaxException e) {
                 source.sendSuccess(() -> Component.literal("§dPlayer Stages: §7(run as player to see your stages)"), false);
             }
@@ -494,6 +517,7 @@ public class StageCommand {
                 List<String> playerStages = registry.getPlayerStages(targetPlayer);
                 String playerStagesText = playerStages.isEmpty() ? "§7(none)" : "§a" + String.join(", ", playerStages);
                 source.sendSuccess(() -> Component.literal("§dPlayer Stages for " + playerName + ": " + playerStagesText), false);
+                sendTeamStagesLine(source, registry, targetPlayer, "§bTeam Stages for " + playerName);
             }
             return targets.size();
         } catch (CommandSyntaxException e) {
@@ -791,12 +815,13 @@ public class StageCommand {
     }
     
     /**
-     * Clears all stages (player and world) for target player(s) (@p, @a, @r, @e, @s, @n)
+     * Clears all stages (player, world, and team for each target) for target player(s) (@p, @a, @r, @e, @s, @n)
      * @param hideInLog se true, il feedback non viene inviato agli op / non viene registrato nel log
      */
     private static int clearAllStages(CommandContext<CommandSourceStack> context, Boolean silentOverride, boolean hideInLog) {
         try {
             CommandSourceStack source = context.getSource();
+            StageRegistry registry = StageRegistry.getInstance(source.getServer());
             List<ServerPlayer> targets = getTargetPlayers(context, "target");
             if (targets.isEmpty()) {
                 source.sendFailure(Component.literal("§cNo player found from selector"));
@@ -804,14 +829,19 @@ public class StageCommand {
             }
             int playerStagesCleared = clearPlayerStages(context, true, hideInLog);
             int worldStagesCleared = clearWorldStages(context, true, hideInLog);
+            int teamStagesCleared = 0;
+            for (ServerPlayer target : targets) {
+                teamStagesCleared += clearTeamStagesForPlayer(registry, target);
+            }
             boolean silent = silentOverride != null ? silentOverride : false;
             boolean broadcastToOps = !hideInLog;
             if (!silent) {
                 String names = targets.stream().map(p -> p.getName().getString()).reduce((a, b) -> a + ", " + b).orElse("");
-                String feedback = "§aCleared " + playerStagesCleared + " player stages and " + worldStagesCleared + " world stages for " + names;
+                String feedback = "§aCleared " + playerStagesCleared + " player, " + worldStagesCleared + " world, and "
+                        + teamStagesCleared + " team stages for " + names;
                 source.sendSuccess(() -> Component.literal(feedback), broadcastToOps);
             }
-            return playerStagesCleared + worldStagesCleared;
+            return playerStagesCleared + worldStagesCleared + teamStagesCleared;
         } catch (CommandSyntaxException e) {
             LOGGER.error("Error in clearAllStages command", e);
             sendUsage(context.getSource(), "clear_all");
@@ -888,7 +918,7 @@ public class StageCommand {
     }
     
     /**
-     * Clears all stages (player and world) for the player executing the command
+     * Clears all stages (player, world, and team) for the player executing the command
      * @param hideInLog se true, il feedback non viene inviato agli op / non viene registrato nel log
      */
     private static int clearAllStagesForSelf(CommandContext<CommandSourceStack> context, Boolean silentOverride, boolean hideInLog) {
@@ -906,13 +936,15 @@ public class StageCommand {
             for (String stage : worldStages) {
                 registry.setWorldStage(stage, false);
             }
+            int teamStagesCount = clearTeamStagesForPlayer(registry, player);
             boolean silent = silentOverride != null ? silentOverride : false;
             boolean broadcastToOps = !hideInLog;
             if (!silent) {
-                String feedback = "§aCleared " + playerStagesCount + " player stages and " + worldStagesCount + " world stages for you";
+                String feedback = "§aCleared " + playerStagesCount + " player, " + worldStagesCount + " world, and "
+                        + teamStagesCount + " team stages for you";
                 source.sendSuccess(() -> Component.literal(feedback), broadcastToOps);
             }
-            return playerStagesCount + worldStagesCount;
+            return playerStagesCount + worldStagesCount + teamStagesCount;
         } catch (CommandSyntaxException e) {
             LOGGER.error("Error executing command: {}", e.getMessage());
             context.getSource().sendFailure(Component.literal("§cThis command must be executed by a player"));

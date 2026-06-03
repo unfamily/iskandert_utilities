@@ -15,7 +15,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.client.FlameVisibilityClient;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;

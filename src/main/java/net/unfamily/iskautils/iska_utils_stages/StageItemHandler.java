@@ -21,7 +21,7 @@ import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import net.unfamily.iskautils.script.LoadActionParser;
 import net.unfamily.iskautils.script.LoadModCondition;
 import net.unfamily.iskautils.script.LoadModGate;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ResourceUtil;
 import org.slf4j.Logger;
 

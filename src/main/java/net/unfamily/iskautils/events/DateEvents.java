@@ -7,7 +7,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 
 import java.time.LocalDate;
 

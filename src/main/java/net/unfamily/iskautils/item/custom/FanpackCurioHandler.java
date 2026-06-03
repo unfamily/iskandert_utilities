@@ -9,7 +9,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ModUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

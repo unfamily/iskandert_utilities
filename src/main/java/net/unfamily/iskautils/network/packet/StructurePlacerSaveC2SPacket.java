@@ -4,8 +4,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
-import net.unfamily.iskautils.structure.StructureDefinition;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructureDefinition;
+import net.unfamily.iskalib.structure.StructureLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

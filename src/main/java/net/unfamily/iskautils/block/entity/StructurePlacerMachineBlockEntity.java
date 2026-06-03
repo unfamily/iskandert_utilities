@@ -28,10 +28,10 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.client.gui.StructurePlacerMachineMenu;
-import net.unfamily.iskautils.structure.StructureBlockPlaceOrder;
-import net.unfamily.iskautils.structure.StructureDefinition;
-import net.unfamily.iskautils.structure.StructureLoader;
-import net.unfamily.iskautils.structure.StructurePlacementFakePlayer;
+import net.unfamily.iskalib.structure.StructureBlockPlaceOrder;
+import net.unfamily.iskalib.structure.StructureDefinition;
+import net.unfamily.iskalib.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructurePlacementFakePlayer;
 
 import java.nio.charset.StandardCharsets;
 
@@ -509,7 +509,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
 
         if (level instanceof net.minecraft.server.level.ServerLevel serverLevel
-                && net.unfamily.iskautils.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
+                && net.unfamily.iskalib.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
             return;
         }
         

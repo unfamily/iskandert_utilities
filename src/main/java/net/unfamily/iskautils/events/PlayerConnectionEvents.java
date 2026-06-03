@@ -4,7 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.unfamily.iskautils.structure.StructurePlacementHistory;
+import net.unfamily.iskalib.structure.StructurePlacementHistory;
 
 /**
  * Handles player connection events for cleanup purposes

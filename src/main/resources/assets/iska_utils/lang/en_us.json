@@ -461,6 +461,8 @@
   "block.iska_utils.graveyard_soil": "Graveyard Soil",
   "block.iska_utils.druidic_podzol": "Druidic Podzol",
   "effect.iska_utils.entropic_empowerment": "Entropic Empowerment",
+  "message.iska_utils.lib_split_backup.title": "Back up this world?",
+  "message.iska_utils.lib_split_backup.warning": "This world was last played with Iskandert's Utilities before version %s. The mod now requires Iskandert's Library and stores data differently.\n\nCreate a backup before loading, or continue without one.",
   "message.iska_utils.cursed_key.artifacts_required": "The Cursed Key only works when Artifacts is installed.",
   "message.iska_utils.suspicious_delivery.cursed_key": "The contents twisted into a cursed key?",
   "tooltip.iska_utils.cursed_key.desc0": "§7Use on a chest to awaken a Mimic (requires Artifacts).",

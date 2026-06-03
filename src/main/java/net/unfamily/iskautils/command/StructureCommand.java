@@ -19,9 +19,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.structure.StructureDefinition;
-import net.unfamily.iskautils.structure.StructureLoader;
-import net.unfamily.iskautils.structure.StructurePlacer;
+import net.unfamily.iskalib.structure.StructureDefinition;
+import net.unfamily.iskalib.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructurePlacer;
 import org.slf4j.Logger;
 
 /**
@@ -294,7 +294,7 @@ public class StructureCommand {
             if (success) {
                 // Add to placement history for undo functionality if player exists
                 if (player != null) {
-                    net.unfamily.iskautils.structure.StructurePlacementHistory.addPlacement(player, pos, structureId, 0);
+                    net.unfamily.iskalib.structure.StructurePlacementHistory.addPlacement(player, pos, structureId, 0);
                 }
                 
                 source.sendSuccess(() -> Component.literal("§aStructure §f" + structureId + " §aplaced successfully at §f" + 

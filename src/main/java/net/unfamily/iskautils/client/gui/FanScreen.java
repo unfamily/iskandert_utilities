@@ -18,7 +18,7 @@ import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.client.MarkRenderer;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskautils.network.ModMessages;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.network.packet.FanRangeUpdateC2SPacket;

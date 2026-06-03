@@ -300,6 +300,8 @@
   "key.iska_utils.burning_brazier_toggle": "Attiva/Disattiva auto-piazzamento fiamme",
   "key.iska_utils.ghost_brazier_toggle": "Attiva/Disattiva Modalità Spettatore Braciere Fantasma",
   "key.iska_utils.scanner_range": "Cicla Range Scanner",
+  "message.iska_utils.lib_split_backup.title": "Eseguire un backup del mondo?",
+  "message.iska_utils.lib_split_backup.warning": "Questo mondo è stato usato con Iskandert's Utilities prima della versione %s. La mod ora richiede Iskandert's Library e gestisce i dati in modo diverso.\n\nCrea un backup prima di caricare, oppure continua senza backup.",
   "message.iska_utils.structure_undo.no_history": "§eNessuna struttura da disassemblare",
   "message.iska_utils.structure_undo.structure_not_found": "§cDefinizione struttura non trovata: %s",
   "message.iska_utils.structure_undo.no_positions": "§cNessuna posizione calcolata per la struttura!",

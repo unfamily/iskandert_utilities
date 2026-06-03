@@ -44,7 +44,7 @@ public class ClientStructureSaver {
                                  isModifyOperation, oldStructureId);
         
         // Ricarica le strutture client
-        net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(true);
+        net.unfamily.iskalib.structure.StructureLoader.reloadAllDefinitions(true);
     }
     
     private static JsonObject createStructureJson(String structureName, String structureId, 

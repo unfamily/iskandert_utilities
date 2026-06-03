@@ -330,7 +330,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     public String getOwnerTeamName() {
         if (this.ownerTeamId != null && this.level != null && !this.level.isClientSide()) {
             if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                return net.unfamily.iskautils.shop.ShopTeamManager.getInstance(serverLevel)
+                return net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverLevel)
                         .getTeamNameById(this.ownerTeamId);
             }
         }
@@ -413,8 +413,8 @@ public class AutoShopBlockEntity extends BlockEntity {
         
         // If there's a saved team, check that the player still belongs to that team
         if (level != null && !level.isClientSide()) {
-            net.unfamily.iskautils.shop.ShopTeamManager teamManager = 
-                net.unfamily.iskautils.shop.ShopTeamManager.getInstance(player.serverLevel());
+            net.unfamily.iskalib.team.ShopTeamManager teamManager = 
+                net.unfamily.iskalib.team.ShopTeamManager.getInstance(player.serverLevel());
             
             // Get player's team
             String playerTeamName = teamManager.getPlayerTeam(player);
@@ -458,7 +458,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
             
             // Convert entry to ItemStack for comparison
-            ItemStack entryItem = net.unfamily.iskautils.shop.ItemConverter.parseItemString(entry.item, 1);
+            ItemStack entryItem = net.unfamily.iskalib.item.ItemConverter.parseItemString(entry.item, 1);
             if (!entryItem.isEmpty() && ItemStack.isSameItemSameComponents(templateItem, entryItem)) {
                 return entry; // Exact match found
             }
@@ -469,7 +469,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
             
             // Convert entry to ItemStack for comparison
-            ItemStack entryItem = net.unfamily.iskautils.shop.ItemConverter.parseItemString(entry.item, 1);
+            ItemStack entryItem = net.unfamily.iskalib.item.ItemConverter.parseItemString(entry.item, 1);
             if (!entryItem.isEmpty() && templateItem.is(entryItem.getItem())) {
                 return entry; // Type match found
             }
@@ -512,10 +512,10 @@ public class AutoShopBlockEntity extends BlockEntity {
             return;
         }
         net.minecraft.server.level.ServerLevel serverLevel = (net.minecraft.server.level.ServerLevel) level;
-        net.unfamily.iskautils.shop.ShopTeamManager teamManager = net.unfamily.iskautils.shop.ShopTeamManager.getInstance(serverLevel);
+        net.unfamily.iskalib.team.ShopTeamManager teamManager = net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverLevel);
         
         // Get team using saved ID
-        net.unfamily.iskautils.shop.ShopTeamManager.Team team = teamManager.getTeamById(entity.getOwnerTeamId());
+        net.unfamily.iskalib.team.ShopTeamManager.Team team = teamManager.getTeamById(entity.getOwnerTeamId());
         if (team == null) {
             return; // Team no longer exists
         }
@@ -565,7 +565,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             }
 
             // Check required stages
-            net.unfamily.iskautils.stage.StageRegistry registry = net.unfamily.iskautils.stage.StageRegistry.getInstance(serverLevel.getServer());
+            net.unfamily.iskalib.stage.StageRegistry registry = net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
             if (entry.stages != null && entry.stages.length > 0 && registry != null) {
                 boolean hasAllStages = true;
                 for (var stage : entry.stages) {
@@ -639,7 +639,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             }
 
             // Check required stages
-            net.unfamily.iskautils.stage.StageRegistry registry = net.unfamily.iskautils.stage.StageRegistry.getInstance(serverLevel.getServer());
+            net.unfamily.iskalib.stage.StageRegistry registry = net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
             if (entry.stages != null && entry.stages.length > 0 && registry != null) {
                 boolean hasAllStages = true;
                 for (var stage : entry.stages) {
@@ -683,7 +683,7 @@ public class AutoShopBlockEntity extends BlockEntity {
 
             // Create item from found entry (not from template)
             // This prevents duplication of NBT that don't exist in the shop
-            ItemStack itemToCreate = net.unfamily.iskautils.shop.ItemConverter.parseItemString(entry.item, entry.itemCount);
+            ItemStack itemToCreate = net.unfamily.iskalib.item.ItemConverter.parseItemString(entry.item, entry.itemCount);
             slot.setStackInSlot(0, itemToCreate);
             entity.setChanged();
         }

@@ -109,8 +109,8 @@ public final class SuspiciousDeliveryStageHost {
     public boolean checkSingleStage(ServerPlayer player, CommandItemDefinition.StageCondition condition) {
         String stageId = condition.getStage();
         boolean shouldBeSet = condition.shouldBeSet();
-        net.unfamily.iskautils.stage.StageRegistry registry =
-                net.unfamily.iskautils.stage.StageRegistry.getInstance(player.getServer());
+        net.unfamily.iskalib.stage.StageRegistry registry =
+                net.unfamily.iskalib.stage.StageRegistry.getInstance(player.getServer());
         return switch (condition.getStageType().toLowerCase()) {
             case "player" -> registry.hasPlayerStage(player, stageId) == shouldBeSet;
             case "world" -> registry.hasWorldStage(stageId) == shouldBeSet;

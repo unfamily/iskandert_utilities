@@ -23,7 +23,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.util.RandomSource;
-import net.unfamily.iskautils.explosion.ExplosionSystem;
+import net.unfamily.iskalib.explosion.ExplosionSystem;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;

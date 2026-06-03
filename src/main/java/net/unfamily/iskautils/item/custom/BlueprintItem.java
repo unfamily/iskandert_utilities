@@ -16,7 +16,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.unfamily.iskautils.client.MarkRenderer;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 
 import java.util.List;
 

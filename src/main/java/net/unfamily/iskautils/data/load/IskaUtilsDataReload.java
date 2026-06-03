@@ -10,7 +10,7 @@ import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
 import net.unfamily.iskautils.iska_utils_stages.StageItemHandler;
 import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.shop.ShopLoader;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.structure.StructureMonouseLoader;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeLoader;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryLoader;
@@ -41,7 +41,7 @@ public final class IskaUtilsDataReload {
         MacroLoader.reloadAllMacros();
         StageActionsLoader.loadAll(rm);
         StageItemHandler.loadAll(rm);
-        StructureLoader.loadAllServerDefinitions(rm);
+        StructureLoader.reloadAllDefinitions(true);
         FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), rm);
         SuspiciousDeliveryLoader.loadAll(rm);
         AncientTabletRecipeLoader.loadAll(rm);

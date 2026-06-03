@@ -14,7 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.client.MarkRenderer;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.network.packet.CollectingCratePreviewToggleC2SPacket;

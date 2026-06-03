@@ -18,7 +18,7 @@ import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.data.BurningBrazierData;
 import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 

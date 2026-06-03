@@ -4,8 +4,11 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "iska_utils.refmap.json",
   "mixins": [
-    "ItemStackMixin",
-    "CraftingInputMixin"
+    "ItemStackMixin"
+  ],
+  "client": [
+    "client.UtilsWorldOpenFlowsMixin",
+    "client.UtilsWorldOpenFlowsInvoker"
   ],
   "minVersion": "0.8"
 }

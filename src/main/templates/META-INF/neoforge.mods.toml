@@ -80,6 +80,14 @@ config="iska_utils.mixins.json"
     ordering="NONE"
     side="BOTH"
 
+# Required dependency on Iskandert Library
+[[dependencies.${mod_id}]]
+    modId="iska_lib"
+    type="required"
+    versionRange="[1.7.0.0.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Optional dependency on Curios API
 [[dependencies.${mod_id}]]
     modId="curios"

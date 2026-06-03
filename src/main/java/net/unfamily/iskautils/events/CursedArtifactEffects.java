@@ -21,7 +21,7 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.effect.ModMobEffects;
 import net.unfamily.iskautils.integration.apotheosis.ApotheosisCompat;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ArtifactTickIntervals;
 import net.unfamily.iskautils.util.AttributeSyncGrace;
 import net.unfamily.iskautils.util.CurioEquipUtil;

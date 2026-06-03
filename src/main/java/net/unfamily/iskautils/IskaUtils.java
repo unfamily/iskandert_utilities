@@ -48,7 +48,7 @@ import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.CuriosIntegration;
 import net.unfamily.iskautils.network.ModMessages;
-import net.unfamily.iskautils.shop.ShopTeamManager;
+import net.unfamily.iskalib.team.ShopTeamManager;
 import net.unfamily.iskautils.data.BurningBrazierData;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ModWoodTypes;
@@ -64,8 +64,14 @@ import net.unfamily.iskautils.data.load.IskaUtilsDataReload;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadListener;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.resources.ResourceLocation;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.minecraft.server.level.ServerPlayer;
+import com.google.gson.JsonElement;
+import java.util.Map;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.unfamily.iskalib.structure.StructureIOHooks;
+import net.unfamily.iskalib.structure.StructureLoader;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
+import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import net.unfamily.iskautils.shop.ShopLoader;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
@@ -77,6 +83,8 @@ public class IskaUtils {
     // The constructor for the mod class is the first code that is run when your mod is loaded.
     // FML will recognize some parameter types like IEventBus or ModContainer and pass them in automatically.
     public IskaUtils(IEventBus modEventBus, ModContainer modContainer) {
+        net.unfamily.iskautils.migration.UtilsWorldBackupGate.register(modEventBus);
+
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
         
@@ -187,6 +195,67 @@ public class IskaUtils {
         
         // Register network messages
         ModMessages.register();
+
+        net.unfamily.iskalib.stage.StageHooks.setListener(new net.unfamily.iskalib.stage.StageHooks.Listener() {
+            @Override
+            public void onPlayerStageChanged(ServerPlayer player, String stage, boolean value) {
+                net.unfamily.iskautils.command.StageActionsManager.onPlayerStageChanged(player, stage, value);
+            }
+
+            @Override
+            public void onWorldStageChanged(MinecraftServer server, String stage, boolean value) {
+                net.unfamily.iskautils.command.StageActionsManager.onWorldStageChanged(server, stage, value);
+            }
+
+            @Override
+            public void onTeamStageChanged(MinecraftServer server, String teamName, String stage, boolean value) {
+                net.unfamily.iskautils.command.StageActionsManager.onTeamStageChanged(server, teamName, stage, value);
+            }
+        });
+
+        net.unfamily.iskalib.stage.StageActionHooks.setListener(new net.unfamily.iskalib.stage.StageActionHooks.Listener() {
+            @Override
+            public java.util.List<String> listActionIds() {
+                return net.unfamily.iskautils.command.StageActionsLoader.getActionIds();
+            }
+
+            @Override
+            public int executeActionById(String actionId, java.util.List<ServerPlayer> players, boolean force) {
+                return net.unfamily.iskautils.command.StageActionsManager.executeActionById(actionId, players, force);
+            }
+        });
+
+        StructureIOHooks.setListener(new StructureIOHooks.Listener() {
+            @Override
+            public void loadServerStructureDefinitions(ResourceManager resourceManagerOrNull,
+                                                       StructureIOHooks.StructureDefinitionSink sink) {
+                Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
+                        ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS)
+                        : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.STRUCTURE_DEFINITIONS);
+                for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
+                    if (!e.getValue().isJsonObject()) {
+                        continue;
+                    }
+                    String defId = IskaUtilsLoadJson.definitionIdFromLocation(e.getKey());
+                    sink.accept(defId, e.getKey().toString(), e.getValue().getAsJsonObject());
+                }
+            }
+
+            @Override
+            public boolean acceptClientStructures() {
+                return Config.acceptClientStructure;
+            }
+
+            @Override
+            public String clientStructurePath() {
+                return Config.clientStructurePath;
+            }
+
+            @Override
+            public boolean allowClientStructurePlaceLikePlayer() {
+                return Config.allowClientStructurePlayerLike;
+            }
+        });
         
         // Register wood types
         ModWoodTypes.register();
@@ -469,7 +538,7 @@ public class IskaUtils {
 
                     // Ensure shop team is created/synced from FTB Teams when available
                     try {
-                        net.unfamily.iskautils.shop.ShopTeamManager.getInstance(serverPlayer.serverLevel()).getPlayerTeam(serverPlayer);
+                        net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverPlayer.serverLevel()).getPlayerTeam(serverPlayer);
                     } catch (Exception e) {
                         LOGGER.error("Error ensuring shop team for player {}: {}", serverPlayer.getName().getString(), e.getMessage());
                     }
@@ -519,7 +588,7 @@ public class IskaUtils {
             // Optional integration: synchronize shop teams with FTB Teams if present
             if (net.neoforged.fml.ModList.get().isLoaded("ftbteams")) {
                 try {
-                    net.unfamily.iskautils.integration.ftbteams.FtbTeamsEvents.init();
+                    net.unfamily.iskalib.integration.ftbteams.FtbTeamsEvents.init();
                 } catch (Throwable t) {
                     LOGGER.error("Error initializing FTB Teams integration: {}", t.getMessage());
                 }
@@ -528,7 +597,7 @@ public class IskaUtils {
             // Ensure shop team exists for already-online players (singleplayer)
             try {
                 for (net.minecraft.server.level.ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
-                    net.unfamily.iskautils.shop.ShopTeamManager.getInstance(player.serverLevel()).getPlayerTeam(player);
+                    net.unfamily.iskalib.team.ShopTeamManager.getInstance(player.serverLevel()).getPlayerTeam(player);
                 }
             } catch (Exception e) {
                 LOGGER.error("Error ensuring shop teams at server start: {}", e.getMessage());

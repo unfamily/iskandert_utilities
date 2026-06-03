@@ -21,10 +21,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.unfamily.iskautils.client.MarkRenderer;
-import net.unfamily.iskautils.structure.StructureBlockPlaceOrder;
-import net.unfamily.iskautils.structure.StructureDefinition;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
+import net.unfamily.iskalib.structure.StructureBlockPlaceOrder;
+import net.unfamily.iskalib.structure.StructureDefinition;
+import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.structure.StructureMonouseDefinition;
 import org.slf4j.Logger;
 
@@ -191,7 +191,7 @@ public class StructureMonouseItem extends Item {
                 giveItemsToPlayer(serverPlayer);
                 
                 // Add to placement history for undo functionality
-                net.unfamily.iskautils.structure.StructurePlacementHistory.addPlacement(serverPlayer, pos, structure.getId(), rotation);
+                net.unfamily.iskalib.structure.StructurePlacementHistory.addPlacement(serverPlayer, pos, structure.getId(), rotation);
                 
                 String structureName = structure.getName() != null ? structure.getName() : structure.getId();
                 player.displayClientMessage(Component.translatable("item.iska_utils.structure_monouse.message.placed_successfully", structureName), true);
@@ -265,7 +265,7 @@ public class StructureMonouseItem extends Item {
             Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
 
             if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
-                    && net.unfamily.iskautils.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
+                    && net.unfamily.iskalib.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
                 player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.structure_mobs_blocking"), true);
                 return false;
             }
@@ -429,9 +429,9 @@ public class StructureMonouseItem extends Item {
                 if (structure.isPlaceAsPlayer()) {
                     ServerLevel serverLevel = (ServerLevel) player.level();
                     ItemStack stackForHand = new ItemStack(block.asItem());
-                    net.unfamily.iskautils.structure.StructurePlacementFakePlayer.placeBlockAsPlayer(
+                    net.unfamily.iskalib.structure.StructurePlacementFakePlayer.placeBlockAsPlayer(
                             serverLevel, blockPos, blockState, stackForHand,
-                            net.unfamily.iskautils.structure.StructurePlacementFakePlayer.get(serverLevel, player.getUUID(), blockPos));
+                            net.unfamily.iskalib.structure.StructurePlacementFakePlayer.get(serverLevel, player.getUUID(), blockPos));
                     if (structure.isRefresh()) {
                         serverLevel.scheduleTick(blockPos, block, 0);
                     }

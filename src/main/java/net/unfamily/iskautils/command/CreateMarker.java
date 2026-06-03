@@ -18,7 +18,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.client.MarkRenderer;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 import org.slf4j.Logger;
 
 import java.util.HashMap;

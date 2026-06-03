@@ -28,7 +28,7 @@ import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.stage.StageRegistry;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ArtifactEquipStages;
 import net.unfamily.iskautils.util.AttributeSyncGrace;
 import net.unfamily.iskautils.util.DamageArmorBypassUtil;

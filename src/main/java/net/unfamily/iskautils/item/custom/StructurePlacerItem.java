@@ -19,12 +19,12 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.BlockItem;
-import net.unfamily.iskautils.client.MarkRenderer;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskautils.network.packet.StructurePlacerGuiOpenC2SPacket;
-import net.unfamily.iskautils.structure.StructureDefinition;
-import net.unfamily.iskautils.structure.StructureLoader;
-import net.unfamily.iskautils.structure.StructurePlacer;
-import net.unfamily.iskautils.structure.StructurePlacementFakePlayer;
+import net.unfamily.iskalib.structure.StructureDefinition;
+import net.unfamily.iskalib.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructurePlacer;
+import net.unfamily.iskalib.structure.StructurePlacementFakePlayer;
 import net.unfamily.iskautils.util.ModUtils;
 
 import java.util.ArrayList;
@@ -193,7 +193,7 @@ public class StructurePlacerItem extends Item {
         Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
 
         if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
-                && net.unfamily.iskautils.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
+                && net.unfamily.iskalib.structure.StructurePlacementMobChecks.hasNonPlayerLivingMobIn(serverLevel, blockPositions)) {
             player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.structure_mobs_blocking"), true);
             return InteractionResult.FAIL;
         }
@@ -274,7 +274,7 @@ public class StructurePlacerItem extends Item {
             showSuccessMarkers((ServerLevel) player.level(), blockAllocation, structure, isForced);
             
             // Add to placement history for undo functionality
-            net.unfamily.iskautils.structure.StructurePlacementHistory.addPlacement(player, centerPos, structure.getId(), getRotation(stack));
+            net.unfamily.iskalib.structure.StructurePlacementHistory.addPlacement(player, centerPos, structure.getId(), getRotation(stack));
             
             String structureName = structure.getName() != null ? structure.getName() : structure.getId();
             if (isForced) {

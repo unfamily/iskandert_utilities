@@ -176,6 +176,19 @@ dependencies {
     // Optional local library: Pattern Crafter (NeoForge 1.21.1)
     compileOnly files('libs/pattern_crafter-1.0.0.0.0-neoforge-1.21.1.jar')
 
+    // Iskandert Library 1.21.1 — local JAR in libs/ (manual copy; see README)
+    def iskaLibLocalJar = file('libs/iska_lib-1.7.0.0.0-neoforge-1.21.1.jar')
+    if (!iskaLibLocalJar.exists()) {
+        throw new GradleException(
+                "Missing ${iskaLibLocalJar.name}. Build Iskandert-Library-1.21.1 (./gradlew jar), " +
+                "copy the JAR into libs/, and for runClient also into run/mods/.")
+    }
+    if (project.findProperty('iskaLibUseLocal')?.toString()?.toBoolean()) {
+        implementation files(iskaLibLocalJar)
+    } else {
+        compileOnly files(iskaLibLocalJar)
+    }
+
     // MixinExtras for advanced mixin features
     // NeoForge 20.2+ includes MixinExtras by default, but we can override with a specific version if needed
     // Using the version that should be compatible with NeoForge 21.1.215

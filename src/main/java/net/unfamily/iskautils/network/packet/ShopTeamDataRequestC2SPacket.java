@@ -7,7 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.shop.ShopTeamManager;
+import net.unfamily.iskalib.team.ShopTeamManager;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.network.ModMessages;

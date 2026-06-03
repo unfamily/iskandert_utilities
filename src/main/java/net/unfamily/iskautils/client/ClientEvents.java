@@ -12,7 +12,7 @@ import net.unfamily.iskautils.IskaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.unfamily.iskautils.client.MarkRenderer;
+import net.unfamily.iskalib.client.marker.MarkRenderer;
 
 /**
  * Class that manages client-specific events

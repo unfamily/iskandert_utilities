@@ -11,7 +11,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.Slot;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.structure.StructureLoader;
+import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.network.ModMessages;
 
 public class StructureSaverMachineScreen extends AbstractContainerScreen<StructureSaverMachineMenu> {
@@ -52,7 +52,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     
     // Scrolling variables
     private int scrollOffset = 0;
-    private java.util.List<net.unfamily.iskautils.structure.StructureDefinition> clientStructures;
+    private java.util.List<net.unfamily.iskalib.structure.StructureDefinition> clientStructures;
     private int selectedEntryIndex = -1;
     private int selectedStructureIndex = -1; // To track selection (-1 = no selection)
     private boolean isDraggingHandle = false;
@@ -100,7 +100,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         super.init();
         
         // Ricarica le strutture all'apertura della GUI usando il flag del config
-        net.unfamily.iskautils.structure.StructureLoader.reloadAllDefinitions(net.unfamily.iskautils.Config.acceptClientStructure);
+        net.unfamily.iskalib.structure.StructureLoader.reloadAllDefinitions(net.unfamily.iskautils.Config.acceptClientStructure);
         
         // Request data from server (area bounds, etc.)
         requestDataFromServer();
@@ -182,7 +182,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
      */
     private void loadClientStructures() {
         // Use the new dedicated method that loads only from player_structures.json
-        var playerStructures = net.unfamily.iskautils.structure.StructureLoader.getPlayerStructuresForSaverMachine();
+        var playerStructures = net.unfamily.iskalib.structure.StructureLoader.getPlayerStructuresForSaverMachine();
         this.clientStructures = new java.util.ArrayList<>(playerStructures.values());
     }
     
@@ -233,7 +233,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             
             // If the entry has a client structure, show name, ID, slot and button
             if (entryIndex < clientStructures.size()) {
-                net.unfamily.iskautils.structure.StructureDefinition structure = clientStructures.get(entryIndex);
+                net.unfamily.iskalib.structure.StructureDefinition structure = clientStructures.get(entryIndex);
                 
                 // Smaller text: scale to 0.7
                 float textScale = 0.7f;
@@ -283,7 +283,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     /**
      * Renders the icon of a structure in the slot (identical to StructureSelectionScreen)
      */
-    private void renderStructureIcon(GuiGraphics guiGraphics, net.unfamily.iskautils.structure.StructureDefinition structure, int x, int y) {
+    private void renderStructureIcon(GuiGraphics guiGraphics, net.unfamily.iskalib.structure.StructureDefinition structure, int x, int y) {
         if (structure.getIcon() != null && structure.getIcon().getItem() != null) {
             // Try to get the item from the specified ID in the script
             try {
