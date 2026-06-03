@@ -333,9 +333,18 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             return true;
         }
         if (button == 0) {
-            if (handleScrollButtonClick(mouseX, mouseY)) return true;
-            if (handleHandleClick(mouseX, mouseY)) return true;
-            if (handleScrollbarClick(mouseX, mouseY)) return true;
+            if (handleScrollButtonClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
+                return true;
+            }
+            if (handleHandleClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
+                return true;
+            }
+            if (handleScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
+                return true;
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
@@ -430,11 +439,22 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (button == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, keyCode, scanCode, modifiers, isDraggingHandle)) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

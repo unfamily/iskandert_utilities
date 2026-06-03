@@ -543,16 +543,19 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         if (button == 0) { // Left click
             // Handle scrollbar clicks
             if (handleScrollButtonClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Handle handle drag start
             if (handleHandleClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Handle scrollbar area clicks
             if (handleScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
@@ -702,11 +705,22 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (button == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, keyCode, scanCode, modifiers, isDraggingHandle)) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
     
     @Override

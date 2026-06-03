@@ -1035,6 +1035,8 @@
   "gui.iska_utils.deep_drawer_extractor.inverted_filter_button.deny": "Lista di blocco",
   "gui.iska_utils.deep_drawer_extractor.click_to_add_filter": "Clicca per aggiungere filtro",
   "gui.iska_utils.deep_drawer_extractor.clear": "Cancella",
+  "gui.iska_utils.deep_drawers.search": "Cerca",
+  "gui.iska_utils.deep_drawers.search_hint": "Nome, oppure -id @mod #tag ?nbt &macro",
   "gui.iska_utils.deep_drawer_extractor.apply": "Applica",
   "gui.iska_utils.deep_drawer_extractor.close_without_saving": "Chiudi senza salvare",
   "gui.iska_utils.deep_drawer_extractor.not_available_in_edit_mode": "Non disponibile",

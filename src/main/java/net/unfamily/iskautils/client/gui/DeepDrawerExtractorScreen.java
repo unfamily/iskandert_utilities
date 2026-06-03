@@ -560,16 +560,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             
             // Handle scrollbar clicks first (they have priority)
             if (handleScrollButtonClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Handle handle drag start
             if (handleHandleClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Handle scrollbar area clicks
             if (handleScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
         }
@@ -1892,32 +1895,13 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        boolean isEditBoxFocused = editingEditBox != null && editingEditBox.isFocused();
-        boolean isEditModeTextBoxFocused = editModeTextBox != null && editModeTextBox.isFocused();
-        boolean esc = keyCode == 256;
-        boolean inv = this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode);
-
-        if (isEditBoxFocused && editingEditBox != null) {
-            if (editingEditBox.keyPressed(keyCode, scanCode, modifiers)) {
-                return true;
-            }
-            if (keyCode == 257) {
-                stopEditingFilter();
-                return true;
-            }
-        }
-
-        if (isEditModeTextBoxFocused && editModeTextBox != null) {
-            if (editModeTextBox.keyPressed(keyCode, scanCode, modifiers)) {
-                return true;
-            }
-        }
-
-        if (esc || inv) {
-            onClose();
+        if (MachineGuiInput.handleContainerKeyPressed(this, keyCode, scanCode, modifiers, isDraggingHandle, editingEditBox, editModeTextBox)) {
             return true;
         }
-
+        if (editingEditBox != null && editingEditBox.isFocused() && keyCode == 257) {
+            stopEditingFilter();
+            return true;
+        }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
     
@@ -1950,9 +1934,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (button == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(mouseX, mouseY, button);
     }

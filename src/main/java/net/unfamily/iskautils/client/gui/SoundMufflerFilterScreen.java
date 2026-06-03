@@ -171,15 +171,10 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (searchBox != null && searchBox.isFocused()) {
-            if (searchBox.keyPressed(keyCode, scanCode, modifiers)) {
-                return true;
-            }
-            if (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
-                return true;
-            }
+        if (MachineGuiInput.handleContainerKeyPressed(this, keyCode, scanCode, modifiers, isDraggingHandle, searchBox)) {
+            return true;
         }
-        if (keyCode == 256) { // GLFW_KEY_ESCAPE
+        if (keyCode == 256) {
             handleCancel();
             return true;
         }
@@ -339,12 +334,14 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
                 if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= upButtonY && mouseY < upButtonY + HANDLE_SIZE) {
                     scrollUp();
                     playButtonSound();
+                    MachineGuiInput.markScrollbarPressed();
                     return true;
                 }
                 int downButtonY = topPos + BUTTON_DOWN_Y;
                 if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= downButtonY && mouseY < downButtonY + HANDLE_SIZE) {
                     scrollDown();
                     playButtonSound();
+                    MachineGuiInput.markScrollbarPressed();
                     return true;
                 }
             }
@@ -352,6 +349,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
                 isDraggingHandle = true;
                 dragStartY = (int) mouseY;
                 dragStartScrollOffset = scrollOffset;
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
         }
@@ -360,7 +358,10 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0) isDraggingHandle = false;
+        if (button == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            isDraggingHandle = false;
+        }
         return super.mouseReleased(mouseX, mouseY, button);
     }
 

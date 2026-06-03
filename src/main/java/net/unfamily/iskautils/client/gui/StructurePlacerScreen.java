@@ -387,16 +387,19 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
             
             // Verifica click sui pulsanti di scroll
             if (handleScrollButtonClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Verifica click sull'handle per il drag
             if (handleHandleClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
             // Verifica click sulla scrollbar per il salto
             if (handleScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             
@@ -578,11 +581,22 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
     
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (button == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, keyCode, scanCode, modifiers, isDraggingHandle)) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
     
     @Override

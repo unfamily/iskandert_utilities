@@ -437,8 +437,11 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
             // Gestisci i vari click nell'ordine di priorità (IDENTICO alla StructurePlacerScreen)
             if (handleScrollButtonClick(mouseX, mouseY) ||
                 handleHandleClick(mouseX, mouseY) ||
-                handleScrollbarClick(mouseX, mouseY) ||
-                handleSaveCancelClick(mouseX, mouseY) ||
+                handleScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
+                return true;
+            }
+            if (handleSaveCancelClick(mouseX, mouseY) ||
                 handleEntryClick(mouseX, mouseY)) {
                 return true;
             }
@@ -616,11 +619,22 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && isDraggingHandle) {
-            isDraggingHandle = false;
-            return true;
+        if (button == 0) {
+            MachineGuiInput.clearScrollbarPressed();
+            if (isDraggingHandle) {
+                isDraggingHandle = false;
+                return true;
+            }
         }
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, keyCode, scanCode, modifiers, isDraggingHandle)) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
     
     @Override
