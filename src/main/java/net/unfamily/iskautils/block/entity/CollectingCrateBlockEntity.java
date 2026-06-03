@@ -21,6 +21,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.Containers;
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -39,10 +40,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvider {
-    public static final TagKey<net.minecraft.world.level.material.Fluid> EXPERIENCE_FLUID_TAG =
+    public static final TagKey<Fluid> EXPERIENCE_FLUID_TAG =
             TagKey.create(Registries.FLUID, ResourceLocation.fromNamespaceAndPath("c", "experience"));
 
     private static final int MIN_HEIGHT_OR_DEPTH = 0;
+    private static final int TANK_INSERTION = 0;
+    private static final int TANK_ACCUMULATION = 1;
 
     private CollectingCrateMode collectMode = CollectingCrateMode.BOTH;
     private int redstoneMode = 0;
@@ -55,7 +58,9 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
 
     private final ItemStackHandler storageHandler;
     private final ItemStackHandler moduleHandler;
-    private final FluidTank experienceTank;
+    private final InsertionBufferTank insertionBufferTank;
+    private final AccumulationTank accumulationTank;
+    private final CrateFluidHandler fluidHandler;
     private final IItemHandler automationItemHandler;
 
     public CollectingCrateBlockEntity(BlockPos pos, BlockState state) {
@@ -84,7 +89,9 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
                 return Config.collectingCrateRangeUpgradeMax;
             }
         };
-        this.experienceTank = new ExperienceTank();
+        this.insertionBufferTank = new InsertionBufferTank();
+        this.accumulationTank = new AccumulationTank();
+        this.fluidHandler = new CrateFluidHandler();
         this.automationItemHandler = storageHandler;
     }
 
@@ -100,8 +107,23 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         return automationItemHandler;
     }
 
+    /** Automation / pipes: insert into buffer, extract from accumulation. */
+    public IFluidHandler getFluidHandler() {
+        return fluidHandler;
+    }
+
+    /** @deprecated Use {@link #getInsertionBufferTank()} — kept for any external callers. */
+    @Deprecated
     public FluidTank getExperienceTank() {
-        return experienceTank;
+        return insertionBufferTank;
+    }
+
+    public FluidTank getInsertionBufferTank() {
+        return insertionBufferTank;
+    }
+
+    public FluidTank getAccumulationTank() {
+        return accumulationTank;
     }
 
     public CollectingCrateMode getCollectMode() {
@@ -233,51 +255,109 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
                 worldPosition, facing, sizeLeft, sizeRight, sizeHeight, sizeDepth);
     }
 
-    public int getStoredXpMb() {
-        return experienceTank.getFluidAmount();
+    /** Mb in accumulation (player-facing storage). */
+    public long getAccumulationMb() {
+        return accumulationTank.getStoredMb();
     }
 
-    public int getStoredXpPoints() {
+    /** Mb waiting in insertion buffer (any c:experience fluid). */
+    public int getInsertionBufferMb() {
+        return insertionBufferTank.getFluidAmount();
+    }
+
+    /** Total mb for GUI bar: accumulation + our fluid in buffer. */
+    public long getStoredXpMb() {
+        return getAccumulationMb() + getOurFluidMbInBuffer();
+    }
+
+    public long getStoredXpPoints() {
         return ExperienceFluidMath.xpPointsFromMb(getStoredXpMb());
     }
 
+    private int getOurFluidMbInBuffer() {
+        FluidStack buffer = insertionBufferTank.getFluid();
+        if (buffer.isEmpty() || buffer.getFluid() != ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get()) {
+            return 0;
+        }
+        return buffer.getAmount();
+    }
+
+    private static long accumulationCapacityMb() {
+        return ExperienceFluidMath.capacityMbFromLevels(Config.collectingCrateXpCapacityLevels);
+    }
+
+    /** Staging buffer uses int fluid amounts; cap matches accumulation config (truncated at int max per transfer). */
+    private static int bufferTankCapacityMb() {
+        long cap = accumulationCapacityMb();
+        return cap > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) cap;
+    }
+
+    private boolean canAcceptInsertionBufferFill() {
+        return accumulationTank.getSpaceMb() > 0;
+    }
+
     public void collectAllXpToPlayer(Player player) {
-        if (level == null || level.isClientSide || experienceTank.isEmpty()) {
+        if (level == null || level.isClientSide) {
             return;
         }
-        int points = getStoredXpPoints();
-        if (points > 0) {
-            player.giveExperiencePoints(points);
-            experienceTank.setFluid(FluidStack.EMPTY);
-            setChanged();
+        processInsertionBuffer();
+        long points = ExperienceFluidMath.xpPointsFromMb(accumulationTank.getStoredMb());
+        if (points <= 0) {
+            return;
         }
+        while (points > 0) {
+            int chunk = (int) Math.min(points, Integer.MAX_VALUE);
+            player.giveExperiencePoints(chunk);
+            points -= chunk;
+        }
+        accumulationTank.setStoredMb(0);
+        setChanged();
     }
 
     public void depositAllXpFromPlayer(Player player) {
         if (level == null || level.isClientSide) {
             return;
         }
+        processInsertionBuffer();
         long totalXp = ExperienceFluidMath.levelsToXp(player.experienceLevel)
                 + Math.round(player.experienceProgress * player.getXpNeededForNextLevel());
         if (totalXp <= 0) {
             return;
         }
-        int spacePoints = ExperienceFluidMath.xpPointsFromMb(experienceTank.getSpace());
-        int toStore = (int) Math.min(totalXp, spacePoints);
+        long spacePoints = ExperienceFluidMath.xpPointsFromMb(accumulationTank.getSpaceMb());
+        long toStore = Math.min(totalXp, spacePoints);
         if (toStore <= 0) {
             return;
         }
-        int mb = ExperienceFluidMath.mbFromXpPoints(toStore);
-        FluidStack stack = new FluidStack(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), mb);
-        experienceTank.fill(stack, IFluidHandler.FluidAction.EXECUTE);
-        player.giveExperiencePoints(-toStore);
-        setChanged();
+        long mbRemaining = ExperienceFluidMath.mbFromXpPoints(toStore);
+        long filledTotal = 0;
+        while (mbRemaining > 0) {
+            int chunk = (int) Math.min(mbRemaining, Integer.MAX_VALUE);
+            FluidStack stack = new FluidStack(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), chunk);
+            int filled = accumulationTank.fill(stack, IFluidHandler.FluidAction.EXECUTE);
+            if (filled <= 0) {
+                break;
+            }
+            filledTotal += filled;
+            mbRemaining -= filled;
+        }
+        long storedPoints = ExperienceFluidMath.xpPointsFromMb(filledTotal);
+        if (storedPoints > 0) {
+            long remaining = storedPoints;
+            while (remaining > 0) {
+                int chunk = (int) Math.min(remaining, Integer.MAX_VALUE);
+                player.giveExperiencePoints(-chunk);
+                remaining -= chunk;
+            }
+            setChanged();
+        }
     }
 
     public void drops() {
         if (level == null || level.isClientSide) {
             return;
         }
+        processInsertionBuffer();
         for (int i = 0; i < storageHandler.getSlots(); i++) {
             ItemStack stack = storageHandler.getStackInSlot(i);
             if (!stack.isEmpty()) {
@@ -295,26 +375,23 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         setChanged();
     }
 
-    /** Block item drop: keeps stored XP; inventory is dropped separately in {@link #drops()}. */
     public ItemStack createDropStack(BlockState state) {
         ItemStack stack = new ItemStack(state.getBlock());
-        int storedMb = experienceTank.getFluidAmount();
+        long storedMb = getTotalStoredMbForPersistence();
         if (storedMb > 0) {
             CompoundTag data = new CompoundTag();
-            data.putInt("StoredXpMb", storedMb);
+            data.putLong("StoredXpMb", storedMb);
             stack.set(DataComponents.CUSTOM_DATA, CustomData.of(data));
         }
         return stack;
     }
 
-    /** Restores XP tank from a broken-crate item tag (1.21.1 {@link net.unfamily.iskautils.item.custom.CollectingCrateBlockItem}). */
     public void loadStoredXpFromDropTag(CompoundTag tag) {
-        if (tag.contains("StoredXpMb")) {
-            int mb = tag.getInt("StoredXpMb");
-            if (mb > 0) {
-                experienceTank.setFluid(new FluidStack(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), mb));
-                setChanged();
-            }
+        long mb = readMbTag(tag, "StoredXpMb");
+        if (mb > 0) {
+            insertionBufferTank.setFluid(new FluidStack(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(),
+                    (int) Math.min(mb, Integer.MAX_VALUE)));
+            setChanged();
         }
     }
 
@@ -325,6 +402,7 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         if (blockEntity.redstoneMode == 3) {
             blockEntity.redstoneMode = 4;
         }
+        blockEntity.processInsertionBuffer();
         blockEntity.tickCounter++;
         if (blockEntity.tickCounter < Config.collectingCrateCollectionIntervalTicks) {
             return;
@@ -338,6 +416,27 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         }
         if (blockEntity.collectMode.collectsItems()) {
             blockEntity.collectItems(level, pos);
+        }
+        blockEntity.processInsertionBuffer();
+    }
+
+    private void processInsertionBuffer() {
+        if (insertionBufferTank.isEmpty() || accumulationTank.getSpaceMb() <= 0) {
+            return;
+        }
+        FluidStack buffer = insertionBufferTank.getFluid();
+        if (buffer.isEmpty()) {
+            return;
+        }
+        int toMove = (int) Math.min(buffer.getAmount(), accumulationTank.getSpaceMb());
+        if (toMove <= 0) {
+            return;
+        }
+        FluidStack out = new FluidStack(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), toMove);
+        int filled = accumulationTank.fill(out, IFluidHandler.FluidAction.EXECUTE);
+        if (filled > 0) {
+            insertionBufferTank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+            setChanged();
         }
     }
 
@@ -358,23 +457,23 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
     }
 
     private void collectExperience(Level level, BlockPos pos) {
-        if (experienceTank.getSpace() < ExperienceFluidMath.mbPerXpPoint()) {
+        if (!canAcceptInsertionBufferFill() || insertionBufferTank.getSpace() < ExperienceFluidMath.mbPerXpPoint()) {
             return;
         }
         AABB area = getCollectionAABB();
         List<ExperienceOrb> orbs = level.getEntitiesOfClass(ExperienceOrb.class, area);
         for (ExperienceOrb orb : orbs) {
-            if (experienceTank.getSpace() < ExperienceFluidMath.mbPerXpPoint()) {
+            if (!canAcceptInsertionBufferFill() || insertionBufferTank.getSpace() < ExperienceFluidMath.mbPerXpPoint()) {
                 break;
             }
             int value = orb.getValue();
             if (value <= 0) {
                 continue;
             }
-            int mb = ExperienceFluidMath.mbFromXpPoints(value);
+            int mb = (int) Math.min(ExperienceFluidMath.mbFromXpPoints(value), Integer.MAX_VALUE);
             FluidStack stack = new FluidStack(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), mb);
-            int filled = experienceTank.fill(stack, IFluidHandler.FluidAction.EXECUTE);
-            if (filled > 0) {
+            int filled = insertionBufferTank.fill(stack, IFluidHandler.FluidAction.EXECUTE);
+            if (filled >= mb) {
                 orb.discard();
                 setChanged();
             }
@@ -427,6 +526,10 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         return remaining;
     }
 
+    private long getTotalStoredMbForPersistence() {
+        return getAccumulationMb() + insertionBufferTank.getFluidAmount();
+    }
+
     @Override
     protected void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
@@ -457,14 +560,38 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
             moduleHandler.deserializeNBT(registries, tag.getCompound("Module"));
         }
         clampSizesToMax();
-        if (tag.contains("ExperienceTank")) {
-            experienceTank.readFromNBT(registries, tag.getCompound("ExperienceTank"));
-        } else if (tag.contains("StoredXpMb")) {
-            int mb = tag.getInt("StoredXpMb");
-            if (mb > 0) {
-                experienceTank.setFluid(new FluidStack(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), mb));
+        if (tag.contains("InsertionBufferTank")) {
+            insertionBufferTank.readFromNBT(registries, tag.getCompound("InsertionBufferTank"));
+        } else if (tag.contains("ExperienceTank")) {
+            insertionBufferTank.readFromNBT(registries, tag.getCompound("ExperienceTank"));
+        }
+        loadXpMbFromTag(tag, registries);
+    }
+
+    private void loadXpMbFromTag(CompoundTag tag, HolderLookup.Provider registries) {
+        long accumMb = readMbTag(tag, "AccumulationMb");
+        if (accumMb >= 0) {
+            accumulationTank.setStoredMb(accumMb);
+        } else if (tag.contains("AccumulationTank")) {
+            accumulationTank.readFromNBT(registries, tag.getCompound("AccumulationTank"));
+            accumulationTank.importLegacyFluidAmount();
+        } else {
+            long legacy = readMbTag(tag, "StoredXpMb");
+            if (legacy > 0) {
+                insertionBufferTank.setFluid(new FluidStack(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(),
+                        (int) Math.min(legacy, Integer.MAX_VALUE)));
             }
         }
+    }
+
+    private static long readMbTag(CompoundTag tag, String key) {
+        if (tag.contains(key, net.minecraft.nbt.Tag.TAG_LONG)) {
+            return tag.getLong(key);
+        }
+        if (tag.contains(key, net.minecraft.nbt.Tag.TAG_INT)) {
+            return tag.getInt(key);
+        }
+        return -1;
     }
 
     @Override
@@ -489,12 +616,14 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         tag.putBoolean("PreviewEnabled", previewEnabled);
         tag.put("Storage", storageHandler.serializeNBT(registries));
         tag.put("Module", moduleHandler.serializeNBT(registries));
-        tag.putInt("StoredXpMb", experienceTank.getFluidAmount());
+        tag.put("InsertionBufferTank", insertionBufferTank.writeToNBT(registries, new CompoundTag()));
+        tag.putLong("AccumulationMb", accumulationTank.getStoredMb());
+        tag.putLong("StoredXpMb", getTotalStoredMbForPersistence());
     }
 
-    private final class ExperienceTank extends FluidTank {
-        ExperienceTank() {
-            super(ExperienceFluidMath.capacityMbFromLevels(Config.collectingCrateXpCapacityLevels));
+    private final class InsertionBufferTank extends FluidTank {
+        InsertionBufferTank() {
+            super(bufferTankCapacityMb());
         }
 
         @Override
@@ -502,12 +631,197 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
             if (stack.isEmpty()) {
                 return true;
             }
+            if (!canAcceptInsertionBufferFill()) {
+                return false;
+            }
             return stack.getFluid().is(EXPERIENCE_FLUID_TAG);
+        }
+
+        @Override
+        public int fill(FluidStack resource, FluidAction action) {
+            if (!canAcceptInsertionBufferFill()) {
+                return 0;
+            }
+            return super.fill(resource, action);
         }
 
         @Override
         protected void onContentsChanged() {
             setChanged();
+        }
+    }
+
+    private final class AccumulationTank extends FluidTank {
+        private long storedMb;
+
+        AccumulationTank() {
+            super(Integer.MAX_VALUE);
+        }
+
+        long getStoredMb() {
+            return storedMb;
+        }
+
+        long getCapacityMb() {
+            return accumulationCapacityMb();
+        }
+
+        long getSpaceMb() {
+            return Math.max(0, getCapacityMb() - storedMb);
+        }
+
+        void setStoredMb(long mb) {
+            storedMb = Math.min(Math.max(0, mb), getCapacityMb());
+            syncInternalFluid();
+            setChanged();
+        }
+
+        void importLegacyFluidAmount() {
+            storedMb = Math.min(getFluid().getAmount(), getCapacityMb());
+            syncInternalFluid();
+        }
+
+        private void syncInternalFluid() {
+            if (storedMb <= 0) {
+                setFluid(FluidStack.EMPTY);
+            } else {
+                int amount = (int) Math.min(storedMb, Integer.MAX_VALUE);
+                setFluid(new FluidStack(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), amount));
+            }
+        }
+
+        @Override
+        public int getFluidAmount() {
+            return storedMb > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) storedMb;
+        }
+
+        @Override
+        public int getSpace() {
+            long space = getSpaceMb();
+            return space > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) space;
+        }
+
+        @Override
+        public int getCapacity() {
+            return Integer.MAX_VALUE;
+        }
+
+        @Override
+        public boolean isFluidValid(FluidStack stack) {
+            if (stack.isEmpty()) {
+                return true;
+            }
+            return stack.getFluid() == ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get();
+        }
+
+        @Override
+        public int fill(FluidStack resource, FluidAction action) {
+            if (!isFluidValid(resource) || resource.isEmpty()) {
+                return 0;
+            }
+            long space = getSpaceMb();
+            if (space <= 0) {
+                return 0;
+            }
+            int toFill = (int) Math.min(Math.min(resource.getAmount(), space), Integer.MAX_VALUE);
+            if (toFill <= 0) {
+                return 0;
+            }
+            if (action == FluidAction.EXECUTE) {
+                storedMb += toFill;
+                syncInternalFluid();
+                onContentsChanged();
+            }
+            return toFill;
+        }
+
+        @Override
+        public @NotNull FluidStack drain(int maxDrain, FluidAction action) {
+            if (storedMb <= 0) {
+                return FluidStack.EMPTY;
+            }
+            int toDrain = (int) Math.min(Math.min(maxDrain, storedMb), Integer.MAX_VALUE);
+            if (toDrain <= 0) {
+                return FluidStack.EMPTY;
+            }
+            FluidStack drained = new FluidStack(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), toDrain);
+            if (action == FluidAction.EXECUTE) {
+                storedMb -= toDrain;
+                syncInternalFluid();
+                onContentsChanged();
+            }
+            return drained;
+        }
+
+        @Override
+        public @NotNull FluidStack drain(FluidStack resource, FluidAction action) {
+            if (resource.isEmpty() || resource.getFluid() != ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get()) {
+                return FluidStack.EMPTY;
+            }
+            return drain(resource.getAmount(), action);
+        }
+
+        @Override
+        protected void onContentsChanged() {
+            setChanged();
+        }
+    }
+
+    private final class CrateFluidHandler implements IFluidHandler {
+        @Override
+        public int getTanks() {
+            return 2;
+        }
+
+        @Override
+        public @NotNull FluidStack getFluidInTank(int tank) {
+            return switch (tank) {
+                case TANK_INSERTION -> insertionBufferTank.getFluid();
+                case TANK_ACCUMULATION -> accumulationTank.getFluid();
+                default -> FluidStack.EMPTY;
+            };
+        }
+
+        @Override
+        public int getTankCapacity(int tank) {
+            return switch (tank) {
+                case TANK_INSERTION -> insertionBufferTank.getCapacity();
+                case TANK_ACCUMULATION -> {
+                    long cap = accumulationCapacityMb();
+                    yield cap > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) cap;
+                }
+                default -> 0;
+            };
+        }
+
+        @Override
+        public boolean isFluidValid(int tank, @NotNull FluidStack stack) {
+            return switch (tank) {
+                case TANK_INSERTION -> insertionBufferTank.isFluidValid(stack);
+                case TANK_ACCUMULATION -> accumulationTank.isFluidValid(stack);
+                default -> false;
+            };
+        }
+
+        @Override
+        public int fill(FluidStack resource, FluidAction action) {
+            if (resource.isEmpty()) {
+                return 0;
+            }
+            return insertionBufferTank.fill(resource, action);
+        }
+
+        @Override
+        public @NotNull FluidStack drain(FluidStack resource, FluidAction action) {
+            if (resource.isEmpty() || resource.getFluid() != ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get()) {
+                return FluidStack.EMPTY;
+            }
+            return accumulationTank.drain(resource, action);
+        }
+
+        @Override
+        public @NotNull FluidStack drain(int maxDrain, FluidAction action) {
+            return accumulationTank.drain(maxDrain, action);
         }
     }
 }

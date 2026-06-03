@@ -277,6 +277,14 @@ public class ModBlockEntities {
                         return null;
                     }
             );
+
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    TEMPORAL_OVERCLOCKER_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof TemporalOverclockerBlockEntity overclocker
+                                    ? overclocker.getItemHandler()
+                                    : null);
             
             // Register item handler capability for Structure Placer Machine
             event.registerBlockEntity(
@@ -420,7 +428,7 @@ public class ModBlockEntities {
                     Capabilities.FluidHandler.BLOCK,
                     COLLECTING_CRATE.get(),
                     (blockEntity, context) ->
-                            blockEntity instanceof CollectingCrateBlockEntity crate ? crate.getExperienceTank() : null);
+                            blockEntity instanceof CollectingCrateBlockEntity crate ? crate.getFluidHandler() : null);
         }
     }
 } 

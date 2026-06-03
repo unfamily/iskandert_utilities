@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class EntropicClockItem extends Item {
     public EntropicClockItem(Properties properties) {
-        super(properties.stacksTo(1));
+        super(properties);
     }
 
     @Override

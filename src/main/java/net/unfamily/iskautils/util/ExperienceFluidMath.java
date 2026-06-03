@@ -34,20 +34,21 @@ public final class ExperienceFluidMath {
         }
     }
 
-    public static int capacityMbFromLevels(int levels) {
-        return Math.toIntExact(Math.min(levelsToXp(levels) * (long) mbPerXpPoint(), Integer.MAX_VALUE));
+    /** Total mb capacity for the configured level cap (may exceed {@link Integer#MAX_VALUE}). */
+    public static long capacityMbFromLevels(int levels) {
+        return levelsToXp(levels) * (long) mbPerXpPoint();
     }
 
-    public static int xpPointsFromMb(int mb) {
+    public static long xpPointsFromMb(long mb) {
         return mb / mbPerXpPoint();
     }
 
-    public static int displayLevelsFromMb(int mb) {
+    public static int displayLevelsFromMb(long mb) {
         return xpToLevels(xpPointsFromMb(mb));
     }
 
-    public static double displayProgressFromMb(int mb) {
-        int points = xpPointsFromMb(mb);
+    public static double displayProgressFromMb(long mb) {
+        long points = xpPointsFromMb(mb);
         int levels = displayLevelsFromMb(mb);
         long levelBase = levelsToXp(levels);
         long nextLevel = levelsToXp(levels + 1);
@@ -57,7 +58,31 @@ public final class ExperienceFluidMath {
         return (double) (points - levelBase) / (nextLevel - levelBase);
     }
 
+    public static long mbFromXpPoints(long points) {
+        return points * (long) mbPerXpPoint();
+    }
+
+    /** @deprecated Use {@link #xpPointsFromMb(long)} */
+    @Deprecated
+    public static int xpPointsFromMb(int mb) {
+        return (int) Math.min(xpPointsFromMb((long) mb), Integer.MAX_VALUE);
+    }
+
+    /** @deprecated Use {@link #mbFromXpPoints(long)} */
+    @Deprecated
     public static int mbFromXpPoints(int points) {
-        return points * mbPerXpPoint();
+        return (int) Math.min(mbFromXpPoints((long) points), Integer.MAX_VALUE);
+    }
+
+    /** @deprecated Use {@link #displayLevelsFromMb(long)} */
+    @Deprecated
+    public static int displayLevelsFromMb(int mb) {
+        return displayLevelsFromMb((long) mb);
+    }
+
+    /** @deprecated Use {@link #displayProgressFromMb(long)} */
+    @Deprecated
+    public static double displayProgressFromMb(int mb) {
+        return displayProgressFromMb((long) mb);
     }
 }

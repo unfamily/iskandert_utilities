@@ -21,25 +21,24 @@ import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.effect.ModMobEffects;
 import net.unfamily.iskautils.util.EntropicSoilSpawnRules;
 import net.unfamily.iskautils.util.EntropicSoilUtil;
+import net.unfamily.iskautils.util.SoilAcceleratedSpawn;
 
-import java.util.List;
 import java.util.Optional;
 
 public class EntropicSoilBlockEntity extends BlockEntity {
     private static final String TAG_COOLDOWN = "spawn_cooldown";
-    private static final String TAG_REDSTONE_ACCEL = "redstone_accel";
+    private static final String TAG_ACCEL_COOLDOWN = "accel_spawn_cooldown";
+    private static final String TAG_PATCH_REDSTONE = "patch_redstone";
     private static final String TAG_LIGHT_DECAY = "light_decay_ticks";
     private static final String TAG_LIGHT_DECAY_TARGET = "light_decay_target";
 
     private static final int LIGHT_DECAY_INTERVAL = 4;
-    private static final int REDSTONE_CHECK_INTERVAL = 10;
-    private static final int SPAWN_ATTEMPTS = 8;
 
     private int spawnCooldownTicks = -1;
-    private boolean redstoneAccelerating;
+    private int accelSpawnCooldownTicks = -1;
+    private boolean patchRedstoneActive;
     private int lightDecayTicks;
     private int lightDecayTarget = -1;
-    private int redstoneCheckCooldown;
 
     public EntropicSoilBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ENTROPIC_SOIL_BE.get(), pos, state);
@@ -53,16 +52,66 @@ public class EntropicSoilBlockEntity extends BlockEntity {
         if ((schedule & (LIGHT_DECAY_INTERVAL - 1L)) == 0L) {
             blockEntity.tickLightDecay(server, LIGHT_DECAY_INTERVAL);
         }
+        blockEntity.tickSpawn(server);
+    }
 
-        if (!EntropicSoilUtil.isNetworkLeader(server, pos)) {
+    public static void requestAcceleratedWave(ServerLevel level, BlockPos soilPos) {
+        if (!Config.entropicSoilRedstoneAccelEnabled || !Config.entropicSoilSpawnEnabled) {
             return;
         }
+        EntropicSoilUtil.queueImmediateAccelSpawn(level, soilPos);
+    }
 
-        List<BlockPos> component = EntropicSoilUtil.collectConnectedSoil(server, pos);
-        if (component.isEmpty()) {
+    private void tickSpawn(ServerLevel level) {
+        if (spawnCooldownTicks < 0) {
+            EntropicSoilUtil.refreshPatchRedstoneState(level, worldPosition);
+        }
+        if (patchRedstoneActive) {
+            tickAcceleratedSpawn(level);
+        } else {
+            tickSlowSpawn(level);
+        }
+    }
+
+    private void tickSlowSpawn(ServerLevel level) {
+        if (spawnCooldownTicks < 0) {
+            rollNormalCooldown(level.getRandom());
+            setChanged();
+        }
+        if (spawnCooldownTicks > 0) {
+            spawnCooldownTicks--;
             return;
         }
-        blockEntity.tickNetwork(server, component);
+        if (canSpawnHere(level)) {
+            trySpawnAtSoil(level, worldPosition);
+        }
+        rollNormalCooldown(level.getRandom());
+        setChanged();
+    }
+
+    private void tickAcceleratedSpawn(ServerLevel level) {
+        if (accelSpawnCooldownTicks < 0) {
+            accelSpawnCooldownTicks = 0;
+            setChanged();
+        }
+        if (accelSpawnCooldownTicks > 0) {
+            accelSpawnCooldownTicks--;
+            return;
+        }
+        if (canSpawnHere(level)) {
+            trySpawnAtSoil(level, worldPosition);
+        }
+        accelSpawnCooldownTicks = EntropicSoilUtil.rollInclusive(
+                Config.entropicSoilRedstoneAccelMinTicks,
+                Config.entropicSoilRedstoneAccelMaxTicks,
+                level.getRandom());
+        setChanged();
+    }
+
+    private boolean canSpawnHere(ServerLevel level) {
+        return Config.entropicSoilSpawnEnabled
+                && level.getDifficulty() != Difficulty.PEACEFUL
+                && EntropicSoilUtil.isDarkSpawnCandidate(level, worldPosition);
     }
 
     private void tickLightDecay(ServerLevel level, int elapsed) {
@@ -87,51 +136,6 @@ public class EntropicSoilBlockEntity extends BlockEntity {
         }
     }
 
-    private void tickNetwork(ServerLevel level, List<BlockPos> component) {
-        if (spawnCooldownTicks < 0) {
-            rollNormalCooldown(level.getRandom());
-            setChanged();
-        }
-
-        boolean spawnAllowed = Config.entropicSoilSpawnEnabled
-                && level.getDifficulty() != Difficulty.PEACEFUL
-                && EntropicSoilUtil.hasAnyDarkSpawnCandidate(level, component);
-
-        if (!redstoneAccelerating
-                && Config.entropicSoilRedstoneAccelEnabled
-                && Config.entropicSoilSpawnEnabled
-                && level.getDifficulty() != Difficulty.PEACEFUL) {
-            if (redstoneCheckCooldown <= 0) {
-                redstoneCheckCooldown = REDSTONE_CHECK_INTERVAL;
-                if (EntropicSoilUtil.hasRedstoneSignal(level, component)) {
-                    int accelTicks = EntropicSoilUtil.rollInclusive(
-                            Config.entropicSoilRedstoneAccelMinTicks,
-                            Config.entropicSoilRedstoneAccelMaxTicks,
-                            level.getRandom());
-                    if (spawnCooldownTicks > accelTicks) {
-                        spawnCooldownTicks = accelTicks;
-                        redstoneAccelerating = true;
-                        setChanged();
-                    }
-                }
-            } else {
-                redstoneCheckCooldown--;
-            }
-        }
-
-        if (spawnCooldownTicks > 0) {
-            spawnCooldownTicks--;
-            return;
-        }
-
-        if (spawnAllowed) {
-            trySpawnMob(level, component);
-        }
-        rollNormalCooldown(level.getRandom());
-        redstoneAccelerating = false;
-        setChanged();
-    }
-
     private void rollNormalCooldown(RandomSource random) {
         spawnCooldownTicks = EntropicSoilUtil.rollInclusive(
                 Config.entropicSoilSpawnIntervalMinTicks,
@@ -139,68 +143,80 @@ public class EntropicSoilBlockEntity extends BlockEntity {
                 random);
     }
 
-    private void trySpawnMob(ServerLevel level, List<BlockPos> component) {
-        List<BlockPos> candidates = EntropicSoilUtil.filterDarkSpawnCandidates(level, component);
-        if (candidates.isEmpty()) {
-            return;
+    private static boolean trySpawnAtSoil(ServerLevel level, BlockPos spawnSoil) {
+        if (!SoilAcceleratedSpawn.isUnderHostileCap(level, spawnSoil, Config.entropicSoilAccelMobCap)) {
+            return false;
+        }
+        BlockPos spawnPos = EntropicSoilUtil.findMobSpawnPos(level, spawnSoil);
+        if (spawnPos == null) {
+            return false;
         }
         RandomSource random = level.getRandom();
-        for (int attempt = 0; attempt < SPAWN_ATTEMPTS; attempt++) {
-            BlockPos spawnSoil = candidates.get(random.nextInt(candidates.size()));
-            BlockPos spawnPos = EntropicSoilUtil.findMobSpawnPos(level, spawnSoil);
-            if (spawnPos == null) {
-                continue;
-            }
-            Optional<MobSpawnSettings.SpawnerData> pick = EntropicSoilSpawnRules.pickSpawnEntry(level, spawnSoil, random);
-            if (pick.isEmpty()) {
-                continue;
-            }
-            EntityType<?> spawnType = pick.get().type;
-            if (spawnType == null) {
-                continue;
-            }
-            if (!EntropicSoilSpawnRules.isValidSpawnContext(level, spawnType, spawnPos, spawnSoil)) {
-                continue;
-            }
-            if (!(spawnType.create(level) instanceof Mob mob)) {
-                continue;
-            }
-            mob.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D,
-                    random.nextFloat() * 360.0F, 0.0F);
-            if (!mob.checkSpawnObstruction(level)) {
-                continue;
-            }
-            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), MobSpawnType.MOB_SUMMONED, null);
-            mob.addEffect(new MobEffectInstance(
-                    ModMobEffects.ENTROPIC_EMPOWERMENT,
-                    MobEffectInstance.INFINITE_DURATION,
-                    0,
-                    true,
-                    true,
-                    true));
-            if (level.addFreshEntity(mob)) {
-                level.sendParticles(ParticleTypes.SMOKE, spawnPos.getX() + 0.5D, spawnPos.getY() + 0.2D, spawnPos.getZ() + 0.5D,
-                        8, 0.25D, 0.1D, 0.25D, 0.01D);
-                return;
-            }
+        Optional<MobSpawnSettings.SpawnerData> pick = EntropicSoilSpawnRules.pickSpawnEntry(level, spawnSoil, random);
+        if (pick.isEmpty()) {
+            return false;
         }
+        EntityType<?> spawnType = pick.get().type;
+        if (spawnType == null) {
+            return false;
+        }
+        if (!EntropicSoilSpawnRules.isValidSpawnContext(level, spawnType, spawnPos, spawnSoil)) {
+            return false;
+        }
+        if (!(spawnType.create(level) instanceof Mob mob)) {
+            return false;
+        }
+        mob.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D,
+                random.nextFloat() * 360.0F, 0.0F);
+        if (!mob.checkSpawnObstruction(level)) {
+            return false;
+        }
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), MobSpawnType.MOB_SUMMONED, null);
+        if (!EntropicSoilSpawnRules.isWithinSpawnMaxHealth(mob)) {
+            mob.discard();
+            return false;
+        }
+        mob.addEffect(new MobEffectInstance(
+                ModMobEffects.ENTROPIC_EMPOWERMENT,
+                MobEffectInstance.INFINITE_DURATION,
+                0,
+                true,
+                true,
+                true));
+        if (level.addFreshEntity(mob)) {
+            level.sendParticles(ParticleTypes.SMOKE, spawnPos.getX() + 0.5D, spawnPos.getY() + 0.2D, spawnPos.getZ() + 0.5D,
+                    8, 0.25D, 0.1D, 0.25D, 0.01D);
+            return true;
+        }
+        return false;
     }
 
     public static void onSoilPlaced(ServerLevel level, BlockPos pos) {
         if (level.getBlockEntity(pos) instanceof EntropicSoilBlockEntity be) {
             be.spawnCooldownTicks = -1;
+            be.accelSpawnCooldownTicks = -1;
             be.lightDecayTicks = 0;
             be.lightDecayTarget = -1;
-            be.redstoneCheckCooldown = 0;
             be.setChanged();
+            EntropicSoilUtil.refreshPatchRedstoneState(level, pos);
         }
+    }
+
+    public void applyPatchRedstoneState(boolean active) {
+        patchRedstoneActive = active;
+    }
+
+    public void queueImmediateAccelSpawn() {
+        accelSpawnCooldownTicks = 0;
+        setChanged();
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
         super.saveAdditional(tag, provider);
         tag.putInt(TAG_COOLDOWN, spawnCooldownTicks);
-        tag.putBoolean(TAG_REDSTONE_ACCEL, redstoneAccelerating);
+        tag.putInt(TAG_ACCEL_COOLDOWN, accelSpawnCooldownTicks);
+        tag.putBoolean(TAG_PATCH_REDSTONE, patchRedstoneActive);
         tag.putInt(TAG_LIGHT_DECAY, lightDecayTicks);
         tag.putInt(TAG_LIGHT_DECAY_TARGET, lightDecayTarget);
     }
@@ -209,9 +225,11 @@ public class EntropicSoilBlockEntity extends BlockEntity {
     public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
         spawnCooldownTicks = tag.getInt(TAG_COOLDOWN);
-        redstoneAccelerating = tag.getBoolean(TAG_REDSTONE_ACCEL);
+        accelSpawnCooldownTicks = tag.contains(TAG_ACCEL_COOLDOWN)
+                ? tag.getInt(TAG_ACCEL_COOLDOWN)
+                : tag.getInt("accel_wave_cooldown");
+        patchRedstoneActive = tag.getBoolean(TAG_PATCH_REDSTONE);
         lightDecayTicks = tag.getInt(TAG_LIGHT_DECAY);
         lightDecayTarget = tag.contains(TAG_LIGHT_DECAY_TARGET) ? tag.getInt(TAG_LIGHT_DECAY_TARGET) : -1;
-        redstoneCheckCooldown = 0;
     }
 }

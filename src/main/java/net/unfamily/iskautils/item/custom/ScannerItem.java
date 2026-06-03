@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -194,7 +195,7 @@ public class ScannerItem extends Item {
         }
         
         // Check if we have enough energy for scanning (energy check only for scanning, not for clearing)
-        if (requiresEnergyToFunction() && !hasEnoughEnergy(itemStack)) {
+        if (requiresEnergyForScan(player) && !hasEnoughEnergy(itemStack)) {
             player.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_energy"), true);
             return InteractionResultHolder.fail(itemStack);
         }
@@ -277,26 +278,23 @@ public class ScannerItem extends Item {
                 
                 if (timeUsed >= requiredDuration) {
                     // Double-check energy before scanning
-                    if (requiresEnergyToFunction() && !hasEnoughEnergy(itemstack)) {
+                    if (requiresEnergyForScan(serverPlayer) && !hasEnoughEnergy(itemstack)) {
                         serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.no_energy"), true);
                         return;
                     }
                     
                     boolean scanSuccess = false;
-                    
+
                     if (targetBlock != null) {
-                        // Scan for blocks
                         serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started", targetBlock.getName()), true);
                         scanArea(serverPlayer, itemstack);
                         scanSuccess = true;
                     } else if (targetMob != null) {
-                        // Scan for mobs
-                        serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob", 
+                        serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob",
                                 getLocalizedMobName(targetMob)), true);
                         scanForMobs(serverPlayer, itemstack);
                         scanSuccess = true;
                     } else if (genericTarget != null) {
-                        // Scan based on generic target
                         if (genericTarget.startsWith("ores")) {
                             serverPlayer.displayClientMessage(Component.translatable("item.iska_utils.scanner.scan_started_ores"), true);
                             scanForAllOres(serverPlayer, itemstack);
@@ -308,9 +306,8 @@ public class ScannerItem extends Item {
                             scanSuccess = true;
                         }
                     }
-                    
-                    // Consume energy if scan was successful
-                    if (scanSuccess) {
+
+                    if (scanSuccess && requiresEnergyForScan(serverPlayer)) {
                         consumeEnergyForOperation(itemstack);
                     }
                 } else {
@@ -556,62 +553,34 @@ public class ScannerItem extends Item {
      * Removes all existing markers for this scanner
      */
     private void clearMarkers(Player player, ItemStack itemStack) {
-        if (!(player instanceof ServerPlayer serverPlayer)) {
-            return;
-        }
-        
-        // Execute the clear command to ensure all markers are cleared
-        try {
-            net.minecraft.commands.CommandSourceStack commandSource = serverPlayer.createCommandSourceStack()
-                    .withPermission(4) // Ensure we have permission
-                    .withSuppressedOutput(); // Suppress command output to avoid spam
-            
-            // Execute the clear command
-            serverPlayer.getServer().getCommands().performPrefixedCommand(commandSource, "iska_utils_marker clear");
-        } catch (Exception e) {
-            LOGGER.warn("Failed to execute clear markers command: {}", e.getMessage());
-            // Fallback to old method if command fails
-            clearMarkersFallback(serverPlayer, itemStack);
+        if (player instanceof ServerPlayer serverPlayer) {
+            clearAllVisualMarkersFor(serverPlayer, itemStack);
         }
     }
-    
+
     /**
-     * Fallback method to clear markers if command execution fails
+     * Full client reset plus server TTL maps, so async scan jobs are not blocked by stale {@link #ACTIVE_MARKERS} entries.
      */
-    private void clearMarkersFallback(ServerPlayer serverPlayer, ItemStack itemStack) {
-        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (tag.contains(SCANNER_ID_TAG)) {
-            UUID scannerId = tag.getUUID(SCANNER_ID_TAG);
-            
-            // Clear from our tracking maps
-            if (ACTIVE_MARKERS.containsKey(scannerId)) {
-                List<BlockPos> markers = new ArrayList<>(ACTIVE_MARKERS.get(scannerId));
-                
-                // Send clear message to client for each marker
-                for (BlockPos pos : markers) {
-                    // Remove the marker from client side
-                    if (MARKER_TTL.containsKey(pos)) {
-                        // Rimuovi i marker usando handleRemoveHighlight che rimuove sia i blocchi che i billboard
-                        net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(serverPlayer, pos);
-                        
-                        MARKER_TTL.remove(pos);
-                    }
-                }
-                
-                ACTIVE_MARKERS.get(scannerId).clear();
-            } else {
-                // Se non ci sono marker attivi per questo scanner, controlla tutti i marker esistenti
-                // Questo gestisce il caso in cui lo scanner è stato rilasciato e ripreso
-                List<BlockPos> allMarkers = new ArrayList<>(MARKER_TTL.keySet());
-                for (BlockPos pos : allMarkers) {
-                    net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(serverPlayer, pos);
-                    MARKER_TTL.remove(pos);
-                }
-                
-                // Pulisci tutte le liste di marker attivi
-                for (UUID id : ACTIVE_MARKERS.keySet()) {
-                    ACTIVE_MARKERS.get(id).clear();
-                }
+    private static void clearAllVisualMarkersFor(ServerPlayer player, ItemStack scannerStack) {
+        net.unfamily.iskautils.network.ModMessages.sendClearHighlightsPacket(player);
+
+        UUID scannerId = null;
+        if (scannerStack != null && !scannerStack.isEmpty()) {
+            CompoundTag tag = scannerStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+            if (tag.contains(SCANNER_ID_TAG)) {
+                scannerId = tag.getUUID(SCANNER_ID_TAG);
+            }
+        }
+
+        if (scannerId != null && ACTIVE_MARKERS.containsKey(scannerId)) {
+            for (BlockPos pos : new ArrayList<>(ACTIVE_MARKERS.get(scannerId))) {
+                MARKER_TTL.remove(pos);
+            }
+            ACTIVE_MARKERS.get(scannerId).clear();
+        } else {
+            MARKER_TTL.clear();
+            for (List<BlockPos> markers : ACTIVE_MARKERS.values()) {
+                markers.clear();
             }
         }
     }
@@ -803,39 +772,105 @@ public class ScannerItem extends Item {
     }
     
     /**
-     * Handles item tick (called every game tick)
-     * Used to update markers and their TTL
+     * Decrements marker TTL once per server tick (not once per dimension).
      */
-    public static void tick(ServerLevel level) {
+    public static void tickServerOnce(MinecraftServer server) {
         Iterator<Map.Entry<BlockPos, Integer>> markerIterator = MARKER_TTL.entrySet().iterator();
-        
+
         while (markerIterator.hasNext()) {
             Map.Entry<BlockPos, Integer> entry = markerIterator.next();
             BlockPos pos = entry.getKey();
             int ttl = entry.getValue() - 1;
-            
+
             if (ttl <= 0) {
-                // Remove expired marker
-                // Send message to all players in the dimension to remove the marker
-                for (ServerPlayer player : level.players()) {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(player, pos);
                 }
-                
-                // Remove marker from TTL map
                 markerIterator.remove();
-                
-                // Remove marker from all active scanners
-                for (UUID scannerId : ACTIVE_MARKERS.keySet()) {
-                    List<BlockPos> markers = ACTIVE_MARKERS.get(scannerId);
+                for (List<BlockPos> markers : ACTIVE_MARKERS.values()) {
                     markers.remove(pos);
                 }
             } else {
-                // Update TTL
                 entry.setValue(ttl);
             }
         }
     }
-    
+
+    /** @deprecated Use {@link #tickServerOnce(MinecraftServer)} */
+    @Deprecated
+    public static void tick(ServerLevel level) {
+        tickServerOnce(level.getServer());
+    }
+
+    static int getTtlMultiplier() {
+        return TTL_MULTIPLIER;
+    }
+
+    public static UUID getScannerIdFromStack(ItemStack itemStack) {
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains(SCANNER_ID_TAG)) {
+            return null;
+        }
+        return tag.getUUID(SCANNER_ID_TAG);
+    }
+
+    public static int getScanRangeFromStack(ItemStack itemStack) {
+        return new ScannerItem().getScanRange(itemStack);
+    }
+
+    public static Block getTargetBlockFromStack(ItemStack itemStack) {
+        return new ScannerItem().getTargetBlock(itemStack);
+    }
+
+    public static String getTargetMobFromStack(ItemStack itemStack) {
+        return new ScannerItem().getTargetMob(itemStack);
+    }
+
+    public static String getGenericTargetFromStack(ItemStack itemStack) {
+        return new ScannerItem().getGenericTarget(itemStack);
+    }
+
+    public static List<Integer> computeRangeSteps(int maxRange) {
+        return getRangeStepsUpTo(maxRange);
+    }
+
+    public static boolean isInScanRange(Player player, BlockPos pos, long ringRangeSq) {
+        return isWithinHorizontalRange(player, pos, ringRangeSq);
+    }
+
+    public static boolean isInScanRange(Player player, double x, double z, double ringRangeSquared) {
+        return isWithinHorizontalRange(player, x, z, ringRangeSquared);
+    }
+
+    public static void notifyScanLimitReached(ServerPlayer player, int maxLimit) {
+        sendScanLimitReachedMessage(player, maxLimit);
+    }
+
+    public static Set<BlockPos> getActiveMarkerPositions(UUID scannerId) {
+        List<BlockPos> markers = ACTIVE_MARKERS.get(scannerId);
+        if (markers == null) {
+            return Set.of();
+        }
+        return new HashSet<>(markers);
+    }
+
+    public static void trackMarker(UUID scannerId, BlockPos pos, int finalTtl) {
+        ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>()).add(pos);
+        MARKER_TTL.put(pos, finalTtl);
+    }
+
+    public static Component localizedMobName(String mobId) {
+        return new ScannerItem().getLocalizedMobName(mobId);
+    }
+
+    /** Whether a completed scan should check or consume energy for this player. */
+    public static boolean requiresEnergyForScan(Player player) {
+        if (player != null && player.isCreative()) {
+            return false;
+        }
+        return new ScannerItem().requiresEnergyToFunction();
+    }
+
     /**
      * Scans the area for target mobs
      */

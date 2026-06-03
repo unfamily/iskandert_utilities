@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.DruidicPodzolBlockEntity;
@@ -33,10 +34,6 @@ public final class DruidicPodzolUtil {
     private static final TagKey<Block> MINECRAFT_DIRT_TAG =
             TagKey.create(net.minecraft.core.registries.Registries.BLOCK,
                     ResourceLocation.withDefaultNamespace("dirt"));
-
-    private static final TagKey<Block> MINECRAFT_GRASS_TAG =
-            TagKey.create(net.minecraft.core.registries.Registries.BLOCK,
-                    ResourceLocation.withDefaultNamespace("grass"));
 
     private static final int SPREAD_RADIUS = 7;
     private static final int SPREAD_RADIUS_SQ = SPREAD_RADIUS * SPREAD_RADIUS;
@@ -58,9 +55,17 @@ public final class DruidicPodzolUtil {
     }
 
     public static boolean isConvertible(BlockState state) {
-        return state.is(CONVERTIBLE_TAG)
-                || state.is(MINECRAFT_DIRT_TAG)
-                || state.is(MINECRAFT_GRASS_TAG);
+        return state.is(CONVERTIBLE_TAG) || state.is(MINECRAFT_DIRT_TAG);
+    }
+
+    public static boolean isAgglomerationTraversable(Level level, BlockPos pos, BlockState state) {
+        return ModTerrainKindUtil.isAgglomerationTraversable(ModTerrainKindUtil.classify(state))
+                && !hasSolidCoverAbove(level, pos);
+    }
+
+    public static boolean isNaturalSpreadTarget(Level level, BlockPos pos, BlockState state) {
+        return ModTerrainKindUtil.isDruidicNaturalSpreadTarget(ModTerrainKindUtil.classify(state))
+                && !hasSolidCoverAbove(level, pos);
     }
 
     public static boolean isDruidicPodzol(BlockState state) {
@@ -76,13 +81,9 @@ public final class DruidicPodzolUtil {
         return !above.isAir() && above.isSolidRender(level, pos.above());
     }
 
-    public static boolean isValidConversionTarget(Level level, BlockPos pos, BlockState state) {
-        return isConvertible(state) && !hasSolidCoverAbove(level, pos);
-    }
-
     public static List<BlockPos> collectConnectedConvertible(ServerLevel level, BlockPos origin) {
         BlockState originState = level.getBlockState(origin);
-        if (!isValidConversionTarget(level, origin, originState)) {
+        if (!isAgglomerationTraversable(level, origin, originState)) {
             return List.of();
         }
 
@@ -104,7 +105,7 @@ public final class DruidicPodzolUtil {
                 continue;
             }
             BlockState state = level.getBlockState(current);
-            if (!isValidConversionTarget(level, current, state)) {
+            if (!isAgglomerationTraversable(level, current, state)) {
                 continue;
             }
             out.add(current.immutable());
@@ -122,7 +123,7 @@ public final class DruidicPodzolUtil {
                     continue;
                 }
                 BlockState neighborState = level.getBlockState(neighbor);
-                if (!isValidConversionTarget(level, neighbor, neighborState)) {
+                if (!isAgglomerationTraversable(level, neighbor, neighborState)) {
                     continue;
                 }
                 visited.add(neighbor);
@@ -176,7 +177,7 @@ public final class DruidicPodzolUtil {
             return false;
         }
         BlockState targetState = level.getBlockState(target);
-        if (isDruidicPodzol(targetState)) {
+        if (!isNaturalSpreadTarget(level, target, targetState)) {
             return false;
         }
         return convertToDruidicPodzol(level, target);
@@ -194,12 +195,22 @@ public final class DruidicPodzolUtil {
         return origin.offset(random.nextBoolean() ? 1 : -1, 0, 0);
     }
 
-    public static boolean convertToDruidicPodzol(ServerLevel level, BlockPos pos) {
+    public static boolean convertToDruidicPodzolForAgglomeration(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
-        if (isDruidicPodzol(state) || !isValidConversionTarget(level, pos, state)) {
+        if (isDruidicPodzol(state) || !isAgglomerationTraversable(level, pos, state)) {
             return false;
         }
-        level.setBlock(pos, ModBlocks.DRUIDIC_PODZOL.get().defaultBlockState(), Block.UPDATE_CLIENTS);
+        level.setBlock(pos, ModBlocks.DRUIDIC_PODZOL.get().defaultBlockState(), Block.UPDATE_ALL);
+        DruidicPodzolBlockEntity.onPodzolPlaced(level, pos);
+        return true;
+    }
+
+    public static boolean convertToDruidicPodzol(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (!isNaturalSpreadTarget(level, pos, state)) {
+            return false;
+        }
+        level.setBlock(pos, ModBlocks.DRUIDIC_PODZOL.get().defaultBlockState(), Block.UPDATE_ALL);
         DruidicPodzolBlockEntity.onPodzolPlaced(level, pos);
         return true;
     }
@@ -266,38 +277,40 @@ public final class DruidicPodzolUtil {
         return height > MAX_PASSABLE_COVER_HEIGHT;
     }
 
-    public static boolean isNetworkLeader(ServerLevel level, BlockPos pos) {
-        if (!isDruidicPodzol(level.getBlockState(pos))) {
-            return false;
-        }
-        int y = pos.getY();
-        int x = pos.getX();
-        int z = pos.getZ();
-        for (BlockPos neighbor : horizontalNeighbors(pos)) {
-            if (!isDruidicPodzol(level.getBlockState(neighbor))) {
-                continue;
-            }
-            int ny = neighbor.getY();
-            int nx = neighbor.getX();
-            int nz = neighbor.getZ();
-            if (ny < y || (ny == y && nx < x) || (ny == y && nx == x && nz < z)) {
-                return false;
-            }
-        }
-        return true;
+    /** Whether this podzol tile can spawn in light (per-block). */
+    public static boolean isLitSpawnCandidate(ServerLevel level, BlockPos soilPos) {
+        return isDruidicPodzol(level.getBlockState(soilPos))
+                && isIlluminated(level, soilPos)
+                && !hasSolidCoverAbove(level, soilPos)
+                && findMobSpawnPos(level, soilPos) != null;
     }
 
-    public static boolean hasAnyLitSpawnCandidate(ServerLevel level, List<BlockPos> component) {
-        for (BlockPos soilPos : component) {
-            if (!isIlluminated(level, soilPos) || hasSolidCoverAbove(level, soilPos)) {
-                continue;
-            }
-            if (findMobSpawnPos(level, soilPos) == null) {
-                continue;
-            }
-            return true;
+    /** Connected-patch redstone flag only (BFS on neighbor/redstone events). */
+    public static void refreshPatchRedstoneState(ServerLevel level, BlockPos origin) {
+        if (!isDruidicPodzol(level.getBlockState(origin))) {
+            return;
         }
-        return false;
+        List<BlockPos> component = collectConnectedPodzol(level, origin);
+        if (component.isEmpty()) {
+            return;
+        }
+        boolean active = Config.druidicPodzolRedstoneAccelEnabled && hasRedstoneSignal(level, component);
+        for (BlockPos pos : component) {
+            if (level.getBlockEntity(pos) instanceof DruidicPodzolBlockEntity be) {
+                be.applyPatchRedstoneState(active);
+                be.setChanged();
+            }
+        }
+    }
+
+    public static void queueImmediateAccelSpawn(ServerLevel level, BlockPos origin) {
+        refreshPatchRedstoneState(level, origin);
+        List<BlockPos> component = collectConnectedPodzol(level, origin);
+        for (BlockPos pos : component) {
+            if (level.getBlockEntity(pos) instanceof DruidicPodzolBlockEntity be) {
+                be.queueImmediateAccelSpawn();
+            }
+        }
     }
 
     public static List<BlockPos> collectConnectedPodzol(ServerLevel level, BlockPos origin) {

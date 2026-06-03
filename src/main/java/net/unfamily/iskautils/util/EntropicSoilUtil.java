@@ -16,6 +16,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.EntropicSoilBlockEntity;
 
@@ -62,10 +63,21 @@ public final class EntropicSoilUtil {
         return RandomRollUtil.rollInclusive(min, max, random);
     }
 
+    /** Datapack hint; runtime uses {@link ModTerrainKind}. */
     public static boolean isConvertible(BlockState state) {
         return state.is(CONVERTIBLE_TAG)
                 || state.is(MINECRAFT_DIRT_TAG)
                 || state.is(MINECRAFT_GRASS_TAG);
+    }
+
+    public static boolean isAgglomerationTraversable(Level level, BlockPos pos, BlockState state) {
+        return ModTerrainKindUtil.isAgglomerationTraversable(ModTerrainKindUtil.classify(state))
+                && !hasSolidCoverAbove(level, pos);
+    }
+
+    public static boolean isNaturalSpreadTarget(Level level, BlockPos pos, BlockState state) {
+        return ModTerrainKindUtil.isEntropicNaturalSpreadTarget(ModTerrainKindUtil.classify(state))
+                && !hasSolidCoverAbove(level, pos);
     }
 
     public static boolean isEntropicSoil(BlockState state) {
@@ -90,14 +102,10 @@ public final class EntropicSoilUtil {
         return !above.isAir() && above.isSolidRender(level, pos.above());
     }
 
-    public static boolean isValidConversionTarget(Level level, BlockPos pos, BlockState state) {
-        return isConvertible(state) && !hasSolidCoverAbove(level, pos);
-    }
-
-    /** Connected flood fill on same Y within circular radius 7 (15x15 max). */
+    /** Connected flood fill for agglomeration (ignores corrupt/blessed spread rules). */
     public static List<BlockPos> collectConnectedConvertible(ServerLevel level, BlockPos origin) {
         BlockState originState = level.getBlockState(origin);
-        if (!isValidConversionTarget(level, origin, originState)) {
+        if (!isAgglomerationTraversable(level, origin, originState)) {
             return List.of();
         }
 
@@ -119,7 +127,7 @@ public final class EntropicSoilUtil {
                 continue;
             }
             BlockState state = level.getBlockState(current);
-            if (!isValidConversionTarget(level, current, state)) {
+            if (!isAgglomerationTraversable(level, current, state)) {
                 continue;
             }
             out.add(current.immutable());
@@ -137,7 +145,7 @@ public final class EntropicSoilUtil {
                     continue;
                 }
                 BlockState neighborState = level.getBlockState(neighbor);
-                if (!isValidConversionTarget(level, neighbor, neighborState)) {
+                if (!isAgglomerationTraversable(level, neighbor, neighborState)) {
                     continue;
                 }
                 visited.add(neighbor);
@@ -185,19 +193,53 @@ public final class EntropicSoilUtil {
         return (int) Math.floor(Math.sqrt(dx * dx + (double) dz * dz) + 0.5D);
     }
 
-    public static boolean trySlowSpread(ServerLevel level, BlockPos origin, RandomSource random, int chanceDenominator) {
-        if (chanceDenominator <= 0 || random.nextInt(chanceDenominator) != 0) {
-            return false;
-        }
+    public static boolean trySlowSpread(
+            ServerLevel level,
+            BlockPos origin,
+            RandomSource random,
+            int normalChanceDenominator,
+            int edgeChanceDenominator,
+            int dirtChanceDenominator) {
         BlockPos target = pickSlowSpreadTarget(origin, random);
         if (target.equals(origin)) {
             return false;
         }
         BlockState targetState = level.getBlockState(target);
-        if (isEntropicSoil(targetState) || isEntropicDirt(targetState)) {
+        if (!isNaturalSpreadTarget(level, target, targetState)) {
+            return false;
+        }
+        int denominator = spreadChanceDenominator(
+                ModTerrainKindUtil.classify(targetState),
+                hasAdjacentEntropicSoil(level, target),
+                normalChanceDenominator,
+                edgeChanceDenominator,
+                dirtChanceDenominator);
+        if (denominator <= 0 || random.nextInt(denominator) != 0) {
             return false;
         }
         return convertToEntropicSoil(level, target);
+    }
+
+    private static int spreadChanceDenominator(
+            ModTerrainKind targetKind,
+            boolean adjacentToEntropicSoil,
+            int normalChanceDenominator,
+            int edgeChanceDenominator,
+            int dirtChanceDenominator) {
+        if (targetKind == ModTerrainKind.ENTROPIC_DIRT) {
+            return dirtChanceDenominator;
+        }
+        return adjacentToEntropicSoil ? edgeChanceDenominator : normalChanceDenominator;
+    }
+
+    public static boolean hasAdjacentEntropicSoil(ServerLevel level, BlockPos pos) {
+        for (int[] offset : HORIZONTAL_NEIGHBOR_OFFSETS) {
+            BlockPos neighbor = pos.offset(offset[0], 0, offset[1]);
+            if (isEntropicSoil(level.getBlockState(neighbor))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static BlockPos pickSlowSpreadTarget(BlockPos origin, RandomSource random) {
@@ -212,12 +254,23 @@ public final class EntropicSoilUtil {
         return origin.offset(random.nextBoolean() ? 1 : -1, 0, 0);
     }
 
-    public static boolean convertToEntropicSoil(ServerLevel level, BlockPos pos) {
+    /** Agglomeration: converts any traversable block except existing entropic soil. */
+    public static boolean convertToEntropicSoilForAgglomeration(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
-        if (isEntropicSoil(state) || !isValidConversionTarget(level, pos, state)) {
+        if (isEntropicSoil(state) || !isAgglomerationTraversable(level, pos, state)) {
             return false;
         }
-        level.setBlock(pos, ModBlocks.ENTROPIC_SOIL.get().defaultBlockState(), Block.UPDATE_CLIENTS);
+        level.setBlock(pos, ModBlocks.ENTROPIC_SOIL.get().defaultBlockState(), Block.UPDATE_ALL);
+        EntropicSoilBlockEntity.onSoilPlaced(level, pos);
+        return true;
+    }
+
+    public static boolean convertToEntropicSoil(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (!isNaturalSpreadTarget(level, pos, state)) {
+            return false;
+        }
+        level.setBlock(pos, ModBlocks.ENTROPIC_SOIL.get().defaultBlockState(), Block.UPDATE_ALL);
         EntropicSoilBlockEntity.onSoilPlaced(level, pos);
         return true;
     }
@@ -296,37 +349,43 @@ public final class EntropicSoilUtil {
         return height > MAX_PASSABLE_COVER_HEIGHT;
     }
 
-    /** True when this block owns the shared spawn/redstone network (O(1), no BFS). */
-    public static boolean isNetworkLeader(ServerLevel level, BlockPos pos) {
-        if (!isEntropicSoil(level.getBlockState(pos))) {
-            return false;
-        }
-        int y = pos.getY();
-        int x = pos.getX();
-        int z = pos.getZ();
-        for (BlockPos neighbor : horizontalNeighbors(pos)) {
-            if (!isEntropicSoil(level.getBlockState(neighbor))) {
-                continue;
-            }
-            int ny = neighbor.getY();
-            int nx = neighbor.getX();
-            int nz = neighbor.getZ();
-            if (ny < y || (ny == y && nx < x) || (ny == y && nx == x && nz < z)) {
-                return false;
-            }
-        }
-        return true;
+    /** Whether this soil tile can spawn in darkness (per-block). */
+    public static boolean isDarkSpawnCandidate(ServerLevel level, BlockPos soilPos) {
+        return isEntropicSoil(level.getBlockState(soilPos))
+                && isDark(level, soilPos)
+                && !hasSolidCoverAbove(level, soilPos)
+                && findMobSpawnPos(level, soilPos) != null;
     }
 
-    /** Cheap dark check for spawn eligibility — avoids per-block spawn position scans. */
-    public static boolean hasAnyDarkSpawnCandidate(ServerLevel level, List<BlockPos> component) {
-        for (BlockPos soilPos : component) {
-            if (!isDark(level, soilPos) || hasSolidCoverAbove(level, soilPos)) {
-                continue;
-            }
-            return true;
+    /**
+     * Connected-patch redstone flag only (BFS on neighbor/redstone events — not used for spawn leadership).
+     */
+    public static void refreshPatchRedstoneState(ServerLevel level, BlockPos origin) {
+        if (!isEntropicSoil(level.getBlockState(origin))) {
+            return;
         }
-        return false;
+        List<BlockPos> component = collectConnectedSoil(level, origin);
+        if (component.isEmpty()) {
+            return;
+        }
+        boolean active = Config.entropicSoilRedstoneAccelEnabled && hasRedstoneSignal(level, component);
+        for (BlockPos pos : component) {
+            if (level.getBlockEntity(pos) instanceof EntropicSoilBlockEntity be) {
+                be.applyPatchRedstoneState(active);
+                be.setChanged();
+            }
+        }
+    }
+
+    /** Refreshes patch redstone and queues an immediate accel attempt on every connected soil block. */
+    public static void queueImmediateAccelSpawn(ServerLevel level, BlockPos origin) {
+        refreshPatchRedstoneState(level, origin);
+        List<BlockPos> component = collectConnectedSoil(level, origin);
+        for (BlockPos pos : component) {
+            if (level.getBlockEntity(pos) instanceof EntropicSoilBlockEntity be) {
+                be.queueImmediateAccelSpawn();
+            }
+        }
     }
 
     /** 4-connected entropic soil cluster on same Y layers (allows ±0 Y only for same block column). */
@@ -353,18 +412,6 @@ public final class EntropicSoilUtil {
             }
         }
         return out;
-    }
-
-    public static BlockPos findLeader(List<BlockPos> component) {
-        BlockPos leader = component.getFirst();
-        for (BlockPos pos : component) {
-            if (pos.getY() < leader.getY()
-                    || (pos.getY() == leader.getY() && pos.getX() < leader.getX())
-                    || (pos.getY() == leader.getY() && pos.getX() == leader.getX() && pos.getZ() < leader.getZ())) {
-                leader = pos;
-            }
-        }
-        return leader;
     }
 
     public static List<BlockPos> horizontalNeighbors(BlockPos pos) {

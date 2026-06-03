@@ -12,6 +12,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
@@ -86,7 +87,8 @@ public final class DruidicPodzolSpawnRules {
         for (MobCategory category : SPAWN_CATEGORIES) {
             for (MobSpawnSettings.SpawnerData data : biome.value().getMobSettings().getMobs(category).unwrap()) {
                 EntityType<?> entityType = data.type;
-                if (entityType == null || !isAnimal(entityType) || isBlockedByDeny(level, soilPos, entityType)) {
+                if (entityType == null || !isAnimal(entityType) || isBlockedByDeny(level, soilPos, entityType)
+                        || !isWithinSpawnMaxHealth(entityType, level)) {
                     continue;
                 }
                 pool.add(data);
@@ -98,7 +100,8 @@ public final class DruidicPodzolSpawnRules {
                 continue;
             }
             EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.get(rule.entityId());
-            if (entityType == null || !isAnimal(entityType) || isBlockedByDeny(level, soilPos, entityType)) {
+            if (entityType == null || !isAnimal(entityType) || isBlockedByDeny(level, soilPos, entityType)
+                    || !isWithinSpawnMaxHealth(entityType, level)) {
                 continue;
             }
             pool.add(new MobSpawnSettings.SpawnerData(entityType, 100, 1, 4));
@@ -147,5 +150,24 @@ public final class DruidicPodzolSpawnRules {
 
     private static boolean isAnimal(EntityType<?> type) {
         return type.getCategory() == MobCategory.CREATURE;
+    }
+
+    /** Uses base entity max health; 0 config disables the cap. */
+    public static boolean isWithinSpawnMaxHealth(EntityType<?> type, ServerLevel level) {
+        int cap = Config.druidicPodzolSpawnMaxHealth;
+        if (cap <= 0) {
+            return true;
+        }
+        if (!(type.create(level) instanceof Mob mob)) {
+            return false;
+        }
+        float maxHp = mob.getMaxHealth();
+        mob.discard();
+        return maxHp <= cap;
+    }
+
+    public static boolean isWithinSpawnMaxHealth(Mob mob) {
+        int cap = Config.druidicPodzolSpawnMaxHealth;
+        return cap <= 0 || mob.getMaxHealth() <= cap;
     }
 }

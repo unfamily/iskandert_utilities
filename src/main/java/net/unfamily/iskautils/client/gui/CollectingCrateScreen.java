@@ -19,6 +19,7 @@ import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.network.packet.CollectingCratePreviewToggleC2SPacket;
 import net.unfamily.iskautils.network.packet.CollectingCrateSizeC2SPacket;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.CollectingCrateMode;
 import net.unfamily.iskautils.util.ExperienceFluidMath;
 import org.lwjgl.glfw.GLFW;
@@ -47,6 +48,8 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
     private static final int XP_BAR_Y = 92;
     private static final int XP_BAR_W = 100;
     private static final int XP_BAR_H = 5;
+    private static final int XP_BAR_COLOR_NORMAL = 0xFF80FF20;
+    private static final int XP_BAR_COLOR_FULL = 0xFFFF3030;
     private static final int SIZE_LABEL_Y = 101;
 
     /** Area size buttons — preview left-aligned with slots; arrows to the right on the same row. */
@@ -254,7 +257,7 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
     }
 
     private void renderXpBar(GuiGraphics guiGraphics) {
-        int mb = menu.getStoredXpMb();
+        long mb = menu.getStoredXpMb();
         int levels = ExperienceFluidMath.displayLevelsFromMb(mb);
         double progress = ExperienceFluidMath.displayProgressFromMb(mb);
 
@@ -266,9 +269,12 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         drawCenteredText(guiGraphics, levelText, barCenterX, this.topPos + XP_TEXT_Y, TITLE_COLOR);
 
         guiGraphics.fill(panelX, barY, panelX + XP_BAR_W, barY + XP_BAR_H, 0xFF000000);
-        int fill = (int) (XP_BAR_W * progress);
+        long capacityMb = ExperienceFluidMath.capacityMbFromLevels(Config.collectingCrateXpCapacityLevels);
+        boolean atMax = capacityMb > 0 && mb >= capacityMb;
+        int fill = atMax ? XP_BAR_W : (int) (XP_BAR_W * progress);
         if (fill > 0) {
-            guiGraphics.fill(panelX, barY, panelX + fill, barY + XP_BAR_H, 0xFF80FF20);
+            guiGraphics.fill(panelX, barY, panelX + fill, barY + XP_BAR_H,
+                    atMax ? XP_BAR_COLOR_FULL : XP_BAR_COLOR_NORMAL);
         }
 
         Component sizeLabel = Component.translatable(

@@ -310,7 +310,7 @@ public class ModItems {
     public static final DeferredItem<Item> ENTROPIC_RING = ITEMS.register("entropic_ring",
             () -> new EntropicRingItem(new Item.Properties()));
     public static final DeferredItem<Item> ENTROPIC_CLOCK = ITEMS.register("entropic_clock",
-            () -> new EntropicClockItem(new Item.Properties()));
+            () -> new EntropicClockItem(new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> ANCIENT_STAR = ITEMS.register("ancient_star",
             () -> new AncientStarItem(new Item.Properties()));
     public static final DeferredItem<Item> RUNIC_DICE = ITEMS.register("runic_dice",
@@ -629,8 +629,7 @@ public class ModItems {
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.GRAVEYARD_SOIL.get(),
                     ITEM_PROPERTIES,
-                    "tooltip.iska_utils.graveyard_soil.desc0",
-                    "tooltip.iska_utils.graveyard_soil.desc1"));
+                    "tooltip.iska_utils.graveyard_soil.desc0"));
 
     public static final DeferredItem<Item> DRUIDIC_PODZOL = ITEMS.register("druidic_podzol",
             () -> new TranslatedTooltipBlockItem(

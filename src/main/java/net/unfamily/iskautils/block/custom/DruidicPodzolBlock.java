@@ -2,9 +2,12 @@ package net.unfamily.iskautils.block.custom;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
@@ -67,6 +70,22 @@ public class DruidicPodzolBlock extends BaseEntityBlock {
         if (level instanceof ServerLevel server) {
             DruidicPodzolBlockEntity.onPodzolPlaced(server, pos);
         }
+    }
+
+    @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, block, fromPos, movedByPiston);
+        if (level instanceof ServerLevel server) {
+            DruidicPodzolBlockEntity.requestAcceleratedWave(server, pos);
+        }
+    }
+
+    @Override
+    public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor level, BlockPos pos, BlockPos facingPos) {
+        if (level instanceof ServerLevel server) {
+            DruidicPodzolBlockEntity.requestAcceleratedWave(server, pos);
+        }
+        return super.updateShape(state, facing, facingState, level, pos, facingPos);
     }
 
     @Nullable
