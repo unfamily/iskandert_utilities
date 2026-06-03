@@ -228,7 +228,7 @@ public class EntropicSoilBlockEntity extends BlockEntity {
         accelSpawnCooldownTicks = input.getInt(TAG_ACCEL_COOLDOWN)
                 .or(() -> input.getInt("accel_wave_cooldown"))
                 .orElse(-1);
-        patchRedstoneActive = input.getBoolean(TAG_PATCH_REDSTONE).orElse(false);
+        patchRedstoneActive = input.getBooleanOr(TAG_PATCH_REDSTONE, false);
         lightDecayTicks = input.getInt(TAG_LIGHT_DECAY).orElse(0);
         lightDecayTarget = input.getInt(TAG_LIGHT_DECAY_TARGET).orElse(-1);
     }

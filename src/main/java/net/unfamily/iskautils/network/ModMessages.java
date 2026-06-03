@@ -269,6 +269,12 @@ public class ModMessages {
         );
 
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.SwissWrenchCycleModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.SwissWrenchCycleModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.SwissWrenchCycleModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
             net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket::handle
@@ -312,6 +318,24 @@ public class ModMessages {
             ScannerMarkerClearS2CPayload.TYPE,
             ScannerMarkerClearS2CPayload.STREAM_CODEC,
             ScannerMarkerClearS2CPayload::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.FlameVisionToggleC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FlameVisionToggleC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FlameVisionToggleC2SPacket::handle
+        );
+
+        registrar.playToClient(
+            net.unfamily.iskautils.network.packet.FlameVisionSyncS2CPacket.TYPE,
+            net.unfamily.iskautils.network.packet.FlameVisionSyncS2CPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.FlameVisionSyncS2CPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket::handle
         );
         
         LOGGER.info("Registered networking payloads for {}", IskaUtils.MOD_ID);

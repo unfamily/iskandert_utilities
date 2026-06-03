@@ -25,6 +25,7 @@ import net.unfamily.iskautils.block.custom.DruidicPodzolBlock;
 import net.unfamily.iskautils.block.custom.DruidicPodzolBlock;
 import net.unfamily.iskautils.block.custom.EntropicDirtBlock;
 import net.unfamily.iskautils.block.custom.EntropicSoilBlock;
+import net.unfamily.iskautils.block.custom.BlazingAltarBlock;
 import net.unfamily.iskautils.block.custom.GraveyardSoilBlock;
 import net.unfamily.iskautils.block.standard.*;
 
@@ -475,6 +476,17 @@ public class ModBlocks {
 
     public static final DeferredBlock<CursedBurningFlameBlock> CURSED_BURNING_FLAME = BLOCKS.register("cursed_burning_flame",
             key -> new CursedBurningFlameBlock(assignBlockId(key, BURNING_FLAME_PROPERTIES)));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> BLAZING_ALTAR_PROPERTIES = p -> p
+            .mapColor(MapColor.NETHER)
+            .strength(1.5f, 6.0f)
+            .requiresCorrectToolForDrops()
+            .sound(SoundType.DEEPSLATE)
+            .lightLevel(state -> 15)
+            .noOcclusion();
+
+    public static final DeferredBlock<BlazingAltarBlock> BLAZING_ALTAR = BLOCKS.register("blazing_altar",
+            key -> new BlazingAltarBlock(assignBlockId(key, BLAZING_ALTAR_PROPERTIES)));
 
     private static final UnaryOperator<BlockBehaviour.Properties> REDSTONE_SIGNAL_PROPERTIES = p -> p
             .mapColor(MapColor.NONE)

@@ -1,6 +1,8 @@
 package net.unfamily.iskautils.block;
 
+import net.minecraft.client.Minecraft;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.client.FlameVisibilityClient;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -9,9 +11,13 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
@@ -31,6 +37,18 @@ public class BurningFlameBlock extends Block {
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return FLAME_SHAPE;
+    }
+
+    @Override
+    public RenderShape getRenderShape(BlockState state) {
+        if (FMLEnvironment.getDist() != Dist.CLIENT) {
+            return RenderShape.MODEL;
+        }
+        Player player = Minecraft.getInstance().player;
+        if (player != null && !FlameVisibilityClient.shouldShowFlames(player)) {
+            return RenderShape.INVISIBLE;
+        }
+        return RenderShape.MODEL;
     }
 
     @Override

@@ -183,6 +183,6 @@ public class DruidicPodzolBlockEntity extends BlockEntity {
         accelSpawnCooldownTicks = input.getInt(TAG_ACCEL_COOLDOWN)
                 .or(() -> input.getInt("accel_wave_cooldown"))
                 .orElse(-1);
-        patchRedstoneActive = input.getBoolean(TAG_PATCH_REDSTONE).orElse(false);
+        patchRedstoneActive = input.getBooleanOr(TAG_PATCH_REDSTONE, false);
     }
 }

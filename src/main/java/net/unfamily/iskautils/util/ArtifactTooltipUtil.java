@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 /**
  * Appends {@code tooltip.iska_utils.<path>.desc0..descN} lines until a key is missing.
  * Lore lines use light gray; mechanical lines use lime green.
+ * If a translation already contains legacy {@code §} color codes, styles are not applied so lang wins.
  */
 public final class ArtifactTooltipUtil {
     private static final int MAX_DESC_LINES = 8;
@@ -87,18 +88,32 @@ public final class ArtifactTooltipUtil {
             int relative = i - startIndex;
             Style style = relative < loreLineCount ? loreStyle() : techStyle();
             if (i == formattedDescIndex && formatArgs.length > 0) {
-                tooltip.accept(Component.translatable(key, formatArgs).withStyle(style));
+                tooltip.accept(withContextStyle(key, style, formatArgs));
             } else {
-                tooltip.accept(Component.translatable(key).withStyle(style));
+                tooltip.accept(withContextStyle(key, style));
             }
         }
     }
 
     private static MutableComponent styledLine(String translationKey, Style style, Object... args) {
-        if (args.length > 0) {
-            return Component.translatable(translationKey, args).withStyle(style);
+        return withContextStyle(translationKey, style, args);
+    }
+
+    private static MutableComponent withContextStyle(String translationKey, Style style, Object... args) {
+        MutableComponent line = args.length > 0
+                ? Component.translatable(translationKey, args)
+                : Component.translatable(translationKey);
+        if (resolvedTextHasLegacyFormatting(translationKey, args)) {
+            return line;
         }
-        return Component.translatable(translationKey).withStyle(style);
+        return line.withStyle(style);
+    }
+
+    private static boolean resolvedTextHasLegacyFormatting(String translationKey, Object... args) {
+        MutableComponent line = args.length > 0
+                ? Component.translatable(translationKey, args)
+                : Component.translatable(translationKey);
+        return line.getString().indexOf('\u00A7') >= 0;
     }
 
     private static boolean hasTranslation(String key) {

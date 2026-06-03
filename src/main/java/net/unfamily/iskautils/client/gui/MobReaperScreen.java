@@ -24,11 +24,6 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
             IskaUtils.MOD_ID, "textures/gui/backgrounds/mob_reaper.png");
     private static final Identifier SINGLE_SLOT_TEXTURE = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/single_slot.png");
-    private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath(
-            IskaUtils.MOD_ID, "textures/gui/medium_buttons.png");
-    private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath(
-            IskaUtils.MOD_ID, "textures/gui/redstone_gui.png");
-
     private static final int GUI_WIDTH = 176;
     private static final int GUI_HEIGHT = 200;
     private static final int REDSTONE_BUTTON_SIZE = 16;
@@ -48,10 +43,8 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
     private static final ItemStack GHOST_EXPERIENCE = new ItemStack(ModItems.EXPERIENCE_MODULE.get());
 
     private Button closeButton;
-    private int redstoneModeButtonX;
-    private int redstoneModeButtonY;
-    private int targetTypeButtonX;
-    private int targetTypeButtonY;
+    private ItemIconButton redstoneModeButton;
+    private ItemIconButton targetTypeButton;
     private long ghostCycleTime;
     private boolean showLethalGhost;
 
@@ -75,10 +68,16 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
 
         int rightButtonX = this.leftPos + this.imageWidth - RIGHT_BUTTON_MARGIN - REDSTONE_BUTTON_SIZE;
         int centerY = this.topPos + 70;
-        redstoneModeButtonY = centerY - REDSTONE_BUTTON_SIZE - BUTTON_SPACING_Y / 2;
-        targetTypeButtonY = centerY + BUTTON_SPACING_Y / 2;
-        redstoneModeButtonX = rightButtonX;
-        targetTypeButtonX = rightButtonX;
+        int redstoneY = centerY - REDSTONE_BUTTON_SIZE - BUTTON_SPACING_Y / 2;
+        int targetY = centerY + BUTTON_SPACING_Y / 2;
+
+        redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
+                rightButtonX, redstoneY, b -> onRedstoneModePressed(false), menu::getRedstoneMode, false));
+        targetTypeButton = addRenderableWidget(new ItemIconButton(
+                rightButtonX, targetY, REDSTONE_BUTTON_SIZE,
+                b -> onTargetTypePressed(false),
+                () -> MachineGuiButtons.targetTypeIcon(menu.getTargetType()),
+                Component.empty()));
     }
 
     @Override
@@ -106,8 +105,6 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
 
         renderModuleSlotBackgrounds(guiGraphics);
         renderStats(guiGraphics);
-        renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
-        renderTargetTypeButton(guiGraphics, mouseX, mouseY);
     }
 
     private void renderModuleSlotBackgrounds(GuiGraphicsExtractor guiGraphics) {
@@ -164,37 +161,15 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
     }
 
     private void renderButtonTooltips(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        if (mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE
-                && mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-            int redstoneMode = menu.getRedstoneMode();
-            if (redstoneMode == 3) {
-                redstoneMode = 4;
-            }
-            Component tooltip = switch (redstoneMode) {
-                case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
-                case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
-                case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-                case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
-                default -> Component.literal("Unknown mode");
-            };
-            guiGraphics.setTooltipForNextFrame(
-                    this.font,
-                    java.util.List.of(tooltip.getVisualOrderText()),
-                    DefaultTooltipPositioner.INSTANCE,
-                    mouseX,
-                    mouseY,
-                    true);
-        } else if (mouseX >= targetTypeButtonX && mouseX <= targetTypeButtonX + REDSTONE_BUTTON_SIZE
-                && mouseY >= targetTypeButtonY && mouseY <= targetTypeButtonY + REDSTONE_BUTTON_SIZE) {
+        if (redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
+            MachineGuiButtons.renderTooltipLine(
+                    guiGraphics, font, mouseX, mouseY,
+                    MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), false));
+        } else if (targetTypeButton != null && targetTypeButton.isMouseOver(mouseX, mouseY)) {
             MachineTargetType targetType = MachineTargetType.fromId(menu.getTargetType());
-            Component tooltip = Component.translatable("gui.iska_utils.mob_reaper.target_type." + targetType.getName());
-            guiGraphics.setTooltipForNextFrame(
-                    this.font,
-                    java.util.List.of(tooltip.getVisualOrderText()),
-                    DefaultTooltipPositioner.INSTANCE,
-                    mouseX,
-                    mouseY,
-                    true);
+            MachineGuiButtons.renderTooltipLine(
+                    guiGraphics, font, mouseX, mouseY,
+                    Component.translatable("gui.iska_utils.mob_reaper.target_type." + targetType.getName()));
         }
     }
 
@@ -230,11 +205,7 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
     }
 
     private void renderGhostItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int slotX, int slotY) {
-        guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().translate(this.leftPos + slotX, this.topPos + slotY);
-        guiGraphics.item(itemStack, 0, 0);
-        guiGraphics.fill(0, 0, 16, 16, 0x80000000);
-        guiGraphics.pose().popMatrix();
+        GhostItemRenderer.render(guiGraphics, itemStack, this.leftPos + slotX, this.topPos + slotY, GuiGhostItem.DEFAULT_ARGB);
     }
 
     private void renderGhostModules(GuiGraphicsExtractor guiGraphics) {
@@ -253,83 +224,21 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
         }
     }
 
-    private void renderRedstoneModeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        boolean isHovered = mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE
-                && mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
-        int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, redstoneModeButtonX, redstoneModeButtonY,
-                0.0F, (float) textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 96, 96);
-
-        int iconX = redstoneModeButtonX + 2;
-        int iconY = redstoneModeButtonY + 2;
-        int iconSize = 12;
-        switch (menu.getRedstoneMode()) {
-            case 0 -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.GUNPOWDER), iconX, iconY, iconSize);
-            case 1 -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.REDSTONE), iconX, iconY, iconSize);
-            case 2 -> renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
-            case 4 -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.BARRIER), iconX, iconY, iconSize);
-            default -> {}
-        }
-    }
-
-    private void renderTargetTypeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        boolean isHovered = mouseX >= targetTypeButtonX && mouseX <= targetTypeButtonX + REDSTONE_BUTTON_SIZE
-                && mouseY >= targetTypeButtonY && mouseY <= targetTypeButtonY + REDSTONE_BUTTON_SIZE;
-        int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, targetTypeButtonX, targetTypeButtonY,
-                0.0F, (float) textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 96, 96);
-
-        int iconX = targetTypeButtonX + 2;
-        int iconY = targetTypeButtonY + 2;
-        int iconSize = 12;
-        MachineTargetType type = MachineTargetType.fromId(menu.getTargetType());
-        switch (type) {
-            case MOBS_ONLY -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.CREEPER_HEAD), iconX, iconY, iconSize);
-            case MOBS_AND_PLAYERS -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.TNT), iconX, iconY, iconSize);
-            case PLAYERS_ONLY -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD), iconX, iconY, iconSize);
-        }
-    }
-
-    private void renderScaledItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y, int size) {
-        guiGraphics.pose().pushMatrix();
-        float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(scale, scale);
-        guiGraphics.item(itemStack, 0, 0);
-        guiGraphics.pose().popMatrix();
-    }
-
-    private void renderScaledTexture(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y, int size) {
-        guiGraphics.pose().pushMatrix();
-        float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(scale, scale);
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16, 16, 16);
-        guiGraphics.pose().popMatrix();
-    }
-
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
-        if (handleMouseClicked(event.x(), event.y(), event.button())) {
-            return true;
-        }
-        return super.mouseClicked(event, isDoubleClick);
-    }
-
-    private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 || button == 1) {
-            if (mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE
-                    && mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-                onRedstoneModePressed(button == 1);
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        if (event.button() == 1) {
+            if (redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
+                onRedstoneModePressed(true);
                 return true;
             }
-            if (mouseX >= targetTypeButtonX && mouseX <= targetTypeButtonX + REDSTONE_BUTTON_SIZE
-                    && mouseY >= targetTypeButtonY && mouseY <= targetTypeButtonY + REDSTONE_BUTTON_SIZE) {
-                onTargetTypePressed(button == 1);
+            if (targetTypeButton != null && targetTypeButton.isMouseOver(mouseX, mouseY)) {
+                onTargetTypePressed(true);
                 return true;
             }
         }
-        return false;
+        return super.mouseClicked(event, doubleClick);
     }
 
     private void onTargetTypePressed(boolean backward) {

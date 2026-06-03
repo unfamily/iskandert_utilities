@@ -32,11 +32,6 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
 
     private static final Identifier ENERGY_BAR_TEXTURE =
             Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/energy_bar.png");
-    private static final Identifier MEDIUM_BUTTONS =
-            Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
-    private static final Identifier REDSTONE_GUI =
-            Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
-
     private static final int GUI_WIDTH = 176;
     private static final int GUI_HEIGHT = 190;
 
@@ -88,6 +83,7 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             FactoryMenu.yCenteredInSlotRow(FactoryMenu.SLOT_OUTPUT_Y, REDSTONE_BUTTON_SIZE);
 
     private final List<AbstractButton> colorGridButtons = new ArrayList<>();
+    private ItemIconButton redstoneModeButton;
 
     private int scrollOffset = 0;
     private boolean isDraggingHandle = false;
@@ -108,17 +104,21 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, leftPos, topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         renderEnergyBar(guiGraphics);
         renderScrollbar(guiGraphics, mouseX, mouseY);
-        renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
     }
-
-    @Override
-    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {}
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         ensureColorGridButtons();
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+        if (redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
+            MachineGuiButtons.renderTooltipLine(
+                    guiGraphics, font, mouseX, mouseY,
+                    MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), false));
+        }
     }
+
+    @Override
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {}
 
     @Override
     protected void extractTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
@@ -135,9 +135,6 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             return;
         }
         if (tryEnergyTooltip(graphics, mouseX, mouseY)) {
-            return;
-        }
-        if (tryRedstoneTooltip(graphics, mouseX, mouseY)) {
             return;
         }
         super.extractTooltip(graphics, mouseX, mouseY);
@@ -167,32 +164,6 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             return true;
         }
         return false;
-    }
-
-    private boolean tryRedstoneTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        int bx = leftPos + REDSTONE_BUTTON_X;
-        int by = topPos + REDSTONE_BUTTON_Y;
-        if (mouseX < bx || mouseX > bx + REDSTONE_BUTTON_SIZE || mouseY < by || mouseY > by + REDSTONE_BUTTON_SIZE) {
-            return false;
-        }
-        int mode = menu.getRedstoneMode();
-        Component tooltip =
-                switch (mode) {
-                    case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
-                    case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
-                    case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-                    case 3 -> Component.translatable("gui.iska_utils.generic.redstone_mode.pulse");
-                    case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
-                    default -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
-                };
-        guiGraphics.setTooltipForNextFrame(
-                this.font,
-                List.of(tooltip.getVisualOrderText()),
-                DefaultTooltipPositioner.INSTANCE,
-                mouseX,
-                mouseY,
-                true);
-        return true;
     }
 
     private void renderEnergyBar(GuiGraphicsExtractor guiGraphics) {
@@ -231,55 +202,6 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         }
     }
 
-    private void renderRedstoneModeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        int buttonX = leftPos + REDSTONE_BUTTON_X;
-        int buttonY = topPos + REDSTONE_BUTTON_Y;
-        boolean hovered =
-                mouseX >= buttonX && mouseX <= buttonX + REDSTONE_BUTTON_SIZE && mouseY >= buttonY && mouseY <= buttonY + REDSTONE_BUTTON_SIZE;
-        int textureY = hovered ? 16 : 0;
-        guiGraphics.blit(
-                RenderPipelines.GUI_TEXTURED,
-                MEDIUM_BUTTONS,
-                buttonX,
-                buttonY,
-                0.0F,
-                (float) textureY,
-                REDSTONE_BUTTON_SIZE,
-                REDSTONE_BUTTON_SIZE,
-                96,
-                96);
-        int iconX = buttonX + 2;
-        int iconY = buttonY + 2;
-        int iconSize = 12;
-        int redstoneMode = menu.getRedstoneMode();
-        switch (redstoneMode) {
-            case 0 -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.GUNPOWDER), iconX, iconY, iconSize);
-            case 1 -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.REDSTONE), iconX, iconY, iconSize);
-            case 2 -> renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
-            case 3 -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.REPEATER), iconX, iconY, iconSize);
-            case 4 -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.BARRIER), iconX, iconY, iconSize);
-            default -> renderScaledItem(guiGraphics, new ItemStack(net.minecraft.world.item.Items.REDSTONE), iconX, iconY, iconSize);
-        }
-    }
-
-    private void renderScaledItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y, int size) {
-        guiGraphics.pose().pushMatrix();
-        float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(scale, scale);
-        guiGraphics.item(itemStack, 0, 0);
-        guiGraphics.pose().popMatrix();
-    }
-
-    private void renderScaledTexture(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y, int size) {
-        guiGraphics.pose().pushMatrix();
-        float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(scale, scale);
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16, 16, 16);
-        guiGraphics.pose().popMatrix();
-    }
-
     @Override
     public void containerTick() {
         super.containerTick();
@@ -299,6 +221,18 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         this.selectedIndex = menu.getSelectedColorIndex();
         lastGridRebuildKey = Integer.MIN_VALUE;
         clearColorGridButtons();
+
+        redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
+                leftPos + REDSTONE_BUTTON_X,
+                topPos + REDSTONE_BUTTON_Y,
+                b -> onRedstoneModePressed(false),
+                menu::getRedstoneMode,
+                false));
+    }
+
+    private void onRedstoneModePressed(boolean backward) {
+        ModMessages.sendFactoryRedstoneMode(menu.getSyncedBlockPos(), backward);
+        playClick();
     }
 
     @Override
@@ -446,22 +380,14 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
     }
 
     private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 1 && redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
+            onRedstoneModePressed(true);
+            return true;
+        }
         if (button != 0 && button != 1) return false;
-        if (handleRedstoneButtonClick(mouseX, mouseY, button)) return true;
         if (handleScrollButtonClick(mouseX, mouseY)) return true;
         if (handleHandleClick(mouseX, mouseY)) return true;
         if (handleScrollbarClick(mouseX, mouseY)) return true;
-        return false;
-    }
-
-    private boolean handleRedstoneButtonClick(double mouseX, double mouseY, int button) {
-        int bx = leftPos + REDSTONE_BUTTON_X;
-        int by = topPos + REDSTONE_BUTTON_Y;
-        if (mouseX >= bx && mouseX < bx + REDSTONE_BUTTON_SIZE && mouseY >= by && mouseY < by + REDSTONE_BUTTON_SIZE) {
-            ModMessages.sendFactoryRedstoneMode(menu.getSyncedBlockPos(), button == 1);
-            playClick();
-            return true;
-        }
         return false;
     }
 

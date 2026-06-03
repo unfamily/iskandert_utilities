@@ -23,7 +23,6 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/structure_selector.png");
     private static final Identifier ENTRY_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
     private static final Identifier SCROLLBAR_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
-    private static final Identifier TINY_BUTTONS_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/tiny_buttons.png");
     private static final Identifier SINGLE_SLOT_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
     
     // Dimensioni della texture (basate sul file PNG reale: 200x164)
@@ -40,13 +39,6 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     private static final int ENTRIES_START_X = (GUI_WIDTH - ENTRY_WIDTH) / 2; // Centra le entry (ora 30)
     private static final int ENTRIES_START_Y = 30; // Inizio delle entry sotto il titolo
     private static final int ENTRY_SPACING = 0; // Nessuno spazio tra le entry
-    
-    // Costanti per i pulsanti di selezione (8x8 pixel)
-    private static final int BUTTON_SIZE = 8;
-    private static final int BUTTON_EMPTY_U = 8; // Seconda colonna (pulsante vuoto)
-    private static final int BUTTON_FILLED_U = 16; // Terza colonna (pulsante pieno)
-    private static final int BUTTON_NORMAL_V = 0; // Prima riga (normale)
-    private static final int BUTTON_HOVERED_V = 8; // Seconda riga (illuminato)
     
     // Costanti per lo slot dell'icona (18x18 pixel)
     private static final int SLOT_SIZE = 18;
@@ -84,7 +76,8 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     private Button saveButton;
     private Button cancelButton;
     private Button closeButton;
-    
+    private final Button[] selectionDotButtons = new Button[visibleEntries];
+
     // Close button position - top right
     private static final int CLOSE_BUTTON_Y = 5;
     private static final int CLOSE_BUTTON_SIZE = 12;
@@ -162,8 +155,49 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
                            .build();
         addRenderableWidget(closeButton);
         
-        // Carica le strutture disponibili
+        for (int i = 0; i < visibleEntries; i++) {
+            final int row = i;
+            selectionDotButtons[i] = addRenderableWidget(MachineGuiButtons.selectionDot(0, 0, false, b -> onSelectionDotPressed(row)));
+            selectionDotButtons[i].visible = false;
+        }
+
         loadAvailableStructures();
+    }
+
+    @Override
+    public void containerTick() {
+        super.containerTick();
+        layoutSelectionDots();
+    }
+
+    private void layoutSelectionDots() {
+        for (int i = 0; i < visibleEntries; i++) {
+            int entryIndex = scrollOffset + i;
+            Button dot = selectionDotButtons[i];
+            if (entryIndex >= availableStructures.size()) {
+                dot.visible = false;
+                continue;
+            }
+            int entryX = leftPos + ENTRIES_START_X;
+            int entryY = topPos + ENTRIES_START_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
+            dot.setX(MachineGuiButtons.structureSelectionDotX(entryX, ENTRY_WIDTH));
+            dot.setY(MachineGuiButtons.structureSelectionDotY(entryY, ENTRY_HEIGHT));
+            dot.visible = true;
+            MachineGuiButtons.updateSelectionDot(dot, entryIndex == selectedStructureIndex);
+        }
+    }
+
+    private void onSelectionDotPressed(int visibleRow) {
+        int entryIndex = scrollOffset + visibleRow;
+        if (entryIndex < 0 || entryIndex >= availableStructures.size()) {
+            return;
+        }
+        if (selectedStructureIndex == entryIndex) {
+            selectedStructureIndex = -1;
+        } else {
+            selectedStructureIndex = entryIndex;
+        }
+        playButtonSound();
     }
     
     @Override
@@ -237,9 +271,12 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
                 guiGraphics.text(this.font, Component.literal(structureId), scaledTextX, scaledIdY, GuiTextColors.SECONDARY, false);
                 
                 guiGraphics.pose().popMatrix();
-                
-                // Renderizza il pulsante di selezione (che include slot e icona)
-                renderSelectionButton(guiGraphics, entryX, entryY, entryIndex, mouseX, mouseY);
+
+                int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - MachineGuiButtons.DOT_SIZE - 6;
+                int slotY = entryY + (ENTRY_HEIGHT - SLOT_SIZE) / 2;
+                guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F,
+                        SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+                renderStructureIcon(guiGraphics, structure, slotX + 1, slotY + 1);
             }
             
             // Se non c'è struttura, l'entry rimane vuota (solo la texture)
@@ -281,40 +318,6 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
                                mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
         int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, handleY, (float)SCROLLBAR_WIDTH, (float)handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-    }
-    
-    /**
-     * Renderizza lo slot dell'icona e il pulsante di selezione per un'entry (IDENTICA alla StructurePlacerScreen)
-     */
-    private void renderSelectionButton(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
-        // Posizione dello slot: più a sinistra, centrato verticalmente
-        int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - BUTTON_SIZE - 6; // 6 pixel di margine totale
-        int slotY = entryY + (ENTRY_HEIGHT - SLOT_SIZE) / 2; // Centrato verticalmente
-        
-        // Disegna lo slot (18x18)
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
-        
-        // Disegna l'icona della struttura nello slot se disponibile
-        if (entryIndex < availableStructures.size()) {
-            net.unfamily.iskalib.structure.StructureDefinition structure = availableStructures.get(entryIndex);
-            renderStructureIcon(guiGraphics, structure, slotX + 1, slotY + 1); // +1 pixel per centrare nell'slot
-        }
-        
-        // Posizione del pulsante: subito dopo lo slot, centrato verticalmente
-        int buttonX = slotX + SLOT_SIZE + 2; // 2 pixel di spazio dopo lo slot
-        int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2; // Centrato verticalmente
-        
-        // Verifica se il mouse è sopra il pulsante
-        boolean isHovered = mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE &&
-                           mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE;
-        
-        // Determina il tipo di pulsante (vuoto o pieno)
-        boolean isSelected = (entryIndex == selectedStructureIndex);
-        int buttonU = isSelected ? BUTTON_FILLED_U : BUTTON_EMPTY_U;
-        int buttonV = isHovered ? BUTTON_HOVERED_V : BUTTON_NORMAL_V;
-        
-        // Disegna il pulsante
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TINY_BUTTONS_TEXTURE, buttonX, buttonY, (float)buttonU, (float)buttonV, BUTTON_SIZE, BUTTON_SIZE, 64, 96);
     }
     
     /**
@@ -414,7 +417,6 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         if (button == 0) { // Left click
             // Gestisci i vari click nell'ordine di priorità (IDENTICO alla StructurePlacerScreen)
             if (handleScrollButtonClick(mouseX, mouseY) ||
-                handleSelectionButtonClick(mouseX, mouseY) ||
                 handleHandleClick(mouseX, mouseY) ||
                 handleScrollbarClick(mouseX, mouseY) ||
                 handleSaveCancelClick(mouseX, mouseY) ||
@@ -458,39 +460,6 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
             return true;
         }
         
-        return false;
-    }
-    
-    /**
-     * Gestisce i click sui pulsanti di selezione (IDENTICO alla StructurePlacerScreen)
-     */
-    private boolean handleSelectionButtonClick(double mouseX, double mouseY) {
-        for (int i = 0; i < visibleEntries; i++) {
-            int entryIndex = scrollOffset + i;
-            if (entryIndex >= availableStructures.size()) continue;
-            
-            int entryX = this.leftPos + ENTRIES_START_X;
-            int entryY = this.topPos + ENTRIES_START_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
-            
-            // Posizione del pulsante (deve corrispondere a renderSelectionButton)
-            int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - BUTTON_SIZE - 6;
-            int buttonX = slotX + SLOT_SIZE + 2;
-            int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2;
-            
-            if (mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE &&
-                mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE) {
-                
-                // Toggle selection (IDENTICO alla StructurePlacerScreen)
-                if (selectedStructureIndex == entryIndex) {
-                    selectedStructureIndex = -1; // Deseleziona se già selezionato
-                } else {
-                    selectedStructureIndex = entryIndex; // Seleziona nuovo
-                }
-                
-                playButtonSound();
-                return true;
-            }
-        }
         return false;
     }
     

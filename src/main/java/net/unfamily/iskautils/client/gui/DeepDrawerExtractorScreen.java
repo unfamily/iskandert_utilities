@@ -37,10 +37,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final Identifier BACKGROUND_EMPTY = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer_extractor_empty.png");
     
-    // Medium buttons texture (16x32 - normal and highlighted)
-    private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
-    // Redstone GUI icon
-    private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
     // Scrollbar texture (identica a DeepDrawersScreen)
     private static final Identifier SCROLLBAR_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
     // Wide entry texture for filter entries
@@ -137,9 +133,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private Button allowNavButton;
     private Button listLogicButton;
     private Button backButton;
-    
-    private int redstoneModeButtonX;
-    private int redstoneModeButtonY;
+
+    private ItemIconButton redstoneModeButton;
     
     // Cached filter fields for rendering (synced from server) - dynamic list
     private java.util.List<String> cachedFilterFields = new java.util.ArrayList<>();
@@ -262,8 +257,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 .build();
         addRenderableWidget(validKeysButton);
 
-        this.redstoneModeButtonX = this.leftPos + REDSTONE_GUI_X;
-        this.redstoneModeButtonY = this.topPos + TOP_ROW_Y;
+        redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
+                this.leftPos + REDSTONE_GUI_X,
+                this.topPos + TOP_ROW_Y,
+                b -> onRedstoneModePressed(false),
+                menu::getRedstoneMode,
+                true));
 
         backButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.back"),
                         button -> handleCloseOrBack())
@@ -467,6 +466,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (backButton != null) {
             backButton.visible = howTo;
         }
+        if (redstoneModeButton != null) {
+            redstoneModeButton.visible = !howTo;
+        }
 
         boolean showEditChrome = edit && !howTo && isFilterListOpen();
         if (editModeTextBox != null) {
@@ -575,12 +577,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
         }
 
-        if (subView != SubView.HOW_TO_USE && (button == 0 || button == 1)) {
-            if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-                onRedstoneModePressed(button == 1);
-                return true;
-            }
+        if (subView != SubView.HOW_TO_USE && button == 1
+                && redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
+            onRedstoneModePressed(true);
+            return true;
         }
         
         // Handle clicks on filter entries (left click to edit, right click to clear)
@@ -783,8 +783,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         if (subView != SubView.HOW_TO_USE) {
-            renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
-            renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
+            if (redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
+                MachineGuiButtons.renderTooltipLine(guiGraphics, font, mouseX, mouseY,
+                        MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), true));
+            }
             if (isFilterListOpen()) {
                 renderScrollbar(guiGraphics, mouseX, mouseY);
             }
@@ -1615,75 +1617,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             removeWidget(editingEditBox);
             editingEditBox = null;
             editingFilterIndex = -1;
-        }
-    }
-    
-    private void renderRedstoneModeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        // Check if mouse is over the button
-        boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                           mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
-        
-        // Draw button background (normal or highlighted)
-        int textureY = isHovered ? 16 : 0; // Highlighted version is below the normal one
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, this.redstoneModeButtonX, this.redstoneModeButtonY,
-                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
-                        96, 96); // Correct texture size: 96x96
-        
-        // Get current redstone mode from ContainerData (synced automatically)
-        int redstoneMode = menu.getRedstoneMode();
-        
-        // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
-        int iconX = this.redstoneModeButtonX + 2; // Center: (16-12)/2 = 2
-        int iconY = this.redstoneModeButtonY + 2; // Center: (16-12)/2 = 2
-        int iconSize = 12;
-        
-        switch (redstoneMode) {
-            case 0 -> {
-                // NONE mode: Gunpowder icon
-                net.minecraft.world.item.ItemStack gunpowder = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GUNPOWDER);
-                renderScaledItem(guiGraphics, gunpowder, iconX, iconY, iconSize);
-            }
-            case 1 -> {
-                // LOW mode: Redstone dust icon
-                net.minecraft.world.item.ItemStack redstone = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REDSTONE);
-                renderScaledItem(guiGraphics, redstone, iconX, iconY, iconSize);
-            }
-            case 2 -> {
-                // HIGH mode: Redstone GUI texture rendered as item-like (12x12)
-                renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
-            }
-            case 3 -> {
-                // PULSE mode: Repeater icon
-                net.minecraft.world.item.ItemStack repeater = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REPEATER);
-                renderScaledItem(guiGraphics, repeater, iconX, iconY, iconSize);
-            }
-            case 4 -> {
-                // DISABLED mode: Barrier icon
-                net.minecraft.world.item.ItemStack barrier = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BARRIER);
-                renderScaledItem(guiGraphics, barrier, iconX, iconY, iconSize);
-            }
-        }
-    }
-    
-    private void renderRedstoneModeTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        // Check if mouse is over the button
-        boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                           mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
-        
-        if (isHovered) {
-            int redstoneMode = menu.getRedstoneMode();
-            
-            Component tooltip = switch (redstoneMode) {
-                case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
-                case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
-                case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-                case 3 -> Component.translatable("gui.iska_utils.generic.redstone_mode.pulse");
-                case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
-                default -> Component.literal("Unknown mode");
-            };
-
-            java.util.List<FormattedCharSequence> lines = java.util.List.of(tooltip.getVisualOrderText());
-            guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
         }
     }
     

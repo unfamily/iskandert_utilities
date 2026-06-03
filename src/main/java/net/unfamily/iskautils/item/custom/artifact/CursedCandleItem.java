@@ -16,7 +16,7 @@ import java.util.function.Consumer;
  * ({@code burning_brazier_super_hot} or {@code iska_utils_internal-curse_flame} stage).
  */
 public class CursedCandleItem extends BurningBrazierItem {
-    private static final String PATH = "cursed_candle";
+    private static final String TOOLTIP_PATH = "cursed_candle";
 
     public CursedCandleItem(Properties properties) {
         super(properties);
@@ -33,18 +33,13 @@ public class CursedCandleItem extends BurningBrazierItem {
     }
 
     @Override
-    protected String flamesTooltipDesc0Key() {
-        return "tooltip.iska_utils.burning_flames.desc0.cursed";
-    }
-
-    @Override
-    protected String flamesTooltipDesc2Key() {
-        return "tooltip.iska_utils.burning_flames.desc2.cursed";
+    protected String flamesTooltipPath() {
+        return TOOLTIP_PATH;
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
-        tooltip.accept(Component.translatable("tooltip.iska_utils." + PATH + ".cursed"));
-        appendFlamesTooltip(tooltip, flamesTooltipDesc0Key(), flamesTooltipDesc2Key());
+        tooltip.accept(Component.translatable("tooltip.iska_utils." + TOOLTIP_PATH + ".cursed"));
+        appendFlameTooltip(tooltip);
     }
 }

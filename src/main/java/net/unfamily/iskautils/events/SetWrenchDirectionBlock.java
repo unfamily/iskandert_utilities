@@ -11,8 +11,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.unfamily.iskautils.item.custom.SwissWrenchItem;
+import net.unfamily.iskautils.network.packet.SwissWrenchCycleModeC2SPacket;
 
 @EventBusSubscriber
 public class SetWrenchDirectionBlock {
@@ -51,33 +53,40 @@ public class SetWrenchDirectionBlock {
 	
 	@SubscribeEvent
 	public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-		Player player = event.getEntity();
-		ItemStack stack = player.getMainHandItem();
-		
-		// check if the player has a Swiss Wrench in hand
-		if (stack.getItem() instanceof SwissWrenchItem) {
-			if (!player.level().isClientSide()) {
-				// check the delay using the shared manager
-				if (!ClickDelayManager.canClick(player.getUUID())) {
-					return;
-				}
-				
-				// change the rotation mode of the wrench
-				RotationMode newMode = cycleRotationMode(stack);
-				
-				// send a message to the player
-				player.sendOverlayMessage(
-					Component.translatable("item.iska_utils.swiss_wrench.message.mode_set",
-					newMode.getDisplayName()));
-				
-				// feedback sound
-				player.level().playSound(null, player.blockPosition(), 
-					SoundEvents.LANTERN_PLACE, SoundSource.PLAYERS, 0.5f, 1.2f);
-				
-				// register this click using the shared manager
-				ClickDelayManager.updateClickTime(player.getUUID());
-			}
+		if (!event.getEntity().level().isClientSide()) {
+			tryCycleRotationMode(event.getEntity());
 		}
+	}
+
+	@SubscribeEvent
+	public static void onLeftClickEmpty(PlayerInteractEvent.LeftClickEmpty event) {
+		if (!event.getLevel().isClientSide()) {
+			return;
+		}
+		if (event.getEntity().getMainHandItem().getItem() instanceof SwissWrenchItem) {
+			ClientPacketDistributor.sendToServer(new SwissWrenchCycleModeC2SPacket());
+		}
+	}
+
+	/** Cycles rotation mode when main hand holds a Swiss Wrench (server only). */
+	public static void tryCycleRotationMode(Player player) {
+		ItemStack stack = player.getMainHandItem();
+		if (!(stack.getItem() instanceof SwissWrenchItem)) {
+			return;
+		}
+		if (player.level().isClientSide()) {
+			return;
+		}
+		if (!ClickDelayManager.canClick(player.getUUID())) {
+			return;
+		}
+
+		RotationMode newMode = cycleRotationMode(stack);
+		player.sendOverlayMessage(
+				Component.translatable("item.iska_utils.swiss_wrench.message.mode_set", newMode.getDisplayName()));
+		player.level().playSound(null, player.blockPosition(),
+				SoundEvents.LANTERN_PLACE, SoundSource.PLAYERS, 0.5f, 1.2f);
+		ClickDelayManager.updateClickTime(player.getUUID());
 	}
 	
 	/**

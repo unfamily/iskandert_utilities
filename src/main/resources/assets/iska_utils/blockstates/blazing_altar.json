@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "flame_visual=glow": { "model": "iska_utils:block/blazing_altar_glow" },
+    "flame_visual=burning": { "model": "iska_utils:block/blazing_altar_burning" },
+    "flame_visual=cursed": { "model": "iska_utils:block/blazing_altar_cursed" },
+    "flame_visual=hidden": { "model": "iska_utils:block/blazing_altar_hidden" }
+  }
+}

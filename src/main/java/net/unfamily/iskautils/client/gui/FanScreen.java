@@ -70,9 +70,6 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     private static final int CELL_BORDER_COLOR = 0xFFC6C6C6; // Light gray border color (#c6c6c6)
     private static final int GRID_BUTTON_OFFSET = 8; // Offset from grid center to bring buttons closer together
     
-    // Right side buttons (redstone mode, push/pull, push type)
-    private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
-    private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
     private static final int REDSTONE_BUTTON_SIZE = 16;
     private static final int BUTTON_SPACING_Y = 4; // Vertical spacing between buttons on right side
     private static final int RIGHT_BUTTON_MARGIN = 10; // Margin from right edge
@@ -102,9 +99,9 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     private Button closeButton; // X button top right
     private Button showButton;
     private boolean previewButtonShowsHide;
-    private int redstoneModeButtonX, redstoneModeButtonY; // Redstone mode button position
-    private int pushPullButtonX, pushPullButtonY; // Push/Pull button position
-    private int pushTypeButtonX, pushTypeButtonY; // Push type button position
+    private ItemIconButton redstoneModeButton;
+    private ItemIconButton pushPullButton;
+    private ItemIconButton pushTypeButton;
     
     @Override
     protected void init() {
@@ -129,13 +126,23 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         // Calculate right side button positions (centered vertically with grid)
         int rightButtonX = this.leftPos + this.imageWidth - RIGHT_BUTTON_MARGIN - REDSTONE_BUTTON_SIZE;
         int gridCenterY = this.topPos + GRID_START_Y + GRID_TOTAL_SIZE / 2;
-        redstoneModeButtonY = gridCenterY - REDSTONE_BUTTON_SIZE - BUTTON_SPACING_Y - REDSTONE_BUTTON_SIZE / 2;
-        pushPullButtonY = gridCenterY - REDSTONE_BUTTON_SIZE / 2;
-        pushTypeButtonY = gridCenterY + BUTTON_SPACING_Y + REDSTONE_BUTTON_SIZE / 2;
-        redstoneModeButtonX = rightButtonX;
-        pushPullButtonX = rightButtonX;
-        pushTypeButtonX = rightButtonX;
-        
+        int redstoneY = gridCenterY - REDSTONE_BUTTON_SIZE - BUTTON_SPACING_Y - REDSTONE_BUTTON_SIZE / 2;
+        int pushPullY = gridCenterY - REDSTONE_BUTTON_SIZE / 2;
+        int pushTypeY = gridCenterY + BUTTON_SPACING_Y + REDSTONE_BUTTON_SIZE / 2;
+
+        redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
+                rightButtonX, redstoneY, b -> onRedstoneModePressed(false), menu::getRedstoneMode, false));
+        pushPullButton = addRenderableWidget(new ItemIconButton(
+                rightButtonX, pushPullY, REDSTONE_BUTTON_SIZE,
+                b -> onPushPullPressed(false),
+                () -> MachineGuiButtons.fanPushPullIcon(menu.isPull()),
+                Component.empty()));
+        pushTypeButton = addRenderableWidget(new ItemIconButton(
+                rightButtonX, pushTypeY, REDSTONE_BUTTON_SIZE,
+                b -> onPushTypePressed(false),
+                () -> MachineGuiButtons.targetTypeIcon(menu.getPushType()),
+                Component.empty()));
+
         // Create range adjustment buttons around the grid
         createRangeButtons();
         
@@ -255,13 +262,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         // Render main background
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, guiX, guiY, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
-        // Render range grid visualization
         renderRangeGrid(guiGraphics);
-        
-        // Render right side buttons
-        renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
-        renderPushPullButton(guiGraphics, mouseX, mouseY);
-        renderPushTypeButton(guiGraphics, mouseX, mouseY);
     }
     
     private void renderRangeGrid(GuiGraphicsExtractor guiGraphics) {
@@ -486,20 +487,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
      * Renders a single ghost item (semi-transparent) at the specified position
      */
     private void renderGhostItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y) {
-        // Save current matrix state
-        guiGraphics.pose().pushMatrix();
-        
-        // Translate to the slot position (relative to GUI)
-        guiGraphics.pose().translate(this.leftPos + x, this.topPos + y);
-        
-        // Render the item first
-        guiGraphics.item(itemStack, 0, 0);
-        
-        // Then apply a semi-transparent dark overlay to create ghost effect
-        guiGraphics.fill(0, 0, 16, 16, 0x80000000); // 50% transparent black overlay
-        
-        // Restore matrix state
-        guiGraphics.pose().popMatrix();
+        GhostItemRenderer.render(guiGraphics, itemStack, this.leftPos + x, this.topPos + y, GuiGhostItem.DEFAULT_ARGB);
     }
     
     @Override
@@ -549,63 +537,18 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     }
     
     private void renderButtonTooltips(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        // Redstone mode button tooltip
-        if (mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-            mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-            // Get current redstone mode from menu
-            int redstoneMode = menu.getRedstoneMode();
-            
-            // Draw the appropriate tooltip
-            Component tooltip = switch (redstoneMode) {
-                case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
-                case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
-                case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-                case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
-                default -> Component.literal("Unknown mode");
-            };
-            guiGraphics.setTooltipForNextFrame(
-                this.font,
-                java.util.List.of(tooltip.getVisualOrderText()),
-                DefaultTooltipPositioner.INSTANCE,
-                mouseX,
-                mouseY,
-                true
-            );
-        }
-        
-        // Push/Pull button tooltip
-        if (mouseX >= pushPullButtonX && mouseX <= pushPullButtonX + REDSTONE_BUTTON_SIZE &&
-            mouseY >= pushPullButtonY && mouseY <= pushPullButtonY + REDSTONE_BUTTON_SIZE) {
-            // Show current state (Push or Pull)
+        if (redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
+            MachineGuiButtons.renderTooltipLine(guiGraphics, font, mouseX, mouseY,
+                    MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), false));
+        } else if (pushPullButton != null && pushPullButton.isMouseOver(mouseX, mouseY)) {
             boolean isPull = menu.isPull();
-            Component tooltip = Component.translatable(isPull ? "gui.iska_utils.fan.push_pull.pull" : "gui.iska_utils.fan.push_pull.push");
-            guiGraphics.setTooltipForNextFrame(
-                this.font,
-                java.util.List.of(tooltip.getVisualOrderText()),
-                DefaultTooltipPositioner.INSTANCE,
-                mouseX,
-                mouseY,
-                true
-            );
+            MachineGuiButtons.renderTooltipLine(guiGraphics, font, mouseX, mouseY,
+                    Component.translatable(isPull ? "gui.iska_utils.fan.push_pull.pull" : "gui.iska_utils.fan.push_pull.push"));
+        } else if (pushTypeButton != null && pushTypeButton.isMouseOver(mouseX, mouseY)) {
+            MachineTargetType pushType = MachineTargetType.fromId(menu.getPushType());
+            MachineGuiButtons.renderTooltipLine(guiGraphics, font, mouseX, mouseY,
+                    Component.translatable("gui.iska_utils.fan.push_type." + pushType.getName()));
         }
-        
-        // Push type button tooltip
-        if (mouseX >= pushTypeButtonX && mouseX <= pushTypeButtonX + REDSTONE_BUTTON_SIZE &&
-            mouseY >= pushTypeButtonY && mouseY <= pushTypeButtonY + REDSTONE_BUTTON_SIZE) {
-            int pushTypeId = menu.getPushType();
-            MachineTargetType pushType = MachineTargetType.fromId(pushTypeId);
-            Component tooltip = Component.translatable("gui.iska_utils.fan.push_type." + pushType.getName());
-            guiGraphics.setTooltipForNextFrame(
-                this.font,
-                java.util.List.of(tooltip.getVisualOrderText()),
-                DefaultTooltipPositioner.INSTANCE,
-                mouseX,
-                mouseY,
-                true
-            );
-        }
-        
-        // Range adjustment buttons tooltips
         renderRangeButtonTooltips(guiGraphics, mouseX, mouseY);
     }
     
@@ -720,166 +663,21 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         }
     }
     
-    private void renderRedstoneModeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        // Check if mouse is over the button
-        boolean isHovered = mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                           mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
-        
-        // Draw button background (normal or highlighted)
-        int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, redstoneModeButtonX, redstoneModeButtonY,
-                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
-                        96, 96);
-        
-        // Get current redstone mode from menu
-        int redstoneMode = menu.getRedstoneMode();
-        
-        // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
-        int iconX = redstoneModeButtonX + 2;
-        int iconY = redstoneModeButtonY + 2;
-        int iconSize = 12;
-        
-        switch (redstoneMode) {
-            case 0 -> {
-                // NONE mode: Gunpowder icon
-                ItemStack gunpowder = new ItemStack(net.minecraft.world.item.Items.GUNPOWDER);
-                renderScaledItem(guiGraphics, gunpowder, iconX, iconY, iconSize);
-            }
-            case 1 -> {
-                // LOW mode: Redstone dust icon
-                ItemStack redstone = new ItemStack(net.minecraft.world.item.Items.REDSTONE);
-                renderScaledItem(guiGraphics, redstone, iconX, iconY, iconSize);
-            }
-            case 2 -> {
-                // HIGH mode: Redstone GUI texture
-                renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
-            }
-            case 4 -> {
-                // DISABLED mode: Barrier icon
-                ItemStack barrier = new ItemStack(net.minecraft.world.item.Items.BARRIER);
-                renderScaledItem(guiGraphics, barrier, iconX, iconY, iconSize);
-            }
-        }
-    }
-    
-    private void renderPushPullButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        // Check if mouse is over the button
-        boolean isHovered = mouseX >= pushPullButtonX && mouseX <= pushPullButtonX + REDSTONE_BUTTON_SIZE &&
-                           mouseY >= pushPullButtonY && mouseY <= pushPullButtonY + REDSTONE_BUTTON_SIZE;
-        
-        // Draw button background
-        int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, pushPullButtonX, pushPullButtonY,
-                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
-                        96, 96);
-        
-        // Get current push/pull state
-        boolean isPull = menu.isPull();
-        
-        // Draw icon: piston for push, sticky piston for pull
-        int iconX = pushPullButtonX + 2;
-        int iconY = pushPullButtonY + 2;
-        int iconSize = 12;
-        
-        if (isPull) {
-            // Pull: sticky piston
-            ItemStack stickyPiston = new ItemStack(net.minecraft.world.item.Items.STICKY_PISTON);
-            renderScaledItem(guiGraphics, stickyPiston, iconX, iconY, iconSize);
-        } else {
-            // Push: regular piston
-            ItemStack piston = new ItemStack(net.minecraft.world.item.Items.PISTON);
-            renderScaledItem(guiGraphics, piston, iconX, iconY, iconSize);
-        }
-    }
-    
-    private void renderPushTypeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        // Check if mouse is over the button
-        boolean isHovered = mouseX >= pushTypeButtonX && mouseX <= pushTypeButtonX + REDSTONE_BUTTON_SIZE &&
-                           mouseY >= pushTypeButtonY && mouseY <= pushTypeButtonY + REDSTONE_BUTTON_SIZE;
-        
-        // Draw button background
-        int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, pushTypeButtonX, pushTypeButtonY,
-                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
-                        96, 96);
-        
-        // Get current push type
-        int pushTypeId = menu.getPushType();
-        MachineTargetType pushType = MachineTargetType.fromId(pushTypeId);
-        
-        // Draw icon based on push type
-        int iconX = pushTypeButtonX + 2;
-        int iconY = pushTypeButtonY + 2;
-        int iconSize = 12;
-        
-        switch (pushType) {
-            case MOBS_ONLY -> {
-                // Mobs only: creeper head
-                ItemStack creeperHead = new ItemStack(net.minecraft.world.item.Items.CREEPER_HEAD);
-                renderScaledItem(guiGraphics, creeperHead, iconX, iconY, iconSize);
-            }
-            case MOBS_AND_PLAYERS -> {
-                // Mobs and players: TNT
-                ItemStack tnt = new ItemStack(net.minecraft.world.item.Items.TNT);
-                renderScaledItem(guiGraphics, tnt, iconX, iconY, iconSize);
-            }
-            case PLAYERS_ONLY -> {
-                // Players only: player head
-                ItemStack playerHead = new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD);
-                renderScaledItem(guiGraphics, playerHead, iconX, iconY, iconSize);
-            }
-        }
-    }
-    
-    /**
-     * Renders an item scaled to the specified size
-     */
-    private void renderScaledItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y, int size) {
-        guiGraphics.pose().pushMatrix();
-        float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(scale, scale);
-        guiGraphics.item(itemStack, 0, 0);
-        guiGraphics.pose().popMatrix();
-    }
-    
-    /**
-     * Renders a texture scaled to the specified size (like an item)
-     */
-    private void renderScaledTexture(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y, int size) {
-        guiGraphics.pose().pushMatrix();
-        float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(scale, scale);
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16, 16, 16);
-        guiGraphics.pose().popMatrix();
-    }
-    
-    private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 || button == 1) {
-            if (mouseX >= redstoneModeButtonX && mouseX <= redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= redstoneModeButtonY && mouseY <= redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-                onRedstoneModePressed(button == 1);
-                return true;
-            }
-            if (mouseX >= pushPullButtonX && mouseX <= pushPullButtonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= pushPullButtonY && mouseY <= pushPullButtonY + REDSTONE_BUTTON_SIZE) {
-                onPushPullPressed(button == 1);
-                return true;
-            }
-            if (mouseX >= pushTypeButtonX && mouseX <= pushTypeButtonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= pushTypeButtonY && mouseY <= pushTypeButtonY + REDSTONE_BUTTON_SIZE) {
-                onPushTypePressed(button == 1);
-                return true;
-            }
-        }
-        return false;
-    }
-
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (handleMouseClicked(event.x(), event.y(), event.button())) {
-            return true;
+        if (event.button() == 1) {
+            if (redstoneModeButton != null && redstoneModeButton.isMouseOver(event.x(), event.y())) {
+                onRedstoneModePressed(true);
+                return true;
+            }
+            if (pushPullButton != null && pushPullButton.isMouseOver(event.x(), event.y())) {
+                onPushPullPressed(true);
+                return true;
+            }
+            if (pushTypeButton != null && pushTypeButton.isMouseOver(event.x(), event.y())) {
+                onPushTypePressed(true);
+                return true;
+            }
         }
         return super.mouseClicked(event, doubleClick);
     }

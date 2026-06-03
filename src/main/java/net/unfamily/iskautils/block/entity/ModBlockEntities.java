@@ -164,6 +164,10 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("druidic_podzol",
                     () -> new BlockEntityType<>(DruidicPodzolBlockEntity::new, ModBlocks.DRUIDIC_PODZOL.get()));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BlazingAltarBlockEntity>> BLAZING_ALTAR_BE =
+            BLOCK_ENTITIES.register("blazing_altar",
+                    () -> new BlockEntityType<>(BlazingAltarBlockEntity::new, ModBlocks.BLAZING_ALTAR.get()));
+
     /**
      * Registra tutte le entità blocco
      */
@@ -344,6 +348,12 @@ public class ModBlockEntities {
                     ANCIENT_TABLE_BE.get(),
                     (blockEntity, ctx) ->
                             blockEntity instanceof AncientTableBlockEntity table ? table.getItemTransferHandler() : null);
+
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    BLAZING_ALTAR_BE.get(),
+                    (blockEntity, ctx) ->
+                            blockEntity instanceof BlazingAltarBlockEntity altar ? altar.getItemTransferHandler() : null);
         }
     }
 } 

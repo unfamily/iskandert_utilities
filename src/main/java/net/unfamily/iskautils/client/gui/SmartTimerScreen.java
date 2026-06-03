@@ -3,15 +3,12 @@ package net.unfamily.iskautils.client.gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.network.ModMessages;
 
@@ -21,15 +18,12 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     private static final int GUI_WIDTH = 280;
     private static final int GUI_HEIGHT = 200;
     
-    // Close button
     private Button closeButton;
+    private ItemIconButton redstoneModeButton;
     private static final int CLOSE_BUTTON_Y = 5;
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
     
-    // Redstone mode button
-    private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
-    private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
     private static final int REDSTONE_BUTTON_SIZE = 16;
     private static final int REDSTONE_BUTTON_X = CLOSE_BUTTON_X - REDSTONE_BUTTON_SIZE - 5; // Left of close button
     private static final int REDSTONE_BUTTON_Y = 40; // Above "redstone off for" label (which is at 50)
@@ -81,7 +75,14 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
                                   CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                            .build();
         addRenderableWidget(closeButton);
-        
+
+        redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
+                this.leftPos + REDSTONE_BUTTON_X,
+                this.topPos + REDSTONE_BUTTON_Y,
+                b -> onRedstoneModePressed(false),
+                menu::getRedstoneMode,
+                false));
+
         // Buttons for cooldown (created always but visibility controlled)
         createButtonsForValue(TEXT_START_X, COOLDOWN_BUTTONS_Y, true);
         
@@ -215,80 +216,6 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
     }
     
-    private void renderRedstoneModeButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        int buttonX = this.leftPos + REDSTONE_BUTTON_X;
-        int buttonY = this.topPos + REDSTONE_BUTTON_Y;
-        
-        // Check if mouse is over the button
-        boolean isHovered = mouseX >= buttonX && mouseX <= buttonX + REDSTONE_BUTTON_SIZE &&
-                           mouseY >= buttonY && mouseY <= buttonY + REDSTONE_BUTTON_SIZE;
-        
-        // Draw button background (normal or highlighted)
-        int textureY = isHovered ? 16 : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, buttonX, buttonY,
-                        0.0F, (float)textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE,
-                        96, 96);
-        
-        // Get current redstone mode from menu
-        int redstoneMode = menu.getRedstoneMode();
-        
-        // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
-        int iconX = buttonX + 2;
-        int iconY = buttonY + 2;
-        int iconSize = 12;
-        
-        switch (redstoneMode) {
-            case 0 -> {
-                // NONE mode: Gunpowder icon
-                ItemStack gunpowder = new ItemStack(net.minecraft.world.item.Items.GUNPOWDER);
-                renderScaledItem(guiGraphics, gunpowder, iconX, iconY, iconSize);
-            }
-            case 1 -> {
-                // LOW mode: Redstone dust icon
-                ItemStack redstone = new ItemStack(net.minecraft.world.item.Items.REDSTONE);
-                renderScaledItem(guiGraphics, redstone, iconX, iconY, iconSize);
-            }
-            case 2 -> {
-                // HIGH mode: Redstone GUI texture
-                renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
-            }
-            case 4 -> {
-                // DISABLED mode: Barrier icon
-                ItemStack barrier = new ItemStack(net.minecraft.world.item.Items.BARRIER);
-                renderScaledItem(guiGraphics, barrier, iconX, iconY, iconSize);
-            }
-            default -> {
-                // Fallback (should never happen)
-                ItemStack redstone = new ItemStack(net.minecraft.world.item.Items.REDSTONE);
-                renderScaledItem(guiGraphics, redstone, iconX, iconY, iconSize);
-            }
-        }
-    }
-    
-    /**
-     * Renders an item scaled to the specified size
-     */
-    private void renderScaledItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y, int size) {
-        guiGraphics.pose().pushMatrix();
-        float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(scale, scale);
-        guiGraphics.item(itemStack, 0, 0);
-        guiGraphics.pose().popMatrix();
-    }
-    
-    /**
-     * Renders a texture scaled to the specified size (like an item)
-     */
-    private void renderScaledTexture(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y, int size) {
-        guiGraphics.pose().pushMatrix();
-        float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(scale, scale);
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16, 16, 16);
-        guiGraphics.pose().popMatrix();
-    }
-    
     @Override
     protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         // Main screen
@@ -315,37 +242,11 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
         guiGraphics.text(this.font, Component.literal(signalDurationTicks), TEXT_START_X, SIGNAL_DURATION_TICKS_Y, GuiTextColors.TITLE, false);
     }
     
-    private void renderRedstoneModeTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        int buttonX = this.leftPos + REDSTONE_BUTTON_X;
-        int buttonY = this.topPos + REDSTONE_BUTTON_Y;
-        if (mouseX >= buttonX && mouseX <= buttonX + REDSTONE_BUTTON_SIZE &&
-            mouseY >= buttonY && mouseY <= buttonY + REDSTONE_BUTTON_SIZE) {
-            // Get current redstone mode from menu
-            int redstoneMode = menu.getRedstoneMode();
-            
-            // Draw the appropriate tooltip
-            Component tooltip = switch (redstoneMode) {
-                case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
-                case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
-                case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-                case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
-                default -> Component.literal("Unknown mode");
-            };
-            java.util.List<FormattedCharSequence> lines = java.util.List.of(tooltip.getVisualOrderText());
-            guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
-        }
-    }
-    
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 0 || event.button() == 1) {
-            int buttonX = this.leftPos + REDSTONE_BUTTON_X;
-            int buttonY = this.topPos + REDSTONE_BUTTON_Y;
-            if (event.x() >= buttonX && event.x() <= buttonX + REDSTONE_BUTTON_SIZE &&
-                event.y() >= buttonY && event.y() <= buttonY + REDSTONE_BUTTON_SIZE) {
-                onRedstoneModePressed(event.button() == 1);
-                return true;
-            }
+        if (event.button() == 1 && redstoneModeButton != null && redstoneModeButton.isMouseOver(event.x(), event.y())) {
+            onRedstoneModePressed(true);
+            return true;
         }
         return super.mouseClicked(event, doubleClick);
     }
@@ -361,8 +262,11 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
-        renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
-        renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
+        if (redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
+            MachineGuiButtons.renderTooltipLine(
+                    guiGraphics, font, mouseX, mouseY,
+                    MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), false));
+        }
     }
     
     

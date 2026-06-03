@@ -369,6 +369,8 @@ public class IskaUtils {
                 net.unfamily.iskautils.client.gui.AncientTableScreen::new);
             event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.COLLECTING_CRATE_MENU.get(),
                 net.unfamily.iskautils.client.gui.CollectingCrateScreen::new);
+            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.BLAZING_ALTAR_MENU.get(),
+                net.unfamily.iskautils.client.gui.BlazingAltarScreen::new);
         }
     }
 
@@ -438,6 +440,13 @@ public class IskaUtils {
         @SubscribeEvent
         public static void onPlayerLoggedIn(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
             if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                try {
+                    boolean flameVision = net.unfamily.iskautils.data.FlameVisionData.getFlameVisionEnabledForPlayer(serverPlayer);
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                            serverPlayer, new net.unfamily.iskautils.network.packet.FlameVisionSyncS2CPacket(flameVision));
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to sync flame vision for {}: {}", serverPlayer.getName().getString(), e.getMessage());
+                }
                 // Ricarica le strutture includendo le client structures ora che il giocatore è disponibile
                 try {
                     LOGGER.info("Player {} connected, reloading structures with client support...", serverPlayer.getName().getString());
@@ -498,6 +507,9 @@ public class IskaUtils {
         
         @SubscribeEvent(priority = EventPriority.LOWEST)
         public static void onServerTick(ServerTickEvent.Post event) {
+            for (net.minecraft.server.level.ServerLevel level : event.getServer().getAllLevels()) {
+                net.unfamily.iskautils.util.BlazingAltarExtinguishJobs.tick(level);
+            }
             IskaUtilsLoadReloadScheduler.runPending(event.getServer());
             // Clean up potion plate cooldowns every 5 minutes (6000 ticks)
             cooldownCleanupTimer++;

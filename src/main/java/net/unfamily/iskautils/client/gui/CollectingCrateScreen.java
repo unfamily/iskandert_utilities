@@ -32,11 +32,6 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
 
     private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/backgrounds/collecting_crate.png");
-    private static final Identifier MEDIUM_BUTTONS = Identifier.fromNamespaceAndPath(
-            IskaUtils.MOD_ID, "textures/gui/medium_buttons.png");
-    private static final Identifier REDSTONE_GUI = Identifier.fromNamespaceAndPath(
-            IskaUtils.MOD_ID, "textures/gui/redstone_gui.png");
-
     private static final int GUI_WIDTH = 176;
     private static final int GUI_HEIGHT = 230;
     private static final int BUTTON_SIZE = 16;
@@ -83,14 +78,10 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
     private Button buttonPreview;
     private boolean previewButtonShowsHide;
 
-    private int collectButtonX;
-    private int collectButtonY;
-    private int depositButtonX;
-    private int depositButtonY;
-    private int modeButtonX;
-    private int modeButtonY;
-    private int redstoneButtonX;
-    private int redstoneButtonY;
+    private ItemIconButton collectButton;
+    private ItemIconButton depositButton;
+    private ItemIconButton modeButton;
+    private ItemIconButton redstoneButton;
 
     public CollectingCrateScreen(CollectingCrateMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
@@ -134,7 +125,7 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         buttonPreview.setTooltip(Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.preview.tooltip")));
         addRenderableWidget(buttonPreview);
 
-        layoutActionButtons();
+        createActionButtons();
         updateButtonTooltips();
         previewButtonShowsHide = menu.isPreviewEnabled();
         updatePreviewButtonLabel();
@@ -183,22 +174,59 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         buttonDepth.setTooltip(tooltipWithValue("gui.iska_utils.collecting_crate.tooltip.behind_value", menu.getAreaDepth()));
     }
 
-    private void layoutActionButtons() {
+    private void createActionButtons() {
         int buttonX = this.leftPos + CollectingCrateMenu.actionButtonsColumnX();
         int y = this.topPos + CollectingCrateMenu.actionButtonsColumnStartY()
                 + CollectingCrateMenu.ACTION_BUTTONS_STACK_HEIGHT - BUTTON_SIZE;
 
-        depositButtonX = buttonX;
-        depositButtonY = y;
+        int depositY = y;
         y -= BUTTON_SIZE + BUTTON_GAP;
-        redstoneButtonX = buttonX;
-        redstoneButtonY = y;
+        int redstoneY = y;
         y -= BUTTON_SIZE + BUTTON_GAP;
-        modeButtonX = buttonX;
-        modeButtonY = y;
+        int modeY = y;
         y -= BUTTON_SIZE + BUTTON_GAP;
-        collectButtonX = buttonX;
-        collectButtonY = y;
+        int collectY = y;
+
+        collectButton = addRenderableWidget(new ItemIconButton(
+                buttonX, collectY, BUTTON_SIZE, b -> sendXpCollect(), () -> new ItemStack(Items.EXPERIENCE_BOTTLE), Component.empty()));
+        depositButton = addRenderableWidget(new ItemIconButton(
+                buttonX, depositY, BUTTON_SIZE, b -> sendXpDeposit(), () -> new ItemStack(Items.GLASS_BOTTLE), Component.empty()));
+        modeButton = addRenderableWidget(new ItemIconButton(
+                buttonX, modeY, BUTTON_SIZE, b -> sendMode(false), this::modeIcon, Component.empty()));
+        redstoneButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
+                buttonX, redstoneY, b -> sendRedstone(false), menu::getRedstoneMode, false));
+    }
+
+    private void sendXpCollect() {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (!pos.equals(BlockPos.ZERO)) {
+            ModMessages.sendCollectingCrateXpCollectPacket(pos);
+            playButtonSound();
+        }
+    }
+
+    private void sendXpDeposit() {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (!pos.equals(BlockPos.ZERO)) {
+            ModMessages.sendCollectingCrateXpDepositPacket(pos);
+            playButtonSound();
+        }
+    }
+
+    private void sendMode(boolean backward) {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (!pos.equals(BlockPos.ZERO)) {
+            ModMessages.sendCollectingCrateModePacket(pos, backward);
+            playButtonSound();
+        }
+    }
+
+    private void sendRedstone(boolean backward) {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (!pos.equals(BlockPos.ZERO)) {
+            ModMessages.sendCollectingCrateRedstoneModePacket(pos, backward);
+            playButtonSound();
+        }
     }
 
     private int modifierStepAmount() {
@@ -247,7 +275,6 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, this.leftPos, this.topPos, 0.0F, 0.0F,
                 this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         renderXpBar(guiGraphics);
-        renderActionButtons(guiGraphics, mouseX, mouseY);
     }
 
     @Override
@@ -288,15 +315,6 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         drawCenteredText(guiGraphics, sizeLabel, barCenterX, this.topPos + SIZE_LABEL_Y, GuiTextColors.TITLE);
     }
 
-    private void renderActionButtons(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        renderButton(guiGraphics, collectButtonX, collectButtonY, mouseX, mouseY,
-                new ItemStack(Items.EXPERIENCE_BOTTLE));
-        renderButton(guiGraphics, depositButtonX, depositButtonY, mouseX, mouseY,
-                new ItemStack(Items.GLASS_BOTTLE));
-        renderButton(guiGraphics, modeButtonX, modeButtonY, mouseX, mouseY, modeIcon());
-        renderRedstoneButton(guiGraphics, mouseX, mouseY);
-    }
-
     private ItemStack modeIcon() {
         return switch (CollectingCrateMode.fromId(menu.getCollectMode())) {
             case BOTH -> new ItemStack(Items.CHEST);
@@ -305,63 +323,8 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         };
     }
 
-    private void renderButton(GuiGraphicsExtractor guiGraphics, int x, int y, int mouseX, int mouseY, ItemStack icon) {
-        boolean hovered = mouseX >= x && mouseX <= x + BUTTON_SIZE && mouseY >= y && mouseY <= y + BUTTON_SIZE;
-        float textureY = hovered ? 16.0F : 0.0F;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, MEDIUM_BUTTONS, x, y, 0.0F, textureY,
-                BUTTON_SIZE, BUTTON_SIZE, 96, 96);
-        renderScaledItem(guiGraphics, icon, x + 2, y + 2, 12);
-    }
-
-    private void renderRedstoneButton(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        renderButton(guiGraphics, redstoneButtonX, redstoneButtonY, mouseX, mouseY, ItemStack.EMPTY);
-        int iconX = redstoneButtonX + 2;
-        int iconY = redstoneButtonY + 2;
-        int iconSize = 12;
-        int redstoneMode = menu.getRedstoneMode();
-        if (redstoneMode == 3) {
-            redstoneMode = 4;
-        }
-        switch (redstoneMode) {
-            case 0 -> renderScaledItem(guiGraphics, new ItemStack(Items.GUNPOWDER), iconX, iconY, iconSize);
-            case 1 -> renderScaledItem(guiGraphics, new ItemStack(Items.REDSTONE), iconX, iconY, iconSize);
-            case 2 -> renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
-            case 4 -> renderScaledItem(guiGraphics, new ItemStack(Items.BARRIER), iconX, iconY, iconSize);
-            default -> {}
-        }
-    }
-
-    private void renderScaledItem(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y, int size) {
-        if (itemStack.isEmpty()) {
-            return;
-        }
-        guiGraphics.pose().pushMatrix();
-        float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(scale, scale);
-        guiGraphics.item(itemStack, 0, 0);
-        guiGraphics.pose().popMatrix();
-    }
-
-    private void renderScaledTexture(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y, int size) {
-        guiGraphics.pose().pushMatrix();
-        float scale = (float) size / 16.0f;
-        guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(scale, scale);
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16, 16, 16);
-        guiGraphics.pose().popMatrix();
-    }
-
     private void renderGhostModule(GuiGraphicsExtractor guiGraphics) {
-        Slot slot = menu.getSlot(CollectingCrateMenu.MODULE_SLOT_INDEX);
-        if (!slot.getItem().isEmpty()) {
-            return;
-        }
-        guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().translate(this.leftPos + slot.x, this.topPos + slot.y);
-        guiGraphics.item(GHOST_RANGE_MODULE, 0, 0);
-        guiGraphics.fill(0, 0, 16, 16, 0x80000000);
-        guiGraphics.pose().popMatrix();
+        GuiGhostItem.render(guiGraphics, leftPos, topPos, menu.getSlot(CollectingCrateMenu.MODULE_SLOT_INDEX), GHOST_RANGE_MODULE);
     }
 
     @Override
@@ -386,40 +349,20 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
     }
 
     private void renderButtonTooltips(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        Component tooltip = null;
-        if (isOver(collectButtonX, collectButtonY, mouseX, mouseY)) {
-            tooltip = Component.translatable("gui.iska_utils.collecting_crate.collect_xp");
-        } else if (isOver(depositButtonX, depositButtonY, mouseX, mouseY)) {
-            tooltip = Component.translatable("gui.iska_utils.collecting_crate.deposit_xp");
-        } else if (isOver(modeButtonX, modeButtonY, mouseX, mouseY)) {
+        if (collectButton != null && collectButton.isMouseOver(mouseX, mouseY)) {
+            MachineGuiButtons.renderTooltipLine(guiGraphics, font, mouseX, mouseY,
+                    Component.translatable("gui.iska_utils.collecting_crate.collect_xp"));
+        } else if (depositButton != null && depositButton.isMouseOver(mouseX, mouseY)) {
+            MachineGuiButtons.renderTooltipLine(guiGraphics, font, mouseX, mouseY,
+                    Component.translatable("gui.iska_utils.collecting_crate.deposit_xp"));
+        } else if (modeButton != null && modeButton.isMouseOver(mouseX, mouseY)) {
             CollectingCrateMode mode = CollectingCrateMode.fromId(menu.getCollectMode());
-            tooltip = Component.translatable("gui.iska_utils.collecting_crate.mode." + mode.name().toLowerCase());
-        } else if (isOver(redstoneButtonX, redstoneButtonY, mouseX, mouseY)) {
-            int redstoneMode = menu.getRedstoneMode();
-            if (redstoneMode == 3) {
-                redstoneMode = 4;
-            }
-            tooltip = switch (redstoneMode) {
-                case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
-                case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
-                case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-                case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
-                default -> Component.literal("Unknown mode");
-            };
+            MachineGuiButtons.renderTooltipLine(guiGraphics, font, mouseX, mouseY,
+                    Component.translatable("gui.iska_utils.collecting_crate.mode." + mode.name().toLowerCase()));
+        } else if (redstoneButton != null && redstoneButton.isMouseOver(mouseX, mouseY)) {
+            MachineGuiButtons.renderTooltipLine(guiGraphics, font, mouseX, mouseY,
+                    MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), false));
         }
-        if (tooltip != null) {
-            guiGraphics.setTooltipForNextFrame(
-                    this.font,
-                    java.util.List.of(tooltip.getVisualOrderText()),
-                    DefaultTooltipPositioner.INSTANCE,
-                    mouseX,
-                    mouseY,
-                    true);
-        }
-    }
-
-    private boolean isOver(int x, int y, int mouseX, int mouseY) {
-        return mouseX >= x && mouseX <= x + BUTTON_SIZE && mouseY >= y && mouseY <= y + BUTTON_SIZE;
     }
 
     private static boolean isInArrowBounds(int x, int y, int left, int top) {
@@ -459,40 +402,17 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
                 return true;
             }
         }
-        if (handleMouseClicked(event.x(), event.y(), event.button())) {
-            return true;
-        }
-        return super.mouseClicked(event, isDoubleClick);
-    }
-
-    private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 || button == 1) {
-            boolean backward = button == 1;
-            BlockPos pos = menu.getSyncedBlockPos();
-            if (!pos.equals(BlockPos.ZERO)) {
-                if (isOver(collectButtonX, collectButtonY, (int) mouseX, (int) mouseY) && !backward) {
-                    ModMessages.sendCollectingCrateXpCollectPacket(pos);
-                    playButtonSound();
-                    return true;
-                }
-                if (isOver(depositButtonX, depositButtonY, (int) mouseX, (int) mouseY) && !backward) {
-                    ModMessages.sendCollectingCrateXpDepositPacket(pos);
-                    playButtonSound();
-                    return true;
-                }
-                if (isOver(modeButtonX, modeButtonY, (int) mouseX, (int) mouseY)) {
-                    ModMessages.sendCollectingCrateModePacket(pos, backward);
-                    playButtonSound();
-                    return true;
-                }
-                if (isOver(redstoneButtonX, redstoneButtonY, (int) mouseX, (int) mouseY)) {
-                    ModMessages.sendCollectingCrateRedstoneModePacket(pos, backward);
-                    playButtonSound();
-                    return true;
-                }
+        if (event.button() == 1) {
+            if (modeButton != null && modeButton.isMouseOver(event.x(), event.y())) {
+                sendMode(true);
+                return true;
+            }
+            if (redstoneButton != null && redstoneButton.isMouseOver(event.x(), event.y())) {
+                sendRedstone(true);
+                return true;
             }
         }
-        return false;
+        return super.mouseClicked(event, isDoubleClick);
     }
 
     private void playButtonSound() {

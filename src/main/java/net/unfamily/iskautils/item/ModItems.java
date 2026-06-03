@@ -455,6 +455,8 @@ public class ModItems {
 
     public static final DeferredItem<BlockItem> BURNING_FLAME = ITEMS.registerSimpleBlockItem(ModBlocks.BURNING_FLAME);
 
+    public static final DeferredItem<BlockItem> BLAZING_ALTAR = ITEMS.registerSimpleBlockItem(ModBlocks.BLAZING_ALTAR);
+
     public static final DeferredItem<Item> GHOST_BRAZIER = ITEMS.registerItem("ghost_brazier", GhostBrazierItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<Item> GREEDY_SHIELD = ITEMS.registerItem("greedy_shield", GreedyShieldItem::new, p -> p.stacksTo(1));

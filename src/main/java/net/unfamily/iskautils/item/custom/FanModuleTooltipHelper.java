@@ -40,6 +40,20 @@ public final class FanModuleTooltipHelper {
         tooltip.accept(Component.translatable("tooltip.iska_utils.fan_module.range_bonus").withStyle(GRAY));
     }
 
+    public static void appendBlazingAltarRangeModuleLines(List<Component> tooltip) {
+        tooltip.add(Component.translatable("tooltip.iska_utils.blazing_altar.range_module.max", Config.blazingAltarRangeUpgradeMax)
+                .withStyle(GRAY));
+        tooltip.add(Component.translatable("tooltip.iska_utils.blazing_altar.range_module.chunk_bonus", Config.blazingAltarRangeModuleChunkBonus)
+                .withStyle(GRAY));
+    }
+
+    public static void appendBlazingAltarRangeModuleLines(Consumer<Component> tooltip) {
+        tooltip.accept(Component.translatable("tooltip.iska_utils.blazing_altar.range_module.max", Config.blazingAltarRangeUpgradeMax)
+                .withStyle(GRAY));
+        tooltip.accept(Component.translatable("tooltip.iska_utils.blazing_altar.range_module.chunk_bonus", Config.blazingAltarRangeModuleChunkBonus)
+                .withStyle(GRAY));
+    }
+
     public static void appendGhostModuleLines(List<Component> tooltip) {
         tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.modular_fan_max", 1).withStyle(GRAY));
         tooltip.add(Component.translatable(ghostEffectKey()).withStyle(GRAY));
