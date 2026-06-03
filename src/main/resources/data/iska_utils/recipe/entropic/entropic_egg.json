@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "#minecraft:eggs",
+    "iska_utils:entropic_agglomeration"
+  ],
+  "result": {
+    "id": "iska_utils:entropic_egg",
+    "count": 1
+  }
+}
