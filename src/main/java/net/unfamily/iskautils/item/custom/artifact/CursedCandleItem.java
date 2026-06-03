@@ -6,6 +6,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.block.Block;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.item.custom.BurningBrazierItem;
+
 import java.util.List;
 
 /**
@@ -15,7 +16,7 @@ import java.util.List;
  * ({@code burning_brazier_super_hot} or {@code iska_utils_internal-curse_flame} stage).
  */
 public class CursedCandleItem extends BurningBrazierItem {
-    private static final String PATH = "cursed_candle";
+    private static final String TOOLTIP_PATH = "cursed_candle";
 
     public CursedCandleItem(Properties properties) {
         super(properties);
@@ -32,18 +33,13 @@ public class CursedCandleItem extends BurningBrazierItem {
     }
 
     @Override
-    protected String flamesTooltipDesc0Key() {
-        return "tooltip.iska_utils.burning_flames.desc0.cursed";
-    }
-
-    @Override
-    protected String flamesTooltipDesc2Key() {
-        return "tooltip.iska_utils.burning_flames.desc2.cursed";
+    protected String flamesTooltipPath() {
+        return TOOLTIP_PATH;
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.iska_utils." + PATH + ".cursed"));
-        appendFlamesTooltip(tooltip::add, flamesTooltipDesc0Key(), flamesTooltipDesc2Key());
+        tooltip.add(Component.translatable("tooltip.iska_utils." + TOOLTIP_PATH + ".cursed"));
+        appendFlameTooltip(tooltip::add);
     }
 }

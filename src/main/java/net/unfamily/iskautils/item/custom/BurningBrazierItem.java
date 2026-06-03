@@ -176,26 +176,21 @@ public class BurningBrazierItem extends Item {
         onFlamePlaced(player, stack);
     }
 
-    protected String flamesTooltipDesc0Key() {
-        return "tooltip.iska_utils.burning_flames.desc0";
+    /** Lang path {@code tooltip.iska_utils.<path>.descN}: desc0 lore, desc1+ mechanical. */
+    protected String flamesTooltipPath() {
+        return "burning_brazier";
     }
 
-    protected String flamesTooltipDesc2Key() {
-        return "tooltip.iska_utils.burning_flames.desc2";
-    }
-
-    public static void appendFlamesTooltip(java.util.function.Consumer<Component> tooltip, String desc0Key, String desc2Key) {
-        tooltip.accept(ArtifactTooltipUtil.loreLine(desc0Key));
+    protected void appendFlameTooltip(java.util.function.Consumer<Component> tooltip) {
         String keybindName = KeyBindings.BURNING_BRAZIER_TOGGLE_KEY.getTranslatedKeyMessage().getString();
-        tooltip.accept(ArtifactTooltipUtil.techLine("tooltip.iska_utils.burning_flames.desc1", keybindName));
-        tooltip.accept(ArtifactTooltipUtil.techLine(desc2Key));
+        ArtifactTooltipUtil.appendDescLines(tooltip, flamesTooltipPath(), 1, 2, keybindName);
     }
 
     @Override
     @OnlyIn(Dist.CLIENT)
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        appendFlamesTooltip(tooltip::add, flamesTooltipDesc0Key(), flamesTooltipDesc2Key());
+        appendFlameTooltip(tooltip::add);
     }
 
     @Override

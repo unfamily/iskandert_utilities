@@ -23,7 +23,7 @@ categories:
 
 <ItemImage id="iska_utils:entropic_sword" />
 
-Chance on hit to **partially ignore** target **armor and toughness** (values on tooltip / config).
+Chance on hit to **partially ignore** target **armor and toughness** (values on the item tooltip).
 
 ## Axe
 
@@ -49,7 +49,7 @@ While mining, block drops always use **+1 Fortune tier** on top of any Fortune e
 
 <ItemImage id="iska_utils:entropic_hoe" />
 
-**Right-click** a **mature crop** to drop one seed and reset growth to age 0 (can require mature crops depending on config).
+**Right-click** a **mature crop** to drop one seed and reset growth to age 0 (may require fully grown crops).
 
 ## Paxel
 
@@ -59,5 +59,5 @@ Combines <ItemImage id="iska_utils:entropic_pickaxe" /> pickaxe, <ItemImage id="
 
 ## Tips
 
-- Tooltips list current proc chances from **config**.
+- Tooltips list current proc chances.
 - Paxel is the best “one slot” entropic tool for exploration and combat.

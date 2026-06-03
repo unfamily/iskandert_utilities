@@ -27,8 +27,6 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/sound_muffler.png");
     private static final ResourceLocation ENTRY_TEXTURE = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/entry_low_wide_wide.png");
     private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
-    private static final ResourceLocation TINY_BUTTONS_TEXTURE = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/tiny_buttons.png");
-
     // Same size as main muffler; 9px margin each side => entry = 230 - 9 - 4 - 8 - 9 = 200
     private static final int BORDER_MARGIN = 9;
     private static final int GUI_WIDTH = 230;
@@ -44,11 +42,6 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     private static final int GAP_ENTRY_SCROLLBAR = 4;
     private static final int SCROLLBAR_WIDTH = 8;
     private static final int HANDLE_SIZE = 8;
-    private static final int BUTTON_SIZE = 8;
-    private static final int BUTTON_EMPTY_U = 8;
-    private static final int BUTTON_FILLED_U = 16;
-    private static final int BUTTON_NORMAL_V = 0;
-    private static final int BUTTON_HOVERED_V = 8;
     private static final int SCROLLBAR_X = ENTRIES_START_X + ENTRY_WIDTH + GAP_ENTRY_SCROLLBAR;
     private static final int SEARCH_BAR_Y = ENTRIES_START_Y;
     private static final int SEARCH_BAR_HEIGHT = 20;
@@ -87,6 +80,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     private Button saveButton;
     private Button cancelButton;
     private Button closeButton;
+    private final Button[] selectionDotButtons = new Button[VISIBLE_ENTRIES];
 
     /** Parent screen to return to on Apply/Cancel (e.g. main Sound Muffler screen). If null, onClose() is used. */
     private final Screen parentScreen;
@@ -164,6 +158,12 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
                 .bounds(leftPos + CLOSE_BUTTON_X, topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                 .build();
         addRenderableWidget(closeButton);
+
+        for (int i = 0; i < VISIBLE_ENTRIES; i++) {
+            final int row = i;
+            selectionDotButtons[i] = addRenderableWidget(MachineGuiButtons.selectionDot(0, 0, false, b -> onSelectionDotPressed(row)));
+            selectionDotButtons[i].visible = false;
+        }
     }
 
     /**
@@ -239,6 +239,39 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
             denyAllowListButton.setMessage(
                     allowList ? Component.translatable("gui.iska_utils.sound_muffler.deny_list") : Component.translatable("gui.iska_utils.sound_muffler.allow_list"));
         }
+        layoutSelectionDots();
+    }
+
+    private void layoutSelectionDots() {
+        for (int i = 0; i < VISIBLE_ENTRIES; i++) {
+            int entryIndex = scrollOffset + i;
+            Button dot = selectionDotButtons[i];
+            if (entryIndex >= filteredSoundIds.size()) {
+                dot.visible = false;
+                continue;
+            }
+            int entryX = leftPos + ENTRIES_START_X;
+            int entryY = topPos + LIST_ENTRIES_START_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
+            dot.setX(MachineGuiButtons.filterSelectionDotX(entryX, ENTRY_WIDTH));
+            dot.setY(MachineGuiButtons.structureSelectionDotY(entryY, ENTRY_HEIGHT));
+            dot.visible = true;
+            boolean selected = selectedSoundIds.contains(filteredSoundIds.get(entryIndex));
+            MachineGuiButtons.updateSelectionDot(dot, selected);
+        }
+    }
+
+    private void onSelectionDotPressed(int visibleRow) {
+        int entryIndex = scrollOffset + visibleRow;
+        if (entryIndex < 0 || entryIndex >= filteredSoundIds.size()) {
+            return;
+        }
+        String id = filteredSoundIds.get(entryIndex);
+        if (selectedSoundIds.contains(id)) {
+            selectedSoundIds.remove(id);
+        } else {
+            selectedSoundIds.add(id);
+        }
+        playButtonSound();
     }
 
     @Override
@@ -263,23 +296,12 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
             guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_TEX_WIDTH, ENTRY_TEX_HEIGHT);
             if (entryIndex < filteredSoundIds.size()) {
                 String soundId = filteredSoundIds.get(entryIndex);
-                int maxW = ENTRY_WIDTH - 8 - BUTTON_SIZE - 6;
+                int maxW = ENTRY_WIDTH - 8 - MachineGuiButtons.DOT_SIZE - 6;
                 String display = font.plainSubstrByWidth(soundId, maxW);
                 if (display.length() < soundId.length()) display = display + "..";
                 guiGraphics.drawString(font, display, entryX + 4, entryY + (ENTRY_HEIGHT - font.lineHeight) / 2, 0x404040, false);
-                renderSelectionButton(guiGraphics, entryX, entryY, entryIndex, mouseX, mouseY);
             }
         }
-    }
-
-    private void renderSelectionButton(GuiGraphics guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
-        int buttonX = entryX + ENTRY_WIDTH - BUTTON_SIZE - 4;
-        int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2;
-        boolean isHovered = mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE && mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE;
-        boolean isSelected = entryIndex < filteredSoundIds.size() && selectedSoundIds.contains(filteredSoundIds.get(entryIndex));
-        int buttonU = isSelected ? BUTTON_FILLED_U : BUTTON_EMPTY_U;
-        int buttonV = isHovered ? BUTTON_HOVERED_V : BUTTON_NORMAL_V;
-        guiGraphics.blit(TINY_BUTTONS_TEXTURE, buttonX, buttonY, buttonU, buttonV, BUTTON_SIZE, BUTTON_SIZE, 64, 96);
     }
 
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
@@ -322,21 +344,6 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
                 int downButtonY = topPos + BUTTON_DOWN_Y;
                 if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= downButtonY && mouseY < downButtonY + HANDLE_SIZE) {
                     scrollDown();
-                    playButtonSound();
-                    return true;
-                }
-            }
-            for (int i = 0; i < VISIBLE_ENTRIES; i++) {
-                int entryIndex = scrollOffset + i;
-                if (entryIndex >= filteredSoundIds.size()) continue;
-                int entryX = leftPos + ENTRIES_START_X;
-                int entryY = topPos + LIST_ENTRIES_START_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
-                int buttonX = entryX + ENTRY_WIDTH - BUTTON_SIZE - 4;
-                int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2;
-                if (mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE && mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE) {
-                    String id = filteredSoundIds.get(entryIndex);
-                    if (selectedSoundIds.contains(id)) selectedSoundIds.remove(id);
-                    else selectedSoundIds.add(id);
                     playButtonSound();
                     return true;
                 }

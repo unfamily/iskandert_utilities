@@ -26,6 +26,7 @@ import net.unfamily.iskautils.block.TemporalOverclockerBlock;
 import net.unfamily.iskautils.block.custom.DruidicPodzolBlock;
 import net.unfamily.iskautils.block.custom.EntropicDirtBlock;
 import net.unfamily.iskautils.block.custom.EntropicSoilBlock;
+import net.unfamily.iskautils.block.custom.BlazingAltarBlock;
 import net.unfamily.iskautils.block.custom.GraveyardSoilBlock;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.unfamily.iskautils.fluid.ModFluids;
@@ -528,6 +529,17 @@ public class ModBlocks {
 
     public static final DeferredBlock<CursedBurningFlameBlock> CURSED_BURNING_FLAME = BLOCKS.register("cursed_burning_flame",
             () -> new CursedBurningFlameBlock(BURNING_FLAME_PROPERTIES));
+
+    private static final BlockBehaviour.Properties BLAZING_ALTAR_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.NETHER)
+            .strength(1.5f, 6.0f)
+            .requiresCorrectToolForDrops()
+            .sound(SoundType.DEEPSLATE)
+            .lightLevel(state -> 15)
+            .noOcclusion();
+
+    public static final DeferredBlock<BlazingAltarBlock> BLAZING_ALTAR = BLOCKS.register("blazing_altar",
+            () -> new BlazingAltarBlock(BLAZING_ALTAR_PROPERTIES));
 
     // ===== REDSTONE SIGNAL BLOCK =====
     private static final BlockBehaviour.Properties REDSTONE_SIGNAL_PROPERTIES = BlockBehaviour.Properties.of()

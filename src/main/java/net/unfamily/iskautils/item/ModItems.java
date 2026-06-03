@@ -643,6 +643,9 @@ public class ModItems {
     // Burning Brazier (places burning flame blocks when light level is low)
     public static final DeferredItem<Item> BURNING_BRAZIER = ITEMS.register("burning_brazier",
             () -> new BurningBrazierItem(new Item.Properties().stacksTo(1).durability(BurningBrazierItem.MAX_DURABILITY)));
+
+    public static final DeferredItem<Item> BLAZING_ALTAR = ITEMS.register("blazing_altar",
+            () -> new net.unfamily.iskautils.item.custom.BlazingAltarBlockItem(ModBlocks.BLAZING_ALTAR.get(), ITEM_PROPERTIES));
     
     public static final DeferredItem<Item> REDSTONE_ACTIVATOR = ITEMS.register("redstone_activator",
             () -> new RedstoneSignalItem(new Item.Properties().stacksTo(1)));

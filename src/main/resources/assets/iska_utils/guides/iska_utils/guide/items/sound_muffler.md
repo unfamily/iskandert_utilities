@@ -16,7 +16,7 @@ categories:
 
 ## What it does
 
-- Attenuates **played sounds** for players inside its **spherical range** (minimum **8** blocks; upper cap may come from config). Volume is **per category**, not a single master knob.
+- Attenuates **played sounds** for players inside its **spherical range** (minimum **8** blocks). Volume is **per category**, not a single master knob.
 - **Music** is not handled through these sliders (client music stays separate).
 
 ## Main GUI

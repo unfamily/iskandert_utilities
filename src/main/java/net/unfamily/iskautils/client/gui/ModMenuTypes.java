@@ -72,4 +72,7 @@ public class ModMenuTypes {
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<CollectingCrateMenu>> COLLECTING_CRATE_MENU =
         MENUS.register("collecting_crate_menu", () -> new MenuType<>(CollectingCrateMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
 
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<BlazingAltarMenu>> BLAZING_ALTAR_MENU =
+        MENUS.register("blazing_altar_menu", () -> new MenuType<>(BlazingAltarMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+
 } 

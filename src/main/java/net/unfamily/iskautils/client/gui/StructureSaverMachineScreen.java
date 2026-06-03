@@ -22,8 +22,6 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/entry_wide.png");
     private static final ResourceLocation SCROLLBAR_TEXTURE = 
         ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
-    private static final ResourceLocation TINY_BUTTONS_TEXTURE = 
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/tiny_buttons.png");
     private static final ResourceLocation SINGLE_SLOT_TEXTURE = 
         ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
     
@@ -36,18 +34,6 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     private static final int SCROLLBAR_WIDTH = 8;
     private static final int SCROLLBAR_HEIGHT = 34;
     private static final int HANDLE_SIZE = 8;
-    
-    // Button dimensions (first button of second set)
-    private static final int BUTTON_SIZE = 8;
-    private static final int BUTTON_U = 0; // First column
-    private static final int BUTTON_NORMAL_V = 24; // Fourth row (X normal)
-    private static final int BUTTON_HOVERED_V = 32; // Fifth row (X illuminated)
-    
-    // Selection buttons (8x8) - like in Structure Placer
-    private static final int SELECTION_BUTTON_EMPTY_U = 8; // Second column (empty button)
-    private static final int SELECTION_BUTTON_FILLED_U = 16; // Third column (full button)
-    private static final int SELECTION_BUTTON_NORMAL_V = 0; // First row (normal)
-    private static final int SELECTION_BUTTON_HOVERED_V = 8; // Second row (illuminated)
     
     // Slot dimensions
     private static final int SLOT_SIZE = 18;
@@ -79,7 +65,8 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     private Button saveButton;
     private Button modeButton;
     private Button closeButton;
-    
+    private final Button[] selectionDotButtons = new Button[VISIBLE_ENTRIES];
+
     // Placement mode
     private boolean isPlayerMode = false; // false = Normal, true = Player
     
@@ -175,8 +162,12 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                                   CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                            .build();
         addRenderableWidget(closeButton);
-        
-        // Slots are populated automatically by the server when the area is set
+
+        for (int i = 0; i < VISIBLE_ENTRIES; i++) {
+            final int row = i;
+            selectionDotButtons[i] = addRenderableWidget(MachineGuiButtons.selectionDot(0, 0, false, b -> onSelectionDotPressed(row)));
+            selectionDotButtons[i].visible = false;
+        }
     }
     
     /**
@@ -271,7 +262,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                 guiGraphics.pose().popPose();
                 
                 // Render slot and button
-                renderSlotAndButton(guiGraphics, entryX, entryY, entryIndex, mouseX, mouseY);
+                renderSlotAndButton(guiGraphics, entryX, entryY, entryIndex);
             }
         }
     }
@@ -279,58 +270,14 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     /**
      * Renders slot and buttons for an entry (selection + X, but buttons temporarily disabled via comment)
      */
-    private void renderSlotAndButton(GuiGraphics guiGraphics, int entryX, int entryY, int entryIndex, int mouseX, int mouseY) {
-        // Slot position: moved more to the left for space for two buttons
-        int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - (BUTTON_SIZE * 2) - 8; // 8 pixel total margin for two buttons
-        int slotY = entryY + (ENTRY_HEIGHT - SLOT_SIZE) / 2; // Centered vertically
-        
-        // --- SLOT SINGLE TEMPORARILY DISABILITATED ---
-        /*
-        // Draw the slot (18x18)
-        guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 
-                        SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
-        
-        // Draw the structure icon in the slot if available
+    private void renderSlotAndButton(GuiGraphics guiGraphics, int entryX, int entryY, int entryIndex) {
+        int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - MachineGuiButtons.DOT_SIZE - 6;
+        int slotY = entryY + (ENTRY_HEIGHT - SLOT_SIZE) / 2;
+        guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0,
+                SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
         if (entryIndex < clientStructures.size()) {
-            net.unfamily.iskautils.structure.StructureDefinition structure = clientStructures.get(entryIndex);
-            renderStructureIcon(guiGraphics, structure, slotX + 1, slotY + 1); // +1 pixel to center in the slot
+            renderStructureIcon(guiGraphics, clientStructures.get(entryIndex), slotX + 1, slotY + 1);
         }
-        */
-        
-        // --- SELECTION BUTTONS TEMPORARILY DISABILITATED ---
-        /*
-        // Position of the first button (selection): right after the slot
-        int selectionButtonX = slotX + SLOT_SIZE + 2; // 2 pixel space after the slot
-        int selectionButtonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2; // Centered vertically
-        
-        // Check if the mouse is over the selection button
-        boolean isSelectionHovered = mouseX >= selectionButtonX && mouseX < selectionButtonX + BUTTON_SIZE &&
-                                    mouseY >= selectionButtonY && mouseY < selectionButtonY + BUTTON_SIZE;
-        
-        // Determine the type of selection button (empty or full)
-        boolean isSelected = (entryIndex == selectedStructureIndex);
-        int selectionButtonU = isSelected ? SELECTION_BUTTON_FILLED_U : SELECTION_BUTTON_EMPTY_U;
-        int selectionButtonV = isSelectionHovered ? SELECTION_BUTTON_HOVERED_V : SELECTION_BUTTON_NORMAL_V;
-        
-        // Draw the selection button
-        guiGraphics.blit(TINY_BUTTONS_TEXTURE, selectionButtonX, selectionButtonY, selectionButtonU, selectionButtonV, 
-                        BUTTON_SIZE, BUTTON_SIZE, 64, 96);
-        
-        // Position of the second button (X): right after the selection button
-        int buttonX = selectionButtonX + BUTTON_SIZE + 2; // 2 pixel space after the selection button
-        int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2; // Centered vertically
-        
-        // Check if the mouse is over the X button
-        boolean isHovered = mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE &&
-                           mouseY >= buttonY && mouseY < buttonY + BUTTON_SIZE;
-        
-        // Use the X button (second set): normal if not hover, illuminated if hover
-        int buttonV = isHovered ? BUTTON_HOVERED_V : BUTTON_NORMAL_V;
-        
-        // Draw the X button
-        guiGraphics.blit(TINY_BUTTONS_TEXTURE, buttonX, buttonY, BUTTON_U, buttonV, 
-                        BUTTON_SIZE, BUTTON_SIZE, 64, 96);
-        */
     }
     
     /**
@@ -677,6 +624,38 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         
         // Update button text based on selection
         updateSaveButtonText();
+        layoutSelectionDots();
+    }
+
+    private void layoutSelectionDots() {
+        for (int i = 0; i < VISIBLE_ENTRIES; i++) {
+            int entryIndex = scrollOffset + i;
+            Button dot = selectionDotButtons[i];
+            if (clientStructures == null || entryIndex >= clientStructures.size()) {
+                dot.visible = false;
+                continue;
+            }
+            int entryX = leftPos + ENTRIES_START_X;
+            int entryY = topPos + ENTRIES_START_Y + i * ENTRY_HEIGHT;
+            dot.setX(MachineGuiButtons.structureSelectionDotX(entryX, ENTRY_WIDTH));
+            dot.setY(MachineGuiButtons.structureSelectionDotY(entryY, ENTRY_HEIGHT));
+            dot.visible = true;
+            MachineGuiButtons.updateSelectionDot(dot, entryIndex == selectedStructureIndex);
+        }
+    }
+
+    private void onSelectionDotPressed(int visibleRow) {
+        int entryIndex = scrollOffset + visibleRow;
+        if (clientStructures == null || entryIndex < 0 || entryIndex >= clientStructures.size()) {
+            return;
+        }
+        if (selectedStructureIndex == entryIndex) {
+            selectedStructureIndex = -1;
+        } else {
+            selectedStructureIndex = entryIndex;
+        }
+        populateEditBoxesFromSelection();
+        playButtonSound();
     }
     
     /**
@@ -853,7 +832,6 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
          if (button == 0) { // Left click
              // Handle various clicks in priority order (like StructureSelectionScreen)
              if (handleScrollButtonClick(mouseX, mouseY) ||
-                 handleSelectionButtonClick(mouseX, mouseY) ||
                  handleHandleClick(mouseX, mouseY) ||
                  handleScrollbarClick(mouseX, mouseY)) {
                  return true;
@@ -885,43 +863,6 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
              return true;
          }
          
-         return false;
-     }
-     
-     /**
-      * Handles clicks on selection buttons (circle)
-      */
-     private boolean handleSelectionButtonClick(double mouseX, double mouseY) {
-         for (int i = 0; i < VISIBLE_ENTRIES; i++) {
-             int entryIndex = scrollOffset + i;
-             if (entryIndex >= clientStructures.size()) continue;
-             
-             int entryX = this.leftPos + ENTRIES_START_X;
-             int entryY = this.topPos + ENTRIES_START_Y + i * ENTRY_HEIGHT;
-             
-             // Selection button position (must match EXACTLY renderSlotAndButton)
-             int slotX = entryX + ENTRY_WIDTH - SLOT_SIZE - (BUTTON_SIZE * 2) - 8; // Same calculation as render
-             int selectionButtonX = slotX + SLOT_SIZE + 2; // FIRST button (circle)
-             int selectionButtonY = entryY + (ENTRY_HEIGHT - BUTTON_SIZE) / 2;
-             
-             if (mouseX >= selectionButtonX && mouseX < selectionButtonX + BUTTON_SIZE &&
-                 mouseY >= selectionButtonY && mouseY < selectionButtonY + BUTTON_SIZE) {
-                 
-                 // Toggle selection with deselection
-                 if (selectedStructureIndex == entryIndex) {
-                     selectedStructureIndex = -1; // Deselect if already selected
-                     // Clear EditBoxes when deselected
-                     populateEditBoxesFromSelection();
-                 } else {
-                     selectedStructureIndex = entryIndex; // Select new
-                     // Populate EditBoxes with selected structure data
-                     populateEditBoxesFromSelection();
-                 }
-                 
-                 playButtonSound();
-                 return true;
-             }
-         }
          return false;
      }
      

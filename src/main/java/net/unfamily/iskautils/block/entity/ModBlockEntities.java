@@ -162,6 +162,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("collecting_crate",
                     () -> BlockEntityType.Builder.of(CollectingCrateBlockEntity::new, ModBlocks.COLLECTING_CRATE.get())
                             .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BlazingAltarBlockEntity>> BLAZING_ALTAR_BE =
+            BLOCK_ENTITIES.register("blazing_altar",
+                    () -> BlockEntityType.Builder.of(BlazingAltarBlockEntity::new, ModBlocks.BLAZING_ALTAR.get())
+                            .build(null));
     
     // Sacred Rubber Sapling Block Entity
     // BlockEntity for RubberLogSacredBlock (stores root coordinates)
@@ -429,6 +434,12 @@ public class ModBlockEntities {
                     COLLECTING_CRATE.get(),
                     (blockEntity, context) ->
                             blockEntity instanceof CollectingCrateBlockEntity crate ? crate.getFluidHandler() : null);
+
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    BLAZING_ALTAR_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof BlazingAltarBlockEntity altar ? altar.getPlacerHandler() : null);
         }
     }
 } 

@@ -22,11 +22,6 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/block_structure.png");
     private static final ResourceLocation ENERGY_BAR = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/energy_bar.png");
     
-    // Medium buttons texture (16x32 - normal and highlighted)
-    private static final ResourceLocation MEDIUM_BUTTONS = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/medium_buttons.png");
-    // Redstone GUI icon
-    private static final ResourceLocation REDSTONE_GUI = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/redstone_gui.png");
-    
     // GUI dimensions (based on block_structure.png: 176x248 - increased button area height by 48px)
     private static final int GUI_WIDTH = 176;
     private static final int GUI_HEIGHT = 248;
@@ -43,8 +38,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     private Button setInventoryButton;    // Bottom right
     private Button closeButton;           // Close button
     
-    // Custom redstone mode button
-    private int redstoneModeButtonX, redstoneModeButtonY;
+    private ItemIconButton redstoneModeButton;
     private static final int REDSTONE_BUTTON_SIZE = 16;
     
     // Close button position - top right
@@ -184,14 +178,11 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                 .build();
         this.addRenderableWidget(this.setInventoryButton);
         
-        // Right side: Redstone Mode Button (opposite to energy bar, between Show and Set Inventory)
-        // Position it at the right edge, similar to energy bar positioning on the left
-        int rightMargin = ((20 - REDSTONE_BUTTON_SIZE) / 2) + 10; // Same margin logic as energy bar + 10px inward
-        this.redstoneModeButtonX = this.leftPos + this.imageWidth - rightMargin - REDSTONE_BUTTON_SIZE;
-        // Position Y between Show (topRowY=25) and Set Inventory (bottomRowY=70)
-        // Show button bottom: 25+20=45, Set Inventory top: 70
-        // Center between them: (45+70)/2 = 57.5, minus half button height: 57.5-8=49.5
-        this.redstoneModeButtonY = this.topPos + 49;
+        int rightMargin = ((20 - REDSTONE_BUTTON_SIZE) / 2) + 10;
+        int redstoneX = this.leftPos + this.imageWidth - rightMargin - REDSTONE_BUTTON_SIZE;
+        int redstoneY = this.topPos + 49;
+        redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
+                redstoneX, redstoneY, b -> onRedstoneModePressed(false), menu::getRedstoneMode, true));
     }
     
     private void onStructureSelectPressed() {
@@ -347,9 +338,6 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         
         // Draw the energy bar
         renderEnergyBar(guiGraphics);
-        
-        // Draw the custom redstone mode button
-        renderRedstoneModeButton(guiGraphics, mouseX, mouseY);
     }
     
     private void renderEnergyBar(GuiGraphics guiGraphics) {
@@ -384,95 +372,6 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         }
     }
     
-    private void renderRedstoneModeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Check if mouse is over the button
-        boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                           mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
-        
-        // Draw button background (normal or highlighted)
-        int textureY = isHovered ? 16 : 0; // Highlighted version is below the normal one
-        guiGraphics.blit(MEDIUM_BUTTONS, this.redstoneModeButtonX, this.redstoneModeButtonY, 
-                        0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 
-                        96, 96); // Correct texture size: 96x96
-        
-        // Get current redstone mode from menu
-        int redstoneMode = this.menu.getRedstoneMode();
-        
-        // Draw the appropriate icon (12x12 pixels, centered in the 16x16 button)
-        int iconX = this.redstoneModeButtonX + 2; // Center: (16-12)/2 = 2
-        int iconY = this.redstoneModeButtonY + 2; // Center: (16-12)/2 = 2
-        int iconSize = 12;
-        
-        switch (redstoneMode) {
-            case 0 -> {
-                // NONE mode: Gunpowder icon
-                net.minecraft.world.item.ItemStack gunpowder = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GUNPOWDER);
-                renderScaledItem(guiGraphics, gunpowder, iconX, iconY, iconSize);
-            }
-            case 1 -> {
-                // LOW mode: Redstone dust icon
-                net.minecraft.world.item.ItemStack redstone = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REDSTONE);
-                renderScaledItem(guiGraphics, redstone, iconX, iconY, iconSize);
-            }
-            case 2 -> {
-                // HIGH mode: Redstone GUI texture rendered as item-like (12x12)
-                renderScaledTexture(guiGraphics, REDSTONE_GUI, iconX, iconY, iconSize);
-            }
-            case 3 -> {
-                // PULSE mode: Repeater icon
-                net.minecraft.world.item.ItemStack repeater = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REPEATER);
-                renderScaledItem(guiGraphics, repeater, iconX, iconY, iconSize);
-            }
-            case 4 -> {
-                // DISABLED mode: Barrier icon
-                net.minecraft.world.item.ItemStack barrier = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BARRIER);
-                renderScaledItem(guiGraphics, barrier, iconX, iconY, iconSize);
-            }
-        }
-    }
-    
-    /**
-     * Renders an item scaled to the specified size
-     */
-    private void renderScaledItem(GuiGraphics guiGraphics, net.minecraft.world.item.ItemStack itemStack, int x, int y, int size) {
-        // Save current matrix state
-        guiGraphics.pose().pushPose();
-        
-        // Calculate scale: original item size is 16x16, we want 12x12
-        float scale = (float) size / 16.0f;
-        
-        // Translate to position and apply scale
-        guiGraphics.pose().translate(x, y, 0);
-        guiGraphics.pose().scale(scale, scale, 1.0f);
-        
-        // Render the item
-        guiGraphics.renderItem(itemStack, 0, 0);
-        
-        // Restore matrix state
-        guiGraphics.pose().popPose();
-    }
-    
-    /**
-     * Renders a texture scaled to the specified size (like an item)
-     */
-    private void renderScaledTexture(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int size) {
-        // Save current matrix state
-        guiGraphics.pose().pushPose();
-        
-        // Calculate scale: original texture size is 16x16, we want 12x12
-        float scale = (float) size / 16.0f;
-        
-        // Translate to position and apply scale
-        guiGraphics.pose().translate(x, y, 0);
-        guiGraphics.pose().scale(scale, scale, 1.0f);
-        
-        // Render the texture (assuming it's 16x16)
-        guiGraphics.blit(texture, 0, 0, 0, 0, 16, 16, 16, 16);
-        
-        // Restore matrix state
-        guiGraphics.pose().popPose();
-    }
-    
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         // Render the background
@@ -484,9 +383,11 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // Render energy bar tooltip
         renderEnergyTooltip(guiGraphics, mouseX, mouseY);
         
-        // Render redstone mode button tooltip
-        renderRedstoneModeTooltip(guiGraphics, mouseX, mouseY);
-        
+        if (redstoneModeButton.isHovered()) {
+            guiGraphics.renderTooltip(this.font,
+                    MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), true), mouseX, mouseY);
+        }
+
         // Render item tooltips
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
@@ -510,24 +411,8 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         }
     }
     
-    /**
-     * Renders a single ghost item (semi-transparent) at the specified position
-     */
     private void renderGhostItem(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y) {
-        // Save current matrix state
-        guiGraphics.pose().pushPose();
-        
-        // Translate to the slot position (relative to GUI)
-        guiGraphics.pose().translate(this.leftPos + x, this.topPos + y, 0);
-        
-        // Render the item first
-        guiGraphics.renderItem(itemStack, 0, 0);
-        
-        // Then apply a semi-transparent dark overlay to create ghost effect
-        guiGraphics.fill(0, 0, 16, 16, 0x80000000); // 50% transparent black overlay
-        
-        // Restore matrix state
-        guiGraphics.pose().popPose();
+        GhostItemRenderer.render(guiGraphics, itemStack, leftPos + x, topPos + y, GuiGhostItem.DEFAULT_ARGB);
     }
     
     private void renderEnergyTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
@@ -544,30 +429,6 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             int maxEnergy = this.menu.getMaxEnergyStored();
             
             Component tooltip = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy));
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
-        }
-    }
-    
-    private void renderRedstoneModeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Check if mouse is over the button
-        boolean isHovered = mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                           mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE;
-        
-        if (isHovered) {
-            // Get current redstone mode from menu
-            int redstoneMode = this.menu.getRedstoneMode();
-            
-            // Draw the appropriate tooltip
-            Component tooltip = switch (redstoneMode) {
-                case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
-                case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
-                case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-                case 3 -> Component.translatable("gui.iska_utils.generic.redstone_mode.pulse");
-                case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
-                default -> Component.literal("Unknown mode");
-            };
-            
-            // Use the standard tooltip rendering system (with background and border)
             guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
         }
     }
@@ -643,12 +504,9 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 || button == 1) {
-            if (mouseX >= this.redstoneModeButtonX && mouseX <= this.redstoneModeButtonX + REDSTONE_BUTTON_SIZE &&
-                mouseY >= this.redstoneModeButtonY && mouseY <= this.redstoneModeButtonY + REDSTONE_BUTTON_SIZE) {
-                onRedstoneModePressed(button == 1);
-                return true;
-            }
+        if (button == 1 && redstoneModeButton.isHovered()) {
+            onRedstoneModePressed(true);
+            return true;
         }
 
         return super.mouseClicked(mouseX, mouseY, button);

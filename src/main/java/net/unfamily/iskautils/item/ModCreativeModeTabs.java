@@ -158,6 +158,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.FACTORY.get());
                                 pOutput.accept(ModItems.DEEP_DRAWER_INTERFACE.get());
                                 pOutput.accept(ModItems.DEEP_DRAWER_EXTENDER.get());
+                                pOutput.accept(ModItems.BLAZING_ALTAR.get());
                                 
                                 // 5. Structure managers
                                 pOutput.accept(ModItems.STRUCTURE_PLACER_MACHINE.get());

@@ -592,14 +592,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
             this.redstoneMode = 4;
         }
         
-        // Load acceleration factor
-        if (tag.contains("accelerationFactor")) {
-            this.accelerationFactor = tag.getInt("accelerationFactor");
-            clampAccelerationFactor();
-        } else {
-            this.accelerationFactor = Config.temporalOverclockerAccelerationFactor;
-        }
-
+        // Upgrade/fuel before clamping acceleration — extended max requires Entropic Clock in slot
         this.storedEntropy = tag.contains(STORED_ENTROPY_TAG) ? tag.getInt(STORED_ENTROPY_TAG) : 0;
         ItemStack loadedUpgrade = tag.contains(UPGRADE_STACK_TAG)
                 ? ItemStack.parseOptional(provider, tag.getCompound(UPGRADE_STACK_TAG))
@@ -616,6 +609,12 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         }
         machineItems.setItem(FUEL_SLOT_INDEX, loadedFuel);
         this.storedEntropy = Mth.clamp(this.storedEntropy, 0, getMaxStoredEntropy());
+
+        if (tag.contains("accelerationFactor")) {
+            this.accelerationFactor = tag.getInt("accelerationFactor");
+        } else {
+            this.accelerationFactor = Config.temporalOverclockerAccelerationFactor;
+        }
         clampAccelerationFactor();
         
         // Load persistent mode

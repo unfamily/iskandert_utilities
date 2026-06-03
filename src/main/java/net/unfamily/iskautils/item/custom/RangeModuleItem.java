@@ -21,6 +21,7 @@ public class RangeModuleItem extends Item {
         super.appendHoverText(stack, context, tooltip, flag);
         if (Screen.hasShiftDown()) {
             FanModuleTooltipHelper.appendRangeModuleLines(tooltip);
+            FanModuleTooltipHelper.appendBlazingAltarRangeModuleLines(tooltip);
         } else {
             FanModuleTooltipHelper.appendShiftHint(tooltip);
         }

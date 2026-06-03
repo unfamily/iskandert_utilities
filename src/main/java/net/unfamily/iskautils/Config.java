@@ -1142,6 +1142,52 @@ public class Config
 
     static {
         BUILDER.pop(); // End of collecting_crate category
+
+        BUILDER.comment("Blazing Altar — area flames and natural spawn control").push("blazing_altar");
+    }
+
+    private static final ModConfigSpec.IntValue BLAZING_ALTAR_MAX_CHUNK_RADIUS = BUILDER
+            .comment("Maximum chunk radius selectable in the GUI (Chebyshev, 1–4 typical)")
+            .defineInRange("000_max_chunk_radius", 4, 1, 16);
+
+    private static final ModConfigSpec.IntValue BLAZING_ALTAR_TICK_INTERVAL = BUILDER
+            .comment("Server ticks between flame placement cycles per altar")
+            .defineInRange("001_tick_interval", 20, 1, 200);
+
+    private static final ModConfigSpec.IntValue BLAZING_ALTAR_PLACEMENTS_PER_TICK = BUILDER
+            .comment("Max flame placement attempts per altar per cycle")
+            .defineInRange("002_placements_per_tick", 6, 1, 64);
+
+    private static final ModConfigSpec.IntValue BLAZING_ALTAR_EXCLUSION_RADIUS = BUILDER
+            .comment("Block radius to check excluded blocks near a flame candidate")
+            .defineInRange("003_exclusion_radius", 3, 0, 16);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> BLAZING_ALTAR_LIGHT_SENSITIVE_ENTRIES = BUILDER
+            .comment("Blocks/tags that must not be lit by altar flames. Prefix # for tags, otherwise block id (namespace:path).",
+                    "Default: mushrooms, entropic soil, dreadful dirt.")
+            .defineList("004_light_sensitive_entries",
+                    java.util.List.of("#c:mushrooms", "iska_utils:entropic_soil", "mob_grinding_utils:dreadful_dirt"),
+                    obj -> obj instanceof String);
+
+    private static final ModConfigSpec.IntValue BLAZING_ALTAR_LIGHT_SENSITIVE_MAX_BLOCK_LIGHT = BUILDER
+            .comment("Maximum block light allowed on light-sensitive blocks and the space above them (simulated after placing a flame).",
+                    "0 = strict darkness (default); placement is blocked if block light would be 1 or higher.")
+            .defineInRange("005_light_sensitive_max_block_light", 0, 0, 15);
+
+    private static final ModConfigSpec.IntValue BLAZING_ALTAR_RANGE_MODULE_CHUNK_BONUS = BUILDER
+            .comment("Extra chunk radius (Chebyshev) per range module installed in the altar")
+            .defineInRange("006_range_module_chunk_bonus", 3, 1, 16);
+
+    private static final ModConfigSpec.IntValue BLAZING_ALTAR_RANGE_UPGRADE_MAX = BUILDER
+            .comment("Maximum stack size of range modules in the altar upgrade slot")
+            .defineInRange("007_range_upgrade_max", 4, 1, 64);
+
+    private static final ModConfigSpec.IntValue BLAZING_ALTAR_EXTINGUISH_COLUMNS_PER_TICK = BUILDER
+            .comment("Chunk columns (16x1 block strips) processed per server tick when removing flames on break or GUI extinguish")
+            .defineInRange("008_extinguish_columns_per_tick", 48, 1, 4096);
+
+    static {
+        BUILDER.pop(); // End of blazing_altar category
         BUILDER.pop(); // End of general_utilities category
 
         // Category for Fan Configuration
@@ -1278,67 +1324,7 @@ public class Config
         BUILDER.comment("Scanner Configuration").push("scanner");
     }
 
-    //removed TTL from scanner config is hardcoded now
-
-    private static final ModConfigSpec.IntValue SCANNER_SCAN_RANGE = BUILDER
-            .comment("DEPRECATED: This parameter has been moved to 200_scannerRangeOptions.",
-                    "The maximum scan range is now determined by the highest value in the scannerRangeOptions array.",
-                    "This parameter is kept for backward compatibility but is no longer used.")
-            .translation("iska_utils.config.deprecated_scanner_scan_range")
-            .defineInRange("000_scannerScanRange", 64, 1, Integer.MAX_VALUE);
-
-    private static final ModConfigSpec.ConfigValue<java.util.List<? extends Integer>> SCANNER_RANGE_OPTIONS = BUILDER
-            .comment("Available scan range options that can be cycled with keybind")
-            .defineList("200_scannerRangeOptions", 
-                    java.util.Arrays.asList(16, 24, 32, 64, 96),
-                    obj -> obj instanceof Integer);
-
-    private static final ModConfigSpec.IntValue SCANNER_DEFAULT_RANGE = BUILDER
-            .comment("Default scan range value (must be one of the values in scannerRangeOptions)")
-            .defineInRange("201_scannerDefaultRange", 32, 1, Integer.MAX_VALUE);
-
-    private static final ModConfigSpec.IntValue SCANNER_SCAN_DURATION = BUILDER
-            .comment("Duration in ticks needed to hold the scanner for scanning (1 second = 20 ticks)")
-            .defineInRange("001_scannerScanDuration", 40, 1, 200);
-
-    private static final ModConfigSpec.IntValue SCANNER_MAX_BLOCKS = BUILDER
-            .comment("Maximum number of blocks that can be scanned at once")
-            .defineInRange("002_scannerMaxBlocks", 8192, 1, Integer.MAX_VALUE);
-
-    private static final ModConfigSpec.IntValue SCANNER_BLOCKS_PER_TICK = BUILDER
-            .comment("Block positions evaluated per server tick during an active scanner job (spreads large scans over multiple ticks)")
-            .defineInRange("002b_scannerBlocksPerTick", 2048, 1, Integer.MAX_VALUE);
-
-    private static final ModConfigSpec.IntValue SCANNER_MARKERS_PER_TICK = BUILDER
-            .comment("Maximum highlight packets sent per server tick while a scanner job is running")
-            .defineInRange("002c_scannerMarkersPerTick", 32, 1, 10000);
-
-    // Scanner energy configuration
-    private static final ModConfigSpec.IntValue SCANNER_ENERGY_CONSUME = BUILDER
-            .comment("Amount of energy consumed per scan operation by the Scanner")
-            .defineInRange("003_scannerEnergyConsume", 50, 0, Integer.MAX_VALUE);
-
-    private static final ModConfigSpec.IntValue SCANNER_ENERGY_BUFFER = BUILDER
-            .comment("Energy capacity of the Scanner in RF/FE")
-            .defineInRange("004_scannerEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
-
-    private static final ModConfigSpec.IntValue SCANNER_MARKER_TTL = BUILDER
-            .comment("Time to live for the scanner markers in ticks (1 second = 20 ticks)")
-            .defineInRange("005_scannerMarkerTTL", 600, 1, Integer.MAX_VALUE);
-
-
-    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_ALPHA = BUILDER
-    .comment("Default alpha value for scanner markers (in hexadecimal)")
-    .define("006_scannerDefaultAlpha", "80");
-
-    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_ORE_COLOR = BUILDER
-    .comment("Default color for ore markers (in hexadecimal RGB)")
-    .define("007_scannerDefaultOreColor", "00BFFF");
-
-    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_MOB_COLOR = BUILDER
-    .comment("Default color for mob markers (in hexadecimal RGB)")
-    .define("008_scannerDefaultMobColor", "EB3480");
-
+    // Scanner field order matches legacy iska_utils-common.toml (100 first, then 001/000/200/…)
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_ORE_ENTRIES = BUILDER
             .comment("List of ore entries that can be scanned with their colors",
@@ -1380,6 +1366,63 @@ public class Config
                         "draconium;9933FF" // Draconium Evolution / common mod ore - Purple
                     ), 
                     obj -> obj instanceof String && ((String)obj).contains(";"));
+
+    private static final ModConfigSpec.IntValue SCANNER_SCAN_DURATION = BUILDER
+            .comment("Duration in ticks needed to hold the scanner for scanning (1 second = 20 ticks)")
+            .defineInRange("001_scannerScanDuration", 40, 1, 200);
+
+    private static final ModConfigSpec.IntValue SCANNER_SCAN_RANGE = BUILDER
+            .comment("DEPRECATED: This parameter has been moved to 200_scannerRangeOptions.",
+                    "The maximum scan range is now determined by the highest value in the scannerRangeOptions array.",
+                    "This parameter is kept for backward compatibility but is no longer used.")
+            .translation("iska_utils.config.deprecated_scanner_scan_range")
+            .defineInRange("000_scannerScanRange", 64, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends Integer>> SCANNER_RANGE_OPTIONS = BUILDER
+            .comment("Available scan range options that can be cycled with keybind")
+            .defineList("200_scannerRangeOptions",
+                    java.util.Arrays.asList(16, 24, 32, 64, 96),
+                    obj -> obj instanceof Integer);
+
+    private static final ModConfigSpec.IntValue SCANNER_DEFAULT_RANGE = BUILDER
+            .comment("Default scan range value (must be one of the values in scannerRangeOptions)")
+            .defineInRange("201_scannerDefaultRange", 32, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue SCANNER_MAX_BLOCKS = BUILDER
+            .comment("Maximum number of blocks that can be scanned at once")
+            .defineInRange("002_scannerMaxBlocks", 8192, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue SCANNER_BLOCKS_PER_TICK = BUILDER
+            .comment("Block positions evaluated per server tick during an active scanner job (spreads large scans over multiple ticks)")
+            .defineInRange("002b_scannerBlocksPerTick", 2048, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue SCANNER_MARKERS_PER_TICK = BUILDER
+            .comment("Maximum highlight packets sent per server tick while a scanner job is running")
+            .defineInRange("002c_scannerMarkersPerTick", 32, 1, 10000);
+
+    private static final ModConfigSpec.IntValue SCANNER_ENERGY_CONSUME = BUILDER
+            .comment("Amount of energy consumed per scan operation by the Scanner")
+            .defineInRange("003_scannerEnergyConsume", 50, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue SCANNER_ENERGY_BUFFER = BUILDER
+            .comment("Energy capacity of the Scanner in RF/FE")
+            .defineInRange("004_scannerEnergyBuffer", 10000, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue SCANNER_MARKER_TTL = BUILDER
+            .comment("Time to live for the scanner markers in ticks (1 second = 20 ticks)")
+            .defineInRange("005_scannerMarkerTTL", 600, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_ALPHA = BUILDER
+            .comment("Default alpha value for scanner markers (in hexadecimal)")
+            .define("006_scannerDefaultAlpha", "80");
+
+    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_ORE_COLOR = BUILDER
+            .comment("Default color for ore markers (in hexadecimal RGB)")
+            .define("007_scannerDefaultOreColor", "00BFFF");
+
+    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_MOB_COLOR = BUILDER
+            .comment("Default color for mob markers (in hexadecimal RGB)")
+            .define("008_scannerDefaultMobColor", "EB3480");
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_MOB_ENTRIES = BUILDER
             .comment("List of mob entries that can be scanned with their colors",
@@ -1600,6 +1643,16 @@ public class Config
     public static boolean acceptClientStructure;
     public static boolean ftbTeamsSyncEnabled;
     public static boolean allowClientStructurePlayerLike;
+    public static int blazingAltarMaxChunkRadius;
+    public static int blazingAltarTickInterval;
+    public static int blazingAltarPlacementsPerTick;
+    public static int blazingAltarExclusionRadius;
+    public static java.util.List<String> blazingAltarLightSensitiveEntries;
+    public static int blazingAltarLightSensitiveMaxBlockLight;
+    public static int blazingAltarRangeModuleChunkBonus;
+    public static int blazingAltarRangeUpgradeMax;
+    public static int blazingAltarExtinguishColumnsPerTick;
+
     public static boolean burningBrazierSuperHot;
     public static double greedyShieldBlockChance;
     public static double greedyShieldReduceChance;
@@ -1864,6 +1917,16 @@ public class Config
         acceptClientStructure = ACCEPT_CLIENT_STRUCTURE.get();
         ftbTeamsSyncEnabled = FTB_TEAMS_SYNC_ENABLED.get();
         allowClientStructurePlayerLike = ALLOW_CLIENT_STRUCTURE_PLAYER_LIKE.get();
+
+        blazingAltarMaxChunkRadius = BLAZING_ALTAR_MAX_CHUNK_RADIUS.get();
+        blazingAltarTickInterval = BLAZING_ALTAR_TICK_INTERVAL.get();
+        blazingAltarPlacementsPerTick = BLAZING_ALTAR_PLACEMENTS_PER_TICK.get();
+        blazingAltarExclusionRadius = BLAZING_ALTAR_EXCLUSION_RADIUS.get();
+        blazingAltarLightSensitiveEntries = new java.util.ArrayList<>(BLAZING_ALTAR_LIGHT_SENSITIVE_ENTRIES.get());
+        blazingAltarLightSensitiveMaxBlockLight = BLAZING_ALTAR_LIGHT_SENSITIVE_MAX_BLOCK_LIGHT.get();
+        blazingAltarRangeModuleChunkBonus = BLAZING_ALTAR_RANGE_MODULE_CHUNK_BONUS.get();
+        blazingAltarRangeUpgradeMax = BLAZING_ALTAR_RANGE_UPGRADE_MAX.get();
+        blazingAltarExtinguishColumnsPerTick = BLAZING_ALTAR_EXTINGUISH_COLUMNS_PER_TICK.get();
 
         // Evil Things configuration
         burningBrazierSuperHot = BURNING_BRAZIER_SUPER_HOT.get();

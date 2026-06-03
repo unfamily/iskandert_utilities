@@ -11,7 +11,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.integration.jei.IskaUtilsJeiDynamicRefresh;
 import net.unfamily.iskautils.block.entity.AncientTableBlockEntity;
@@ -24,11 +23,6 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/ancient_table.png");
     private static final ResourceLocation SCROLLBAR_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
-    private static final ResourceLocation MEDIUM_BUTTONS =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/medium_buttons.png");
-    private static final ResourceLocation REDSTONE_GUI =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/redstone_gui.png");
-
     public static final int GUI_WIDTH = 200;
     public static final int GUI_HEIGHT = 190;
 
@@ -67,6 +61,7 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
             Component.translatable("container.iska_utils.ancient_table");
 
     private Button closeButton;
+    private ItemIconButton redstoneModeButton;
 
     private int inputScroll;
     private int outputScroll;
@@ -97,6 +92,13 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
                 .bounds(leftPos + CLOSE_BUTTON_X, topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                 .build();
         addRenderableWidget(closeButton);
+
+        redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
+                leftPos + REDSTONE_BUTTON_X,
+                topPos + REDSTONE_BUTTON_Y,
+                b -> onRedstoneModePressed(false),
+                menu::getRedstoneMode,
+                true));
     }
 
     @Override
@@ -119,8 +121,11 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         renderFuelGhostItem(graphics);
-        renderRedstoneModeButton(graphics, mouseX, mouseY);
         this.renderTooltip(graphics, mouseX, mouseY);
+        if (redstoneModeButton.isHovered()) {
+            graphics.renderTooltip(font,
+                    MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), true), mouseX, mouseY);
+        }
     }
 
     @Override
@@ -139,9 +144,6 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
 
     @Override
     protected void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (tryRedstoneTooltip(graphics, mouseX, mouseY)) {
-            return;
-        }
         if (tryFuelGhostTooltip(graphics, mouseX, mouseY)) {
             return;
         }
@@ -155,13 +157,8 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
         renderGhostItem(graphics, new ItemStack(ModItems.DROP_OF_ENTROPY.get()), AncientTableMenu.FUEL_X, AncientTableMenu.FUEL_Y);
     }
 
-    /** Semi-transparent placeholder (same pattern as {@link FanScreen}). */
     private void renderGhostItem(GuiGraphics graphics, ItemStack stack, int slotX, int slotY) {
-        graphics.pose().pushPose();
-        graphics.pose().translate(leftPos + slotX, topPos + slotY, 0.0f);
-        graphics.renderItem(stack, 0, 0);
-        graphics.fill(0, 0, 16, 16, 0x80000000);
-        graphics.pose().popPose();
+        GhostItemRenderer.render(graphics, stack, leftPos + slotX, topPos + slotY, GuiGhostItem.DEFAULT_ARGB);
     }
 
     private boolean tryFuelGhostTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -253,65 +250,9 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
                 34);
     }
 
-    private void renderRedstoneModeButton(GuiGraphics graphics, int mouseX, int mouseY) {
-        int buttonX = leftPos + REDSTONE_BUTTON_X;
-        int buttonY = topPos + REDSTONE_BUTTON_Y;
-        boolean hovered = mouseX >= buttonX
-                && mouseX <= buttonX + REDSTONE_BUTTON_SIZE
-                && mouseY >= buttonY
-                && mouseY <= buttonY + REDSTONE_BUTTON_SIZE;
-        int textureY = hovered ? 16 : 0;
-        graphics.blit(
-                MEDIUM_BUTTONS, buttonX, buttonY, 0, textureY, REDSTONE_BUTTON_SIZE, REDSTONE_BUTTON_SIZE, 96, 96);
-        int iconX = buttonX + 2;
-        int iconY = buttonY + 2;
-        int iconSize = 12;
-        switch (menu.getRedstoneMode()) {
-            case 0 -> renderScaledItem(graphics, new ItemStack(Items.GUNPOWDER), iconX, iconY, iconSize);
-            case 1 -> renderScaledItem(graphics, new ItemStack(Items.REDSTONE), iconX, iconY, iconSize);
-            case 2 -> renderScaledTexture(graphics, REDSTONE_GUI, iconX, iconY, iconSize);
-            case 3 -> renderScaledItem(graphics, new ItemStack(Items.REPEATER), iconX, iconY, iconSize);
-            case 4 -> renderScaledItem(graphics, new ItemStack(Items.BARRIER), iconX, iconY, iconSize);
-            default -> renderScaledItem(graphics, new ItemStack(Items.REDSTONE), iconX, iconY, iconSize);
-        }
-    }
-
-    private void renderScaledItem(GuiGraphics graphics, ItemStack stack, int x, int y, int size) {
-        graphics.pose().pushPose();
-        float scale = size / 16.0f;
-        graphics.pose().translate(x, y, 0.0f);
-        graphics.pose().scale(scale, scale, 1.0f);
-        graphics.renderItem(stack, 0, 0);
-        graphics.pose().popPose();
-    }
-
-    private void renderScaledTexture(GuiGraphics graphics, ResourceLocation texture, int x, int y, int size) {
-        graphics.pose().pushPose();
-        float scale = size / 16.0f;
-        graphics.pose().translate(x, y, 0.0f);
-        graphics.pose().scale(scale, scale, 1.0f);
-        graphics.blit(texture, 0, 0, 0, 0, 16, 16, 16, 16);
-        graphics.pose().popPose();
-    }
-
-    private boolean tryRedstoneTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        int bx = leftPos + REDSTONE_BUTTON_X;
-        int by = topPos + REDSTONE_BUTTON_Y;
-        if (mouseX < bx || mouseX > bx + REDSTONE_BUTTON_SIZE || mouseY < by || mouseY > by + REDSTONE_BUTTON_SIZE) {
-            return false;
-        }
-        int mode = menu.getRedstoneMode();
-        Component tooltip =
-                switch (mode) {
-                    case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
-                    case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
-                    case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-                    case 3 -> Component.translatable("gui.iska_utils.generic.redstone_mode.pulse");
-                    case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
-                    default -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
-                };
-        graphics.renderTooltip(font, tooltip, mouseX, mouseY);
-        return true;
+    private void onRedstoneModePressed(boolean backward) {
+        ModMessages.sendAncientTableRedstoneMode(menu.getSyncedBlockPos(), backward);
+        playClick();
     }
 
     private int maxInputScroll() {
@@ -324,10 +265,9 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 || button == 1) {
-            if (handleRedstoneButtonClick(mouseX, mouseY, button)) {
-                return true;
-            }
+        if (button == 1 && redstoneModeButton.isHovered()) {
+            onRedstoneModePressed(true);
+            return true;
         }
         if (button == 0) {
             if (handleScrollButtonClick(mouseX, mouseY, true)
@@ -340,17 +280,6 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    private boolean handleRedstoneButtonClick(double mouseX, double mouseY, int button) {
-        int bx = leftPos + REDSTONE_BUTTON_X;
-        int by = topPos + REDSTONE_BUTTON_Y;
-        if (mouseX >= bx && mouseX < bx + REDSTONE_BUTTON_SIZE && mouseY >= by && mouseY < by + REDSTONE_BUTTON_SIZE) {
-            ModMessages.sendAncientTableRedstoneMode(menu.getSyncedBlockPos(), button == 1);
-            playClick();
-            return true;
-        }
-        return false;
     }
 
     private boolean handleScrollButtonClick(double mouseX, double mouseY, boolean input) {
