@@ -24,8 +24,9 @@ public class ScannerEvents {
      */
     @SubscribeEvent
     public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
-        var server = event.getServer();
-        ScannerScanJobs.tick(server);
-        ScannerItem.tickServerOnce(server);
+        // Aggiorna i TTL dei blocchi scanner ogni tick
+        for (ServerLevel level : event.getServer().getAllLevels()) {
+            ScannerItem.tick(level);
+        }
     }
 } 

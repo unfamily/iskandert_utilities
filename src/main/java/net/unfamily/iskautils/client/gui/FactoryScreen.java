@@ -8,6 +8,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
@@ -153,7 +154,8 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         int barY = energyBarScreenY();
         if (mouseX >= barX && mouseX <= barX + ENERGY_BAR_WIDTH && mouseY >= barY && mouseY <= barY + ENERGY_BAR_HEIGHT) {
             int energy = menu.getEnergyStored();
-            Component line = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy));
+            Component line = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy))
+                    .withStyle(ChatFormatting.RED);
             guiGraphics.setTooltipForNextFrame(
                     this.font,
                     List.of(line.getVisualOrderText()),

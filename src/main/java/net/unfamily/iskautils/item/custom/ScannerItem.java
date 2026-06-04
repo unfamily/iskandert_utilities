@@ -11,7 +11,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -47,9 +46,9 @@ import java.time.LocalDate;
 /**
  * Item for scanning specific blocks in an area
  */
-public class ScannerItem extends Item {
+public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfStoringItem {
     private static final Logger LOGGER = LogUtils.getLogger();
-
+ 
     private static final String TARGET_BLOCK_TAG = "TargetBlock";
     private static final String TARGET_MOB_TAG = "TargetMob";
     private static final String TARGET_GEN_TAG = "TargetGeneric";
@@ -196,7 +195,7 @@ public class ScannerItem extends Item {
         clearMarkers(player, itemStack);
         
         // Energy is required only for scanning, not for the clear above
-        if (requiresEnergyForScan(player) && !hasEnoughEnergy(itemStack)) {
+        if (requiresEnergyToFunction() && !hasEnoughEnergy(itemStack)) {
             player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.no_energy"));
             return InteractionResult.FAIL;
         }
@@ -280,23 +279,26 @@ public class ScannerItem extends Item {
                 
                 if (timeUsed >= requiredDuration) {
                     // Double-check energy before scanning
-                    if (requiresEnergyForScan(serverPlayer) && !hasEnoughEnergy(itemstack)) {
+                    if (requiresEnergyToFunction() && !hasEnoughEnergy(itemstack)) {
                         serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.no_energy"));
                         return false;
                     }
                     
                     boolean scanSuccess = false;
-
+                    
                     if (targetBlock != null) {
+                        // Scan for blocks
                         serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started", targetBlock.getName()));
                         scanArea(serverPlayer, itemstack);
                         scanSuccess = true;
                     } else if (targetMob != null) {
-                        serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob",
+                        // Scan for mobs
+                        serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_mob", 
                                 getLocalizedMobName(targetMob)));
                         scanForMobs(serverPlayer, itemstack);
                         scanSuccess = true;
                     } else if (genericTarget != null) {
+                        // Scan based on generic target
                         if (genericTarget.startsWith("ores")) {
                             serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_ores"));
                             scanForAllOres(serverPlayer, itemstack);
@@ -308,14 +310,12 @@ public class ScannerItem extends Item {
                             scanSuccess = true;
                         }
                     }
-
+                    
+                    // Consume energy if scan was successful
                     if (scanSuccess) {
-                        if (requiresEnergyForScan(serverPlayer)) {
-                            consumeEnergyForOperation(itemstack);
-                        }
-                        return true;
+                        consumeEnergyForOperation(itemstack);
                     }
-                    return false;
+                    return scanSuccess;
                 } else {
                     // If player released before required time, clear existing markers
                     clearMarkers(player, itemstack);
@@ -789,152 +789,39 @@ public class ScannerItem extends Item {
     }
     
     /**
-     * Decrements marker TTL once per server tick (not once per dimension).
+     * Handles item tick (called every game tick)
+     * Used to update markers and their TTL
      */
-    public static void tickServerOnce(MinecraftServer server) {
+    public static void tick(ServerLevel level) {
         Iterator<Map.Entry<BlockPos, Integer>> markerIterator = MARKER_TTL.entrySet().iterator();
-
+        
         while (markerIterator.hasNext()) {
             Map.Entry<BlockPos, Integer> entry = markerIterator.next();
             BlockPos pos = entry.getKey();
             int ttl = entry.getValue() - 1;
-
+            
             if (ttl <= 0) {
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                // Remove expired marker
+                // Send message to all players in the dimension to remove the marker
+                for (ServerPlayer player : level.players()) {
                     net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(player, pos);
                 }
+                
+                // Remove marker from TTL map
                 markerIterator.remove();
-                for (List<BlockPos> markers : ACTIVE_MARKERS.values()) {
+                
+                // Remove marker from all active scanners
+                for (UUID scannerId : ACTIVE_MARKERS.keySet()) {
+                    List<BlockPos> markers = ACTIVE_MARKERS.get(scannerId);
                     markers.remove(pos);
                 }
             } else {
+                // Update TTL
                 entry.setValue(ttl);
             }
         }
     }
-
-    /** @deprecated Use {@link #tickServerOnce(MinecraftServer)} */
-    @Deprecated
-    public static void tick(ServerLevel level) {
-        tickServerOnce(level.getServer());
-    }
-
-    static int getTtlMultiplier() {
-        return TTL_MULTIPLIER;
-    }
-
-    public static UUID getScannerIdFromStack(ItemStack itemStack) {
-        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.getString(SCANNER_ID_TAG).map(UUID::fromString).orElse(null);
-    }
-
-    public static int getScanRangeFromStack(ItemStack itemStack) {
-        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(SCAN_RANGE_TAG)) {
-            return Config.scannerDefaultRange;
-        }
-        int range = tag.getInt(SCAN_RANGE_TAG).orElse(Config.scannerDefaultRange);
-        java.util.List<Integer> options = Config.scannerRangeOptions;
-        if (options != null && !options.isEmpty()) {
-            boolean found = false;
-            for (Integer option : options) {
-                if (option != null && option.intValue() == range) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                return Config.scannerDefaultRange;
-            }
-        }
-        return range;
-    }
-
-    public static Block getTargetBlockFromStack(ItemStack itemStack) {
-        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TARGET_BLOCK_TAG)) {
-            return null;
-        }
-        String blockId = tag.getString(TARGET_BLOCK_TAG).orElse("");
-        Identifier id = Identifier.tryParse(blockId);
-        return id == null ? null : BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
-    }
-
-    public static String getTargetMobFromStack(ItemStack itemStack) {
-        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TARGET_MOB_TAG)) {
-            return null;
-        }
-        String mobId = tag.getString(TARGET_MOB_TAG).orElse("");
-        return mobId.isEmpty() ? null : mobId;
-    }
-
-    public static String getGenericTargetFromStack(ItemStack itemStack) {
-        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TARGET_GEN_TAG)) {
-            return null;
-        }
-        String genericTarget = tag.getString(TARGET_GEN_TAG).orElse("");
-        return genericTarget.isEmpty() ? null : genericTarget;
-    }
-
-    public static List<Integer> computeRangeSteps(int maxRange) {
-        return getRangeStepsUpTo(maxRange);
-    }
-
-    public static boolean isInScanRange(Player player, BlockPos pos, long ringRangeSq) {
-        return isWithinHorizontalRange(player, pos, ringRangeSq);
-    }
-
-    public static boolean isInScanRange(Player player, double x, double z, double ringRangeSquared) {
-        return isWithinHorizontalRange(player, x, z, ringRangeSquared);
-    }
-
-    public static void notifyScanLimitReached(ServerPlayer player, int maxLimit) {
-        sendScanLimitReachedMessage(player, maxLimit);
-    }
-
-    public static Set<BlockPos> getActiveMarkerPositions(UUID scannerId) {
-        List<BlockPos> markers = ACTIVE_MARKERS.get(scannerId);
-        if (markers == null) {
-            return Set.of();
-        }
-        return new HashSet<>(markers);
-    }
-
-    public static void trackMarker(UUID scannerId, BlockPos pos, int finalTtl) {
-        ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>()).add(pos);
-        MARKER_TTL.put(pos, finalTtl);
-    }
-
-    public static Component localizedMobName(String mobId) {
-        return localizeMobName(mobId);
-    }
-
-    /** Whether a completed scan should check or consume energy for this player. */
-    public static boolean requiresEnergyForScan(Player player) {
-        if (player != null && player.isCreative()) {
-            return false;
-        }
-        return Config.scannerEnergyConsume > 0 && Config.scannerEnergyBuffer > 0;
-    }
-
-    public static void consumeEnergyForHeldStack(ItemStack stack) {
-        if (Config.scannerEnergyConsume <= 0 || Config.scannerEnergyBuffer <= 0) {
-            return;
-        }
-        int consumption = Math.min(Config.scannerEnergyConsume, Config.scannerEnergyBuffer);
-        if (consumption <= 0) {
-            return;
-        }
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        int currentEnergy = tag.getInt(ENERGY_TAG).orElse(0);
-        if (currentEnergy >= consumption) {
-            tag.putInt(ENERGY_TAG, currentEnergy - consumption);
-            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-        }
-    }
-
+    
     /**
      * Scans the area for target mobs
      */
@@ -1166,10 +1053,6 @@ public class ScannerItem extends Item {
      * Creates a localized name for a mob from its ID
      */
     private Component getLocalizedMobName(String mobId) {
-        return localizeMobName(mobId);
-    }
-
-    private static Component localizeMobName(String mobId) {
         if (mobId == null) return Component.literal("Unknown");
         
         // Extract namespace and path from the ID

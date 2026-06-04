@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 /**
  * Electric Tree Tap - Electric variant of the TreeTap that consumes energy
  */
-public class ElectricTreeTapItem extends TreeTapItem {
+public class ElectricTreeTapItem extends TreeTapItem implements net.unfamily.iskautils.item.RfStoringItem {
     // Energy storage tag
     private static final String ENERGY_TAG = "Energy";
 

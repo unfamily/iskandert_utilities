@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  * When worn or held in hand, provides increased speed to vector plates.
  * Now includes energy storage and consumption system.
  */
-public class VectorCharmItem extends Item {
+public class VectorCharmItem extends Item implements net.unfamily.iskautils.item.RfStoringItem {
     private static final Logger LOGGER = LoggerFactory.getLogger(VectorCharmItem.class);
 
     /**

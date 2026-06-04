@@ -215,7 +215,7 @@
   "item.iska_utils.temporal_overclocker_chip.link_failed": "You have reached the maximum number of linkable blocks.",
   "item.iska_utils.temporal_overclocker_chip.link_too_far": "Block is too far away. Maximum link range is %s blocks.",
   "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line1": "Left-click: +1 | Right-click: -1",
-  "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line2": "Ctrl/Alt + Click: §5 | Shift + Click: Max/Min",
+  "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line2": "Ctrl/Alt + Click: ±5 | Shift + Click: Max/Min",
   "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line3": "Middle-click: Reset to %s",
   "gui.iska_utils.temporal_overclocker.show": "Show",
   "gui.iska_utils.temporal_overclocker.show_modifier_ctrl": "Ctrl/Alt: Same type",

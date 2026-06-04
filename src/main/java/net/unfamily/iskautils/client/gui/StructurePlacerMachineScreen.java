@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import com.mojang.blaze3d.platform.InputConstants;
 import org.lwjgl.glfw.GLFW;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
@@ -442,7 +443,8 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             int energy = this.menu.getEnergyStored();
             int maxEnergy = this.menu.getMaxEnergyStored();
             
-            Component tooltip = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy));
+            Component tooltip = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy))
+                    .withStyle(ChatFormatting.RED);
             guiGraphics.setTooltipForNextFrame(this.font, java.util.List.of(tooltip.getVisualOrderText()), DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
         }
     }
