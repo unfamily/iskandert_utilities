@@ -138,7 +138,8 @@ tasks.register('verifyLangFiles') {
     description = 'Fails build if en_us.json is not clean UTF-8 or has mojibake formatting codes.'
     doLast {
         def files = [
-                file('src/main/resources/assets/iska_utils/lang/en_us.json')
+                file('src/main/resources/assets/iska_utils/lang/en_us.json'),
+                file('src/main/resources/assets/iska_utils/lang/it_it.json')
         ]
         files.each { f ->
             if (!f.exists()) return
