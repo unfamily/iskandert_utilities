@@ -1,9 +1,7 @@
 package net.unfamily.iskautils.migration;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
@@ -17,7 +15,12 @@ import org.slf4j.Logger;
 import java.nio.file.Path;
 
 /**
- * Registers the one-time 3.6 library-split backup gate for Iskandert's Utilities (1.21.1 only).
+ * One-time 3.6 library-split migration for Iskandert's Utilities (1.21.1 only).
+ *
+ * <p>There is intentionally NO client-side prompt / world-open mixin: any pre-load or in-world
+ * confirmation can be hidden behind FancyMenu / level loading screens and leave world loading stuck.
+ * The gate is acknowledged silently on the server after start; no UI, no blocking work on the
+ * world-open or first-tick critical path.
  */
 public final class UtilsWorldBackupGate {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -50,23 +53,22 @@ public final class UtilsWorldBackupGate {
         if (config == null) {
             return;
         }
-        Path dataDir = event.getServer().getWorldPath(LevelResource.ROOT).resolve("data");
-        if (!WorldBackupGateStorage.hasLegacyWorldData(dataDir, config)) {
-            return;
-        }
-        if (!WorldBackupGateStorage.isAcknowledged(dataDir, config)) {
-            WorldBackupGate.acknowledgeOnDisk(dataDir, config);
-            LOGGER.warn(
-                    "Server auto-acknowledged lib_split backup gate (legacy .dat files still present under data/)");
-        }
-        ServerLevel overworld = event.getServer().overworld();
-        if (overworld != null) {
-            WorldBackupGate.syncAckFromDisk(overworld, config);
-            Component notice = Component.translatable(
-                    "message.iska_utils.lib_split_backup.skipped", config.migrationVersionLabel());
-            for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
-                player.displayClientMessage(notice, false);
+        try {
+            Path dataDir = event.getServer().getWorldPath(LevelResource.ROOT).resolve("data");
+            if (!WorldBackupGateStorage.hasLegacyWorldData(dataDir, config)) {
+                return;
             }
+            if (!WorldBackupGateStorage.isAcknowledged(dataDir, config)) {
+                WorldBackupGate.acknowledgeOnDisk(dataDir, config);
+                LOGGER.warn("Auto-acknowledged lib_split migration (legacy IskaUtils .dat files present under {}). "
+                        + "No backup prompt is shown; back up the save manually if you have not already.", dataDir);
+            }
+            ServerLevel overworld = event.getServer().overworld();
+            if (overworld != null) {
+                WorldBackupGate.syncAckFromDisk(overworld, config);
+            }
+        } catch (Exception e) {
+            LOGGER.error("lib_split migration ack failed: {}", e.toString());
         }
     }
 }

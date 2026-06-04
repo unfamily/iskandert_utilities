@@ -6,9 +6,5 @@
   "mixins": [
     "ItemStackMixin"
   ],
-  "client": [
-    "client.UtilsWorldOpenFlowsMixin",
-    "client.UtilsWorldOpenFlowsInvoker"
-  ],
   "minVersion": "0.8"
 }

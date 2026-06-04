@@ -460,14 +460,22 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         if (level == null || level.isClientSide) {
             return;
         }
-        BlazingAltarSpatialIndex.add(level.dimension(), worldPosition);
-        if (level instanceof ServerLevel serverLevel) {
-            attachToActiveJobIfAny(serverLevel);
-            BlazingAltarBlockSync.sync(this);
-            if (!isOperational()) {
-                BlazingAltarFlamePlacement.refreshBrazierFlameLightInRadius(
-                        serverLevel, worldPosition, config.getChunkRadius(), config.isGroundOnly());
-            }
+        BlazingAltarSpatialIndex.update(level.dimension(), worldPosition, isOperational(), getChunkRadius());
+        if (level instanceof ServerLevel serverLevel && serverLevel.getServer() != null) {
+            // Defer all cross-chunk work (state sync + flame light refresh over a chunk radius) to the
+            // next server tick. Running it synchronously during chunk load can re-enter the chunk system
+            // and deadlock with other chunk-loading mods reinstating forced chunks during world load.
+            serverLevel.getServer().execute(() -> {
+                if (isRemoved() || level == null) {
+                    return;
+                }
+                attachToActiveJobIfAny(serverLevel);
+                BlazingAltarBlockSync.sync(this);
+                if (!isOperational()) {
+                    BlazingAltarFlamePlacement.refreshBrazierFlameLightInRadius(
+                            serverLevel, worldPosition, config.getChunkRadius(), config.isGroundOnly());
+                }
+            });
         }
     }
 
