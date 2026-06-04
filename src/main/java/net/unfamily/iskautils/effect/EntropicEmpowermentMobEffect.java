@@ -9,3 +9,4 @@ public class EntropicEmpowermentMobEffect extends MobEffect {
         super(MobEffectCategory.NEUTRAL, 0x6B3FA0);
     }
 }
+
