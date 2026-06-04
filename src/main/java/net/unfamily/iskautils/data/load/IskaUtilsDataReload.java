@@ -31,21 +31,35 @@ public final class IskaUtilsDataReload {
             LOGGER.warn("reloadAllFromServer called with no server; skipping datapack merge");
             return;
         }
+        long totalStart = System.nanoTime();
+        LOGGER.info("IskaUtils load/** reload starting...");
         ResourceManager rm = server.getResourceManager();
 
         // Must be safe to call multiple times and during /reload.
-        CommandItemRegistry.reloadDefinitions();
-        DynamicPotionPlateScanner.loadAll(rm);
-        StructureMonouseLoader.loadAll(rm);
-        ShopLoader.loadAll(rm);
-        MacroLoader.reloadAllMacros();
-        StageActionsLoader.loadAll(rm);
-        StageItemHandler.loadAll(rm);
-        StructureLoader.reloadAllDefinitions(true);
-        FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), rm);
-        SuspiciousDeliveryLoader.loadAll(rm);
-        AncientTabletRecipeLoader.loadAll(rm);
-        ArcaneDictionaryLoader.loadAll(rm);
+        runPhase("command items", () -> CommandItemRegistry.reloadDefinitions());
+        runPhase("potion plates", () -> DynamicPotionPlateScanner.loadAll(rm));
+        runPhase("structure monouse", () -> StructureMonouseLoader.loadAll(rm));
+        runPhase("shop", () -> ShopLoader.loadAll(rm));
+        runPhase("macros", MacroLoader::reloadAllMacros);
+        runPhase("stage actions", () -> StageActionsLoader.loadAll(rm));
+        runPhase("stage items", () -> StageItemHandler.loadAll(rm));
+        runPhase("structures", () -> StructureLoader.reloadAllDefinitions(true));
+        runPhase("factory sources", () -> FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), rm));
+        runPhase("suspicious delivery", () -> SuspiciousDeliveryLoader.loadAll(rm));
+        runPhase("ancient tablet", () -> AncientTabletRecipeLoader.loadAll(rm));
+        runPhase("arcane dictionary", () -> ArcaneDictionaryLoader.loadAll(rm));
+
+        LOGGER.info("IskaUtils load/** reload finished in {} ms", elapsedMs(totalStart));
+    }
+
+    private static void runPhase(String name, Runnable action) {
+        long start = System.nanoTime();
+        action.run();
+        LOGGER.info("  load/** phase '{}' took {} ms", name, elapsedMs(start));
+    }
+
+    private static long elapsedMs(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000L;
     }
 }
 

@@ -498,9 +498,14 @@ public class DeepDrawersBlockEntity extends BlockEntity {
     @Override
     public void onLoad() {
         super.onLoad();
-        // Sync data to client when chunk is loaded (server-side only)
-        if (level != null && !level.isClientSide()) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        // Defer block update sync to avoid stalling chunk load when many drawers load at once.
+        if (level != null && !level.isClientSide() && level.getServer() != null) {
+            level.getServer().execute(() -> {
+                if (isRemoved() || level == null) {
+                    return;
+                }
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            });
         }
     }
     

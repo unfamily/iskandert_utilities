@@ -177,7 +177,6 @@
   "gui.iska_utils.deep_drawers.capacity": "%d/%d",
   "gui.iska_utils.deep_drawer.capacity": "%d/%d",
   "gui.iska_utils.deep_drawers.search": "Search",
-  "gui.iska_utils.deep_drawers.search_hint": "Name, or -id @mod #tag ?nbt &macro",
   "gui.iska_utils.deep_drawer_extractor.apply": "Apply",
   "gui.iska_utils.deep_drawer_extractor.back": "Back",
   "gui.iska_utils.deep_drawer_extractor.buffer_label": "Deep Drawer Buffer",

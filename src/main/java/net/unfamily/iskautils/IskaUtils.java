@@ -519,32 +519,22 @@ public class IskaUtils {
                 } catch (Exception e) {
                     LOGGER.warn("Failed to sync flame vision for {}: {}", serverPlayer.getName().getString(), e.getMessage());
                 }
-                // Ricarica le strutture includendo le client structures ora che il giocatore è disponibile
-                try {
-                    LOGGER.info("Player {} connected, reloading structures with client support...", serverPlayer.getName().getString());
-                    
-                    // Ricarica le strutture con il contesto del giocatore per il nickname corretto
-                    StructureLoader.reloadAllDefinitions(true, serverPlayer);
-                    
-                    // Aggiungi un piccolo delay per assicurarsi che il client sia pronto per la sincronizzazione
-                    serverPlayer.getServer().execute(() -> {
-                        try {
-                            net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(serverPlayer);
-                        } catch (Exception e) {
-                            LOGGER.error("Error synchronizing structures to player {}: {}", 
-                                       serverPlayer.getName().getString(), e.getMessage());
-                        }
-                    });
-
-                    // Ensure shop team is created/synced from FTB Teams when available
+                // Structures are loaded on server start (/reload); avoid rescanning files on login (blocks spawn).
+                serverPlayer.getServer().execute(() -> {
                     try {
-                        net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverPlayer.serverLevel()).getPlayerTeam(serverPlayer);
+                        net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(serverPlayer);
                     } catch (Exception e) {
-                        LOGGER.error("Error ensuring shop team for player {}: {}", serverPlayer.getName().getString(), e.getMessage());
+                        LOGGER.error("Error synchronizing structures to player {}: {}",
+                                serverPlayer.getName().getString(), e.getMessage());
                     }
-                } catch (Exception e) {
-                    LOGGER.error("Error in player login event: {}", e.getMessage());
-                }
+                    try {
+                        net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverPlayer.serverLevel())
+                                .getPlayerTeam(serverPlayer);
+                    } catch (Exception e) {
+                        LOGGER.error("Error ensuring shop team for player {}: {}",
+                                serverPlayer.getName().getString(), e.getMessage());
+                    }
+                });
             }
         }
 
@@ -579,38 +569,31 @@ public class IskaUtils {
                 LOGGER.error("Error cleaning up scanner markers: {}", e.getMessage());
             }
             
-            try {
-                IskaUtilsDataReload.reloadAllFromServer();
-            } catch (Exception e) {
-                LOGGER.error("Error applying IskaUtils datapack load JSON at server startup: {}", e.getMessage());
-            }
-
-            // Optional integration: synchronize shop teams with FTB Teams if present
-            if (net.neoforged.fml.ModList.get().isLoaded("ftbteams")) {
+            // Defer heavy load/** merge so world join is not blocked on the server thread.
+            event.getServer().execute(() -> {
                 try {
-                    net.unfamily.iskalib.integration.ftbteams.FtbTeamsEvents.init();
-                } catch (Throwable t) {
-                    LOGGER.error("Error initializing FTB Teams integration: {}", t.getMessage());
+                    IskaUtilsDataReload.reloadAllFromServer();
+                } catch (Exception e) {
+                    LOGGER.error("Error applying IskaUtils datapack load JSON at server startup: {}", e.getMessage());
                 }
-            }
 
-            // Ensure shop team exists for already-online players (singleplayer)
-            try {
-                for (net.minecraft.server.level.ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
-                    net.unfamily.iskalib.team.ShopTeamManager.getInstance(player.serverLevel()).getPlayerTeam(player);
+                if (net.neoforged.fml.ModList.get().isLoaded("ftbteams")) {
+                    try {
+                        net.unfamily.iskalib.integration.ftbteams.FtbTeamsEvents.init();
+                    } catch (Throwable t) {
+                        LOGGER.error("Error initializing FTB Teams integration: {}", t.getMessage());
+                    }
                 }
-            } catch (Exception e) {
-                LOGGER.error("Error ensuring shop teams at server start: {}", e.getMessage());
-            }
-            
-            // Sincronizza le strutture con tutti i client connessi
-            try {
-                for (net.minecraft.server.level.ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
-                    net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
+
+                try {
+                    for (net.minecraft.server.level.ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+                        net.unfamily.iskalib.team.ShopTeamManager.getInstance(player.serverLevel()).getPlayerTeam(player);
+                        net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error in post-startup player sync: {}", e.getMessage());
                 }
-            } catch (Exception e) {
-                LOGGER.error("Error synchronizing structures to clients: {}", e.getMessage());
-            }
+            });
         }
         
         @SubscribeEvent
@@ -682,21 +665,6 @@ public class IskaUtils {
             }
         }
 
-        @SubscribeEvent
-        public static void onClientPlayerLoggedIn(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
-            // Solo per il client locale (singleplayer) o quando il client si connette a un server
-            if (event.getEntity() instanceof net.minecraft.client.player.LocalPlayer) {
-                try {
-                    LOGGER.info("Local player joined world, reloading client structures...");
-                    
-                    // Ricarica le strutture includendo le client structures ora che il giocatore è disponibile
-                    StructureLoader.reloadAllDefinitions(true);
-                    
-                } catch (Exception e) {
-                    LOGGER.error("Error reloading client structures on player join: {}", e.getMessage());
-                }
-            }
-        }
     }
 
     /**
