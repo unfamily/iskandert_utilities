@@ -7,6 +7,7 @@ import net.unfamily.iskautils.block.BlazingAltarFlameVisual;
 import net.unfamily.iskautils.block.custom.BlazingAltarBlock;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.BlazingAltarFlamePlacement;
+import net.unfamily.iskautils.world.BlazingAltarSpatialIndex;
 
 /** Applies derived block state (visual + powered) from machine operational state. */
 public final class BlazingAltarBlockSync {
@@ -25,6 +26,12 @@ public final class BlazingAltarBlockSync {
         boolean powered = altar.isOperational();
         boolean wasPowered = state.getValue(BlazingAltarBlock.POWERED);
         boolean visualChanged = state.getValue(BlazingAltarBlock.FLAME_VISUAL) != visual;
+
+        // Keep the in-memory index current (on the server thread) before triggering any relight, so
+        // the light engine reads fresh operational state without ever touching block entities.
+        if (altar.getLevel() instanceof ServerLevel indexLevel) {
+            BlazingAltarSpatialIndex.update(indexLevel.dimension(), altar.getBlockPos(), powered, altar.getChunkRadius());
+        }
 
         if (wasPowered != powered && altar.getLevel() instanceof ServerLevel serverLevel) {
             BlazingAltarFlamePlacement.refreshBrazierFlameLightInRadius(

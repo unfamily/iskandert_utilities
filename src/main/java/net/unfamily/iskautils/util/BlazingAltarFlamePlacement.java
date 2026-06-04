@@ -11,7 +11,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -20,13 +19,11 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
-import net.unfamily.iskautils.block.entity.BlazingAltarBlockEntity;
 import net.unfamily.iskautils.world.BlazingAltarSpatialIndex;
 
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /** Server-side flame placement rules for the Blazing Altar. */
 public final class BlazingAltarFlamePlacement {
@@ -232,34 +229,20 @@ public final class BlazingAltarFlamePlacement {
         return ModBlocks.CURSED_BURNING_FLAME.get();
     }
 
-    /** Brazier flames in range of a non-operational altar must not emit block light. */
+    /**
+     * Brazier flames in range of a non-operational altar must not emit block light.
+     *
+     * <p>This is invoked by {@code BurningFlameBlock#getLightEmission}, which the light engine calls
+     * from its own worker threads. It therefore must be a pure, non-blocking lookup: it reads only
+     * the in-memory {@link BlazingAltarSpatialIndex} and never touches block entities or neighbour
+     * chunks (which would trigger off-thread chunk loads and deadlock during world load).
+     */
     public static boolean isBrazierFlameLightSuppressed(BlockGetter level, BlockPos flamePos) {
         if (!(level instanceof Level world)) {
             return false;
         }
-        BlockState flameState = world.getBlockState(flamePos);
-        if (!flameState.is(ModBlocks.BURNING_FLAME.get())) {
-            return false;
-        }
-        int flameChunkX = flamePos.getX() >> 4;
-        int flameChunkZ = flamePos.getZ() >> 4;
-        int searchRadius = maxAltarChunkReach();
-        for (int dcx = -searchRadius; dcx <= searchRadius; dcx++) {
-            for (int dcz = -searchRadius; dcz <= searchRadius; dcz++) {
-                Set<BlockPos> altars = BlazingAltarSpatialIndex.getAltarsInChunk(
-                        world.dimension(), new ChunkPos(flameChunkX + dcx, flameChunkZ + dcz));
-                for (BlockPos altarPos : altars) {
-                    BlockEntity be = world.getBlockEntity(altarPos);
-                    if (!(be instanceof BlazingAltarBlockEntity altar) || altar.isOperational()) {
-                        continue;
-                    }
-                    if (BlazingAltarSpatialIndex.isWithinChunkRadius(altarPos, flamePos, altar.getChunkRadius())) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+        return BlazingAltarSpatialIndex.isFlameSuppressedBySuspendedAltar(
+                world.dimension(), flamePos, maxAltarChunkReach());
     }
 
     /** Recomputes block light for brazier flames after altar operational state changes. */

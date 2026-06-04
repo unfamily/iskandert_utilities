@@ -468,7 +468,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         if (level == null || level.isClientSide()) {
             return;
         }
-        BlazingAltarSpatialIndex.add(level.dimension(), worldPosition);
+        BlazingAltarSpatialIndex.update(level.dimension(), worldPosition, isOperational(), getChunkRadius());
         if (level instanceof ServerLevel serverLevel) {
             attachToActiveJobIfAny(serverLevel);
             BlazingAltarBlockSync.sync(this);

@@ -958,7 +958,6 @@
   "gui.iska_utils.deep_drawer.capacity": "%d/%d",
   "gui.iska_utils.deep_drawers.capacity": "%d/%d",
   "gui.iska_utils.deep_drawer.search": "Search",
-  "gui.iska_utils.deep_drawer.search_hint": "Name, or -id @mod #tag ?nbt &macro",
   "gui.iska_utils.deep_drawer_extractor.apply": "Apply",
   "gui.iska_utils.deep_drawer_extractor.close_without_saving": "Close without saving",
   "gui.iska_utils.deep_drawer_extractor.not_available_in_edit_mode": "Not available",
