@@ -345,7 +345,7 @@
   "gui.iska_utils.structure_saver.success": "§aStructure '§f%s§a' %s successfully!",
   "gui.iska_utils.structure_selection.title": "Select Structure",
   "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line1": "Left-click: +1 | Right-click: -1",
-  "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line2": "Ctrl/Alt + Click: §5 | Shift + Click: Max/Min",
+  "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line2": "Ctrl/Alt + Click: ±5 | Shift + Click: Max/Min",
   "gui.iska_utils.temporal_overclocker.acceleration_tooltip.line3": "Middle-click: Reset to %s",
   "gui.iska_utils.temporal_overclocker.disconnect": "Disconnect",
   "gui.iska_utils.temporal_overclocker.persistent.description": "Persistent mode does not remove links when the block is broken",

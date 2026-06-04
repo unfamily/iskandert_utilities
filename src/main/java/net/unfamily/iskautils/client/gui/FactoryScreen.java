@@ -156,7 +156,8 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             int energy = menu.getEnergyStored();
             int maxEnergy = menu.getMaxEnergyStored();
             guiGraphics.renderTooltip(
-                    this.font, Component.literal(String.format("%,d / %,d RF", energy, maxEnergy)), mouseX, mouseY);
+                    this.font, Component.literal(String.format("%,d / %,d RF", energy, maxEnergy))
+                            .withStyle(net.minecraft.ChatFormatting.RED), mouseX, mouseY);
             return true;
         }
         return false;

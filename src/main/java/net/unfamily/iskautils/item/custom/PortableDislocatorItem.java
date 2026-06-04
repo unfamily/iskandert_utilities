@@ -148,8 +148,8 @@ public class PortableDislocatorItem extends Item {
             
             String energyString = String.format("%,d / %,d RF (%.1f%%)", energy, maxEnergy, percentage);
             Component energyText = Component.translatable("item.iska_utils.portable_dislocator.tooltip.energy")
-                .withStyle(ArtifactTooltipUtil.techStyle())
-                .append(Component.literal(energyString).withStyle(ArtifactTooltipUtil.techStyle()));
+                .withStyle(style -> style.withColor(ChatFormatting.RED))
+                .append(Component.literal(energyString).withStyle(ChatFormatting.RED));
             
             tooltipComponents.add(energyText);
             

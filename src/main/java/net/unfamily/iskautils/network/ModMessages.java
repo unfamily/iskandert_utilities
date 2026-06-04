@@ -21,9 +21,6 @@ import net.unfamily.iskautils.network.packet.VectorCharmC2SPacket;
 import net.unfamily.iskautils.network.packet.PortableDislocatorC2SPacket;
 import net.unfamily.iskautils.network.packet.ClearPreviewForOwnerS2CPayload;
 import net.unfamily.iskautils.network.packet.PreviewMarkerS2CPayload;
-import net.unfamily.iskautils.network.packet.ScannerMarkerAddS2CPayload;
-import net.unfamily.iskautils.network.packet.ScannerMarkerClearS2CPayload;
-import net.unfamily.iskautils.network.packet.ScannerMarkerRemoveS2CPayload;
 import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
 import net.unfamily.iskautils.network.packet.TemporalOverclockerHighlightBlockC2SPacket;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -292,22 +289,6 @@ public class ModMessages {
             ClearPreviewForOwnerS2CPayload::handle
         );
 
-        registrar.playToClient(
-            ScannerMarkerAddS2CPayload.TYPE,
-            ScannerMarkerAddS2CPayload.STREAM_CODEC,
-            ScannerMarkerAddS2CPayload::handle
-        );
-        registrar.playToClient(
-            ScannerMarkerRemoveS2CPayload.TYPE,
-            ScannerMarkerRemoveS2CPayload.STREAM_CODEC,
-            ScannerMarkerRemoveS2CPayload::handle
-        );
-        registrar.playToClient(
-            ScannerMarkerClearS2CPayload.TYPE,
-            ScannerMarkerClearS2CPayload.STREAM_CODEC,
-            ScannerMarkerClearS2CPayload::handle
-        );
-
         registrar.playToServer(
             net.unfamily.iskautils.network.packet.FlameVisionToggleC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.FlameVisionToggleC2SPacket.STREAM_CODEC,
@@ -515,12 +496,23 @@ public class ModMessages {
      * in single player mode, but would use actual packets in multiplayer
      */
     public static void sendAddHighlightPacket(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
-        PacketDistributor.sendToPlayer(player, new ScannerMarkerAddS2CPayload(pos, color, durationTicks, "", false));
+        try {
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                ClientEvents.handleAddHighlight(pos, color, durationTicks);
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+        }
     }
 
     public static void sendAddHighlightWithNamePacket(ServerPlayer player, BlockPos pos, int color, int durationTicks, String name) {
-        PacketDistributor.sendToPlayer(player,
-                new ScannerMarkerAddS2CPayload(pos, color, durationTicks, name != null ? name : "", false));
+        try {
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                ClientEvents.handleAddHighlightWithName(pos, color, durationTicks, name);
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+        }
     }
 
     /** S2C: footprint preview marker owned by a machine block (toggle only). */
@@ -534,12 +526,23 @@ public class ModMessages {
     }
 
     public static void sendAddBillboardPacket(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
-        PacketDistributor.sendToPlayer(player, new ScannerMarkerAddS2CPayload(pos, color, durationTicks, "", true));
+        try {
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                ClientEvents.handleAddBillboard(pos, color, durationTicks);
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+        }
     }
 
     public static void sendAddBillboardWithNamePacket(ServerPlayer player, BlockPos pos, int color, int durationTicks, String name) {
-        PacketDistributor.sendToPlayer(player,
-                new ScannerMarkerAddS2CPayload(pos, color, durationTicks, name != null ? name : "", true));
+        try {
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                ClientEvents.handleAddBillboardWithName(pos, color, durationTicks, name);
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+        }
     }
     
     /**
@@ -589,14 +592,26 @@ public class ModMessages {
      * Sends a packet to remove a highlighted block
      */
     public static void sendRemoveHighlightPacket(ServerPlayer player, BlockPos pos) {
-        PacketDistributor.sendToPlayer(player, new ScannerMarkerRemoveS2CPayload(pos));
+        try {
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                ClientEvents.handleRemoveHighlight(pos);
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+        }
     }
 
     /**
      * Sends a packet to clear all highlighted blocks
      */
     public static void sendClearHighlightsPacket(ServerPlayer player) {
-        PacketDistributor.sendToPlayer(player, new ScannerMarkerClearS2CPayload());
+        try {
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                ClientEvents.handleClearHighlights();
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+        }
     }
     
     /**

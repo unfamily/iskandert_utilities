@@ -428,7 +428,8 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             int energy = this.menu.getEnergyStored();
             int maxEnergy = this.menu.getMaxEnergyStored();
             
-            Component tooltip = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy));
+            Component tooltip = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy))
+                    .withStyle(net.minecraft.ChatFormatting.RED);
             guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
         }
     }

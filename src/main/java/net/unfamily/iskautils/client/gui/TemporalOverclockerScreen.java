@@ -3,6 +3,7 @@ package net.unfamily.iskautils.client.gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -811,7 +812,8 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
             int energy = this.menu.getEnergyStored();
             int maxEnergy = this.menu.getMaxEnergyStored();
             
-            Component tooltip = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy));
+            Component tooltip = Component.literal(String.format("%,d / %,d RF", energy, maxEnergy))
+                    .withStyle(ChatFormatting.RED);
             guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
         }
     }
@@ -834,10 +836,13 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     private void renderAccelerationTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (this.accelerationButton != null && this.accelerationButton.isMouseOver(mouseX, mouseY)) {
             java.util.List<Component> tooltipLines = new java.util.ArrayList<>();
-            tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.acceleration_tooltip.line1"));
-            tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.acceleration_tooltip.line2"));
+            tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.acceleration_tooltip.line1")
+                    .withStyle(ChatFormatting.GRAY));
+            tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.acceleration_tooltip.line2")
+                    .withStyle(ChatFormatting.GRAY));
             int defaultValue = net.unfamily.iskautils.Config.temporalOverclockerAccelerationFactor;
-            tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.acceleration_tooltip.line3", defaultValue));
+            tooltipLines.add(Component.translatable("gui.iska_utils.temporal_overclocker.acceleration_tooltip.line3", defaultValue)
+                    .withStyle(ChatFormatting.GRAY));
             guiGraphics.renderComponentTooltip(this.font, tooltipLines, mouseX, mouseY);
         }
     }
