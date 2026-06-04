@@ -4,10 +4,8 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.command.ShopCommand;
-import net.unfamily.iskautils.network.ModMessages;
 import org.slf4j.Logger;
 
 /**
@@ -23,29 +21,36 @@ public final class IskaUtilsLoadReloadEffects {
 
     /** Full load/** reload after vanilla datapack reload has finished. */
     public static void applyReloadFromDatapacks() {
-        LOGGER.info("Applying IskaUtils load/** reload from server ResourceManager");
-        IskaUtilsDataReload.reloadAllFromServer();
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            LOGGER.warn("applyReloadFromDatapacks with no server; running synchronous reload");
+            IskaUtilsDataReload.reloadAllFromServer();
+            notifyShopClientsAfterReload();
+            return;
+        }
+        IskaUtilsPhasedReloadScheduler.schedule(server, IskaUtilsLoadReloadEffects::notifyShopClientsAfterReload);
+    }
+
+    /** Same as {@link #applyReloadFromDatapacks()} plus a notice to the command executor. */
+    public static void applyReloadFromDatapacks(CommandSourceStack source) {
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            applyReloadFromDatapacks();
+            sendReloadNotice(source);
+            return;
+        }
+        IskaUtilsPhasedReloadScheduler.schedule(server, () -> {
+            notifyShopClientsAfterReload();
+            sendReloadNotice(source);
+        });
+    }
+
+    static void notifyShopClientsAfterReload() {
         try {
             ShopCommand.notifyClientGUIReload();
         } catch (Exception e) {
             LOGGER.error("Error notifying shop GUI reload: {}", e.getMessage());
         }
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null) {
-            try {
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    ModMessages.sendStructureSyncPacket(player);
-                }
-            } catch (Exception e) {
-                LOGGER.error("Error syncing structures after reload: {}", e.getMessage());
-            }
-        }
-    }
-
-    /** Same as {@link #applyReloadFromDatapacks()} plus a notice to the command executor. */
-    public static void applyReloadFromDatapacks(CommandSourceStack source) {
-        applyReloadFromDatapacks();
-        sendReloadNotice(source);
     }
 
     /** Notice for mod-initiated reload commands (debug/shop/structure, etc.). */

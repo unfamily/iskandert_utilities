@@ -28,6 +28,6 @@ public final class IskaUtilsLoadReloadScheduler {
         }
         pending = false;
         LOGGER.info("Running deferred IskaUtils load/** reload after vanilla datapack reload");
-        IskaUtilsLoadReloadEffects.applyReloadFromDatapacks();
+        IskaUtilsPhasedReloadScheduler.schedule(server, IskaUtilsLoadReloadEffects::notifyShopClientsAfterReload);
     }
 }

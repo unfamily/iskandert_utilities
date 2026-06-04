@@ -9,6 +9,8 @@ import net.unfamily.iskalib.client.migration.WorldBackupGateClient;
 import net.unfamily.iskalib.migration.worldbackup.WorldBackupGate;
 import net.unfamily.iskalib.migration.worldbackup.WorldBackupGateConfig;
 import net.unfamily.iskalib.migration.worldbackup.WorldBackupGateStorage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -22,6 +24,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(WorldOpenFlows.class)
 public abstract class UtilsWorldOpenFlowsMixin {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UtilsWorldOpenFlowsMixin.class);
 
     @Shadow
     @Final
@@ -53,6 +57,7 @@ public abstract class UtilsWorldOpenFlowsMixin {
             return;
         }
 
+        LOGGER.info("Showing lib_split backup prompt before loading world (legacy IskaUtils data detected)");
         ci.cancel();
         Runnable resume = () -> ((UtilsWorldOpenFlowsInvoker) this)
                 .invokeOpenWorldLoadLevelStem(access, dynamic, false, onFail);

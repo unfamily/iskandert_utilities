@@ -569,31 +569,7 @@ public class IskaUtils {
                 LOGGER.error("Error cleaning up scanner markers: {}", e.getMessage());
             }
             
-            // Defer heavy load/** merge so world join is not blocked on the server thread.
-            event.getServer().execute(() -> {
-                try {
-                    IskaUtilsDataReload.reloadAllFromServer();
-                } catch (Exception e) {
-                    LOGGER.error("Error applying IskaUtils datapack load JSON at server startup: {}", e.getMessage());
-                }
-
-                if (net.neoforged.fml.ModList.get().isLoaded("ftbteams")) {
-                    try {
-                        net.unfamily.iskalib.integration.ftbteams.FtbTeamsEvents.init();
-                    } catch (Throwable t) {
-                        LOGGER.error("Error initializing FTB Teams integration: {}", t.getMessage());
-                    }
-                }
-
-                try {
-                    for (net.minecraft.server.level.ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
-                        net.unfamily.iskalib.team.ShopTeamManager.getInstance(player.serverLevel()).getPlayerTeam(player);
-                        net.unfamily.iskautils.network.ModMessages.sendStructureSyncPacket(player);
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error in post-startup player sync: {}", e.getMessage());
-                }
-            });
+            net.unfamily.iskautils.data.load.IskaUtilsPhasedReloadScheduler.schedule(event.getServer());
         }
         
         @SubscribeEvent
@@ -609,6 +585,7 @@ public class IskaUtils {
                 net.unfamily.iskautils.util.BlazingAltarExtinguishJobs.tick(level);
             }
             IskaUtilsLoadReloadScheduler.runPending(event.getServer());
+            net.unfamily.iskautils.data.load.IskaUtilsPhasedReloadScheduler.tick(event.getServer());
             // Clean up potion plate cooldowns every 5 minutes (6000 ticks)
             cooldownCleanupTimer++;
             if (cooldownCleanupTimer >= 6000) {

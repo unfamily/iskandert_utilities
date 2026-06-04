@@ -20,6 +20,7 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.crafting.FactorySourcesRecipe;
+import net.unfamily.iskautils.crafting.ModFactoryRecipes;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost;
 import net.unfamily.iskautils.script.LoadEntryIfParser;
@@ -142,19 +143,16 @@ public final class FactoryLoader {
 
     public static void loadFromRecipeManager(RecipeManager recipeManager, ResourceManager datapackResources) {
         List<Source> merged = new ArrayList<>();
-        for (RecipeHolder<?> holder : recipeManager.getRecipes()) {
-            if (holder.value() instanceof FactorySourcesRecipe r) {
-                merged.addAll(r.compiledSources());
-            }
+        var factoryType = ModFactoryRecipes.FACTORY_SOURCES_TYPE.get();
+        for (RecipeHolder<FactorySourcesRecipe> holder : recipeManager.getAllRecipesFor(factoryType)) {
+            merged.addAll(holder.value().compiledSources());
         }
         if (!merged.isEmpty()) {
             SOURCES = List.copyOf(merged);
-            LOGGER.info("Loaded {} Factory sources from recipe holders", SOURCES.size());
+            LOGGER.info("Loaded {} Factory sources from {} recipe(s)", SOURCES.size(), merged.size());
             return;
         }
-        LOGGER.warn(
-                "No Factory sources from RecipeManager ({} holders); falling back to merged recipe JSON",
-                recipeManager.getRecipes().size());
+        LOGGER.warn("No Factory sources from RecipeManager type {}; falling back to merged recipe JSON", factoryType);
         loadFromMergedRecipeResources(Objects.requireNonNull(datapackResources, "datapackResources"));
     }
 
