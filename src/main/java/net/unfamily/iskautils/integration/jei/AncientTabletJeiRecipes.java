@@ -34,7 +34,7 @@ public final class AncientTabletJeiRecipes {
 
     public static List<AncientTabletJeiRecipe> buildAll(Minecraft mc) {
         ensureLoaded();
-        ServerPlayer player = CraftingEntryPools.resolveJeiPlayer(mc);
+        ServerPlayer player = CraftingEntryPools.resolveJeiPlayer();
         List<AncientTabletJeiRecipe> out = new ArrayList<>();
         for (AncientTabletRecipeEntry entry : AncientTabletRecipeLoader.getEntries()) {
             if (entry.hasIfVariants()) {

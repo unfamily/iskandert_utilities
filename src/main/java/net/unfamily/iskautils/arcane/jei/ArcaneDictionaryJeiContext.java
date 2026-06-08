@@ -23,7 +23,7 @@ public record ArcaneDictionaryJeiContext(
             Identifier traitId,
             ArcaneDictionaryDefinition.Entry entry,
             Minecraft mc) {
-        return ArcaneDictionaryPools.jeiContext(traitId, entry, mc);
+        return net.unfamily.iskautils.integration.jei.ArcaneDictionaryJeiPools.jeiContext(traitId, entry, mc);
     }
 
     public int level(int level) {

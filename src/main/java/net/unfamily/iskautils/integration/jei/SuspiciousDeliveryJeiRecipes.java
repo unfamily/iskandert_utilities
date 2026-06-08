@@ -39,7 +39,7 @@ public final class SuspiciousDeliveryJeiRecipes {
 
     public static List<SuspiciousDeliveryJeiRecipe> buildAll() {
         Minecraft mc = Minecraft.getInstance();
-        ServerPlayer player = CraftingEntryPools.resolveJeiPlayer(mc);
+        ServerPlayer player = CraftingEntryPools.resolveJeiPlayer();
         SuspiciousDeliveryDefinition def = SuspiciousDeliveryLoader.get();
         List<SuspiciousDeliveryDefinition.Entry> pool =
                 player != null ? SuspiciousDeliveryLoot.eligiblePool(player, def) : def.entries();

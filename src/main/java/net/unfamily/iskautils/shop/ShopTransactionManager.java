@@ -424,27 +424,15 @@ public class ShopTransactionManager {
      * Sends a transaction error to the client
      */
     private static void sendTransactionErrorToClient(ServerPlayer player, String errorType, String itemId, String valuteId) {
-        try {
-            // Simplified implementation for single player compatibility
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                net.unfamily.iskautils.client.gui.ShopScreen.handleTransactionError(errorType, itemId, valuteId);
-            });
-        } catch (Exception e) {
-            // Ignore errors when running on dedicated server or if client is not available
-        }
+        net.unfamily.iskautils.util.ClientRuntimeAccess.runOnClientThread(() ->
+                net.unfamily.iskautils.util.ClientGuiAccess.handleShopTransactionError(errorType, itemId, valuteId));
     }
     
     /**
      * Sends a transaction success to the client
      */
     private static void sendTransactionSuccessToClient(ServerPlayer player) {
-        try {
-            // Simplified implementation for single player compatibility
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                net.unfamily.iskautils.client.gui.ShopScreen.handleTransactionSuccess();
-            });
-        } catch (Exception e) {
-            // Ignore errors when running on dedicated server or if client is not available
-        }
+        net.unfamily.iskautils.util.ClientRuntimeAccess.runOnClientThread(
+                net.unfamily.iskautils.util.ClientGuiAccess::handleShopTransactionSuccess);
     }
 } 

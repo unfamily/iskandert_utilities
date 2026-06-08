@@ -10,7 +10,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -95,9 +97,8 @@ public class IskaUtils {
             // Register key mappings (client-only, MOD bus)
             modEventBus.register(net.unfamily.iskautils.client.KeyBindings.class);
 
-            // Register menu screens (client-only, MOD bus)
-            modEventBus.addListener(ClientModEvents::registerMenuScreens);
-            modEventBus.addListener(ClientModEvents::registerEntityRenderers);
+            modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerMenuScreens);
+            modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerEntityRenderers);
             modEventBus.addListener(net.neoforged.neoforge.client.event.RegisterFluidModelsEvent.class,
                     net.unfamily.iskautils.client.fluid.ModFluidClient::registerFluidModels);
 
@@ -179,24 +180,6 @@ public class IskaUtils {
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
         
-        // Add shutdown hook to clean up client threads
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            ClientEvents.shutdown();
-        }));
-        
-        // Initialize GuideME guide if available
-        if (ModList.get().isLoaded("guideme")) {
-            try {
-                Guide.builder(Identifier.fromNamespaceAndPath(MOD_ID, "guide"))
-                        .extension(TagCompiler.EXTENSION_POINT, new TheRootsTitleTagCompiler())
-                        .index(new TheRootsNavigationIndex())
-                        .build();
-                LOGGER.info("GuideME guide registered");
-            } catch (Exception e) {
-                LOGGER.warn("Failed to register GuideME guide: {}", e.getMessage());
-            }
-        }
-
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
@@ -294,12 +277,7 @@ public class IskaUtils {
     }
 
     private static boolean isClientEnvironment() {
-        try {
-            Class.forName("net.minecraft.client.Minecraft");
-            return true;
-        } catch (Throwable ignored) {
-            return false;
-        }
+        return FMLEnvironment.getDist() == Dist.CLIENT;
     }
     
     /**
@@ -309,7 +287,19 @@ public class IskaUtils {
         // Initialize client events
         ClientEvents.init();
 
-        NeoForge.EVENT_BUS.register(ClientGameEvents.class);
+        Runtime.getRuntime().addShutdownHook(new Thread(ClientEvents::shutdown));
+
+        if (ModList.get().isLoaded("guideme")) {
+            try {
+                Guide.builder(Identifier.fromNamespaceAndPath(MOD_ID, "guide"))
+                        .extension(TagCompiler.EXTENSION_POINT, new TheRootsTitleTagCompiler())
+                        .index(new TheRootsNavigationIndex())
+                        .build();
+                LOGGER.info("GuideME guide registered");
+            } catch (Exception e) {
+                LOGGER.warn("Failed to register GuideME guide: {}", e.getMessage());
+            }
+        }
 
         // Register custom GUI screens - will be done in ClientModEvents
     }
@@ -317,61 +307,6 @@ public class IskaUtils {
     // Add the example block item to the building blocks tab
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
         // No need to add anything here as we already defined the content of our tab
-    }
-
-    // Registered explicitly on the MOD bus from the constructor (client-only)
-    public static class ClientModEvents {
-        
-        @SubscribeEvent
-        public static void onClientSetup(FMLClientSetupEvent event) {
-            // No-op for now.
-        }
-
-        @SubscribeEvent
-        public static void registerEntityRenderers(
-                net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
-            event.registerEntityRenderer(
-                    net.unfamily.iskautils.entity.ModEntities.DECEPTION_SEAT.get(),
-                    net.unfamily.iskautils.client.renderer.DeceptionSeatRenderer::new);
-        }
-
-        @SubscribeEvent
-        public static void registerMenuScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_PLACER_MENU.get(),
-                          net.unfamily.iskautils.client.gui.StructurePlacerScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_PLACER_MACHINE_MENU.get(),
-                          net.unfamily.iskautils.client.gui.StructurePlacerMachineScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_SELECTION_MENU.get(),
-                          net.unfamily.iskautils.client.gui.StructureSelectionScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_SAVER_MACHINE_MENU.get(),
-                          net.unfamily.iskautils.client.gui.StructureSaverMachineScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SHOP_MENU.get(),
-                          net.unfamily.iskautils.client.gui.ShopScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.AUTO_SHOP_MENU.get(),
-                          net.unfamily.iskautils.client.gui.AutoShopScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.DEEP_DRAWERS_MENU.get(),
-                          net.unfamily.iskautils.client.gui.DeepDrawersScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SMART_TIMER_MENU.get(),
-                          net.unfamily.iskautils.client.gui.SmartTimerScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.DEEP_DRAWER_EXTRACTOR_MENU.get(),
-                          net.unfamily.iskautils.client.gui.DeepDrawerExtractorScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.TEMPORAL_OVERCLOCKER_MENU.get(),
-                net.unfamily.iskautils.client.gui.TemporalOverclockerScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FAN_MENU.get(),
-                net.unfamily.iskautils.client.gui.FanScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.MOB_REAPER_MENU.get(),
-                net.unfamily.iskautils.client.gui.MobReaperScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SOUND_MUFFLER_MENU.get(),
-                net.unfamily.iskautils.client.gui.SoundMufflerScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FACTORY_MENU.get(),
-                net.unfamily.iskautils.client.gui.FactoryScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.ANCIENT_TABLE_MENU.get(),
-                net.unfamily.iskautils.client.gui.AncientTableScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.COLLECTING_CRATE_MENU.get(),
-                net.unfamily.iskautils.client.gui.CollectingCrateScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.BLAZING_ALTAR_MENU.get(),
-                net.unfamily.iskautils.client.gui.BlazingAltarScreen::new);
-        }
     }
 
     public static class GameEventBusEvents {
@@ -521,64 +456,6 @@ public class IskaUtils {
                 // Clean up expired team invitations
                 ShopTeamManager.getInstance(event.getServer().overworld()).getTeamDataInstance().cleanupExpiredInvitations();
                 // Note: Burning Brazier data is saved automatically when modified
-            }
-        }
-    }
-    
-    public static class ClientGameEvents {
-
-        @SubscribeEvent
-        public static void onPlaySound(net.neoforged.neoforge.client.event.sound.PlaySoundEvent event) {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            net.minecraft.world.level.Level level = mc.level;
-            if (level == null || event.getSound() == null) {
-                return;
-            }
-            net.minecraft.client.resources.sounds.SoundInstance sound = event.getOriginalSound();
-            if (sound == null) {
-                sound = event.getSound();
-            }
-            if (sound.getSource() == net.minecraft.sounds.SoundSource.MUSIC) {
-                return;
-            }
-            net.minecraft.core.BlockPos soundPos = net.minecraft.core.BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
-            String soundId = sound.getIdentifier().toString();
-            int maxRadius = net.unfamily.iskautils.Config.soundMufflerRangeMax;
-            int effectivePercent = 100;
-            for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(
-                    soundPos.offset(-maxRadius, -maxRadius, -maxRadius),
-                    soundPos.offset(maxRadius, maxRadius, maxRadius))) {
-                var be = level.getBlockEntity(pos);
-                if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
-                    int r = muffler.getRange();
-                    if (pos.distSqr(soundPos) > (long) r * r) continue;
-                    if (muffler.hasFilter() && !muffler.isSoundAllowedByFilter(soundId)) continue;
-                    int p = muffler.getEffectiveVolumeFor(sound.getSource(), sound.getIdentifier());
-                    if (p < effectivePercent) effectivePercent = p;
-                }
-            }
-            if (effectivePercent <= 0) {
-                event.setSound(null);
-                return;
-            }
-            if (effectivePercent < 100) {
-                event.setSound(new net.unfamily.iskautils.client.SoundMufflerVolumeScaledSound(sound, effectivePercent / 100f));
-            }
-        }
-
-        @SubscribeEvent
-        public static void onClientPlayerLoggedIn(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
-            // Solo per il client locale (singleplayer) o quando il client si connette a un server
-            if (event.getEntity() instanceof net.minecraft.client.player.LocalPlayer) {
-                try {
-                    LOGGER.info("Local player joined world, reloading client structures...");
-                    
-                    // Ricarica le strutture includendo le client structures ora che il giocatore è disponibile
-                    StructureLoader.reloadAllDefinitions(true);
-                    
-                } catch (Exception e) {
-                    LOGGER.error("Error reloading client structures on player join: {}", e.getMessage());
-                }
             }
         }
     }

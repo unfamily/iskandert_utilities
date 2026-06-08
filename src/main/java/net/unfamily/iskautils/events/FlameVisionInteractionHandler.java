@@ -4,6 +4,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
@@ -13,7 +14,7 @@ import net.unfamily.iskautils.client.FlameVisibilityClient;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.packet.FlameVisionToggleC2SPacket;
 
-@EventBusSubscriber(modid = IskaUtils.MOD_ID)
+@EventBusSubscriber(value = Dist.CLIENT, modid = IskaUtils.MOD_ID)
 public final class FlameVisionInteractionHandler {
 
     private FlameVisionInteractionHandler() {}

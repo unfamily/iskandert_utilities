@@ -77,7 +77,7 @@ public final class ArcaneDictionaryJeiLines {
     }
 
     private static List<ArcaneDictionaryDefinition.Entry> eligiblePool() {
-        return ArcaneDictionaryPools.eligibleForJei(Minecraft.getInstance());
+        return net.unfamily.iskautils.integration.jei.ArcaneDictionaryJeiPools.eligibleForJei(Minecraft.getInstance());
     }
 
     public static void appendLine(List<Component> lines, String translationKey, Object... args) {

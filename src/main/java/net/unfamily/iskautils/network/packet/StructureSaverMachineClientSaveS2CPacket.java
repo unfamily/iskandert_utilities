@@ -2,16 +2,13 @@ package net.unfamily.iskautils.network.packet;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.unfamily.iskautils.util.StructureSaverClientAccess;
 
 /**
- * Packet per dire al client di salvare la struttura localmente dopo la validazione del server
+ * Packet that asks the local client to save a structure after server validation.
  */
 public class StructureSaverMachineClientSaveS2CPacket {
-    
-    private static final Logger LOGGER = LoggerFactory.getLogger(StructureSaverMachineClientSaveS2CPacket.class);
-    
+
     private final String structureName;
     private final String structureId;
     private final BlockPos vertex1;
@@ -21,8 +18,8 @@ public class StructureSaverMachineClientSaveS2CPacket {
     private final boolean placeAsPlayer;
     private final boolean isModifyOperation;
     private final String oldStructureId;
-    
-    public StructureSaverMachineClientSaveS2CPacket(String structureName, String structureId, 
+
+    public StructureSaverMachineClientSaveS2CPacket(String structureName, String structureId,
                                                    BlockPos vertex1, BlockPos vertex2, BlockPos center,
                                                    boolean slower, boolean placeAsPlayer,
                                                    boolean isModifyOperation, String oldStructureId) {
@@ -36,70 +33,12 @@ public class StructureSaverMachineClientSaveS2CPacket {
         this.isModifyOperation = isModifyOperation;
         this.oldStructureId = oldStructureId;
     }
-    
-    /**
-     * Invia il packet al client per il salvataggio locale
-     */
-    public static void send(ServerPlayer player, String structureName, String structureId, 
+
+    public static void send(ServerPlayer player, String structureName, String structureId,
                            BlockPos vertex1, BlockPos vertex2, BlockPos center,
                            boolean slower, boolean placeAsPlayer,
                            boolean isModifyOperation, String oldStructureId) {
-        
-        
-        // Simplified system for single player compatibility
-        try {
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                handleClient(structureName, structureId, vertex1, vertex2, center, 
-                           slower, placeAsPlayer, isModifyOperation, oldStructureId);
-            });
-        } catch (Exception e) {
-            // Ignora errori quando si esegue su server dedicato
-            LOGGER.debug("Packet not sent in dedicated server mode: {}", e.getMessage());
-        }
+        StructureSaverClientAccess.saveStructureOnClient(
+                structureName, structureId, vertex1, vertex2, center, slower, placeAsPlayer, isModifyOperation, oldStructureId);
     }
-    
-    /**
-     * Gestisce il packet lato client - salva la struttura localmente
-     */
-    private static void handleClient(String structureName, String structureId, 
-                                   BlockPos vertex1, BlockPos vertex2, BlockPos center,
-                                   boolean slower, boolean placeAsPlayer,
-                                   boolean isModifyOperation, String oldStructureId) {
-        try {
-            
-            
-            var level = net.minecraft.client.Minecraft.getInstance().level;
-            if (level == null) {
-                LOGGER.error("Client level is null, cannot save structure");
-                return;
-            }
-            
-            // Esegui il salvataggio della struttura lato client
-            net.unfamily.iskautils.client.ClientStructureSaver.saveStructure(
-                structureName, structureId, vertex1, vertex2, center, level,
-                slower, placeAsPlayer, isModifyOperation, oldStructureId);
-                
-
-            
-            // Mostra messaggio di successo al giocatore
-            var player = net.minecraft.client.Minecraft.getInstance().player;
-            if (player != null) {
-                String operationType = isModifyOperation ? "modificata" : "salvata";
-                player.sendOverlayMessage(
-                    net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_saver.client_success", structureName, operationType)
-                    );
-            }
-            
-        } catch (Exception e) {
-            LOGGER.error("Errore durante il salvataggio client della struttura: {}", e.getMessage(), e);
-            
-            // Mostra messaggio di errore al giocatore
-            var player = net.minecraft.client.Minecraft.getInstance().player;
-            if (player != null) {
-                player.sendOverlayMessage(
-                    net.minecraft.network.chat.Component.translatable("gui.iska_utils.structure_saver.error.client_save_failed", e.getMessage())
-                    );
-            }
-        }
-    }
-} 
+}

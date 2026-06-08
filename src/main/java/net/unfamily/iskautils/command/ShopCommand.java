@@ -179,14 +179,7 @@ public class ShopCommand {
      * Public for use by iska_utils_debug reload.
      */
     public static void notifyClientGUIReload() {
-        try {
-            // This runs on server, but must notify the client
-            // On integrated server (single player), we can call GUIs directly
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                net.unfamily.iskautils.client.gui.ShopScreen.notifyReload();
-            });
-        } catch (Exception e) {
-            // Ignore errors when running on dedicated server
-        }
+        net.unfamily.iskautils.util.ClientRuntimeAccess.runOnClientThread(
+                net.unfamily.iskautils.util.ClientGuiAccess::notifyShopReload);
     }
 } 

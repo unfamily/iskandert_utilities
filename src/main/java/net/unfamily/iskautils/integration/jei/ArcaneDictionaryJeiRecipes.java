@@ -86,7 +86,7 @@ public final class ArcaneDictionaryJeiRecipes {
 
     /** Same order as {@link SuspiciousDeliveryJeiRecipes}: rarest first, then highest luck. */
     private static void sortForJei(List<ArcaneDictionaryDefinition.Entry> entries, Minecraft mc) {
-        List<ArcaneDictionaryDefinition.Entry> eligible = ArcaneDictionaryPools.eligibleForJei(mc);
+        List<ArcaneDictionaryDefinition.Entry> eligible = ArcaneDictionaryJeiPools.eligibleForJei(mc);
         int total = ArcaneDictionaryPools.poolTotalWeight(eligible);
         if (total <= 0) {
             entries.sort(Comparator.comparingInt(ArcaneDictionaryDefinition.Entry::luck).reversed());
