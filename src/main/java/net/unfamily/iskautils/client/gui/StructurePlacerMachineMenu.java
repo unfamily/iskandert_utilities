@@ -269,8 +269,9 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
             return this.blockEntity; // Server side
         } else {
             // Client side - find the block entity by searching near player
-            if (level.isClientSide && net.minecraft.client.Minecraft.getInstance().player != null) {
-                BlockPos playerPos = net.minecraft.client.Minecraft.getInstance().player.blockPosition();
+            net.minecraft.world.entity.player.Player clientPlayer = net.unfamily.iskautils.util.ClientPlayerAccess.getLocalPlayer();
+            if (level.isClientSide && clientPlayer != null) {
+                BlockPos playerPos = clientPlayer.blockPosition();
                 
                 // Search in a 16x16x16 area around player for the machine
                 for (int x = -8; x <= 8; x++) {
@@ -324,8 +325,9 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
                 this.lastSyncedStructureHash = currentHash;
                 
                 // Try to find the block entity to get the structure string
-                if (net.minecraft.client.Minecraft.getInstance().level != null) {
-                    StructurePlacerMachineBlockEntity be = getBlockEntityFromLevel(net.minecraft.client.Minecraft.getInstance().level);
+                net.minecraft.world.level.Level clientLevel = net.unfamily.iskautils.util.ClientRuntimeAccess.getClientLevel();
+                if (clientLevel != null) {
+                    StructurePlacerMachineBlockEntity be = getBlockEntityFromLevel(clientLevel);
                     if (be != null) {
                         this.cachedSelectedStructure = be.getSelectedStructure();
                     } else {
@@ -372,8 +374,9 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
             return this.blockEntity.getGhostFilter(slot);
         } else {
             // Client side - try to get from block entity via level lookup
-            if (this.minecraft != null && this.minecraft.level != null) {
-                StructurePlacerMachineBlockEntity blockEntity = getBlockEntityFromLevel(this.minecraft.level);
+            net.minecraft.world.level.Level clientLevel = net.unfamily.iskautils.util.ClientRuntimeAccess.getClientLevel();
+            if (clientLevel != null) {
+                StructurePlacerMachineBlockEntity blockEntity = getBlockEntityFromLevel(clientLevel);
                 if (blockEntity != null) {
                     return blockEntity.getGhostFilter(slot);
                 }
@@ -391,8 +394,9 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
             return this.blockEntity.hasGhostFilter(slot);
         } else {
             // Client side - try to get from block entity via level lookup
-            if (this.minecraft != null && this.minecraft.level != null) {
-                StructurePlacerMachineBlockEntity blockEntity = getBlockEntityFromLevel(this.minecraft.level);
+            net.minecraft.world.level.Level clientLevel = net.unfamily.iskautils.util.ClientRuntimeAccess.getClientLevel();
+            if (clientLevel != null) {
+                StructurePlacerMachineBlockEntity blockEntity = getBlockEntityFromLevel(clientLevel);
                 if (blockEntity != null) {
                     return blockEntity.hasGhostFilter(slot);
                 }
@@ -400,7 +404,4 @@ public class StructurePlacerMachineMenu extends AbstractContainerMenu {
             return false;
         }
     }
-    
-    // Add minecraft field for client-side access
-    private net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
 } 

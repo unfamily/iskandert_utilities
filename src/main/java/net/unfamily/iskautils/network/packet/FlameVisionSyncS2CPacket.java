@@ -5,11 +5,9 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.client.FlameVisibilityClient;
+import net.unfamily.iskautils.util.FlameVisibilityClientAccess;
 
 /** S2C: sync global flame vision flag to the local client. */
 public record FlameVisionSyncS2CPacket(boolean enabled) implements CustomPacketPayload {
@@ -26,10 +24,6 @@ public record FlameVisionSyncS2CPacket(boolean enabled) implements CustomPacketP
     }
 
     public static void handle(FlameVisionSyncS2CPacket packet, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (FMLEnvironment.dist == Dist.CLIENT) {
-                FlameVisibilityClient.applyGlobalFlameVision(packet.enabled());
-            }
-        });
+        context.enqueueWork(() -> FlameVisibilityClientAccess.applyGlobalFlameVision(packet.enabled()));
     }
 }

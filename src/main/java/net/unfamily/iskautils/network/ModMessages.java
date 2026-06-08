@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.network;
 
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
@@ -15,8 +16,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.core.Vec3i;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
-import net.unfamily.iskautils.client.ClientEvents;
-import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskautils.network.packet.VectorCharmC2SPacket;
 import net.unfamily.iskautils.network.packet.PortableDislocatorC2SPacket;
 import net.unfamily.iskautils.network.packet.ClearPreviewForOwnerS2CPayload;
@@ -26,6 +25,9 @@ import net.unfamily.iskautils.network.packet.TemporalOverclockerHighlightBlockC2
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
+import net.unfamily.iskautils.util.ClientEventsAccess;
+import net.unfamily.iskautils.util.ClientGuiAccess;
+import net.unfamily.iskautils.util.ClientRuntimeAccess;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.minecraft.network.FriendlyByteBuf;
@@ -336,11 +338,11 @@ public class ModMessages {
     public static void sendFactorySelectColor(net.minecraft.core.BlockPos pos, int index) {
         var packet = new net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket(pos, index);
         try {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null && mc.getSingleplayerServer() != null) {
-                mc.getSingleplayerServer().execute(() -> {
-                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()
-                            ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
                         if (be instanceof net.unfamily.iskautils.block.entity.FactoryBlockEntity factory) {
@@ -359,11 +361,11 @@ public class ModMessages {
     public static void sendFactoryScroll(net.minecraft.core.BlockPos pos, int offset) {
         var packet = new net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket(pos, offset);
         try {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null && mc.getSingleplayerServer() != null) {
-                mc.getSingleplayerServer().execute(() -> {
-                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()
-                            ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
                         if (be instanceof net.unfamily.iskautils.block.entity.FactoryBlockEntity factory) {
@@ -382,11 +384,11 @@ public class ModMessages {
     public static void sendFactoryRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
         var packet = new net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket(pos, backward);
         try {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null && mc.getSingleplayerServer() != null) {
-                mc.getSingleplayerServer().execute(() -> {
-                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()
-                            ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
                         if (be instanceof net.unfamily.iskautils.block.entity.FactoryBlockEntity factory) {
@@ -409,11 +411,11 @@ public class ModMessages {
     public static void sendAncientTableScroll(net.minecraft.core.BlockPos pos, int side, int offset) {
         var packet = new net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket(pos, side, offset);
         try {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null && mc.getSingleplayerServer() != null) {
-                mc.getSingleplayerServer().execute(() -> {
-                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()
-                            ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
                         if (be instanceof net.unfamily.iskautils.block.entity.AncientTableBlockEntity table) {
@@ -436,11 +438,11 @@ public class ModMessages {
     public static void sendAncientTableRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
         var packet = new net.unfamily.iskautils.network.packet.AncientTableRedstoneModeC2SPacket(pos, backward);
         try {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null && mc.getSingleplayerServer() != null) {
-                mc.getSingleplayerServer().execute(() -> {
-                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()
-                            ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
                         if (be instanceof net.unfamily.iskautils.block.entity.AncientTableBlockEntity table) {
@@ -468,7 +470,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
             
             // Create and handle the packet on server thread
@@ -497,8 +499,8 @@ public class ModMessages {
      */
     public static void sendAddHighlightPacket(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
         try {
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                ClientEvents.handleAddHighlight(pos, color, durationTicks);
+            ClientRuntimeAccess.runOnClientThread(() -> {
+                ClientEventsAccess.handleAddHighlight(pos, color, durationTicks);
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
@@ -507,8 +509,8 @@ public class ModMessages {
 
     public static void sendAddHighlightWithNamePacket(ServerPlayer player, BlockPos pos, int color, int durationTicks, String name) {
         try {
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                ClientEvents.handleAddHighlightWithName(pos, color, durationTicks, name);
+            ClientRuntimeAccess.runOnClientThread(() -> {
+                ClientEventsAccess.handleAddHighlightWithName(pos, color, durationTicks, name);
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
@@ -527,8 +529,8 @@ public class ModMessages {
 
     public static void sendAddBillboardPacket(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
         try {
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                ClientEvents.handleAddBillboard(pos, color, durationTicks);
+            ClientRuntimeAccess.runOnClientThread(() -> {
+                ClientEventsAccess.handleAddBillboard(pos, color, durationTicks);
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
@@ -537,8 +539,8 @@ public class ModMessages {
 
     public static void sendAddBillboardWithNamePacket(ServerPlayer player, BlockPos pos, int color, int durationTicks, String name) {
         try {
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                ClientEvents.handleAddBillboardWithName(pos, color, durationTicks, name);
+            ClientRuntimeAccess.runOnClientThread(() -> {
+                ClientEventsAccess.handleAddBillboardWithName(pos, color, durationTicks, name);
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
@@ -552,8 +554,8 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // This will be executed on the client side
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                net.unfamily.iskautils.client.gui.ShopScreen.handleTeamDataUpdate(teamName, teamBalances);
+            ClientRuntimeAccess.runOnClientThread(() -> {
+                ClientGuiAccess.handleShopTeamDataUpdate(teamName, teamBalances);
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
@@ -568,7 +570,7 @@ public class ModMessages {
         // Simplified implementation - directly handle on the server side
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
             
             // Create and handle the packet on server thread
@@ -593,8 +595,8 @@ public class ModMessages {
      */
     public static void sendRemoveHighlightPacket(ServerPlayer player, BlockPos pos) {
         try {
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                ClientEvents.handleRemoveHighlight(pos);
+            ClientRuntimeAccess.runOnClientThread(() -> {
+                ClientEventsAccess.handleRemoveHighlight(pos);
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
@@ -606,8 +608,8 @@ public class ModMessages {
      */
     public static void sendClearHighlightsPacket(ServerPlayer player) {
         try {
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                ClientEvents.handleClearHighlights();
+            ClientRuntimeAccess.runOnClientThread(() -> {
+                ClientEventsAccess.handleClearHighlights();
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
@@ -623,7 +625,7 @@ public class ModMessages {
 
         // Simplified implementation - directly handle on the server side
         try {
-            net.minecraft.server.level.ServerPlayer player = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer().getPlayerList().getPlayers().get(0);
+            ServerPlayer player = ClientRuntimeAccess.getFirstSingleplayerPlayer();
             if (player != null) {
                 net.unfamily.iskautils.network.packet.StructurePlacerSaveC2SPacket packet = 
                     new net.unfamily.iskautils.network.packet.StructurePlacerSaveC2SPacket(structureId);
@@ -642,10 +644,10 @@ public class ModMessages {
         
         // Simplified system identical to other packets in this class
         try {
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+            ClientRuntimeAccess.runOnClientThread(() -> {
                 // Handle packet on client side
                 try {
-                    var level = net.minecraft.client.Minecraft.getInstance().level;
+                    var level = ClientRuntimeAccess.getClientLevel();
                     if (level != null) {
                         var blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity structureSaver) {
@@ -675,13 +677,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineRotatePacket(BlockPos machinePos) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -734,9 +730,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
             server.execute(() -> {
                 try {
@@ -771,10 +765,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server != null) {
                 server.execute(() -> {
                     try {
@@ -813,10 +804,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server != null) {
                 server.execute(() -> {
                     try {
@@ -859,7 +847,7 @@ public class ModMessages {
         // Simplified implementation - directly handle on the server side
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Server is null - cannot send Structure Placer Machine Set Inventory packet");
                 return;
@@ -1115,13 +1103,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineSavePacket(String structureId, BlockPos machinePos) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -1202,7 +1184,7 @@ public class ModMessages {
                            player.getName().getString(), networkError.getMessage());
                 // Fallback: try simplified method as backup
                 try {
-                    net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                    ClientRuntimeAccess.runOnClientThread(() -> {
                         net.unfamily.iskautils.network.packet.StructureSyncS2CPacket.handle(packet);
                     });
                 } catch (Exception fallbackError) {
@@ -1223,7 +1205,7 @@ public class ModMessages {
 
         // Simplified implementation for single player compatibility
         try {
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server != null) {
                 // Find the machine BlockEntity and request recalculation
                 var level = server.getAllLevels().iterator().next(); // Get the first world
@@ -1256,13 +1238,7 @@ public class ModMessages {
 
 
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -1311,7 +1287,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
             
             // Create and handle the packet on server thread
@@ -1339,7 +1315,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
             
             // Create and handle the packet on server thread
@@ -1367,7 +1343,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
             
             // Create and handle the packet on server thread
@@ -1395,7 +1371,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
 
             // Create and handle the packet on server thread
@@ -1422,7 +1398,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawersSearchStatePacket(BlockPos pos, String query, int filterScrollOffset) {
         try {
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 return;
             }
@@ -1446,7 +1422,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.warn("Client: Cannot send DeepDrawersScrollPacket: server is null");
                 return;
@@ -1480,7 +1456,7 @@ public class ModMessages {
         try {
             // Direct call for single player compatibility
             // Execute on client thread to ensure GUI is accessible
-            net.minecraft.client.Minecraft.getInstance().execute(() -> packet.handle());
+            ClientRuntimeAccess.runOnClientThread(() -> packet.handle());
         } catch (Exception e) {
             LOGGER.warn("Failed to send Deep Drawers sync packet to player: {}", e.getMessage());
         }
@@ -1495,7 +1471,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
 
             // Create and handle the packet on server thread
@@ -1531,7 +1507,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
 
             // Create and handle the packet on server thread
@@ -1569,7 +1545,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
 
             // Create and handle the packet on server thread
@@ -1603,7 +1579,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
 
             // Create and handle the packet on server thread
@@ -1645,7 +1621,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
 
             // Create and handle the packet on server thread
@@ -1673,7 +1649,7 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
-            net.minecraft.server.MinecraftServer server = net.minecraft.client.Minecraft.getInstance().getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
 
             // Create and handle the packet on server thread
@@ -1700,13 +1676,7 @@ public class ModMessages {
     public static void sendDeepDrawerExtractorFilterUpdatePacket(BlockPos pos, java.util.Map<Integer, String> filterMap, boolean isWhitelistMode) {
         // Simplified implementation - directly handle on the server side (like rotation in Structure Placer)
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -1751,13 +1721,7 @@ public class ModMessages {
     public static void sendDeepDrawerExtractorInvertedFilterUpdatePacket(BlockPos pos, java.util.Map<Integer, String> invertedFilterMap) {
         // Simplified implementation - directly handle on the server side (like rotation in Structure Placer)
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -1820,13 +1784,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerIoConfigCyclePacket(BlockPos machinePos, net.minecraft.core.Direction direction) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -1866,13 +1824,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerIoConfigResetPacket(BlockPos machinePos) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -1914,13 +1866,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerAccelerationChangePacket(BlockPos machinePos, int action) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -1968,10 +1914,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) return;
 
             server.execute(() -> {
@@ -2022,13 +1965,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerTogglePersistentPacket(BlockPos overclockerPos) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -2060,13 +1997,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerHighlightBlockPacket(BlockPos blockPos) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -2098,13 +2029,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerRemoveLinkPacket(BlockPos overclockerPos, BlockPos linkedPos) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) {
-                LOGGER.error("Minecraft instance is null!");
-                return;
-            }
-            
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server == null) {
                 LOGGER.error("Singleplayer server is null!");
                 return;
@@ -2145,10 +2070,7 @@ public class ModMessages {
     @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerRedstoneModePacket(BlockPos pos, boolean backward) {
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft == null) return;
-
-            net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server != null) {
                 server.execute(() -> {
                     try {
@@ -2188,22 +2110,19 @@ public class ModMessages {
     public static void sendSoundMufflerVolumePacket(BlockPos pos, int categoryIndex, int delta) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerVolumeC2SPacket(pos, categoryIndex, delta);
         try {
-            net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-            if (minecraft != null) {
-                net.minecraft.client.server.IntegratedServer server = minecraft.getSingleplayerServer();
-                if (server != null) {
-                    server.execute(() -> {
-                        net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().isEmpty() ? null : server.getPlayerList().getPlayers().get(0);
-                        if (player != null) {
-                            net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(packet.pos());
-                            if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
-                                muffler.addVolume(packet.categoryIndex(), packet.delta());
-                                player.level().playSound(null, packet.pos(), net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                            }
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty() ? null : server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(packet.pos());
+                        if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
+                            muffler.addVolume(packet.categoryIndex(), packet.delta());
+                            player.level().playSound(null, packet.pos(), net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
                         }
-                    });
-                    return;
-                }
+                    }
+                });
+                return;
             }
         } catch (Exception ignored) {}
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
@@ -2213,10 +2132,10 @@ public class ModMessages {
     public static void sendSoundMufflerRangePacket(BlockPos pos, int range) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket(pos, range);
         try {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null && mc.getSingleplayerServer() != null) {
-                mc.getSingleplayerServer().execute(() -> {
-                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty() ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty() ? null : server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
                         if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
@@ -2235,10 +2154,10 @@ public class ModMessages {
     public static void sendSoundMufflerModeTogglePacket(BlockPos pos) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerModeToggleC2SPacket(pos);
         try {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null && mc.getSingleplayerServer() != null) {
-                mc.getSingleplayerServer().execute(() -> {
-                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty() ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty() ? null : server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
                         if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
@@ -2257,10 +2176,10 @@ public class ModMessages {
     public static void sendSoundMufflerFilterUpdatePacket(BlockPos pos, java.util.List<String> filterSoundIds) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerFilterUpdateC2SPacket(pos, filterSoundIds != null ? new java.util.ArrayList<>(filterSoundIds) : new java.util.ArrayList<>());
         try {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null && mc.getSingleplayerServer() != null) {
-                mc.getSingleplayerServer().execute(() -> {
-                    net.minecraft.server.level.ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty() ? null : mc.getSingleplayerServer().getPlayerList().getPlayers().get(0);
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty() ? null : server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
                         net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
                         if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {

@@ -25,7 +25,7 @@ public final class FactoryJeiRecipes {
     }
 
     public static List<FactoryJeiRecipe> buildAll() {
-        ServerPlayer player = CraftingEntryPools.resolveJeiPlayer(Minecraft.getInstance());
+        ServerPlayer player = CraftingEntryPools.resolveJeiPlayer();
         final int pageSize = FactoryJeiBackgroundDrawable.GRID_COLS * FactoryJeiBackgroundDrawable.GRID_ROWS;
         List<FactoryJeiRecipe> out = new ArrayList<>();
         for (FactoryLoader.Source src : FactoryLoader.getSources()) {

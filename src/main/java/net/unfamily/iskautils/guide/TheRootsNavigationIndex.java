@@ -8,8 +8,9 @@ import guideme.compiler.ParsedGuidePage;
 import guideme.indices.PageIndex;
 import java.io.IOException;
 import java.util.List;
-import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.unfamily.iskautils.util.ClientPlayerAccess;
+import net.unfamily.iskautils.util.ClientRuntimeAccess;
 
 /**
  * Re-applies the dynamic The Roots navigation title after GuideME rebuilds its navigation tree.
@@ -43,9 +44,8 @@ public final class TheRootsNavigationIndex implements PageIndex {
     private static void schedulePatch() {
         Runnable patch = () -> TheRootsNavigationPatcher.patchGuide(Guides.getById(TheRootsNavigationPatcher.GUIDE_ID));
 
-        var minecraft = Minecraft.getInstance();
-        if (minecraft != null) {
-            minecraft.execute(patch);
+        if (ClientPlayerAccess.isClientEnvironment()) {
+            ClientRuntimeAccess.runOnClientThread(patch);
             return;
         }
 

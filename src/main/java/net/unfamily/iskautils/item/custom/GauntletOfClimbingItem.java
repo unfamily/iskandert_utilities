@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -18,6 +17,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.ClientPlayerAccess;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -88,7 +88,7 @@ public class GauntletOfClimbingItem extends Item {
         tooltip.add(Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.desc"));
         tooltip.add(Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.toggle", keybindName));
 
-        Player clientPlayer = Minecraft.getInstance().player;
+        Player clientPlayer = ClientPlayerAccess.getLocalPlayer();
         boolean on = isClimbingEnabled(clientPlayer);
         tooltip.add(
                 Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.status." + (on ? "enabled" : "disabled"))

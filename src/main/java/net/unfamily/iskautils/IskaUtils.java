@@ -4,9 +4,6 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -55,7 +52,6 @@ import net.unfamily.iskautils.util.ModWoodTypes;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.unfamily.iskautils.block.PotionPlateBlock;
 import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
-import net.unfamily.iskautils.data.DynamicPotionPlateModelLoader;
 import net.unfamily.iskautils.command.MacroLoader;
 import net.unfamily.iskautils.command.MacroCommand;
 import net.unfamily.iskautils.crafting.FactorySourcesReloadListener;
@@ -161,30 +157,6 @@ public class IskaUtils {
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
         
-        // Add shutdown hook to clean up client threads
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            ClientEvents.shutdown();
-        }));
-        
-        // Initialize GuideME guide if available
-        if (ModList.get().isLoaded("guideme")) {
-            try {
-                var guideItemSettings = new GuideItemSettings(
-                        Optional.of(Component.translatable("item.iska_utils.guide")),
-                        List.of(Component.translatable("tooltip.iska_utils.guide.line0")
-                                .withStyle(ChatFormatting.DARK_GRAY)),
-                        Optional.empty());
-                Guide.builder(ResourceLocation.fromNamespaceAndPath(MOD_ID, "guide"))
-                        .itemSettings(guideItemSettings)
-                        .extension(TagCompiler.EXTENSION_POINT, new TheRootsTitleTagCompiler())
-                        .index(new TheRootsNavigationIndex())
-                        .build();
-                LOGGER.info("GuideME guide registered");
-            } catch (Exception e) {
-                LOGGER.warn("Failed to register GuideME guide: {}", e.getMessage());
-            }
-        }
-
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
@@ -286,6 +258,26 @@ public class IskaUtils {
     private void clientSetup(final FMLClientSetupEvent event) {
         // Initialize client events
         ClientEvents.init();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(ClientEvents::shutdown));
+
+        if (ModList.get().isLoaded("guideme")) {
+            try {
+                var guideItemSettings = new GuideItemSettings(
+                        Optional.of(Component.translatable("item.iska_utils.guide")),
+                        List.of(Component.translatable("tooltip.iska_utils.guide.line0")
+                                .withStyle(ChatFormatting.DARK_GRAY)),
+                        Optional.empty());
+                Guide.builder(ResourceLocation.fromNamespaceAndPath(MOD_ID, "guide"))
+                        .itemSettings(guideItemSettings)
+                        .extension(TagCompiler.EXTENSION_POINT, new TheRootsTitleTagCompiler())
+                        .index(new TheRootsNavigationIndex())
+                        .build();
+                LOGGER.info("GuideME guide registered");
+            } catch (Exception e) {
+                LOGGER.warn("Failed to register GuideME guide: {}", e.getMessage());
+            }
+        }
         
         // Register custom GUI screens - will be done in ClientModEvents
     }
@@ -302,155 +294,6 @@ public class IskaUtils {
         public static void commonSetup(FMLCommonSetupEvent event) {
             // Register network messages
             ModMessages.register();
-        }
-    }
-
-    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-    public static class ClientModEvents {
-        
-        @SubscribeEvent
-        public static void registerEntityRenderers(
-                net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
-            event.registerEntityRenderer(
-                    net.unfamily.iskautils.entity.ModEntities.DECEPTION_SEAT.get(),
-                    net.unfamily.iskautils.client.renderer.DeceptionSeatRenderer::new);
-        }
-
-        @SubscribeEvent
-        public static void onClientSetup(FMLClientSetupEvent event) {
-            // Register CUTOUT rendering for the slow_vect block
-            event.enqueueWork(() -> {
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.SLOW_VECT.get(), RenderType.cutout());
-                // Aggiungi RenderType cutout per il rubber_sapling
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.RUBBER_SAPLING.get(), RenderType.cutout());
-                // Aggiungi RenderType cutout per il sacred_rubber_sapling
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.SACRED_RUBBER_SAPLING.get(), RenderType.cutout());
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_EMPTY.get(), RenderType.cutout());
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_FILLED.get(), RenderType.cutout());
-                // Aggiungi RenderType cutout_mipped per le netherite_bars
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.NETHERITE_BARS.get(), RenderType.cutoutMipped());
-                // Aggiungi RenderType cutout per il redstone_activator_signal
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get(), RenderType.cutout());
-
-                net.unfamily.iskautils.client.entropic.EntropicAnimatedArmorTextures.register();
-                
-                // Register item property functions for dolly filled state
-                ItemProperties.register(
-                    ModItems.DOLLY.get(),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "filled"),
-                    (stack, level, entity, seed) -> {
-                        net.minecraft.world.item.component.CustomData customData = stack.getOrDefault(
-                            net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                            net.minecraft.world.item.component.CustomData.EMPTY);
-                        net.minecraft.nbt.CompoundTag nbt = customData.copyTag();
-                        return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
-                    }
-                );
-                
-                ItemProperties.register(
-                    ModItems.DOLLY_HARD.get(),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "filled"),
-                    (stack, level, entity, seed) -> {
-                        net.minecraft.world.item.component.CustomData customData = stack.getOrDefault(
-                            net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                            net.minecraft.world.item.component.CustomData.EMPTY);
-                        net.minecraft.nbt.CompoundTag nbt = customData.copyTag();
-                        return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
-                    }
-                );
-                
-                ItemProperties.register(
-                    ModItems.DOLLY_CREATIVE.get(),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "filled"),
-                    (stack, level, entity, seed) -> {
-                        net.minecraft.world.item.component.CustomData customData = stack.getOrDefault(
-                            net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                            net.minecraft.world.item.component.CustomData.EMPTY);
-                        net.minecraft.nbt.CompoundTag nbt = customData.copyTag();
-                        return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
-                    }
-                );
-
-                ItemProperties.register(
-                    ModItems.CHOSEN_CHEESE.get(),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "chosen_cheese_full"),
-                    (stack, level, entity, seed) -> {
-                        int y = net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem.getLevel(stack);
-                        int x = Config.chosenCheeseMax;
-                        return (y >= x) ? 1.0F : 0.0F;
-                    }
-                );
-
-                ItemProperties.register(
-                    ModItems.THE_ROOTS.get(),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "unix_root"),
-                    (stack, level, entity, seed) ->
-                            net.unfamily.iskautils.item.custom.artifact.TheRootsItem.isUnixLike() ? 1.0F : 0.0F
-                );
-
-            });
-        }
-
-        @SubscribeEvent
-        public static void registerItemColors(net.neoforged.neoforge.client.event.RegisterColorHandlersEvent.Item event) {
-            event.register(
-                    (stack, tintIndex) -> {
-                        if (tintIndex == 0) {
-                            return 0xFFFFFFFF;
-                        }
-                        return 0xFF000000 | net.unfamily.iskautils.item.component.UnstableEntropyCatalystDecay.calcTintRgb(stack);
-                    },
-                    ModItems.UNSTABLE_ENTROPY_CATALYST.get()
-            );
-        }
-        
-        @SubscribeEvent
-        public static void registerGeometryLoaders(net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders event) {
-            event.register(DynamicPotionPlateModelLoader.ID, DynamicPotionPlateModelLoader.INSTANCE);
-        }
-
-        @SubscribeEvent
-        public static void registerClientExtensions(net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent event) {
-            net.unfamily.iskautils.client.fluid.ModFluidClient.registerClientExtensions(event);
-        }
-        
-        
-        @SubscribeEvent
-        public static void registerMenuScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_PLACER_MENU.get(),
-                          net.unfamily.iskautils.client.gui.StructurePlacerScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_PLACER_MACHINE_MENU.get(),
-                          net.unfamily.iskautils.client.gui.StructurePlacerMachineScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_SELECTION_MENU.get(),
-                          net.unfamily.iskautils.client.gui.StructureSelectionScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.STRUCTURE_SAVER_MACHINE_MENU.get(),
-                          net.unfamily.iskautils.client.gui.StructureSaverMachineScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SHOP_MENU.get(),
-                          net.unfamily.iskautils.client.gui.ShopScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.AUTO_SHOP_MENU.get(),
-                          net.unfamily.iskautils.client.gui.AutoShopScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.DEEP_DRAWERS_MENU.get(),
-                          net.unfamily.iskautils.client.gui.DeepDrawersScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SMART_TIMER_MENU.get(),
-                          net.unfamily.iskautils.client.gui.SmartTimerScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.DEEP_DRAWER_EXTRACTOR_MENU.get(),
-                          net.unfamily.iskautils.client.gui.DeepDrawerExtractorScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.TEMPORAL_OVERCLOCKER_MENU.get(),
-                net.unfamily.iskautils.client.gui.TemporalOverclockerScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FAN_MENU.get(),
-                net.unfamily.iskautils.client.gui.FanScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.MOB_REAPER_MENU.get(),
-                net.unfamily.iskautils.client.gui.MobReaperScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.SOUND_MUFFLER_MENU.get(),
-                net.unfamily.iskautils.client.gui.SoundMufflerScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.FACTORY_MENU.get(),
-                net.unfamily.iskautils.client.gui.FactoryScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.ANCIENT_TABLE_MENU.get(),
-                net.unfamily.iskautils.client.gui.AncientTableScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.COLLECTING_CRATE_MENU.get(),
-                net.unfamily.iskautils.client.gui.CollectingCrateScreen::new);
-            event.register(net.unfamily.iskautils.client.gui.ModMenuTypes.BLAZING_ALTAR_MENU.get(),
-                net.unfamily.iskautils.client.gui.BlazingAltarScreen::new);
         }
     }
 
@@ -600,50 +443,6 @@ public class IskaUtils {
         }
     }
     
-    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
-    public static class ClientGameEvents {
-
-        @SubscribeEvent
-        public static void onPlaySound(net.neoforged.neoforge.client.event.sound.PlaySoundEvent event) {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            net.minecraft.world.level.Level level = mc.level;
-            if (level == null || event.getSound() == null) {
-                return;
-            }
-            net.minecraft.client.resources.sounds.SoundInstance sound = event.getOriginalSound();
-            if (sound == null) {
-                sound = event.getSound();
-            }
-            if (sound == null || sound.getSource() == net.minecraft.sounds.SoundSource.MUSIC) {
-                return;
-            }
-            net.minecraft.core.BlockPos soundPos = net.minecraft.core.BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
-            String soundId = sound.getLocation().toString();
-            int maxRadius = net.unfamily.iskautils.Config.soundMufflerRangeMax;
-            int effectivePercent = 100;
-            for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(
-                    soundPos.offset(-maxRadius, -maxRadius, -maxRadius),
-                    soundPos.offset(maxRadius, maxRadius, maxRadius))) {
-                var be = level.getBlockEntity(pos);
-                if (be instanceof net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity muffler) {
-                    int r = muffler.getRange();
-                    if (pos.distSqr(soundPos) > (long) r * r) continue;
-                    if (muffler.hasFilter() && !muffler.isSoundAllowedByFilter(soundId)) continue;
-                    int p = muffler.getEffectiveVolumeFor(sound.getSource(), sound.getLocation());
-                    if (p < effectivePercent) effectivePercent = p;
-                }
-            }
-            if (effectivePercent <= 0) {
-                event.setSound(null);
-                return;
-            }
-            if (effectivePercent < 100) {
-                event.setSound(new net.unfamily.iskautils.client.SoundMufflerVolumeScaledSound(sound, effectivePercent / 100f));
-            }
-        }
-
-    }
-
     /**
      * Gestisce l'evento di unload di un chunk per rimuovere i marker dello scanner
      */

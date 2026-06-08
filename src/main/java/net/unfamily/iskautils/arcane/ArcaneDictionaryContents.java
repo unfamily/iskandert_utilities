@@ -11,7 +11,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.arcane.jei.ArcaneDictionaryJeiLines;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -145,7 +144,9 @@ public final class ArcaneDictionaryContents {
         }
         ArcaneDictionaryDefinition.Entry poolEntry = ArcaneDictionaryLoader.findEntry(trait.id());
         if (poolEntry != null && poolEntry.catalysts() != null && !poolEntry.catalysts().isEmpty()) {
-            int total = ArcaneDictionaryJeiLines.poolTotalWeight();
+            List<ArcaneDictionaryDefinition.Entry> visible = ArcaneDictionaryPools.visibleForJei(
+                    new ArrayList<>(ArcaneDictionaryPools.uniqueEntries(ArcaneDictionaryLoader.getEntries()).values()));
+            int total = ArcaneDictionaryPools.poolTotalWeight(visible);
             double chance = ArcaneDictionaryCatalystBoost.maxBoostedChancePercent(poolEntry, total);
             add.accept(ArtifactTooltipUtil.techLine(
                     "tooltip.iska_utils.arcane_trait.catalyst_chance",

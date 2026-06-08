@@ -1,6 +1,5 @@
 package net.unfamily.iskautils.arcane.jei;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -76,7 +75,7 @@ public final class ArcaneDictionaryJeiLines {
     }
 
     private static List<ArcaneDictionaryDefinition.Entry> eligiblePool() {
-        return ArcaneDictionaryPools.eligibleForJei(Minecraft.getInstance());
+        return net.unfamily.iskautils.integration.jei.ArcaneDictionaryJeiPools.eligibleForCurrentEnvironment();
     }
 
     public static void appendLine(List<Component> lines, String translationKey, Object... args) {

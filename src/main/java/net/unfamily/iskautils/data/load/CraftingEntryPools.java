@@ -1,9 +1,11 @@
 package net.unfamily.iskautils.data.load;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.unfamily.iskautils.util.ClientPlayerAccess;
+import net.unfamily.iskautils.util.ClientRuntimeAccess;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabIfVariant;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeEntry;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryDefinition;
@@ -92,18 +94,19 @@ public final class CraftingEntryPools {
     }
 
     @Nullable
-    public static ServerPlayer resolveJeiPlayer(@Nullable Minecraft mc) {
-        if (mc == null) {
+    public static ServerPlayer resolveJeiPlayer() {
+        Player player = ClientPlayerAccess.getLocalPlayer();
+        if (player == null) {
             return null;
         }
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
-            server = mc.getSingleplayerServer();
+            server = ClientRuntimeAccess.getSingleplayerServer();
         }
-        if (server == null || mc.player == null) {
+        if (server == null) {
             return null;
         }
-        return server.getPlayerList().getPlayer(mc.player.getUUID());
+        return server.getPlayerList().getPlayer(player.getUUID());
     }
 
     public static boolean ancientTabVariantActive(

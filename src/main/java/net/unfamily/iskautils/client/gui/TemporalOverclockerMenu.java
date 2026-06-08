@@ -392,8 +392,9 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
             if (shouldUpdate) {
                 this.lastSyncedLinkedBlocksHash = currentHash;
 
-                if (net.minecraft.client.Minecraft.getInstance().level != null) {
-                    TemporalOverclockerBlockEntity be = getBlockEntityFromLevel(net.minecraft.client.Minecraft.getInstance().level);
+                net.minecraft.world.level.Level clientLevel = net.unfamily.iskautils.util.ClientRuntimeAccess.getClientLevel();
+                if (clientLevel != null) {
+                    TemporalOverclockerBlockEntity be = getBlockEntityFromLevel(clientLevel);
                     if (be != null) {
                         this.cachedLinkedBlocks = new java.util.ArrayList<>(be.getLinkedBlocks());
                     }

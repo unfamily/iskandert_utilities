@@ -1,6 +1,5 @@
 package net.unfamily.iskautils.block;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,11 +10,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.client.FlameVisibilityClient;
 import net.unfamily.iskautils.util.BlazingAltarFlamePlacement;
+import net.unfamily.iskautils.util.ClientPlayerAccess;
+import net.unfamily.iskautils.util.FlameVisibilityClientAccess;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -48,10 +46,12 @@ public class BurningFlameBlock extends Block {
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
     public RenderShape getRenderShape(BlockState state) {
-        Player player = Minecraft.getInstance().player;
-        if (player != null && !FlameVisibilityClient.shouldShowFlames(player)) {
+        if (!ClientPlayerAccess.isClientEnvironment()) {
+            return RenderShape.MODEL;
+        }
+        Player player = ClientPlayerAccess.getLocalPlayer();
+        if (player != null && !FlameVisibilityClientAccess.shouldShowFlames(player)) {
             return RenderShape.INVISIBLE;
         }
         return RenderShape.MODEL;

@@ -1,6 +1,5 @@
 package net.unfamily.iskautils.item.custom.artifact;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -13,6 +12,7 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.integration.apotheosis.ApotheosisCompat;
 import net.unfamily.iskautils.util.ArtifactBalanceFormat;
 import net.unfamily.iskautils.util.ArtifactTooltipUtil;
+import net.unfamily.iskautils.util.ClientPlayerAccess;
 
 import java.util.List;
 
@@ -53,7 +53,7 @@ public class CursedArtifactItem extends Item {
             case "the_deception" -> ArtifactTooltipUtil.appendDescLines(tooltip, path, 3);
             case "entropic_ring" -> {
                 ArtifactTooltipUtil.addLoreLine(tooltip::add, "tooltip.iska_utils.entropic_ring.desc0");
-                Player player = FMLEnvironment.dist == Dist.CLIENT ? Minecraft.getInstance().player : null;
+                Player player = ClientPlayerAccess.getLocalPlayer();
                 ArtifactTooltipUtil.addTechLine(tooltip::add, "tooltip.iska_utils.entropic_ring.desc3",
                         ArtifactBalanceFormat.flatBonus(ApotheosisCompat.getEffectiveDamagePer100Hp(player)));
                 if (FMLEnvironment.dist == Dist.CLIENT) {

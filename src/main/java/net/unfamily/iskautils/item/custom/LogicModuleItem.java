@@ -1,7 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.screens.Screen;
+import net.unfamily.iskautils.util.ScreenAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -29,7 +29,7 @@ public class LogicModuleItem extends Item {
         super.appendHoverText(stack, context, tooltip, flag);
 
         if (ModList.get().isLoaded("pattern_crafter")) {
-            if (Screen.hasShiftDown()) {
+            if (ScreenAccess.hasShiftDown()) {
                 PatternCrafterTooltipHelper.addLogicModuleTooltip(tooltip);
             } else {
                 tooltip.add(Component.translatable("tooltip.iska_utils.fan_module.press_shift")

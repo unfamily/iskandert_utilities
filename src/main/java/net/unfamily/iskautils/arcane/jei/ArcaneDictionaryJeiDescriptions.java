@@ -43,7 +43,7 @@ public final class ArcaneDictionaryJeiDescriptions {
             ResourceLocation traitId,
             ArcaneDictionaryDefinition.Entry entry,
             Minecraft mc) {
-        ArcaneDictionaryJeiContext ctx = ArcaneDictionaryJeiContext.of(traitId, entry, mc);
+        ArcaneDictionaryJeiContext ctx = net.unfamily.iskautils.integration.jei.ArcaneDictionaryJeiPools.jeiContext(traitId, entry, mc);
         List<Component> lines = new ArrayList<>();
         ArcaneDictionaryJeiLines.appendLevelHeader(ctx, lines);
 

@@ -1,7 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.screens.Screen;
+import net.unfamily.iskautils.util.ScreenAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -34,7 +34,7 @@ public class ProductionModuleItem extends Item {
             return;
         }
 
-        if (Screen.hasShiftDown()) {
+        if (ScreenAccess.hasShiftDown()) {
             if (showPatternCrafter) {
                 PatternCrafterTooltipHelper.addProductionModuleTooltip(tooltip);
             }

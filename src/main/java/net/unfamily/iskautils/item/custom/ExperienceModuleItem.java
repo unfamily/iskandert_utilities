@@ -1,7 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.screens.Screen;
+import net.unfamily.iskautils.util.ScreenAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -22,7 +22,7 @@ public class ExperienceModuleItem extends Item {
     @OnlyIn(Dist.CLIENT)
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        if (Screen.hasShiftDown()) {
+        if (ScreenAccess.hasShiftDown()) {
             tooltip.add(Component.translatable("tooltip.iska_utils.mob_reaper_module.max", Config.reaperExperienceUpgradeMax)
                     .withStyle(ChatFormatting.GRAY));
             tooltip.add(Component.translatable("tooltip.iska_utils.mob_reaper_module.experience_bonus",
