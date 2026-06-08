@@ -81,8 +81,9 @@ public class StructureSelectionMenu extends AbstractContainerMenu {
                 }
                 
                 // Fallback: search near player if saved position doesn't work
-                if (net.minecraft.client.Minecraft.getInstance().player != null) {
-                    BlockPos playerPos = net.minecraft.client.Minecraft.getInstance().player.blockPosition();
+                net.minecraft.world.entity.player.Player clientPlayer = net.unfamily.iskautils.util.ClientPlayerAccess.getLocalPlayer();
+                if (clientPlayer != null) {
+                    BlockPos playerPos = clientPlayer.blockPosition();
                     
                     // Search in a 16x16x16 area around player for the machine
                     for (int x = -8; x <= 8; x++) {

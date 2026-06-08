@@ -327,8 +327,9 @@ public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
                 }
                 
                 // Try to find the block entity using synced position only (search disabled)
-                if (net.minecraft.client.Minecraft.getInstance().level != null) {
-                    DeepDrawerExtractorBlockEntity be = getBlockEntityFromLevel(net.minecraft.client.Minecraft.getInstance().level);
+                net.minecraft.world.level.Level clientLevel = net.unfamily.iskautils.util.ClientRuntimeAccess.getClientLevel();
+                if (clientLevel != null) {
+                    DeepDrawerExtractorBlockEntity be = getBlockEntityFromLevel(clientLevel);
                     if (be != null) {
                         this.cachedFilterFields = new java.util.ArrayList<>(be.getFilterFields());
                         this.cachedInvertedFilterFields = new java.util.ArrayList<>(be.getInvertedFilterFields());
