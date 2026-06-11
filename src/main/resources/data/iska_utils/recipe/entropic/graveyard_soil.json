@@ -3,9 +3,7 @@
   "ingredients": [
     { "tag": "minecraft:dirt" },
     { "item": "minecraft:bone" },
-    { "item": "minecraft:rotten_flesh" },
-    { "item": "iska_utils:entropic_agglomeration" },
-    { "item": "iska_utils:drop_of_entropy" }
+    { "item": "minecraft:rotten_flesh" }
   ],
   "result": {
     "id": "iska_utils:graveyard_soil",

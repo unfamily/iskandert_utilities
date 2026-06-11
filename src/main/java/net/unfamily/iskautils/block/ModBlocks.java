@@ -495,6 +495,15 @@ public class ModBlocks {
             .requiresCorrectToolForDrops()
             .lightLevel((state) -> state.getValue(TemporalOverclockerBlock.POWERED) ? 7 : 0)));
 
+    public static final DeferredBlock<EntropicSpawnerBlock> ENTROPIC_SPAWNER = BLOCKS.register("entropic_spawner",
+        () -> new EntropicSpawnerBlock(BlockBehaviour.Properties.of()
+            .strength(5.0f, 1200.0f)
+            .sound(SoundType.METAL)
+            .requiresCorrectToolForDrops()
+            .noOcclusion()
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false)));
+
     // ===== ANGEL BLOCK =====
     // Un blocco che può essere piazzato in aria e si rompe facilmente
     public static final DeferredBlock<AngelBlock> ANGEL_BLOCK = BLOCKS.register("angel_block",

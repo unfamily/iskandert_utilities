@@ -28,7 +28,6 @@ import guideme.Guide;
 import guideme.GuideItemSettings;
 import guideme.compiler.TagCompiler;
 import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 import java.util.List;
 import java.util.Optional;
 import net.unfamily.iskautils.guide.TheRootsNavigationIndex;
@@ -40,6 +39,7 @@ import net.unfamily.iskautils.command.CommandItemLoader;
 import net.unfamily.iskautils.data.VectorCharmData;
 import net.unfamily.iskautils.events.LootEvents;
 import net.unfamily.iskautils.effect.ModMobEffects;
+import net.unfamily.iskautils.particle.ModParticles;
 import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.item.ModCreativeModeTabs;
 import net.unfamily.iskautils.item.ModItems;
@@ -90,6 +90,8 @@ public class IskaUtils {
 
             // Register GUI MenuTypes (client-only)
             net.unfamily.iskautils.client.gui.ModMenuTypes.MENUS.register(modEventBus);
+
+            registerGuideMeGuide();
         }
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
@@ -132,6 +134,7 @@ public class IskaUtils {
         ModFactoryRecipes.register(modEventBus);
         ModItems.register(modEventBus);
         ModMobEffects.register(modEventBus);
+        ModParticles.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         net.unfamily.iskautils.entity.ModEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
@@ -261,25 +264,28 @@ public class IskaUtils {
 
         Runtime.getRuntime().addShutdownHook(new Thread(ClientEvents::shutdown));
 
-        if (ModList.get().isLoaded("guideme")) {
-            try {
-                var guideItemSettings = new GuideItemSettings(
-                        Optional.of(Component.translatable("item.iska_utils.guide")),
-                        List.of(Component.translatable("tooltip.iska_utils.guide.line0")
-                                .withStyle(ChatFormatting.DARK_GRAY)),
-                        Optional.empty());
-                Guide.builder(ResourceLocation.fromNamespaceAndPath(MOD_ID, "guide"))
-                        .itemSettings(guideItemSettings)
-                        .extension(TagCompiler.EXTENSION_POINT, new TheRootsTitleTagCompiler())
-                        .index(new TheRootsNavigationIndex())
-                        .build();
-                LOGGER.info("GuideME guide registered");
-            } catch (Exception e) {
-                LOGGER.warn("Failed to register GuideME guide: {}", e.getMessage());
-            }
-        }
-        
         // Register custom GUI screens - will be done in ClientModEvents
+    }
+
+    private static void registerGuideMeGuide() {
+        if (!ModList.get().isLoaded("guideme")) {
+            return;
+        }
+        try {
+            var guideItemSettings = new GuideItemSettings(
+                    Optional.of(Component.translatable("item.iska_utils.guide")),
+                    List.of(Component.translatable("tooltip.iska_utils.guide.line0")
+                            .withStyle(ChatFormatting.DARK_GRAY)),
+                    Optional.empty());
+            Guide.builder(ResourceLocation.fromNamespaceAndPath(MOD_ID, "guide"))
+                    .itemSettings(guideItemSettings)
+                    .extension(TagCompiler.EXTENSION_POINT, new TheRootsTitleTagCompiler())
+                    .index(new TheRootsNavigationIndex())
+                    .build();
+            LOGGER.info("GuideME guide registered");
+        } catch (Exception e) {
+            LOGGER.error("Failed to register GuideME guide", e);
+        }
     }
 
     // Add the example block item to the building blocks tab

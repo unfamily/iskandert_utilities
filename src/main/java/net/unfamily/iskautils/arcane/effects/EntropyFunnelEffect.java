@@ -6,7 +6,6 @@ import net.unfamily.iskautils.arcane.ArcaneDictionaryTraitIds;
 import net.unfamily.iskautils.arcane.jei.ArcaneDictionaryJeiContext;
 import net.unfamily.iskautils.arcane.jei.ArcaneDictionaryJeiLines;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.integration.apotheosis.ApotheosisCompat;
 
 import java.util.List;
 

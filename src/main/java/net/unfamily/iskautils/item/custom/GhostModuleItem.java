@@ -1,6 +1,6 @@
 package net.unfamily.iskautils.item.custom;
 
-import net.unfamily.iskautils.util.ScreenAccess;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -17,12 +17,8 @@ public class GhostModuleItem extends Item {
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<net.minecraft.network.chat.Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        if (ScreenAccess.hasShiftDown()) {
-            FanModuleTooltipHelper.appendGhostModuleLines(tooltip);
-        } else {
-            FanModuleTooltipHelper.appendShiftHint(tooltip);
-        }
+        UpgradeModuleTooltipHelper.appendGhostModuleTooltip(tooltip, flag);
     }
 }

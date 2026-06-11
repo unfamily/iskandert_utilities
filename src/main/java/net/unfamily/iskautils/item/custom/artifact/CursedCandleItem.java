@@ -10,7 +10,7 @@ import net.unfamily.iskautils.item.custom.BurningBrazierItem;
 import java.util.List;
 
 /**
- * Cursed Candle - eternal brazier extension: cursed flames, no durability.
+ * Arcane Candle - eternal brazier extension: cursed burning flames, no durability.
  * Unlike other artifacts, it is fully usable from inventory or hands (not Curios-only).
  * Player ignite on place uses the same rules as {@link BurningBrazierItem}
  * ({@code burning_brazier_super_hot} or {@code iska_utils_internal-curse_flame} stage).

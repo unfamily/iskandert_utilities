@@ -47,7 +47,7 @@ public final class CursedArtifactEffects {
         if (player.level().isClientSide) return;
         if (!(player instanceof ServerPlayer sp)) return;
 
-        // Busted Crown: bonus HP per cursed artifact (Curios); Cursed Candle also counts in inventory/hands.
+        // Busted Crown: bonus HP per arcane artifact (Curios); Arcane Candle also counts in inventory/hands.
         if (!hasBustedCrownEquipped(sp)) {
             if (!AttributeSyncGrace.shouldDeferRemoval(sp)) {
                 removeBustedCrownModifier(sp);

@@ -261,9 +261,9 @@ dependencies {
 
     // Verify that the value of runtime_itemlist_mod is valid
     if (project.hasProperty('runtime_itemlist_mod') && 
-        !(project.runtime_itemlist_mod in ["jei", "rei", "emi", "curios", "none"])) {
+        !(project.runtime_itemlist_mod in ["jei", "rei", "emi", "curios", "guideme", "none"])) {
         throw new GradleException("Invalid value for runtime_itemlist_mod: " + project.runtime_itemlist_mod + 
-                                  ". Allowed values: jei, rei, emi, curios, none")
+                                  ". Allowed values: jei, rei, emi, curios, guideme, none")
     }
     
     // Verify that the value of include_compass_mods is valid

@@ -250,6 +250,12 @@ public class ModMessages {
         );
 
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
             net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket::handle
@@ -396,6 +402,33 @@ public class ModMessages {
                                 factory.cycleRedstoneModeBackward();
                             } else {
                                 factory.cycleRedstoneMode();
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendEntropicSpawnerRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
+        var packet = new net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket(pos, backward);
+        try {
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.EntropicSpawnerBlockEntity spawner) {
+                            if (backward) {
+                                spawner.cycleRedstoneModeBackward();
+                            } else {
+                                spawner.cycleRedstoneMode();
                             }
                         }
                     }

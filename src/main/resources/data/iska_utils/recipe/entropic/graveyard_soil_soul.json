@@ -5,7 +5,7 @@
     { "tag": "minecraft:soul_fire_base_blocks" },
     { "item": "minecraft:bone" },
     { "item": "minecraft:rotten_flesh" },
-    { "item": "iska_utils:entropic_agglomeration" }
+    { "item": "minecraft:phantom_membrane" }
   ],
   "result": {
     "id": "iska_utils:graveyard_soil",

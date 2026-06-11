@@ -18,6 +18,33 @@
         { "id": "#c:nether_stars", "count": 1 }
       ],
       "produce": [ "iska_utils:unstable_entropy_catalyst" ]
+    },
+    {
+      "fuel_cost": 10,
+      "require": [
+        { "id": "#c:bars/netherite", "count": 12 },
+        { "id": "#c:nether_stars", "count": 1 },
+        { "id": "iska_utils:drop_of_entropy", "count": 16 }
+      ],
+      "produce": [ "minecraft:spawner" ]
+    },
+    {
+      "fuel_cost": 10,
+      "require": [
+        { "id": "#c:bars/netherite", "count": 12 },
+        { "id": "iska_utils:unstable_entropy_catalyst", "count": 1 }
+      ],
+      "produce": [ "minecraft:spawner" ]
+    },
+    {
+      "fuel_cost": 10,
+      "require": [
+        { "id": "minecraft:spawner", "count": 1 },
+        { "id": "iska_utils:entropic_smithing_template", "count": 4 },
+        { "id": "iska_utils:entropy_crystal", "count": 4 },
+        { "id": "iska_utils:entropic_agglomeration", "count": 8 }
+      ],
+      "produce": [ "iska_utils:entropic_spawner" ]
     }
   ]
 }

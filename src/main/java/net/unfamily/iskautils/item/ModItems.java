@@ -576,7 +576,10 @@ public class ModItems {
     // Temporal Overclocker
     public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER = ITEMS.register("temporal_overclocker",
             () -> new TemporalOverclockerBlockItem(ModBlocks.TEMPORAL_OVERCLOCKER.get(), new Item.Properties().stacksTo(64)));
-    
+
+    public static final DeferredItem<Item> ENTROPIC_SPAWNER = ITEMS.register("entropic_spawner",
+            () -> new net.minecraft.world.item.BlockItem(ModBlocks.ENTROPIC_SPAWNER.get(), new Item.Properties()));
+
     // Temporal Overclocker Chipset
     public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER_CHIPSET = ITEMS.register("temporal_overclocker_chip",
             () -> new TemporalOverclockerChipsetItem(new Item.Properties().stacksTo(1)));

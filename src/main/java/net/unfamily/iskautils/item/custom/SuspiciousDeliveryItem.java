@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.fml.ModList;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryDefinition;
@@ -38,7 +39,11 @@ public class SuspiciousDeliveryItem extends Item {
         if (level.isClientSide) {
             return InteractionResultHolder.success(stack);
         }
+        // FakePlayer extends ServerPlayer — automation can open packages too.
         if (!(player instanceof ServerPlayer sp)) {
+            return InteractionResultHolder.pass(stack);
+        }
+        if (sp instanceof FakePlayer && sp.level().isClientSide) {
             return InteractionResultHolder.pass(stack);
         }
 

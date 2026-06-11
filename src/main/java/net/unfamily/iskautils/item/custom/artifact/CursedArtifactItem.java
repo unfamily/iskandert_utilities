@@ -29,10 +29,23 @@ public class CursedArtifactItem extends Item {
     public static void appendCursedArtifactTooltip(List<Component> tooltip, String path) {
         tooltip.add(Component.translatable("tooltip.iska_utils." + path + ".cursed"));
         switch (path) {
-            case "totem_of_pain" -> ArtifactTooltipUtil.appendDescLines(
-                    tooltip, path, 2, 2, ArtifactBalanceFormat.percent(Config.totemOfPainProcChance));
-            case "busted_crown" -> ArtifactTooltipUtil.appendDescLines(
-                    tooltip, path, 2, 2, ArtifactBalanceFormat.flatBonus(Config.bustedCrownHpPerCursedArtifact));
+            case "totem_of_pain" -> {
+                String prefix = "tooltip.iska_utils.totem_of_pain.";
+                ArtifactTooltipUtil.addLoreLine(tooltip::add, prefix + "desc0");
+                ArtifactTooltipUtil.addLoreLine(tooltip::add, prefix + "desc1");
+                ArtifactTooltipUtil.addTechLine(tooltip::add, prefix + "desc2",
+                        ArtifactBalanceFormat.percent(Config.totemOfPainProcChance));
+                ArtifactTooltipUtil.addTechLine(tooltip::add, prefix + "desc3",
+                        ArtifactBalanceFormat.percent(Config.curseOfPainDamagePerLevel));
+            }
+            case "busted_crown" -> {
+                String prefix = "tooltip.iska_utils.busted_crown.";
+                String hpBonus = ArtifactBalanceFormat.flatBonus(Config.bustedCrownHpPerCursedArtifact);
+                ArtifactTooltipUtil.addLoreLine(tooltip::add, prefix + "desc0");
+                ArtifactTooltipUtil.addLoreLine(tooltip::add, prefix + "desc1");
+                ArtifactTooltipUtil.addTechLine(tooltip::add, prefix + "desc2", hpBonus);
+                ArtifactTooltipUtil.addTechLine(tooltip::add, prefix + "desc3", hpBonus);
+            }
             case "ritual_gauntlet" -> {
                 String prefix = "tooltip.iska_utils.ritual_gauntlet.";
                 ArtifactTooltipUtil.addLoreLine(tooltip::add, prefix + "desc0");
@@ -46,8 +59,17 @@ public class CursedArtifactItem extends Item {
                         ArtifactBalanceFormat.percentBonusFromMultiplier(
                                 Config.ritualGauntletCritDamageHarmful));
             }
-            case "necrotic_crystal_heart" -> ArtifactTooltipUtil.appendDescLines(
-                    tooltip, path, 4, 4, ArtifactBalanceFormat.flatBonus(Config.necroticCrystalHeartHpCostPerSave));
+            case "necrotic_crystal_heart" -> {
+                String prefix = "tooltip.iska_utils.necrotic_crystal_heart.";
+                ArtifactTooltipUtil.addLoreLine(tooltip::add, prefix + "desc0");
+                ArtifactTooltipUtil.addLoreLine(tooltip::add, prefix + "desc1");
+                ArtifactTooltipUtil.addTechLine(tooltip::add, prefix + "desc2");
+                ArtifactTooltipUtil.addTechLine(tooltip::add, prefix + "desc3",
+                        ArtifactBalanceFormat.flatBonus(Config.necroticCrystalHeartHpCostPerSave));
+                ArtifactTooltipUtil.addTechLine(tooltip::add, prefix + "desc4",
+                        ArtifactBalanceFormat.flatBonus(Config.necroticCrystalHeartMinMaxHealth));
+                ArtifactTooltipUtil.addTechLine(tooltip::add, prefix + "desc5");
+            }
             case "arcane_dictionary" -> ArtifactTooltipUtil.appendDescLines(
                     tooltip, path, 1, 1, Config.arcaneDictionaryMaxRollLevels);
             case "the_deception" -> ArtifactTooltipUtil.appendDescLines(tooltip, path, 3);

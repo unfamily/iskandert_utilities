@@ -7,6 +7,7 @@ import net.neoforged.fml.ModList;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Adds Colossal Reactors config-based tooltips to shared upgrade modules.
@@ -35,6 +36,16 @@ public final class ColossalReactorsTooltipHelper {
             return false;
         }
         return getConfigBoolean("ENABLE_RADIATION_MANAGEMENT", false);
+    }
+
+    public static void appendProductionModuleMaxInstall(Consumer<Component> tooltip) {
+        if (!supportsRadiationScrubberProductionModule()) {
+            return;
+        }
+        tooltip.accept(Component.translatable(
+                        "tooltip.iska_utils.module_compat.radiation_scrubber.max",
+                        MAX_PRODUCTION_MODULES)
+                .withStyle(ChatFormatting.GRAY));
     }
 
     public static void addRadiationScrubberProductionModuleTooltip(List<Component> tooltip) {

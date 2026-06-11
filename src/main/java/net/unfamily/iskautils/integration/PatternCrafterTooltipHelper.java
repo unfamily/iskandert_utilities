@@ -7,6 +7,7 @@ import net.neoforged.fml.ModList;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Adds Pattern Crafter config-based tooltips to shared upgrade modules.
@@ -31,6 +32,36 @@ public final class PatternCrafterTooltipHelper {
         return ModList.get().getModContainerById(PATTERN_CRAFTER_MOD_ID)
                 .map(container -> isAtLeastVersion(container.getModInfo().getVersion().toString(), MIN_PRODUCTION_MODULE_VERSION))
                 .orElse(false);
+    }
+
+    public static boolean isPatternCrafterLoaded() {
+        return ModList.get().isLoaded(PATTERN_CRAFTER_MOD_ID);
+    }
+
+    public static void appendSpeedModuleMaxInstall(Consumer<Component> tooltip) {
+        if (!isPatternCrafterLoaded()) {
+            return;
+        }
+        appendPatternCrafterMaxInstall(tooltip, getConfigInt("MAX_SPEED_MODULES", 1));
+    }
+
+    public static void appendLogicModuleMaxInstall(Consumer<Component> tooltip) {
+        if (!isPatternCrafterLoaded()) {
+            return;
+        }
+        appendPatternCrafterMaxInstall(tooltip, getConfigInt("MAX_LOGIC_MODULES", 3));
+    }
+
+    public static void appendProductionModuleMaxInstall(Consumer<Component> tooltip) {
+        if (!supportsProductionModule()) {
+            return;
+        }
+        appendPatternCrafterMaxInstall(tooltip, getConfigInt("MAX_PRODUCTION_MODULES", 1));
+    }
+
+    private static void appendPatternCrafterMaxInstall(Consumer<Component> tooltip, int max) {
+        tooltip.accept(Component.translatable("tooltip.iska_utils.module_compat.pattern_crafter.max", max)
+                .withStyle(ChatFormatting.GRAY));
     }
 
     /** Speed module types: slow, moderate, fast, extreme, ultra. */

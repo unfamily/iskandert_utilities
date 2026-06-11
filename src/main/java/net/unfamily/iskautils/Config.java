@@ -183,7 +183,7 @@ public class Config
     private static final ModConfigSpec.IntValue ENTROPIC_CLOCK_MAX_STORED = BUILDER
             .comment("Maximum stored entropy buffer for the Entropic Clock upgrade (0 uses Ancient Table max)")
             .defineInRange("239_entropicClockMaxStored", 0, 0, 1000000);
-            
+
     // Portable Dislocator resource priority configuration
     private static final ModConfigSpec.BooleanValue PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY = BUILDER
             .comment("If true, energy will be consumed before XP when both are available",
@@ -236,6 +236,51 @@ public class Config
     private static final ModConfigSpec.IntValue ANCIENT_TABLE_IO_SLOTS = BUILDER
             .comment("Logical input and output slot count per side on the Ancient Table")
             .defineInRange("102_io_slots", 63, 9, 63);
+
+    static {
+        BUILDER.pop();
+        BUILDER.comment("Entropic Spawner").push("entropic_spawner");
+    }
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_SPAWNER_ENABLED = BUILDER
+            .comment("Enable the Entropic Spawner machine")
+            .define("240_entropicSpawnerEnabled", true);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SPAWNER_BASE_DELAY_MIN = BUILDER
+            .comment("Minimum spawn delay in ticks (base, before fuel/clock modifiers)")
+            .defineInRange("241_entropicSpawnerBaseDelayMin", 200, 20, 72000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SPAWNER_BASE_DELAY_MAX = BUILDER
+            .comment("Maximum spawn delay in ticks (base, before fuel/clock modifiers)")
+            .defineInRange("242_entropicSpawnerBaseDelayMax", 800, 20, 72000);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_SPAWNER_FUEL_SPEED_MULTIPLIER = BUILDER
+            .comment("Spawn delay multiplier when the internal entropy buffer has charge (< 1.0 = faster)")
+            .defineInRange("243_entropicSpawnerFuelSpeedMultiplier", 0.75D, 0.05D, 1.0D);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SPAWNER_MAX_ENTROPIC_CLOCKS = BUILDER
+            .comment("Maximum Entropic Clocks stackable in the spawner clock slot (0–64, single-slot stack)")
+            .defineInRange("244_entropicSpawnerMaxEntropicClocks", 8, 0, 64);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_SPAWNER_CLOCK_DELAY_FACTOR_PER_CLOCK = BUILDER
+            .comment("Per installed Entropic Clock, multiply spawn delay by this factor")
+            .defineInRange("245_entropicSpawnerClockDelayFactorPerClock", 0.85D, 0.1D, 1.0D);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SPAWNER_MAX_PRODUCTION_MODULES = BUILDER
+            .comment("Maximum Production Modules stackable in the spawner module slot (0–64, single-slot stack)")
+            .defineInRange("246_entropicSpawnerMaxProductionModules", 8, 0, 64);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SPAWNER_ENTROPY_PER_SPAWN = BUILDER
+            .comment("Deprecated — no longer used; entropy buffer only shortens spawn delay. Kept for config compatibility.")
+            .defineInRange("247_entropicSpawnerEntropyPerSpawn", 0, 0, 100_000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SPAWNER_MAX_LIFETIME_SPAWNS = BUILDER
+            .comment("Total mobs this spawner may ever spawn before locking (0 = unlimited)")
+            .defineInRange("248_entropicSpawnerMaxLifetimeSpawns", 0, 0, 1_000_000);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_SPAWNER_MAX_MOBS_ABOVE = BUILDER
+            .comment("Spawner pauses countdown while this many or more living entities are above it (0 = disabled)")
+            .defineInRange("249_entropicSpawnerMaxMobsAbove", 16, 0, 256);
 
     static {
         BUILDER.pop();
@@ -1729,6 +1774,16 @@ public class Config
     public static double entropicClockMaxFactorMultiplier;
     public static int entropicClockEntropyPerTick;
     public static int entropicClockMaxStored;
+    public static boolean entropicSpawnerEnabled;
+    public static int entropicSpawnerBaseDelayMin;
+    public static int entropicSpawnerBaseDelayMax;
+    public static double entropicSpawnerFuelSpeedMultiplier;
+    public static int entropicSpawnerMaxEntropicClocks;
+    public static double entropicSpawnerClockDelayFactorPerClock;
+    public static int entropicSpawnerMaxProductionModules;
+    public static int entropicSpawnerEntropyPerSpawn;
+    public static int entropicSpawnerMaxLifetimeSpawns;
+    public static int entropicSpawnerMaxMobsAbove;
 
     // Entropic & graveyard soils
     public static boolean entropicSoilSpawnEnabled;
@@ -2198,6 +2253,20 @@ public class Config
         if (entropicClockMaxStored <= 0) {
             entropicClockMaxStored = entropyAncientTableMaxStored;
         }
+
+        entropicSpawnerEnabled = ENTROPIC_SPAWNER_ENABLED.get();
+        entropicSpawnerBaseDelayMin = ENTROPIC_SPAWNER_BASE_DELAY_MIN.get();
+        entropicSpawnerBaseDelayMax = ENTROPIC_SPAWNER_BASE_DELAY_MAX.get();
+        if (entropicSpawnerBaseDelayMax < entropicSpawnerBaseDelayMin) {
+            entropicSpawnerBaseDelayMax = entropicSpawnerBaseDelayMin;
+        }
+        entropicSpawnerFuelSpeedMultiplier = ENTROPIC_SPAWNER_FUEL_SPEED_MULTIPLIER.get();
+        entropicSpawnerMaxEntropicClocks = ENTROPIC_SPAWNER_MAX_ENTROPIC_CLOCKS.get();
+        entropicSpawnerClockDelayFactorPerClock = ENTROPIC_SPAWNER_CLOCK_DELAY_FACTOR_PER_CLOCK.get();
+        entropicSpawnerMaxProductionModules = ENTROPIC_SPAWNER_MAX_PRODUCTION_MODULES.get();
+        entropicSpawnerEntropyPerSpawn = ENTROPIC_SPAWNER_ENTROPY_PER_SPAWN.get();
+        entropicSpawnerMaxLifetimeSpawns = ENTROPIC_SPAWNER_MAX_LIFETIME_SPAWNS.get();
+        entropicSpawnerMaxMobsAbove = ENTROPIC_SPAWNER_MAX_MOBS_ABOVE.get();
 
         entropicSoilSpawnEnabled = ENTROPIC_SOIL_SPAWN_ENABLED.get();
         entropicSoilSpawnIntervalMinTicks = ENTROPIC_SOIL_SPAWN_INTERVAL_MIN.get();
