@@ -51,6 +51,7 @@
     "iska_utils:iska_utils_freeze",
     "iska_utils:ancient_table",
     "iska_utils:temporal_overclocker",
+    "iska_utils:entropic_spawner",
     "iska_utils:iska_utils_lethal_damage",
     "iska_utils:angel_block",
     "iska_utils:entropy_tnt",

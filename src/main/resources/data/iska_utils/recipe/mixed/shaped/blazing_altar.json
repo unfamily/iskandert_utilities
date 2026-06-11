@@ -10,9 +10,7 @@
     "A": {
       "item": "iska_utils:smooth_blackstone"
     },
-    "B": {
-      "item": "iska_utils:drop_of_entropy"
-    },
+    "B": "#iska_utils:blazing_altar_entropy",
     "C": {
       "item": "minecraft:glowstone"
     }

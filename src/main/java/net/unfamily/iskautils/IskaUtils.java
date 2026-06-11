@@ -24,11 +24,7 @@ import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.resource.VanillaServerListeners;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.ChunkEvent;
-import net.neoforged.fml.ModList;
-import guideme.Guide;
-import guideme.compiler.TagCompiler;
-import net.unfamily.iskautils.guide.TheRootsNavigationIndex;
-import net.unfamily.iskautils.guide.TheRootsTitleTagCompiler;
+import net.unfamily.iskautils.guide.IskaUtilsGuide;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.ClientEvents;
@@ -99,6 +95,7 @@ public class IskaUtils {
 
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerMenuScreens);
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerEntityRenderers);
+            modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerParticleProviders);
             modEventBus.addListener(net.neoforged.neoforge.client.event.RegisterFluidModelsEvent.class,
                     net.unfamily.iskautils.client.fluid.ModFluidClient::registerFluidModels);
 
@@ -155,6 +152,7 @@ public class IskaUtils {
         ModFluids.FLUIDS.register(modEventBus);
         net.unfamily.iskautils.crafting.ModFactoryRecipes.register(modEventBus);
         ModMobEffects.register(modEventBus);
+        net.unfamily.iskautils.particle.ModParticles.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         net.unfamily.iskautils.entity.ModEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
@@ -289,17 +287,7 @@ public class IskaUtils {
 
         Runtime.getRuntime().addShutdownHook(new Thread(ClientEvents::shutdown));
 
-        if (ModList.get().isLoaded("guideme")) {
-            try {
-                Guide.builder(Identifier.fromNamespaceAndPath(MOD_ID, "guide"))
-                        .extension(TagCompiler.EXTENSION_POINT, new TheRootsTitleTagCompiler())
-                        .index(new TheRootsNavigationIndex())
-                        .build();
-                LOGGER.info("GuideME guide registered");
-            } catch (Exception e) {
-                LOGGER.warn("Failed to register GuideME guide: {}", e.getMessage());
-            }
-        }
+        IskaUtilsGuide.registerClient();
 
         // Register custom GUI screens - will be done in ClientModEvents
     }

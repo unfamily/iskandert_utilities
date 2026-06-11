@@ -4,9 +4,6 @@ navigation:
   parent: hubs/rubber_and_processing.md
   position: 30
 item_ids:
-  - iska_utils:sap
-  - iska_utils:rubber
-  - iska_utils:rubber_chunk
   - iska_utils:plastic_ingot
   - iska_utils:green_sludge
   - iska_utils:tar_slimeball

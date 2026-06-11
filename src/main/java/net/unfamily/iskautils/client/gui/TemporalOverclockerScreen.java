@@ -175,10 +175,12 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
             int percentage = accelerationFactor * 100;
             boolean entropic = accelerationFactor > Config.temporalOverclockerAccelerationFactorMax;
             boolean depowered = entropic && this.menu.isAccelerationDepowered();
-            String pct = entropic
-                    ? (depowered ? "§5" + percentage + "§7*" : "§5" + percentage) + "§r"
-                    : String.valueOf(percentage);
-            this.accelerationButton.setMessage(Component.literal("Overclock: " + pct + "%"));
+            ChatFormatting valueColor = entropic
+                    ? (depowered ? ChatFormatting.GRAY : ChatFormatting.DARK_PURPLE)
+                    : ChatFormatting.WHITE;
+            this.accelerationButton.setMessage(Component.literal("Overclock: ")
+                    .append(Component.literal(String.valueOf(percentage)).withStyle(valueColor))
+                    .append(Component.literal("%")));
         }
         
         // Update entry buttons SOLO se necessario (evita lampeggiamento tooltip)

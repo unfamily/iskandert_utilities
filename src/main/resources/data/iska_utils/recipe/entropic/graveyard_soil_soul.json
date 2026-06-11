@@ -5,7 +5,7 @@
     "#minecraft:soul_fire_base_blocks",
     "minecraft:bone",
     "minecraft:rotten_flesh",
-    "iska_utils:entropic_agglomeration"
+    "minecraft:phantom_membrane"
   ],
   "result": {
     "id": "iska_utils:graveyard_soil",

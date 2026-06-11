@@ -420,6 +420,10 @@ public class ModItems {
             props -> new TemporalOverclockerBlockItem(ModBlocks.TEMPORAL_OVERCLOCKER.get(), props),
             p -> p.useBlockDescriptionPrefix().stacksTo(64));
 
+    public static final DeferredItem<Item> ENTROPIC_SPAWNER = ITEMS.registerItem("entropic_spawner",
+            props -> new net.minecraft.world.item.BlockItem(ModBlocks.ENTROPIC_SPAWNER.get(), props),
+            p -> p.useBlockDescriptionPrefix());
+
     public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER_CHIPSET = ITEMS.registerItem("temporal_overclocker_chip",
             TemporalOverclockerChipsetItem::new, p -> p.stacksTo(1));
 

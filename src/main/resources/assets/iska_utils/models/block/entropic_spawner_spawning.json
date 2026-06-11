@@ -1,0 +1,10 @@
+{
+  "render_type": "cutout",
+  "parent": "minecraft:block/cube_bottom_top_inner_faces",
+  "textures": {
+    "particle": "iska_utils:block/entropic_spawner/entropic_spawner_side_active",
+    "side": "iska_utils:block/entropic_spawner/entropic_spawner_side_active",
+    "top": "iska_utils:block/entropic_spawner/entropic_spawner_top_spawn",
+    "bottom": "iska_utils:block/entropic_spawner/entropic_spawner_bottom"
+  }
+}

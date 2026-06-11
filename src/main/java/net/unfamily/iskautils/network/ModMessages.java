@@ -263,6 +263,12 @@ public class ModMessages {
         );
 
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
             net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.AncientTabletCraftC2SPacket::handle
@@ -375,6 +381,15 @@ public class ModMessages {
                     new net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket(pos, backward));
         } catch (Exception e) {
             LOGGER.warn("Failed to send Factory redstone mode packet: {}", e.getMessage());
+        }
+    }
+
+    public static void sendEntropicSpawnerRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
+        try {
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket(pos, backward));
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send Entropic Spawner redstone mode packet: {}", e.getMessage());
         }
     }
 

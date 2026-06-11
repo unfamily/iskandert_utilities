@@ -7,7 +7,6 @@ navigation:
 item_ids:
   - iska_utils:temporal_overclocker
   - iska_utils:temporal_overclocker_chip
-  - iska_utils:entropic_clock
 categories:
   - World and machines
 ---

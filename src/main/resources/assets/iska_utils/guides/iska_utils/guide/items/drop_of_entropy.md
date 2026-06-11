@@ -42,6 +42,6 @@ A rare **resource** — not worn on the body. Used on the <ItemImage id="iska_ut
   - <ItemImage id="iska_utils:old_brick" /> Old Brick
   - <ItemImage id="iska_utils:the_roots" /> The Roots
   - <ItemImage id="iska_utils:mining_equitizer" /> Mining Equitizer
-  - <ItemImage id="iska_utils:cursed_candle" /> Cursed Candle
+  - <ItemImage id="iska_utils:cursed_candle" /> Arcane Candle
 
 **Drop of Entropy** itself is **not** recyclable.

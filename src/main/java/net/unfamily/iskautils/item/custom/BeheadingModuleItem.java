@@ -1,7 +1,5 @@
 package net.unfamily.iskautils.item.custom;
 
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -21,18 +19,10 @@ public class BeheadingModuleItem extends Item {
             ItemStack stack,
             TooltipContext context,
             TooltipDisplay tooltipDisplay,
-            Consumer<Component> tooltip,
+            Consumer<net.minecraft.network.chat.Component> tooltip,
             TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
-        if (flag.hasShiftDown()) {
-            tooltip.accept(Component.translatable("tooltip.iska_utils.mob_reaper_module.max", Config.reaperBeheadingUpgradeMax)
-                    .withStyle(ChatFormatting.GRAY));
-            tooltip.accept(Component.translatable("tooltip.iska_utils.mob_reaper_module.beheading_chance",
-                            (int) Math.round(Config.reaperBeheadingChancePerLevel * 100) + "%")
-                    .withStyle(ChatFormatting.GRAY));
-        } else {
-            tooltip.accept(Component.translatable("tooltip.iska_utils.fan_module.press_shift")
-                    .withStyle(ChatFormatting.GRAY));
-        }
+        UpgradeModuleTooltipHelper.appendMobReaperModuleTooltip(
+                tooltip, flag, Config.reaperBeheadingUpgradeMax, "tooltip.iska_utils.module.beheading.effect");
     }
 }

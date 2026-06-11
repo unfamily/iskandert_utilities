@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "active=false,spawning=false": {
+      "model": "iska_utils:block/entropic_spawner_inactive"
+    },
+    "active=false,spawning=true": {
+      "model": "iska_utils:block/entropic_spawner_inactive"
+    },
+    "active=true,spawning=false": {
+      "model": "iska_utils:block/entropic_spawner_active"
+    },
+    "active=true,spawning=true": {
+      "model": "iska_utils:block/entropic_spawner_spawning"
+    }
+  }
+}

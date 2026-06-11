@@ -6,6 +6,7 @@ navigation:
   position: 10
 item_ids:
   - iska_utils:range_module
+  - iska_utils:ghost_module
 categories:
   - Fan system
 ---

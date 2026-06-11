@@ -134,6 +134,10 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("mob_reaper",
                     () -> new BlockEntityType<>(MobReaperBlockEntity::new, ModBlocks.MOB_REAPER.get()));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropicSpawnerBlockEntity>> ENTROPIC_SPAWNER_BE =
+            BLOCK_ENTITIES.register("entropic_spawner",
+                    () -> new BlockEntityType<>(EntropicSpawnerBlockEntity::new, ModBlocks.ENTROPIC_SPAWNER.get()));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CollectingCrateBlockEntity>> COLLECTING_CRATE_BE =
             BLOCK_ENTITIES.register("collecting_crate",
                     () -> new BlockEntityType<>(CollectingCrateBlockEntity::new, ModBlocks.COLLECTING_CRATE.get()));
@@ -354,6 +358,12 @@ public class ModBlockEntities {
                     BLAZING_ALTAR_BE.get(),
                     (blockEntity, ctx) ->
                             blockEntity instanceof BlazingAltarBlockEntity altar ? altar.getItemTransferHandler() : null);
+
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    ENTROPIC_SPAWNER_BE.get(),
+                    (blockEntity, ctx) ->
+                            blockEntity instanceof EntropicSpawnerBlockEntity spawner ? spawner.getItemTransferHandler() : null);
         }
     }
 } 

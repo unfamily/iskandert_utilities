@@ -153,6 +153,8 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.TIME_ALTERER.get());
                                 pOutput.accept(ModItems.TEMPORAL_OVERCLOCKER.get());
                                 pOutput.accept(ModItems.TEMPORAL_OVERCLOCKER_CHIPSET.get());
+                                pOutput.accept(ModItems.ENTROPIC_SPAWNER.get());
+                                pOutput.accept(ModItems.ENTROPIC_CLOCK.get());
                                 // Deep drawer (all components)
                                 pOutput.accept(ModItems.DEEP_DRAWERS.get());
                                 pOutput.accept(ModItems.DEEP_DRAWER_EXTRACTOR.get());
@@ -221,7 +223,6 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.OLD_BRICK.get());
                                 pOutput.accept(ModItems.COARSELY_FORGED_RING.get());
                                 pOutput.accept(ModItems.ENTROPIC_RING.get());
-                                pOutput.accept(ModItems.ENTROPIC_CLOCK.get());
                                 pOutput.accept(ModItems.ANCIENT_STAR.get());
                                 pOutput.accept(ModItems.RUNIC_DICE.get());
                                 pOutput.accept(ModItems.CHOSEN_CHEESE.get());

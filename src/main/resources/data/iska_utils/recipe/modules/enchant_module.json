@@ -3,7 +3,7 @@
   "ingredients": [
     "iska_utils:base_module",
     "minecraft:enchanting_table",
-    "iska_utils:entropic_agglomeration"
+    "#c:storage_blocks/gold"
   ],
   "result": {
     "id": "iska_utils:enchant_module",

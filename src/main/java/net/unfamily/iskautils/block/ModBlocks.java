@@ -447,6 +447,15 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .lightLevel((state) -> state.getValue(TemporalOverclockerBlock.POWERED) ? 7 : 0))));
 
+    public static final DeferredBlock<EntropicSpawnerBlock> ENTROPIC_SPAWNER = BLOCKS.register("entropic_spawner",
+            key -> new EntropicSpawnerBlock(assignBlockId(key, p -> p
+                    .strength(5.0f, 1200.0f)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .isSuffocating((state, level, pos) -> false)
+                    .isViewBlocking((state, level, pos) -> false))));
+
     public static final DeferredBlock<AngelBlock> ANGEL_BLOCK = BLOCKS.register("angel_block",
             key -> new AngelBlock(assignBlockId(key, p -> p
                     .mapColor(MapColor.STONE)

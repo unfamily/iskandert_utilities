@@ -3,6 +3,7 @@
   "values": [
     "iska_utils:netherite_bars",
     "iska_utils:temporal_overclocker",
+    "iska_utils:entropic_spawner",
     "iska_utils:wither_proof_block",
     "iska_utils:wither_proof_stairs",
     "iska_utils:wither_proof_slab",

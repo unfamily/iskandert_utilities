@@ -1,6 +1,5 @@
 package net.unfamily.iskautils.item.custom;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -19,14 +18,9 @@ public class RangeModuleItem extends Item {
             ItemStack stack,
             TooltipContext context,
             TooltipDisplay tooltipDisplay,
-            Consumer<Component> tooltip,
+            Consumer<net.minecraft.network.chat.Component> tooltip,
             TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
-        if (flag.hasShiftDown()) {
-            FanModuleTooltipHelper.appendRangeModuleLines(tooltip);
-            FanModuleTooltipHelper.appendBlazingAltarRangeModuleLines(tooltip);
-        } else {
-            FanModuleTooltipHelper.appendShiftHint(tooltip);
-        }
+        UpgradeModuleTooltipHelper.appendRangeModuleTooltip(tooltip, flag);
     }
 }

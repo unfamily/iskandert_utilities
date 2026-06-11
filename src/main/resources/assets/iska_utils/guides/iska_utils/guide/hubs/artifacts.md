@@ -32,7 +32,7 @@ Unwanted unopened **Suspicious Delivery** and most **delivery artifacts** can be
 
 ## Curios
 
-Most artifacts are worn in **Curios** slots. **Cursed Candle** is an exception and works from your hotbar or inventory.
+Most artifacts are worn in **Curios** slots. **Arcane Candle** is an exception and works from your hotbar or inventory.
 
 **Entropy materials** (tablet, crystals, entropic gear) are listed in the next hub below.
 

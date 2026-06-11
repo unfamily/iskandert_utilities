@@ -6,7 +6,6 @@ navigation:
   position: 23
 item_ids:
   - iska_utils:blazing_altar
-  - iska_utils:range_module
 categories:
   - Combat and travel
 ---
@@ -20,7 +19,7 @@ Area controller for **Burning Flame** / **Cursed Burning Flame** placement and o
 
 ## Placer slot
 
-- Insert a **Burning Brazier** or **Cursed Candle** to auto-place matching flames in the configured chunk radius.
+- Insert a **Burning Brazier** or **Arcane Candle** to auto-place matching flames in the configured chunk radius.
 - Empty slot: no flame placement; spawn blocking (if enabled) still works.
 - Brazier durability increases on each placement but **never** breaks (capped below max).
 
