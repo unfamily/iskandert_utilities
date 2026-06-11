@@ -143,7 +143,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
         int x1 = leftPos + BOTTOM_ROW_START_X;
         int x2 = x1 + BOTTOM_BUTTON_W + BOTTOM_BUTTON_GAP;
         int x3 = x2 + BOTTOM_BUTTON_W + BOTTOM_BUTTON_GAP;
-        denyAllowListButton = Button.builder(Component.translatable("gui.iska_utils.sound_muffler.allow_list"), btn -> onDenyAllowListClicked())
+        denyAllowListButton = Button.builder(Component.translatable("gui.iska_utils.sound_muffler.deny_list"), btn -> onDenyAllowListClicked())
                 .bounds(x1, buttonY, BOTTOM_BUTTON_W, BOTTOM_BUTTON_H)
                 .build();
         saveButton = Button.builder(Component.translatable("gui.iska_utils.structure_placer.apply"), btn -> handleApply())
@@ -155,6 +155,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
         addRenderableWidget(denyAllowListButton);
         addRenderableWidget(saveButton);
         addRenderableWidget(cancelButton);
+        refreshModeButton();
         closeButton = Button.builder(Component.literal("✕"), btn -> handleCancel())
                 .bounds(leftPos + CLOSE_BUTTON_X, topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                 .build();
@@ -230,12 +231,21 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
             }
         }
         if (denyAllowListButton != null) {
-            SoundMufflerBlockEntity be = menu.getBlockEntityFromLevel(minecraft != null ? minecraft.level : null);
-            boolean allowList = be != null && be.isAllowList();
-            denyAllowListButton.setMessage(
-                    allowList ? Component.translatable("gui.iska_utils.sound_muffler.deny_list") : Component.translatable("gui.iska_utils.sound_muffler.allow_list"));
+            refreshModeButton();
         }
         layoutSelectionDots();
+    }
+
+    private void refreshModeButton() {
+        SoundMufflerBlockEntity be = menu.getBlockEntityFromLevel(minecraft != null ? minecraft.level : null);
+        boolean allowList = be != null && be.isAllowList();
+        denyAllowListButton.setMessage(
+                allowList ? Component.translatable("gui.iska_utils.sound_muffler.allow_list")
+                        : Component.translatable("gui.iska_utils.sound_muffler.deny_list"));
+        denyAllowListButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                Component.translatable(allowList
+                        ? "gui.iska_utils.sound_muffler.mode.allow.tooltip"
+                        : "gui.iska_utils.sound_muffler.mode.deny.tooltip")));
     }
 
     private void layoutSelectionDots() {

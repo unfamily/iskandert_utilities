@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.renderer.Rect2i;
@@ -15,10 +16,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity;
+import net.unfamily.iskautils.integration.anotherdynamics.client.DeepDrawerSettingsCopierClient;
+import net.unfamily.iskautils.integration.anotherdynamics.AnotherDynamicsCompat;
 import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket;
 import net.unfamily.iskautils.integration.jei.ghost.IIskaUtilsGhostTarget;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,17 +62,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
 
-    private final class SilentCloseButton extends Button.Plain {
-        private SilentCloseButton(int x, int y, int w, int h, Component message, java.lang.Runnable action) {
-            super(x, y, w, h, message, button -> action.run(), DEFAULT_NARRATION);
-        }
-
-        @Override
-        public void playDownSound(net.minecraft.client.sounds.SoundManager handler) {
-            // Silent by design.
-        }
-    }
-    
     private enum SubView {
         MAIN,
         DENY_FILTERS,
@@ -92,10 +86,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int BUFFER_SLOTS_FIRST_X = 32;
     private static final int BUFFER_SLOT_COUNT = 5;
     private static final int BUFFER_SLOT_STEP = 18;
-    /** Player grid in GUI space (must match {@link DeepDrawerExtractorMenu}). Used to place vanilla "Inventory" label. */
-    private static final int PLAYER_INV_GUI_X = 159;
-    private static final int PLAYER_INV_FIRST_ROW_Y = 165;
-    private static final int PLAYER_INV_COLUMNS = 9;
     private static final int MAX_FILTER_SLOTS = net.unfamily.iskautils.Config.deepDrawerExtractorMaxFilters;
     private static final int VISIBLE_ENTRIES = 7;
     
@@ -121,8 +111,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int DENY_NAV_X = NAV_ROW_LEFT;
     private static final int LIST_LOGIC_X = DENY_NAV_X + NAV_TEXT_BTN_WIDTH + TOP_ROW_SPACING;
     private static final int ALLOW_NAV_X = LIST_LOGIC_X + NAV_TEXT_BTN_WIDTH + TOP_ROW_SPACING;
-    /** Valid Keys only beside the open filter entry row (edit mode). */
-    private static final int FILTER_NAV_GAP = 4;
     
     // How to use back button
     private static final int BACK_BUTTON_X = 8;
@@ -140,7 +128,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private java.util.List<String> cachedFilterFields = new java.util.ArrayList<>();
     // Cached inverted filter fields for rendering (synced from server) - dynamic list
     private java.util.List<String> cachedInvertedFilterFields = new java.util.ArrayList<>();
-    
+    private java.util.List<Integer> cachedConcatFields = new java.util.ArrayList<>();
+
+    private Button settingsCopierSaveButton;
+    private Button settingsCopierLoadButton;
+    private final java.util.List<DeepDrawerConcatChannelButton> concatButtons = new java.util.ArrayList<>();
+
     // Scroll state for filter EditBoxes (identical to DeepDrawersScreen)
     private int filterScrollOffset = 0;
     private boolean isDraggingHandle = false;
@@ -188,12 +181,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (editModeFilterIndex < 0) {
             return null;
         }
-        int inventoryStartX = 159;
-        int slotColumn = 1;
-        int slotSize = 18;
-        int slotX = this.leftPos + inventoryStartX + slotColumn * 18 - 1;
-        int slotY = this.topPos + 100 - 1;
-        return new Rect2i(slotX, slotY, slotSize, slotSize);
+        int slotX = this.leftPos + DeepDrawerExtractorMenu.EDIT_MODE_GHOST_SLOT_X;
+        int slotY = this.topPos + DeepDrawerExtractorMenu.EDIT_MODE_PANEL_Y;
+        return new Rect2i(slotX, slotY, DeepDrawerExtractorMenu.EDIT_SLOT_SIZE, DeepDrawerExtractorMenu.EDIT_SLOT_SIZE);
     }
 
     private void acceptJeiGhostItem(ItemStack stack) {
@@ -223,14 +213,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         cachedFilterFields.clear();
         cachedInvertedFilterFields.clear();
 
-        closeButton = new SilentCloseButton(
-                this.leftPos + CLOSE_BUTTON_X,
-                this.topPos + CLOSE_BUTTON_Y,
-                CLOSE_BUTTON_SIZE,
-                CLOSE_BUTTON_SIZE,
-                Component.literal("✕"),
-                this::onCloseButtonClicked
-        );
+        closeButton = Button.builder(Component.literal("✕"), button -> onCloseButtonClicked())
+                .bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
+                .build();
         addRenderableWidget(closeButton);
 
         allowNavButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.allow"),
@@ -239,10 +224,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 .build();
         addRenderableWidget(allowNavButton);
 
-        listLogicButton = Button.builder(getListLogicButtonLabel(),
+        listLogicButton = Button.builder(listLogicButtonMessage(denyOverridesAllow()),
                         button -> onListLogicButtonClicked())
                 .bounds(this.leftPos + LIST_LOGIC_X, this.topPos + TOP_ROW_Y, NAV_TEXT_BTN_WIDTH, NAV_BTN_HEIGHT)
                 .build();
+        listLogicButton.setTooltip(listLogicButtonTooltip());
         addRenderableWidget(listLogicButton);
 
         denyNavButton = Button.builder(Component.translatable("gui.iska_utils.deep_drawer_extractor.filters.deny"),
@@ -258,8 +244,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         addRenderableWidget(validKeysButton);
 
         redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
-                this.leftPos + REDSTONE_GUI_X,
-                this.topPos + TOP_ROW_Y,
+                this.leftPos + DeepDrawerExtractorMenu.REDSTONE_GUI_X,
+                this.topPos + DeepDrawerExtractorMenu.FIRST_ROW_Y,
                 b -> onRedstoneModePressed(false),
                 menu::getRedstoneMode,
                 true));
@@ -272,6 +258,76 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
 
         applySubViewVisibility();
         tryRestoreSavedFilterSubview();
+        initSettingsCopierButtons();
+    }
+
+    private void initSettingsCopierButtons() {
+        if (!AnotherDynamicsCompat.isLoaded() || !menu.includesCopierSlot()) {
+            return;
+        }
+        int colX = this.leftPos + DeepDrawerExtractorMenu.COPIER_COLUMN_X;
+        settingsCopierSaveButton = Button.builder(
+                        Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.copy"),
+                        b -> sendSettingsCopierAction(DeepDrawerExtractorSettingsCopierC2SPacket.ACTION_COPY))
+                .tooltip(Tooltip.create(DeepDrawerExtractorGuiTooltips.grayLine(
+                        "gui.iska_utils.deep_drawer_extractor.settings_copier.copy.tooltip")))
+                .bounds(colX, this.topPos + DeepDrawerExtractorMenu.COPIER_SAVE_BUTTON_Y,
+                        DeepDrawerExtractorMenu.COPIER_ACTION_BUTTON_W, DeepDrawerExtractorMenu.COPIER_ACTION_BUTTON_H)
+                .build();
+        settingsCopierLoadButton = Button.builder(
+                        Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.paste"),
+                        b -> sendSettingsCopierAction(DeepDrawerExtractorSettingsCopierC2SPacket.ACTION_PASTE))
+                .tooltip(Tooltip.create(DeepDrawerExtractorGuiTooltips.grayLine(
+                        "gui.iska_utils.deep_drawer_extractor.settings_copier.paste.tooltip")))
+                .bounds(colX, this.topPos + DeepDrawerExtractorMenu.COPIER_LOAD_BUTTON_Y,
+                        DeepDrawerExtractorMenu.COPIER_ACTION_BUTTON_W, DeepDrawerExtractorMenu.COPIER_ACTION_BUTTON_H)
+                .build();
+        addRenderableWidget(settingsCopierSaveButton);
+        addRenderableWidget(settingsCopierLoadButton);
+        refreshCopierPasteUi();
+    }
+
+    private void sendSettingsCopierAction(int action) {
+        BlockPos blockPos = resolveMachinePos();
+        if (blockPos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        int allowDeny = isDenyPanelActive()
+                ? DeepDrawerExtractorSettingsCopierC2SPacket.LIST_DENY
+                : DeepDrawerExtractorSettingsCopierC2SPacket.LIST_ALLOW;
+        saveFilterData();
+        ModMessages.sendDeepDrawerExtractorSettingsCopierPacket(blockPos, action, allowDeny);
+        menu.updateCachedFilters();
+        updateCachedFiltersForMode();
+        updateEditButtons();
+        refreshCopierPasteUi();
+    }
+
+    private void refreshCopierPasteUi() {
+        if (settingsCopierLoadButton == null) {
+            return;
+        }
+        boolean allowPaste = menu.copySettingsSlotIndex() >= 0;
+        settingsCopierLoadButton.active = allowPaste;
+    }
+
+    private void layoutSettingsCopierButtons() {
+        if (settingsCopierSaveButton == null || settingsCopierLoadButton == null) {
+            return;
+        }
+        int colX = this.leftPos + DeepDrawerExtractorMenu.COPIER_COLUMN_X;
+        settingsCopierSaveButton.setX(colX);
+        settingsCopierSaveButton.setY(this.topPos + DeepDrawerExtractorMenu.COPIER_SAVE_BUTTON_Y);
+        settingsCopierSaveButton.setWidth(DeepDrawerExtractorMenu.COPIER_ACTION_BUTTON_W);
+        settingsCopierSaveButton.setHeight(DeepDrawerExtractorMenu.COPIER_ACTION_BUTTON_H);
+        settingsCopierLoadButton.setX(colX);
+        settingsCopierLoadButton.setY(this.topPos + DeepDrawerExtractorMenu.COPIER_LOAD_BUTTON_Y);
+        settingsCopierLoadButton.setWidth(DeepDrawerExtractorMenu.COPIER_ACTION_BUTTON_W);
+        settingsCopierLoadButton.setHeight(DeepDrawerExtractorMenu.COPIER_ACTION_BUTTON_H);
+    }
+
+    private boolean showsSettingsCopierColumn() {
+        return AnotherDynamicsCompat.isLoaded() && menu.includesCopierSlot() && isFilterListOpen();
     }
 
     private void tryRestoreSavedFilterSubview() {
@@ -331,10 +387,33 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         return this.leftPos + ENTRY_X;
     }
 
-    private Component getListLogicButtonLabel() {
-        // <<<<< = deny list applied first (whitelist / allow-primary mode); >>>>> = allow bypasses via inverted list first
-        // AD-style default: show >>>>> when whitelistMode is true (default).
-        return Component.literal(menu.getWhitelistMode() ? ">>>>>" : "<<<<<");
+    /** {@code true} when deny list wins over allow (AD {@code >>>>>} / denyOverridesAllow). */
+    private boolean denyOverridesAllow() {
+        return !menu.getWhitelistMode();
+    }
+
+    private static Component listLogicButtonMessage(boolean denyOverridesAllow) {
+        return Component.translatable(
+                denyOverridesAllow
+                        ? "gui.iska_utils.deep_drawer_extractor.list_logic.label.deny_wins"
+                        : "gui.iska_utils.deep_drawer_extractor.list_logic.label.allow_bypass");
+    }
+
+    private Tooltip listLogicButtonTooltip() {
+        boolean denyOver = denyOverridesAllow();
+        return Tooltip.create(Component.translatable(
+                denyOver
+                        ? "gui.iska_utils.deep_drawer_extractor.list_logic.tooltip.deny_wins"
+                        : "gui.iska_utils.deep_drawer_extractor.list_logic.tooltip.allow_bypass"));
+    }
+
+    private void refreshListLogicButton() {
+        if (listLogicButton == null) {
+            return;
+        }
+        boolean denyOver = denyOverridesAllow();
+        listLogicButton.setMessage(listLogicButtonMessage(denyOver));
+        listLogicButton.setTooltip(listLogicButtonTooltip());
     }
 
     private BlockPos resolveMachinePos() {
@@ -434,14 +513,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         boolean filterList = isFilterListOpen();
         boolean edit = inEditMode();
 
-        if (howTo) {
-            this.inventoryLabelY = 10000;
-        } else {
-            int invPixelWidth = PLAYER_INV_COLUMNS * BUFFER_SLOT_STEP;
-            int invMidX = PLAYER_INV_GUI_X + invPixelWidth / 2;
-            this.inventoryLabelX = invMidX - this.font.width(this.playerInventoryTitle) / 2;
-            this.inventoryLabelY = PLAYER_INV_FIRST_ROW_Y - this.font.lineHeight - 2;
-        }
+        this.inventoryLabelY = 10000;
 
         if (denyNavButton != null) {
             denyNavButton.visible = !howTo;
@@ -454,10 +526,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (listLogicButton != null) {
             listLogicButton.visible = !howTo;
             listLogicButton.active = !edit;
-            listLogicButton.setMessage(getListLogicButtonLabel());
+            refreshListLogicButton();
         }
         if (validKeysButton != null) {
-            validKeysButton.visible = !howTo && edit;
+            validKeysButton.visible = !howTo;
             validKeysButton.active = true;
             if (validKeysButton.visible) {
                 layoutValidKeysButton();
@@ -490,6 +562,23 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             editModeCloseButton.visible = showEditChrome;
         }
 
+        boolean showCopier = showsSettingsCopierColumn() && !howTo;
+        if (settingsCopierSaveButton != null) {
+            settingsCopierSaveButton.visible = showCopier;
+        }
+        if (settingsCopierLoadButton != null) {
+            settingsCopierLoadButton.visible = showCopier;
+            if (showCopier) {
+                layoutSettingsCopierButtons();
+                refreshCopierPasteUi();
+            }
+        }
+        for (DeepDrawerConcatChannelButton btn : concatButtons) {
+            if (btn != null) {
+                btn.visible = filterList && !howTo;
+            }
+        }
+
         if (!filterList || howTo) {
             for (Button button : editButtons) {
                 if (button != null) {
@@ -510,17 +599,33 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
     }
 
-    /** Beside edit row when a filter entry is open. */
+    /** On the edit row; follows close button while editing. */
     private void layoutValidKeysButton() {
-        if (validKeysButton == null || subView == SubView.HOW_TO_USE || !inEditMode() || editModeCloseButton == null) {
+        if (validKeysButton == null || subView == SubView.HOW_TO_USE) {
             return;
         }
-        int gap = FILTER_NAV_GAP;
-        int vkY = editModeCloseButton.getY() + (editModeCloseButton.getHeight() - NAV_BTN_HEIGHT) / 2;
-        validKeysButton.setX(editModeCloseButton.getX() + editModeCloseButton.getWidth() + gap);
-        validKeysButton.setY(vkY);
         validKeysButton.setWidth(NAV_TEXT_BTN_WIDTH);
         validKeysButton.setHeight(NAV_BTN_HEIGHT);
+        if (inEditMode() && editModeCloseButton != null) {
+            validKeysButton.setX(editModeCloseButton.getX() + editModeCloseButton.getWidth() + DeepDrawerExtractorMenu.EDIT_ROW_GAP);
+            validKeysButton.setY(editModeCloseButton.getY() + (editModeCloseButton.getHeight() - NAV_BTN_HEIGHT) / 2);
+        } else {
+            validKeysButton.setX(this.leftPos + DeepDrawerExtractorMenu.validKeysButtonX());
+            validKeysButton.setY(this.topPos + DeepDrawerExtractorMenu.validKeysButtonY(NAV_BTN_HEIGHT));
+        }
+    }
+
+    private boolean isMouseOverConcatButton(double mouseX, double mouseY) {
+        for (DeepDrawerConcatChannelButton btn : concatButtons) {
+            if (!btn.visible || !btn.active) {
+                continue;
+            }
+            if (mouseX >= btn.getX() && mouseX < btn.getX() + btn.getWidth()
+                    && mouseY >= btn.getY() && mouseY < btn.getY() + btn.getHeight()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
@@ -546,12 +651,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (button == 0 && isFilterListOpen()) {
             // Handle ghost slot click (if in edit mode) - prioritize this
             if (editModeFilterIndex >= 0) {
-                // Position: align horizontally with second column of player inventory (x = 159 + 18 = 177)
-                int inventoryStartX = 159; // First column of inventory
-                int slotColumn = 1; // Second column (0-indexed: 0=first, 1=second)
-                int slotSize = 18;
-                int slotX = this.leftPos + inventoryStartX + slotColumn * 18 - 1; // Second column, -1px left
-                int slotY = this.topPos + 100 - 1; // Positioned higher, not aligned vertically with inventory, -1px up
+                int slotX = this.leftPos + DeepDrawerExtractorMenu.EDIT_MODE_GHOST_SLOT_X;
+                int slotY = this.topPos + DeepDrawerExtractorMenu.EDIT_MODE_PANEL_Y;
+                int slotSize = DeepDrawerExtractorMenu.EDIT_SLOT_SIZE;
                 
                 if (mouseX >= slotX && mouseX < slotX + slotSize &&
                     mouseY >= slotY && mouseY < slotY + slotSize) {
@@ -583,13 +685,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (subView != SubView.HOW_TO_USE && button == 1
                 && redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
             onRedstoneModePressed(true);
+            playButtonSound();
             return true;
         }
         
-        // Handle clicks on filter entries (left click to edit, right click to clear)
-        // But prioritize edit button clicks - if click is on edit button area, let the button handle it
+        // Handle clicks on filter entries — edit/delete widgets handle their own clicks
         if (subView != SubView.HOW_TO_USE && isFilterListOpen() && button == 0) {
-            // Check if click is on a filter entry
             for (int i = 0; i < VISIBLE_ENTRIES; i++) {
                 int filterIndex = filterScrollOffset + i;
                 if (filterIndex >= MAX_FILTER_SLOTS) {
@@ -599,36 +700,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 int entryX = this.leftPos + ENTRY_X;
                 int entryY = this.topPos + FIRST_ROW_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
                 
-                // Check if click is within entry bounds
                 if (mouseX >= entryX && mouseX < entryX + ENTRY_WIDTH &&
                     mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT) {
-                    
-                    // Check if click is on delete (X) or edit button area (prioritize buttons)
-                    int buttonSize = 12;
-                    int buttonMargin = 5;
-                    int buttonSpacing = 2;
-                    int editButtonX = entryX + ENTRY_WIDTH - buttonMargin - buttonSize;
-                    int deleteButtonX = editButtonX - buttonSize - buttonSpacing;
-                    int buttonY = entryY + (ENTRY_HEIGHT - buttonSize) / 2;
-                    
-                    // Check delete button first
-                    if (mouseX >= deleteButtonX && mouseX < deleteButtonX + buttonSize &&
-                        mouseY >= buttonY && mouseY < buttonY + buttonSize) {
-                        // Click is on delete button - handle it directly
-                        onDeleteButtonClicked(filterIndex);
-                        return true; // Consume the click
-                    }
-                    
-                    // Check edit button
-                    if (mouseX >= editButtonX && mouseX < editButtonX + buttonSize &&
-                        mouseY >= buttonY && mouseY < buttonY + buttonSize) {
-                        // Click is on edit button - handle it directly
-                        onEditButtonClicked(filterIndex);
-                        return true; // Consume the click
-                    }
-                    
-                    // Quick edit is disabled - do nothing when clicking on entry
-                    // User must use the edit button (✎) to enter edit mode
                     return false;
                 }
             }
@@ -636,6 +709,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Handle right click on entries (clear filter)
         if (subView != SubView.HOW_TO_USE && isFilterListOpen() && button == 1) {
+            if (isMouseOverConcatButton(mouseX, mouseY)) {
+                return false;
+            }
             // First check if right click is on edit mode textbox
             if (editModeTextBox != null && editModeFilterIndex >= 0) {
                 int textBoxX = editModeTextBox.getX();
@@ -653,6 +729,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                     ghostSlotItem = ItemStack.EMPTY;
                     filterVariants.clear();
                     currentFilterVariantIndex = 0;
+                    playButtonSound();
                     return true;
                 }
             }
@@ -676,7 +753,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                         cachedFilterFields.add("");
                     }
                     cachedFilterFields.set(filterIndex, "");
+                    while (cachedConcatFields.size() <= filterIndex) {
+                        cachedConcatFields.add(0);
+                    }
+                    cachedConcatFields.set(filterIndex, 0);
                     saveFilterData();
+                    playButtonSound();
                     return true;
                 }
             }
@@ -712,11 +794,20 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         cachedFilterFields = isDenyPanelActive()
                 ? new java.util.ArrayList<>(menu.getCachedInvertedFilterFields())
                 : new java.util.ArrayList<>(menu.getCachedFilterFields());
+        cachedConcatFields = isDenyPanelActive()
+                ? new java.util.ArrayList<>(menu.getCachedDenyConcatChannels())
+                : new java.util.ArrayList<>(menu.getCachedAllowConcatChannels());
         while (cachedFilterFields.size() < MAX_FILTER_SLOTS) {
             cachedFilterFields.add("");
         }
         while (cachedFilterFields.size() > MAX_FILTER_SLOTS) {
             cachedFilterFields.remove(cachedFilterFields.size() - 1);
+        }
+        while (cachedConcatFields.size() < MAX_FILTER_SLOTS) {
+            cachedConcatFields.add(0);
+        }
+        while (cachedConcatFields.size() > MAX_FILTER_SLOTS) {
+            cachedConcatFields.remove(cachedConcatFields.size() - 1);
         }
     }
     
@@ -724,7 +815,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         BlockPos blockPos = resolveMachinePos();
         if (!blockPos.equals(BlockPos.ZERO)) {
             ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos, backward);
-            playButtonSound();
         }
         saveFilterData();
     }
@@ -739,23 +829,23 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (!machinePos.equals(net.minecraft.core.BlockPos.ZERO)) {
             // Collect filter field values as index-value pairs (only non-empty filters)
             java.util.Map<Integer, String> filterMap = new java.util.HashMap<>();
+            java.util.Map<Integer, Integer> concatMap = new java.util.HashMap<>();
             for (int i = 0; i < cachedFilterFields.size(); i++) {
                 String filter = cachedFilterFields.get(i);
                 if (filter != null && !filter.trim().isEmpty()) {
-                    String trimmed = filter.trim();
-                    filterMap.put(i, trimmed);
+                    filterMap.put(i, filter.trim());
+                    int ch = (i < cachedConcatFields.size() && cachedConcatFields.get(i) != null)
+                            ? cachedConcatFields.get(i) : 0;
+                    if (ch > 0) {
+                        concatMap.put(i, ch);
+                    }
                 }
             }
-            
-            // Always read whitelist mode from synced ContainerData (not local isWhitelistMode)
-            // This ensures we use the server-authoritative value, not stale local state
             boolean currentWhitelistMode = menu.getWhitelistMode();
-            
-            // Deny panel always writes inverted filters.
             if (isDenyPanelActive()) {
-                ModMessages.sendDeepDrawerExtractorInvertedFilterUpdatePacket(machinePos, filterMap);
+                ModMessages.sendDeepDrawerExtractorInvertedFilterUpdatePacket(machinePos, filterMap, concatMap);
             } else {
-                ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(machinePos, filterMap, currentWhitelistMode);
+                ModMessages.sendDeepDrawerExtractorFilterUpdatePacket(machinePos, filterMap, concatMap, currentWhitelistMode);
             }
         }
     }
@@ -792,6 +882,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
             if (isFilterListOpen()) {
                 renderScrollbar(guiGraphics, mouseX, mouseY);
+                renderSettingsCopierColumn(guiGraphics);
             }
             
             if (editModeFilterIndex >= 0) {
@@ -862,14 +953,13 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         int textY = entryY + (ENTRY_HEIGHT - this.font.lineHeight) / 2;
         
         // Button positions (right side, but not on the edge)
-        int buttonSize = 12; // Small button size
-        int buttonMargin = 5; // Margin from right edge (not on border)
-        int buttonSpacing = 2; // Space between delete (X) and edit buttons
+        int buttonSize = 12;
+        int buttonMargin = 5;
+        int buttonSpacing = 2;
         int editButtonX = entryX + ENTRY_WIDTH - buttonMargin - buttonSize;
-        int deleteButtonX = editButtonX - buttonSize - buttonSpacing; // X button before edit button
-        
-        // Calculate available width for text (up to delete button)
-        int maxTextWidth = deleteButtonX - textX - 5; // 5px margin before delete button
+        int deleteButtonX = editButtonX - buttonSize - buttonSpacing;
+        int concatButtonX = deleteButtonX - buttonSize - 2;
+        int maxTextWidth = concatButtonX - textX - 5;
         
         // Render filter text (truncate if too long)
         String displayText = filter.isEmpty() ? "" : filter;
@@ -888,13 +978,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Renders the edit mode UI (ghost slot and textbox)
      */
     private void renderEditModeUI(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        // Position: align horizontally with second column of player inventory (x = 159 + 18 = 177)
-        // Player inventory starts at x=159 (from DeepDrawerExtractorMenu)
-        int inventoryStartX = 159; // First column of inventory
-        int slotColumn = 1; // Second column (0-indexed: 0=first, 1=second)
-        int slotSize = 18;
-        int slotX = this.leftPos + inventoryStartX + slotColumn * 18 - 1; // Second column, -1px left
-        int slotY = this.topPos + 100 - 1; // Positioned higher, not aligned vertically with inventory, -1px up
+        int slotX = this.leftPos + DeepDrawerExtractorMenu.EDIT_MODE_GHOST_SLOT_X;
+        int slotY = this.topPos + DeepDrawerExtractorMenu.EDIT_MODE_PANEL_Y;
+        int slotSize = DeepDrawerExtractorMenu.EDIT_SLOT_SIZE;
         
         // Draw slot background
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, slotSize, slotSize, slotSize, slotSize);
@@ -1024,6 +1110,37 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         return ItemStack.EMPTY;
     }
     
+    private void renderSettingsCopierColumn(GuiGraphicsExtractor guiGraphics) {
+        if (!showsSettingsCopierColumn()) {
+            return;
+        }
+        DeepDrawerSettingsCopierClient.blitSlotFrame(
+                guiGraphics,
+                this.leftPos + DeepDrawerExtractorMenu.COPIER_COLUMN_X,
+                this.topPos + DeepDrawerExtractorMenu.COPIER_SLOT_BACKGROUND_Y);
+    }
+
+    @Override
+    protected void extractSlots(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        int copierIdx = menu.copySettingsSlotIndex();
+        Slot hovered = this.hoveredSlot;
+        if (hovered != null && copierIdx >= 0 && hovered.index == copierIdx) {
+            this.hoveredSlot = null;
+            super.extractSlots(graphics, mouseX, mouseY);
+            this.hoveredSlot = hovered;
+            return;
+        }
+        super.extractSlots(graphics, mouseX, mouseY);
+    }
+
+    @Override
+    protected void renderSlotContents(GuiGraphicsExtractor guiGraphics, ItemStack stack, net.minecraft.world.inventory.Slot slot, @org.jetbrains.annotations.Nullable String count) {
+        if (menu.copySettingsSlotIndex() >= 0 && slot.index == menu.copySettingsSlotIndex()) {
+            return;
+        }
+        super.renderSlotContents(guiGraphics, stack, slot, count);
+    }
+
     /**
      * Renders the scrollbar with UP/DOWN buttons and draggable handle
      * Identical to DeepDrawersScreen implementation
@@ -1082,6 +1199,13 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             }
         }
         deleteButtons.clear();
+
+        for (DeepDrawerConcatChannelButton button : concatButtons) {
+            if (button != null) {
+                removeWidget(button);
+            }
+        }
+        concatButtons.clear();
         
         if (subView == SubView.HOW_TO_USE) {
             return;
@@ -1092,8 +1216,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Create edit and delete buttons for visible entries
         int buttonSize = 12;
-        int buttonMargin = 5; // Margin from right edge
-        int buttonSpacing = 2; // Space between delete (X) and edit buttons
+        int buttonMargin = 5;
+        int buttonSpacing = 2;
+        int concatSpacing = 2;
         
         for (int i = 0; i < VISIBLE_ENTRIES; i++) {
             int filterIndex = filterScrollOffset + i;
@@ -1104,13 +1229,32 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             int entryX = this.leftPos + ENTRY_X;
             int entryY = this.topPos + FIRST_ROW_Y + i * (ENTRY_HEIGHT + ENTRY_SPACING);
             int editButtonX = entryX + ENTRY_WIDTH - buttonMargin - buttonSize;
-            int deleteButtonX = editButtonX - buttonSize - buttonSpacing; // X button before edit button
+            int deleteButtonX = editButtonX - buttonSize - buttonSpacing;
+            int concatButtonX = deleteButtonX - buttonSize - concatSpacing;
             int buttonY = entryY + (ENTRY_HEIGHT - buttonSize) / 2;
             
             final int finalFilterIndex = filterIndex;
+            while (cachedConcatFields.size() <= filterIndex) {
+                cachedConcatFields.add(0);
+            }
+            int concatVal = cachedConcatFields.get(filterIndex) != null ? cachedConcatFields.get(filterIndex) : 0;
+
+            DeepDrawerConcatChannelButton concatButton = new DeepDrawerConcatChannelButton(
+                    concatButtonX, buttonY, buttonSize, buttonSize,
+                    ch -> {
+                        while (cachedConcatFields.size() <= finalFilterIndex) {
+                            cachedConcatFields.add(0);
+                        }
+                        cachedConcatFields.set(finalFilterIndex, ch);
+                        saveFilterData();
+                    });
+            concatButton.setChannelOrdinal(concatVal);
+            concatButton.setTooltip(DeepDrawerExtractorGuiTooltips.concatChannelTooltip());
+            concatButtons.add(concatButton);
+            addRenderableWidget(concatButton);
             
             // Create delete button (C) with "Clear" tooltip
-            Button deleteButton = Button.builder(Component.literal("C"), 
+            Button deleteButton = Button.builder(Component.literal("C"),
                 button -> {
                         onDeleteButtonClicked(finalFilterIndex);
                     })
@@ -1146,8 +1290,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // Clear the filter entry
         cachedFilterFields.set(filterIndex, "");
-        
-        // Save to server
+        while (cachedConcatFields.size() <= filterIndex) {
+            cachedConcatFields.add(0);
+        }
+        cachedConcatFields.set(filterIndex, 0);
         saveFilterData();
     }
     
@@ -1208,19 +1354,14 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         // Remove existing edit mode UI if any
         removeEditModeUI();
         
-        // Position: align horizontally with second column of player inventory (x = 159 + 18 = 177)
-        // Player inventory starts at x=159 (from DeepDrawerExtractorMenu)
-        int inventoryStartX = 159; // First column of inventory
-        int slotColumn = 1; // Second column (0-indexed: 0=first, 1=second)
-        int slotSize = 18;
-        int slotX = this.leftPos + inventoryStartX + slotColumn * 18 - 1; // Second column, -1px left
-        int slotY = this.topPos + 100 - 1; // Positioned higher, not aligned vertically with inventory, -1px up
+        int slotX = this.leftPos + DeepDrawerExtractorMenu.EDIT_MODE_GHOST_SLOT_X;
+        int slotY = this.topPos + DeepDrawerExtractorMenu.EDIT_MODE_PANEL_Y;
+        int slotSize = DeepDrawerExtractorMenu.EDIT_SLOT_SIZE;
         
-        // Button size and spacing (small buttons)
-        int buttonSize = 12;
-        int buttonSpacing = 2;
-        int arrowSpacing = 4;
-        int editActionGap = 8;
+        int buttonSize = DeepDrawerExtractorMenu.EDIT_BTN_SIZE;
+        int buttonSpacing = DeepDrawerExtractorMenu.EDIT_BTN_SPACING;
+        int arrowSpacing = DeepDrawerExtractorMenu.EDIT_ARROW_GAP;
+        int editActionGap = DeepDrawerExtractorMenu.EDIT_ACTION_GAP;
         
         // Left arrow button (to the left of slot)
         int leftButtonX = slotX - buttonSize - arrowSpacing;
@@ -1248,10 +1389,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         int applyButtonX = clearButtonX + buttonSize + buttonSpacing;
         int closeButtonX = applyButtonX + buttonSize + buttonSpacing;
         
-        // Textbox position - one row below slot and buttons
-        int textBoxX = this.leftPos + inventoryStartX; // Start from first column of inventory
-        int textBoxY = slotY + slotSize + 2; // One row below slot (slotSize + 2px spacing)
-        int textBoxHeight = 15;
+        // Textbox on the row directly above player inventory
+        int textBoxX = this.leftPos + DeepDrawerExtractorMenu.PLAYER_INV_X;
+        int textBoxY = this.topPos + DeepDrawerExtractorMenu.EDIT_TEXTBOX_Y;
+        int textBoxHeight = DeepDrawerExtractorMenu.EDIT_TEXTBOX_HEIGHT;
         
         // Calculate textbox width - almost to the right edge
         int rightEdge = this.leftPos + GUI_WIDTH;
@@ -1333,14 +1474,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         addRenderableWidget(editModeApplyButton);
         
         // Create close button (X) - exits edit mode without saving
-        editModeCloseButton = new SilentCloseButton(
-                closeButtonX,
-                buttonAfterSlotY,
-                buttonSize,
-                buttonSize,
-                Component.literal("✕"),
-                this::exitEditMode
-        );
+        editModeCloseButton = Button.builder(Component.literal("✕"), button -> exitEditMode())
+                .bounds(closeButtonX, buttonAfterSlotY, buttonSize, buttonSize)
+                .build();
         addRenderableWidget(editModeCloseButton);
 
         layoutValidKeysButton();
@@ -1751,7 +1887,54 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             return;
         }
 
-        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+        this.extractContents(guiGraphics, mouseX, mouseY, partialTick);
+        this.extractCarriedItem(guiGraphics, mouseX, mouseY);
+        this.extractSnapbackItem(guiGraphics);
+        renderSettingsCopierItem(guiGraphics, mouseX, mouseY);
+        this.extractTooltip(guiGraphics, mouseX, mouseY);
+    }
+
+    private boolean isCopierSlotHovered(double mouseX, double mouseY) {
+        int idx = menu.copySettingsSlotIndex();
+        if (idx < 0 || !showsSettingsCopierColumn()) {
+            return false;
+        }
+        Slot slot = menu.getSlot(idx);
+        return slot.isActive() && isHovering(slot.x, slot.y, DeepDrawerExtractorMenu.COPIER_SLOT_SIZE, DeepDrawerExtractorMenu.COPIER_SLOT_SIZE, mouseX, mouseY);
+    }
+
+    private void renderSettingsCopierItem(GuiGraphicsExtractor guiGraphics, double mouseX, double mouseY) {
+        if (!showsSettingsCopierColumn()) {
+            return;
+        }
+        int idx = menu.copySettingsSlotIndex();
+        if (idx < 0) {
+            return;
+        }
+        int frameX = this.leftPos + DeepDrawerExtractorMenu.COPIER_COLUMN_X;
+        int frameY = this.topPos + DeepDrawerExtractorMenu.COPIER_SLOT_BACKGROUND_Y;
+        int iconX = this.leftPos + DeepDrawerExtractorMenu.copierSlotItemX(DeepDrawerExtractorMenu.COPIER_COLUMN_X);
+        int iconY = this.topPos + DeepDrawerExtractorMenu.copierSlotItemY(DeepDrawerExtractorMenu.COPIER_SLOT_BACKGROUND_Y);
+        ItemStack copier = menu.getSlot(idx).getItem();
+
+        DeepDrawerSettingsCopierClient.blitSlotFrame(guiGraphics, frameX, frameY);
+        if (!copier.isEmpty()) {
+            guiGraphics.item(copier, iconX, iconY);
+            guiGraphics.itemDecorations(this.font, copier, iconX, iconY);
+        }
+        if (isCopierSlotHovered(mouseX, mouseY)) {
+            guiGraphics.nextStratum();
+            renderCopierSlotHighlight(guiGraphics);
+        }
+    }
+
+    private static final int COPIER_SLOT_HOVER_COLOR = -2130706433;
+
+    private void renderCopierSlotHighlight(GuiGraphicsExtractor graphics) {
+        int x = this.leftPos + DeepDrawerExtractorMenu.copierSlotHighlightX(DeepDrawerExtractorMenu.COPIER_COLUMN_X);
+        int y = this.topPos + DeepDrawerExtractorMenu.copierSlotHighlightY(DeepDrawerExtractorMenu.COPIER_SLOT_BACKGROUND_Y);
+        int size = DeepDrawerExtractorMenu.COPIER_SLOT_HIGHLIGHT_SIZE;
+        graphics.fillGradient(x, y, x + size, y + size, COPIER_SLOT_HOVER_COLOR, COPIER_SLOT_HOVER_COLOR);
     }
     
     /**
@@ -1927,9 +2110,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         
         // No need to update entries - they are rendered directly from cachedFilterFields
         
-        if (listLogicButton != null) {
-            listLogicButton.setMessage(getListLogicButtonLabel());
-        }
+        refreshListLogicButton();
     }
     
     @Override
@@ -1970,9 +2151,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
         if (isFilterListOpen()) {
             if (deltaY > 0) {
-                return scrollUpSilent();
+                scrollUp();
+                return true;
             } else if (deltaY < 0) {
-                return scrollDownSilent();
+                scrollDown();
+                return true;
             }
         }
         return super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);

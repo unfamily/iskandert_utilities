@@ -179,6 +179,9 @@ dependencies {
         compileOnly files('libs/pattern_crafter-1.0.0.0.0-neoforge-1.21.1.jar')
     }
 
+    // Another Dynamics is 1.21.1-only; optional Settings Copier integration uses reflection at runtime.
+    // Do not add the 1.21.1 jar to localRuntime on 26.x (version mismatch crashes FML).
+
     // Iskandert Library 26.x — local JAR required for 1.7.0.0.0 (Curse file 8179862 is still 1.6.0.1.0)
     def iskaLibLocalJar = file('libs/iska_lib-1.7.0.0.0.jar')
     def iskaLibUseLocal = project.findProperty('iskaLibUseLocal')?.toString()?.toBoolean() != false

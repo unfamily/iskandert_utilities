@@ -241,6 +241,11 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket::handle
         );
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket::handle
+        );
+        registrar.playToServer(
             net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket::handle
@@ -1536,10 +1541,13 @@ public class ModMessages {
     /**
      * Sends filter update packet to server
      */
-    public static void sendDeepDrawerExtractorFilterUpdatePacket(BlockPos pos, java.util.Map<Integer, String> filterMap, boolean isWhitelistMode) {
+    public static void sendDeepDrawerExtractorFilterUpdatePacket(
+            BlockPos pos, java.util.Map<Integer, String> filterMap,
+            java.util.Map<Integer, Integer> concatMap, boolean isWhitelistMode) {
         try {
             net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket(pos, filterMap, isWhitelistMode));
+                    new net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket(
+                            pos, filterMap, concatMap, isWhitelistMode));
         } catch (Exception e) {
             LOGGER.error("Could not send Deep Drawer Extractor filter update packet: {}", e.getMessage(), e);
         }
@@ -1548,13 +1556,24 @@ public class ModMessages {
     /**
      * Sends inverted filter update packet to server
      */
-    public static void sendDeepDrawerExtractorInvertedFilterUpdatePacket(BlockPos pos, java.util.Map<Integer, String> invertedFilterMap) {
+    public static void sendDeepDrawerExtractorInvertedFilterUpdatePacket(
+            BlockPos pos, java.util.Map<Integer, String> invertedFilterMap,
+            java.util.Map<Integer, Integer> concatMap) {
         try {
             net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket(pos, invertedFilterMap));
+                    new net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket(
+                            pos, invertedFilterMap, concatMap));
         } catch (Exception e) {
             LOGGER.error("Could not send Deep Drawer Extractor inverted filter update packet: {}", e.getMessage(), e);
         }
+    }
+
+    public static void sendDeepDrawerExtractorSettingsCopierPacket(BlockPos pos, int action, int allowDeny) {
+        if (pos == null || pos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket(pos, action, allowDeny));
     }
     
     /**

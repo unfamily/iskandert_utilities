@@ -39,11 +39,11 @@ public class SoundMufflerBlockEntity extends BlockEntity {
     /** 0=ALL (excl. music), 1=OTHER (uncatalogued), 2=RECORDS, 3=WEATHER, 4=BLOCKS, 5=HOSTILE, 6=NEUTRAL, 7=PLAYERS, 8=AMBIENT, 9=VOICE. */
     private final int[] volumes = new int[CATEGORY_COUNT];
 
-    /** true = allow list (muffle only sounds in filterSoundIds), false = deny list (muffle all except filterSoundIds). */
+    /** true = allow list: listed sounds pass through; false = deny list: listed sounds are muffled. */
     private boolean allowList = false;
     /** Effect range in blocks (min 8, max from config, default 8). */
     private int range = 8;
-    /** Sound IDs (e.g. "minecraft:entity.creeper.hiss") in the filter. Empty = no filter applied. */
+    /** Sound IDs (e.g. "minecraft:entity.creeper.hiss") in the filter. Empty = muffle all sounds. */
     private final List<String> filterSoundIds = new ArrayList<>();
 
     private static final Pattern ENTITY_SOUND_PATH = Pattern.compile("^entity\\.([a-z0-9_]+)\\.");
@@ -104,16 +104,23 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         sendUpdateToClients();
     }
 
-    /** True if the filter list is active (non-empty). */
+    /** True if the filter list has entries (allow/deny mode applies). */
     public boolean hasFilter() {
         return !filterSoundIds.isEmpty();
     }
 
-    /** True if this sound ID is allowed by the filter (filter not active, or matches allow/deny list). */
-    public boolean isSoundAllowedByFilter(String soundId) {
-        if (filterSoundIds.isEmpty()) return true;
+    /**
+     * Whether this muffler's volume scaling applies to the given sound.
+     * Empty list: all sounds (except music, handled by caller).
+     * Allow list: only sounds not in the list.
+     * Deny list: only sounds in the list.
+     */
+    public boolean shouldMuffleSound(String soundId) {
+        if (filterSoundIds.isEmpty()) {
+            return true;
+        }
         boolean inList = filterSoundIds.contains(soundId);
-        return allowList ? inList : !inList;
+        return allowList ? !inList : inList;
     }
 
     public static final int RANGE_MIN = 8;

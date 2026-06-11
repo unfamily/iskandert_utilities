@@ -6,24 +6,19 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Client-to-server: apply inverted filter map on the Deep Drawer Extractor.
+ * Client-to-server: apply inverted filter map and concat map on the Deep Drawer Extractor.
  */
-public record DeepDrawerExtractorInvertedFiltersC2SPacket(BlockPos pos, Map<Integer, String> invertedFilterMap)
+public record DeepDrawerExtractorInvertedFiltersC2SPacket(
+        BlockPos pos, Map<Integer, String> invertedFilterMap, Map<Integer, Integer> concatMap)
         implements CustomPacketPayload {
-
-    private static final int MAX_ENTRIES = 512;
-    private static final int MAX_STRING_LEN = 512;
 
     public static final Type<DeepDrawerExtractorInvertedFiltersC2SPacket> TYPE = new Type<>(
             Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "deep_drawer_extractor_inverted_filters"));
@@ -31,25 +26,13 @@ public record DeepDrawerExtractorInvertedFiltersC2SPacket(BlockPos pos, Map<Inte
     public static final StreamCodec<FriendlyByteBuf, DeepDrawerExtractorInvertedFiltersC2SPacket> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {
                 BlockPos.STREAM_CODEC.encode(buf, p.pos());
-                Map<Integer, String> map = p.invertedFilterMap() != null ? p.invertedFilterMap() : Map.of();
-                buf.writeVarInt(map.size());
-                for (Map.Entry<Integer, String> e : map.entrySet()) {
-                    buf.writeVarInt(e.getKey());
-                    buf.writeUtf(e.getValue() != null ? e.getValue() : "", MAX_STRING_LEN);
-                }
+                DeepDrawerExtractorFilterUpdateC2SPacket.writeStringMap(buf, p.invertedFilterMap());
+                DeepDrawerExtractorFilterUpdateC2SPacket.writeIntMap(buf, p.concatMap());
             },
-            buf -> {
-                BlockPos pos = BlockPos.STREAM_CODEC.decode(buf);
-                int n = buf.readVarInt();
-                if (n < 0 || n > MAX_ENTRIES) {
-                    n = 0;
-                }
-                Map<Integer, String> map = new HashMap<>(Math.min(n, MAX_ENTRIES));
-                for (int i = 0; i < n; i++) {
-                    map.put(buf.readVarInt(), buf.readUtf(MAX_STRING_LEN));
-                }
-                return new DeepDrawerExtractorInvertedFiltersC2SPacket(pos, map);
-            }
+            buf -> new DeepDrawerExtractorInvertedFiltersC2SPacket(
+                    BlockPos.STREAM_CODEC.decode(buf),
+                    DeepDrawerExtractorFilterUpdateC2SPacket.readStringMap(buf),
+                    DeepDrawerExtractorFilterUpdateC2SPacket.readIntMap(buf))
     );
 
     @Override
@@ -70,6 +53,7 @@ public record DeepDrawerExtractorInvertedFiltersC2SPacket(BlockPos pos, Map<Inte
                 return;
             }
             extractor.setInvertedFilterFieldsFromMap(packet.invertedFilterMap());
+            extractor.setDenyConcatFromMap(packet.concatMap());
         });
     }
 }

@@ -25,6 +25,7 @@ The Deep Drawer Extractor is a specialized module designed to extract items from
   - **Deny Filter List**: Extracts all items except those that match the filters (blacklist mode). When this list is active, the button shows "Allow List" to switch back to the allow filter
   - **Filter Priority**: When both filter lists have entries (hybrid cases), the Deny Filter List is applied first, then the Allow Filter List. This means items matching the Deny Filter List are blocked before checking the Allow Filter List
   - Switch between the two filter lists using the "Allow List" / "Deny List" button in the GUI
+- **Filter Concatenation**: Each filter row has a concat button (`-`, `A`–`Z`). Lines sharing the same letter must all match (AND); different letters or standalone lines combine with OR
 - **Redstone Control**: Control extraction with redstone signals
 - **Optimized Performance**: Designed specifically for extraction to minimize performance impact
 - **Network Discovery**: Automatically finds the drawer through connected modules up to 16 blocks away
