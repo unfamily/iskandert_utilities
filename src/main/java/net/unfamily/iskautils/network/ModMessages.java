@@ -198,6 +198,21 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket::handle
         );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket::handle
+        );
 
         // Register Sound Muffler Volume C2S Packet (Client to Server)
         registrar.playToServer(
@@ -1706,42 +1721,13 @@ public class ModMessages {
      * Sends filter update packet to server
      */
     @OnlyIn(Dist.CLIENT)
-    public static void sendDeepDrawerExtractorFilterUpdatePacket(BlockPos pos, java.util.Map<Integer, String> filterMap, boolean isWhitelistMode) {
-        // Simplified implementation - directly handle on the server side (like rotation in Structure Placer)
+    public static void sendDeepDrawerExtractorFilterUpdatePacket(
+            BlockPos pos, java.util.Map<Integer, String> filterMap,
+            java.util.Map<Integer, Integer> concatMap, boolean isWhitelistMode) {
         try {
-            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
-            if (server == null) {
-                LOGGER.error("Singleplayer server is null!");
-                return;
-            }
-            
-            // Execute on server thread
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
-                        
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
-                            // Update filter fields from map (indices outside valid range are ignored)
-                            if (filterMap != null) {
-                                extractor.setFilterFieldsFromMap(filterMap);
-                            }
-                            
-                            // Update mode
-                            extractor.setWhitelistMode(isWhitelistMode);
-                            
-                            // Mark BlockEntity as changed
-                            extractor.setChanged();
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Deep Drawer Extractor filter update packet: {}", e.getMessage());
-                }
-            });
-            
-
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket(
+                            pos, filterMap, concatMap, isWhitelistMode));
         } catch (Exception e) {
             LOGGER.error("Could not send Deep Drawer Extractor filter update packet: {}", e.getMessage(), e);
         }
@@ -1751,42 +1737,25 @@ public class ModMessages {
      * Sends inverted filter update packet to server
      */
     @OnlyIn(Dist.CLIENT)
-    public static void sendDeepDrawerExtractorInvertedFilterUpdatePacket(BlockPos pos, java.util.Map<Integer, String> invertedFilterMap) {
-        // Simplified implementation - directly handle on the server side (like rotation in Structure Placer)
+    public static void sendDeepDrawerExtractorInvertedFilterUpdatePacket(
+            BlockPos pos, java.util.Map<Integer, String> invertedFilterMap,
+            java.util.Map<Integer, Integer> concatMap) {
         try {
-            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
-            if (server == null) {
-                LOGGER.error("Singleplayer server is null!");
-                return;
-            }
-            
-            // Execute on server thread
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = player.serverLevel();
-                        
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
-                            // Update inverted filter fields from map (indices outside valid range are ignored)
-                            if (invertedFilterMap != null) {
-                                extractor.setInvertedFilterFieldsFromMap(invertedFilterMap);
-                            }
-                            
-                            // Mark BlockEntity as changed
-                            extractor.setChanged();
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Deep Drawer Extractor inverted filter update packet: {}", e.getMessage());
-                }
-            });
-            
-
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket(
+                            pos, invertedFilterMap, concatMap));
         } catch (Exception e) {
             LOGGER.error("Could not send Deep Drawer Extractor inverted filter update packet: {}", e.getMessage(), e);
         }
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendDeepDrawerExtractorSettingsCopierPacket(BlockPos pos, int action, int allowDeny) {
+        if (pos == null || pos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket(pos, action, allowDeny));
     }
     
     /**

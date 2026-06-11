@@ -17,6 +17,7 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.block.DeepDrawerExtractorBlock;
 import net.unfamily.iskautils.util.DeepDrawerConnectorHelper;
+import net.unfamily.iskautils.util.DeepDrawerFilterConcatEvaluator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -52,6 +53,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     private final String[] filterFields;
     // Inverted filter configuration (same size as filterFields)
     private final String[] invertedFilterFields;
+    /** Concat channel ordinal per allow filter line (0 = NONE). */
+    private final int[] allowConcatChannels;
+    /** Concat channel ordinal per deny filter line (0 = NONE). */
+    private final int[] denyConcatChannels;
     // Whitelist + empty filters = no extraction; deny (inverted) list is evaluated before allow (primary).
     private boolean isWhitelistMode = true;
     /** 0 = allow list panel, 1 = deny list panel (GUI reopen default). */
@@ -128,10 +133,14 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         int maxSlots = net.unfamily.iskautils.Config.deepDrawerExtractorMaxFilters;
         filterFields = new String[maxSlots];
         invertedFilterFields = new String[maxSlots];
+        allowConcatChannels = new int[maxSlots];
+        denyConcatChannels = new int[maxSlots];
         // Initialize all filter slots to empty strings
         for (int i = 0; i < maxSlots; i++) {
             filterFields[i] = "";
             invertedFilterFields[i] = "";
+            allowConcatChannels[i] = 0;
+            denyConcatChannels[i] = 0;
         }
     }
     
@@ -178,37 +187,41 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             return 6; // Unknown format - goes last
         };
         
-        // Collect non-empty filters with their indices
-        java.util.List<java.util.Map.Entry<Integer, String>> normalFilters = new java.util.ArrayList<>();
-        java.util.List<java.util.Map.Entry<Integer, String>> invertedFilters = new java.util.ArrayList<>();
-        
+        record FilterEntry(String value, int concat) {}
+
+        java.util.List<FilterEntry> normalFilters = new java.util.ArrayList<>();
+        java.util.List<FilterEntry> invertedFilters = new java.util.ArrayList<>();
+
         for (int i = 0; i < getMaxFilterSlots(); i++) {
             String filter = filterFields[i];
             if (filter != null && !filter.trim().isEmpty()) {
-                normalFilters.add(new java.util.AbstractMap.SimpleEntry<>(i, filter));
+                normalFilters.add(new FilterEntry(filter, allowConcatChannels[i]));
             }
             String invertedFilter = invertedFilterFields[i];
             if (invertedFilter != null && !invertedFilter.trim().isEmpty()) {
-                invertedFilters.add(new java.util.AbstractMap.SimpleEntry<>(i, invertedFilter));
+                invertedFilters.add(new FilterEntry(invertedFilter, denyConcatChannels[i]));
             }
         }
-        
-        // Sort by priority (cheapest first)
-        normalFilters.sort((a, b) -> Integer.compare(getPriority.apply(a.getValue()), getPriority.apply(b.getValue())));
-        invertedFilters.sort((a, b) -> Integer.compare(getPriority.apply(a.getValue()), getPriority.apply(b.getValue())));
-        
-        // Clear arrays
+
+        normalFilters.sort((a, b) -> Integer.compare(getPriority.apply(a.value()), getPriority.apply(b.value())));
+        invertedFilters.sort((a, b) -> Integer.compare(getPriority.apply(a.value()), getPriority.apply(b.value())));
+
         for (int i = 0; i < getMaxFilterSlots(); i++) {
             filterFields[i] = "";
             invertedFilterFields[i] = "";
+            allowConcatChannels[i] = 0;
+            denyConcatChannels[i] = 0;
         }
-        
-        // Re-insert sorted filters
+
         for (int i = 0; i < normalFilters.size() && i < getMaxFilterSlots(); i++) {
-            filterFields[i] = normalFilters.get(i).getValue();
+            FilterEntry e = normalFilters.get(i);
+            filterFields[i] = e.value();
+            allowConcatChannels[i] = e.concat();
         }
         for (int i = 0; i < invertedFilters.size() && i < getMaxFilterSlots(); i++) {
-            invertedFilterFields[i] = invertedFilters.get(i).getValue();
+            FilterEntry e = invertedFilters.get(i);
+            invertedFilterFields[i] = e.value();
+            denyConcatChannels[i] = e.concat();
         }
     }
     
@@ -570,24 +583,10 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             return false;
         }
         
-        // Check if item matches any inverted filter
-        // After reorderFilters(), empty filters are at the end, so we can early exit
-        boolean matchesAnyFilter = false;
-        for (int i = 0; i < getMaxFilterSlots(); i++) {
-            String filter = invertedFilterFields[i];
-            // Early exit: after reorderFilters(), empty filters are at the end
-            if (filter == null || filter.isEmpty()) {
-                break; // No more valid filters
-            }
-            if (matchesFilterEntry(stack, item, itemId, itemIdStr, itemModId, filter)) {
-                matchesAnyFilter = true;
-                break;
-            }
-        }
-        
-        // The inverted filter always returns true if it matches (regardless of extractor mode)
-        // The logic of what to do with the match is handled in tryExtractFromDrawer()
-        return matchesAnyFilter;
+        java.util.List<String> lines = getInvertedFilterFields();
+        java.util.List<Integer> concat = getDenyConcatChannels();
+        return DeepDrawerFilterConcatEvaluator.matchesAny(lines, concat,
+                (lineIndex, trimmedLine) -> matchesFilterEntry(stack, item, itemId, itemIdStr, itemModId, trimmedLine));
     }
     
     /**
@@ -606,30 +605,14 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             return false;
         }
         
-        // Check if item matches any filter
-        // After reorderFilters(), empty filters are at the end, so we can early exit
-        boolean matchesAnyFilter = false;
-        boolean hasAnyFilter = false;
-        for (int i = 0; i < getMaxFilterSlots(); i++) {
-            String filter = filterFields[i];
-            // Early exit: after reorderFilters(), empty filters are at the end
-            if (filter == null || filter.isEmpty()) {
-                break; // No more valid filters
-            }
-            hasAnyFilter = true;
-            if (matchesFilterEntry(stack, item, itemId, itemIdStr, itemModId, filter)) {
-                matchesAnyFilter = true;
-                break;
-            }
-        }
-        
-        // If no valid filters, whitelist mode = extract nothing, blacklist mode = extract everything
+        java.util.List<String> lines = getFilterFields();
+        boolean hasAnyFilter = lines.stream().anyMatch(s -> s != null && !s.trim().isEmpty());
         if (!hasAnyFilter) {
-            return !isWhitelistMode; // Blacklist with no filters = extract all
+            return !isWhitelistMode;
         }
-        
-        // Whitelist: extract only if matches a filter
-        // Blacklist: extract only if doesn't match any filter
+        java.util.List<Integer> concat = getAllowConcatChannels();
+        boolean matchesAnyFilter = DeepDrawerFilterConcatEvaluator.matchesAny(lines, concat,
+                (lineIndex, trimmedLine) -> matchesFilterEntry(stack, item, itemId, itemIdStr, itemModId, trimmedLine));
         return isWhitelistMode ? matchesAnyFilter : !matchesAnyFilter;
     }
     
@@ -667,6 +650,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         CompoundTag filterTag = new CompoundTag();
         net.minecraft.nbt.ListTag filterList = new net.minecraft.nbt.ListTag();
         net.minecraft.nbt.ListTag invertedFilterList = new net.minecraft.nbt.ListTag();
+        net.minecraft.nbt.ListTag allowConcatList = new net.minecraft.nbt.ListTag();
+        net.minecraft.nbt.ListTag denyConcatList = new net.minecraft.nbt.ListTag();
         int maxSlots = getMaxFilterSlots();
         for (int i = 0; i < maxSlots; i++) {
             String filter = filterFields[i];
@@ -674,10 +659,14 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             if (filter != null && !filter.trim().isEmpty()) {
                 CompoundTag filterEntry = new CompoundTag();
                 filterEntry.putInt("index", i);
-                // Debug: log filter length before saving
-                // LOGGER.debug("Saving filter at index {}: length={}, value={}", i, filter != null ? filter.length() : 0, filter);
                 filterEntry.putString("value", filter);
                 filterList.add(filterEntry);
+                if (allowConcatChannels[i] > 0) {
+                    CompoundTag concatEntry = new CompoundTag();
+                    concatEntry.putInt("index", i);
+                    concatEntry.putInt("channel", allowConcatChannels[i]);
+                    allowConcatList.add(concatEntry);
+                }
             }
             // Save inverted filters
             String invertedFilter = invertedFilterFields[i];
@@ -686,13 +675,25 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 invertedFilterEntry.putInt("index", i);
                 invertedFilterEntry.putString("value", invertedFilter);
                 invertedFilterList.add(invertedFilterEntry);
+                if (denyConcatChannels[i] > 0) {
+                    CompoundTag concatEntry = new CompoundTag();
+                    concatEntry.putInt("index", i);
+                    concatEntry.putInt("channel", denyConcatChannels[i]);
+                    denyConcatList.add(concatEntry);
+                }
             }
         }
         filterTag.put("filters", filterList);
         filterTag.put("inverted_filters", invertedFilterList);
+        if (!allowConcatList.isEmpty()) {
+            filterTag.put("allow_concat", allowConcatList);
+        }
+        if (!denyConcatList.isEmpty()) {
+            filterTag.put("deny_concat", denyConcatList);
+        }
         filterTag.putBoolean("whitelist_mode", isWhitelistMode);
         filterTag.putInt("last_filter_panel", lastFilterPanel);
-        filterTag.putInt("filter_version", 5); // Version 5 = index-value pairs + inverted filters
+        filterTag.putInt("filter_version", 6); // Version 6 = concat channels
         filterTag.putInt("filter_slot_count", maxSlots); // Save slot count for migration
         tag.put("filter_config", filterTag);
         
@@ -724,6 +725,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             for (int i = 0; i < maxSlots; i++) {
                 filterFields[i] = "";
                 invertedFilterFields[i] = "";
+                allowConcatChannels[i] = 0;
+                denyConcatChannels[i] = 0;
             }
             
             // Load inverted filters (version 5+)
@@ -823,11 +826,18 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             lastFilterPanel = filterTag.contains("last_filter_panel")
                     ? clampFilterPanel(filterTag.getInt("last_filter_panel"))
                     : FILTER_PANEL_ALLOW;
+
+            if (version >= 6) {
+                loadConcatList(filterTag, "allow_concat", allowConcatChannels, maxSlots, true);
+                loadConcatList(filterTag, "deny_concat", denyConcatChannels, maxSlots, true);
+            }
         } else {
             // No filter_config tag: initialize all to empty
             for (int i = 0; i < maxSlots; i++) {
                 filterFields[i] = "";
                 invertedFilterFields[i] = "";
+                allowConcatChannels[i] = 0;
+                denyConcatChannels[i] = 0;
             }
             lastFilterPanel = FILTER_PANEL_ALLOW;
         }
@@ -856,6 +866,8 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             for (int i = 0; i < maxSlots; i++) {
                 filterFields[i] = "";
                 invertedFilterFields[i] = "";
+                allowConcatChannels[i] = 0;
+                denyConcatChannels[i] = 0;
             }
             isWhitelistMode = true;
             lastFilterPanel = FILTER_PANEL_ALLOW;
@@ -962,28 +974,23 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      */
     public void setInvertedFilterFieldsFromMap(java.util.Map<Integer, String> filterMap) {
         int maxSlots = getMaxFilterSlots();
-        // Initialize all to empty first
         for (int i = 0; i < maxSlots; i++) {
             invertedFilterFields[i] = "";
+            denyConcatChannels[i] = 0;
         }
-        // Fill from provided map, ignoring out-of-range indices
         if (filterMap != null) {
             for (java.util.Map.Entry<Integer, String> entry : filterMap.entrySet()) {
                 int index = entry.getKey();
                 String value = entry.getValue();
                 if (index >= 0 && index < maxSlots && value != null) {
                     value = value.trim();
-                    // Only strip wrapping quotes; do NOT remove quotes inside the string (NBT/JSON relies on them).
                     value = stripWrappingQuotes(value);
                     invertedFilterFields[index] = value;
                 }
             }
         }
         setChanged();
-        // Force sync to client
-        if (level != null && !level.isClientSide()) {
-            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-        }
+        syncToClient();
     }
     
     /**
@@ -992,40 +999,27 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
      */
     public void setFilterFieldsFromMap(java.util.Map<Integer, String> filterMap) {
         int maxSlots = getMaxFilterSlots();
-        // Initialize all to empty first
         for (int i = 0; i < maxSlots; i++) {
             filterFields[i] = "";
+            allowConcatChannels[i] = 0;
         }
-        // Fill from provided map, ignoring out-of-range indices
         if (filterMap != null) {
             for (java.util.Map.Entry<Integer, String> entry : filterMap.entrySet()) {
                 int index = entry.getKey();
                 String value = entry.getValue();
-                // Ignore indices outside valid range
                 if (index >= 0 && index < maxSlots) {
                     if (value != null) {
-                        // Debug: log value before processing
-                        // LOGGER.debug("setFilterFieldsFromMap: index={}, original length={}, value={}", index, value.length(), value);
                         value = value.trim();
-                        // Only strip wrapping quotes; do NOT remove quotes inside the string (NBT/JSON relies on them).
                         value = stripWrappingQuotes(value);
-                        // Debug: log value after processing
-                        // LOGGER.debug("setFilterFieldsFromMap: index={}, processed length={}, value={}", index, value.length(), value);
                         filterFields[index] = value;
-                        // Debug: log value after setting
-                        // LOGGER.debug("setFilterFieldsFromMap: index={}, stored length={}, value={}", index, filterFields[index] != null ? filterFields[index].length() : 0, filterFields[index]);
                     } else {
                         filterFields[index] = "";
                     }
                 }
-                // If index is out of range, simply ignore it (as requested)
             }
         }
         setChanged();
-        // Force sync to client
-        if (level != null && !level.isClientSide()) {
-            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-        }
+        syncToClient();
     }
     
     /**
@@ -1088,6 +1082,157 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         if (this.isWhitelistMode != whitelistMode) {
             this.isWhitelistMode = whitelistMode;
             setChanged(); // setChanged() override already calls sendBlockUpdated()
+        }
+    }
+
+    // ===== Concat channel getters/setters =====
+
+    public java.util.List<Integer> getAllowConcatChannels() {
+        java.util.List<Integer> list = new java.util.ArrayList<>();
+        for (int i = 0; i < getMaxFilterSlots(); i++) {
+            list.add(allowConcatChannels[i]);
+        }
+        return list;
+    }
+
+    public java.util.List<Integer> getDenyConcatChannels() {
+        java.util.List<Integer> list = new java.util.ArrayList<>();
+        for (int i = 0; i < getMaxFilterSlots(); i++) {
+            list.add(denyConcatChannels[i]);
+        }
+        return list;
+    }
+
+    public int getAllowConcatChannel(int index) {
+        if (index >= 0 && index < getMaxFilterSlots()) {
+            return allowConcatChannels[index];
+        }
+        return 0;
+    }
+
+    public int getDenyConcatChannel(int index) {
+        if (index >= 0 && index < getMaxFilterSlots()) {
+            return denyConcatChannels[index];
+        }
+        return 0;
+    }
+
+    public void setAllowConcatChannel(int index, int channel) {
+        if (index >= 0 && index < getMaxFilterSlots()) {
+            allowConcatChannels[index] = Math.clamp(channel, 0, net.unfamily.iskautils.util.DeepDrawerFilterConcatChannel.MAX_LETTER);
+            setChanged();
+            syncToClient();
+        }
+    }
+
+    public void setDenyConcatChannel(int index, int channel) {
+        if (index >= 0 && index < getMaxFilterSlots()) {
+            denyConcatChannels[index] = Math.clamp(channel, 0, net.unfamily.iskautils.util.DeepDrawerFilterConcatChannel.MAX_LETTER);
+            setChanged();
+            syncToClient();
+        }
+    }
+
+    public void setAllowConcatFromMap(java.util.Map<Integer, Integer> concatMap) {
+        if (concatMap == null) {
+            return;
+        }
+        for (java.util.Map.Entry<Integer, Integer> entry : concatMap.entrySet()) {
+            int index = entry.getKey();
+            if (index >= 0 && index < getMaxFilterSlots()) {
+                int ch = entry.getValue() != null ? entry.getValue() : 0;
+                allowConcatChannels[index] = Math.clamp(ch, 0, net.unfamily.iskautils.util.DeepDrawerFilterConcatChannel.MAX_LETTER);
+            }
+        }
+        setChanged();
+        syncToClient();
+    }
+
+    public void setDenyConcatFromMap(java.util.Map<Integer, Integer> concatMap) {
+        if (concatMap == null) {
+            return;
+        }
+        for (java.util.Map.Entry<Integer, Integer> entry : concatMap.entrySet()) {
+            int index = entry.getKey();
+            if (index >= 0 && index < getMaxFilterSlots()) {
+                int ch = entry.getValue() != null ? entry.getValue() : 0;
+                denyConcatChannels[index] = Math.clamp(ch, 0, net.unfamily.iskautils.util.DeepDrawerFilterConcatChannel.MAX_LETTER);
+            }
+        }
+        setChanged();
+        syncToClient();
+    }
+
+    /**
+     * Replaces the entire allow filter list (used by settings copier paste).
+     */
+    public void replaceAllowFilterList(java.util.List<String> lines, java.util.List<Integer> concat) {
+        int maxSlots = getMaxFilterSlots();
+        for (int i = 0; i < maxSlots; i++) {
+            filterFields[i] = "";
+            allowConcatChannels[i] = 0;
+        }
+        if (lines != null) {
+            int count = Math.min(maxSlots, lines.size());
+            for (int i = 0; i < count; i++) {
+                String line = lines.get(i);
+                filterFields[i] = line != null ? stripWrappingQuotes(line.trim()) : "";
+                if (concat != null && i < concat.size() && concat.get(i) != null) {
+                    allowConcatChannels[i] = Math.clamp(concat.get(i), 0,
+                            net.unfamily.iskautils.util.DeepDrawerFilterConcatChannel.MAX_LETTER);
+                }
+            }
+        }
+        setChanged();
+        syncToClient();
+    }
+
+    /**
+     * Replaces the entire deny filter list (used by settings copier paste).
+     */
+    public void replaceDenyFilterList(java.util.List<String> lines, java.util.List<Integer> concat) {
+        int maxSlots = getMaxFilterSlots();
+        for (int i = 0; i < maxSlots; i++) {
+            invertedFilterFields[i] = "";
+            denyConcatChannels[i] = 0;
+        }
+        if (lines != null) {
+            int count = Math.min(maxSlots, lines.size());
+            for (int i = 0; i < count; i++) {
+                String line = lines.get(i);
+                invertedFilterFields[i] = line != null ? stripWrappingQuotes(line.trim()) : "";
+                if (concat != null && i < concat.size() && concat.get(i) != null) {
+                    denyConcatChannels[i] = Math.clamp(concat.get(i), 0,
+                            net.unfamily.iskautils.util.DeepDrawerFilterConcatChannel.MAX_LETTER);
+                }
+            }
+        }
+        setChanged();
+        syncToClient();
+    }
+
+    private void syncToClient() {
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    private static void loadConcatList(
+            CompoundTag filterTag, String key, int[] target, int maxSlots, boolean enabled) {
+        if (!enabled || !filterTag.contains(key, CompoundTag.TAG_LIST)) {
+            return;
+        }
+        net.minecraft.nbt.ListTag list = filterTag.getList(key, CompoundTag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            CompoundTag entry = list.getCompound(i);
+            if (entry.contains("index", CompoundTag.TAG_INT) && entry.contains("channel", CompoundTag.TAG_INT)) {
+                int index = entry.getInt("index");
+                int channel = entry.getInt("channel");
+                if (index >= 0 && index < maxSlots) {
+                    target[index] = Math.clamp(channel, 0,
+                            net.unfamily.iskautils.util.DeepDrawerFilterConcatChannel.MAX_LETTER);
+                }
+            }
         }
     }
     

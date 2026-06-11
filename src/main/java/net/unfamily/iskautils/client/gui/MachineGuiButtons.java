@@ -19,7 +19,6 @@ public final class MachineGuiButtons {
 
     public static final int ICON_SIZE = 16;
     public static final int DOT_SIZE = 8;
-    public static final String DOT_EMPTY = "\u25CB";
     public static final String DOT_FILLED = "\u25CF";
 
     public static final ResourceLocation REDSTONE_GUI =
@@ -88,13 +87,17 @@ public final class MachineGuiButtons {
     }
 
     public static Button selectionDot(int x, int y, boolean selected, Button.OnPress onPress) {
-        return Button.builder(Component.literal(selected ? DOT_FILLED : DOT_EMPTY), onPress)
+        return Button.builder(selectionDotLabel(selected), onPress)
                 .bounds(x, y, DOT_SIZE, DOT_SIZE)
                 .build();
     }
 
     public static void updateSelectionDot(Button button, boolean selected) {
-        button.setMessage(Component.literal(selected ? DOT_FILLED : DOT_EMPTY));
+        button.setMessage(selectionDotLabel(selected));
+    }
+
+    private static Component selectionDotLabel(boolean selected) {
+        return selected ? Component.literal(DOT_FILLED) : Component.empty();
     }
 
     /** Dot X to the right of an 18px structure icon slot in a wide entry row. */

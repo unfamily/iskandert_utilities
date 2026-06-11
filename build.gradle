@@ -177,6 +177,12 @@ dependencies {
     // Optional local library: Pattern Crafter (NeoForge 1.21.1)
     compileOnly files('libs/pattern_crafter-1.0.0.0.0-neoforge-1.21.1.jar')
 
+    // Optional: Another Dynamics (Settings Copier integration; dev runtime only)
+    def anotherDynamicsJar = file('../Another-Dynaimics/build/libs/another_dynamics-1.0.0.0.0.jar')
+    if (anotherDynamicsJar.exists()) {
+        localRuntime files(anotherDynamicsJar)
+    }
+
     // Iskandert Library 1.21.1 — local JAR in libs/ (manual copy; see README)
     def iskaLibLocalJar = file('libs/iska_lib-1.7.0.0.0-neoforge-1.21.1.jar')
     if (!iskaLibLocalJar.exists()) {

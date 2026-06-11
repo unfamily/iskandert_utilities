@@ -1,47 +1,110 @@
 package net.unfamily.iskautils.network.packet;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Packet to update filter configuration from client to server
- * Note: Currently not used - ModMessages handles this directly, but kept for potential future use
+ * Client-to-server: apply normal filter map, concat map, and whitelist mode on the Deep Drawer Extractor.
  */
-public class DeepDrawerExtractorFilterUpdateC2SPacket {
-    
-    private final BlockPos pos;
-    private final java.util.List<String> filterFields;
-    private final boolean isWhitelistMode;
-    
-    public DeepDrawerExtractorFilterUpdateC2SPacket(BlockPos pos, java.util.List<String> filterFields, boolean isWhitelistMode) {
-        this.pos = pos;
-        this.filterFields = filterFields != null ? new java.util.ArrayList<>(filterFields) : new java.util.ArrayList<>();
-        this.isWhitelistMode = isWhitelistMode;
+public record DeepDrawerExtractorFilterUpdateC2SPacket(
+        BlockPos pos, Map<Integer, String> filterMap, Map<Integer, Integer> concatMap, boolean whitelistMode)
+        implements CustomPacketPayload {
+
+    private static final int MAX_ENTRIES = 512;
+    private static final int MAX_STRING_LEN = 512;
+
+    public static final Type<DeepDrawerExtractorFilterUpdateC2SPacket> TYPE = new Type<>(
+            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "deep_drawer_extractor_filter_update"));
+
+    public static final StreamCodec<FriendlyByteBuf, DeepDrawerExtractorFilterUpdateC2SPacket> STREAM_CODEC = StreamCodec.of(
+            (buf, p) -> {
+                BlockPos.STREAM_CODEC.encode(buf, p.pos());
+                buf.writeBoolean(p.whitelistMode());
+                writeStringMap(buf, p.filterMap());
+                writeIntMap(buf, p.concatMap());
+            },
+            buf -> {
+                BlockPos pos = BlockPos.STREAM_CODEC.decode(buf);
+                boolean whitelist = buf.readBoolean();
+                Map<Integer, String> map = readStringMap(buf);
+                Map<Integer, Integer> concat = readIntMap(buf);
+                return new DeepDrawerExtractorFilterUpdateC2SPacket(pos, map, concat, whitelist);
+            }
+    );
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
-    
-    /**
-     * Handles the packet on server
-     */
-    public void handle(ServerPlayer player) {
-        if (player == null || player.level() == null) return;
-        
-        // Get the BlockEntity
-        var blockEntity = player.level().getBlockEntity(pos);
-        if (!(blockEntity instanceof DeepDrawerExtractorBlockEntity extractor)) return;
-        
-        // Update filter fields
-        if (filterFields != null) {
-            extractor.setFilterFields(filterFields);
+
+    public static void handle(DeepDrawerExtractorFilterUpdateC2SPacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return;
+            }
+            BlockEntity be = player.level().getBlockEntity(packet.pos());
+            if (!(be instanceof DeepDrawerExtractorBlockEntity extractor)) {
+                return;
+            }
+            if (!extractor.stillValid(player)) {
+                return;
+            }
+            extractor.setFilterFieldsFromMap(packet.filterMap());
+            extractor.setAllowConcatFromMap(packet.concatMap());
+            extractor.setWhitelistMode(packet.whitelistMode());
+        });
+    }
+
+    static void writeStringMap(FriendlyByteBuf buf, Map<Integer, String> map) {
+        Map<Integer, String> safe = map != null ? map : Map.of();
+        buf.writeVarInt(safe.size());
+        for (Map.Entry<Integer, String> e : safe.entrySet()) {
+            buf.writeVarInt(e.getKey());
+            buf.writeUtf(e.getValue() != null ? e.getValue() : "", MAX_STRING_LEN);
         }
-        
-        // Update mode
-        extractor.setWhitelistMode(isWhitelistMode);
-        
-        // Mark BlockEntity as changed
-        extractor.setChanged();
-        
-        // Update client
-        player.level().sendBlockUpdated(pos, blockEntity.getBlockState(), blockEntity.getBlockState(), 3);
+    }
+
+    static Map<Integer, String> readStringMap(FriendlyByteBuf buf) {
+        int n = buf.readVarInt();
+        if (n < 0 || n > MAX_ENTRIES) {
+            n = 0;
+        }
+        Map<Integer, String> map = new HashMap<>(Math.min(n, MAX_ENTRIES));
+        for (int i = 0; i < n; i++) {
+            map.put(buf.readVarInt(), buf.readUtf(MAX_STRING_LEN));
+        }
+        return map;
+    }
+
+    static void writeIntMap(FriendlyByteBuf buf, Map<Integer, Integer> map) {
+        Map<Integer, Integer> safe = map != null ? map : Map.of();
+        buf.writeVarInt(safe.size());
+        for (Map.Entry<Integer, Integer> e : safe.entrySet()) {
+            buf.writeVarInt(e.getKey());
+            buf.writeVarInt(e.getValue() != null ? e.getValue() : 0);
+        }
+    }
+
+    static Map<Integer, Integer> readIntMap(FriendlyByteBuf buf) {
+        int n = buf.readVarInt();
+        if (n < 0 || n > MAX_ENTRIES) {
+            n = 0;
+        }
+        Map<Integer, Integer> map = new HashMap<>(Math.min(n, MAX_ENTRIES));
+        for (int i = 0; i < n; i++) {
+            map.put(buf.readVarInt(), buf.readVarInt());
+        }
+        return map;
     }
 }
