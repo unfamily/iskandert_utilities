@@ -69,7 +69,7 @@ public class DruidicPodzolBlockEntity extends BlockEntity {
             return;
         }
         if (canSpawnHere(level)) {
-            trySpawnAtPodzol(level, worldPosition);
+            trySpawnAtPodzol(level, worldPosition, false);
         }
         rollNormalCooldown(level.getRandom());
         setChanged();
@@ -85,7 +85,7 @@ public class DruidicPodzolBlockEntity extends BlockEntity {
             return;
         }
         if (canSpawnHere(level)) {
-            trySpawnAtPodzol(level, worldPosition);
+            trySpawnAtPodzol(level, worldPosition, true);
         }
         accelSpawnCooldownTicks = DruidicPodzolUtil.rollInclusive(
                 Config.druidicPodzolRedstoneAccelMinTicks,
@@ -106,8 +106,9 @@ public class DruidicPodzolBlockEntity extends BlockEntity {
                 random);
     }
 
-    private static boolean trySpawnAtPodzol(ServerLevel level, BlockPos spawnSoil) {
-        if (!SoilAcceleratedSpawn.isUnderCreatureCap(level, spawnSoil, Config.druidicPodzolAccelMobCap)) {
+    private static boolean trySpawnAtPodzol(ServerLevel level, BlockPos spawnSoil, boolean accelerated) {
+        int cap = accelerated ? Config.druidicPodzolAccelMobCap : SoilAcceleratedSpawn.PER_BLOCK_MOB_CAP;
+        if (!SoilAcceleratedSpawn.isUnderCreatureCap(level, spawnSoil, cap, accelerated)) {
             return false;
         }
         BlockPos spawnPos = DruidicPodzolUtil.findMobSpawnPos(level, spawnSoil);

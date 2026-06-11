@@ -82,7 +82,7 @@ public class EntropicSoilBlockEntity extends BlockEntity {
             return;
         }
         if (canSpawnHere(level)) {
-            trySpawnAtSoil(level, worldPosition);
+            trySpawnAtSoil(level, worldPosition, false);
         }
         rollNormalCooldown(level.getRandom());
         setChanged();
@@ -98,7 +98,7 @@ public class EntropicSoilBlockEntity extends BlockEntity {
             return;
         }
         if (canSpawnHere(level)) {
-            trySpawnAtSoil(level, worldPosition);
+            trySpawnAtSoil(level, worldPosition, true);
         }
         accelSpawnCooldownTicks = EntropicSoilUtil.rollInclusive(
                 Config.entropicSoilRedstoneAccelMinTicks,
@@ -142,8 +142,9 @@ public class EntropicSoilBlockEntity extends BlockEntity {
                 random);
     }
 
-    private static boolean trySpawnAtSoil(ServerLevel level, BlockPos spawnSoil) {
-        if (!SoilAcceleratedSpawn.isUnderHostileCap(level, spawnSoil, Config.entropicSoilAccelMobCap)) {
+    private static boolean trySpawnAtSoil(ServerLevel level, BlockPos spawnSoil, boolean accelerated) {
+        int cap = accelerated ? Config.entropicSoilAccelMobCap : SoilAcceleratedSpawn.PER_BLOCK_MOB_CAP;
+        if (!SoilAcceleratedSpawn.isUnderHostileCap(level, spawnSoil, cap, accelerated)) {
             return false;
         }
         BlockPos spawnPos = EntropicSoilUtil.findMobSpawnPos(level, spawnSoil);
