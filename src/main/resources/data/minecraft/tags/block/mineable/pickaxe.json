@@ -50,6 +50,7 @@
     "iska_utils:iska_utils_fire",
     "iska_utils:iska_utils_freeze",
     "iska_utils:ancient_table",
+    "iska_utils:factory",
     "iska_utils:temporal_overclocker",
     "iska_utils:entropic_spawner",
     "iska_utils:blazing_altar"
