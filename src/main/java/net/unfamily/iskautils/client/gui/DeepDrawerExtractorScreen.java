@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.client.gui;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -25,8 +27,6 @@ import net.unfamily.iskautils.integration.anotherdynamics.AnotherDynamicsCompat;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket;
 import net.unfamily.iskautils.integration.jei.ghost.IIskaUtilsGhostTarget;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Screen for Deep Drawer Extractor GUI
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawerExtractorMenu>
     implements IIskaUtilsGhostTarget {
     
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DeepDrawerExtractorScreen.class);
+    private static final ModLogger LOGGER = ModLogger.of(DeepDrawerExtractorScreen.class);
     
     private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer_extractor.png");

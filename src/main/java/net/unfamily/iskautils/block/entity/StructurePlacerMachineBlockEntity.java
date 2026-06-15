@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.block.entity;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -47,15 +49,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Block Entity for the Structure Placer Machine
  */
 public class StructurePlacerMachineBlockEntity extends BlockEntity implements MenuProvider {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(StructurePlacerMachineBlockEntity.class);
+    private static final ModLogger LOGGER = ModLogger.of(StructurePlacerMachineBlockEntity.class);
     
     private final ItemStackHandler itemHandler = new ItemStackHandler(27) {
         @Override
@@ -213,7 +213,6 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
 
         int currentEnergy = energyStorage.getEnergyStored();
         output.putInt("energy", currentEnergy);
-        LOGGER.debug("Structure Placer Machine saving energy: {}", currentEnergy);
 
         output.putInt("autoPulseTimer", autoPulseTimer);
         output.storeNullable("placedByPlayer", net.minecraft.core.UUIDUtil.CODEC, placedByPlayer);
@@ -249,7 +248,6 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
 
         input.getInt("energy").ifPresent(savedEnergy -> {
             energyStorage.setEnergy(savedEnergy);
-            LOGGER.debug("Structure Placer Machine loaded energy: {}", savedEnergy);
         });
 
         autoPulseTimer = input.getIntOr("autoPulseTimer", 0);
@@ -591,8 +589,6 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                     int energyRequired = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
                     if (energyRequired > 0 && energyStorage.getEnergyStored() < energyRequired) {
                         // Not enough energy, stop placing more blocks (don't consume items)
-                        LOGGER.debug("Structure Placer Machine: Not enough energy to place block (need {}, have {})", 
-                            energyRequired, energyStorage.getEnergyStored());
                         break;
                     }
                     
@@ -612,7 +608,6 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             }
             
             if (placedBlocks > 0) {
-                LOGGER.info("Structure Placer Machine placed {} blocks", placedBlocks);
             }
             if (!blockAllocation.isEmpty()) {
                 startPlacementCooldown();
@@ -846,12 +841,8 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     private boolean placeSingleBlock(ServerLevel level, BlockPos blockPos, AllocatedBlock allocated, StructureDefinition structure) {
         // Check if we have enough energy to place this block
         int energyRequired = net.unfamily.iskautils.Config.structurePlacerMachineEnergyConsume;
-        LOGGER.debug("Structure Placer Machine energy requirement check: energyRequired={}, currentEnergy={}", 
-            energyRequired, energyStorage.getEnergyStored());
         
         if (energyRequired > 0 && energyStorage.getEnergyStored() < energyRequired) {
-            LOGGER.debug("Structure Placer Machine: Not enough energy to place block (need {}, have {})", 
-                energyRequired, energyStorage.getEnergyStored());
             return false; // Not enough energy
         }
         
@@ -897,8 +888,6 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
                 int energyBefore = energyStorage.getEnergyStored();
                 energyStorage.extractEnergy(energyRequired, false);
                 int energyAfter = energyStorage.getEnergyStored();
-                LOGGER.debug("Structure Placer Machine consumed {} energy ({} -> {}) for placing block at {}", 
-                    energyBefore - energyAfter, energyBefore, energyAfter, blockPos);
                 setChanged(); // Mark block entity as changed for saving
             }
             

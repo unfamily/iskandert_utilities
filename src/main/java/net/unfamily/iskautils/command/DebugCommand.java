@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.command;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -17,15 +19,13 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadEffects;
 import net.unfamily.iskautils.debug.HandItemDump;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Mod debug command: {@code iska_utils_debug reload} (level 2) and {@code iska_utils_debug hand} (delegates to library dump).
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class DebugCommand {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DebugCommand.class);
+    private static final ModLogger LOGGER = ModLogger.of(DebugCommand.class);
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {

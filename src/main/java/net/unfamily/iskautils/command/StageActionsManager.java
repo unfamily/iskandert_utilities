@@ -1,11 +1,11 @@
 package net.unfamily.iskautils.command;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  * Manages execution of stage actions when stages are added or removed.
  */
 public class StageActionsManager {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(StageActionsManager.class);
     private static final ScheduledExecutorService EXECUTOR = Executors.newScheduledThreadPool(2);
 
     private static boolean executingActions = false;

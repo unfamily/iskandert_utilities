@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.debug;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -28,8 +30,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -45,7 +45,7 @@ import java.util.Optional;
  * - tags / component detail
  */
 public final class HandItemDump {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HandItemDump.class);
+    private static final ModLogger LOGGER = ModLogger.of(HandItemDump.class);
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
 
     private HandItemDump() {}

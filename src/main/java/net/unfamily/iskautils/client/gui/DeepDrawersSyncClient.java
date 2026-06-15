@@ -1,22 +1,19 @@
 package net.unfamily.iskautils.client.gui;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.client.Minecraft;
 import net.unfamily.iskautils.network.packet.DeepDrawersSyncSlotsS2CPacket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Client-side handler for deep drawer slot sync packets. */
 public final class DeepDrawersSyncClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DeepDrawersSyncClient.class);
+    private static final ModLogger LOGGER = ModLogger.of(DeepDrawersSyncClient.class);
 
     private DeepDrawersSyncClient() {}
 
     public static void handle(DeepDrawersSyncSlotsS2CPacket packet) {
         if (packet.isFullSync()) {
-            LOGGER.debug("Client: Received DeepDrawersSyncSlotsS2CPacket (full sync). Slots: {}", packet.allSlots().size());
         } else {
-            LOGGER.debug("Client: Received DeepDrawersSyncSlotsS2CPacket. Offset: {}, Stacks: {}",
-                    packet.scrollOffset(), packet.visibleStacks().size());
         }
 
         Minecraft minecraft = Minecraft.getInstance();

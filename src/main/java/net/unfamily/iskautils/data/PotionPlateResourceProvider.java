@@ -1,12 +1,12 @@
 package net.unfamily.iskautils.data;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,7 +20,7 @@ import java.util.Optional;
  * This works in JAR files by generating JSON in memory
  */
 public class PotionPlateResourceProvider {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(PotionPlateResourceProvider.class);
     
     // Cache for generated models
     private static final Map<Identifier, JsonObject> GENERATED_MODELS = new HashMap<>();

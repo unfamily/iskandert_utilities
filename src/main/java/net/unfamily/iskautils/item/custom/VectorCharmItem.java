@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -15,8 +17,6 @@ import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  * Now includes energy storage and consumption system.
  */
 public class VectorCharmItem extends Item implements net.unfamily.iskautils.item.RfStoringItem {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VectorCharmItem.class);
+    private static final ModLogger LOGGER = ModLogger.of(VectorCharmItem.class);
 
     /**
      * Force multiplier when the charm is worn or in hand

@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.block.entity;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
@@ -16,8 +18,6 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -26,7 +26,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public class ShopBlockEntity extends BlockEntity implements MenuProvider {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(ShopBlockEntity.class);
+    private static final ModLogger LOGGER = ModLogger.of(ShopBlockEntity.class);
     
     // Item storage for shop slots (display and transactions)
     private final ItemStackHandler itemHandler = new ItemStackHandler(36) { // 4 rows x 9 slots

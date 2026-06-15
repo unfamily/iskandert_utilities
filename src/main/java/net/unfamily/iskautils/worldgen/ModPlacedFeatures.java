@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.worldgen;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
@@ -21,14 +23,12 @@ import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.placement.PlacementModifier;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
 
 public class ModPlacedFeatures {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ModPlacedFeatures.class);
+    private static final ModLogger LOGGER = ModLogger.of(ModPlacedFeatures.class);
     public static final ResourceKey<PlacedFeature> RUBBER_PLACED_KEY = ResourceKey.create(
             Registries.PLACED_FEATURE, 
             Identifier.tryParse(IskaUtils.MOD_ID + ":" + "rubber_placed"));

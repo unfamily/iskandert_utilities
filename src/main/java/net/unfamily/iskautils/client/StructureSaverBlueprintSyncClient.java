@@ -1,13 +1,13 @@
 package net.unfamily.iskautils.client;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class StructureSaverBlueprintSyncClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StructureSaverBlueprintSyncClient.class);
+    private static final ModLogger LOGGER = ModLogger.of(StructureSaverBlueprintSyncClient.class);
 
     private StructureSaverBlueprintSyncClient() {}
 

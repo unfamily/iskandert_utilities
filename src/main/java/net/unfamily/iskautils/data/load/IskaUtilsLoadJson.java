@@ -1,15 +1,15 @@
 package net.unfamily.iskautils.data.load;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.fml.ModList;
 import net.unfamily.iskautils.IskaUtils;
-import org.slf4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  * for bootstrap before a server exists.
  */
 public final class IskaUtilsLoadJson {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(IskaUtilsLoadJson.class);
     private static final Gson GSON = new Gson();
 
     private IskaUtilsLoadJson() {}

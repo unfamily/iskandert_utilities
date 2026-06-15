@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.integration.artifacts;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -9,8 +11,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.neoforged.fml.ModList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 
@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 public final class ArtifactsCompat {
     public static final String MOD_ID = "artifacts";
     private static final Identifier MIMIC_ID = Identifier.fromNamespaceAndPath(MOD_ID, "mimic");
-    private static final Logger LOGGER = LoggerFactory.getLogger(ArtifactsCompat.class);
+    private static final ModLogger LOGGER = ModLogger.of(ArtifactsCompat.class);
 
     private ArtifactsCompat() {}
 

@@ -1,16 +1,16 @@
 package net.unfamily.iskautils.util;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for the mod
  */
 public class ModUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ModUtils.class);
+    private static final ModLogger LOGGER = ModLogger.of(ModUtils.class);
     
     /**
      * Curios mod ID for integration

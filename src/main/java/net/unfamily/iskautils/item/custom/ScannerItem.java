@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -37,7 +38,6 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import net.unfamily.iskautils.util.ScannerMobCategories;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,7 +47,7 @@ import java.time.LocalDate;
  * Item for scanning specific blocks in an area
  */
 public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfStoringItem {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(ScannerItem.class);
  
     private static final String TARGET_BLOCK_TAG = "TargetBlock";
     private static final String TARGET_MOB_TAG = "TargetMob";
@@ -59,9 +59,6 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
     
     // Map to track active markers by scanner ID
     private static final Map<UUID, List<BlockPos>> ACTIVE_MARKERS = new HashMap<>();
-    
-    // Map to track TTL for each marker
-    private static final Map<BlockPos, Integer> MARKER_TTL = new HashMap<>();
 
     private static final int LOADING_BAR_LENGTH = 15; // Number of blocks █ in the loading bar
     /** Extra hold ticks after scan requirement before the loading bar shows 100%. */
@@ -371,14 +368,10 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
     private String getTargetMob(ItemStack itemStack) {
         CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         
-        if (!tag.contains(TARGET_MOB_TAG)) {
-            LOGGER.debug("No target mob found in item");
-            return null;
+        if (!tag.contains(TARGET_MOB_TAG)) {            return null;
         }
         
-        String mobId = tag.getString(TARGET_MOB_TAG).orElse("");
-        LOGGER.debug("Found target mob in item: {}", mobId);
-        
+        String mobId = tag.getString(TARGET_MOB_TAG).orElse("");        
         return mobId.isEmpty() ? null : mobId;
     }
     
@@ -393,9 +386,7 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
             return null;
         }
         
-        String genericTarget = tag.getString(TARGET_GEN_TAG).orElse("");
-        LOGGER.debug("Found generic target in item: {}", genericTarget);
-        
+        String genericTarget = tag.getString(TARGET_GEN_TAG).orElse("");        
         return genericTarget.isEmpty() ? null : genericTarget;
     }
     
@@ -569,8 +560,8 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
     }
 
     /**
-     * Full client reset ({@link net.unfamily.iskautils.network.ModMessages#sendClearHighlightsPacket}) plus server TTL
-     * maps, so markers disappear even when the stack has no {@link #SCANNER_ID_TAG} or maps are out of sync after
+     * Full client reset ({@link net.unfamily.iskautils.network.ModMessages#sendClearHighlightsPacket}) plus server
+     * active-marker tracking so markers disappear even when the stack has no {@link #SCANNER_ID_TAG} or maps are out of sync after
      * swapping the item in/out of the hotbar.
      */
     private static void clearAllVisualMarkersFor(ServerPlayer player, ItemStack scannerStack) {
@@ -585,12 +576,8 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
         }
 
         if (scannerId != null && ACTIVE_MARKERS.containsKey(scannerId)) {
-            for (BlockPos pos : new ArrayList<>(ACTIVE_MARKERS.get(scannerId))) {
-                MARKER_TTL.remove(pos);
-            }
             ACTIVE_MARKERS.get(scannerId).clear();
         } else {
-            MARKER_TTL.clear();
             for (List<BlockPos> markers : ACTIVE_MARKERS.values()) {
                 markers.clear();
             }
@@ -701,9 +688,7 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
                                     // Calculate TTL multiplier based on the number of scanned blocks
                                     int finalTTL = baseTTL * TTL_MULTIPLIER;
                                     
-                                    // Add TTL for this marker
-                                    MARKER_TTL.put(pos, finalTTL);
-                                    
+                                    // Add TTL for this marker                                    
                                     // Get the block name for display
                                     BlockState blockState = level.getBlockState(pos);
                                     Block block = blockState.getBlock();
@@ -756,11 +741,6 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
                                         }
                                     }
                                     
-                                    // Log debug info if needed
-                                    if (colorFound) {
-                                        LOGGER.debug("Applied color {} to block {}", Integer.toHexString(color), blockId);
-                                    }
-                                    
                                     // Add alpha channel to the color
                                     int colorWithAlpha = (0x80 << 24) | color;
                                     
@@ -788,39 +768,6 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
         }
     }
     
-    /**
-     * Handles item tick (called every game tick)
-     * Used to update markers and their TTL
-     */
-    public static void tick(ServerLevel level) {
-        Iterator<Map.Entry<BlockPos, Integer>> markerIterator = MARKER_TTL.entrySet().iterator();
-        
-        while (markerIterator.hasNext()) {
-            Map.Entry<BlockPos, Integer> entry = markerIterator.next();
-            BlockPos pos = entry.getKey();
-            int ttl = entry.getValue() - 1;
-            
-            if (ttl <= 0) {
-                // Remove expired marker
-                // Send message to all players in the dimension to remove the marker
-                for (ServerPlayer player : level.players()) {
-                    net.unfamily.iskautils.network.ModMessages.sendRemoveHighlightPacket(player, pos);
-                }
-                
-                // Remove marker from TTL map
-                markerIterator.remove();
-                
-                // Remove marker from all active scanners
-                for (UUID scannerId : ACTIVE_MARKERS.keySet()) {
-                    List<BlockPos> markers = ACTIVE_MARKERS.get(scannerId);
-                    markers.remove(pos);
-                }
-            } else {
-                // Update TTL
-                entry.setValue(ttl);
-            }
-        }
-    }
     
     /**
      * Scans the area for target mobs
@@ -912,9 +859,7 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
                     // Calculate the final TTL
                     int finalTTL = maxTTL * TTL_MULTIPLIER;
                     
-                    // Add TTL for this marker
-                    MARKER_TTL.put(entityPos, finalTTL);
-                    
+                    // Add TTL for this marker                    
                     // Use MarkRenderer to add a billboard marker on the client side with the entity name
                     // Get color from config and apply alpha
                     int color = (Config.scannerDefaultAlpha << 24) | Config.scannerDefaultMobColor;
@@ -1597,9 +1542,7 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
                                     // Calculate TTL multiplier based on the number of scanned blocks
                                     int finalTTL = baseTTL * TTL_MULTIPLIER;
                                     
-                                    // Add TTL for this marker
-                                    MARKER_TTL.put(pos, finalTTL);
-                                    
+                                    // Add TTL for this marker                                    
                                     // Determine color based on ore type
                                     int color = defaultOreColor;
                                     
@@ -1643,11 +1586,6 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
                                                 }
                                             }
                                         }
-                                    }
-                                    
-                                    // Log debug info if needed
-                                    if (colorFound) {
-                                        LOGGER.debug("Applied color {} to block {}", Integer.toHexString(color), blockId);
                                     }
                                     
                                     // Add alpha channel to the color
@@ -1794,9 +1732,7 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
                     // Calculate the final TTL
                     int finalTTL = maxTTL * TTL_MULTIPLIER;
                     
-                    // Add TTL for this marker
-                    MARKER_TTL.put(entityPos, finalTTL);
-                    
+                    // Add TTL for this marker                    
                     // Determine color based on mob type
                     String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
                     int color = defaultMobColor;

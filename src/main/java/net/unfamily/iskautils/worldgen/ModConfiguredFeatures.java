@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.worldgen;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.resources.ResourceKey;
@@ -22,14 +24,12 @@ import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.RubberLogFilledBlock;
 import net.minecraft.core.Direction;
 import net.minecraft.util.random.WeightedList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class that contains all the configurations of the features used in the mod.  
  */
 public class ModConfiguredFeatures {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ModConfiguredFeatures.class);
+    private static final ModLogger LOGGER = ModLogger.of(ModConfiguredFeatures.class);
     
     /**
      * ResourceKey for the rubber tree.

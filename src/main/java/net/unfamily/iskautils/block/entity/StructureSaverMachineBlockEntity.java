@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.block.entity;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -19,8 +21,6 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -29,7 +29,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public class StructureSaverMachineBlockEntity extends BlockEntity implements MenuProvider {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(StructureSaverMachineBlockEntity.class);
+    private static final ModLogger LOGGER = ModLogger.of(StructureSaverMachineBlockEntity.class);
     
     // Item storage per i 18 slot display (solo visualizzazione, non estraibili)
     private final ItemStackHandler itemHandler = new ItemStackHandler(18) {

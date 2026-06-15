@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.data;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -13,7 +14,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.PotionPlateBlock;
-import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +24,7 @@ import java.util.function.UnaryOperator;
  * Now uses configurations discovered during mod initialization
  */
 public class PotionPlateRegistry {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(PotionPlateRegistry.class);
     
     // DeferredRegister for dynamic blocks and items
     public static final DeferredRegister.Blocks POTION_PLATES = DeferredRegister.createBlocks(IskaUtils.MOD_ID);

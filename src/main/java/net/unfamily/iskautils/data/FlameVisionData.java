@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.data;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.serialization.Codec;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
@@ -8,8 +10,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 import net.unfamily.iskautils.IskaUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,7 +17,7 @@ import java.util.UUID;
 
 /** Per-player global flame vision toggle (Blazing Altar GUI). */
 public class FlameVisionData extends SavedData {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FlameVisionData.class);
+    private static final ModLogger LOGGER = ModLogger.of(FlameVisionData.class);
     private static final SavedDataType<FlameVisionData> TYPE = new SavedDataType<>(
             Identifier.tryBuild(IskaUtils.MOD_ID, "flame_vision_data"),
             FlameVisionData::new,

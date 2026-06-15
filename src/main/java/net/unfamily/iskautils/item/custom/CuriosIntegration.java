@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -8,8 +10,6 @@ import net.neoforged.neoforge.event.entity.living.LivingEvent;
 import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
 import net.unfamily.iskautils.item.custom.artifact.TheDeceptionItem;
 import net.unfamily.iskautils.util.ModUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 
@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
  * Simplified implementation to avoid compatibility issues.
  */
 public class CuriosIntegration {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CuriosIntegration.class);
+    private static final ModLogger LOGGER = ModLogger.of(CuriosIntegration.class);
 
     /**
      * Registers the necessary events for Curios integration

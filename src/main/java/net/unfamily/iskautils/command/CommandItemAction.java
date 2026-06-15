@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.command;
 
+import net.minecraft.resources.Identifier;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,7 +53,7 @@ public class CommandItemAction {
     private int delay;
     private ItemActionType itemAction;
     private net.unfamily.iskautils.obtaining.MessageSpec message;
-    private net.minecraft.resources.Identifier dropItemId;
+    private Identifier dropItemId;
     private List<CommandItemDefinition.StageCondition> stages = new ArrayList<>();
     
     // For IF action type
@@ -102,11 +104,11 @@ public class CommandItemAction {
         return message;
     }
 
-    public void setDropItemId(net.minecraft.resources.Identifier dropItemId) {
+    public void setDropItemId(Identifier dropItemId) {
         this.dropItemId = dropItemId;
     }
 
-    public net.minecraft.resources.Identifier getDropItemId() {
+    public Identifier getDropItemId() {
         return dropItemId;
     }
     
@@ -225,191 +227,63 @@ public class CommandItemAction {
      * @return true if all conditions are met
      */
     public boolean checkConditionsByIndices(net.minecraft.server.level.ServerPlayer player, CommandItemDefinition definition) {
-        com.mojang.logging.LogUtils.getLogger().debug("Checking conditions by indices: {} with logic: {}", conditionIndices, definition.getStagesLogic());
-        
         if (conditionIndices.isEmpty()) {
-            com.mojang.logging.LogUtils.getLogger().debug("No conditions to check, returning true");
             return true;
         }
-        
-        // Otteniamo direttamente il registro degli stage per verifiche dirette
+
         net.unfamily.iskalib.stage.StageRegistry registry =
-            net.unfamily.iskalib.stage.StageRegistry.getInstance(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
-        
+                net.unfamily.iskalib.stage.StageRegistry.getInstance(
+                        ((net.minecraft.server.level.ServerLevel) player.level()).getServer());
         List<CommandItemDefinition.StageCondition> allStages = definition.getStages();
-        
-        // Per debug, mostriamo lo stato attuale di tutti gli stage definiti
-        if (com.mojang.logging.LogUtils.getLogger().isDebugEnabled()) {
-            com.mojang.logging.LogUtils.getLogger().debug("Current state of ALL defined stages:");
-            for (int i = 0; i < allStages.size(); i++) {
-                CommandItemDefinition.StageCondition condition = allStages.get(i);
-                boolean currentState = false;
-                if ("world".equalsIgnoreCase(condition.getStageType())) {
-                    currentState = registry.hasWorldStage(condition.getStage());
-                } else if ("player".equalsIgnoreCase(condition.getStageType())) {
-                    currentState = registry.hasPlayerStage(player, condition.getStage());
-                } else if ("team".equalsIgnoreCase(condition.getStageType())) {
-                    currentState = registry.hasPlayerTeamStage(player, condition.getStage());
-                }
-                com.mojang.logging.LogUtils.getLogger().debug("  Stage {}: {} (type: {}, current: {})", 
-                    i, condition.getStage(), condition.getStageType(), currentState);
-            }
-            
-            com.mojang.logging.LogUtils.getLogger().debug("Current state of stages being checked (indices {}):", conditionIndices);
-            for (Integer index : conditionIndices) {
-                if (index >= 0 && index < allStages.size()) {
-                    CommandItemDefinition.StageCondition condition = allStages.get(index);
-                    boolean currentState = false;
-                    if ("world".equalsIgnoreCase(condition.getStageType())) {
-                        currentState = registry.hasWorldStage(condition.getStage());
-                    } else if ("player".equalsIgnoreCase(condition.getStageType())) {
-                        currentState = registry.hasPlayerStage(player, condition.getStage());
-                    } else if ("team".equalsIgnoreCase(condition.getStageType())) {
-                        currentState = registry.hasPlayerTeamStage(player, condition.getStage());
-                    }
-                    com.mojang.logging.LogUtils.getLogger().debug("  Stage[{}] {}: actual={}, expected={}, match={}", 
-                        index, condition.getStage(), currentState, condition.shouldBeSet(), currentState == condition.shouldBeSet());
-                }
-            }
-        }
-        
-        // *** IMPLEMENTAZIONE CORRETTA DELLE LOGICHE ***
-        // DEF_AND: Tutte le condizioni devono essere soddisfatte (true = true && true && ...)
-        // DEF_OR: Almeno una condizione deve essere soddisfatta (true = true || true || ...)
-        
-        // Ignoriamo il campo stages_logic di definition e usiamo sempre AND per DEF_AND e OR per DEF_OR,
-        // questo perché "DEF_" sta per "deferred" e indica solo che le condizioni sono espresse per indice
-        // invece che direttamente.
-        
-        // DEF_AND: tutte le condizioni devono essere soddisfatte
+
         if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND) {
-            com.mojang.logging.LogUtils.getLogger().debug("Using DEF_AND logic for conditions: {} (all must match)", conditionIndices);
-            
-            boolean allMatch = true; // Assume true unless we find a mismatch
-            
             for (Integer index : conditionIndices) {
                 if (index < 0 || index >= allStages.size()) {
-                    // Invalid index
-                    com.mojang.logging.LogUtils.getLogger().debug("Invalid index: {} (max: {})", index, allStages.size() - 1);
-                    allMatch = false;
-                    break;
+                    return false;
                 }
-                
-                CommandItemDefinition.StageCondition condition = allStages.get(index);
-                
-                // Direct verification from stage registry to get the most up-to-date state
-                boolean currentState = false;
-                if ("world".equalsIgnoreCase(condition.getStageType())) {
-                    currentState = registry.hasWorldStage(condition.getStage());
-                } else if ("player".equalsIgnoreCase(condition.getStageType())) {
-                    currentState = registry.hasPlayerStage(player, condition.getStage());
-                } else if ("team".equalsIgnoreCase(condition.getStageType())) {
-                    currentState = registry.hasPlayerTeamStage(player, condition.getStage());
-                }
-                
-                // The condition is satisfied if the current state matches the expected one
-                boolean conditionMet = (currentState == condition.shouldBeSet());
-                
-                com.mojang.logging.LogUtils.getLogger().debug("DEF_AND condition at index {} ({}: {}): actual={}, expected={}, match={}", 
-                    index, condition.getStageType(), condition.getStage(), 
-                    currentState, condition.shouldBeSet(), conditionMet);
-                
-                if (!conditionMet) {
-                    allMatch = false;
-                    break;
+                if (!isStageConditionMet(player, registry, allStages.get(index))) {
+                    return false;
                 }
             }
-            
-            com.mojang.logging.LogUtils.getLogger().debug("DEF_AND final result for conditions {}: {}", conditionIndices, allMatch);
-            return allMatch;
-        } 
-        // DEF_OR: almeno una condizione deve essere soddisfatta
-        else if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) {
-            com.mojang.logging.LogUtils.getLogger().debug("Using DEF_OR logic for conditions: {} (at least one must match)", conditionIndices);
-            
-            if (conditionIndices.isEmpty()) {
-                com.mojang.logging.LogUtils.getLogger().debug("Empty conditions list with DEF_OR, returning true");
-                return true; // Empty conditions list is always true for OR
-            }
-            
-            boolean anyMatch = false; // Assume false unless we find a match
-            
+            return true;
+        }
+
+        if (definition.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_OR) {
             for (Integer index : conditionIndices) {
                 if (index < 0 || index >= allStages.size()) {
-                    // Skip invalid index
-                    com.mojang.logging.LogUtils.getLogger().debug("Invalid index: {} (max: {}), skipping", index, allStages.size() - 1);
                     continue;
                 }
-                
-                CommandItemDefinition.StageCondition condition = allStages.get(index);
-                
-                // Direct verification from stage registry to get the most up-to-date state
-                boolean currentState = false;
-                if ("world".equalsIgnoreCase(condition.getStageType())) {
-                    currentState = registry.hasWorldStage(condition.getStage());
-                } else if ("player".equalsIgnoreCase(condition.getStageType())) {
-                    currentState = registry.hasPlayerStage(player, condition.getStage());
-                } else if ("team".equalsIgnoreCase(condition.getStageType())) {
-                    currentState = registry.hasPlayerTeamStage(player, condition.getStage());
-                }
-                
-                // The condition is satisfied if the current state matches the expected one
-                boolean conditionMet = (currentState == condition.shouldBeSet());
-                
-                com.mojang.logging.LogUtils.getLogger().debug("DEF_OR condition at index {} ({}: {}): actual={}, expected={}, match={}", 
-                    index, condition.getStageType(), condition.getStage(), 
-                    currentState, condition.shouldBeSet(), conditionMet);
-                
-                if (conditionMet) {
-                    anyMatch = true;
-                    break;
+                if (isStageConditionMet(player, registry, allStages.get(index))) {
+                    return true;
                 }
             }
-            
-            com.mojang.logging.LogUtils.getLogger().debug("DEF_OR final result for conditions {}: {}", conditionIndices, anyMatch);
-            return anyMatch;
+            return false;
         }
-        
-        // Default to AND logic for any other case
-        com.mojang.logging.LogUtils.getLogger().debug("Using default AND logic for conditions: {}", conditionIndices);
-        
-        boolean allMatch = true; // Assume true unless we find a mismatch
-        
+
         for (Integer index : conditionIndices) {
             if (index < 0 || index >= allStages.size()) {
-                // Invalid index
-                com.mojang.logging.LogUtils.getLogger().debug("Invalid index: {} (max: {})", index, allStages.size() - 1);
-                allMatch = false;
-                break;
+                return false;
             }
-            
-            CommandItemDefinition.StageCondition condition = allStages.get(index);
-            
-            // Direct verification from stage registry to get the most up-to-date state
-            boolean currentState = false;
-            if ("world".equalsIgnoreCase(condition.getStageType())) {
-                currentState = registry.hasWorldStage(condition.getStage());
-            } else if ("player".equalsIgnoreCase(condition.getStageType())) {
-                currentState = registry.hasPlayerStage(player, condition.getStage());
-            } else if ("team".equalsIgnoreCase(condition.getStageType())) {
-                currentState = registry.hasPlayerTeamStage(player, condition.getStage());
-            }
-            
-            // The condition is satisfied if the current state matches the expected one
-            boolean conditionMet = (currentState == condition.shouldBeSet());
-            
-            com.mojang.logging.LogUtils.getLogger().debug("Default AND condition at index {} ({}: {}): actual={}, expected={}, match={}", 
-                index, condition.getStageType(), condition.getStage(), 
-                currentState, condition.shouldBeSet(), conditionMet);
-            
-            if (!conditionMet) {
-                allMatch = false;
-                break;
+            if (!isStageConditionMet(player, registry, allStages.get(index))) {
+                return false;
             }
         }
-        
-        com.mojang.logging.LogUtils.getLogger().debug("Default AND final result for conditions {}: {}", conditionIndices, allMatch);
-        return allMatch;
+        return true;
+    }
+
+    private static boolean isStageConditionMet(
+            net.minecraft.server.level.ServerPlayer player,
+            net.unfamily.iskalib.stage.StageRegistry registry,
+            CommandItemDefinition.StageCondition condition) {
+        boolean currentState = false;
+        if ("world".equalsIgnoreCase(condition.getStageType())) {
+            currentState = registry.hasWorldStage(condition.getStage());
+        } else if ("player".equalsIgnoreCase(condition.getStageType())) {
+            currentState = registry.hasPlayerStage(player, condition.getStage());
+        } else if ("team".equalsIgnoreCase(condition.getStageType())) {
+            currentState = registry.hasPlayerTeamStage(player, condition.getStage());
+        }
+        return currentState == condition.shouldBeSet();
     }
 
     public boolean checkModConditionsByIndices(CommandItemDefinition definition) {

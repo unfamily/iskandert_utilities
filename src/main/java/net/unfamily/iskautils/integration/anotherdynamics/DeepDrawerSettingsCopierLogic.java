@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.integration.anotherdynamics;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -10,8 +12,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity;
 import net.unfamily.iskautils.client.gui.DeepDrawerExtractorMenu;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ import java.util.List;
  * Copy/paste Deep Drawer Extractor filter lists via Another Dynamics Settings Copier (reflection, optional mod).
  */
 public final class DeepDrawerSettingsCopierLogic {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DeepDrawerSettingsCopierLogic.class);
+    private static final ModLogger LOGGER = ModLogger.of(DeepDrawerSettingsCopierLogic.class);
 
     private DeepDrawerSettingsCopierLogic() {}
 

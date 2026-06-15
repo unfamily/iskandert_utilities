@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.iska_utils_stages;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -15,7 +16,6 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
-import org.slf4j.Logger;
 
 
 /**
@@ -23,7 +23,7 @@ import org.slf4j.Logger;
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class StageItemManager {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(StageItemManager.class);
     private static boolean initialized = false;
     
     /**

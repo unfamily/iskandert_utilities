@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.data.load;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -8,7 +9,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.command.ShopCommand;
 import net.unfamily.iskautils.network.ModMessages;
-import org.slf4j.Logger;
 
 /**
  * Shared side effects for IskaUtils {@code load/**} reload.
@@ -17,7 +17,7 @@ import org.slf4j.Logger;
  */
 public final class IskaUtilsLoadReloadEffects {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(IskaUtilsLoadReloadEffects.class);
 
     private IskaUtilsLoadReloadEffects() {}
 

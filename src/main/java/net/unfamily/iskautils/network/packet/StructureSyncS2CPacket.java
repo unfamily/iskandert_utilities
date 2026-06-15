@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.network.packet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -8,8 +10,6 @@ import net.minecraft.resources.Identifier;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ import java.util.Map;
  * Packet per sincronizzare le strutture dal server al client
  */
 public record StructureSyncS2CPacket(Map<String, String> structureData, boolean acceptClientStructures) implements CustomPacketPayload {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StructureSyncS2CPacket.class);
+    private static final ModLogger LOGGER = ModLogger.of(StructureSyncS2CPacket.class);
     public static final Type<StructureSyncS2CPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "structure_sync"));
     
     public static final StreamCodec<FriendlyByteBuf, StructureSyncS2CPacket> STREAM_CODEC = StreamCodec.composite(

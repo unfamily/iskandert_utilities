@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,8 +17,6 @@ import net.minecraft.world.item.component.TooltipDisplay;
 import net.unfamily.iskautils.events.LivingIncomingDamageEventHandler;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskalib.stage.StageRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.neoforged.fml.ModList;
 import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
 import java.lang.reflect.Method;
@@ -32,7 +31,7 @@ import java.util.function.Consumer;
  * Completely blocks all damage when equipped.
  */
 public class NecroticCrystalHeartItem extends Item {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NecroticCrystalHeartItem.class);
+    private static final ModLogger LOGGER = ModLogger.of(NecroticCrystalHeartItem.class);
     
     // Damage reduction setting
     private static final float DAMAGE_REDUCTION = 0.0f; // Complete reduction (0% of original damage)

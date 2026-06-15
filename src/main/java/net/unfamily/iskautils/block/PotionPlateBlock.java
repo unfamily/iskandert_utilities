@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.block;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -21,7 +22,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.data.PotionPlateConfig;
 import net.unfamily.iskautils.data.PotionPlateType;
-import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +31,7 @@ import java.util.UUID;
  * A plate block that applies potion effects to entities stepping on it
  */
 public class PotionPlateBlock extends VectorBlock {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(PotionPlateBlock.class);
     public static final MapCodec<PotionPlateBlock> CODEC = simpleCodec(PotionPlateBlock::new);
     
     // Cooldown system: entity UUID -> last application time
@@ -162,11 +162,6 @@ public class PotionPlateBlock extends VectorBlock {
         // Apply the effect (this will override any existing effect with same or lower amplifier)
         boolean success = livingEntity.addEffect(adjustedEffect);
         
-        if (success && LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Applied effect {} (duration: {}s) to entity {} at position {}", 
-                config.getEffectId(), duration / 20.0f, livingEntity.getName().getString(), livingEntity.blockPosition());
-        }
-        
         return success;
     }
     
@@ -202,12 +197,6 @@ public class PotionPlateBlock extends VectorBlock {
             livingEntity.hurt(damageSource, config.getDamageAmount());
             boolean success = true;
             
-            if (success && LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Applied {} damage (type: {}) to entity {} at position {}", 
-                    config.getDamageAmount(), config.getDamageType(), 
-                    livingEntity.getName().getString(), livingEntity.blockPosition());
-            }
-            
             return success;
         } catch (Exception e) {
             LOGGER.error("Failed to apply damage from plate {}: {}", config.getPlateId(), e.getMessage());
@@ -226,11 +215,6 @@ public class PotionPlateBlock extends VectorBlock {
                 
                 // Always set to the full duration for consistent behavior
                 livingEntity.setRemainingFireTicks(fireTicks);
-                
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Applied fire effect ({}s) to entity {} at position {}", 
-                        fireTicks / 20.0f, livingEntity.getName().getString(), livingEntity.blockPosition());
-                }
                 return true;
             }
             
@@ -247,13 +231,6 @@ public class PotionPlateBlock extends VectorBlock {
                 // This ensures immediate freezing effect like vanilla powder snow
                 int newFreezeTicks = 200; // Ensuring we're well above the 140 threshold
                 livingEntity.setTicksFrozen(newFreezeTicks);
-                
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Set freeze effect to {} for entity {} at position {} (max: {})", 
-                        newFreezeTicks / 20.0f, 
-                        livingEntity.getName().getString(), livingEntity.blockPosition(), 
-                        maxFreezeTicks / 20.0f);
-                }
                 
                 // Always return true to track cooldown, even if we're at max freeze
                 return true;

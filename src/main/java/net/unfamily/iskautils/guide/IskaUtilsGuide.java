@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.guide;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import guideme.Guide;
 import guideme.GuideItemSettings;
 import guideme.compiler.TagCompiler;
@@ -10,14 +12,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.neoforged.fml.ModList;
 import net.unfamily.iskautils.IskaUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Registers the Iska Utils GuideME guidebook on the client.
  */
 public final class IskaUtilsGuide {
-    private static final Logger LOGGER = LoggerFactory.getLogger(IskaUtilsGuide.class);
+    private static final ModLogger LOGGER = ModLogger.of(IskaUtilsGuide.class);
 
     public static final Identifier GUIDE_ID = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "guide");
 

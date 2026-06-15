@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,8 +18,6 @@ import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import net.minecraft.network.chat.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.minecraft.world.item.component.TooltipDisplay;
 
 import java.lang.reflect.Method;
@@ -29,7 +29,7 @@ import java.util.function.Consumer;
  * when held in inventory and keybind is pressed
  */
 public class GhostBrazierItem extends Item {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GhostBrazierItem.class);
+    private static final ModLogger LOGGER = ModLogger.of(GhostBrazierItem.class);
 
     public GhostBrazierItem(Properties properties) {
         super(properties);

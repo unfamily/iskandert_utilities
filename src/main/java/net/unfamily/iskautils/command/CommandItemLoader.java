@@ -1,18 +1,18 @@
 package net.unfamily.iskautils.command;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import net.unfamily.iskautils.script.LoadActionParser;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,7 +23,7 @@ import java.util.Map;
  * Loads command item definitions from external JSON files
  */
 public class CommandItemLoader {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(CommandItemLoader.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
     // Map to store command item definitions
@@ -125,7 +125,7 @@ public class CommandItemLoader {
             }
             
             String itemId = itemJson.get("id").getAsString();
-            if (!net.unfamily.iskautils.script.LoadModGate.shouldIncludeAtLoad(itemJson, LOGGER, itemId)) {
+            if (!net.unfamily.iskautils.script.LoadModGate.shouldIncludeAtLoad(itemJson, LOGGER.unwrap(), itemId)) {
                 return;
             }
             

@@ -1,12 +1,13 @@
 package net.unfamily.iskautils.command;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -24,14 +25,13 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskalib.structure.StructurePlacer;
-import org.slf4j.Logger;
 
 /**
  * Command handler for structure placement
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class StructureCommand {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(StructureCommand.class);
     
     // Error messages
     private static final SimpleCommandExceptionType ERROR_STRUCTURE_NOT_FOUND = new SimpleCommandExceptionType(

@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.client;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
@@ -15,11 +16,10 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity;
 import net.unfamily.iskalib.structure.StructureLoader;
-import org.slf4j.Logger;
 
 @EventBusSubscriber(value = Dist.CLIENT, modid = IskaUtils.MOD_ID)
 public final class IskaUtilsClientGameEvents {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(IskaUtilsClientGameEvents.class);
 
     private IskaUtilsClientGameEvents() {}
 

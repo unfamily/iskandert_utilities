@@ -1,17 +1,17 @@
 package net.unfamily.iskautils.structure;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
-import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +20,7 @@ import java.util.Map;
  * Loads Structure Monouse item definitions from external JSON files
  */
 public class StructureMonouseLoader {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(StructureMonouseLoader.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
     // Map to store monouse item definitions

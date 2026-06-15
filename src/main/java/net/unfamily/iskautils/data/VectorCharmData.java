@@ -1,11 +1,11 @@
 package net.unfamily.iskautils.data;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.unfamily.iskautils.IskaUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,7 +17,7 @@ import java.util.UUID;
  * implemented later.
  */
 public class VectorCharmData {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VectorCharmData.class);
+    private static final ModLogger LOGGER = ModLogger.of(VectorCharmData.class);
     private static final String DATA_NAME = IskaUtils.MOD_ID + "_vector_charm_data";
     
     // Singleton instance

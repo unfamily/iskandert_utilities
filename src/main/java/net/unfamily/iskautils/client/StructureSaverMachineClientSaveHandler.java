@@ -1,13 +1,13 @@
 package net.unfamily.iskautils.client;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class StructureSaverMachineClientSaveHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StructureSaverMachineClientSaveHandler.class);
+    private static final ModLogger LOGGER = ModLogger.of(StructureSaverMachineClientSaveHandler.class);
 
     private StructureSaverMachineClientSaveHandler() {}
 

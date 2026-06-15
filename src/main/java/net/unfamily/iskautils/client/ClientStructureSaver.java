@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.client;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -11,8 +13,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.Config;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +26,7 @@ import java.util.*;
  */
 public class ClientStructureSaver {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClientStructureSaver.class);
+    private static final ModLogger LOGGER = ModLogger.of(ClientStructureSaver.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
     /**

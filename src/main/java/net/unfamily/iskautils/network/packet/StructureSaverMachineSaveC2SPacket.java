@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.network.packet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -17,8 +19,6 @@ import net.minecraft.resources.Identifier;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity;
 import net.unfamily.iskalib.structure.StructureLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +31,7 @@ import java.util.*;
  * Packet to save a structure from the Structure Saver Machine
  */
 public class StructureSaverMachineSaveC2SPacket {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StructureSaverMachineSaveC2SPacket.class);
+    private static final ModLogger LOGGER = ModLogger.of(StructureSaverMachineSaveC2SPacket.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
     private final String structureName;

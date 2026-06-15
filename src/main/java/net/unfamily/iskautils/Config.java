@@ -1567,14 +1567,28 @@ public class Config {
 
     private static final ModConfigSpec.BooleanValue ENTROPIC_EGG_ALWAYS_CONSUME = BUILDER
             .comment("If true, using an Entropic Egg on a mob without a vanilla spawn egg still consumes one from the stack (no reward or buff). Valid mobs always consume one egg on use.")
-            .define("200_000_always_consume_egg", false);
+            .define("200_always_consume_egg", false);
 
     private static final ModConfigSpec.BooleanValue ENTROPIC_EGG_APPLY_BUFF = BUILDER
             .comment("If true, a successful Entropic Egg use applies Entropic Empowerment to the mob.")
-            .define("200_001_apply_entropic_buff", true);
+            .define("201_apply_entropic_buff", true);
 
     static {
         BUILDER.pop(); // End of evil_things category
+
+        BUILDER.comment("Mod logging (off by default in production)").push("logging");
+    }
+
+    private static final ModConfigSpec.BooleanValue ENABLE_DEV_LOGGING = BUILDER
+            .comment("If true, enables debug, info, and warn log output from IskaUtils.")
+            .define("000_enable_dev_logging", false);
+
+    private static final ModConfigSpec.BooleanValue ENABLE_ERROR_LOGGING = BUILDER
+            .comment("If true, enables error-level log output from IskaUtils.")
+            .define("001_enable_error_logging", true);
+
+    static {
+        BUILDER.pop(); // End of logging category
     }
 
     static final ModConfigSpec SPEC = BUILDER.build();
@@ -1687,6 +1701,8 @@ public class Config {
     public static String clientStructurePath;
     public static boolean acceptClientStructure;
     public static boolean allowClientStructurePlayerLike;
+    public static boolean devLoggingEnabled = false;
+    public static boolean errorLoggingEnabled = true;
     public static int blazingAltarMaxChunkRadius;
     public static int blazingAltarTickInterval;
     public static int blazingAltarPlacementsPerTick;
@@ -1978,6 +1994,8 @@ public class Config {
         clientStructurePath = CLIENT_STRUCTURE_PATH.get();
         acceptClientStructure = ACCEPT_CLIENT_STRUCTURE.get();
         allowClientStructurePlayerLike = ALLOW_CLIENT_STRUCTURE_PLAYER_LIKE.get();
+        devLoggingEnabled = ENABLE_DEV_LOGGING.get();
+        errorLoggingEnabled = ENABLE_ERROR_LOGGING.get();
 
         blazingAltarMaxChunkRadius = BLAZING_ALTAR_MAX_CHUNK_RADIUS.get();
         blazingAltarTickInterval = BLAZING_ALTAR_TICK_INTERVAL.get();

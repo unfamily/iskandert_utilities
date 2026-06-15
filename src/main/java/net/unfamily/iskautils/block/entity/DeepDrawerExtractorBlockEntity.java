@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.block.entity;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -25,8 +27,6 @@ import net.unfamily.iskautils.util.DeepDrawerConnectorHelper;
 import net.unfamily.iskautils.util.DeepDrawerFilterConcatEvaluator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -37,7 +37,7 @@ import java.util.*;
  */
 public class DeepDrawerExtractorBlockEntity extends BlockEntity implements WorldlyContainer {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(DeepDrawerExtractorBlockEntity.class);
+    private static final ModLogger LOGGER = ModLogger.of(DeepDrawerExtractorBlockEntity.class);
     
     // Inventory with 5 slots
     private static final int INVENTORY_SIZE = 5;
@@ -1170,7 +1170,6 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
             // Log for debugging
             if (oldMode != this.redstoneMode) {
-                LOGGER.debug("DeepDrawerExtractor: Redstone mode changed from {} to {}", oldMode, this.redstoneMode);
                 // Reset pulse timer when switching modes
                 if (RedstoneMode.fromValue(this.redstoneMode) != RedstoneMode.PULSE) {
                     pulseIgnoreTimer = 0;

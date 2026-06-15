@@ -1,8 +1,8 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.unfamily.iskautils.util.ModUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class that handles Curios integration for the Vector Charm.
@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
  * even when Curios is not present.
  */
 public class VectorCharmCurioHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VectorCharmCurioHandler.class);
+    private static final ModLogger LOGGER = ModLogger.of(VectorCharmCurioHandler.class);
     
     /**
      * Registers the Vector Charm as a curio through reflection.

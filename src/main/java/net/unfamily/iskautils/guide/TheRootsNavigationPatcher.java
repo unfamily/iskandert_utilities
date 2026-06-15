@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.guide;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import guideme.Guide;
 import guideme.navigation.NavigationNode;
 import guideme.navigation.NavigationTree;
@@ -9,14 +11,12 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import com.mojang.logging.LogUtils;
 
 /**
  * Patches the guide navigation tree so sidebar titles follow {@link TheRootsGuideNames}.
  */
 public final class TheRootsNavigationPatcher {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(TheRootsNavigationPatcher.class);
     static final Identifier GUIDE_ID = Identifier.fromNamespaceAndPath("iska_utils", "guide");
     private static final Identifier THE_ROOTS_PAGE = Identifier.fromNamespaceAndPath("iska_utils", "items/the_roots.md");
 

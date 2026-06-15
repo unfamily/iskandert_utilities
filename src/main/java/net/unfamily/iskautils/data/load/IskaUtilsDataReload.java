@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.data.load;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
@@ -15,13 +16,12 @@ import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeLoader;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryLoader;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryLoader;
-import org.slf4j.Logger;
 
 /**
  * Reloads IskaUtils JSON from the {@code load} tree in all datapacks using the current server {@link ResourceManager}.
  */
 public final class IskaUtilsDataReload {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(IskaUtilsDataReload.class);
 
     private IskaUtilsDataReload() {}
 

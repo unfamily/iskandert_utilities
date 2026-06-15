@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.obtaining;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
@@ -13,7 +14,6 @@ import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.command.CommandItemAction;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.command.PlayerCommandSources;
-import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Runs suspicious delivery {@code do[]} action lists (including delays and commands).
  */
 public final class SuspiciousDeliveryScriptRunner {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(SuspiciousDeliveryScriptRunner.class);
     private static final String CONTEXT = "suspicious_delivery";
 
     private static final ConcurrentHashMap<UUID, CopyOnWriteArrayList<PendingRun>> PENDING =
@@ -117,7 +117,7 @@ public final class SuspiciousDeliveryScriptRunner {
             }
             case MESSAGE -> {
                 if (action.getMessage() != null) {
-                    action.getMessage().send(source, origin, LOGGER, CONTEXT);
+                    action.getMessage().send(source, origin, LOGGER.unwrap(), CONTEXT);
                 }
             }
             case DROP -> spawnDrop(player, action.getDropItemId(), origin);

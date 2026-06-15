@@ -1,8 +1,8 @@
 package net.unfamily.iskautils.data.load;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.server.MinecraftServer;
-import org.slf4j.Logger;
 
 /**
  * Defers IskaUtils {@code load/**} reload until the server tick after vanilla {@code /reload}
@@ -10,7 +10,7 @@ import org.slf4j.Logger;
  */
 public final class IskaUtilsLoadReloadScheduler {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(IskaUtilsLoadReloadScheduler.class);
     private static volatile boolean pending;
 
     private IskaUtilsLoadReloadScheduler() {}
