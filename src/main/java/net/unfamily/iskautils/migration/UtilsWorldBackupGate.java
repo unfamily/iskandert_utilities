@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.migration;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.IEventBus;
@@ -10,7 +11,6 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskalib.migration.worldbackup.WorldBackupGate;
 import net.unfamily.iskalib.migration.worldbackup.WorldBackupGateConfig;
 import net.unfamily.iskalib.migration.worldbackup.WorldBackupGateStorage;
-import org.slf4j.Logger;
 
 import java.nio.file.Path;
 
@@ -23,7 +23,7 @@ import java.nio.file.Path;
  * world-open or first-tick critical path.
  */
 public final class UtilsWorldBackupGate {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(UtilsWorldBackupGate.class);
     public static final String LIB_SPLIT_VERSION = "3.6.0.0.0";
     public static final String REGISTRY_KEY = IskaUtils.MOD_ID + "_lib_split";
 

@@ -1,11 +1,12 @@
 package net.unfamily.iskautils.obtaining;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
-import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -26,7 +27,6 @@ import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.command.PlayerCommandSources;
 import net.unfamily.iskautils.script.LoadActionParser;
 import net.unfamily.iskautils.script.LoadModCondition;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +38,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Pending runs are anchored to world + position + actor UUID so delays continue without an online player.
  */
 public final class SuspiciousDeliveryScriptRunner {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(SuspiciousDeliveryScriptRunner.class);
     private static final String CONTEXT = "suspicious_delivery";
     private static final Gson GSON = new Gson();
 
@@ -208,7 +208,7 @@ public final class SuspiciousDeliveryScriptRunner {
             }
             case MESSAGE -> {
                 if (action.getMessage() != null) {
-                    action.getMessage().send(source, anchor, LOGGER, CONTEXT);
+                    action.getMessage().send(source, anchor, LOGGER.unwrap(), CONTEXT);
                 }
             }
             case DROP -> spawnDrop(level, action.getDropItemId(), anchor);

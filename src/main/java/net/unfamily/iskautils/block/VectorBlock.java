@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.block;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -28,7 +29,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Collections;
@@ -37,7 +37,7 @@ import net.minecraft.world.level.block.state.properties.Property;
 import net.unfamily.iskautils.Config;
 
 public class VectorBlock extends HorizontalDirectionalBlock {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(VectorBlock.class);
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty VERTICAL = BooleanProperty.create("vertical");
     public static final MapCodec<VectorBlock> CODEC = simpleCodec(VectorBlock::new);

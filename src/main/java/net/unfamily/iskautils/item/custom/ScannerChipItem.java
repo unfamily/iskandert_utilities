@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -24,7 +25,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import org.slf4j.Logger;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.ScannerMobCategories;
 
@@ -34,7 +34,7 @@ import java.util.List;
  * Item can store a block or mob target to be transferred to a scanner
  */
 public class ScannerChipItem extends Item {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(ScannerChipItem.class);
     
     // Constant tags used to store data in the item
     private static final String TARGET_BLOCK_TAG = "TargetBlock";

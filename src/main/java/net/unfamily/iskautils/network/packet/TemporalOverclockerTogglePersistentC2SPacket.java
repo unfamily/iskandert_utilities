@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.network.packet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -9,15 +11,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Packet to toggle persistent mode in Temporal Overclocker
  */
 public record TemporalOverclockerTogglePersistentC2SPacket(BlockPos overclockerPos) implements CustomPacketPayload {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(TemporalOverclockerTogglePersistentC2SPacket.class);
+    private static final ModLogger LOGGER = ModLogger.of(TemporalOverclockerTogglePersistentC2SPacket.class);
     
     public static final Type<TemporalOverclockerTogglePersistentC2SPacket> TYPE = new Type<>(
         ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "temporal_overclocker_toggle_persistent"));

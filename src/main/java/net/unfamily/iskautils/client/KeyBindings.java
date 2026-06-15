@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.client;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -16,8 +18,6 @@ import net.unfamily.iskautils.data.VectorCharmData;
 import net.unfamily.iskautils.data.VectorFactorType;
 import net.unfamily.iskautils.network.ModMessages;
 import org.lwjgl.glfw.GLFW;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Manages keybindings for the mod
@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class KeyBindings {
-    private static final Logger LOGGER = LoggerFactory.getLogger(KeyBindings.class);
+    private static final ModLogger LOGGER = ModLogger.of(KeyBindings.class);
 
     private static final String KEY_CATEGORY_ISKA_UTILS = "key.categories.iska_utils";
     private static final String KEY_VECTOR_VERTICAL = "key.iska_utils.vector_vertical";

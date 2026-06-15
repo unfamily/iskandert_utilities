@@ -183,18 +183,25 @@ dependencies {
         localRuntime files(anotherDynamicsJar)
     }
 
-    // Iskandert Library 1.21.1 — local JAR in libs/ (manual copy; see README)
+    // Iskandert Library 1.21.1 — local JAR in libs/ when present, else CurseForge
     def iskaLibLocalJar = file('libs/iska_lib-1.7.0.0.0-neoforge-1.21.1.jar')
-    if (!iskaLibLocalJar.exists()) {
-        throw new GradleException(
-                "Missing ${iskaLibLocalJar.name}. Build Iskandert-Library-1.21.1 (./gradlew jar), " +
-                "copy the JAR into libs/, and for runClient also into run/mods/.")
-    }
-    if (project.findProperty('iskaLibUseLocal')?.toString()?.toBoolean()) {
+    def iskaLibForceRemote = project.findProperty('iskaLibUseLocal')?.toString()?.toBoolean() == false
+    if (iskaLibLocalJar.exists() && !iskaLibForceRemote) {
         implementation files(iskaLibLocalJar)
+        localRuntime files(iskaLibLocalJar)
     } else {
-        compileOnly files(iskaLibLocalJar)
+        implementation "curse.maven:iskanderts-library-1516512:8195543"
     }
+
+    tasks.register('syncIskaLibToRunMods', Copy) {
+        group = 'neoforge'
+        description = 'Copies local iska_lib JAR into run/mods for manual runs outside Gradle'
+        onlyIf { iskaLibLocalJar.exists() && !iskaLibForceRemote }
+        from(iskaLibLocalJar)
+        into(layout.projectDirectory.dir('run/mods'))
+    }
+    tasks.named('runClient').configure { dependsOn('syncIskaLibToRunMods') }
+    tasks.named('runServer').configure { dependsOn('syncIskaLibToRunMods') }
 
     // MixinExtras for advanced mixin features
     // NeoForge 20.2+ includes MixinExtras by default, but we can override with a specific version if needed

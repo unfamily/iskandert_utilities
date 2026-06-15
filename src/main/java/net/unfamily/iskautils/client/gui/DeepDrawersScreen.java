@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.client.gui;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
@@ -12,8 +14,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.network.ModMessages;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Screen for the Deep Drawers GUI
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DeepDrawersScreen.class);
+    private static final ModLogger LOGGER = ModLogger.of(DeepDrawersScreen.class);
     private static final int SEARCH_DEBOUNCE_TICKS = 4;
 
     private static final ResourceLocation TEXTURE =
@@ -72,7 +72,6 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     protected void init() {
         super.init();
         this.scrollOffset = menu.getEffectiveScrollOffset();
-        LOGGER.debug("DeepDrawersScreen.init: Initialized scrollOffset from menu: {}", this.scrollOffset);
 
         searchBox = new EditBox(
                 font,
@@ -103,7 +102,6 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         } else {
             int menuOffset = menu.getScrollOffset();
             if (menuOffset != this.scrollOffset) {
-                LOGGER.debug("DeepDrawersScreen.containerTick: Syncing scrollOffset from menu: {} -> {}", this.scrollOffset, menuOffset);
                 scrollOffset = menuOffset;
             }
         }

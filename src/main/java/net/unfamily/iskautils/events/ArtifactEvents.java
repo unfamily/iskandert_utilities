@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.events;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -7,8 +9,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskalib.stage.StageRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Small first-pass implementation of artifact effects from legacy design notes.
@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  */
 @EventBusSubscriber
 public class ArtifactEvents {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ArtifactEvents.class);
+    private static final ModLogger LOGGER = ModLogger.of(ArtifactEvents.class);
     private static final String THE_ROOTS_STAGE = "iska_utils_internal-the_roots_equip";
 
     @SubscribeEvent

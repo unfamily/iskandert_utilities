@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.events;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.level.storage.loot.LootPool;
@@ -11,8 +13,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.LootTableLoadEvent;
 import net.unfamily.iskautils.IskaUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
@@ -22,7 +22,7 @@ import java.util.List;
  */
 @EventBusSubscriber
 public class LootEvents {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LootEvents.class);
+    private static final ModLogger LOGGER = ModLogger.of(LootEvents.class);
 
     /** Tag containing curio items that can drop from Artifacts' Mimic. See data/iska_utils/tags/item/curio_compat/mimic.json */
     private static final ResourceLocation MIMIC_CURIO_TAG = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "curio_compat/mimic");

@@ -1,20 +1,20 @@
 package net.unfamily.iskautils.data.load.ancienttablet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class AncientTabletRequirementParser {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(AncientTabletRequirementParser.class);
 
     private AncientTabletRequirementParser() {}
 

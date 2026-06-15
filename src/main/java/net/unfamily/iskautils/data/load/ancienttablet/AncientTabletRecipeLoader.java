@@ -1,13 +1,13 @@
 package net.unfamily.iskautils.data.load.ancienttablet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.ItemStack;
-import org.slf4j.Logger;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class AncientTabletRecipeLoader {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(AncientTabletRecipeLoader.class);
 
     private static volatile List<AncientTabletRecipeEntry> ENTRIES = List.of();
 

@@ -1,11 +1,12 @@
 package net.unfamily.iskautils.command;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
@@ -19,7 +20,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskalib.client.marker.MarkRenderer;
-import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +29,7 @@ import java.util.Map;
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class CreateMarker {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(CreateMarker.class);
     
     // Default values for debug
     private static final String DEFAULT_COLOR = "33FF0000"; // Semi-transparent red

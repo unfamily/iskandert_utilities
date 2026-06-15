@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -26,7 +27,6 @@ import net.unfamily.iskalib.structure.StructureBlockPlaceOrder;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.structure.StructureMonouseDefinition;
-import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +37,7 @@ import java.util.Map;
  * and giving items to the player after placement
  */
 public class StructureMonouseItem extends Item {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(StructureMonouseItem.class);
     
     // Colors for markers
     public static final int PREVIEW_COLOR = 0x804444FF; // Semi-transparent blue

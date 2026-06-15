@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.item;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
@@ -73,15 +75,13 @@ import net.unfamily.iskautils.item.custom.artifact.SharpenedBoneItem;
 import net.unfamily.iskautils.item.custom.artifact.TheRootsItem;
 
 import net.unfamily.iskautils.util.ModUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.unfamily.iskautils.item.custom.RubberBootsItem;
 import net.unfamily.iskautils.item.custom.MiningEquitizer;
 
 
 
 public class ModItems {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ModItems.class);
+    private static final ModLogger LOGGER = ModLogger.of(ModItems.class);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(IskaUtils.MOD_ID);
 
     // Common properties for all items

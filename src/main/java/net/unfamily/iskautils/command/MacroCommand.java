@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.command;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -12,7 +14,6 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -23,7 +24,6 @@ import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.script.LoadActionParser;
 import net.unfamily.iskautils.script.LoadModCondition;
 import net.unfamily.iskautils.script.LoadModGate;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
  * System for executing command macros with delays
  */
 public class MacroCommand {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(MacroCommand.class);
     
     // Thread pool for scheduled command execution
     private static final ScheduledExecutorService COMMAND_EXECUTOR = Executors.newScheduledThreadPool(2);

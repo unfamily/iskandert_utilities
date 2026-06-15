@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.network.packet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -7,8 +9,6 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.unfamily.iskautils.block.entity.DeepDrawersBlockEntity;
 import net.unfamily.iskautils.client.gui.DeepDrawersMenu;
 import net.unfamily.iskautils.network.ModMessages;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +19,7 @@ import java.util.List;
  */
 public class DeepDrawersScrollC2SPacket {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(DeepDrawersScrollC2SPacket.class);
+    private static final ModLogger LOGGER = ModLogger.of(DeepDrawersScrollC2SPacket.class);
     
     private final BlockPos pos;
     private final int scrollOffset;
@@ -56,8 +56,6 @@ public class DeepDrawersScrollC2SPacket {
             return;
         }
 
-        int oldOffset = menu.getScrollOffset();
-        LOGGER.debug("DeepDrawersScrollC2SPacket.handle: Updating scrollOffset from {} to {}", oldOffset, scrollOffset);
         menu.setScrollOffset(scrollOffset);
         
         // NOTE: We no longer send slot data when scrolling because all slots are sent

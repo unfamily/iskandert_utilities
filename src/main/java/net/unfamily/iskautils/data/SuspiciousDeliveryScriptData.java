@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.data;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -9,8 +11,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryScriptRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +20,7 @@ import java.util.UUID;
  * Persists suspicious delivery pending script runs across server restarts.
  */
 public class SuspiciousDeliveryScriptData extends SavedData {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SuspiciousDeliveryScriptData.class);
+    private static final ModLogger LOGGER = ModLogger.of(SuspiciousDeliveryScriptData.class);
     private static final String DATA_NAME = IskaUtils.MOD_ID + "_suspicious_delivery_script_data";
     private static final String KILL_FAKE_TNT = "kill @e[type=minecraft:tnt,tag=fake_tnt]";
 

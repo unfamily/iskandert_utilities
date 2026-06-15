@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.network.packet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -7,14 +9,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Packet per salvare la struttura selezionata nella Structure Placer Machine dal client al server
  */
 public class StructurePlacerMachineSaveC2SPacket {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StructurePlacerMachineSaveC2SPacket.class);
+    private static final ModLogger LOGGER = ModLogger.of(StructurePlacerMachineSaveC2SPacket.class);
     
     private final String structureId;
     private final BlockPos machinePos;

@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.events;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.component.DataComponents;
@@ -26,12 +28,10 @@ import net.unfamily.iskautils.util.ArtifactTickIntervals;
 import net.unfamily.iskautils.util.AttributeSyncGrace;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @EventBusSubscriber
 public final class CursedArtifactEffects {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CursedArtifactEffects.class);
+    private static final ModLogger LOGGER = ModLogger.of(CursedArtifactEffects.class);
 
     private static final ResourceLocation BUSTED_CROWN_HP_ID = ResourceLocation.fromNamespaceAndPath("iska_utils", "busted_crown_hp");
     private static final String TOTEM_OF_PAIN_STAGE = "iska_utils_internal-totem_of_pain_equip";

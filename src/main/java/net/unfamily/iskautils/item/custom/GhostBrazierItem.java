@@ -2,7 +2,6 @@ package net.unfamily.iskautils.item.custom;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -13,12 +12,10 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.data.GhostBrazierData;
 import net.unfamily.iskautils.network.ModMessages;
-import net.unfamily.iskautils.util.ModUtils;
+import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.minecraft.network.chat.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
 import java.util.List;
 
 /**
@@ -26,7 +23,6 @@ import java.util.List;
  * when held in inventory and keybind is pressed
  */
 public class GhostBrazierItem extends Item {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GhostBrazierItem.class);
 
     public GhostBrazierItem(Properties properties) {
         super(properties);
@@ -41,61 +37,7 @@ public class GhostBrazierItem extends Item {
         if (player == null) {
             return false;
         }
-
-        // Check hands first (highest priority)
-        ItemStack mainHand = player.getMainHandItem();
-        if (mainHand.getItem() instanceof GhostBrazierItem) {
-            return true;
-        }
-
-        ItemStack offHand = player.getOffhandItem();
-        if (offHand.getItem() instanceof GhostBrazierItem) {
-            return true;
-        }
-
-        // If Curios is loaded, check Curios slots (second priority)
-        if (ModUtils.isCuriosLoaded()) {
-            if (checkCuriosSlots(player)) {
-                return true;
-            }
-        }
-
-        // Check player inventory (lowest priority)
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.getItem() instanceof GhostBrazierItem) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Uses reflection to check if the Ghost Brazier is equipped in a Curios slot
-     */
-    private static boolean checkCuriosSlots(Player player) {
-        try {
-            Class<?> curioApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-            Method getCuriosHandlerMethod = curioApiClass.getMethod("getCuriosHelper");
-            Object curiosHelper = getCuriosHandlerMethod.invoke(null);
-            Method getEquippedCurios = curiosHelper.getClass().getMethod("getEquippedCurios", LivingEntity.class);
-            Object equippedCurios = getEquippedCurios.invoke(curiosHelper, player);
-            
-            if (equippedCurios instanceof Iterable<?> items) {
-                for (Object itemPair : items) {
-                    Method getStackMethod = itemPair.getClass().getMethod("getRight");
-                    ItemStack stack = (ItemStack) getStackMethod.invoke(itemPair);
-                    if (stack.getItem() instanceof GhostBrazierItem) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            LOGGER.warn("Error checking Curios slots for Ghost Brazier: {}", e.getMessage());
-            return false;
-        }
+        return !CurioEquipUtil.findActiveStack(player, ModItems.GHOST_BRAZIER.get()).isEmpty();
     }
 
     public static void tickEquipped(ServerPlayer serverPlayer) {

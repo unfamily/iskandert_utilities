@@ -596,8 +596,6 @@ public class DeepDrawersBlockEntity extends BlockEntity {
                 return item.builtInRegistryHolder().is(itemTag);
             } catch (Exception e) {
                 // Invalid tag format - log for debugging
-                org.slf4j.LoggerFactory.getLogger(DeepDrawersBlockEntity.class).debug(
-                    "Failed to parse tag '{}' for blacklist check: {}", tagOrId, e.getMessage());
                 return false;
             }
         } else {

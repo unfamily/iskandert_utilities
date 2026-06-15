@@ -1,12 +1,12 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.util.ModUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Classe che gestisce l'integrazione Curios per il Portable Dislocator.
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * anche quando Curios non è presente.
  */
 public class PortableDislocatorCurioHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PortableDislocatorCurioHandler.class);
+    private static final ModLogger LOGGER = ModLogger.of(PortableDislocatorCurioHandler.class);
     
     /**
      * Registers the Portable Dislocator as a curio through reflection.

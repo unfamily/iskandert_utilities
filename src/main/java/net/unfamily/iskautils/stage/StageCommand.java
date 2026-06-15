@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.stage;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -9,7 +11,6 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -24,7 +25,6 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskalib.team.ShopTeamManager;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class StageCommand {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(StageCommand.class);
     
     // Error messages
     private static final SimpleCommandExceptionType ERROR_NEED_PLAYER = new SimpleCommandExceptionType(

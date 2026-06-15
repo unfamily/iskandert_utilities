@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.item;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -13,7 +14,6 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.command.CommandItemLoader;
-import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +23,7 @@ import java.util.Map;
  * seguendo l'approccio usato per le potion plate
  */
 public class CommandItemRegistry {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(CommandItemRegistry.class);
     
     // Registro differito per gli item
     private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(

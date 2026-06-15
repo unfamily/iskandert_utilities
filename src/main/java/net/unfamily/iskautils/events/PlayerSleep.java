@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.events;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -11,14 +13,12 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerWakeUpEvent;
 import net.unfamily.iskalib.stage.StageRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
 @EventBusSubscriber
 public class PlayerSleep {
-	private static final Logger LOGGER = LoggerFactory.getLogger(PlayerSleep.class);
+	private static final ModLogger LOGGER = ModLogger.of(PlayerSleep.class);
 	private static final String NECRO_CRYSTAL_HEART_COUNTER = "necro_crystal_heart_hex";
 	private static final double BASE_HEALTH = 20.0;
 

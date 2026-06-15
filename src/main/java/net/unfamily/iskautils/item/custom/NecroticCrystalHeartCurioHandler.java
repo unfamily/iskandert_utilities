@@ -1,13 +1,13 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskalib.stage.StageRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -16,7 +16,7 @@ import net.minecraft.server.level.ServerPlayer;
  * even when Curios is not present.
  */
 public class NecroticCrystalHeartCurioHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NecroticCrystalHeartCurioHandler.class);
+    private static final ModLogger LOGGER = ModLogger.of(NecroticCrystalHeartCurioHandler.class);
    
     /**
      * Registers the Necrotic Crystal Heart as a curio.

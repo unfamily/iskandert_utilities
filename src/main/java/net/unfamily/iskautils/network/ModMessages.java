@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.network;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -35,9 +37,6 @@ import net.minecraft.core.BlockPos;
 import com.mojang.math.Transformation;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.mojang.logging.LogUtils;
 import net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket;
 import net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket;
 import net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket;
@@ -53,7 +52,7 @@ import java.util.List;
  * Handles network messages for the mod
  */
 public class ModMessages {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(ModMessages.class);
     
     // Simplified version to avoid NeoForge networking compatibility issues
     
@@ -61,7 +60,6 @@ public class ModMessages {
      * Registers network messages for the mod
      */
     public static void register() {
-        LOGGER.info("Registering packets for " + IskaUtils.MOD_ID);
         // Registration is now handled by the RegisterPayloadHandlersEvent
         // See registerPayloads() method below
     }
@@ -330,7 +328,6 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket::handle
         );
 
-        LOGGER.info("Registered preview networking packets for {}", IskaUtils.MOD_ID);
     }
     
     /**
@@ -351,7 +348,6 @@ public class ModMessages {
      * Sends a Portable Dislocator packet to the server
      */
     public static void sendPortableDislocatorPacket(int targetX, int targetZ) {
-        LOGGER.info("Sending Portable Dislocator packet to server: {}, {}", targetX, targetZ);
         // Simplified implementation for single player compatibility
     }
 
@@ -514,7 +510,6 @@ public class ModMessages {
      */
     @OnlyIn(Dist.CLIENT)
     public static void sendStructureUndoPacket() {
-        LOGGER.debug("Sending Structure Undo packet to server");
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
@@ -700,7 +695,6 @@ public class ModMessages {
                         var blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity structureSaver) {
                             structureSaver.setBlueprintDataClientSide(vertex1, vertex2, center);
-                            LOGGER.info("Blueprint synchronized successfully on client via ModMessages");
                         } else {
                             LOGGER.warn("BlockEntity at {} is not a StructureSaverMachineBlockEntity", machinePos);
                         }
@@ -713,7 +707,6 @@ public class ModMessages {
             });
         } catch (Exception e) {
             // Ignore errors when running on dedicated server
-            LOGGER.debug("Blueprint sync packet not sent in dedicated server mode: {}", e.getMessage());
         }
     }
     
@@ -1202,8 +1195,6 @@ public class ModMessages {
             boolean isSingleplayer = player.getServer().isSingleplayer();
             
             if (isSingleplayer) {
-                LOGGER.debug("Singleplayer mode detected, skipping structure sync for player {}", 
-                           player.getName().getString());
                 return; // In singleplayer, the client already has its local structures
             }
             
@@ -1211,12 +1202,9 @@ public class ModMessages {
             Map<String, StructureDefinition> serverStructures = StructureLoader.getStructuresForSync();
             
             if (serverStructures.isEmpty()) {
-                LOGGER.debug("No structures to synchronize for player {}", player.getName().getString());
                 return;
             }
             
-            LOGGER.info("Synchronizing {} structures to client for player {} (dedicated server)", 
-                       serverStructures.size(), player.getName().getString());
             
             // Create synchronization packet with server flag
             net.unfamily.iskautils.network.packet.StructureSyncS2CPacket packet = 
@@ -1225,8 +1213,6 @@ public class ModMessages {
             // Send the real packet to client using NeoForge networking system
             try {
                 net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, packet);
-                LOGGER.info("Successfully synchronized structures to client {} via real networking", 
-                           player.getName().getString());
             } catch (Exception networkError) {
                 LOGGER.error("Error sending structure sync packet to {}: {}", 
                            player.getName().getString(), networkError.getMessage());
@@ -1260,7 +1246,6 @@ public class ModMessages {
                 var blockEntity = level.getBlockEntity(machinePos);
                 if (blockEntity instanceof net.unfamily.iskautils.block.entity.StructureSaverMachineBlockEntity machine) {
                     machine.requestAreaRecalculation();
-                    LOGGER.info("Area recalculation requested successfully");
                 }
             }
         } catch (Exception e) {
@@ -1466,7 +1451,6 @@ public class ModMessages {
 
     @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawersScrollPacket(BlockPos pos, int scrollOffset) {
-        LOGGER.info("Client: Sending DeepDrawersScrollPacket: pos={}, offset={}", pos, scrollOffset);
         // Simplified implementation for single player compatibility
         try {
             // Get the server from single player or dedicated server
@@ -1481,7 +1465,6 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        LOGGER.info("Client: Executing DeepDrawersScrollPacket on server thread: pos={}, offset={}", pos, scrollOffset);
                         // Create and handle the packet
                         new net.unfamily.iskautils.network.packet.DeepDrawersScrollC2SPacket(pos, scrollOffset).handle(player);
                     } else {

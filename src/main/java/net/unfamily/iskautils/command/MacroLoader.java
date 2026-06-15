@@ -1,12 +1,13 @@
 package net.unfamily.iskautils.command;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -20,7 +21,6 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import net.unfamily.iskautils.script.LoadModGate;
-import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class MacroLoader {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(MacroLoader.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
     // Stores files with overwritable=false to prevent them from being overwritten
@@ -605,7 +605,7 @@ public class MacroLoader {
             }
             
             String macroId = json.get("command").getAsString();
-            if (!LoadModGate.shouldIncludeAtLoad(json, LOGGER, "macro:" + macroId)) {
+            if (!LoadModGate.shouldIncludeAtLoad(json, LOGGER.unwrap(), "macro:" + macroId)) {
                 return;
             }
             

@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.data;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -7,8 +9,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.unfamily.iskautils.IskaUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +19,7 @@ import java.util.UUID;
  * Manages whether player has Ghost Brazier in inventory and previous game mode.
  */
 public class GhostBrazierData extends SavedData {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GhostBrazierData.class);
+    private static final ModLogger LOGGER = ModLogger.of(GhostBrazierData.class);
     private static final String DATA_NAME = IskaUtils.MOD_ID + "_ghost_brazier_data";
 
     // Map to store whether player has Ghost Brazier in inventory

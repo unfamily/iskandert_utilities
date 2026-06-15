@@ -1,9 +1,10 @@
 package net.unfamily.iskautils.data;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.mojang.logging.LogUtils;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.*;
@@ -11,7 +12,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext;
 import net.neoforged.neoforge.client.model.geometry.IGeometryLoader;
 import net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry;
-import org.slf4j.Logger;
 
 import java.util.function.Function;
 
@@ -19,7 +19,7 @@ import java.util.function.Function;
  * Custom model loader for dynamic potion plate models
  */
 public class DynamicPotionPlateModelLoader implements IGeometryLoader<DynamicPotionPlateModelLoader.Geometry> {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(DynamicPotionPlateModelLoader.class);
     
     public static final DynamicPotionPlateModelLoader INSTANCE = new DynamicPotionPlateModelLoader();
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("iska_utils", "dynamic_potion_plate");

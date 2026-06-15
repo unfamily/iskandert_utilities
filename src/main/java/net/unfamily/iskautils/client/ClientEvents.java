@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.client;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -9,8 +11,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent.Stage;
 import net.unfamily.iskautils.IskaUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.unfamily.iskalib.client.marker.MarkRenderer;
 
@@ -19,7 +19,7 @@ import net.unfamily.iskalib.client.marker.MarkRenderer;
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT)
 public class ClientEvents {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClientEvents.class);
+    private static final ModLogger LOGGER = ModLogger.of(ClientEvents.class);
     
     /**
      * Flag to check if the thread is active

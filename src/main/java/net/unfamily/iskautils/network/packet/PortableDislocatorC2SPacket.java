@@ -1,16 +1,16 @@
 package net.unfamily.iskautils.network.packet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Packet for Portable Dislocator teleportation from client to server
  */
 public class PortableDislocatorC2SPacket {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PortableDislocatorC2SPacket.class);
+    private static final ModLogger LOGGER = ModLogger.of(PortableDislocatorC2SPacket.class);
     
     private final int targetX;
     private final int targetZ;

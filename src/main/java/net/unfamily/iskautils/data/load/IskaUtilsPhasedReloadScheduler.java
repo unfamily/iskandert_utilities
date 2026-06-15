@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.data.load;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.unfamily.iskautils.command.MacroLoader;
@@ -15,7 +16,6 @@ import net.unfamily.iskautils.structure.StructureMonouseLoader;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeLoader;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryLoader;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryLoader;
-import org.slf4j.Logger;
 
 /**
  * Spreads IskaUtils {@code load/**} work across server ticks so world join is not blocked
@@ -23,7 +23,7 @@ import org.slf4j.Logger;
  */
 public final class IskaUtilsPhasedReloadScheduler {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(IskaUtilsPhasedReloadScheduler.class);
 
     private static volatile boolean running;
     private static int phase;

@@ -1,14 +1,14 @@
 package net.unfamily.iskautils.script;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.unfamily.iskautils.command.CommandItemAction;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.obtaining.MessageSpec;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.List;
  * Shared JSON parsing for {@code do[]} action lists (command items, suspicious delivery, etc.).
  */
 public final class LoadActionParser {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(LoadActionParser.class);
 
     private LoadActionParser() {}
 
@@ -48,7 +48,7 @@ public final class LoadActionParser {
                 action.setCommand(actionJson.get("execute").getAsString());
             } else if (actionJson.has("message") && actionJson.get("message").isJsonObject()) {
                 action.setType(CommandItemAction.ActionType.MESSAGE);
-                action.setMessage(MessageSpec.fromJson(actionJson.getAsJsonObject("message"), LOGGER, contextId));
+                action.setMessage(MessageSpec.fromJson(actionJson.getAsJsonObject("message"), LOGGER.unwrap(), contextId));
             } else if (actionJson.has("delay")) {
                 action.setType(CommandItemAction.ActionType.DELAY);
                 action.setDelay(actionJson.get("delay").getAsInt());

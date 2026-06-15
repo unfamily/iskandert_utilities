@@ -1,13 +1,13 @@
 package net.unfamily.iskautils.data;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.unfamily.iskautils.IskaUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ import java.util.UUID;
  * Manages auto-placement toggle state for each player.
  */
 public class BurningBrazierData extends SavedData {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BurningBrazierData.class);
+    private static final ModLogger LOGGER = ModLogger.of(BurningBrazierData.class);
     private static final String DATA_NAME = IskaUtils.MOD_ID + "_burning_brazier_data";
 
     // Map to store auto-placement enabled state for each player (default: true)

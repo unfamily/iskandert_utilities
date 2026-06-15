@@ -1,15 +1,15 @@
 package net.unfamily.iskautils.arcane;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.resources.ResourceLocation;
-import org.slf4j.Logger;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class ArcaneDictionaryEffectRegistry {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(ArcaneDictionaryEffectRegistry.class);
     private static final Map<ResourceLocation, ArcaneDictionaryEffect> EFFECTS = new LinkedHashMap<>();
 
     private ArcaneDictionaryEffectRegistry() {}

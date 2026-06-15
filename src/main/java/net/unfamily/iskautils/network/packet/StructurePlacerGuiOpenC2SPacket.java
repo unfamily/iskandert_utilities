@@ -1,11 +1,11 @@
 package net.unfamily.iskautils.network.packet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -13,7 +13,7 @@ import java.util.Map;
  * Packet per aprire la GUI di selezione struttura dal client al server
  */
 public class StructurePlacerGuiOpenC2SPacket {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StructurePlacerGuiOpenC2SPacket.class);
+    private static final ModLogger LOGGER = ModLogger.of(StructurePlacerGuiOpenC2SPacket.class);
     
     /**
      * Crea un nuovo packet per aprire la GUI

@@ -1,10 +1,11 @@
 package net.unfamily.iskautils.iska_utils_stages;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,7 +24,6 @@ import net.unfamily.iskautils.script.LoadModCondition;
 import net.unfamily.iskautils.script.LoadModGate;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ResourceUtil;
-import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.FileReader;
@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
  * based on restrictions defined in JSON files.
  */
 public class StageItemHandler {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(StageItemHandler.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
     // Map of item restrictions loaded from JSON files
@@ -373,7 +373,7 @@ public class StageItemHandler {
             for (JsonElement element : json.getAsJsonArray("restrictions")) {
                 if (element.isJsonObject()) {
                     JsonObject ruleObj = element.getAsJsonObject();
-                    if (!LoadModGate.shouldIncludeAtLoad(ruleObj, LOGGER, "stage_item_rule")) {
+                    if (!LoadModGate.shouldIncludeAtLoad(ruleObj, LOGGER.unwrap(), "stage_item_rule")) {
                         continue;
                     }
                     StageItemRule rule = new StageItemRule();

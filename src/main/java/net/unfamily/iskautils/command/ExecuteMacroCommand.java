@@ -1,9 +1,10 @@
 package net.unfamily.iskautils.command;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -12,7 +13,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.iskautils.IskaUtils;
-import org.slf4j.Logger;
 
 /**
  * Command handler for executing command macros
@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class ExecuteMacroCommand {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(ExecuteMacroCommand.class);
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {

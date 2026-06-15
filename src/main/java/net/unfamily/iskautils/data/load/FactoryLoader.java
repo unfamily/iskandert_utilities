@@ -1,9 +1,10 @@
 package net.unfamily.iskautils.data.load;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,14 +26,13 @@ import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost;
 import net.unfamily.iskautils.script.LoadEntryIfParser;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
 
 /**
  * Factory machine input/output mappings: server from {@link FactorySourcesRecipe}; client from merged
  * Scans all {@code recipe/} JSON; uses files with {@code type} {@code iska_utils:factory} or {@code iska_utils:factory_sources}.
  */
 public final class FactoryLoader {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(FactoryLoader.class);
     private static final String FACTORY_TYPE = "iska_utils:factory";
     private static final String FACTORY_SOURCES_TYPE = "iska_utils:factory_sources";
 

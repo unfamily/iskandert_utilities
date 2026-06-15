@@ -209,11 +209,6 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                 // This should never happen due to break protection, but is a failsafe
                 if (deepDrawers.hasItems()) {
                     // Log warning if this happens (shouldn't be possible)
-                    org.slf4j.LoggerFactory.getLogger(DeepDrawersBlock.class).warn(
-                        "Deep Drawers at {} was broken with items inside! Contents destroyed to prevent lag. " +
-                        "This should not happen due to break protection.",
-                        pos
-                    );
                     
                     // Clear storage without dropping (prevents lag)
                     deepDrawers.clearStorage();

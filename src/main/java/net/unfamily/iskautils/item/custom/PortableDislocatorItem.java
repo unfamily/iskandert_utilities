@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -25,8 +27,6 @@ import net.unfamily.iskautils.Config;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.component.CustomData;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.util.ArtifactTooltipUtil;
@@ -47,7 +47,7 @@ import java.util.HashMap;
  * When worn or held in hand, provides portable dislocation functionality.
  */
 public class PortableDislocatorItem extends Item {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PortableDislocatorItem.class);
+    private static final ModLogger LOGGER = ModLogger.of(PortableDislocatorItem.class);
     
     // Energy storage tag
     private static final String ENERGY_TAG = "Energy";
@@ -1138,8 +1138,6 @@ public class PortableDislocatorItem extends Item {
         ItemStack mainHand = player.getMainHandItem();
         ItemStack offHand = player.getOffhandItem();
         
-        LOGGER.debug("Checking hands for compass: mainHand={}, offHand={}", 
-                    mainHand.getItem(), offHand.getItem());
         
         ItemStack compassStack = null;
         String compassType = null;
@@ -1148,30 +1146,24 @@ public class PortableDislocatorItem extends Item {
         if (isValidCompass(mainHand)) {
             compassStack = mainHand;
             compassType = getCompassType(mainHand);
-            LOGGER.debug("Found valid compass in main hand: type={}", compassType);
         }
         // If not found in main hand, check off hand
         else if (isValidCompass(offHand)) {
             compassStack = offHand;
             compassType = getCompassType(offHand);
-            LOGGER.debug("Found valid compass in off hand: type={}", compassType);
         }
         
         if (compassStack == null || compassType == null) {
-            LOGGER.debug("No valid compass found in hands");
             return;
         }
 
         // Extract coordinates from compass using a robust approach
-        LOGGER.debug("Attempting to extract coordinates from compass");
         Pair<Integer, Integer> coordinates = extractCoordinates(compassStack, player);
         
         if (coordinates == null) {
-            LOGGER.debug("Failed to extract coordinates from compass");
             return;
         }
         
-        LOGGER.debug("Successfully extracted coordinates: x={}, z={}", coordinates.getLeft(), coordinates.getRight());
 
         // If we're on the client side, create a request for the server
         if (player.level().isClientSide) {
@@ -1233,14 +1225,12 @@ public class PortableDislocatorItem extends Item {
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         String itemIdString = itemId.toString();
         
-        LOGGER.debug("Checking if item is valid compass: itemId={}", itemIdString);
         
         boolean isValid = itemIdString.equals("naturescompass:naturescompass") || 
                          itemIdString.equals("explorerscompass:explorerscompass") ||
                          itemIdString.equals("structurecompass:structure_compass");
 
         
-        LOGGER.debug("Item valid compass check result: {}", isValid);
         
         return isValid;
     }
@@ -1254,7 +1244,6 @@ public class PortableDislocatorItem extends Item {
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         String itemIdString = itemId.toString();
         
-        LOGGER.debug("Getting compass type for itemId: {}", itemIdString);
         
         if (itemIdString.equals("naturescompass:naturescompass")) {
             return "naturescompass";
@@ -1278,8 +1267,6 @@ public class PortableDislocatorItem extends Item {
         String compassString = compass.toString();
         
         // Debug logging
-        LOGGER.debug("Processing compass: type={}, item={}", compassTypeFromId, compassItemString);
-        LOGGER.debug("Compass string: {}", compassString);
         
         var components = compass.getComponents();
         
@@ -1292,7 +1279,6 @@ public class PortableDislocatorItem extends Item {
                 if (structureMatcher.find()) {
                     int x = Integer.parseInt(structureMatcher.group(1));
                     int z = Integer.parseInt(structureMatcher.group(2));
-                    LOGGER.debug("Extracted coordinates from string parsing (early): x={}, z={}", x, z);
                     return Pair.of(x, z);
                 }
                 
@@ -1302,7 +1288,6 @@ public class PortableDislocatorItem extends Item {
                 if (altMatcher.find()) {
                     int x = Integer.parseInt(altMatcher.group(1));
                     int z = Integer.parseInt(altMatcher.group(2));
-                    LOGGER.debug("Extracted coordinates from alternative pattern: x={}, z={}", x, z);
                     return Pair.of(x, z);
                 }
                 
@@ -1311,19 +1296,15 @@ public class PortableDislocatorItem extends Item {
                     String componentKey = entry.type().toString();
                     Object componentValue = entry.value();
                     
-                    LOGGER.debug("Structure compass component: key={}, value={}, valueClass={}", 
-                                 componentKey, componentValue, componentValue.getClass().getSimpleName());
                     
                     if (componentKey.contains("structure_info") || componentKey.endsWith("structure_info")) {
                         if (componentValue instanceof CompoundTag) {
                             CompoundTag structureInfo = (CompoundTag) componentValue;
-                            LOGGER.debug("Found structure_info CompoundTag: {}", structureInfo);
                             if (structureInfo.contains("pos")) {
                                 int[] pos = structureInfo.getIntArray("pos");
                                 if (pos.length >= 3) {
                                     int x = pos[0];
                                     int z = pos[2];
-                                    LOGGER.debug("Extracted coordinates from structure_info: x={}, z={}", x, z);
                                     return Pair.of(x, z);
                                 }
                             }
@@ -1337,7 +1318,6 @@ public class PortableDislocatorItem extends Item {
                 var customData = compass.get(DataComponents.CUSTOM_DATA);
                 var nbt = customData.copyTag();
                 
-                LOGGER.debug("Found CustomData NBT: {}", nbt);
                 
                 if ("naturescompass".equals(compassTypeFromId)) {
                     if (nbt.contains("naturescompass:found_x") && nbt.contains("naturescompass:found_z")) {
@@ -1370,15 +1350,12 @@ public class PortableDislocatorItem extends Item {
             Integer foundX = null;
             Integer foundZ = null;
             
-            LOGGER.debug("Method 2: Iterating through {} components", components.size());
             
             // Try to extract values by converting from Object to Integer
             for (var entry : components) {
                 String componentKey = entry.type().toString();
                 Object componentValue = entry.value();
                 
-                LOGGER.debug("Component: key={}, value={}, valueClass={}", 
-                            componentKey, componentValue, componentValue.getClass().getSimpleName());
                 
                 if ("naturescompass".equals(compassTypeFromId)) {
                     if (componentKey.contains("found_x") && componentValue instanceof Integer) {
@@ -1397,8 +1374,6 @@ public class PortableDislocatorItem extends Item {
                 } else if ("structurecompass".equals(compassTypeFromId)) {
                     // Handle structure_info component for structure compass
                     if (componentKey.contains("structure_info")) {
-                        LOGGER.debug("Found structure_info in Method 2: key={}, valueClass={}", 
-                                    componentKey, componentValue.getClass().getSimpleName());
                         
                         // Try to handle StructureInfo object directly
                         if (componentValue.getClass().getSimpleName().equals("StructureInfo")) {
@@ -1415,17 +1390,14 @@ public class PortableDislocatorItem extends Item {
                                     int x = (Integer) getXMethod.invoke(blockPos);
                                     int z = (Integer) getZMethod.invoke(blockPos);
                                     
-                                    LOGGER.debug("Method 2: Extracted coordinates from StructureInfo: x={}, z={}", x, z);
                                     foundX = x;
                                     foundZ = z;
                                 }
                             } catch (Exception e) {
-                                LOGGER.debug("Method 2: StructureInfo reflection failed: {}", e.getMessage());
                                 
                                 // Fallback: try string parsing on the StructureInfo object
                                 try {
                                     String valueString = componentValue.toString();
-                                    LOGGER.debug("Method 2: Trying string parsing on StructureInfo: {}", valueString);
                                     
                                     // Pattern for BlockPos{x=3200, y=0, z=6672}
                                     Pattern blockPosPattern = Pattern.compile("BlockPos\\{x=(-?\\d+),\\s*y=(-?\\d+),\\s*z=(-?\\d+)\\}");
@@ -1433,10 +1405,8 @@ public class PortableDislocatorItem extends Item {
                                     if (matcher.find()) {
                                         foundX = Integer.parseInt(matcher.group(1));
                                         foundZ = Integer.parseInt(matcher.group(3));
-                                        LOGGER.debug("Method 2: String parsing found coordinates from StructureInfo x={}, z={}", foundX, foundZ);
                                     }
                                 } catch (Exception ex) {
-                                    LOGGER.debug("Method 2: StructureInfo string parsing failed: {}", ex.getMessage());
                                 }
                             }
                         }
@@ -1447,7 +1417,6 @@ public class PortableDislocatorItem extends Item {
                                 if (pos.length >= 3) {
                                     foundX = pos[0];
                                     foundZ = pos[2];
-                                    LOGGER.debug("Method 2: Found coordinates x={}, z={}", foundX, foundZ);
                                 }
                             }
                         }
@@ -1455,17 +1424,14 @@ public class PortableDislocatorItem extends Item {
                         else {
                             try {
                                 String valueString = componentValue.toString();
-                                LOGGER.debug("Method 2: Trying string parsing on: {}", valueString);
                                 // Try to extract from string representation
                                 Pattern posPattern = Pattern.compile("pos:\\[I;(-?\\d+),\\d+,(-?\\d+)\\]");
                                 Matcher matcher = posPattern.matcher(valueString);
                                 if (matcher.find()) {
                                     foundX = Integer.parseInt(matcher.group(1));
                                     foundZ = Integer.parseInt(matcher.group(2));
-                                    LOGGER.debug("Method 2: String parsing found coordinates x={}, z={}", foundX, foundZ);
                                 }
                             } catch (Exception e) {
-                                LOGGER.debug("Method 2: String parsing failed: {}", e.getMessage());
                             }
                         }
                     }
@@ -1474,10 +1440,8 @@ public class PortableDislocatorItem extends Item {
             
             // If we found both coordinates, return them
             if (foundX != null && foundZ != null) {
-                LOGGER.debug("Method 2: Successfully found coordinates x={}, z={}", foundX, foundZ);
                 return Pair.of(foundX, foundZ);
             } else {
-                LOGGER.debug("Method 2: No coordinates found (foundX={}, foundZ={})", foundX, foundZ);
             }
             
             // Method 3: toString() parsing as fallback
@@ -1526,10 +1490,8 @@ public class PortableDislocatorItem extends Item {
             }
             
         } catch (Exception e) {
-            LOGGER.debug("Exception in extractCoordinates: {}", e.getMessage());
         }
         
-        LOGGER.debug("extractCoordinates: No coordinates found for compass type {}", compassTypeFromId);
         return null;
     }
     

@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.structure;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
@@ -8,7 +9,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.custom.StructureMonouseItem;
-import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,7 +17,7 @@ import java.util.Map;
  * Registry for dynamically registered Structure Monouse items
  */
 public class StructureMonouseRegistry {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(StructureMonouseRegistry.class);
     
     // Deferred register for items
     private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(

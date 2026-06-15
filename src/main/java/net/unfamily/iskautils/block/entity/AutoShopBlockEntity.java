@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.block.entity;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -11,8 +13,6 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import net.minecraft.world.item.ItemStack;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.minecraft.world.entity.player.Player;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,7 +23,7 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public class AutoShopBlockEntity extends BlockEntity {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(AutoShopBlockEntity.class);
+    private static final ModLogger LOGGER = ModLogger.of(AutoShopBlockEntity.class);
     
     // Custom slot for encapsulated function (1 slot) - exposed for automatic extraction
     private final ItemStackHandler encapsulatedSlot = new ItemStackHandler(1) {

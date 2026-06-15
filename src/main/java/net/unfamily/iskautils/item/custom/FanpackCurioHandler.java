@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.item.custom;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,8 +13,6 @@ import net.minecraft.world.item.component.CustomData;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ModUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -24,7 +24,7 @@ import java.util.UUID;
  * This implements ICurio using reflection to avoid direct dependencies on Curios.
  */
 public class FanpackCurioHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FanpackCurioHandler.class);
+    private static final ModLogger LOGGER = ModLogger.of(FanpackCurioHandler.class);
     
     // Track last warning time for low energy messages (same as FanpackItem)
     private static final Map<UUID, Long> lastWarningTime = new HashMap<>();

@@ -1,8 +1,9 @@
 package net.unfamily.iskautils.command;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -17,7 +18,6 @@ import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopTransactionManager;
-import org.slf4j.Logger;
 
 import java.util.Map;
 
@@ -26,7 +26,7 @@ import java.util.Map;
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class ShopCommand {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(ShopCommand.class);
     
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {

@@ -1,20 +1,20 @@
 package net.unfamily.iskautils.arcane;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public final class ArcaneDictionaryLoader {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(ArcaneDictionaryLoader.class);
 
     private static volatile List<ArcaneDictionaryDefinition.Entry> ENTRIES = List.of();
 
@@ -49,7 +49,7 @@ public final class ArcaneDictionaryLoader {
         if (!obj.has("type") || !IskaUtilsLoadPaths.TYPE_ARCANE_DICTIONARY.equals(obj.get("type").getAsString())) {
             return;
         }
-        out.addAll(ArcaneDictionaryDefinition.parseEntries(obj, LOGGER, fileId.toString()));
+        out.addAll(ArcaneDictionaryDefinition.parseEntries(obj, LOGGER.unwrap(), fileId.toString()));
     }
 
     public static List<ArcaneDictionaryDefinition.Entry> getEntries() {

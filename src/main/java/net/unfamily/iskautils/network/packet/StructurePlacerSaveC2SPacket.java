@@ -1,19 +1,19 @@
 package net.unfamily.iskautils.network.packet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Packet per salvare la struttura selezionata dal client al server
  */
 public class StructurePlacerSaveC2SPacket {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StructurePlacerSaveC2SPacket.class);
+    private static final ModLogger LOGGER = ModLogger.of(StructurePlacerSaveC2SPacket.class);
     
     private final String structureId;
     

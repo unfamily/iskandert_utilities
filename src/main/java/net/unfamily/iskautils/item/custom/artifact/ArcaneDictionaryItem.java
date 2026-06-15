@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.item.custom.artifact;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -13,12 +14,11 @@ import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryContents;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryLoader;
 import net.unfamily.iskautils.arcane.ArcaneDictionaryReroll;
-import org.slf4j.Logger;
 
 import java.util.List;
 
 public class ArcaneDictionaryItem extends CursedArtifactItem {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(ArcaneDictionaryItem.class);
 
     public ArcaneDictionaryItem(Properties properties) {
         super(properties);

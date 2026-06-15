@@ -4,8 +4,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
@@ -15,6 +13,8 @@ import net.unfamily.iskautils.item.custom.artifact.TheDeceptionItem;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -24,7 +24,11 @@ import java.util.function.Predicate;
  * We treat main/offhand as equipped as well (useful when Curios is not installed).
  */
 public final class CurioEquipUtil {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CurioEquipUtil.class);
+    private static final String CURIOS_API_CLASS = "top.theillusivec4.curios.api.CuriosApi";
+
+    private static volatile boolean inventoryApiProbed;
+    private static volatile boolean inventoryApiAvailable;
+    private static Method getCuriosInventoryMethod;
 
     private CurioEquipUtil() {}
 
@@ -45,30 +49,43 @@ public final class CurioEquipUtil {
         if (player == null || consumer == null || !ModUtils.isCuriosLoaded()) {
             return;
         }
-        int[] found = {0};
-        Consumer<ItemStack> counter = stack -> {
-            found[0]++;
-            consumer.accept(stack);
-        };
-        boolean inventoryScanned = forEachViaCuriosInventory(player, counter);
-        if (!inventoryScanned || found[0] == 0) {
-            forEachViaCuriosHelper(player, consumer);
+        forEachViaCuriosInventory(player, consumer);
+    }
+
+    private static boolean ensureInventoryApi() {
+        if (inventoryApiProbed) {
+            return inventoryApiAvailable;
+        }
+        synchronized (CurioEquipUtil.class) {
+            if (inventoryApiProbed) {
+                return inventoryApiAvailable;
+            }
+            try {
+                Class<?> curiosApiClass = Class.forName(CURIOS_API_CLASS);
+                getCuriosInventoryMethod = curiosApiClass.getMethod("getCuriosInventory", LivingEntity.class);
+                inventoryApiAvailable = true;
+            } catch (Throwable ignored) {
+                inventoryApiAvailable = false;
+            }
+            inventoryApiProbed = true;
+            return inventoryApiAvailable;
         }
     }
 
-    private static boolean forEachViaCuriosInventory(Player player, Consumer<ItemStack> consumer) {
+    private static void forEachViaCuriosInventory(Player player, Consumer<ItemStack> consumer) {
+        if (!ensureInventoryApi()) {
+            return;
+        }
         try {
-            Class<?> curiosApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-            Method getCuriosInventory = curiosApiClass.getMethod("getCuriosInventory", LivingEntity.class);
-            Object curiosInventoryOpt = getCuriosInventory.invoke(null, player);
-            if (!(curiosInventoryOpt instanceof java.util.Optional<?> opt) || opt.isEmpty()) {
-                return false;
+            Object curiosInventoryOpt = getCuriosInventoryMethod.invoke(null, player);
+            if (!(curiosInventoryOpt instanceof Optional<?> opt) || opt.isEmpty()) {
+                return;
             }
             Object curiosInventory = opt.get();
             Method getCurios = curiosInventory.getClass().getMethod("getCurios");
             Object curiosMap = getCurios.invoke(curiosInventory);
-            if (!(curiosMap instanceof java.util.Map<?, ?> map)) {
-                return false;
+            if (!(curiosMap instanceof Map<?, ?> map)) {
+                return;
             }
             for (Object slotInventory : map.values()) {
                 Method getStacks = slotInventory.getClass().getMethod("getStacks");
@@ -83,33 +100,8 @@ public final class CurioEquipUtil {
                     }
                 }
             }
-            return true;
-        } catch (Throwable t) {
-            LOGGER.debug("Curios inventory scan failed: {}", t.toString());
-            return false;
-        }
-    }
-
-    private static void forEachViaCuriosHelper(Player player, Consumer<ItemStack> consumer) {
-        try {
-            Class<?> curiosApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-            Method getCuriosHelperMethod = curiosApiClass.getMethod("getCuriosHelper");
-            Object curiosHelper = getCuriosHelperMethod.invoke(null);
-
-            Method getEquippedCurios = curiosHelper.getClass().getMethod("getEquippedCurios", LivingEntity.class);
-            Object equippedCurios = getEquippedCurios.invoke(curiosHelper, player);
-
-            if (equippedCurios instanceof Iterable<?> items) {
-                for (Object itemPair : items) {
-                    Method getRight = itemPair.getClass().getMethod("getRight");
-                    ItemStack stack = (ItemStack) getRight.invoke(itemPair);
-                    if (stack != null && !stack.isEmpty()) {
-                        consumer.accept(stack);
-                    }
-                }
-            }
-        } catch (Throwable t) {
-            LOGGER.debug("Curios helper scan failed: {}", t.toString());
+        } catch (Throwable ignored) {
+            // Curios not ready or API mismatch; avoid per-tick logging.
         }
     }
 

@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.client;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -9,14 +11,12 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.data.VectorCharmData;
 import net.unfamily.iskautils.data.VectorFactorType;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Manages player movement when they have Vector Charm equipped
  */
 public class VectorCharmMovement {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VectorCharmMovement.class);
+    private static final ModLogger LOGGER = ModLogger.of(VectorCharmMovement.class);
     
     // Flag to track if the player was in hover mode in the previous tick
     private static boolean wasInHoverMode = false;

@@ -1,12 +1,12 @@
 package net.unfamily.iskautils.script;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.Optional;
  * Shared parsing for top-level {@code if[]} arrays (Ancient Tab, Factory, etc.).
  */
 public final class LoadEntryIfParser {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(LoadEntryIfParser.class);
 
     private LoadEntryIfParser() {}
 

@@ -1,8 +1,8 @@
 package net.unfamily.iskautils;
 
-import org.slf4j.Logger;
+import net.unfamily.iskautils.util.ModLogger;
 
-import com.mojang.logging.LogUtils;
+
 
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
@@ -22,7 +22,6 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadScheduler;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.fml.ModList;
 import guideme.Guide;
 import guideme.GuideItemSettings;
@@ -74,7 +73,7 @@ import net.unfamily.iskautils.shop.ShopLoader;
 @Mod(IskaUtils.MOD_ID)
 public class IskaUtils {
     public static final String MOD_ID = "iska_utils";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(IskaUtils.class);
 
     // The constructor for the mod class is the first code that is run when your mod is loaded.
     // FML will recognize some parameter types like IEventBus or ModContainer and pass them in automatically.
@@ -246,9 +245,6 @@ public class IskaUtils {
         
         // Inizializza il sistema di stage degli item
         net.unfamily.iskautils.iska_utils_stages.StageItemManager.initialize(event);
-
-        // Registra eventi per chunk unload che rimuovono i marker dello scanner
-        NeoForge.EVENT_BUS.addListener(this::onChunkUnload);
         
         // Registro l'handler degli eventi dei loot table
         LOGGER.info("Registrando l'handler degli eventi dei loot table...");
@@ -407,17 +403,6 @@ public class IskaUtils {
             // Server is fully started, all external datapacks should be loaded by now
             LOGGER.info("Server fully started, all external datapacks should be available");
             
-            // Clean up any scanner markers that might be leftover from previous session
-            try {
-                if (event.getServer().overworld() != null) {
-                    // La funzionalità cleanupAllMarkers è stata rimossa
-                    // net.unfamily.iskautils.item.custom.ScannerItem.cleanupAllMarkers(event.getServer().overworld());
-                    LOGGER.info("Cleaned up all scanner markers");
-                }
-            } catch (Exception e) {
-                LOGGER.error("Error cleaning up scanner markers: {}", e.getMessage());
-            }
-            
             net.unfamily.iskautils.data.load.IskaUtilsPhasedReloadScheduler.schedule(event.getServer());
         }
         
@@ -446,19 +431,6 @@ public class IskaUtils {
                 ShopTeamManager.getInstance(event.getServer().overworld()).getTeamDataInstance().cleanupExpiredInvitations();
                 // Note: Burning Brazier data is saved automatically when modified
             }
-        }
-    }
-    
-    /**
-     * Gestisce l'evento di unload di un chunk per rimuovere i marker dello scanner
-     */
-    private void onChunkUnload(ChunkEvent.Unload event) {
-        if (event.getChunk() instanceof net.minecraft.world.level.chunk.LevelChunk levelChunk && !levelChunk.getLevel().isClientSide()) {
-            net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) levelChunk.getLevel();
-            net.minecraft.world.level.ChunkPos chunkPos = levelChunk.getPos();
-            
-            // La funzionalità removeMarkersInChunk è stata rimossa
-            // ScannerItem.removeMarkersInChunk(level, chunkPos);
         }
     }
 

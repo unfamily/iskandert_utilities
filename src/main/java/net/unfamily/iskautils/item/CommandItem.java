@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.item;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -19,7 +20,6 @@ import net.unfamily.iskautils.command.CommandItemAction;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.command.CommandItemLoader;
 import net.unfamily.iskautils.command.PlayerCommandSources;
-import org.slf4j.Logger;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +31,7 @@ import java.util.function.Consumer;
  * Now uses fixed definitions assigned at registration
  */
 public class CommandItem extends Item {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(CommandItem.class);
     private static final Map<UUID, Map<String, Long>> PLAYER_COOLDOWNS = new HashMap<>();
     
     // To track already processed ItemStacks, we use a combination of player UUID and stack hash
@@ -598,7 +598,7 @@ public class CommandItem extends Item {
                     action.getMessage().send(
                             player.createCommandSourceStack().withSuppressedOutput(),
                             player.position(),
-                            LOGGER,
+                            LOGGER.unwrap(),
                             "command_item:" + getDefinitionId());
                 }
                 break;

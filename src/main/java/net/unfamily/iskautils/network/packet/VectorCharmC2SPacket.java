@@ -1,19 +1,19 @@
 package net.unfamily.iskautils.network.packet;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.data.VectorCharmData;
 import net.unfamily.iskautils.data.VectorFactorType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Packet for Vector Charm configuration from client to server
  * Currently simplified to avoid networking complexity
  */
 public class VectorCharmC2SPacket {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VectorCharmC2SPacket.class);
+    private static final ModLogger LOGGER = ModLogger.of(VectorCharmC2SPacket.class);
     
     private final byte newFactor;
     private final boolean isVertical;

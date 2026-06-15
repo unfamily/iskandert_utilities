@@ -1,12 +1,12 @@
 package net.unfamily.iskautils.shop;
 
-import com.mojang.logging.LogUtils;
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskalib.item.ItemConverter;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskalib.team.ShopTeamManager;
-import org.slf4j.Logger;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Inventory;
 import java.util.Map;
@@ -16,7 +16,7 @@ import java.util.HashMap;
  * Manages shop transactions using team valutes
  */
 public class ShopTransactionManager {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(ShopTransactionManager.class);
     
     /**
      * Attempts to buy an item from the shop using team valutes

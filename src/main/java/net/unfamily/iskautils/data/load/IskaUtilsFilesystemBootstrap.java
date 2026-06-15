@@ -1,12 +1,12 @@
 package net.unfamily.iskautils.data.load;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.loading.FMLPaths;
-import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +22,7 @@ import java.util.stream.Stream;
  */
 public final class IskaUtilsFilesystemBootstrap {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ModLogger LOGGER = ModLogger.of(IskaUtilsFilesystemBootstrap.class);
     private static final Gson GSON = new Gson();
 
     private IskaUtilsFilesystemBootstrap() {}

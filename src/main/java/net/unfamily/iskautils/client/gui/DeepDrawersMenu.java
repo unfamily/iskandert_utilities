@@ -1,5 +1,7 @@
 package net.unfamily.iskautils.client.gui;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -15,8 +17,6 @@ import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.DeepDrawersBlockEntity;
 import net.unfamily.iskautils.util.DeepDrawerItemFilter;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Menu for the Deep Drawers GUI
@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DeepDrawersMenu extends AbstractContainerMenu {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(DeepDrawersMenu.class);
+    private static final ModLogger LOGGER = ModLogger.of(DeepDrawersMenu.class);
     
     private final DeepDrawersBlockEntity blockEntity;
     private final ContainerLevelAccess levelAccess;
@@ -161,7 +161,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             player
         );
         
-        LOGGER.debug("Server: Sent all {} slots to client", allSlots.size());
     }
     
     // Client-side constructor (NeoForge factory pattern) - simple version
@@ -399,7 +398,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             !this.blockEntity.getLevel().isClientSide()) {
             updatingViewHandler = true;
             try {
-                LOGGER.debug("Updating viewHandler for scroll offset: {}", this.scrollOffset);
                 // Copy items from actual storage to the view handler
                 if (this.viewHandler instanceof net.neoforged.neoforge.items.ItemStackHandler stackHandler) {
                     for (int i = 0; i < VISIBLE_SLOTS; i++) {
@@ -425,7 +423,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
      * This loads all slots into client memory so scrolling works instantly
      */
     public void updateAllSlotsFromServer(java.util.Map<Integer, ItemStack> allSlots) {
-        LOGGER.debug("Client: Updating ALL slots from server. Slots: {}", allSlots.size());
         
         // Update itemHandler lato client con TUTTI gli slot
         if (this.itemHandler instanceof net.neoforged.neoforge.items.ItemStackHandler itemStackHandler) {
@@ -440,7 +437,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 ItemStack stack = entry.getValue();
                 if (slotIndex >= 0 && slotIndex < totalSlots && !stack.isEmpty()) {
                     itemStackHandler.setStackInSlot(slotIndex, stack.copy());
-                    LOGGER.debug("Client: ItemHandler slot {} = {}", slotIndex, stack.getItem());
                 }
             }
         }
@@ -472,7 +468,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         // Force full broadcast to ensure all slots are synced
         this.broadcastFullState();
         
-        LOGGER.debug("Client: Finished updating ALL slots from server");
     }
     
     /**
@@ -480,7 +475,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
      * Called when receiving DeepDrawersSyncSlotsS2CPacket (backward compatibility)
      */
     public void updateViewHandlerFromServer(int offset, java.util.List<ItemStack> visibleStacks) {
-        LOGGER.debug("Client: Updating itemHandler and viewHandler from server. Offset: {}, Stacks: {}", offset, visibleStacks.size());
         this.scrollOffset = offset;
         
         // Update itemHandler lato client con i nuovi item (solo per gli slot visibili)
@@ -492,7 +486,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 
                 // Update itemHandler at the actual index
                 itemStackHandler.setStackInSlot(actualIndex, stackCopy);
-                LOGGER.debug("Client: ItemHandler slot {} = {}", actualIndex, stackCopy.isEmpty() ? "EMPTY" : stackCopy.getItem());
             }
             
             // Fill remaining visible slots with empty stacks if needed
@@ -534,7 +527,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         // Force full broadcast to ensure all slots are synced
         this.broadcastFullState();
         
-        LOGGER.debug("Client: Finished updating itemHandler/viewHandler and forcing slot refresh");
     }
     
     /**
@@ -557,7 +549,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             
             // Server-side: When scroll changes, update the view handler
             if (oldOffset != this.scrollOffset) {
-                LOGGER.debug("Server: scroll offset changed from {} to {} (saved to BlockEntity)", oldOffset, this.scrollOffset);
                 updateViewHandler(); // Copy new items into view handler
                 
                 // Force full state broadcast to sync all slots
@@ -572,7 +563,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             // Client-side: When scroll changes, force all slots to refresh
             // This ensures slots read from the new scroll position immediately
             if (oldOffset != this.scrollOffset) {
-                LOGGER.debug("Client: scroll offset changed from {} to {}, forcing slot refresh", oldOffset, this.scrollOffset);
                 
                 // Force all visible slots to refresh by re-reading from offsetItemHandler
                 // Since all slots are now in memory, we just need to refresh the display
@@ -621,7 +611,6 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                         return;
                     }
                     // Otherwise, sync from server (server has the authoritative value)
-                    LOGGER.debug("Client: Syncing scrollOffset from containerData: {} -> {}", this.scrollOffset, serverOffset);
                     this.scrollOffset = serverOffset;
                 }
             }
