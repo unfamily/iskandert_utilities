@@ -6,7 +6,7 @@
     "ABA"
   ],
   "key": {
-    "A": "#c:stones",
+    "A": "minecraft:stone",
     "B": "minecraft:repeater",
     "C": "minecraft:clock"
   },

@@ -50,6 +50,7 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
     private static final int MIN_HEIGHT_OR_DEPTH = 0;
     private static final int TANK_INSERTION = 0;
     private static final int TANK_ACCUMULATION = 1;
+    private static final int KNOWLEDGE_COMPRESSOR_TRANSFER_MB_PER_TICK = 1000;
 
     private CollectingCrateMode collectMode = CollectingCrateMode.BOTH;
     private int redstoneMode = 0;
@@ -420,6 +421,7 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
             blockEntity.redstoneMode = 4;
         }
         blockEntity.processInsertionBuffer();
+        blockEntity.pushExperienceToAdjacentKnowledgeCompressors(level);
         blockEntity.tickCounter++;
         if (blockEntity.tickCounter < Config.collectingCrateCollectionIntervalTicks) {
             return;
@@ -435,6 +437,40 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
             blockEntity.collectItems(level, pos);
         }
         blockEntity.processInsertionBuffer();
+    }
+
+    private void pushExperienceToAdjacentKnowledgeCompressors(Level level) {
+        if (level == null) {
+            return;
+        }
+        if (accumulationTank.getStoredMb() <= 0) {
+            return;
+        }
+        for (Direction dir : Direction.values()) {
+            BlockPos otherPos = worldPosition.relative(dir);
+            if (!(level.getBlockEntity(otherPos) instanceof KnowledgeCompressorBlockEntity compressor)) {
+                continue;
+            }
+            IFluidHandler target = compressor.getFluidHandler();
+
+            FluidStack canDrain = accumulationTank.drain(KNOWLEDGE_COMPRESSOR_TRANSFER_MB_PER_TICK, IFluidHandler.FluidAction.SIMULATE);
+            if (canDrain.isEmpty()) {
+                continue;
+            }
+            int accepted = target.fill(canDrain, IFluidHandler.FluidAction.SIMULATE);
+            if (accepted <= 0) {
+                continue;
+            }
+            FluidStack drained = accumulationTank.drain(accepted, IFluidHandler.FluidAction.EXECUTE);
+            if (drained.isEmpty()) {
+                continue;
+            }
+            target.fill(drained, IFluidHandler.FluidAction.EXECUTE);
+            setChanged();
+            if (accumulationTank.getStoredMb() <= 0) {
+                return;
+            }
+        }
     }
 
     private void processInsertionBuffer() {

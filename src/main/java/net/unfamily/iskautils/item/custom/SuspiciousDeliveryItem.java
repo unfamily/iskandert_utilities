@@ -30,6 +30,8 @@ public class SuspiciousDeliveryItem extends Item {
             Consumer<Component> tooltip,
             TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
+        tooltip.accept(Component.translatable("tooltip.iska_utils.suspicious_delivery.use0"));
+        tooltip.accept(Component.translatable("tooltip.iska_utils.suspicious_delivery.use1"));
         tooltip.accept(Component.translatable("tooltip.iska_utils.suspicious_delivery.obtaining0"));
         tooltip.accept(Component.translatable("tooltip.iska_utils.suspicious_delivery.obtaining1"));
         if (ModList.get().isLoaded("artifacts")) {
@@ -47,11 +49,21 @@ public class SuspiciousDeliveryItem extends Item {
             return InteractionResult.PASS;
         }
 
-        var entry = SuspiciousDeliveryLoot.pick(sp, sp.getRandom());
-        stack.shrink(1);
-        if (entry != null) {
-            SuspiciousDeliveryScriptRunner.start(sp, entry);
-        }
+        boolean bulk = player.isShiftKeyDown();
+        do {
+            if (stack.isEmpty()) {
+                break;
+            }
+            var entry = SuspiciousDeliveryLoot.pick(sp, sp.getRandom());
+            stack.shrink(1);
+            if (entry != null) {
+                SuspiciousDeliveryScriptRunner.start(sp, entry);
+            }
+            if (!bulk || entry == null || !entry.quickOpen()) {
+                break;
+            }
+        } while (true);
+
         return InteractionResult.CONSUME;
     }
 }

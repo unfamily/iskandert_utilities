@@ -1,6 +1,11 @@
 package net.unfamily.iskautils.arcane;
 
 import net.unfamily.iskautils.arcane.effects.AgilityEffect;
+import net.unfamily.iskautils.arcane.effects.ArcaneEchoEffect;
+import net.unfamily.iskautils.arcane.effects.CurseOfPainEffect;
+import net.unfamily.iskautils.arcane.effects.CurseOfUselessTraitEffect;
+import net.unfamily.iskautils.arcane.effects.EntropicCapacityEffect;
+import net.unfamily.iskautils.arcane.effects.EntropicRageEffect;
 import net.unfamily.iskautils.arcane.effects.BloodLedgerEffect;
 import net.unfamily.iskautils.arcane.effects.EntropyBladeEffect;
 import net.unfamily.iskautils.arcane.effects.EntropyFunnelEffect;
@@ -49,6 +54,11 @@ public final class ArcaneDictionaryEffectsInit {
         register(new LastStandEffect());
         register(new GraveDebtEffect());
         register(new TierResonanceEffect());
+        register(new CurseOfPainEffect());
+        register(new CurseOfUselessTraitEffect());
+        register(new ArcaneEchoEffect());
+        register(new EntropicCapacityEffect());
+        register(new EntropicRageEffect());
     }
 
     private static void register(ArcaneDictionaryEffect effect) {

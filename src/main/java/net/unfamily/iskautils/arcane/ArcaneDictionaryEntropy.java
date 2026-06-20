@@ -4,6 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.arcane.effects.EntropicCapacityEffect;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.EntropyCharges;
 
@@ -17,6 +18,10 @@ public final class ArcaneDictionaryEntropy {
         return Math.max(0, Config.arcaneDictionaryMaxStored);
     }
 
+    public static int maxStored(ItemStack dictionary, ServerPlayer player) {
+        return maxStored() + EntropicCapacityEffect.bonusStored(dictionary, player);
+    }
+
     /** Each fast tick: absorb drops into the single dictionary equipped in Curios (no waste past cap). */
     public static void tickInventoryRefill(ServerPlayer player) {
         ItemStack dictionary = ArcaneDictionaryActivation.singleCurioDictionary(player);
@@ -26,7 +31,7 @@ public final class ArcaneDictionaryEntropy {
         tryAbsorbDrops(dictionary, player);
     }
 
-    public static boolean consume(ItemStack dictionary, int cost) {
+    public static boolean consume(ItemStack dictionary, int cost, ServerPlayer player) {
         if (cost <= 0) {
             return true;
         }
@@ -34,8 +39,13 @@ public final class ArcaneDictionaryEntropy {
         if (stored < cost) {
             return false;
         }
-        ArcaneDictionaryContents.setStoredEntropy(dictionary, EntropyCharges.consume(stored, cost));
+        ArcaneDictionaryContents.setStoredEntropy(
+                dictionary, EntropyCharges.consume(stored, cost), maxStored(dictionary, player));
         return true;
+    }
+
+    public static boolean consume(ItemStack dictionary, int cost) {
+        return consume(dictionary, cost, null);
     }
 
     public static int computeTotalConsume(ItemStack dictionary) {
@@ -43,14 +53,19 @@ public final class ArcaneDictionaryEntropy {
     }
 
     /** Consumes stored entropy on consume interval ticks; between payments, traits stay active while any charge remains. */
-    public static boolean tickEffectConsume(ItemStack dictionary, int periodConsume, long gameTime) {
+    public static boolean tickEffectConsume(
+            ItemStack dictionary, int periodConsume, long gameTime, ServerPlayer player) {
         if (periodConsume <= 0) {
             return true;
         }
         if (gameTime % CONSUME_PERIOD_TICKS == 0) {
-            return consume(dictionary, periodConsume);
+            return consume(dictionary, periodConsume, player);
         }
         return ArcaneDictionaryContents.getStoredEntropy(dictionary) > 0;
+    }
+
+    public static boolean tickEffectConsume(ItemStack dictionary, int periodConsume, long gameTime) {
+        return tickEffectConsume(dictionary, periodConsume, gameTime, null);
     }
 
     public static boolean canAffordConsume(ItemStack dictionary, int periodConsume, long gameTime) {
@@ -69,7 +84,7 @@ public final class ArcaneDictionaryEntropy {
 
     private static void tryAbsorbDrops(ItemStack dictionary, ServerPlayer player) {
         int stored = ArcaneDictionaryContents.getStoredEntropy(dictionary);
-        int max = maxStored();
+        int max = maxStored(dictionary, player);
         int funnelLevel = entropyFunnelLevel(dictionary, player);
         boolean changed = false;
         while (EntropyCharges.canAbsorbOneMore(stored, max)) {
@@ -86,7 +101,7 @@ public final class ArcaneDictionaryEntropy {
             changed = true;
         }
         if (changed) {
-            ArcaneDictionaryContents.setStoredEntropy(dictionary, stored);
+            ArcaneDictionaryContents.setStoredEntropy(dictionary, stored, max);
         }
     }
 

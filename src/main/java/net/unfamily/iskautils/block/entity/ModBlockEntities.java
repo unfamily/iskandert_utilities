@@ -47,6 +47,10 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("rubber_sap_extractor", () ->
                     new BlockEntityType<>(RubberSapExtractorBlockEntity::new, ModBlocks.RUBBER_SAP_EXTRACTOR.get()));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<KnowledgeCompressorBlockEntity>> KNOWLEDGE_COMPRESSOR =
+            BLOCK_ENTITIES.register("knowledge_compressor", () ->
+                    new BlockEntityType<>(KnowledgeCompressorBlockEntity::new, ModBlocks.KNOWLEDGE_COMPRESSOR.get()));
+
     // Registra il Weather Alterer Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WeatherAltererBlockEntity>> WEATHER_ALTERER_BE =
             BLOCK_ENTITIES.register("weather_alterer_block_entity", () ->
@@ -211,6 +215,18 @@ public class ModBlockEntities {
                     Capabilities.Item.BLOCK,
                     RUBBER_SAP_EXTRACTOR.get(),
                     (blockEntity, ctx) -> blockEntity instanceof RubberSapExtractorBlockEntity be ? be.getItemTransferHandler() : null
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.Fluid.BLOCK,
+                    KNOWLEDGE_COMPRESSOR.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof KnowledgeCompressorBlockEntity be ? be.getFluidTransferHandler() : null
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    KNOWLEDGE_COMPRESSOR.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof KnowledgeCompressorBlockEntity be ? be.getItemTransferHandler() : null
             );
             
             // Register energy capability for WeatherAlterer

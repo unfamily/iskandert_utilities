@@ -55,7 +55,11 @@ public final class ArcaneDictionaryContents {
     }
 
     public static void setStoredEntropy(ItemStack stack, int stored) {
-        int clamped = Math.max(0, Math.min(Config.arcaneDictionaryMaxStored, stored));
+        setStoredEntropy(stack, stored, Config.arcaneDictionaryMaxStored);
+    }
+
+    public static void setStoredEntropy(ItemStack stack, int stored, int max) {
+        int clamped = Math.max(0, Math.min(Math.max(1, max), stored));
         CompoundTag tag = root(stack);
         tag.putInt(NBT_STORED, clamped);
         write(stack, tag);

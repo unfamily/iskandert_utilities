@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "iska_utils:block/knowledge_compressor_top",
+    "front": "iska_utils:block/knowledge_compressor_front",
+    "side": "iska_utils:block/knowledge_compressor_side",
+    "bottom": "iska_utils:block/knowledge_compressor_bottom"
+  }
+}

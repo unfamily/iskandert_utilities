@@ -13,6 +13,7 @@
     "iska_utils:plastic_block",
     "iska_utils:plastic_bricks",
     "iska_utils:rubber_sap_extractor",
+    "iska_utils:knowledge_compressor",
     "iska_utils:weather_detector",
     "iska_utils:sound_muffler",
     "iska_utils:time_alterer",

@@ -24,6 +24,7 @@ import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ArtifactEquipStages;
 import net.unfamily.iskautils.util.ArtifactTickIntervals;
 import net.unfamily.iskautils.util.AttributeSyncGrace;
+import net.unfamily.iskautils.util.RelicEffectGate;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 
 /**
@@ -48,6 +49,9 @@ public final class ArtifactTickEffects {
         if (!(player instanceof ServerPlayer sp)) {
             return;
         }
+        if (!RelicEffectGate.shouldApply(sp)) {
+            return;
+        }
 
         long gameTime = sp.level().getGameTime();
         applyChosenCheese(sp);
@@ -62,6 +66,9 @@ public final class ArtifactTickEffects {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onAncientStarDamage(LivingIncomingDamageEvent event) {
         if (!(event.getSource().getEntity() instanceof Player player)) {
+            return;
+        }
+        if (player instanceof ServerPlayer sp && !RelicEffectGate.shouldApply(sp)) {
             return;
         }
         if (Config.ancientStarDamageBonus <= 0.0D || Config.ancientStarHighHpRatio <= 0.0D) {

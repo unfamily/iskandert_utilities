@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ACA",
+    "BBB",
+    "AAA"
+  ],
+  "key": {
+    "A": "minecraft:stone",
+    "B": "#c:ingots/copper",
+    "C": "minecraft:ender_eye"
+  },
+  "result": {
+    "id": "iska_utils:knowledge_compressor",
+    "count": 1
+  }
+}

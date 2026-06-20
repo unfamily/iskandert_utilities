@@ -2,6 +2,7 @@ package net.unfamily.iskautils.arcane;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.unfamily.iskautils.arcane.effects.CurseOfUselessEffect;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 public final class ArcaneDictionaryTraitDispatcher {
@@ -110,6 +111,10 @@ public final class ArcaneDictionaryTraitDispatcher {
             ServerPlayer player,
             ArcaneDictionaryContents.TraitSlot trait,
             boolean curioFull) {
+        if (!ArcaneDictionaryTraitIds.CURSE_OF_USELESS.equals(trait.id())
+                && CurseOfUselessEffect.isBlocking(player)) {
+            return false;
+        }
         if (!ArcaneDictionaryEntryGate.traitActive(player, trait.id())) {
             return false;
         }

@@ -59,8 +59,10 @@ import net.unfamily.iskautils.item.custom.ExperienceModuleItem;
 import net.unfamily.iskautils.item.custom.LogicModuleItem;
 import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
+import net.unfamily.iskautils.item.custom.JellyOfKnowledgeItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.artifact.AncientStarItem;
+import net.unfamily.iskautils.item.custom.artifact.MiniatureTentItem;
 import net.unfamily.iskautils.item.custom.artifact.ArcaneDictionaryItem;
 import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.artifact.CoarselyForgedRingItem;
@@ -262,6 +264,10 @@ public class ModItems {
             "entropic_clock", EntropicClockItem::new, p -> p.stacksTo(64));
     public static final DeferredItem<Item> ANCIENT_STAR = ITEMS.registerItem(
             "ancient_star", AncientStarItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> MINIATURE_TENT = ITEMS.registerItem(
+            "miniature_tent", MiniatureTentItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> JELLY_OF_KNOWLEDGE = ITEMS.registerItem(
+            "jelly_of_knowledge", JellyOfKnowledgeItem::new, p -> p.stacksTo(64));
     public static final DeferredItem<Item> RUNIC_DICE = ITEMS.registerItem(
             "runic_dice", RunicDiceItem::new, p -> p.stacksTo(1));
 
@@ -403,6 +409,9 @@ public class ModItems {
 
     public static final DeferredItem<Item> RUBBER_SAP_EXTRACTOR = ITEMS.registerItem("rubber_sap_extractor",
             props -> new RubberSapExtractorBlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), props), Item.Properties::useBlockDescriptionPrefix);
+
+    public static final DeferredItem<Item> KNOWLEDGE_COMPRESSOR = ITEMS.registerItem("knowledge_compressor",
+            props -> new BlockItem(ModBlocks.KNOWLEDGE_COMPRESSOR.get(), props), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> WEATHER_DETECTOR = ITEMS.registerSimpleBlockItem(ModBlocks.WEATHER_DETECTOR);
 

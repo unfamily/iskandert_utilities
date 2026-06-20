@@ -28,6 +28,7 @@ public final class ArtifactEquipStages {
     public static final String GREEDY_SHIELD = GreedyShieldItem.EQUIP_STAGE;
     public static final String NECRO_CRYSTAL_HEART = LivingIncomingDamageEventHandler.NECRO_CRYSTAL_HEART_EQUIP_STAGE;
     public static final String ANCIENT_STAR = "iska_utils_internal-ancient_star_equip";
+    public static final String MINIATURE_TENT = "iska_utils_internal-miniature_tent_equip";
     public static final String RUNIC_DICE = "iska_utils_internal-runic_dice_equip";
 
     private static final List<String> ALL_STAGES = List.of(
@@ -43,6 +44,7 @@ public final class ArtifactEquipStages {
             GREEDY_SHIELD,
             NECRO_CRYSTAL_HEART,
             ANCIENT_STAR,
+            MINIATURE_TENT,
             RUNIC_DICE
     );
 
@@ -79,6 +81,7 @@ public final class ArtifactEquipStages {
         map.put(ModItems.GREEDY_SHIELD.get(), GREEDY_SHIELD);
         map.put(ModItems.NECROTIC_CRYSTAL_HEART.get(), NECRO_CRYSTAL_HEART);
         map.put(ModItems.ANCIENT_STAR.get(), ANCIENT_STAR);
+        map.put(ModItems.MINIATURE_TENT.get(), MINIATURE_TENT);
         map.put(ModItems.RUNIC_DICE.get(), RUNIC_DICE);
         return Collections.unmodifiableMap(map);
     }

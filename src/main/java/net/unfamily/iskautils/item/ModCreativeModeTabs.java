@@ -179,6 +179,8 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.MOB_REAPER.get());
                                 pOutput.accept(ModItems.COLLECTING_CRATE.get());
                                 pOutput.accept(ModFluids.CONDENSED_KNOWLEDGE.getBucket());
+                                pOutput.accept(ModItems.KNOWLEDGE_COMPRESSOR.get());
+                                pOutput.accept(ModItems.JELLY_OF_KNOWLEDGE.get());
                                 pOutput.accept(ModItems.ANGEL_BLOCK.get());
                                 pOutput.accept(ModItems.RAFT.get());
                                 pOutput.accept(ModItems.SCANNER.get());
@@ -239,6 +241,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RITUAL_GAUNTLET.get());
                                 pOutput.accept(ModItems.THE_DECEPTION.get());
                                 pOutput.accept(ModItems.ARCANE_DICTIONARY.get());
+                                pOutput.accept(ModItems.MINIATURE_TENT.get());
 
                                 // Delivery-related items (after all artifacts)
                                 pOutput.accept(ModItems.DROP_OF_ENTROPY.get());

@@ -62,6 +62,16 @@ public final class ExperienceFluidMath {
         return points * (long) mbPerXpPoint();
     }
 
+    public static int compressorMbPerXpPoint() {
+        return Config.knowledgeCompressorMbPerXpPoint > 0
+                ? Config.knowledgeCompressorMbPerXpPoint
+                : DEFAULT_MB_PER_XP_POINT;
+    }
+
+    public static int jellyMbCost() {
+        return Math.max(1, Config.knowledgeCompressorJellyXpPoints * compressorMbPerXpPoint());
+    }
+
     /** @deprecated Use {@link #xpPointsFromMb(long)} */
     @Deprecated
     public static int xpPointsFromMb(int mb) {
