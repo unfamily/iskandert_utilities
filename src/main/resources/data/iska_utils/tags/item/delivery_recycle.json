@@ -22,6 +22,7 @@
     "iska_utils:coarsely_forged_ring",
     "iska_utils:entropic_ring",
     "iska_utils:entropic_clock",
-    "iska_utils:ancient_star"
+    "iska_utils:ancient_star",
+    "iska_utils:miniature_tent"
   ]
 }

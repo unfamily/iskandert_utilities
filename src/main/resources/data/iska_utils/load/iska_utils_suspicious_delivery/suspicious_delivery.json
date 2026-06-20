@@ -5,7 +5,12 @@
       "weight": 30,
       "luck": 10000,
       "jeimode": "show",
-      "mods": [{ "mod": "artifacts", "is": false }],
+      "mods": [
+        {
+          "mod": "artifacts",
+          "is": false
+        }
+      ],
       "do": [
         {
           "message": {
@@ -15,14 +20,22 @@
             "text": "message.iska_utils.suspicious_delivery.entropy_primitive"
           }
         },
-        { "drop": "iska_utils:drop_of_entropy" }
-      ]
+        {
+          "drop": "iska_utils:drop_of_entropy"
+        }
+      ],
+      "quick_open": true
     },
     {
       "weight": 30,
       "luck": 10000,
       "jeimode": "show",
-      "mods": [{ "mod": "artifacts", "is": true }],
+      "mods": [
+        {
+          "mod": "artifacts",
+          "is": true
+        }
+      ],
       "do": [
         {
           "message": {
@@ -32,8 +45,11 @@
             "text": "message.iska_utils.suspicious_delivery.cursed_key"
           }
         },
-        { "drop": "iska_utils:cursed_key" }
-      ]
+        {
+          "drop": "iska_utils:cursed_key"
+        }
+      ],
+      "quick_open": true
     },
     {
       "weight": 85,
@@ -47,8 +63,11 @@
             "text": "message.iska_utils.suspicious_delivery.nested"
           }
         },
-        { "drop": "iska_utils:suspicious_delivery" }
-      ]
+        {
+          "drop": "iska_utils:suspicious_delivery"
+        }
+      ],
+      "quick_open": true
     },
     {
       "weight": 50,
@@ -62,7 +81,9 @@
             "text": "message.iska_utils.suspicious_delivery.bomb_tickle"
           }
         },
-        { "delay": 20 },
+        {
+          "delay": 20
+        },
         {
           "message": {
             "target": "@s",
@@ -74,7 +95,9 @@
         {
           "execute": "summon tnt ~ ~ ~ {fuse:5000, Tags:[\"fake_tnt\"]}"
         },
-        { "delay": 100 },
+        {
+          "delay": 100
+        },
         {
           "execute": "kill @e[type=tnt,tag=fake_tnt]"
         },
@@ -85,27 +108,230 @@
             "text": "message.iska_utils.suspicious_delivery.bomb_clock"
           }
         },
-        { "drop": "minecraft:clock" }
+        {
+          "drop": "minecraft:clock"
+        }
       ]
     },
-    { "weight": 100, "luck": 1200, "jeimode": "show", "do": [{ "drop": "iska_utils:chosen_cheese" }] },
-    { "weight": 100, "luck": 1100, "jeimode": "show", "do": [{ "drop": "iska_utils:totem_of_pain" }] },
-    { "weight": 100, "luck": 1000, "jeimode": "show", "do": [{ "drop": "iska_utils:necrotic_crystal_heart" }] },
-    { "weight": 100, "luck": 900, "jeimode": "show", "do": [{ "drop": "iska_utils:sharpened_bone" }] },
-    { "weight": 75, "luck": 850, "jeimode": "show", "do": [{ "drop": "iska_utils:ancient_tablet" }] },
-    { "weight": 75, "luck": 50, "jeimode": "show", "do": [{ "drop": "iska_utils:durable_shears" }] },
-    { "weight": 100, "luck": 800, "jeimode": "show", "do": [{ "drop": "iska_utils:ritual_gauntlet" }] },
-    { "weight": 100, "luck": 700, "jeimode": "show", "do": [{ "drop": "iska_utils:busted_crown" }] },
-    { "weight": 100, "luck": 600, "jeimode": "show", "do": [{ "drop": "iska_utils:the_deception" }] },
-    { "weight": 100, "luck": 500, "jeimode": "show", "do": [{ "drop": "iska_utils:ice_diamond" }] },
-    { "weight": 100, "luck": 400, "jeimode": "show", "do": [{ "drop": "iska_utils:old_brick" }] },
-    { "weight": 100, "luck": 350, "jeimode": "show", "do": [{ "drop": "iska_utils:coarsely_forged_ring" }] },
-    { "weight": 100, "luck": 300, "jeimode": "show", "do": [{ "drop": "iska_utils:the_roots" }] },
-    { "weight": 30, "luck": 10000, "jeimode": "show", "do": [{ "drop": "iska_utils:entropic_clock" }] },
-    { "weight": 100, "luck": 850, "jeimode": "show", "do": [{ "drop": "iska_utils:runic_dice" }] },
-    { "weight": 75, "luck": 100, "jeimode": "show", "do": [{ "drop": "iska_utils:ancient_star" }] },
-    { "weight": 50, "luck": 30, "jeimode": "show", "do": [{ "drop": "iska_utils:arcane_dictionary" }] },
-    { "weight": 100, "luck": 200, "jeimode": "show", "do": [{ "drop": "iska_utils:mining_equitizer" }] },
-    { "weight": 75, "luck": 100, "jeimode": "show", "do": [{ "drop": "iska_utils:cursed_candle" }] }
+    {
+      "weight": 100,
+      "luck": 1200,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:chosen_cheese"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 1100,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:totem_of_pain"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 1000,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:necrotic_crystal_heart"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 900,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:sharpened_bone"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 75,
+      "luck": 850,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:ancient_tablet"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 75,
+      "luck": 50,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:durable_shears"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 800,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:ritual_gauntlet"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 700,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:busted_crown"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 600,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:the_deception"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 500,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:ice_diamond"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 400,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:old_brick"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 350,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:coarsely_forged_ring"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 300,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:the_roots"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 30,
+      "luck": 10000,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:entropic_clock"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 850,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:runic_dice"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 75,
+      "luck": 100,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:ancient_star"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 75,
+      "luck": 200,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:miniature_tent"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 50,
+      "luck": 30,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:arcane_dictionary"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
+      "luck": 200,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:mining_equitizer"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 75,
+      "luck": 100,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:cursed_candle"
+        }
+      ],
+      "quick_open": true
+    }
   ]
 }

@@ -53,6 +53,11 @@ public class ModBlockEntities {
                     BlockEntityType.Builder.of(RubberSapExtractorBlockEntity::new,
                             ModBlocks.RUBBER_SAP_EXTRACTOR.get()).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<KnowledgeCompressorBlockEntity>> KNOWLEDGE_COMPRESSOR =
+            BLOCK_ENTITIES.register("knowledge_compressor", () ->
+                    BlockEntityType.Builder.of(KnowledgeCompressorBlockEntity::new,
+                            ModBlocks.KNOWLEDGE_COMPRESSOR.get()).build(null));
+
     // Registra il Weather Alterer Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WeatherAltererBlockEntity>> WEATHER_ALTERER_BE =
             BLOCK_ENTITIES.register("weather_alterer_block_entity", () ->
@@ -247,6 +252,28 @@ public class ModBlockEntities {
                     (blockEntity, context) -> {
                         if (blockEntity instanceof RubberSapExtractorBlockEntity extractorEntity) {
                             return extractorEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.FluidHandler.BLOCK,
+                    KNOWLEDGE_COMPRESSOR.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof KnowledgeCompressorBlockEntity compressor) {
+                            return compressor.getFluidHandler();
+                        }
+                        return null;
+                    }
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    KNOWLEDGE_COMPRESSOR.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof KnowledgeCompressorBlockEntity compressor) {
+                            return compressor.getItemHandler();
                         }
                         return null;
                     }

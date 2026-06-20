@@ -284,6 +284,27 @@ public class Config
 
     static {
         BUILDER.pop();
+        BUILDER.comment("Knowledge Compressor — converts c:experience fluid into jelly of knowledge").push("knowledge_compressor");
+    }
+
+    private static final ModConfigSpec.IntValue KNOWLEDGE_COMPRESSOR_TANK_CAPACITY_MB = BUILDER
+            .comment("Internal experience fluid tank capacity in millibuckets")
+            .defineInRange("000_tank_capacity_mb", 1000, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue KNOWLEDGE_COMPRESSOR_JELLY_XP_POINTS = BUILDER
+            .comment("Player experience points granted per jelly of knowledge")
+            .defineInRange("001_jelly_xp_points", 50, 1, 1_000_000);
+
+    private static final ModConfigSpec.IntValue KNOWLEDGE_COMPRESSOR_MB_PER_XP_POINT = BUILDER
+            .comment("Millibuckets of experience fluid consumed per XP point when crafting jelly")
+            .defineInRange("002_mb_per_xp_point", 20, 1, 10_000);
+
+    private static final ModConfigSpec.IntValue KNOWLEDGE_COMPRESSOR_CONVERSION_INTERVAL_TICKS = BUILDER
+            .comment("Server ticks between jelly conversion attempts")
+            .defineInRange("003_conversion_interval_ticks", 10, 1, 72000);
+
+    static {
+        BUILDER.pop();
         BUILDER.comment("Arcane Dictionary — 100–199: item/reroll; 200+: per-trait tuning").push("arcane_dictionary");
     }
 
@@ -426,6 +447,34 @@ public class Config
     private static final ModConfigSpec.DoubleValue ARCANE_TIER_RESONANCE_CONSUME_REDUCTION = BUILDER
             .comment("Tier Resonance (Apotheosis): entropy consume reduction per world tier step per level (0.02 = 2% per tier per level)")
             .defineInRange("227_tier_resonance_consume_reduction_per_tier_per_level", 0.02D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.IntValue ARCANE_CURSE_OF_PAIN_DURATION_SECONDS = BUILDER
+            .comment("Curse of Pain trait: self-applied effect duration in seconds")
+            .defineInRange("228_curse_of_pain_duration_seconds", 5, 1, 600);
+
+    private static final ModConfigSpec.IntValue ARCANE_CURSE_OF_PAIN_MAX_AMPLIFIER = BUILDER
+            .comment("Curse of Pain trait: maximum amplifier (level - 1) applied to self")
+            .defineInRange("229_curse_of_pain_max_amplifier", 4, 0, 255);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_CURSE_OF_USELESS_DISABLE_CHANCE = BUILDER
+            .comment("Curse of Useless: chance per trait level to disable other relics and arcane traits (0.20 = 100% at level V)")
+            .defineInRange("230_curse_of_useless_disable_chance_per_level", 0.20D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_ECHO_PROC_CHANCE = BUILDER
+            .comment("Arcane Echo: bonus damage proc chance per trait level (0.20 = 100% at level V)")
+            .defineInRange("231_arcane_echo_proc_chance_per_level", 0.20D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_ECHO_DAMAGE_PER_ARTIFACT = BUILDER
+            .comment("Arcane Echo: flat bonus damage per equipped cursed artifact when proc succeeds")
+            .defineInRange("232_arcane_echo_damage_per_artifact", 1.0D, 0.0D, 1000.0D);
+
+    private static final ModConfigSpec.IntValue ARCANE_ENTROPIC_CAPACITY_BONUS_STORED = BUILDER
+            .comment("Entropic Capacity: extra dictionary entropy storage per trait level")
+            .defineInRange("233_entropic_capacity_bonus_stored_per_level", 100000, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue ARCANE_ENTROPIC_RAGE_DAMAGE_MULT = BUILDER
+            .comment("Entropic Rage: added damage multiplier per trait level vs Wandering Traders (1.0 = x2 at I, x6 at V)")
+            .defineInRange("234_entropic_rage_damage_mult_per_level", 1.0D, 0.0D, 100.0D);
 
     static {
         BUILDER.pop(); // arcane_dictionary
@@ -1038,6 +1087,10 @@ public class Config
     private static final ModConfigSpec.IntValue RUNIC_DICE_REROLL_TICKS = BUILDER
             .comment("Ticks between Runic Dice attack-speed re-rolls while equipped.")
             .defineInRange("542_runic_dice_reroll_ticks", 60, 1, 72000);
+
+    private static final ModConfigSpec.DoubleValue MINIATURE_TENT_PROC_MULTIPLIER = BUILDER
+            .comment("Proc chance multiplier for other IskaUtils relics while Miniature Tent is equipped (2.0 = double chance, capped at 100%).")
+            .defineInRange("543_miniature_tent_proc_multiplier", 2.0D, 1.0D, 10.0D);
 
     private static final ModConfigSpec.DoubleValue ENTROPIC_RING_APOTHEOSIS_HAVEN_MULT = BUILDER
             .comment("Entropic Ring damage multiplier at Apotheosis WorldTier Haven.")
@@ -1703,6 +1756,17 @@ public class Config
     public static double arcaneGraveDebtLowHpRatio;
     public static double arcaneGraveDebtSpeedMultPerLevel;
     public static double arcaneTierResonanceConsumeReductionPerTierPerLevel;
+    public static int arcaneCurseOfPainDurationSeconds;
+    public static int arcaneCurseOfPainMaxAmplifier;
+    public static double arcaneCurseOfUselessDisableChancePerLevel;
+    public static double arcaneEchoProcChancePerLevel;
+    public static double arcaneEchoDamagePerArtifact;
+    public static int arcaneEntropicCapacityBonusStoredPerLevel;
+    public static double arcaneEntropicRageDamageMultPerLevel;
+    public static int knowledgeCompressorTankCapacityMb;
+    public static int knowledgeCompressorJellyXpPoints;
+    public static int knowledgeCompressorMbPerXpPoint;
+    public static int knowledgeCompressorConversionIntervalTicks;
     public static boolean factoryStonecutterEnabled;
     public static int factoryStonecutterEnergyPerOp;
     public static int soundMufflerRangeMax;
@@ -1787,6 +1851,7 @@ public class Config
     public static double runicDiceAttackSpeedMin;
     public static double runicDiceAttackSpeedMax;
     public static int runicDiceRerollTicks;
+    public static double miniatureTentProcMultiplier;
     public static double entropicClockMaxFactorMultiplier;
     public static int entropicClockEntropyPerTick;
     public static int entropicClockMaxStored;
@@ -1989,6 +2054,17 @@ public class Config
         arcaneGraveDebtLowHpRatio = ARCANE_GRAVE_DEBT_LOW_HP_RATIO.get();
         arcaneGraveDebtSpeedMultPerLevel = ARCANE_GRAVE_DEBT_SPEED_MULT.get();
         arcaneTierResonanceConsumeReductionPerTierPerLevel = ARCANE_TIER_RESONANCE_CONSUME_REDUCTION.get();
+        arcaneCurseOfPainDurationSeconds = ARCANE_CURSE_OF_PAIN_DURATION_SECONDS.get();
+        arcaneCurseOfPainMaxAmplifier = ARCANE_CURSE_OF_PAIN_MAX_AMPLIFIER.get();
+        arcaneCurseOfUselessDisableChancePerLevel = ARCANE_CURSE_OF_USELESS_DISABLE_CHANCE.get();
+        arcaneEchoProcChancePerLevel = ARCANE_ECHO_PROC_CHANCE.get();
+        arcaneEchoDamagePerArtifact = ARCANE_ECHO_DAMAGE_PER_ARTIFACT.get();
+        arcaneEntropicCapacityBonusStoredPerLevel = ARCANE_ENTROPIC_CAPACITY_BONUS_STORED.get();
+        arcaneEntropicRageDamageMultPerLevel = ARCANE_ENTROPIC_RAGE_DAMAGE_MULT.get();
+        knowledgeCompressorTankCapacityMb = KNOWLEDGE_COMPRESSOR_TANK_CAPACITY_MB.get();
+        knowledgeCompressorJellyXpPoints = KNOWLEDGE_COMPRESSOR_JELLY_XP_POINTS.get();
+        knowledgeCompressorMbPerXpPoint = KNOWLEDGE_COMPRESSOR_MB_PER_XP_POINT.get();
+        knowledgeCompressorConversionIntervalTicks = KNOWLEDGE_COMPRESSOR_CONVERSION_INTERVAL_TICKS.get();
         factoryStonecutterEnabled = FACTORY_STONECUTTER_ENABLED.get();
         factoryStonecutterEnergyPerOp = FACTORY_STONECUTTER_ENERGY_PER_OPERATION.get();
         soundMufflerRangeMax = SOUND_MUFFLER_RANGE_MAX.get();
@@ -2121,6 +2197,7 @@ public class Config
         runicDiceAttackSpeedMin = RUNIC_DICE_ATTACK_SPEED_MIN.get();
         runicDiceAttackSpeedMax = RUNIC_DICE_ATTACK_SPEED_MAX.get();
         runicDiceRerollTicks = RUNIC_DICE_REROLL_TICKS.get();
+        miniatureTentProcMultiplier = MINIATURE_TENT_PROC_MULTIPLIER.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         

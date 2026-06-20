@@ -26,6 +26,11 @@ public final class ArcaneDictionaryTraitIds {
     public static final ResourceLocation LAST_STAND = id("last_stand");
     public static final ResourceLocation GRAVE_DEBT = id("grave_debt");
     public static final ResourceLocation TIER_RESONANCE = id("tier_resonance");
+    public static final ResourceLocation CURSE_OF_PAIN = id("curse_of_pain");
+    public static final ResourceLocation CURSE_OF_USELESS = id("curse_of_useless");
+    public static final ResourceLocation ARCANE_ECHO = id("arcane_echo");
+    public static final ResourceLocation ENTROPIC_CAPACITY = id("entropic_capacity");
+    public static final ResourceLocation ENTROPIC_RAGE = id("entropic_rage");
 
     private ArcaneDictionaryTraitIds() {}
 

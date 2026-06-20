@@ -23,6 +23,7 @@ public final class ArtifactEquipStages {
     public static final String RITUAL_GAUNTLET = "iska_utils_internal-ritual_gauntlet_equip";
     public static final String THE_DECEPTION = "iska_utils_internal-the_deception_equip";
     public static final String ANCIENT_STAR = "iska_utils_internal-ancient_star_equip";
+    public static final String MINIATURE_TENT = "iska_utils_internal-miniature_tent_equip";
     public static final String RUNIC_DICE = "iska_utils_internal-runic_dice_equip";
     public static final String GREEDY_SHIELD = "iska_utils_internal-greedy_shield_equip";
     public static final String NECRO_CRYSTAL_HEART = "iska_utils_internal-necro_crystal_heart_equip";
@@ -40,6 +41,7 @@ public final class ArtifactEquipStages {
             GREEDY_SHIELD,
             NECRO_CRYSTAL_HEART,
             ANCIENT_STAR,
+            MINIATURE_TENT,
             RUNIC_DICE
     );
 
@@ -76,6 +78,7 @@ public final class ArtifactEquipStages {
         map.put(ModItems.GREEDY_SHIELD.get(), GREEDY_SHIELD);
         map.put(ModItems.NECROTIC_CRYSTAL_HEART.get(), NECRO_CRYSTAL_HEART);
         map.put(ModItems.ANCIENT_STAR.get(), ANCIENT_STAR);
+        map.put(ModItems.MINIATURE_TENT.get(), MINIATURE_TENT);
         map.put(ModItems.RUNIC_DICE.get(), RUNIC_DICE);
         return Collections.unmodifiableMap(map);
     }

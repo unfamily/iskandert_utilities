@@ -59,8 +59,10 @@ import net.unfamily.iskautils.item.custom.ProductionModuleItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.AncientTabletItem;
 import net.unfamily.iskautils.item.custom.UnstableEntropyCatalystItem;
+import net.unfamily.iskautils.item.custom.JellyOfKnowledgeItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.artifact.AncientStarItem;
+import net.unfamily.iskautils.item.custom.artifact.MiniatureTentItem;
 import net.unfamily.iskautils.item.custom.artifact.ArcaneDictionaryItem;
 import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.artifact.CoarselyForgedRingItem;
@@ -316,6 +318,10 @@ public class ModItems {
             () -> new EntropicClockItem(new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> ANCIENT_STAR = ITEMS.register("ancient_star",
             () -> new AncientStarItem(new Item.Properties()));
+    public static final DeferredItem<Item> MINIATURE_TENT = ITEMS.register("miniature_tent",
+            () -> new MiniatureTentItem(new Item.Properties()));
+    public static final DeferredItem<Item> JELLY_OF_KNOWLEDGE = ITEMS.register("jelly_of_knowledge",
+            () -> new JellyOfKnowledgeItem(new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> RUNIC_DICE = ITEMS.register("runic_dice",
             () -> new RunicDiceItem(new Item.Properties()));
 
@@ -558,8 +564,11 @@ public class ModItems {
 
             
     // ===== UTILITY BLOCKS =====
-    public static final DeferredItem<Item> RUBBER_SAP_EXTRACTOR = ITEMS.register("rubber_sap_extractor", 
+    public static final DeferredItem<Item> RUBBER_SAP_EXTRACTOR = ITEMS.register("rubber_sap_extractor",
             () -> new RubberSapExtractorBlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> KNOWLEDGE_COMPRESSOR = ITEMS.register("knowledge_compressor",
+            () -> new BlockItem(ModBlocks.KNOWLEDGE_COMPRESSOR.get(), ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> WEATHER_DETECTOR = ITEMS.register("weather_detector",
             () -> new BlockItem(ModBlocks.WEATHER_DETECTOR.get(), ITEM_PROPERTIES));

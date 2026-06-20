@@ -190,6 +190,17 @@ public class ModBlocks {
     public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",
             () -> new RubberSapExtractorBlock(RUBBER_SAP_EXTRACTOR_PROPERTIES));
 
+    private static final BlockBehaviour.Properties KNOWLEDGE_COMPRESSOR_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_PURPLE)
+            .strength(3.5f, 6.0f)
+            .sound(SoundType.STONE)
+            .requiresCorrectToolForDrops()
+            .lightLevel(state -> 5)
+            .noOcclusion();
+
+    public static final DeferredBlock<KnowledgeCompressorBlock> KNOWLEDGE_COMPRESSOR = BLOCKS.register("knowledge_compressor",
+            () -> new KnowledgeCompressorBlock(KNOWLEDGE_COMPRESSOR_PROPERTIES));
+
     // Factory (dye / item processing machine)
     private static final BlockBehaviour.Properties FACTORY_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.STONE)

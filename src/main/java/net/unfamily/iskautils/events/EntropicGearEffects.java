@@ -31,7 +31,9 @@ import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ArtifactEquipStages;
 import net.unfamily.iskautils.util.AttributeSyncGrace;
+import net.unfamily.iskautils.util.ArtifactProcUtil;
 import net.unfamily.iskautils.util.DamageArmorBypassUtil;
+import net.unfamily.iskautils.util.RelicEffectGate;
 import net.unfamily.iskautils.util.EntropicGearUtil;
 
 @EventBusSubscriber
@@ -126,6 +128,9 @@ public final class EntropicGearEffects {
         if (!(event.getSource().getEntity() instanceof Player player)) {
             return;
         }
+        if (player instanceof ServerPlayer sp && !RelicEffectGate.shouldApply(sp)) {
+            return;
+        }
         if (!(event.getEntity() instanceof LivingEntity target)) {
             return;
         }
@@ -135,7 +140,7 @@ public final class EntropicGearEffects {
         if (!StageRegistry.playerHasStage(player, ArtifactEquipStages.SHARPENED_BONE)) {
             return;
         }
-        if (player.getRandom().nextDouble() >= Config.sharpenedBoneArmorIgnoreChance) {
+        if (!ArtifactProcUtil.rollProc(player, Config.sharpenedBoneArmorIgnoreChance)) {
             return;
         }
         float extra = DamageArmorBypassUtil.computeExtraDamage(

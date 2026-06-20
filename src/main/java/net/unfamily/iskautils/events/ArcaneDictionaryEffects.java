@@ -48,7 +48,7 @@ public final class ArcaneDictionaryEffects {
         boolean curioFull = activation.curioFull();
         ItemStack dictionary = activation.dictionary();
         int periodConsume = ArcaneDictionaryConsume.computeTotalConsume(dictionary, gameTime, curioFull, player);
-        if (periodConsume > 0 && !ArcaneDictionaryEntropy.tickEffectConsume(dictionary, periodConsume, gameTime)) {
+        if (periodConsume > 0 && !ArcaneDictionaryEntropy.tickEffectConsume(dictionary, periodConsume, gameTime, player)) {
             ArcaneDictionaryPassiveCleanup.clear(player);
             return;
         }

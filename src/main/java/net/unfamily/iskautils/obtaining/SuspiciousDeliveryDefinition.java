@@ -19,7 +19,8 @@ public final class SuspiciousDeliveryDefinition {
             int luck,
             SuspiciousDeliveryJeiMode jeiMode,
             SuspiciousDeliveryStageHost stageHost,
-            List<CommandItemAction> actions) {
+            List<CommandItemAction> actions,
+            boolean quickOpen) {
 
         public boolean isPoolEligible(ServerPlayer player) {
             return stageHost.isPoolEligible(player);
@@ -80,6 +81,8 @@ public final class SuspiciousDeliveryDefinition {
                 actions.addAll(LoadActionParser.parseActions(obj.getAsJsonArray("do"), contextId));
             }
 
+            boolean quickOpen = obj.has("quick_open") && obj.get("quick_open").getAsBoolean();
+
             out.add(new Entry(
                     Math.max(0, weight),
                     luck,
@@ -89,7 +92,8 @@ public final class SuspiciousDeliveryDefinition {
                             stagesLogic,
                             LoadActionParser.parseMods(obj),
                             LoadActionParser.parseModsLogic(obj)),
-                    actions));
+                    actions,
+                    quickOpen));
         }
         return new SuspiciousDeliveryDefinition(out);
     }

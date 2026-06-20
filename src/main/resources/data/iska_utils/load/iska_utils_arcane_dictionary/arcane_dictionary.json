@@ -161,6 +161,41 @@
       "ent_cha": 6,
       "color": "AA66FF",
       "mods": [{ "mod": "apotheosis", "is": true }]
+    },
+    {
+      "weight": 20,
+      "luck": -5,
+      "enchant": "iska_utils:curse_of_pain",
+      "ent_cha": 4,
+      "color": "9933FF"
+    },
+    {
+      "weight": 8,
+      "luck": -20,
+      "enchant": "iska_utils:curse_of_useless",
+      "ent_cha": 0,
+      "color": "222222"
+    },
+    {
+      "weight": 15,
+      "luck": 10,
+      "enchant": "iska_utils:arcane_echo",
+      "ent_cha": 6,
+      "color": "66FFAA"
+    },
+    {
+      "weight": 25,
+      "luck": 5,
+      "enchant": "iska_utils:entropic_capacity",
+      "ent_cha": 2,
+      "color": "88CCFF"
+    },
+    {
+      "weight": 20,
+      "luck": 0,
+      "enchant": "iska_utils:entropic_rage",
+      "ent_cha": 0,
+      "color": "FFAA66"
     }
   ]
 }

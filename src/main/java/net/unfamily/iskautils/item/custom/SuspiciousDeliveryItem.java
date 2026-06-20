@@ -26,6 +26,8 @@ public class SuspiciousDeliveryItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
+        tooltip.add(Component.translatable("tooltip.iska_utils.suspicious_delivery.use0"));
+        tooltip.add(Component.translatable("tooltip.iska_utils.suspicious_delivery.use1"));
         tooltip.add(Component.translatable("tooltip.iska_utils.suspicious_delivery.obtaining0"));
         tooltip.add(Component.translatable("tooltip.iska_utils.suspicious_delivery.obtaining1"));
         if (ModList.get().isLoaded("artifacts")) {
@@ -39,7 +41,6 @@ public class SuspiciousDeliveryItem extends Item {
         if (level.isClientSide) {
             return InteractionResultHolder.success(stack);
         }
-        // FakePlayer extends ServerPlayer — automation can open packages too.
         if (!(player instanceof ServerPlayer sp)) {
             return InteractionResultHolder.pass(stack);
         }
@@ -47,11 +48,21 @@ public class SuspiciousDeliveryItem extends Item {
             return InteractionResultHolder.pass(stack);
         }
 
-        SuspiciousDeliveryDefinition.Entry entry = SuspiciousDeliveryLoot.pick(sp, sp.getRandom());
-        stack.shrink(1);
-        if (entry != null) {
-            SuspiciousDeliveryScriptRunner.start(sp, entry);
-        }
+        boolean bulk = player.isShiftKeyDown();
+        do {
+            if (stack.isEmpty()) {
+                break;
+            }
+            SuspiciousDeliveryDefinition.Entry entry = SuspiciousDeliveryLoot.pick(sp, sp.getRandom());
+            stack.shrink(1);
+            if (entry != null) {
+                SuspiciousDeliveryScriptRunner.start(sp, entry);
+            }
+            if (!bulk || entry == null || !entry.quickOpen()) {
+                break;
+            }
+        } while (true);
+
         return InteractionResultHolder.consume(stack);
     }
 }

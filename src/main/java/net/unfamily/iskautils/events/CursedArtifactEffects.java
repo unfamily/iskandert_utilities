@@ -28,6 +28,8 @@ import net.unfamily.iskautils.util.ArtifactTickIntervals;
 import net.unfamily.iskautils.util.AttributeSyncGrace;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
+import net.unfamily.iskautils.util.ArtifactProcUtil;
+import net.unfamily.iskautils.util.RelicEffectGate;
 
 @EventBusSubscriber
 public final class CursedArtifactEffects {
@@ -46,6 +48,12 @@ public final class CursedArtifactEffects {
         Player player = event.getEntity();
         if (player.level().isClientSide) return;
         if (!(player instanceof ServerPlayer sp)) return;
+        if (!RelicEffectGate.shouldApply(sp)) {
+            if (!AttributeSyncGrace.shouldDeferRemoval(sp)) {
+                removeBustedCrownModifier(sp);
+            }
+            return;
+        }
 
         // Busted Crown: bonus HP per arcane artifact (Curios); Arcane Candle also counts in inventory/hands.
         if (!hasBustedCrownEquipped(sp)) {
@@ -83,10 +91,13 @@ public final class CursedArtifactEffects {
 
         Entity src = event.getSource().getEntity();
         if (!(src instanceof Player player)) return;
+        if (player instanceof ServerPlayer sp && !RelicEffectGate.shouldApply(sp)) {
+            return;
+        }
 
         // Totem of Pain: apply stacking Curse of Pain to the hit target with chance.
         if (StageRegistry.playerHasStage(player, TOTEM_OF_PAIN_STAGE)) {
-            if (player.getRandom().nextDouble() < Config.totemOfPainProcChance) {
+            if (ArtifactProcUtil.rollProc(player, Config.totemOfPainProcChance)) {
                 int amp = 0;
                 if (curseInst != null) {
                     amp = Math.min(4, curseInst.getAmplifier() + 1);
@@ -103,7 +114,7 @@ public final class CursedArtifactEffects {
 
         if (StageRegistry.playerHasStage(player, RITUAL_GAUNTLET_STAGE)) {
             Float critMultiplier = resolveRitualGauntletCritMultiplier(player);
-            if (critMultiplier != null && player.getRandom().nextDouble() < Config.ritualGauntletCritChance) {
+            if (critMultiplier != null && ArtifactProcUtil.rollProc(player, Config.ritualGauntletCritChance)) {
                 event.setAmount(event.getAmount() * critMultiplier);
             }
         }
@@ -112,6 +123,9 @@ public final class CursedArtifactEffects {
     }
 
     private static void applyEntropicRingBonus(LivingIncomingDamageEvent event, Player player, LivingEntity target) {
+        if (player instanceof ServerPlayer sp && !RelicEffectGate.shouldApply(sp)) {
+            return;
+        }
         if (Config.entropicRingDamagePer100Hp <= 0.0D) {
             return;
         }
