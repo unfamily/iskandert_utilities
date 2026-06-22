@@ -8,7 +8,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -178,7 +177,6 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.MOB_REAPER.get());
                                 pOutput.accept(ModItems.COLLECTING_CRATE.get());
                                 pOutput.accept(ModItems.CONDENSED_KNOWLEDGE_BUCKET.get());
-                                pOutput.accept(ModBlocks.CONDENSED_KNOWLEDGE_BLOCK.get().asItem());
                                 pOutput.accept(ModItems.KNOWLEDGE_COMPRESSOR.get());
                                 pOutput.accept(ModItems.JELLY_OF_KNOWLEDGE.get());
                                 pOutput.accept(ModItems.ANGEL_BLOCK.get());
