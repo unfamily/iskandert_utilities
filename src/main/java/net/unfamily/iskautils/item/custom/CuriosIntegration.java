@@ -7,7 +7,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
-import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
+import net.unfamily.iskautils.item.custom.artifact.ArcaneArtifactItem;
 import net.unfamily.iskautils.item.custom.artifact.TheDeceptionItem;
 import net.unfamily.iskautils.util.ModUtils;
 
@@ -50,13 +50,13 @@ public class CuriosIntegration {
         // Register Fanpack as curio
         FanpackCurioHandler.register();
 
-        registerCursedArtifactUnequipAllowance();
+        registerArcaneArtifactUnequipAllowance();
     }
 
     /**
      * Cursed artifacts must always be removable from Curios (no lock-on-equip behavior).
      */
-    private static void registerCursedArtifactUnequipAllowance() {
+    private static void registerArcaneArtifactUnequipAllowance() {
         try {
             Class<?> eventClass = Class.forName("top.theillusivec4.curios.api.event.CurioCanUnequipEvent");
             Class<?> triStateClass = Class.forName("net.neoforged.neoforge.common.util.TriState");
@@ -71,7 +71,7 @@ public class CuriosIntegration {
                 }
                 try {
                     ItemStack stack = (ItemStack) getStackMethod.invoke(event);
-                    if (stack.getItem() instanceof CursedArtifactItem || stack.getItem() instanceof TheDeceptionItem) {
+                    if (stack.getItem() instanceof ArcaneArtifactItem || stack.getItem() instanceof TheDeceptionItem) {
                         setResultMethod.invoke(event, allowUnequip);
                     }
                 } catch (ReflectiveOperationException e) {

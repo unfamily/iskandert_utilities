@@ -30,11 +30,11 @@ import net.unfamily.iskautils.util.ArtifactProcUtil;
 import net.unfamily.iskautils.util.AttributeSyncGrace;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
-import net.unfamily.iskautils.util.RelicEffectGate;
+import net.unfamily.iskautils.util.ArtifactEffectGate;
 
 @EventBusSubscriber
-public final class CursedArtifactEffects {
-    private static final ModLogger LOGGER = ModLogger.of(CursedArtifactEffects.class);
+public final class ArcaneArtifactEffects {
+    private static final ModLogger LOGGER = ModLogger.of(ArcaneArtifactEffects.class);
 
     private static final Identifier BUSTED_CROWN_HP_ID = Identifier.fromNamespaceAndPath("iska_utils", "busted_crown_hp");
     private static final Identifier BUSTED_CROWN_CURSED_ZERO_ID =
@@ -44,7 +44,7 @@ public final class CursedArtifactEffects {
     private static final String THE_DECEPTION_STAGE = "iska_utils_internal-the_deception_equip";
     private static final String ENTROPIC_RING_STAGE = "iska_utils_internal-entropic_ring_equip";
 
-    private CursedArtifactEffects() {}
+    private ArcaneArtifactEffects() {}
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onPlayerTick(PlayerTickEvent.Post event) {
@@ -60,15 +60,15 @@ public final class CursedArtifactEffects {
             return;
         }
 
-        if (!RelicEffectGate.shouldApply(sp)) {
+        if (!ArtifactEffectGate.shouldApply(sp)) {
             if (AttributeSyncGrace.shouldRemoveEquippedBonus(sp, BUSTED_CROWN_HP_ID, false)) {
                 removeBustedCrownModifier(sp);
             }
             return;
         }
 
-        int cursedCount = countEquippedCursedArtifacts(sp);
-        applyBustedCrownModifier(sp, cursedCount);
+        int arcaneCount = countEquippedArcaneArtifacts(sp);
+        applyBustedCrownModifier(sp, arcaneCount);
         AttributeSyncGrace.shouldRemoveEquippedBonus(sp, BUSTED_CROWN_HP_ID, true);
     }
 
@@ -91,7 +91,7 @@ public final class CursedArtifactEffects {
 
         Entity src = event.getSource().getEntity();
         if (!(src instanceof Player player)) return;
-        if (player instanceof ServerPlayer sp && !RelicEffectGate.shouldApply(sp)) {
+        if (player instanceof ServerPlayer sp && !ArtifactEffectGate.shouldApply(sp)) {
             return;
         }
 
@@ -122,7 +122,7 @@ public final class CursedArtifactEffects {
     }
 
     private static void applyEntropicRingBonus(LivingIncomingDamageEvent event, Player player, LivingEntity target) {
-        if (player instanceof ServerPlayer sp && !RelicEffectGate.shouldApply(sp)) {
+        if (player instanceof ServerPlayer sp && !ArtifactEffectGate.shouldApply(sp)) {
             return;
         }
         if (Config.entropicRingDamagePer100Hp <= 0.0D) {
@@ -200,18 +200,18 @@ public final class CursedArtifactEffects {
         return found[0];
     }
 
-    private static int countEquippedCursedArtifacts(ServerPlayer player) {
-        return CurioEquipUtil.countEquippedCursedArtifacts(player);
+    private static int countEquippedArcaneArtifacts(ServerPlayer player) {
+        return CurioEquipUtil.countEquippedArcaneArtifacts(player);
     }
 
-    private static void applyBustedCrownModifier(ServerPlayer player, int cursedCount) {
+    private static void applyBustedCrownModifier(ServerPlayer player, int arcaneCount) {
         AttributeInstance maxHealth = player.getAttribute(Attributes.MAX_HEALTH);
         if (maxHealth == null) return;
 
         AttributeModifier existing = maxHealth.getModifier(BUSTED_CROWN_HP_ID);
-        double amount = Config.bustedCrownHpPerCursedArtifact * Math.max(0, cursedCount);
+        double amount = Config.bustedCrownHpPerArcaneArtifact * Math.max(0, arcaneCount);
 
-        if (cursedCount <= 0) {
+        if (arcaneCount <= 0) {
             if (existing != null && existing.amount() > 0.0D) {
                 if (!AttributeSyncGrace.shouldRemoveEquippedBonus(player, BUSTED_CROWN_CURSED_ZERO_ID, false)) {
                     return;

@@ -137,6 +137,13 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket::handle
         );
 
+        // Register Mob Reaper Age Filter C2S Packet (Client to Server)
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket::handle
+        );
+
         registrar.playToServer(
             net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket.STREAM_CODEC,
@@ -2033,6 +2040,15 @@ public class ModMessages {
                     new net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket(pos, backward));
         } catch (Exception e) {
             LOGGER.error("Could not send Mob Reaper redstone mode packet: {}", e.getMessage(), e);
+        }
+    }
+
+    public static void sendMobReaperAgeFilterPacket(BlockPos pos, boolean backward) {
+        try {
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket(pos, backward));
+        } catch (Exception e) {
+            LOGGER.error("Could not send Mob Reaper age filter packet: {}", e.getMessage(), e);
         }
     }
 

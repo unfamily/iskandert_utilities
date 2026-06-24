@@ -9,7 +9,7 @@
     "A": "iska_utils:wither_proof_block",
     "B": "iska_utils:entropy_crystal",
     "C": "iska_utils:entropic_smithing_template",
-    "D": "iska_utils:drop_of_entropy"
+    "D": "iska_utils:unstable_entropy_catalyst"
   },
   "result": {
     "id": "iska_utils:entropic_smithing_template",

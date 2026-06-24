@@ -5,9 +5,11 @@ import net.unfamily.iskautils.util.ModLogger;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.ItemStack;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 
@@ -96,6 +98,10 @@ public final class AncientTabletRecipeLoader {
                 LOGGER.warn("Ancient Tablet entry in {} skipped (empty require or produce)", fileId);
                 continue;
             }
+            if (ifVariants.isEmpty() && !isAncientTabOutputEnabled(produce)) {
+                LOGGER.debug("Ancient Tablet entry in {} skipped (disabled by config)", fileId);
+                continue;
+            }
             out.add(new AncientTabletRecipeEntry(
                     fileId, mustOrdered, destroyIfWrong, fuelCost, gateHost, require, produce, ifVariants));
         }
@@ -129,5 +135,32 @@ public final class AncientTabletRecipeLoader {
 
     public static List<ItemStack> exampleInputsForJei(AncientTabletRecipeEntry entry) {
         return AncientTabletRecipeMatcher.expandToExampleStacks(entry.require());
+    }
+
+    private static boolean isAncientTabOutputEnabled(List<AncientTabletRequirement> produce) {
+        Identifier outputId = primaryOutputId(produce);
+        if (outputId == null) {
+            return true;
+        }
+        if ("iska_utils".equals(outputId.getNamespace())) {
+            return switch (outputId.getPath()) {
+                case "entropy_crystal" -> Config.balanceAncientTabEntropyCrystal;
+                case "unstable_entropy_catalyst" -> Config.balanceAncientTabUnstableCatalyst;
+                default -> true;
+            };
+        }
+        if ("minecraft".equals(outputId.getNamespace()) && "spawner".equals(outputId.getPath())) {
+            return Config.balanceAncientTabSpawner;
+        }
+        return true;
+    }
+
+    private static Identifier primaryOutputId(List<AncientTabletRequirement> produce) {
+        for (AncientTabletRequirement requirement : produce) {
+            if (requirement instanceof AncientTabletRequirement.ItemRequirement itemRequirement) {
+                return BuiltInRegistries.ITEM.getKey(itemRequirement.item());
+            }
+        }
+        return null;
     }
 }

@@ -6,6 +6,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.command.MacroLoader;
+import net.unfamily.iskautils.command.CommandItemLoader;
 import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.command.StageActionsLoader;
 import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
@@ -32,6 +33,7 @@ public final class IskaUtilsDataReload {
             return;
         }
         ResourceManager rm = server.getResourceManager();
+        CommandItemLoader.loadAll(rm);
         CommandItemRegistry.reloadDefinitions();
         DynamicPotionPlateScanner.loadAll(rm);
         StructureMonouseLoader.loadAll(rm);

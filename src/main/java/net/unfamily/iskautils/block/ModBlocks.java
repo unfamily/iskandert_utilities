@@ -182,6 +182,17 @@ public class ModBlocks {
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
             key -> new HellfireIgniterBlock(assignBlockId(key, HELLFIRE_PROPERTIES)));
 
+    private static final UnaryOperator<BlockBehaviour.Properties> ENDER_NULLIFIER_PROPERTIES = p -> p
+            .mapColor(MapColor.COLOR_PURPLE)
+            .strength(1.5f, 6.0f)
+            .sound(SoundType.DEEPSLATE)
+            .requiresCorrectToolForDrops()
+            .noOcclusion()
+            .lightLevel((state) -> state.getValue(EnderNullifierBlock.ON) ? 7 : 0);
+
+    public static final DeferredBlock<EnderNullifierBlock> ENDER_NULLIFIER = BLOCKS.register("ender_nullifier",
+            key -> new EnderNullifierBlock(assignBlockId(key, ENDER_NULLIFIER_PROPERTIES)));
+
     public static final DeferredBlock<FanBlock> FAN = BLOCKS.register("fan",
             key -> new FanBlock(assignBlockId(key, FAN_PROPERTIES)));
 

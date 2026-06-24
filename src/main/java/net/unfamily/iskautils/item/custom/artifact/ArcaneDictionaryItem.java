@@ -20,7 +20,7 @@ import net.unfamily.iskautils.arcane.ArcaneDictionaryReroll;
 
 import java.util.function.Consumer;
 
-public class ArcaneDictionaryItem extends CursedArtifactItem {
+public class ArcaneDictionaryItem extends ArcaneArtifactItem {
     private static final ModLogger LOGGER = ModLogger.of(ArcaneDictionaryItem.class);
 
     public ArcaneDictionaryItem(Properties properties) {

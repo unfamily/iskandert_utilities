@@ -24,7 +24,7 @@ import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.util.ArtifactEquipStages;
 import net.unfamily.iskautils.util.ArtifactTickIntervals;
 import net.unfamily.iskautils.util.AttributeSyncGrace;
-import net.unfamily.iskautils.util.RelicEffectGate;
+import net.unfamily.iskautils.util.ArtifactEffectGate;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 
 /**
@@ -37,6 +37,9 @@ public final class ArtifactTickEffects {
     private static final Identifier ANCIENT_STAR_ARMOR_ID = Identifier.fromNamespaceAndPath("iska_utils", "ancient_star_armor");
     private static final Identifier ANCIENT_STAR_TOUGHNESS_ID = Identifier.fromNamespaceAndPath("iska_utils", "ancient_star_toughness");
     private static final Identifier RUNIC_DICE_ATTACK_SPEED_ID = Identifier.fromNamespaceAndPath("iska_utils", "runic_dice_attack_speed");
+    private static final Identifier CALLING_BELL_HP_ID = Identifier.fromNamespaceAndPath("iska_utils", "calling_bell_hp");
+    private static final Identifier CALLING_BELL_ARMOR_ID = Identifier.fromNamespaceAndPath("iska_utils", "calling_bell_armor");
+    private static final Identifier CALLING_BELL_TOUGHNESS_ID = Identifier.fromNamespaceAndPath("iska_utils", "calling_bell_toughness");
 
     private ArtifactTickEffects() {}
 
@@ -49,7 +52,7 @@ public final class ArtifactTickEffects {
         if (!(player instanceof ServerPlayer sp)) {
             return;
         }
-        if (!RelicEffectGate.shouldApply(sp)) {
+        if (!ArtifactEffectGate.shouldApply(sp)) {
             return;
         }
 
@@ -59,6 +62,7 @@ public final class ArtifactTickEffects {
             applyOldBrick(sp);
             applyAncientStarAttributes(sp);
             applyRunicDice(sp, gameTime);
+            applyCallingBell(sp);
         }
         applyIceDiamond(sp);
     }
@@ -68,7 +72,7 @@ public final class ArtifactTickEffects {
         if (!(event.getSource().getEntity() instanceof Player player)) {
             return;
         }
-        if (player instanceof ServerPlayer sp && !RelicEffectGate.shouldApply(sp)) {
+        if (player instanceof ServerPlayer sp && !ArtifactEffectGate.shouldApply(sp)) {
             return;
         }
         if (Config.ancientStarDamageBonus <= 0.0D || Config.ancientStarHighHpRatio <= 0.0D) {
@@ -171,6 +175,54 @@ public final class ArtifactTickEffects {
             applyTransientModifier(toughness, ANCIENT_STAR_TOUGHNESS_ID, Config.ancientStarToughnessBonus, player, true);
         } else {
             removeTransientModifier(toughness, ANCIENT_STAR_TOUGHNESS_ID, player);
+        }
+    }
+
+    private static void applyCallingBell(ServerPlayer player) {
+        String stage = ArtifactEquipStages.stageForArcaneArtifact(ModItems.CALLING_BELL.get());
+        boolean equipped = stage != null && StageRegistry.playerHasStage(player, stage);
+        int arcane = CurioEquipUtil.countEquippedArcaneArtifacts(player, ModItems.CALLING_BELL.get());
+        boolean active = equipped && arcane >= Config.callingBellArcaneArtifactThreshold;
+
+        AttributeInstance maxHealth = player.getAttribute(Attributes.MAX_HEALTH);
+        AttributeInstance armor = player.getAttribute(Attributes.ARMOR);
+        AttributeInstance toughness = player.getAttribute(Attributes.ARMOR_TOUGHNESS);
+        if (maxHealth == null || armor == null || toughness == null) {
+            return;
+        }
+
+        if (!active) {
+            removeCallingBellModifiersImmediately(maxHealth, armor, toughness, player);
+            return;
+        }
+
+        applyTransientModifier(maxHealth, CALLING_BELL_HP_ID, Config.callingBellHpBonus, player, true);
+        applyTransientModifier(armor, CALLING_BELL_ARMOR_ID, Config.callingBellArmorBonus, player, true);
+        applyTransientModifier(toughness, CALLING_BELL_TOUGHNESS_ID, Config.callingBellToughnessBonus, player, true);
+        clampHealth(player);
+    }
+
+    private static void removeCallingBellModifiersImmediately(
+            AttributeInstance maxHealth,
+            AttributeInstance armor,
+            AttributeInstance toughness,
+            ServerPlayer player) {
+        boolean removedHp = false;
+        if (maxHealth.getModifier(CALLING_BELL_HP_ID) != null) {
+            maxHealth.removeModifier(CALLING_BELL_HP_ID);
+            AttributeSyncGrace.shouldRemoveEquippedBonus(player, CALLING_BELL_HP_ID, true);
+            removedHp = true;
+        }
+        if (armor.getModifier(CALLING_BELL_ARMOR_ID) != null) {
+            armor.removeModifier(CALLING_BELL_ARMOR_ID);
+            AttributeSyncGrace.shouldRemoveEquippedBonus(player, CALLING_BELL_ARMOR_ID, true);
+        }
+        if (toughness.getModifier(CALLING_BELL_TOUGHNESS_ID) != null) {
+            toughness.removeModifier(CALLING_BELL_TOUGHNESS_ID);
+            AttributeSyncGrace.shouldRemoveEquippedBonus(player, CALLING_BELL_TOUGHNESS_ID, true);
+        }
+        if (removedHp) {
+            clampHealth(player);
         }
     }
 

@@ -19,16 +19,16 @@ import net.unfamily.iskautils.util.ClientPlayerAccess;
 import java.util.function.Consumer;
 
 /**
- * Base class for cursed artifacts.
+ * Base class for arcane artifacts.
  * Concrete effects are implemented elsewhere (events / keybind integration).
  */
-public class CursedArtifactItem extends Item {
+public class ArcaneArtifactItem extends Item {
 
-    public CursedArtifactItem(Properties properties) {
+    public ArcaneArtifactItem(Properties properties) {
         super(properties.stacksTo(1));
     }
 
-    public static void appendCursedArtifactTooltip(Consumer<Component> tooltip, String path) {
+    public static void appendArcaneArtifactTooltip(Consumer<Component> tooltip, String path) {
         tooltip.accept(Component.translatable("tooltip.iska_utils." + path + ".cursed"));
         switch (path) {
             case "totem_of_pain" -> {
@@ -42,7 +42,7 @@ public class CursedArtifactItem extends Item {
             }
             case "busted_crown" -> {
                 String prefix = "tooltip.iska_utils.busted_crown.";
-                String hpBonus = ArtifactBalanceFormat.flatBonus(Config.bustedCrownHpPerCursedArtifact);
+                String hpBonus = ArtifactBalanceFormat.flatBonus(Config.bustedCrownHpPerArcaneArtifact);
                 ArtifactTooltipUtil.addLoreLine(tooltip, prefix + "desc0");
                 ArtifactTooltipUtil.addLoreLine(tooltip, prefix + "desc1");
                 ArtifactTooltipUtil.addTechLine(tooltip, prefix + "desc2", hpBonus);
@@ -75,6 +75,15 @@ public class CursedArtifactItem extends Item {
             case "arcane_dictionary" -> ArtifactTooltipUtil.appendDescLines(
                     tooltip, path, 1, 1, Config.arcaneDictionaryMaxRollLevels);
             case "the_deception" -> ArtifactTooltipUtil.appendDescLines(tooltip, path, 3);
+            case "calling_bell" -> {
+                String prefix = "tooltip.iska_utils.calling_bell.";
+                ArtifactTooltipUtil.addLoreLine(tooltip, prefix + "desc0");
+                ArtifactTooltipUtil.addTechLine(tooltip, prefix + "desc1", Config.callingBellArcaneArtifactThreshold);
+                ArtifactTooltipUtil.addTechLine(tooltip, prefix + "desc2",
+                        ArtifactBalanceFormat.flatBonus(Config.callingBellHpBonus),
+                        ArtifactBalanceFormat.flatBonus(Config.callingBellArmorBonus),
+                        ArtifactBalanceFormat.flatBonus(Config.callingBellToughnessBonus));
+            }
             case "entropic_ring" -> {
                 ArtifactTooltipUtil.addLoreLine(tooltip, "tooltip.iska_utils.entropic_ring.desc0");
                 Player player = ClientPlayerAccess.getLocalPlayer();
@@ -96,6 +105,6 @@ public class CursedArtifactItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        appendCursedArtifactTooltip(tooltip, id.getPath());
+        appendArcaneArtifactTooltip(tooltip, id.getPath());
     }
 }

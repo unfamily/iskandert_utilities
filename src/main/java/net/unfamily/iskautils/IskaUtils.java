@@ -105,6 +105,7 @@ public class IskaUtils {
         NeoForge.EVENT_BUS.register(net.unfamily.iskautils.command.CommandEvents.class);
         NeoForge.EVENT_BUS.register(net.unfamily.iskautils.events.FlightHandler.class);
         NeoForge.EVENT_BUS.register(net.unfamily.iskautils.events.StructurePlacerEvents.class);
+        NeoForge.EVENT_BUS.register(net.unfamily.iskautils.events.EnderNullifierEvents.class);
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);

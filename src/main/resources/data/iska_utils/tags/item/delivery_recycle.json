@@ -23,6 +23,7 @@
     "iska_utils:runic_dice",
     "iska_utils:entropic_clock",
     "iska_utils:ancient_star",
-    "iska_utils:miniature_tent"
+    "iska_utils:miniature_tent",
+    "iska_utils:calling_bell"
   ]
 }

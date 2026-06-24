@@ -14,6 +14,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.block.entity.MobReaperBlockEntity;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.util.MachineTargetType;
@@ -45,6 +46,7 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
     private Button closeButton;
     private ItemIconButton redstoneModeButton;
     private ItemIconButton targetTypeButton;
+    private ItemIconButton ageFilterButton;
     private long ghostCycleTime;
     private boolean showLethalGhost;
 
@@ -68,8 +70,9 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
 
         int rightButtonX = this.leftPos + this.imageWidth - RIGHT_BUTTON_MARGIN - REDSTONE_BUTTON_SIZE;
         int centerY = this.topPos + 70;
-        int redstoneY = centerY - REDSTONE_BUTTON_SIZE - BUTTON_SPACING_Y / 2;
-        int targetY = centerY + BUTTON_SPACING_Y / 2;
+        int redstoneY = centerY - REDSTONE_BUTTON_SIZE - BUTTON_SPACING_Y - REDSTONE_BUTTON_SIZE / 2;
+        int targetY = centerY - REDSTONE_BUTTON_SIZE / 2;
+        int ageFilterY = centerY + BUTTON_SPACING_Y + REDSTONE_BUTTON_SIZE / 2;
 
         redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
                 rightButtonX, redstoneY, b -> onRedstoneModePressed(false), menu::getRedstoneMode, false));
@@ -77,6 +80,11 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
                 rightButtonX, targetY, REDSTONE_BUTTON_SIZE,
                 b -> onTargetTypePressed(false),
                 () -> MachineGuiButtons.targetTypeIcon(menu.getTargetType()),
+                Component.empty()));
+        ageFilterButton = addRenderableWidget(new ItemIconButton(
+                rightButtonX, ageFilterY, REDSTONE_BUTTON_SIZE,
+                b -> onAgeFilterPressed(false),
+                () -> MachineGuiButtons.mobAgeFilterIcon(menu.getAgeFilter()),
                 Component.empty()));
     }
 
@@ -170,6 +178,11 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
             MachineGuiButtons.renderTooltipLine(
                     guiGraphics, font, mouseX, mouseY,
                     Component.translatable("gui.iska_utils.mob_reaper.target_type." + targetType.getName()));
+        } else if (ageFilterButton != null && ageFilterButton.isMouseOver(mouseX, mouseY)) {
+            MobReaperBlockEntity.MobAgeFilter ageFilter = MobReaperBlockEntity.MobAgeFilter.fromId(menu.getAgeFilter());
+            MachineGuiButtons.renderTooltipLine(
+                    guiGraphics, font, mouseX, mouseY,
+                    Component.translatable("gui.iska_utils.mob_reaper.age_filter." + ageFilter.getName()));
         }
     }
 
@@ -237,6 +250,10 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
                 onTargetTypePressed(true);
                 return true;
             }
+            if (ageFilterButton != null && ageFilterButton.isMouseOver(mouseX, mouseY)) {
+                onAgeFilterPressed(true);
+                return true;
+            }
         }
         return super.mouseClicked(event, doubleClick);
     }
@@ -245,6 +262,14 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
         BlockPos pos = menu.getSyncedBlockPos();
         if (pos != null && !pos.equals(BlockPos.ZERO)) {
             ModMessages.sendMobReaperTargetTypePacket(pos, backward);
+            playButtonSound();
+        }
+    }
+
+    private void onAgeFilterPressed(boolean backward) {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos != null && !pos.equals(BlockPos.ZERO)) {
+            ModMessages.sendMobReaperAgeFilterPacket(pos, backward);
             playButtonSound();
         }
     }

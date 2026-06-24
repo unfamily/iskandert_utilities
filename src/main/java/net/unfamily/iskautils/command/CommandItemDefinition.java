@@ -3,6 +3,7 @@ package net.unfamily.iskautils.command;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.unfamily.iskautils.script.LoadModGate;
 import net.unfamily.iskautils.script.LoadModCondition;
 
 /**
@@ -295,6 +296,29 @@ public class CommandItemDefinition {
 
     public StagesLogic getModsLogic() {
         return modsLogic;
+    }
+
+    /**
+     * Runtime mod gate for non-deferred {@code mods} / {@code mods_logic} (load always registers the definition).
+     */
+    public boolean checkModsMet() {
+        if (mods.isEmpty() || LoadModGate.isDeferredLogic(modsLogic)) {
+            return true;
+        }
+        if (modsLogic == StagesLogic.OR) {
+            for (LoadModCondition condition : mods) {
+                if (condition.matches()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        for (LoadModCondition condition : mods) {
+            if (!condition.matches()) {
+                return false;
+            }
+        }
+        return true;
     }
     
     /**

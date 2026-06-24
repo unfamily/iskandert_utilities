@@ -2,12 +2,14 @@
 navigation:
   title: Modular Fan
   icon: iska_utils:fan
-  parent: hubs/fan_system.md
-  position: 5
+  parent: hubs/world_and_machines.md
+  position: 35
 item_ids:
   - iska_utils:fan
+  - iska_utils:range_module
+  - iska_utils:ghost_module
 categories:
-  - Fan system
+  - World and machines
 ---
 # Modular Fan
 
@@ -20,12 +22,20 @@ categories:
 ## GUI
 
 - Adjust reach on each axis with **+ / −** around the grid; bottom bar shows forward depth (green = in bar, blue = extended beyond the visual cap).
+- Install modules in the module slots shown in the fan GUI.
 
 ## Redstone
 
 - Multiple redstone modes (see in-game labels); integrates with automation via the fan GUI and redstone input.
 
-## Modules
+## Fan modules
 
-- See **Fan modules** in this guide for Range and Ghost upgrades.
+<ItemImage id="iska_utils:range_module" />
 
+- **Range module**: increases max reach in all axes.
+- **Ghost module**: changes how the airflow interacts with blocks.
+
+<ItemGrid>
+  <ItemIcon id="iska_utils:range_module" />
+  <ItemIcon id="iska_utils:ghost_module" />
+</ItemGrid>

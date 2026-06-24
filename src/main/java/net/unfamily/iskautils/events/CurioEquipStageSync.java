@@ -67,7 +67,7 @@ public final class CurioEquipStageSync {
         Item item = stack.getItem();
         String stageId = ArtifactEquipStages.stageForItem(item);
         if (stageId == null) {
-            stageId = ArtifactEquipStages.stageForCursedArtifact(item);
+            stageId = ArtifactEquipStages.stageForArcaneArtifact(item);
         }
         if (stageId == null || applied.contains(stageId)) {
             return;

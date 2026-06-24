@@ -125,9 +125,6 @@ public class CommandItemLoader {
             }
             
             String itemId = itemJson.get("id").getAsString();
-            if (!net.unfamily.iskautils.script.LoadModGate.shouldIncludeAtLoad(itemJson, LOGGER.unwrap(), itemId)) {
-                return;
-            }
             
             // Create item definition
             CommandItemDefinition definition = new CommandItemDefinition(itemId);

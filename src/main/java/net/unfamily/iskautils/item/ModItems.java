@@ -63,11 +63,12 @@ import net.unfamily.iskautils.item.custom.JellyOfKnowledgeItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.artifact.AncientStarItem;
 import net.unfamily.iskautils.item.custom.artifact.MiniatureTentItem;
+import net.unfamily.iskautils.item.custom.artifact.CallingBellItem;
 import net.unfamily.iskautils.item.custom.artifact.ArcaneDictionaryItem;
 import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.artifact.CoarselyForgedRingItem;
 import net.unfamily.iskautils.item.custom.artifact.CursedCandleItem;
-import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
+import net.unfamily.iskautils.item.custom.artifact.ArcaneArtifactItem;
 import net.unfamily.iskautils.item.custom.artifact.EntropicClockItem;
 import net.unfamily.iskautils.item.custom.artifact.EntropicRingItem;
 import net.unfamily.iskautils.item.custom.artifact.IceDiamondItem;
@@ -250,7 +251,7 @@ public class ModItems {
     public static final DeferredItem<Item> ENTROPIC_BOOTS = ITEMS.registerItem(
             "entropic_boots", p -> new EntropicArmorItem(ArmorType.BOOTS, p), EntropicGear::armorProperties);
 
-    // ===== RELICS (reliquie) =====
+    // ===== ARTIFACTS =====
     public static final DeferredItem<Item> OLD_BRICK = ITEMS.registerItem("old_brick", OldBrickItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> CHOSEN_CHEESE = ITEMS.registerItem("chosen_cheese", ChosenCheeseItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> ICE_DIAMOND = ITEMS.registerItem("ice_diamond", IceDiamondItem::new, p -> p.stacksTo(1).durability(1024));
@@ -266,15 +267,17 @@ public class ModItems {
             "ancient_star", AncientStarItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> MINIATURE_TENT = ITEMS.registerItem(
             "miniature_tent", MiniatureTentItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> CALLING_BELL = ITEMS.registerItem(
+            "calling_bell", CallingBellItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> JELLY_OF_KNOWLEDGE = ITEMS.registerItem(
             "jelly_of_knowledge", JellyOfKnowledgeItem::new, p -> p.stacksTo(64));
     public static final DeferredItem<Item> RUNIC_DICE = ITEMS.registerItem(
             "runic_dice", RunicDiceItem::new, p -> p.stacksTo(1));
 
-    public static final DeferredItem<Item> TOTEM_OF_PAIN = ITEMS.registerItem("totem_of_pain", CursedArtifactItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> TOTEM_OF_PAIN = ITEMS.registerItem("totem_of_pain", ArcaneArtifactItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> CURSED_CANDLE = ITEMS.registerItem("cursed_candle", CursedCandleItem::new, p -> p.stacksTo(1));
-    public static final DeferredItem<Item> BUSTED_CROWN = ITEMS.registerItem("busted_crown", CursedArtifactItem::new, p -> p.stacksTo(1));
-    public static final DeferredItem<Item> RITUAL_GAUNTLET = ITEMS.registerItem("ritual_gauntlet", CursedArtifactItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> BUSTED_CROWN = ITEMS.registerItem("busted_crown", ArcaneArtifactItem::new, p -> p.stacksTo(1));
+    public static final DeferredItem<Item> RITUAL_GAUNTLET = ITEMS.registerItem("ritual_gauntlet", ArcaneArtifactItem::new, p -> p.stacksTo(1));
     public static final DeferredItem<Item> THE_DECEPTION = ITEMS.registerItem("the_deception",
             props -> new net.unfamily.iskautils.item.custom.artifact.TheDeceptionItem(ModBlocks.THE_DECEPTION.get(), props),
             Item.Properties::useBlockDescriptionPrefix);
@@ -365,6 +368,8 @@ public class ModItems {
     
     public static final DeferredItem<Item> HELLFIRE_IGNITER = ITEMS.registerItem("hellfire_igniter",
             props -> new HellfireIgniterBlockItem(ModBlocks.HELLFIRE_IGNITER.get(), props), Item.Properties::useBlockDescriptionPrefix);
+
+    public static final DeferredItem<BlockItem> ENDER_NULLIFIER = ITEMS.registerSimpleBlockItem(ModBlocks.ENDER_NULLIFIER);
 
     public static final DeferredItem<Item> FAN = ITEMS.registerItem("fan",
             props -> new FanBlockItem(ModBlocks.FAN.get(), props), Item.Properties::useBlockDescriptionPrefix);

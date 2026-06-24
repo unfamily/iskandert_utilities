@@ -107,6 +107,7 @@
     { "weight": 30, "luck": 10000, "jeimode": "show", "do": [{ "drop": "iska_utils:entropic_clock" }], "quick_open": true },
     { "weight": 75, "luck": 100, "jeimode": "show", "do": [{ "drop": "iska_utils:ancient_star" }], "quick_open": true },
     { "weight": 75, "luck": 200, "jeimode": "show", "do": [{ "drop": "iska_utils:miniature_tent" }], "quick_open": true },
+    { "weight": 75, "luck": 250, "jeimode": "show", "do": [{ "drop": "iska_utils:calling_bell" }], "quick_open": true },
     { "weight": 100, "luck": 850, "jeimode": "show", "do": [{ "drop": "iska_utils:runic_dice" }], "quick_open": true },
     { "weight": 50, "luck": 30, "jeimode": "show", "do": [{ "drop": "iska_utils:arcane_dictionary" }], "quick_open": true },
     { "weight": 100, "luck": 200, "jeimode": "show", "do": [{ "drop": "iska_utils:mining_equitizer" }], "quick_open": true },
