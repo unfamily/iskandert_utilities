@@ -66,7 +66,6 @@ public final class EnderNullifierSpatialIndex {
         }
 
         int radius = Config.enderNullifierRadius;
-        int radiusSq = radius * radius;
         int centerChunkX = ((int) Math.floor(position.x)) >> 4;
         int centerChunkZ = ((int) Math.floor(position.z)) >> 4;
         int chunkRadius = (radius >> 4) + 1;
@@ -78,7 +77,7 @@ public final class EnderNullifierSpatialIndex {
                     continue;
                 }
                 for (BlockPos nullifierPos : nullifiers.keySet()) {
-                    if (isWithinRadius(nullifierPos, position, radiusSq)) {
+                    if (isWithinRadius(nullifierPos, position, radius)) {
                         return true;
                     }
                 }
@@ -87,10 +86,11 @@ public final class EnderNullifierSpatialIndex {
         return false;
     }
 
-    private static boolean isWithinRadius(BlockPos center, Vec3 position, int radiusSq) {
-        double dx = center.getX() + 0.5D - position.x;
-        double dy = center.getY() + 0.5D - position.y;
-        double dz = center.getZ() + 0.5D - position.z;
-        return dx * dx + dy * dy + dz * dz <= radiusSq;
+    /** Axis-aligned cube centered on the nullifier block (Chebyshev / per-axis radius). */
+    private static boolean isWithinRadius(BlockPos center, Vec3 position, int radius) {
+        double dx = Math.abs(center.getX() + 0.5D - position.x);
+        double dy = Math.abs(center.getY() + 0.5D - position.y);
+        double dz = Math.abs(center.getZ() + 0.5D - position.z);
+        return dx <= radius && dy <= radius && dz <= radius;
     }
 }

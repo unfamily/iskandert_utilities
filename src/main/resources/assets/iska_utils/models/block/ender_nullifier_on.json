@@ -1,8 +1,8 @@
 {
   "textures": {
-    "base": "iska_utils:block/ender_nullifier_base",
-    "eye": "iska_utils:block/ender_nullifier_on",
-    "particle": "iska_utils:block/ender_nullifier_base"
+    "base": "iska_utils:block/ender_nullifier/base",
+    "eye": "iska_utils:block/ender_nullifier/on",
+    "particle": "iska_utils:block/ender_nullifier/base"
   },
   "elements": [
     {

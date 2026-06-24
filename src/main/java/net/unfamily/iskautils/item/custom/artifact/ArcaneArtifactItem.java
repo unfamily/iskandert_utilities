@@ -28,6 +28,16 @@ public class ArcaneArtifactItem extends Item {
         super(properties.stacksTo(1));
     }
 
+    /**
+     * Whether this item counts as a distinct arcane artifact for Calling Bell, Busted Crown, and arcane traits.
+     */
+    public static boolean isArcaneArtifact(Item item) {
+        return item instanceof ArcaneArtifactItem
+                || item instanceof CursedCandleItem
+                || item instanceof TheDeceptionItem
+                || item instanceof net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
+    }
+
     public static void appendArcaneArtifactTooltip(Consumer<Component> tooltip, String path) {
         tooltip.accept(Component.translatable("tooltip.iska_utils." + path + ".cursed"));
         switch (path) {

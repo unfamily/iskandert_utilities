@@ -15,7 +15,7 @@ categories:
 
 ## What it does
 
-Directional block that **cancels mob teleports** (Endermen, Shulkers, chorus-fruit hops, etc.) inside a configurable radius around the front face. Players are not affected.
+Block that **cancels mob teleports** within a cubic **radius** around it on every axis. Does not affect players.
 
 ## Controls
 
@@ -25,5 +25,6 @@ Directional block that **cancels mob teleports** (Endermen, Shulkers, chorus-fru
 
 ## Tips
 
-- Place facing the area you want to protect; range defaults to **8** blocks (see config `enderNullifierRadius`).
-- Useful near mob farms or end-themed builds where teleporting mobs break containment.
+- Place at the center of the area you want to protect.
+- Useful near mob farms where teleporting mobs break containment.
+- Starts **enabled** when placed.

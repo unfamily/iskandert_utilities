@@ -6,10 +6,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
-import net.unfamily.iskautils.item.custom.artifact.CursedCandleItem;
 import net.unfamily.iskautils.item.custom.artifact.ArcaneArtifactItem;
-import net.unfamily.iskautils.item.custom.artifact.TheDeceptionItem;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
@@ -165,7 +162,7 @@ public final class CurioEquipUtil {
             return 0;
         }
         int count = ModUtils.isCuriosLoaded()
-                ? countDistinctEquippedCurioItems(player, item -> item != exclude && isArcaneArtifactItem(item))
+                ? countDistinctEquippedCurioItems(player, item -> item != exclude && ArcaneArtifactItem.isArcaneArtifact(item))
                 : 0;
         Item cursedCandle = ModItems.CURSED_CANDLE.get();
         if (exclude != cursedCandle && !findActiveStack(player, cursedCandle).isEmpty()) {
@@ -187,13 +184,6 @@ public final class CurioEquipUtil {
             }
         });
         return found[0] != null ? found[0] : ItemStack.EMPTY;
-    }
-
-    private static boolean isArcaneArtifactItem(Item item) {
-        return item instanceof ArcaneArtifactItem
-                || item instanceof CursedCandleItem
-                || item instanceof TheDeceptionItem
-                || item instanceof NecroticCrystalHeartItem;
     }
 
     private static boolean isInCuriosSlots(Player player, Item item) {
