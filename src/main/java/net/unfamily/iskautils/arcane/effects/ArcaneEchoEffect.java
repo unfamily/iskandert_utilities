@@ -29,7 +29,7 @@ public final class ArcaneEchoEffect implements ArcaneDictionaryEffect {
         if (ctx.player().getRandom().nextDouble() >= procChance) {
             return;
         }
-        int artifacts = CurioEquipUtil.countEquippedCursedArtifacts(ctx.player());
+        int artifacts = CurioEquipUtil.countEquippedArcaneArtifacts(ctx.player());
         if (artifacts <= 0) {
             return;
         }

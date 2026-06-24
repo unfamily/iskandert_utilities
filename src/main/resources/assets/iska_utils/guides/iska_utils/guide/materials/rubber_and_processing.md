@@ -1,18 +1,15 @@
 ---
 navigation:
   title: Materials (rubber and dye)
-  parent: hubs/rubber_and_processing.md
-  position: 30
+  parent: hubs/materials.md
+  position: 10
 item_ids:
-  - iska_utils:sap
-  - iska_utils:rubber
-  - iska_utils:rubber_chunk
   - iska_utils:plastic_ingot
   - iska_utils:green_sludge
   - iska_utils:tar_slimeball
   - iska_utils:dye_berry
 categories:
-  - Rubber and processing
+  - Materials
 ---
 # Materials (rubber and dye)
 

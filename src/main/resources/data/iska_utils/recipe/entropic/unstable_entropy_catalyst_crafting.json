@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "tag": "c:storage_blocks/copper" },
+    { "tag": "c:gems/diamond" },
+    { "tag": "c:gems/diamond" },
+    { "tag": "c:gems/diamond" },
+    { "tag": "c:gems/diamond" },
+    { "tag": "c:gems/diamond" },
+    { "item": "iska_utils:entropic_agglomeration" },
+    { "item": "iska_utils:entropic_agglomeration" },
+    { "tag": "c:nether_stars" }
+  ],
+  "result": {
+    "id": "iska_utils:unstable_entropy_catalyst",
+    "count": 1
+  }
+}

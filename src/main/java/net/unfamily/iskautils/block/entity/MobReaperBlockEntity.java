@@ -41,7 +41,51 @@ import java.util.Set;
 import java.util.UUID;
 
 public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
+
+    public enum MobAgeFilter {
+        BOTH(0, "both"),
+        ADULTS(1, "adults"),
+        BABIES(2, "babies");
+
+        private final int id;
+        private final String name;
+
+        MobAgeFilter(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public static MobAgeFilter fromId(int id) {
+            for (MobAgeFilter filter : values()) {
+                if (filter.id == id) {
+                    return filter;
+                }
+            }
+            return BOTH;
+        }
+
+        public MobAgeFilter cycle(boolean backward) {
+            MobAgeFilter[] all = values();
+            int index = ordinal();
+            if (backward) {
+                index = (index - 1 + all.length) % all.length;
+            } else {
+                index = (index + 1) % all.length;
+            }
+            return all[index];
+        }
+    }
+
     private MachineTargetType targetType = MachineTargetType.MOBS_ONLY;
+    private MobAgeFilter ageFilter = MobAgeFilter.BOTH;
     private int redstoneMode = 0;
     private int attackCooldown = 0;
     private UUID ownerUuid;
@@ -194,6 +238,23 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
         setTargetType(targetType.cycle(true));
     }
 
+    public MobAgeFilter getAgeFilter() {
+        return ageFilter;
+    }
+
+    public void setAgeFilter(MobAgeFilter value) {
+        this.ageFilter = value != null ? value : MobAgeFilter.BOTH;
+        setChanged();
+    }
+
+    public void cycleAgeFilter() {
+        setAgeFilter(ageFilter.cycle(false));
+    }
+
+    public void cycleAgeFilterBackward() {
+        setAgeFilter(ageFilter.cycle(true));
+    }
+
     public boolean isLethalActive() {
         return moduleHandler.getStackInSlot(0).is(ModItems.LETHAL_DAMAGE_MODULE.get());
     }
@@ -252,7 +313,8 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
         return new AABB(pos.relative(direction, step));
     }
 
-    private static void collectTargets(ServerLevel level, BlockPos pos, BlockState state, MachineTargetType targetType, Set<LivingEntity> targets) {
+    private static void collectTargets(ServerLevel level, BlockPos pos, BlockState state, MachineTargetType targetType,
+                                       MobAgeFilter ageFilter, Set<LivingEntity> targets) {
         Direction facing = state.getValue(MobReaperBlock.FACING);
         Direction excluded = getExcludedContactDirection(state);
         int hitDepth = Math.max(1, Config.reaperHitDepth);
@@ -266,7 +328,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
                 AABB hitArea = calculateHitArea(pos, direction, step);
                 for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, hitArea,
                         e -> e.isAlive() && !e.isSpectator() && e.getBoundingBox().intersects(hitArea)
-                                && shouldTargetEntity(e, targetType))) {
+                                && shouldTargetEntity(e, targetType, ageFilter))) {
                     targets.add(entity);
                 }
             }
@@ -277,6 +339,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         targetType = MachineTargetType.fromId(tag.getInt("TargetType"));
+        ageFilter = MobAgeFilter.fromId(tag.getInt("AgeFilter"));
         redstoneMode = tag.getInt("RedstoneMode");
         if (redstoneMode == 3) {
             redstoneMode = 4;
@@ -295,6 +358,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt("TargetType", targetType.getId());
+        tag.putInt("AgeFilter", ageFilter.getId());
         tag.putInt("RedstoneMode", redstoneMode);
         tag.putInt("AttackCooldown", attackCooldown);
         tag.putBoolean("MountedOnPlate", mountedOnPlate);
@@ -341,22 +405,33 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
 
         ServerLevel serverLevel = (ServerLevel) level;
         Set<LivingEntity> targets = new HashSet<>();
-        collectTargets(serverLevel, pos, state, blockEntity.targetType, targets);
+        collectTargets(serverLevel, pos, state, blockEntity.targetType, blockEntity.ageFilter, targets);
 
         for (LivingEntity entity : targets) {
             blockEntity.attackEntity(serverLevel, entity);
         }
     }
 
-    private static boolean shouldTargetEntity(LivingEntity entity, MachineTargetType targetType) {
+    private static boolean shouldTargetEntity(LivingEntity entity, MachineTargetType targetType, MobAgeFilter ageFilter) {
         boolean isPlayer = entity instanceof Player;
         if (targetType == MachineTargetType.MOBS_AND_PLAYERS) {
+            // fall through to age filter
+        } else if (targetType == MachineTargetType.PLAYERS_ONLY) {
+            if (!isPlayer) {
+                return false;
+            }
+        } else if (isPlayer) {
+            return false;
+        }
+
+        if (ageFilter == MobAgeFilter.BOTH) {
             return true;
         }
-        if (targetType == MachineTargetType.PLAYERS_ONLY) {
-            return isPlayer;
+        boolean isBaby = entity.isBaby();
+        if (ageFilter == MobAgeFilter.ADULTS) {
+            return !isBaby;
         }
-        return !isPlayer;
+        return isBaby;
     }
 
     private void attackEntity(ServerLevel level, LivingEntity target) {

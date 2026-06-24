@@ -36,7 +36,10 @@ public final class IskaUtilsDataReload {
         ResourceManager rm = server.getResourceManager();
 
         // Must be safe to call multiple times and during /reload.
-        runPhase("command items", () -> CommandItemRegistry.reloadDefinitions());
+        runPhase("command items", () -> {
+            net.unfamily.iskautils.command.CommandItemLoader.loadAll(rm);
+            CommandItemRegistry.reloadDefinitions();
+        });
         runPhase("potion plates", () -> DynamicPotionPlateScanner.loadAll(rm));
         runPhase("structure monouse", () -> StructureMonouseLoader.loadAll(rm));
         runPhase("shop", () -> ShopLoader.loadAll(rm));

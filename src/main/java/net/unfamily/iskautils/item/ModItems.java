@@ -63,11 +63,12 @@ import net.unfamily.iskautils.item.custom.JellyOfKnowledgeItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
 import net.unfamily.iskautils.item.custom.artifact.AncientStarItem;
 import net.unfamily.iskautils.item.custom.artifact.MiniatureTentItem;
+import net.unfamily.iskautils.item.custom.artifact.CallingBellItem;
 import net.unfamily.iskautils.item.custom.artifact.ArcaneDictionaryItem;
 import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.artifact.CoarselyForgedRingItem;
 import net.unfamily.iskautils.item.custom.artifact.CursedCandleItem;
-import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
+import net.unfamily.iskautils.item.custom.artifact.ArcaneArtifactItem;
 import net.unfamily.iskautils.item.custom.artifact.EntropicClockItem;
 import net.unfamily.iskautils.item.custom.artifact.EntropicRingItem;
 import net.unfamily.iskautils.item.custom.artifact.RunicDiceItem;
@@ -299,7 +300,7 @@ public class ModItems {
     public static final DeferredItem<Item> ENTROPIC_BOOTS = ITEMS.register("entropic_boots",
             () -> new net.unfamily.iskautils.item.entropic.EntropicArmorItem(net.minecraft.world.item.ArmorItem.Type.BOOTS, net.unfamily.iskautils.item.entropic.EntropicGear.armorProperties()));
 
-    // ===== RELICS (reliquie) =====
+    // ===== ARTIFACTS =====
     public static final DeferredItem<Item> OLD_BRICK = ITEMS.register("old_brick",
             () -> new OldBrickItem(new Item.Properties()));
     public static final DeferredItem<Item> CHOSEN_CHEESE = ITEMS.register("chosen_cheese",
@@ -320,6 +321,8 @@ public class ModItems {
             () -> new AncientStarItem(new Item.Properties()));
     public static final DeferredItem<Item> MINIATURE_TENT = ITEMS.register("miniature_tent",
             () -> new MiniatureTentItem(new Item.Properties()));
+    public static final DeferredItem<Item> CALLING_BELL = ITEMS.register("calling_bell",
+            () -> new CallingBellItem(new Item.Properties()));
     public static final DeferredItem<Item> JELLY_OF_KNOWLEDGE = ITEMS.register("jelly_of_knowledge",
             () -> new JellyOfKnowledgeItem(new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> RUNIC_DICE = ITEMS.register("runic_dice",
@@ -327,13 +330,13 @@ public class ModItems {
 
     // Cursed artifact set
     public static final DeferredItem<Item> TOTEM_OF_PAIN = ITEMS.register("totem_of_pain",
-            () -> new CursedArtifactItem(new Item.Properties()));
+            () -> new ArcaneArtifactItem(new Item.Properties()));
     public static final DeferredItem<Item> CURSED_CANDLE = ITEMS.register("cursed_candle",
             () -> new CursedCandleItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> BUSTED_CROWN = ITEMS.register("busted_crown",
-            () -> new CursedArtifactItem(new Item.Properties()));
+            () -> new ArcaneArtifactItem(new Item.Properties()));
     public static final DeferredItem<Item> RITUAL_GAUNTLET = ITEMS.register("ritual_gauntlet",
-            () -> new CursedArtifactItem(new Item.Properties()));
+            () -> new ArcaneArtifactItem(new Item.Properties()));
     public static final DeferredItem<Item> THE_DECEPTION = ITEMS.register("the_deception",
             () -> new net.unfamily.iskautils.item.custom.artifact.TheDeceptionItem(
                     ModBlocks.THE_DECEPTION.get(), new Item.Properties().stacksTo(1)));
@@ -486,6 +489,9 @@ public class ModItems {
     // Item for the Hellfire Igniter
     public static final DeferredItem<Item> HELLFIRE_IGNITER = ITEMS.register("hellfire_igniter",
             () -> new HellfireIgniterBlockItem(ModBlocks.HELLFIRE_IGNITER.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<BlockItem> ENDER_NULLIFIER = ITEMS.register("ender_nullifier",
+            () -> new BlockItem(ModBlocks.ENDER_NULLIFIER.get(), ITEM_PROPERTIES));
     
     // Item for the Fan
     public static final DeferredItem<Item> FAN = ITEMS.register("fan",

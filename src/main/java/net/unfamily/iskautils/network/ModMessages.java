@@ -138,6 +138,12 @@ public class ModMessages {
         );
 
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket::handle
+        );
+
+        registrar.playToServer(
             net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket::handle
@@ -2201,6 +2207,12 @@ public class ModMessages {
     public static void sendMobReaperRedstoneModePacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket(pos, backward));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendMobReaperAgeFilterPacket(BlockPos pos, boolean backward) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket(pos, backward));
     }
 
     @OnlyIn(Dist.CLIENT)

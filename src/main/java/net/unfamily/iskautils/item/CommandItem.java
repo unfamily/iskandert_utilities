@@ -434,6 +434,9 @@ public class CommandItem extends Item {
      */
     private boolean areConditionsMet(ServerPlayer player) {
         CommandItemDefinition def = getDefinition();
+        if (!def.checkModsMet()) {
+            return false;
+        }
         // For the DEF logic, the check is done for each action
         // so here we simply return true
         if (def.getStagesLogic() == CommandItemDefinition.StagesLogic.DEF_AND || 

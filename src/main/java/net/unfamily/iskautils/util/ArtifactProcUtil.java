@@ -17,7 +17,7 @@ public final class ArtifactProcUtil {
         if (!(player instanceof ServerPlayer sp)) {
             return player.getRandom().nextDouble() < baseChance;
         }
-        if (!RelicEffectGate.shouldApply(sp)) {
+        if (!ArtifactEffectGate.shouldApply(sp)) {
             return false;
         }
         double chance = Math.min(1.0D, baseChance * procMultiplier(sp));

@@ -13,7 +13,7 @@ import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.neoforged.fml.ModList;
-import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
+import net.unfamily.iskautils.item.custom.artifact.ArcaneArtifactItem;
 import java.lang.reflect.Method;
 
 import java.util.List;
@@ -38,7 +38,7 @@ public class NecroticCrystalHeartItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
-        CursedArtifactItem.appendCursedArtifactTooltip(tooltipComponents, "necrotic_crystal_heart");
+        ArcaneArtifactItem.appendArcaneArtifactTooltip(tooltipComponents, "necrotic_crystal_heart");
     }
     
     /**

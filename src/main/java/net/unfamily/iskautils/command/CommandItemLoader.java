@@ -64,107 +64,6 @@ public class CommandItemLoader {
     }
     
     /**
-     * Registers internal default command item definitions.
-     * These are always available as fallback; external scripts can override them.
-     */
-    private static void registerInternalDefaults() {
-        // Default: iska_utils-world_init
-        CommandItemDefinition worldInit = new CommandItemDefinition("iska_utils-world_init");
-        worldInit.setCreativeTabVisible(false);
-        worldInit.setMaxStackSize(1);
-        worldInit.setGlowing(false);
-        worldInit.setStagesLogic(CommandItemDefinition.StagesLogic.DEF_AND);
-        worldInit.setCooldown(10);
-        worldInit.addStage("world", "initializing", false);  // index 0
-        worldInit.addStage("world", "initialized", false);    // index 1
-        worldInit.addStage("world", "initialized", true);     // index 2
-        
-        // onTick: if conditions [0,1] -> initialization sequence
-        CommandItemAction ifAction1 = new CommandItemAction();
-        ifAction1.setType(CommandItemAction.ActionType.IF);
-        List<Integer> cond1 = new ArrayList<>();
-        cond1.add(0);
-        cond1.add(1);
-        ifAction1.setConditionIndices(cond1);
-        
-        String[] initCommands = {
-            "iska_utils_stage add world initializing true",
-            "title @a times 20 100 40",
-            "title @a subtitle {\"text\":\"please stand still and do nothing.\",\"color\":\"dark_red\"}",
-            "title @a title {\"text\":\"World Initialization:\",\"color\":\"dark_red\"}"
-        };
-        for (String cmd : initCommands) {
-            CommandItemAction exec = new CommandItemAction();
-            exec.setType(CommandItemAction.ActionType.EXECUTE);
-            exec.setCommand(cmd);
-            ifAction1.addSubAction(exec);
-        }
-        
-        CommandItemAction delay1 = new CommandItemAction();
-        delay1.setType(CommandItemAction.ActionType.DELAY);
-        delay1.setDelay(160);
-        ifAction1.addSubAction(delay1);
-        
-        String[] reloadCommands = {
-            "kubejs reload server-scripts",
-            "reload"
-        };
-        for (String cmd : reloadCommands) {
-            CommandItemAction exec = new CommandItemAction();
-            exec.setType(CommandItemAction.ActionType.EXECUTE);
-            exec.setCommand(cmd);
-            ifAction1.addSubAction(exec);
-        }
-        
-        CommandItemAction delay2 = new CommandItemAction();
-        delay2.setType(CommandItemAction.ActionType.DELAY);
-        delay2.setDelay(20);
-        ifAction1.addSubAction(delay2);
-        
-        String[] finishCommands = {
-            "custommachinery reload",
-            "title @a times 20 100 40",
-            "title @a subtitle {\"text\":\"completed, apologies for the wait\",\"color\":\"dark_green\"}",
-            "title @a title {\"text\":\"World Initialization:\",\"color\":\"dark_green\"}",
-            "title @a times 20 100 20",
-            "iska_utils_stage add world initialized true",
-            "iska_utils_stage remove world initializing true"
-        };
-        for (String cmd : finishCommands) {
-            CommandItemAction exec = new CommandItemAction();
-            exec.setType(CommandItemAction.ActionType.EXECUTE);
-            exec.setCommand(cmd);
-            ifAction1.addSubAction(exec);
-        }
-        
-        CommandItemAction deleteAll1 = new CommandItemAction();
-        deleteAll1.setType(CommandItemAction.ActionType.ITEM);
-        deleteAll1.setItemAction(CommandItemAction.ItemActionType.DELETE_ALL);
-        ifAction1.addSubAction(deleteAll1);
-        
-        worldInit.addTickAction(ifAction1);
-        
-        // onTick: if conditions [0,2] -> already initialized, just delete
-        CommandItemAction ifAction2 = new CommandItemAction();
-        ifAction2.setType(CommandItemAction.ActionType.IF);
-        List<Integer> cond2 = new ArrayList<>();
-        cond2.add(0);
-        cond2.add(2);
-        ifAction2.setConditionIndices(cond2);
-        
-        CommandItemAction deleteAll2 = new CommandItemAction();
-        deleteAll2.setType(CommandItemAction.ActionType.ITEM);
-        deleteAll2.setItemAction(CommandItemAction.ItemActionType.DELETE_ALL);
-        ifAction2.addSubAction(deleteAll2);
-        
-        worldInit.addTickAction(ifAction2);
-        
-        COMMAND_ITEMS.put("iska_utils-world_init", worldInit);
-        LOGGER.debug("Registered internal default command item: iska_utils-world_init");
-    }
-    
-    
-    /**
      * Creates a README file in the configuration directory
      */
     private static void createReadme(Path configPath) {
@@ -446,9 +345,6 @@ public class CommandItemLoader {
             }
             
             String itemId = itemJson.get("id").getAsString();
-            if (!net.unfamily.iskautils.script.LoadModGate.shouldIncludeAtLoad(itemJson, LOGGER.unwrap(), itemId)) {
-                return;
-            }
             
             // Create item definition
             CommandItemDefinition definition = new CommandItemDefinition(itemId);

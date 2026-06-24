@@ -143,6 +143,7 @@ public class ModCreativeModeTabs {
                                 // 4. Machines
                                 pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
                                 pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
+                                pOutput.accept(ModItems.ENDER_NULLIFIER.get());
                                 pOutput.accept(ModItems.SMART_TIMER.get());
                                 pOutput.accept(ModItems.FAN.get());
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());
@@ -236,6 +237,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.THE_DECEPTION.get());
                                 pOutput.accept(ModItems.ARCANE_DICTIONARY.get());
                                 pOutput.accept(ModItems.MINIATURE_TENT.get());
+                                pOutput.accept(ModItems.CALLING_BELL.get());
 
                                 // Delivery-related items (after all artifacts)
                                 if (ArtifactsCompat.isLoaded()) {

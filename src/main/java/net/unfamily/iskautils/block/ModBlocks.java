@@ -178,6 +178,17 @@ public class ModBlocks {
     // Hellfire Igniter (creates fire when activated by redstone)
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
             () -> new HellfireIgniterBlock(HELLFIRE_PROPERTIES));
+
+    private static final BlockBehaviour.Properties ENDER_NULLIFIER_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_PURPLE)
+            .strength(1.5f, 6.0f)
+            .sound(SoundType.DEEPSLATE)
+            .requiresCorrectToolForDrops()
+            .noOcclusion()
+            .lightLevel((state) -> state.getValue(EnderNullifierBlock.ON) ? 7 : 0);
+
+    public static final DeferredBlock<EnderNullifierBlock> ENDER_NULLIFIER = BLOCKS.register("ender_nullifier",
+            () -> new EnderNullifierBlock(ENDER_NULLIFIER_PROPERTIES));
     
     // Fan (directional block with 6 directions placement)
     public static final DeferredBlock<FanBlock> FAN = BLOCKS.register("fan",

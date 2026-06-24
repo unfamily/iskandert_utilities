@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.block.entity.MobReaperBlockEntity;
 import net.unfamily.iskautils.util.MachineTargetType;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,6 +81,14 @@ public final class MachineGuiButtons {
 
     public static ItemStack fanPushPullIcon(boolean pull) {
         return new ItemStack(pull ? Items.STICKY_PISTON : Items.PISTON);
+    }
+
+    public static ItemStack mobAgeFilterIcon(int ageFilterId) {
+        return switch (MobReaperBlockEntity.MobAgeFilter.fromId(ageFilterId)) {
+            case BOTH -> new ItemStack(Items.ROTTEN_FLESH);
+            case ADULTS -> new ItemStack(Items.LEATHER);
+            case BABIES -> new ItemStack(Items.EGG);
+        };
     }
 
     public static ItemStack persistentModeIcon(boolean persistent) {

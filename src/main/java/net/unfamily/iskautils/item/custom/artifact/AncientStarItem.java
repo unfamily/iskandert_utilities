@@ -11,7 +11,7 @@ import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 import java.util.List;
 
 /**
- * Ancient Star relic for the Curios curio slot.
+ * Ancient Star artifact for the Curios curio slot.
  */
 public class AncientStarItem extends Item {
     public AncientStarItem(Properties properties) {

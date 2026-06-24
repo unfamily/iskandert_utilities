@@ -2,7 +2,7 @@ package net.unfamily.iskautils.util;
 
 import net.minecraft.world.item.Item;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.item.custom.artifact.CursedArtifactItem;
+import net.unfamily.iskautils.item.custom.artifact.ArcaneArtifactItem;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,8 +57,8 @@ public final class ArtifactEquipStages {
         return STAGE_BY_ITEM.get(item);
     }
 
-    public static String stageForCursedArtifact(Item item) {
-        if (!(item instanceof CursedArtifactItem)) {
+    public static String stageForArcaneArtifact(Item item) {
+        if (!(item instanceof ArcaneArtifactItem)) {
             return null;
         }
         return "iska_utils_internal-" + item.builtInRegistryHolder().key().location().getPath() + "_equip";

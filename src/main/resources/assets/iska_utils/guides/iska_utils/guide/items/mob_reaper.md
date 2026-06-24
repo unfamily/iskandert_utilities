@@ -38,6 +38,7 @@ Ghost icons show valid modules when a slot is empty. Live stats: **damage**, **b
 | Control | Action |
 | ------- | ------ |
 | **Target type** (right side) | Cycles: **Mobs only** → **Mobs and players** → **Players only**. Left click forward, right click backward. |
+| **Age filter** (far right) | Cycles: **All ages** → **Adults only** → **Babies only**. Skips baby or adult mobs when filtering. |
 | **Redstone mode** | Same family as other machines: **Ignore**, **Low**, **High**, **Disabled** (left / right click). |
 | **✕** | Close |
 

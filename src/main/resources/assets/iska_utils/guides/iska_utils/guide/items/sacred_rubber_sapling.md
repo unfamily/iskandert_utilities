@@ -13,7 +13,8 @@ categories:
 
 <ItemImage id="iska_utils:sacred_rubber_sapling" />
 
-## Worldgen / growth
+## Growth
 
-- Special rubber tree variant; read tooltip for placement and growth hints.
-
+- Does **not** grow from random ticks — apply **bonemeal** repeatedly (**15** uses total) to start procedural growth.
+- Growth needs clear space for a very large trunk and leaf dome.
+- If **Druidic Agglomeration** is used on the sapling, it becomes a **mega sacred** tree, which is even bigger.

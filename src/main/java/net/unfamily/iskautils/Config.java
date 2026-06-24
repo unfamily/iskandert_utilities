@@ -97,6 +97,10 @@ public class Config
                     "Also disables inverted placement (Shift when placing the block has no effect on direction)")
             .define("002_hellfireIgniterVanillaLike", false);
 
+    private static final ModConfigSpec.IntValue ENDER_NULLIFIER_RADIUS = BUILDER
+            .comment("Radius in blocks around an active Ender Nullifier that blocks mob teleports")
+            .defineInRange("003_enderNullifierRadius", 8, 1, 128);
+
     // Portable Dislocator energy configuration
     private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CAPACITY = BUILDER
             .comment("Energy capacity of the Portable Dislocator in RF/FE",
@@ -457,7 +461,7 @@ public class Config
             .defineInRange("229_curse_of_pain_max_amplifier", 4, 0, 255);
 
     private static final ModConfigSpec.DoubleValue ARCANE_CURSE_OF_USELESS_DISABLE_CHANCE = BUILDER
-            .comment("Curse of Useless: chance per trait level to disable other relics and arcane traits (0.20 = 100% at level V)")
+            .comment("Curse of Useless: chance per trait level to disable other artifacts and arcane traits (0.20 = 100% at level V)")
             .defineInRange("230_curse_of_useless_disable_chance_per_level", 0.20D, 0.0D, 1.0D);
 
     private static final ModConfigSpec.DoubleValue ARCANE_ECHO_PROC_CHANCE = BUILDER
@@ -552,7 +556,7 @@ public class Config
 
     private static final ModConfigSpec.IntValue UNSTABLE_ENTROPY_CATALYST_DECAY_TICKS = BUILDER
             .comment("Ticks until unstable_entropy_catalyst decays in player inventory (0 = disabled). Default 600 = 30 seconds.")
-            .defineInRange("110_unstable_entropy_catalyst_decay_ticks", 600, 0, Integer.MAX_VALUE);
+            .defineInRange("110_unstable_entropy_catalyst_decay_ticks", 0, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.ConfigValue<String> UNSTABLE_ENTROPY_CATALYST_DECAY_TINTS = BUILDER
             .comment("Color ramp used by unstable_entropy_catalyst as it decays (semicolon-separated).",
@@ -562,6 +566,23 @@ public class Config
 
     static {
         BUILDER.pop(); // unstable_entropy_catalyst
+        BUILDER.comment("Recipe balance (Ancient Tab simple outputs)").push("balance");
+    }
+
+    private static final ModConfigSpec.BooleanValue BALANCE_ANCIENT_TAB_ENTROPY_CRYSTAL = BUILDER
+            .comment("Enable the simple Ancient Tab recipe for entropy_crystal.")
+            .define("001_ancient_tab_entropy_crystal", true);
+
+    private static final ModConfigSpec.BooleanValue BALANCE_ANCIENT_TAB_UNSTABLE_CATALYST = BUILDER
+            .comment("Enable the simple Ancient Tab recipe for unstable_entropy_catalyst.")
+            .define("002_ancient_tab_unstable_entropy_catalyst", true);
+
+    private static final ModConfigSpec.BooleanValue BALANCE_ANCIENT_TAB_SPAWNER = BUILDER
+            .comment("Enable the simple Ancient Tab recipe for minecraft:spawner.")
+            .define("003_ancient_tab_spawner", true);
+
+    static {
+        BUILDER.pop(); // balance
         BUILDER.pop(); // entropy
     }
 
@@ -1089,8 +1110,24 @@ public class Config
             .defineInRange("542_runic_dice_reroll_ticks", 60, 1, 72000);
 
     private static final ModConfigSpec.DoubleValue MINIATURE_TENT_PROC_MULTIPLIER = BUILDER
-            .comment("Proc chance multiplier for other IskaUtils relics while Miniature Tent is equipped (2.0 = double chance, capped at 100%).")
+            .comment("Proc chance multiplier for other IskaUtils artifacts while Miniature Tent is equipped (2.0 = double chance, capped at 100%).")
             .defineInRange("543_miniature_tent_proc_multiplier", 2.0D, 1.0D, 10.0D);
+
+    private static final ModConfigSpec.IntValue CALLING_BELL_ARCANE_ARTIFACT_THRESHOLD = BUILDER
+            .comment("Minimum distinct equipped arcane artifacts required for Calling Bell bonuses.")
+            .defineInRange("544_calling_bell_arcane_artifact_threshold", 3, 1, 32);
+
+    private static final ModConfigSpec.DoubleValue CALLING_BELL_HP_BONUS = BUILDER
+            .comment("Max health bonus while Calling Bell is active.")
+            .defineInRange("545_calling_bell_hp_bonus", 2.0D, 0.0D, 64.0D);
+
+    private static final ModConfigSpec.DoubleValue CALLING_BELL_ARMOR_BONUS = BUILDER
+            .comment("Armor bonus while Calling Bell is active.")
+            .defineInRange("546_calling_bell_armor_bonus", 2.0D, 0.0D, 64.0D);
+
+    private static final ModConfigSpec.DoubleValue CALLING_BELL_TOUGHNESS_BONUS = BUILDER
+            .comment("Armor toughness bonus while Calling Bell is active.")
+            .defineInRange("547_calling_bell_toughness_bonus", 2.0D, 0.0D, 64.0D);
 
     private static final ModConfigSpec.DoubleValue ENTROPIC_RING_APOTHEOSIS_HAVEN_MULT = BUILDER
             .comment("Entropic Ring damage multiplier at Apotheosis WorldTier Haven.")
@@ -1286,6 +1323,17 @@ public class Config
 
     static {
         BUILDER.pop(); // End of blazing_altar category
+    }
+
+    private static final ModConfigSpec.BooleanValue SACRED_RUBBER_TREE_GROWTH_ENABLED = BUILDER
+            .comment("If true, sacred rubber saplings can grow after the required bonemeal uses.")
+            .define("950_sacredRubberTreeGrowthEnabled", true);
+
+    private static final ModConfigSpec.BooleanValue SACRED_RUBBER_MEGA_TREE_GROWTH_ENABLED = BUILDER
+            .comment("If true, mega sacred rubber saplings (fertilized with druidic agglomeration) can grow after bonemeal.")
+            .define("951_sacredRubberMegaTreeGrowthEnabled", true);
+
+    static {
         BUILDER.pop(); // End of general_utilities category
 
         // Category for Fan Configuration
@@ -1666,6 +1714,9 @@ public class Config
     public static int hellfireIgniterConsume;
     public static int hellfireIgniterBuffer;
     public static boolean hellfireIgniterVanillaLike;
+    public static int enderNullifierRadius;
+    public static boolean sacredRubberTreeGrowthEnabled;
+    public static boolean sacredRubberMegaTreeGrowthEnabled;
     public static boolean verticalCharmEnabled;
     public static boolean horizontalCharmEnabled;
     public static int vectorCharmEnergyCapacity;
@@ -1796,6 +1847,9 @@ public class Config
     public static boolean entropicEggAlwaysConsume;
     public static boolean entropicEggApplyBuff;
     public static int unstableEntropyCatalystDecayTicks;
+    public static boolean balanceAncientTabEntropyCrystal;
+    public static boolean balanceAncientTabUnstableCatalyst;
+    public static boolean balanceAncientTabSpawner;
     public static boolean unstableEntropyCatalystDecayKillsPlayer;
     public static java.util.List<Integer> unstableEntropyCatalystDecayTintColors;
     public static double gauntletClimbingSpeed;
@@ -1825,7 +1879,7 @@ public class Config
     public static double ritualGauntletCritChance;
     public static double ritualGauntletCritDamageBeneficialNeutral;
     public static double ritualGauntletCritDamageHarmful;
-    public static double bustedCrownHpPerCursedArtifact;
+    public static double bustedCrownHpPerArcaneArtifact;
     public static double curseOfPainDamagePerLevel;
     public static int theDeceptionAbsorptionDurationSeconds;
     public static double necroticCrystalHeartHpCostPerSave;
@@ -1852,6 +1906,10 @@ public class Config
     public static double runicDiceAttackSpeedMax;
     public static int runicDiceRerollTicks;
     public static double miniatureTentProcMultiplier;
+    public static int callingBellArcaneArtifactThreshold;
+    public static double callingBellHpBonus;
+    public static double callingBellArmorBonus;
+    public static double callingBellToughnessBonus;
     public static double entropicClockMaxFactorMultiplier;
     public static int entropicClockEntropyPerTick;
     public static int entropicClockMaxStored;
@@ -1984,6 +2042,9 @@ public class Config
         hellfireIgniterConsume = HELLFIRE_IGNITER_CONSUME.get();
         hellfireIgniterBuffer = HELLFIRE_IGNITER_BUFFER.get();
         hellfireIgniterVanillaLike = HELLFIRE_IGNITER_VANILLA_LIKE.get();
+        enderNullifierRadius = ENDER_NULLIFIER_RADIUS.get();
+        sacredRubberTreeGrowthEnabled = SACRED_RUBBER_TREE_GROWTH_ENABLED.get();
+        sacredRubberMegaTreeGrowthEnabled = SACRED_RUBBER_MEGA_TREE_GROWTH_ENABLED.get();
         portableDislocatorEnergyCapacity = PORTABLE_DISLOCATOR_ENERGY_CAPACITY.get();
         portableDislocatorEnergyConsume = PORTABLE_DISLOCATOR_ENERGY_CONSUME.get();
         portableDislocatorXpConsume = PORTABLE_DISLOCATOR_XP_CONSUME.get();
@@ -2098,6 +2159,9 @@ public class Config
         entropicEggAlwaysConsume = ENTROPIC_EGG_ALWAYS_CONSUME.get();
         entropicEggApplyBuff = ENTROPIC_EGG_APPLY_BUFF.get();
         unstableEntropyCatalystDecayTicks = UNSTABLE_ENTROPY_CATALYST_DECAY_TICKS.get();
+        balanceAncientTabEntropyCrystal = BALANCE_ANCIENT_TAB_ENTROPY_CRYSTAL.get();
+        balanceAncientTabUnstableCatalyst = BALANCE_ANCIENT_TAB_UNSTABLE_CATALYST.get();
+        balanceAncientTabSpawner = BALANCE_ANCIENT_TAB_SPAWNER.get();
         unstableEntropyCatalystDecayTintColors = parseHexRgbList(UNSTABLE_ENTROPY_CATALYST_DECAY_TINTS.get(), java.util.List.of(0xFF0000));
         unstableEntropyCatalystDecayKillsPlayer = UNSTABLE_ENTROPY_CATALYST_DECAY_KILLS_PLAYER.get();
 
@@ -2171,7 +2235,7 @@ public class Config
         ritualGauntletCritChance = RITUAL_GAUNTLET_CRIT_CHANCE.get();
         ritualGauntletCritDamageBeneficialNeutral = RITUAL_GAUNTLET_CRIT_DAMAGE_BENEFICIAL_NEUTRAL.get();
         ritualGauntletCritDamageHarmful = RITUAL_GAUNTLET_CRIT_DAMAGE_HARMFUL.get();
-        bustedCrownHpPerCursedArtifact = BUSTED_CROWN_HP_PER_CURSED_ARTIFACT.get();
+        bustedCrownHpPerArcaneArtifact = BUSTED_CROWN_HP_PER_CURSED_ARTIFACT.get();
         curseOfPainDamagePerLevel = CURSE_OF_PAIN_DAMAGE_PER_LEVEL.get();
         theDeceptionAbsorptionDurationSeconds = THE_DECEPTION_ABSORPTION_DURATION_SECONDS.get();
         necroticCrystalHeartHpCostPerSave = NECROTIC_CRYSTAL_HEART_HP_COST_PER_SAVE.get();
@@ -2198,6 +2262,10 @@ public class Config
         runicDiceAttackSpeedMax = RUNIC_DICE_ATTACK_SPEED_MAX.get();
         runicDiceRerollTicks = RUNIC_DICE_REROLL_TICKS.get();
         miniatureTentProcMultiplier = MINIATURE_TENT_PROC_MULTIPLIER.get();
+        callingBellArcaneArtifactThreshold = CALLING_BELL_ARCANE_ARTIFACT_THRESHOLD.get();
+        callingBellHpBonus = CALLING_BELL_HP_BONUS.get();
+        callingBellArmorBonus = CALLING_BELL_ARMOR_BONUS.get();
+        callingBellToughnessBonus = CALLING_BELL_TOUGHNESS_BONUS.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         

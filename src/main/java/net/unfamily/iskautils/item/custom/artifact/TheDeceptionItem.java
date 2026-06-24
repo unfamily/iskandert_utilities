@@ -19,6 +19,6 @@ public class TheDeceptionItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        CursedArtifactItem.appendCursedArtifactTooltip(tooltip, "the_deception");
+        ArcaneArtifactItem.appendArcaneArtifactTooltip(tooltip, "the_deception");
     }
 }

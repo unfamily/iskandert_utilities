@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "tag": "c:ingots/netherite" },
+    { "tag": "c:ingots/netherite" },
+    { "tag": "c:ingots/netherite" },
+    { "tag": "c:ingots/netherite" },
+    { "tag": "c:ingots/netherite" },
+    { "tag": "c:ingots/netherite" },
+    { "item": "iska_utils:unstable_entropy_catalyst" },
+    { "item": "minecraft:ender_eye" },
+    { "item": "iska_utils:entropic_agglomeration" }
+  ],
+  "result": {
+    "id": "minecraft:spawner",
+    "count": 1
+  }
+}

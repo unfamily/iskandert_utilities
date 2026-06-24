@@ -1,0 +1,33 @@
+{
+  "textures": {
+    "base": "iska_utils:block/ender_nullifier_base",
+    "eye": "iska_utils:block/ender_nullifier_off",
+    "particle": "iska_utils:block/ender_nullifier_base"
+  },
+  "elements": [
+    {
+      "from": [2, 3, 14],
+      "to": [14, 15, 16],
+      "faces": {
+        "north": {"uv": [2, 2, 14, 14], "texture": "#base"},
+        "east": {"uv": [2, 2, 4, 14], "texture": "#base"},
+        "south": {"uv": [2, 2, 14, 14], "texture": "#base"},
+        "west": {"uv": [12, 2, 14, 14], "texture": "#base"},
+        "up": {"uv": [2, 2, 14, 4], "texture": "#base"},
+        "down": {"uv": [2, 12, 14, 14], "texture": "#base"}
+      }
+    },
+    {
+      "from": [4, 5, 11],
+      "to": [12, 13, 14],
+      "faces": {
+        "north": {"uv": [0, 0, 8, 8], "texture": "#eye"},
+        "east": {"uv": [8, 12, 0, 9], "rotation": 90, "texture": "#eye"},
+        "south": {"uv": [8, 0, 16, 8], "texture": "#eye"},
+        "west": {"uv": [0, 9, 8, 12], "rotation": 90, "texture": "#eye"},
+        "up": {"uv": [0, 12, 8, 9], "texture": "#eye"},
+        "down": {"uv": [0, 9, 8, 12], "texture": "#eye"}
+      }
+    }
+  ]
+}

@@ -23,6 +23,7 @@ public class JellyOfKnowledgeItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
+        tooltip.add(Component.translatable("tooltip.iska_utils.jelly_of_knowledge.obtain").withStyle(ChatFormatting.DARK_GRAY));
         tooltip.add(Component.translatable("tooltip.iska_utils.jelly_of_knowledge.use0").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.iska_utils.jelly_of_knowledge.use1").withStyle(ChatFormatting.DARK_GRAY));
         int xp = Math.max(1, Config.knowledgeCompressorJellyXpPoints);

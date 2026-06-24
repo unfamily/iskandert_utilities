@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:amethyst_block" },
+    { "tag": "c:gems/amethyst" },
+    { "tag": "c:gems/amethyst" },
+    { "tag": "c:gems/amethyst" },
+    { "tag": "c:gems/amethyst" },
+    { "tag": "c:gems/amethyst" },
+    { "item": "iska_utils:entropic_agglomeration" },
+    { "item": "iska_utils:entropic_agglomeration" }
+  ],
+  "result": {
+    "id": "iska_utils:entropy_crystal",
+    "count": 1
+  }
+}

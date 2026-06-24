@@ -14,11 +14,14 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.block.grower.TreeGrower;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.block.entity.SacredRubberSaplingBlockEntity;
 import net.unfamily.iskautils.worldgen.tree.SacredRubberTreeGrower;
+import net.unfamily.iskautils.worldgen.tree.SacredRubberTreeScale;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +37,17 @@ public class SacredRubberSaplingBlock extends SaplingBlock implements net.minecr
     
     // Property to track the number of bonemeal used (0-15)
     public static final IntegerProperty BONEMEAL_COUNT = IntegerProperty.create("bonemeal_count", 0, 15);
+    public static final BooleanProperty MEGA = BooleanProperty.create("mega");
+
+    public static SacredRubberTreeScale getScale(BlockState state) {
+        return state.getValue(MEGA) ? SacredRubberTreeScale.MEGA : SacredRubberTreeScale.NORMAL;
+    }
+
+    public static boolean isGrowthEnabled(BlockState state) {
+        return getScale(state) == SacredRubberTreeScale.MEGA
+                ? Config.sacredRubberMegaTreeGrowthEnabled
+                : Config.sacredRubberTreeGrowthEnabled;
+    }
     
     // Empty TreeGrower that doesn't grow anything (for now)
     private static final TreeGrower EMPTY_GROWER = new TreeGrower(
@@ -47,13 +61,15 @@ public class SacredRubberSaplingBlock extends SaplingBlock implements net.minecr
         super(EMPTY_GROWER, properties);
         // Register default state with bonemeal_count = 0
         this.registerDefaultState(this.stateDefinition.any()
-                .setValue(BONEMEAL_COUNT, 0));
+                .setValue(BONEMEAL_COUNT, 0)
+                .setValue(MEGA, false));
     }
     
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<net.minecraft.world.level.block.Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
         builder.add(BONEMEAL_COUNT);
+        builder.add(MEGA);
     }
     
     @Override
@@ -75,7 +91,7 @@ public class SacredRubberSaplingBlock extends SaplingBlock implements net.minecr
      */
     @Override
     public void performBonemeal(@NotNull ServerLevel level, @NotNull RandomSource random, @NotNull BlockPos pos, @NotNull BlockState state) {
-        if (level.isClientSide) {
+        if (level.isClientSide || !isGrowthEnabled(state)) {
             return;
         }
         
@@ -95,8 +111,7 @@ public class SacredRubberSaplingBlock extends SaplingBlock implements net.minecr
      */
     @Override
     public boolean isBonemealSuccess(@NotNull Level level, @NotNull RandomSource random, @NotNull BlockPos pos, @NotNull BlockState state) {
-        // Allow bonemeal only if we haven't reached 15 yet
-        return state.getValue(BONEMEAL_COUNT) < 15;
+        return isGrowthEnabled(state) && state.getValue(BONEMEAL_COUNT) < 15;
     }
     
     @Override

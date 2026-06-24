@@ -27,6 +27,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("hellfire_igniter", () ->
                     BlockEntityType.Builder.of(HellfireIgniterBlockEntity::new,
                             ModBlocks.HELLFIRE_IGNITER.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EnderNullifierBlockEntity>> ENDER_NULLIFIER_BE =
+            BLOCK_ENTITIES.register("ender_nullifier", () ->
+                    BlockEntityType.Builder.of(EnderNullifierBlockEntity::new,
+                            ModBlocks.ENDER_NULLIFIER.get()).build(null));
                             
     // BlockEntity per il nuovo blocco di legno di gomma vuoto
     public static final Supplier<BlockEntityType<RubberLogEmptyBlockEntity>> RUBBER_LOG_EMPTY = 

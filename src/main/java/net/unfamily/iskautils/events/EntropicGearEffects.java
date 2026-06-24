@@ -33,7 +33,7 @@ import net.unfamily.iskautils.util.ArtifactEquipStages;
 import net.unfamily.iskautils.util.AttributeSyncGrace;
 import net.unfamily.iskautils.util.ArtifactProcUtil;
 import net.unfamily.iskautils.util.DamageArmorBypassUtil;
-import net.unfamily.iskautils.util.RelicEffectGate;
+import net.unfamily.iskautils.util.ArtifactEffectGate;
 import net.unfamily.iskautils.util.EntropicGearUtil;
 
 @EventBusSubscriber
@@ -128,7 +128,7 @@ public final class EntropicGearEffects {
         if (!(event.getSource().getEntity() instanceof Player player)) {
             return;
         }
-        if (player instanceof ServerPlayer sp && !RelicEffectGate.shouldApply(sp)) {
+        if (player instanceof ServerPlayer sp && !ArtifactEffectGate.shouldApply(sp)) {
             return;
         }
         if (!(event.getEntity() instanceof LivingEntity target)) {

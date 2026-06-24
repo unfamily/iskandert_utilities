@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
     { "tag": "minecraft:eggs" },
-    "iska_utils:entropic_agglomeration"
+    { "item": "iska_utils:entropic_agglomeration" }
   ],
   "result": {
     "id": "iska_utils:entropic_egg",

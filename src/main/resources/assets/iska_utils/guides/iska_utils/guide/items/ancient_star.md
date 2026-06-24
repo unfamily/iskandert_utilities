@@ -15,7 +15,7 @@ categories:
 
 ## What it does
 
-A relic for the Curios **curio** slot (not cursed). While equipped:
+An artifact for the Curios **curio** slot (not cursed). While equipped:
 
 - **Always:** bonus armor
 - **High HP:** bonus outgoing damage

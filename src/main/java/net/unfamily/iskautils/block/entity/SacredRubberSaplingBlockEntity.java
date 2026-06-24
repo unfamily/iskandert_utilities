@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.SacredRubberSaplingBlock;
 import net.unfamily.iskautils.worldgen.tree.SacredRubberTreeGrower;
+import net.unfamily.iskautils.worldgen.tree.SacredRubberTreeScale;
 
 public class SacredRubberSaplingBlockEntity extends BlockEntity {
     private static final int GROWTH_INTERVAL = 2; // Add blocks every 2 ticks (faster)
@@ -38,9 +39,13 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
         }
         
         if (!blockEntity.isGrowing) {
+            if (!SacredRubberSaplingBlock.isGrowthEnabled(state)) {
+                return;
+            }
             int bonemealCount = state.getValue(SacredRubberSaplingBlock.BONEMEAL_COUNT);
             if (bonemealCount >= 15) {
-                if (SacredRubberTreeGrower.canGrowAt((ServerLevel) level, pos)) {
+                SacredRubberTreeScale scale = SacredRubberSaplingBlock.getScale(state);
+                if (SacredRubberTreeGrower.canGrowAt((ServerLevel) level, pos, scale)) {
                     blockEntity.isGrowing = true;
                     blockEntity.basePos = pos;
                     blockEntity.currentTrunkY = 0;
@@ -52,6 +57,11 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
             return;
         }
         blockEntity.growthTick++;
+        if (!SacredRubberSaplingBlock.isGrowthEnabled(state)) {
+            blockEntity.isGrowing = false;
+            blockEntity.setChanged();
+            return;
+        }
         if (blockEntity.growthTick >= GROWTH_INTERVAL) {
             blockEntity.growthTick = 0;
             blockEntity.growStep((ServerLevel) level, state);
@@ -60,13 +70,14 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
 
     private void growStep(ServerLevel level, BlockState state) {
         RandomSource random = level.getRandom();
-        if (currentTrunkY < SacredRubberTreeGrower.TRUNK_HEIGHT) {
-            growTrunkLayer(level, random);
+        SacredRubberTreeScale scale = SacredRubberSaplingBlock.getScale(state);
+        if (currentTrunkY < scale.trunkHeight) {
+            growTrunkLayer(level, random, scale);
             currentTrunkY++;
         } else {
-            growLeavesLayer(level, random);
+            growLeavesLayer(level, random, scale);
             currentLeavesY++;
-            if (currentLeavesY >= SacredRubberTreeGrower.LEAVES_HEIGHT) {
+            if (currentLeavesY >= scale.leavesHeight) {
                 // Replace sapling with sacred rubber root when growth completes
                 level.setBlock(basePos, ModBlocks.SACRED_RUBBER_ROOT.get().defaultBlockState(), 3);
                 isGrowing = false;
@@ -75,13 +86,13 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
         setChanged();
     }
 
-    private void growTrunkLayer(ServerLevel level, RandomSource random) {
+    private void growTrunkLayer(ServerLevel level, RandomSource random, SacredRubberTreeScale scale) {
         int y = currentTrunkY;
         BlockPos levelPos = basePos.above(y);
         
         // Check if this is the first or last layer
         boolean isFirstLayer = (y == 0);
-        boolean isLastLayer = (y == SacredRubberTreeGrower.TRUNK_HEIGHT - 1);
+        boolean isLastLayer = (y == scale.trunkHeight - 1);
         
         // States for different trunk parts
         net.minecraft.world.level.block.state.BlockState strippedLogState = ModBlocks.STRIPPED_RUBBER_LOG.get().defaultBlockState()
@@ -90,10 +101,10 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
                 .setValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS, net.minecraft.core.Direction.Axis.Y);
         net.minecraft.world.level.block.state.BlockState sapBlockState = ModBlocks.SAP_BLOCK.get().defaultBlockState();
         
-        for (int x = -SacredRubberTreeGrower.TRUNK_RADIUS; x <= SacredRubberTreeGrower.TRUNK_RADIUS; x++) {
-            for (int z = -SacredRubberTreeGrower.TRUNK_RADIUS; z <= SacredRubberTreeGrower.TRUNK_RADIUS; z++) {
+        for (int x = -scale.trunkRadius; x <= scale.trunkRadius; x++) {
+            for (int z = -scale.trunkRadius; z <= scale.trunkRadius; z++) {
                 double distance = Math.sqrt(x * x + z * z);
-                if (distance <= SacredRubberTreeGrower.TRUNK_RADIUS + 0.5) {
+                if (distance <= scale.trunkRadius + 0.5) {
                     BlockPos pos = levelPos.offset(x, 0, z);
                     net.minecraft.world.level.block.state.BlockState existingState = level.getBlockState(pos);
                     if (existingState.isAir() || existingState.canBeReplaced()) {
@@ -104,7 +115,7 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
                             blockToPlace = strippedLogState;
                         }
                         // Edge: rubber log (or randomly rubber_log_filled facing outward)
-                        else if (distance >= SacredRubberTreeGrower.TRUNK_RADIUS - 0.5) {
+                        else if (distance >= scale.trunkRadius - 0.5) {
                             // Random chance for filled log on edge (e.g., 10% chance)
                             if (random.nextFloat() < 0.1f) {
                                 // Determine direction towards outside
@@ -137,24 +148,19 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
         }
     }
     
-    private void growLeavesLayer(ServerLevel level, RandomSource random) {
+    private void growLeavesLayer(ServerLevel level, RandomSource random, SacredRubberTreeScale scale) {
         int yOffset = currentLeavesY;
-        int centerY = basePos.getY() + SacredRubberTreeGrower.TRUNK_HEIGHT + SacredRubberTreeGrower.LEAVES_OFFSET;
+        int centerY = basePos.getY() + scale.trunkHeight + SacredRubberTreeGrower.LEAVES_OFFSET;
         int currentY = centerY + yOffset;
         
-        // Calculate radius for this level (flatter shape, less pointed)
-        // Maintains maximum radius for a larger central portion
-        int centerOffset = Math.abs(yOffset - SacredRubberTreeGrower.LEAVES_HEIGHT / 2);
-        int maxRadius = SacredRubberTreeGrower.LEAVES_RADIUS;
+        int centerOffset = Math.abs(yOffset - scale.leavesHeight / 2);
+        int maxRadius = scale.leavesRadius;
         
-        // Use a gentler quadratic formula to make the canopy flatter
-        // Maintains maximum radius for ~60% of central height
-        double flatZone = SacredRubberTreeGrower.LEAVES_HEIGHT * 0.3; // Flat zone at center (30% of height)
+        double flatZone = scale.leavesHeight * 0.3;
         if (centerOffset > flatZone) {
-            // Reduce radius more gradually using a quadratic curve
-            double normalizedOffset = (centerOffset - flatZone) / (SacredRubberTreeGrower.LEAVES_HEIGHT / 2.0 - flatZone);
-            double factor = 1.0 - (normalizedOffset * normalizedOffset); // Gentler quadratic curve
-            maxRadius = (int)(SacredRubberTreeGrower.LEAVES_RADIUS * factor);
+            double normalizedOffset = (centerOffset - flatZone) / (scale.leavesHeight / 2.0 - flatZone);
+            double factor = 1.0 - (normalizedOffset * normalizedOffset);
+            maxRadius = (int)(scale.leavesRadius * factor);
             maxRadius = Math.max(1, maxRadius); // Minimum radius 1
         }
         
@@ -189,7 +195,7 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
                             shouldBeWood = true;
                         } else {
                             // Denser grid pattern: every 4 blocks, no horizontal distance limit (can protrude)
-                            if (distance > SacredRubberTreeGrower.TRUNK_RADIUS + 0.5) {
+                            if (distance > scale.trunkRadius + 0.5) {
                                 // Check that there's no wood block directly above or below (prevent vertical continuity)
                                 BlockPos abovePos = pos.above();
                                 BlockPos belowPos = pos.below();
