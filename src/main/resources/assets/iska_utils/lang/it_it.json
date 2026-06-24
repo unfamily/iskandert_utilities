@@ -790,6 +790,7 @@
   "effect.iska_utils.entropic_empowerment": "Potenziamento entropico",
   "message.iska_utils.ender_nullifier.enabled": "Nullificatore dell'End attivato",
   "message.iska_utils.ender_nullifier.disabled": "Nullificatore dell'End disattivato",
+  "tooltip.iska_utils.ender_nullifier.radius": "Raggio: %s blocchi",
   "message.iska_utils.cursed_key.artifacts_required": "La Chiave maledetta funziona solo con Artifacts installato.",
   "message.iska_utils.suspicious_delivery.cursed_key": "Il contenuto si è trasformato in una chiave maledetta?",
   "tooltip.iska_utils.cursed_key.desc0": "§7Usala su una cassa per risvegliare un Mimic (richiede Artifacts).",

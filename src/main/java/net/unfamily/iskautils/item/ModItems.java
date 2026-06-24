@@ -37,6 +37,7 @@ import net.unfamily.iskautils.item.custom.TemporalOverclockerBlockItem;
 import net.unfamily.iskautils.item.custom.TranslatedTooltipBlockItem;
 import net.unfamily.iskautils.item.custom.FanBlockItem;
 import net.unfamily.iskautils.item.custom.ShopBlockItem;
+import net.unfamily.iskautils.item.custom.EnderNullifierBlockItem;
 import net.unfamily.iskautils.item.custom.HellfireIgniterBlockItem;
 import net.unfamily.iskautils.item.custom.RubberSapExtractorBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerMachineBlockItem;
@@ -490,8 +491,8 @@ public class ModItems {
     public static final DeferredItem<Item> HELLFIRE_IGNITER = ITEMS.register("hellfire_igniter",
             () -> new HellfireIgniterBlockItem(ModBlocks.HELLFIRE_IGNITER.get(), ITEM_PROPERTIES));
 
-    public static final DeferredItem<BlockItem> ENDER_NULLIFIER = ITEMS.register("ender_nullifier",
-            () -> new BlockItem(ModBlocks.ENDER_NULLIFIER.get(), ITEM_PROPERTIES));
+    public static final DeferredItem<Item> ENDER_NULLIFIER = ITEMS.register("ender_nullifier",
+            () -> new EnderNullifierBlockItem(ModBlocks.ENDER_NULLIFIER.get(), ITEM_PROPERTIES));
     
     // Item for the Fan
     public static final DeferredItem<Item> FAN = ITEMS.register("fan",

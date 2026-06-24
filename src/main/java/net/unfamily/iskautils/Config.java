@@ -98,7 +98,7 @@ public class Config
             .define("002_hellfireIgniterVanillaLike", false);
 
     private static final ModConfigSpec.IntValue ENDER_NULLIFIER_RADIUS = BUILDER
-            .comment("Radius in blocks around an active Ender Nullifier that blocks mob teleports")
+            .comment("Per-axis radius in blocks of the cubic area around an active Ender Nullifier that blocks mob teleports")
             .defineInRange("003_enderNullifierRadius", 8, 1, 128);
 
     // Portable Dislocator energy configuration

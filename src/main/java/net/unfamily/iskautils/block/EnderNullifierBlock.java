@@ -24,6 +24,9 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.block.entity.EnderNullifierBlockEntity;
 import net.unfamily.iskautils.block.entity.EnderNullifierRedstoneMode;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
@@ -35,11 +38,18 @@ public class EnderNullifierBlock extends DirectionalBlock implements EntityBlock
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final MapCodec<EnderNullifierBlock> CODEC = simpleCodec(EnderNullifierBlock::new);
 
+    private static final VoxelShape SHAPE_NORTH = buildShape(Direction.NORTH);
+    private static final VoxelShape SHAPE_EAST = buildShape(Direction.EAST);
+    private static final VoxelShape SHAPE_SOUTH = buildShape(Direction.SOUTH);
+    private static final VoxelShape SHAPE_WEST = buildShape(Direction.WEST);
+    private static final VoxelShape SHAPE_UP = buildShape(Direction.UP);
+    private static final VoxelShape SHAPE_DOWN = buildShape(Direction.DOWN);
+
     public EnderNullifierBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
-                .setValue(ON, false)
+                .setValue(ON, true)
                 .setValue(POWERED, false));
     }
 
@@ -56,15 +66,26 @@ public class EnderNullifierBlock extends DirectionalBlock implements EntityBlock
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction facing = context.getNearestLookingDirection().getOpposite();
+        boolean powered = context.getLevel().hasNeighborSignal(context.getClickedPos());
         return this.defaultBlockState()
                 .setValue(FACING, facing)
-                .setValue(ON, false)
-                .setValue(POWERED, false);
+                .setValue(ON, true)
+                .setValue(POWERED, powered);
     }
 
     @Override
     public RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
+    }
+
+    @Override
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return shapeForFacing(state.getValue(FACING));
+    }
+
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return shapeForFacing(state.getValue(FACING));
     }
 
     @Override
@@ -78,7 +99,7 @@ public class EnderNullifierBlock extends DirectionalBlock implements EntityBlock
         if (!level.isClientSide) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof EnderNullifierBlockEntity nullifier) {
-                nullifier.syncSpatialIndexFromState();
+                nullifier.reconcileEffectiveState();
             }
         }
     }
@@ -168,5 +189,45 @@ public class EnderNullifierBlock extends DirectionalBlock implements EntityBlock
                 : Component.translatable("message.iska_utils.ender_nullifier.disabled").withStyle(ChatFormatting.RED);
         player.displayClientMessage(message, true);
         return InteractionResult.CONSUME;
+    }
+
+    private static VoxelShape shapeForFacing(Direction facing) {
+        return switch (facing) {
+            case EAST -> SHAPE_EAST;
+            case SOUTH -> SHAPE_SOUTH;
+            case WEST -> SHAPE_WEST;
+            case UP -> SHAPE_UP;
+            case DOWN -> SHAPE_DOWN;
+            default -> SHAPE_NORTH;
+        };
+    }
+
+    /** Matches {@code models/block/ender_nullifier_off.json} element bounds (north-facing model). */
+    private static VoxelShape buildShape(Direction facing) {
+        return Shapes.or(
+                element(2, 3, 14, 14, 15, 16, facing),
+                element(4, 5, 11, 12, 13, 14, facing));
+    }
+
+    private static VoxelShape element(
+            double x1, double y1, double z1,
+            double x2, double y2, double z2,
+            Direction facing) {
+        double[] cornerA = transformNorthModel(x1, y1, z1, facing);
+        double[] cornerB = transformNorthModel(x2, y2, z2, facing);
+        return Block.box(
+                Math.min(cornerA[0], cornerB[0]), Math.min(cornerA[1], cornerB[1]), Math.min(cornerA[2], cornerB[2]),
+                Math.max(cornerA[0], cornerB[0]), Math.max(cornerA[1], cornerB[1]), Math.max(cornerA[2], cornerB[2]));
+    }
+
+    private static double[] transformNorthModel(double x, double y, double z, Direction facing) {
+        return switch (facing) {
+            case NORTH -> new double[] {x, y, z};
+            case SOUTH -> new double[] {16.0D - x, y, 16.0D - z};
+            case EAST -> new double[] {16.0D - z, y, x};
+            case WEST -> new double[] {z, y, 16.0D - x};
+            case DOWN -> new double[] {x, z, 16.0D - y};
+            case UP -> new double[] {x, 16.0D - z, y};
+        };
     }
 }

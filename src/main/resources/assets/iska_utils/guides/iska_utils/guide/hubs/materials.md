@@ -1,7 +1,7 @@
 ---
 navigation:
   title: Materials
-  icon: iska_utils:rubber
+  icon: iska_utils:jelly_of_knowledge
   parent: index.md
   position: 13
 categories:
