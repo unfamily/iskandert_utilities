@@ -408,7 +408,7 @@
   "commands.iska_utils.explosion.usage.vertical": "- raggio_verticale: Raggio Y dell'ellisse (1-1000)",
   "commands.iska_utils.explosion.usage.interval": "- tick_interval: Ogni quanti tick espandere (0=istantaneo, no limite)",
   "commands.iska_utils.explosion.usage.location": "L'esplosione avviene nella posizione del giocatore",
-  "commands.iska_utils.explosion.created": "Esplosione creata! Centro: %d, %d, %d | Raggi: %dx%d | Tick: %d",
+  "commands.iska_utils.explosion.created": "Esplosione #%s creata! Centro: %s, %s, %s | Raggi: %sx%s | Tick: %s",
   "commands.iska_utils.explosion.stopped": "Fermate %d esplosioni attive",
   "commands.iska_utils.explosion.none_active": "Nessuna esplosione attiva da fermare",
   "item.iska_utils.scanner.no_target": "Nessun target impostato. Usa Shift+click destro su un blocco o un mob per impostarlo",
