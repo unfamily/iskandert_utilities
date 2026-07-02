@@ -1,5 +1,5 @@
 {
-  "render_type": "minecraft:cutout_mipped",
+  "render_type": "minecraft:translucent",
   "parent": "minecraft:block/cube_all",
   "textures": {
     "all": "iska_utils:block/obscure_glass/obscure_glass_single"

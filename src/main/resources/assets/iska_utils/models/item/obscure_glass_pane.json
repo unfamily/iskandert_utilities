@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "iska_utils:block/obscure_glass/obscure_glass_single"
-  }
-}

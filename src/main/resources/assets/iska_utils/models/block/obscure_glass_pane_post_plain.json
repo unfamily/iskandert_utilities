@@ -1,8 +1,0 @@
-{
-  "render_type": "minecraft:cutout_mipped",
-  "parent": "iska_utils:block/template_glass_pane_post",
-  "textures": {
-    "pane": "iska_utils:block/obscure_glass/obscure_glass_single",
-    "edge": "iska_utils:block/obscure_glass/obscure_glass_edge"
-  }
-}

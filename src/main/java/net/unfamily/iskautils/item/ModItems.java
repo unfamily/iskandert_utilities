@@ -112,8 +112,6 @@ public class ModItems {
 
     public static final DeferredItem<BlockItem> OBSCURE_GLASS = ITEMS.registerSimpleBlockItem(ModBlocks.OBSCURE_GLASS);
 
-    public static final DeferredItem<BlockItem> OBSCURE_GLASS_PANE = ITEMS.registerSimpleBlockItem(ModBlocks.OBSCURE_GLASS_PANE);
-
     // ===== CUSTOM ITEMS =====
 
     public static final DeferredItem<Item> BASE_MODULE = ITEMS.registerSimpleItem("base_module");
