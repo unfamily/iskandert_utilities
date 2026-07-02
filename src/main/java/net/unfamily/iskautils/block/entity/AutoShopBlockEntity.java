@@ -12,6 +12,8 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import net.minecraft.world.item.ItemStack;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import net.minecraft.world.entity.player.Player;
 import java.util.Map;
@@ -76,7 +78,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     // Shop state (simplified)
     private boolean isActive = false;
     private String currentCategory = "000_default";
-    private String selectedValute = "unset"; // Selected currency, default to "unset"
+    private String selectedValute = resolveDefaultCurrencyId();
     private UUID ownerTeamId = null; // Team ID of the player who placed the AutoShop
     private UUID placedByPlayer = null; // UUID of the player who placed the Auto Shop
     private ItemStack selectedItem = ItemStack.EMPTY; // Selected item for encapsulated slot
@@ -201,14 +203,10 @@ public class AutoShopBlockEntity extends BlockEntity {
             this.isActive = shopData.getBoolean("isActive");
             this.currentCategory = shopData.getString("currentCategory");
             
-            // Load currency if present, otherwise use "unset"
             if (shopData.contains("selectedValute")) {
-                this.selectedValute = shopData.getString("selectedValute");
-                if (this.selectedValute.isEmpty()) {
-                    this.selectedValute = "unset"; // Fallback if empty
-                }
+                this.selectedValute = normalizeCurrencyId(shopData.getString("selectedValute"));
             } else {
-                this.selectedValute = "unset"; // Default if not present
+                this.selectedValute = resolveDefaultCurrencyId();
             }
             
             // Load mode if present
@@ -314,8 +312,74 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
     
     public void setSelectedValute(String valute) {
-        this.selectedValute = valute != null ? valute : "unset";
+        this.selectedValute = normalizeCurrencyId(valute);
         setChanged();
+    }
+
+    public static String resolveDefaultCurrencyId() {
+        List<String> ids = getSortedCurrencyIds();
+        return ids.isEmpty() ? "null_coin" : ids.getFirst();
+    }
+
+    public static List<String> getSortedCurrencyIds() {
+        return new ArrayList<>(net.unfamily.iskautils.shop.ShopLoader.getCurrencies().keySet().stream().sorted().toList());
+    }
+
+    public static int getCurrencyIndex(String currencyId) {
+        List<String> ids = getSortedCurrencyIds();
+        if (ids.isEmpty()) {
+            return 0;
+        }
+        int index = ids.indexOf(normalizeCurrencyId(currencyId));
+        return index >= 0 ? index : 0;
+    }
+
+    public static String getCurrencyIdFromIndex(int index) {
+        List<String> ids = getSortedCurrencyIds();
+        if (ids.isEmpty()) {
+            return "null_coin";
+        }
+        if (index < 0 || index >= ids.size()) {
+            return ids.getFirst();
+        }
+        return ids.get(index);
+    }
+
+    public static String normalizeCurrencyId(String currencyId) {
+        if (currencyId == null || currencyId.isEmpty() || "unset".equals(currencyId)) {
+            return resolveDefaultCurrencyId();
+        }
+        if (!net.unfamily.iskautils.shop.ShopLoader.getCurrencies().containsKey(currencyId)) {
+            return resolveDefaultCurrencyId();
+        }
+        return currencyId;
+    }
+
+    public void ensureDefaultCurrency() {
+        this.selectedValute = normalizeCurrencyId(this.selectedValute);
+        setChanged();
+    }
+
+    public void cycleCurrency(boolean backward) {
+        List<String> ids = getSortedCurrencyIds();
+        if (ids.isEmpty()) {
+            this.selectedValute = "null_coin";
+            setChanged();
+            return;
+        }
+        int currentIndex = ids.indexOf(this.selectedValute);
+        if (currentIndex < 0) {
+            currentIndex = 0;
+        }
+        int nextIndex = backward
+                ? (currentIndex - 1 + ids.size()) % ids.size()
+                : (currentIndex + 1) % ids.size();
+        this.selectedValute = ids.get(nextIndex);
+        setChanged();
+    }
+
+    public int getCurrencyIndex() {
+        return getCurrencyIndex(this.selectedValute);
     }
     
     public UUID getOwnerTeamId() {
@@ -447,35 +511,30 @@ public class AutoShopBlockEntity extends BlockEntity {
         return false;
     }
     
-    /**
-     * Searches for a ShopEntry for a specific item by directly comparing ItemStacks
-     */
-    private static net.unfamily.iskautils.shop.ShopEntry findEntryForItem(ItemStack templateItem) {
+    private static net.unfamily.iskautils.shop.ShopEntry findEntryForItemExact(ItemStack templateItem) {
         Map<String, net.unfamily.iskautils.shop.ShopEntry> allEntries = net.unfamily.iskautils.shop.ShopLoader.getEntries();
-        
-        // First look for exact match (same item with same NBT)
         for (Map.Entry<String, net.unfamily.iskautils.shop.ShopEntry> entryMap : allEntries.entrySet()) {
             net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
-            
-            // Convert entry to ItemStack for comparison
             ItemStack entryItem = net.unfamily.iskalib.item.ItemConverter.parseItemString(entry.item, 1);
             if (!entryItem.isEmpty() && ItemStack.isSameItemSameComponents(templateItem, entryItem)) {
-                return entry; // Exact match found
+                return entry;
             }
         }
-        
-        // If no exact match found, search by item type (without NBT)
-        for (Map.Entry<String, net.unfamily.iskautils.shop.ShopEntry> entryMap : allEntries.entrySet()) {
-            net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
-            
-            // Convert entry to ItemStack for comparison
-            ItemStack entryItem = net.unfamily.iskalib.item.ItemConverter.parseItemString(entry.item, 1);
-            if (!entryItem.isEmpty() && templateItem.is(entryItem.getItem())) {
-                return entry; // Type match found
+        return null;
+    }
+
+    /** Resolves the internal shop team key from a saved team UUID (not display name). */
+    private static String resolveTeamKey(net.unfamily.iskalib.team.ShopTeamManager teamManager, java.util.UUID ownerTeamId) {
+        if (ownerTeamId == null) {
+            return null;
+        }
+        for (String key : teamManager.getAllTeams()) {
+            java.util.UUID id = teamManager.getTeamIdByName(key);
+            if (ownerTeamId.equals(id)) {
+                return key;
             }
         }
-        
-        return null; // Entry not found
+        return null;
     }
     
     /**
@@ -507,25 +566,34 @@ public class AutoShopBlockEntity extends BlockEntity {
             return;
         }
 
+        net.minecraft.server.level.ServerLevel serverLevel = (net.minecraft.server.level.ServerLevel) level;
+        net.unfamily.iskalib.team.ShopTeamManager teamManager = net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverLevel);
+
+        // Lazy-bind team if the placer joined a team after placing the block
+        if (entity.getOwnerTeamId() == null && entity.getPlacedByPlayer() != null) {
+            String placerTeamName = teamManager.getPlayerTeam(entity.getPlacedByPlayer());
+            if (placerTeamName != null) {
+                java.util.UUID teamId = teamManager.getTeamIdByName(placerTeamName);
+                if (teamId != null) {
+                    entity.setOwnerTeamId(teamId);
+                }
+            }
+        }
+
         // Get the owner's team (needed for both modes)
         if (entity.getOwnerTeamId() == null) {
             return;
         }
-        net.minecraft.server.level.ServerLevel serverLevel = (net.minecraft.server.level.ServerLevel) level;
-        net.unfamily.iskalib.team.ShopTeamManager teamManager = net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverLevel);
         
-        // Get team using saved ID
-        net.unfamily.iskalib.team.ShopTeamManager.Team team = teamManager.getTeamById(entity.getOwnerTeamId());
-        if (team == null) {
+        String teamKey = resolveTeamKey(teamManager, entity.getOwnerTeamId());
+        if (teamKey == null) {
             return; // Team no longer exists
         }
-        
-        String teamName = team.getName();
 
         // Check that the player who placed the AutoShop is still in the team
         if (entity.getPlacedByPlayer() != null) {
-            String placerTeamName = teamManager.getPlayerTeam(entity.getPlacedByPlayer());
-            if (placerTeamName == null || !placerTeamName.equals(teamName)) {
+            String placerTeamKey = teamManager.getPlayerTeam(entity.getPlacedByPlayer());
+            if (placerTeamKey == null || !placerTeamKey.equals(teamKey)) {
                 return; // The placer is no longer in the team, block the AutoShop
             }
         }
@@ -533,27 +601,26 @@ public class AutoShopBlockEntity extends BlockEntity {
         // Retrieve the placer's ServerPlayer (if online) - needed for player stage
         net.minecraft.server.level.ServerPlayer placerPlayer = serverLevel.getServer().getPlayerList().getPlayer(entity.getPlacedByPlayer());
 
-        // Check that there's a valid selected currency
-        String currencyId = entity.getSelectedValute();
-        if (currencyId == null || currencyId.equals("unset")) {
-            return;
+        String currencyId = normalizeCurrencyId(entity.getSelectedValute());
+        if (!currencyId.equals(entity.getSelectedValute())) {
+            entity.setSelectedValute(currencyId);
         }
 
         // SELL mode
         if (!entity.isAutoBuyMode()) {
-            // Check if there's an item in the encapsulated slot
             ItemStackHandler slot = entity.getEncapsulatedSlot();
             ItemStack stack = slot.getStackInSlot(0);
             if (stack.isEmpty()) {
                 return;
             }
 
-            // Determine which template to use for ShopEntry search
             ItemStack filterItem = entity.getSelectedItem();
-            ItemStack templateItem = !filterItem.isEmpty() ? filterItem : stack;
+            if (!filterItem.isEmpty() && !ItemStack.isSameItemSameComponents(stack, filterItem)) {
+                return;
+            }
 
-            // Find ShopEntry using the most appropriate template
-            net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(templateItem);
+            net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItemExact(
+                    filterItem.isEmpty() ? stack : filterItem);
             if (entry == null || entry.sell <= 0) {
                 return;
             }
@@ -579,7 +646,7 @@ public class AutoShopBlockEntity extends BlockEntity {
                         boolean hasPlayerStage = registry.hasPlayerStage(placerPlayer, stage.stage);
                         stageMet = (hasPlayerStage == stage.is);
                     } else if ("team".equals(type)) {
-                        boolean hasTeamStage = registry.hasTeamStage(teamName, stage.stage);
+                        boolean hasTeamStage = registry.hasTeamStage(teamKey, stage.stage);
                         stageMet = (hasTeamStage == stage.is);
                     } else if ("world".equals(type)) {
                         boolean hasWorldStage = registry.hasWorldStage(stage.stage);
@@ -607,7 +674,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             }
 
             // Credit money to team (only single value)
-            teamManager.addTeamValutes(teamName, currencyId, entry.sell);
+            teamManager.addTeamValutes(teamKey, currencyId, entry.sell);
             entity.setChanged();
         }
         // BUY mode
@@ -625,9 +692,7 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return;
             }
 
-            // Find ShopEntry for selected filter item
-            ItemStack itemId = selectedStack;
-            net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItem(itemId);
+            net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItemExact(selectedStack);
             if (entry == null || (entry.buy <= 0 && !entry.free)) {
                 return;
             }
@@ -653,7 +718,7 @@ public class AutoShopBlockEntity extends BlockEntity {
                         boolean hasPlayerStage = registry.hasPlayerStage(placerPlayer, stage.stage);
                         stageMet = (hasPlayerStage == stage.is);
                     } else if ("team".equals(type)) {
-                        boolean hasTeamStage = registry.hasTeamStage(teamName, stage.stage);
+                        boolean hasTeamStage = registry.hasTeamStage(teamKey, stage.stage);
                         stageMet = (hasTeamStage == stage.is);
                     } else if ("world".equals(type)) {
                         boolean hasWorldStage = registry.hasWorldStage(stage.stage);
@@ -671,13 +736,13 @@ public class AutoShopBlockEntity extends BlockEntity {
 
             // Check team funds (free entries cost 0)
             double cost = entry.free ? 0 : entry.buy;
-            double teamBalance = teamManager.getTeamValuteBalance(teamName, currencyId);
+            double teamBalance = teamManager.getTeamValuteBalance(teamKey, currencyId);
             if (teamBalance < cost) {
                 return; // Insufficient funds
             }
 
             // Deduct money from team
-            if (!teamManager.removeTeamValutes(teamName, currencyId, cost)) {
+            if (!teamManager.removeTeamValutes(teamKey, currencyId, cost)) {
                 return; // Removal failed
             }
 

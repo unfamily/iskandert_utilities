@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.client.gui.AutoShopScreen;
 import net.unfamily.iskautils.client.gui.DeepDrawerExtractorScreen;
 import net.unfamily.iskautils.integration.jei.ghost.IskaUtilsGhostIngredientHandler;
 import net.unfamily.iskautils.item.ModItems;
@@ -81,9 +82,11 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
         registration.addGhostIngredientHandler(
-            DeepDrawerExtractorScreen.class,
-            new IskaUtilsGhostIngredientHandler<>()
-        );
+                DeepDrawerExtractorScreen.class,
+                new IskaUtilsGhostIngredientHandler<>());
+        registration.addGhostIngredientHandler(
+                AutoShopScreen.class,
+                new IskaUtilsGhostIngredientHandler<>());
     }
 }
 

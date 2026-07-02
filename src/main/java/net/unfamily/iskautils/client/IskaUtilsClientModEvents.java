@@ -27,6 +27,7 @@ import net.unfamily.iskautils.client.gui.*;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.renderer.DeceptionSeatRenderer;
 import net.unfamily.iskautils.client.renderer.EntropicSpawnerRenderer;
+import net.unfamily.iskautils.client.model.ConnectedTextureFallbackModelLoader;
 import net.unfamily.iskautils.data.DynamicPotionPlateModelLoader;
 import net.unfamily.iskautils.entity.ModEntities;
 import net.unfamily.iskautils.item.ModItems;
@@ -57,6 +58,8 @@ public final class IskaUtilsClientModEvents {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_EMPTY.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_FILLED.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.NETHERITE_BARS.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.OBSCURE_GLASS.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.OBSCURE_GLASS_PANE.get(), RenderType.cutoutMipped());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.ENTROPIC_SPAWNER.get(), RenderType.cutout());
 
@@ -132,6 +135,7 @@ public final class IskaUtilsClientModEvents {
     @SubscribeEvent
     public static void registerGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
         event.register(DynamicPotionPlateModelLoader.ID, DynamicPotionPlateModelLoader.INSTANCE);
+        event.register(ConnectedTextureFallbackModelLoader.ID, ConnectedTextureFallbackModelLoader.INSTANCE);
     }
 
     @SubscribeEvent

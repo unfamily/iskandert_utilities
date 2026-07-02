@@ -108,9 +108,6 @@ public class BlazingAltarBlock extends BaseEntityBlock {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof BlazingAltarBlockEntity altar) {
                 altar.prepareForRemoval();
-                if (level instanceof ServerLevel serverLevel) {
-                    altar.enqueueFlameCleanupOnBreak(serverLevel);
-                }
                 if (!player.isCreative()) {
                 double x = pos.getX() + 0.5;
                 double y = pos.getY() + 0.5;

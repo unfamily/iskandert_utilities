@@ -366,7 +366,6 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
             return;
         }
         if (placer.isEmpty()) {
-            advancePlacementChunkIndex(chunksByDistance.size());
             return;
         }
         Block flameBlock = BlazingAltarFlamePlacement.flameBlockForPlacer(placer.getItem());

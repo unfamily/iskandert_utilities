@@ -21,6 +21,7 @@ public class EnderNullifierBlockItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
+        tooltip.add(Component.translatable("tooltip.iska_utils.ender_nullifier.effect"));
         tooltip.add(Component.translatable("tooltip.iska_utils.ender_nullifier.radius", Config.enderNullifierRadius));
     }
 }

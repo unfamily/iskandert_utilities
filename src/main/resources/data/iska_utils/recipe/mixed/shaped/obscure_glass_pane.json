@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "###",
+    "###"
+  ],
+  "key": {
+    "#": {
+      "item": "iska_utils:obscure_glass"
+    }
+  },
+  "result": {
+    "id": "iska_utils:obscure_glass_pane",
+    "count": 16
+  }
+}

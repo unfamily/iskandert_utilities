@@ -144,6 +144,12 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
                                 pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
                                 pOutput.accept(ModItems.ENDER_NULLIFIER.get());
+                                pOutput.accept(ModItems.WANDER_NULLIFIER.get());
+                                if (net.neoforged.fml.ModList.get().isLoaded("forbidden_arcanus")) {
+                                    pOutput.accept(ModItems.SOUL_NULLIFIER.get());
+                                }
+                                pOutput.accept(ModItems.OBSCURE_GLASS.get());
+                                pOutput.accept(ModItems.OBSCURE_GLASS_PANE.get());
                                 pOutput.accept(ModItems.SMART_TIMER.get());
                                 pOutput.accept(ModItems.FAN.get());
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());

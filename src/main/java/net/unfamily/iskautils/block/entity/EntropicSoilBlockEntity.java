@@ -171,8 +171,8 @@ public class EntropicSoilBlockEntity extends BlockEntity {
         if (!mob.checkSpawnObstruction(level)) {
             return false;
         }
-        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), MobSpawnType.MOB_SUMMONED, null);
-        if (!EntropicSoilSpawnRules.isWithinSpawnMaxHealth(mob)) {
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), MobSpawnType.SPAWNER, null);
+        if (!EntropicSoilSpawnRules.canSpawnMobAt(level, mob)) {
             mob.discard();
             return false;
         }

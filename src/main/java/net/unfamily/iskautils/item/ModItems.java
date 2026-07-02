@@ -38,6 +38,7 @@ import net.unfamily.iskautils.item.custom.TranslatedTooltipBlockItem;
 import net.unfamily.iskautils.item.custom.FanBlockItem;
 import net.unfamily.iskautils.item.custom.ShopBlockItem;
 import net.unfamily.iskautils.item.custom.EnderNullifierBlockItem;
+import net.unfamily.iskautils.item.custom.NullifierBlockItem;
 import net.unfamily.iskautils.item.custom.HellfireIgniterBlockItem;
 import net.unfamily.iskautils.item.custom.RubberSapExtractorBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerMachineBlockItem;
@@ -109,6 +110,12 @@ public class ModItems {
     // Wither Proof Wall
     public static final DeferredItem<Item> WITHER_PROOF_WALL = ITEMS.register("wither_proof_wall",
             () -> new BlockItem(ModBlocks.WITHER_PROOF_WALL.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> OBSCURE_GLASS = ITEMS.register("obscure_glass",
+            () -> new BlockItem(ModBlocks.OBSCURE_GLASS.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> OBSCURE_GLASS_PANE = ITEMS.register("obscure_glass_pane",
+            () -> new BlockItem(ModBlocks.OBSCURE_GLASS_PANE.get(), ITEM_PROPERTIES));
             
     // Netherite Bars
     public static final DeferredItem<Item> NETHERITE_BARS = ITEMS.register("netherite_bars",
@@ -493,6 +500,12 @@ public class ModItems {
 
     public static final DeferredItem<Item> ENDER_NULLIFIER = ITEMS.register("ender_nullifier",
             () -> new EnderNullifierBlockItem(ModBlocks.ENDER_NULLIFIER.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> WANDER_NULLIFIER = ITEMS.register("wander_nullifier",
+            () -> new NullifierBlockItem(ModBlocks.WANDER_NULLIFIER.get(), ITEM_PROPERTIES, "wander_nullifier"));
+
+    public static final DeferredItem<Item> SOUL_NULLIFIER = ITEMS.register("soul_nullifier",
+            () -> new NullifierBlockItem(ModBlocks.SOUL_NULLIFIER.get(), ITEM_PROPERTIES, "soul_nullifier"));
     
     // Item for the Fan
     public static final DeferredItem<Item> FAN = ITEMS.register("fan",

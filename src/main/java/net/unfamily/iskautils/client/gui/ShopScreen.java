@@ -68,8 +68,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final int BACK_BUTTON_WIDTH = 30;
     private static final int BACK_BUTTON_HEIGHT = 15;
     private static final int BACK_BUTTON_X = GUI_WIDTH - RIGHT_EDGE_MARGIN - BACK_BUTTON_WIDTH;  // 260
-    private static final int INFO_AREA_X = BACK_BUTTON_X - 2;
-    private static final int INFO_AREA_WIDTH = 35;
+    private static final int CURRENCIES_AREA_LEFT = SCROLLBAR_X + SCROLLBAR_WIDTH + 4;
+    private static final int CURRENCIES_AREA_RIGHT = GUI_WIDTH - RIGHT_EDGE_MARGIN;
     private static final int BACK_BUTTON_Y = 20; // Same level as entries
     private static final int CURRENCIES_START_Y = BACK_BUTTON_Y + BACK_BUTTON_HEIGHT + 13; // Spostato da 10px a 13px sotto il pulsante
     
@@ -844,47 +844,42 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     private void renderAvailableCurrencies(GuiGraphics guiGraphics, int guiX, int guiY) {
         int startY = guiY + CURRENCIES_START_Y;
-        int textX = guiX + BACK_BUTTON_X; // Allineato con il pulsante Back
-        
-        // Se il giocatore non è in un team
+
         if (playerTeamName == null) {
             Component noTeamText = Component.translatable("gui.iska_utils.shop.no_team");
-            
-            // Applica scaling 0.77 per rimpicciolire il testo
+            int scaledWidth = (int) (this.font.width(noTeamText) * 0.77f);
+            int textX = guiX + CURRENCIES_AREA_RIGHT - scaledWidth;
+            textX = Math.max(guiX + CURRENCIES_AREA_LEFT, textX);
+
             guiGraphics.pose().pushPose();
             guiGraphics.pose().translate(textX, startY, 0);
             guiGraphics.pose().scale(0.77f, 0.77f, 1.0f);
-            
             guiGraphics.drawString(this.font, noTeamText, 0, 0, 0x808080, false);
-            
             guiGraphics.pose().popPose();
             return;
         }
-        
-        
+
         int lineIndex = 0;
         for (ShopCurrency currency : availableCurrencies.values()) {
-            int textY = startY + lineIndex * 10; // 10px di spaziatura tra le righe
-            
-            // Ottieni il balance reale del team per questa valuta
+            int textY = startY + lineIndex * 10;
+
             double balance = playerTeamBalances.getOrDefault(currency.id, 0.0);
-            
-            // Formatta il balance con abbreviazioni per numeri grandi
             String balanceStr = formatLargeNumber(balance);
-            
             String balanceText = balanceStr + " " + (currency.charSymbol != null ? currency.charSymbol : currency.id);
             Component currencyText = Component.literal(balanceText);
-            
-            // Colore: rosso se balance è 0, normale altrimenti
+
             int color = balance > 0 ? 0x404040 : 0x804040;
+            int textX = guiX + CURRENCIES_AREA_RIGHT - this.font.width(balanceText);
+            textX = Math.max(guiX + CURRENCIES_AREA_LEFT, textX);
             guiGraphics.drawString(this.font, currencyText, textX, textY, color, false);
-            
+
             lineIndex++;
         }
-        
-        // Se non ci sono valute configurate, mostra un messaggio
+
         if (availableCurrencies.isEmpty()) {
             Component noValutesText = Component.translatable("gui.iska_utils.shop.no_valutes");
+            int textX = guiX + CURRENCIES_AREA_RIGHT - this.font.width(noValutesText);
+            textX = Math.max(guiX + CURRENCIES_AREA_LEFT, textX);
             guiGraphics.drawString(this.font, noValutesText, textX, startY, 0x808080, false);
         }
     }

@@ -20,7 +20,7 @@ Block that **cancels mob teleports** within a cubic **radius** around it on ever
 ## Controls
 
 - **Right-click**: toggle enabled / disabled (action bar feedback).
-- **Shift + right-click**: cycle redstone mode — manual, low, high, pulse (same pattern as other Iska machines).
+- **Shift + right-click**: cycle redstone mode — manual, low, high (same pattern as other Iska machines).
 - **Comparator** reads powered state when redstone modes apply.
 
 ## Tips
@@ -28,3 +28,4 @@ Block that **cancels mob teleports** within a cubic **radius** around it on ever
 - Place at the center of the area you want to protect.
 - Useful near mob farms where teleporting mobs break containment.
 - Starts **enabled** when placed.
+- See also: [Wander Nullifier](wander_nullifier.md), [Soul Nullifier](soul_nullifier.md).

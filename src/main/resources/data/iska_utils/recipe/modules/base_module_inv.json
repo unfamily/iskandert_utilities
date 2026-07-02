@@ -1,9 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "ABA",
+    "ACA",
     "BCB",
-    "ABA"
+    "ACA"
   ],
   "key": {
     "B": {
@@ -13,11 +13,11 @@
       "tag": "c:ingots/iron"
     },
     "C": {
-      "item": "iska_utils:smooth_blackstone"
+      "item": "iska_utils:plate_base_block"
     }
   },
   "result": {
     "id": "iska_utils:base_module",
     "count": 1
   }
-} 
+}
