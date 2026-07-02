@@ -337,6 +337,47 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket::handle
         );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopRedstoneModeC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopCycleCurrencyC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopCycleCurrencyC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopCycleCurrencyC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.GhostBrazierToggleC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.GhostBrazierToggleC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.GhostBrazierToggleC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.BurningBrazierToggleC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.BurningBrazierToggleC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.BurningBrazierToggleC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket::handle
+        );
         
     }
     
@@ -680,34 +721,18 @@ public class ModMessages {
      * Sends an Auto Shop Redstone Mode packet to the server (cycle mode on button click)
      */
     public static void sendAutoShopRedstoneModePacket(BlockPos machinePos, boolean backward) {
-        try {
-            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
-            if (server == null) return;
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
-                        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
-                        if (blockEntity instanceof net.unfamily.iskautils.block.entity.AutoShopBlockEntity autoShop) {
-                            net.unfamily.iskautils.block.entity.AutoShopBlockEntity.RedstoneMode current =
-                                    net.unfamily.iskautils.block.entity.AutoShopBlockEntity.RedstoneMode.fromValue(autoShop.getRedstoneMode());
-                            net.unfamily.iskautils.block.entity.AutoShopBlockEntity.RedstoneMode next =
-                                    backward ? current.previous() : current.next();
-                            autoShop.setRedstoneMode(next.getValue());
-                            float pitch = backward ? 0.82f : 1.0f;
-                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
-                                    net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, pitch);
-                            autoShop.setChanged();
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Error handling Auto Shop redstone mode packet: {}", e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.error("Could not send Auto Shop redstone mode packet: {}", e.getMessage(), e);
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.AutoShopRedstoneModeC2SPacket(machinePos, backward));
+    }
+
+    public static void sendAutoShopCycleCurrencyPacket(BlockPos machinePos, boolean backward) {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.AutoShopCycleCurrencyC2SPacket(machinePos, backward));
+    }
+
+    public static void sendAutoShopSetModePacket(BlockPos machinePos, boolean buyMode, boolean backward) {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket(machinePos, buyMode, backward));
     }
 
     /**
@@ -1219,54 +1244,17 @@ public class ModMessages {
      * Invia il packet per settare lo slot encapsulato dell'Auto Shop
      */
     public static void sendAutoShopSetEncapsulatedPacket(BlockPos pos) {
-        // Simplified implementation for single player compatibility
-        try {
-            // Get the server from single player or dedicated server
-            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
-            if (server == null) return;
-            
-            // Create and handle the packet on server thread
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        // Create and handle the packet
-                        new AutoShopSetEncapsulatedC2SPacket(pos).handle(player);
-                    }
-                } catch (Exception e) {
-                    // Ignore errors
-                }
-            });
-        } catch (Exception e) {
-            // Ignore errors
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new AutoShopSetEncapsulatedC2SPacket(pos));
     }
 
     /**
      * Invia il packet per settare lo slot selectedItem dell'Auto Shop
      */
     public static void sendAutoShopSelectedItemPacket(BlockPos pos, ItemStack stack) {
-        // Simplified implementation for single player compatibility
-        try {
-            // Get the server from single player or dedicated server
-            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
-            if (server == null) return;
-
-            // Create and handle the packet on server thread
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        // Create and handle the packet
-                        new net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket(pos, stack).handle(player);
-                    }
-                } catch (Exception e) {
-                    // Ignore errors
-                }
-            });
-        } catch (Exception e) {
-            // Ignore errors
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket(
+                        pos, stack == null ? ItemStack.EMPTY : stack));
     }
     
     /**
@@ -1341,28 +1329,8 @@ public class ModMessages {
      * This toggles the auto-placement state for the Burning Brazier item
      */
     public static void sendBurningBrazierTogglePacket() {
-        // Simplified implementation for single player compatibility
-        try {
-            // Get the server from single player or dedicated server
-            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
-            if (server == null) return;
-
-            // Create and handle the packet on server thread
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player != null) {
-                        boolean newState = net.unfamily.iskautils.item.custom.BurningBrazierItem.toggleAutoPlacement(player);
-                        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.burning_flames.auto_placement." +
-                                                     (newState ? "enabled" : "disabled")));
-                    }
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to toggle Burning Brazier auto-placement: {}", e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.warn("Failed to send Burning Brazier toggle packet: {}", e.getMessage());
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.BurningBrazierToggleC2SPacket());
     }
 
     /**
@@ -1407,30 +1375,8 @@ public class ModMessages {
      * This toggles the climbing ability on/off
      */
     public static void sendGauntletClimbingTogglePacket() {
-        // Simplified implementation for single player compatibility
-        try {
-            // Get the server from single player or dedicated server
-            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
-            if (server == null) return;
-
-            // Create and handle the packet on server thread
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player == null) {
-                        return;
-                    }
-
-                    boolean newState = net.unfamily.iskautils.item.custom.GauntletOfClimbingItem.toggleClimbing(player);
-                    player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.gauntlet_climbing_toggle." +
-                                                                                                 (newState ? "enabled" : "disabled")));
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to toggle Gauntlet of Climbing: {}", e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.warn("Failed to send Gauntlet of Climbing toggle packet: {}", e.getMessage());
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket());
     }
 
     /**
@@ -1438,41 +1384,8 @@ public class ModMessages {
      * This toggles the game mode between Survival and Spectator
      */
     public static void sendGhostBrazierTogglePacket() {
-        // Simplified implementation for single player compatibility
-        try {
-            // Get the server from single player or dedicated server
-            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
-            if (server == null) return;
-
-            // Create and handle the packet on server thread
-            server.execute(() -> {
-                try {
-                    net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
-                    if (player == null) {
-                        return;
-                    }
-
-                    net.minecraft.world.level.GameType currentGameMode = player.gameMode.getGameModeForPlayer();
-                    
-                    if (currentGameMode == net.minecraft.world.level.GameType.SPECTATOR) {
-                        // Switch back to previous game mode (or Survival if not set)
-                        net.minecraft.world.level.GameType previousMode = net.unfamily.iskautils.data.GhostBrazierData.getPreviousGameMode(player);
-                        player.setGameMode(previousMode);
-                        net.unfamily.iskautils.data.GhostBrazierData.clearPreviousGameMode(player);
-                        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_physical"));
-                    } else {
-                        // Switch to Spectator mode, save current mode
-                        net.unfamily.iskautils.data.GhostBrazierData.setPreviousGameMode(player, currentGameMode);
-                        player.setGameMode(net.minecraft.world.level.GameType.SPECTATOR);
-                        player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("message.iska_utils.ghost_brazier.became_ethereal"));
-                    }
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to toggle Ghost Brazier game mode: {}", e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.warn("Failed to send Ghost Brazier toggle packet: {}", e.getMessage());
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.GhostBrazierToggleC2SPacket());
     }
 
     /**

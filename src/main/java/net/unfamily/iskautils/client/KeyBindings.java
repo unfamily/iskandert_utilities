@@ -238,24 +238,28 @@ public class KeyBindings {
 
             // Key for Burning Brazier auto-placement toggle
             if (BURNING_BRAZIER_TOGGLE_KEY.consumeClick()) {
-                // Send toggle request to server
-                ModMessages.sendBurningBrazierTogglePacket();
-            }
-
-            // Key for Scanner range cycle
-            if (SCANNER_RANGE_KEY.consumeClick()) {
-                // Send range cycle request to server
-                ModMessages.sendScannerRangeCyclePacket();
+                if (!net.unfamily.iskautils.util.CurioEquipUtil.findActiveStack(player, net.unfamily.iskautils.item.ModItems.BURNING_BRAZIER.get()).isEmpty()) {
+                    ModMessages.sendBurningBrazierTogglePacket();
+                }
             }
 
             // Key for Gauntlet of Climbing toggle
             if (GAUNTLET_CLIMBING_TOGGLE_KEY.consumeClick()) {
-                ModMessages.sendGauntletClimbingTogglePacket();
+                if (!net.unfamily.iskautils.util.CurioEquipUtil.findActiveStack(player, net.unfamily.iskautils.item.ModItems.GAUNTLET_OF_CLIMBING.get()).isEmpty()) {
+                    ModMessages.sendGauntletClimbingTogglePacket();
+                }
             }
 
             // Key for Ghost Brazier toggle
             if (GHOST_BRAZIER_TOGGLE_KEY.consumeClick()) {
-                ModMessages.sendGhostBrazierTogglePacket();
+                if (net.unfamily.iskautils.item.custom.GhostBrazierItem.hasGhostBrazier(player)) {
+                    ModMessages.sendGhostBrazierTogglePacket();
+                }
+            }
+
+            // Key for Scanner range cycle
+            if (SCANNER_RANGE_KEY.consumeClick()) {
+                ModMessages.sendScannerRangeCyclePacket();
             }
 
             // Portable Dislocator (inventory + curios: stack resolved server-side after C2S)

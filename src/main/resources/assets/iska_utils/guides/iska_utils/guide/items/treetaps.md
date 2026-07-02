@@ -23,4 +23,3 @@ categories:
 <ItemImage id="iska_utils:electric_treetap" />
 
 - Powered variant; see tooltip for energy use.
-

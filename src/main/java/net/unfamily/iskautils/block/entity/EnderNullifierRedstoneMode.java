@@ -6,8 +6,7 @@ package net.unfamily.iskautils.block.entity;
 public enum EnderNullifierRedstoneMode {
     MANUAL(0),
     LOW(1),
-    HIGH(2),
-    PULSE(3);
+    HIGH(2);
 
     private final int value;
 
@@ -32,8 +31,7 @@ public enum EnderNullifierRedstoneMode {
         return switch (this) {
             case MANUAL -> LOW;
             case LOW -> HIGH;
-            case HIGH -> PULSE;
-            case PULSE -> MANUAL;
+            case HIGH -> MANUAL;
         };
     }
 }

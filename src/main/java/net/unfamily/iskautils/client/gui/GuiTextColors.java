@@ -17,6 +17,8 @@ public final class GuiTextColors {
     public static final int LINK = 0xFF0066CC;
     public static final int LINK_HOVER = 0xFF0066FF;
     public static final int FEEDBACK_DEFAULT = 0xFFFFFFFF;
+    /** Bright text on widget buttons (e.g. currency symbol on Auto Shop). */
+    public static final int BUTTON_SYMBOL = 0xFFFFFFFF;
 
     private GuiTextColors() {}
 }

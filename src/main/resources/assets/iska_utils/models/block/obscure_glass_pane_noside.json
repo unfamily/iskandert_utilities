@@ -1,0 +1,18 @@
+{
+  "render_type": "minecraft:cutout_mipped",
+  "loader": "fusion:model",
+  "type": "fusion:connecting",
+  "parent": "iska_utils:block/template_glass_pane_noside",
+  "connections": {
+    "type": "fusion:or",
+    "predicates": [
+      {
+        "type": "fusion:is_same_block"
+      }
+    ]
+  },
+  "textures": {
+    "pane": "iska_utils:block/obscure_glass/obscure_glass",
+    "edge": "iska_utils:block/obscure_glass/obscure_glass_edge"
+  }
+}

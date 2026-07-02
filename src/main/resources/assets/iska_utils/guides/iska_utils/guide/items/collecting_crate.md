@@ -6,6 +6,7 @@ navigation:
   position: 46
 item_ids:
   - iska_utils:collecting_crate
+  - iska_utils:range_module
 categories:
   - World and machines
 ---

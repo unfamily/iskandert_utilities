@@ -3,8 +3,10 @@ package net.unfamily.iskautils.client;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.client.model.ConnectedTextureFallbackModelLoader;
 import net.unfamily.iskautils.client.gui.*;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.unfamily.iskautils.client.particle.EntropicFlameParticle;
@@ -20,7 +22,7 @@ public final class IskaUtilsClientModEvents {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        // No-op for now.
+        // Obscure glass render layers are set via "render_type" in block model JSON (26.x).
     }
 
     @SubscribeEvent
@@ -32,6 +34,13 @@ public final class IskaUtilsClientModEvents {
     public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.DECEPTION_SEAT.get(), DeceptionSeatRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ENTROPIC_SPAWNER_BE.get(), EntropicSpawnerRenderer::new);
+    }
+
+    @SubscribeEvent
+    public static void registerModelLoaders(ModelEvent.RegisterLoaders event) {
+        event.register(
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "connected_texture_fallback"),
+                new ConnectedTextureFallbackModelLoader());
     }
 
     @SubscribeEvent

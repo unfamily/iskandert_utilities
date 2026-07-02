@@ -1,61 +1,47 @@
 package net.unfamily.iskautils.network.packet;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.AutoShopBlockEntity;
 
-/**
- * Packet per impostare l'item nello slot encapsulated dell'Auto Shop
- * Versione semplificata per compatibilità single player
- */
-public class AutoShopSetEncapsulatedC2SPacket {
-    
-    private final BlockPos pos;
-    private final ItemStack stack;
-    
-    public AutoShopSetEncapsulatedC2SPacket(BlockPos pos, ItemStack stack) {
-        this.pos = pos;
-        this.stack = stack;
+public record AutoShopSetEncapsulatedC2SPacket(BlockPos pos) implements CustomPacketPayload {
+
+    public static final Type<AutoShopSetEncapsulatedC2SPacket> TYPE = new Type<>(
+            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "auto_shop_set_encapsulated"));
+
+    public static final StreamCodec<FriendlyByteBuf, AutoShopSetEncapsulatedC2SPacket> STREAM_CODEC = StreamCodec.composite(
+            BlockPos.STREAM_CODEC, AutoShopSetEncapsulatedC2SPacket::pos,
+            AutoShopSetEncapsulatedC2SPacket::new);
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
-    
-    public AutoShopSetEncapsulatedC2SPacket(BlockPos pos) {
-        this.pos = pos;
-        this.stack = ItemStack.EMPTY;
-    }
-    
-    /**
-     * Gestisce il packet sul server
-     */
-    public void handle(ServerPlayer player) {
-        if (player == null || player.level() == null) return;
-        
-        // Ottieni la BlockEntity
-        var blockEntity = player.level().getBlockEntity(pos);
-        if (!(blockEntity instanceof AutoShopBlockEntity autoShop)) return;
-        
-        // Se non abbiamo uno stack specifico, usa l'item dalla mano del player
-        ItemStack itemToSet = this.stack;
-        if (itemToSet.isEmpty()) {
-            itemToSet = player.getMainHandItem();
+
+    public static void handle(AutoShopSetEncapsulatedC2SPacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            ServerPlayer player = (ServerPlayer) context.player();
+            var blockEntity = player.level().getBlockEntity(packet.pos());
+            if (!(blockEntity instanceof AutoShopBlockEntity autoShop)) {
+                return;
+            }
+            ItemStack itemToSet = player.getMainHandItem();
             if (itemToSet.isEmpty()) {
-                // If hand is empty, clear the slot
                 autoShop.getEncapsulatedSlot().setStackInSlot(0, ItemStack.EMPTY);
             } else {
-                // Altrimenti, copia l'item nella slot (1 item alla volta)
                 ItemStack copyStack = itemToSet.copy();
                 copyStack.setCount(1);
                 autoShop.getEncapsulatedSlot().setStackInSlot(0, copyStack);
             }
-        } else {
-            // Usa lo stack specificato nel packet
-            autoShop.getEncapsulatedSlot().setStackInSlot(0, itemToSet.copy());
-        }
-        
-        // Marca la BlockEntity come modificata
-        autoShop.setChanged();
-        
-        // Aggiorna il client
-        player.level().sendBlockUpdated(pos, blockEntity.getBlockState(), blockEntity.getBlockState(), 3);
+            autoShop.setChanged();
+            player.level().sendBlockUpdated(packet.pos(), blockEntity.getBlockState(), blockEntity.getBlockState(), 3);
+        });
     }
-} 
+}

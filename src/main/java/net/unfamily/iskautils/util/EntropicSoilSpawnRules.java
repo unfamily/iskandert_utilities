@@ -18,6 +18,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
+import net.neoforged.neoforge.event.EventHooks;
 import net.unfamily.iskautils.Config;
 
 import java.util.ArrayList;
@@ -30,6 +31,9 @@ public final class EntropicSoilSpawnRules {
     private static final MobCategory[] SPAWN_CATEGORIES = {
             MobCategory.MONSTER
     };
+
+    private static final TagKey<EntityType<?>> NO_SPAWN_TAG =
+            TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath("iska_utils", "entropic_soil_no_spawn"));
 
     private EntropicSoilSpawnRules() {}
 
@@ -92,7 +96,7 @@ public final class EntropicSoilSpawnRules {
                 MobSpawnSettings.SpawnerData data = weighted.value();
                 EntityType<?> entityType = data.type();
                 if (entityType == null || !isHostile(entityType) || isBlockedByDeny(level, soilPos, entityType)
-                        || !isWithinSpawnMaxHealth(entityType, level)) {
+                        || isBlockedByNoSpawnTag(entityType)) {
                     continue;
                 }
                 pool.add(data, weighted.weight());
@@ -105,7 +109,7 @@ public final class EntropicSoilSpawnRules {
             }
             EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(rule.entityId());
             if (entityType == null || !isHostile(entityType) || isBlockedByDeny(level, soilPos, entityType)
-                    || !isWithinSpawnMaxHealth(entityType, level)) {
+                    || isBlockedByNoSpawnTag(entityType)) {
                 continue;
             }
             pool.add(new MobSpawnSettings.SpawnerData(entityType, 1, 4), 100);
@@ -123,7 +127,7 @@ public final class EntropicSoilSpawnRules {
      * rejects most biome mobs here (light lottery, {@code ANIMALS_SPAWNABLE_ON}, slime chunks, surface-only rules).
      */
     public static boolean isValidSpawnContext(ServerLevel level, EntityType<?> type, BlockPos spawnPos, BlockPos soilPos) {
-        if (level.getDifficulty() == Difficulty.PEACEFUL || isBlockedByDeny(level, soilPos, type)) {
+        if (level.getDifficulty() == Difficulty.PEACEFUL || isBlockedByDeny(level, soilPos, type) || isBlockedByNoSpawnTag(type)) {
             return false;
         }
         MobCategory category = type.getCategory();
@@ -142,26 +146,20 @@ public final class EntropicSoilSpawnRules {
         return true;
     }
 
-    private static boolean isHostile(EntityType<?> type) {
-        return type.getCategory() == MobCategory.MONSTER;
+    private static boolean isBlockedByNoSpawnTag(EntityType<?> type) {
+        return type.builtInRegistryHolder().is(NO_SPAWN_TAG);
     }
 
-    /** Uses base entity max health before difficulty scaling; 0 config disables the cap. */
-    public static boolean isWithinSpawnMaxHealth(EntityType<?> type, ServerLevel level) {
-        int cap = Config.entropicSoilSpawnMaxHealth;
-        if (cap <= 0) {
-            return true;
-        }
-        if (!(type.create(level, EntitySpawnReason.MOB_SUMMONED) instanceof Mob mob)) {
+    public static boolean canSpawnMobAt(ServerLevel level, Mob mob) {
+        if (!EventHooks.checkSpawnPosition(mob, level, EntitySpawnReason.MOB_SUMMONED)) {
             return false;
         }
-        float maxHp = mob.getMaxHealth();
-        mob.discard();
-        return maxHp <= cap;
+        return level.getEntitiesOfClass(Mob.class, mob.getBoundingBox(),
+                        other -> other.getType() == mob.getType() && other.isAlive()).isEmpty()
+                && level.noCollision(mob);
     }
 
-    public static boolean isWithinSpawnMaxHealth(Mob mob) {
-        int cap = Config.entropicSoilSpawnMaxHealth;
-        return cap <= 0 || mob.getMaxHealth() <= cap;
+    private static boolean isHostile(EntityType<?> type) {
+        return type.getCategory() == MobCategory.MONSTER;
     }
 }

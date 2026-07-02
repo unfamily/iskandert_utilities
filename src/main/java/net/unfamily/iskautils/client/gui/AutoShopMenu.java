@@ -23,11 +23,15 @@ public class AutoShopMenu extends AbstractContainerMenu {
     private final BlockPos blockPos;
     private final ContainerData containerData;
 
+    public static final int FILTER_SLOT_INDEX = 0;
+
     private static final int BLOCK_POS_X_INDEX = 0;
     private static final int BLOCK_POS_Y_INDEX = 1;
     private static final int BLOCK_POS_Z_INDEX = 2;
     private static final int REDSTONE_MODE_INDEX = 3;
-    private static final int DATA_COUNT = 4;
+    private static final int AUTO_BUY_MODE_INDEX = 4;
+    private static final int CURRENCY_INDEX = 5;
+    private static final int DATA_COUNT = 6;
 
     // Costruttore server-side
     public AutoShopMenu(int containerId, Inventory playerInventory, AutoShopBlockEntity blockEntity) {
@@ -43,6 +47,8 @@ public class AutoShopMenu extends AbstractContainerMenu {
                     case BLOCK_POS_Y_INDEX -> blockPos.getY();
                     case BLOCK_POS_Z_INDEX -> blockPos.getZ();
                     case REDSTONE_MODE_INDEX -> blockEntity.getRedstoneMode();
+                    case AUTO_BUY_MODE_INDEX -> blockEntity.isAutoBuyMode() ? 1 : 0;
+                    case CURRENCY_INDEX -> blockEntity.getCurrencyIndex();
                     default -> 0;
                 };
             }
@@ -81,14 +87,21 @@ public class AutoShopMenu extends AbstractContainerMenu {
      */
     @Override
     public void clicked(int slotId, int button, ContainerInput containerInput, Player player) {
-        if (slotId == 0 && blockEntity != null) {
+        if (slotId == FILTER_SLOT_INDEX) {
             ItemStack carried = getCarried();
             ItemStack toSet = carried.isEmpty() ? ItemStack.EMPTY : carried.copy();
             if (!toSet.isEmpty()) {
                 toSet.setCount(1);
             }
-            blockEntity.setSelectedItem(toSet);
-            broadcastFullState();
+            if (blockEntity != null) {
+                blockEntity.setSelectedItem(toSet);
+                broadcastFullState();
+            } else if (player.level().isClientSide()) {
+                BlockPos pos = getSyncedBlockPos();
+                if (!pos.equals(BlockPos.ZERO)) {
+                    net.unfamily.iskautils.network.ModMessages.sendAutoShopSelectedItemPacket(pos, toSet);
+                }
+            }
             return;
         }
         super.clicked(slotId, button, containerInput, player);
@@ -146,6 +159,18 @@ public class AutoShopMenu extends AbstractContainerMenu {
 
     public int getRedstoneMode() {
         return containerData.get(REDSTONE_MODE_INDEX);
+    }
+
+    public boolean isAutoBuyMode() {
+        return containerData.get(AUTO_BUY_MODE_INDEX) != 0;
+    }
+
+    public int getCurrencyIndex() {
+        return containerData.get(CURRENCY_INDEX);
+    }
+
+    public String getSelectedCurrencyId() {
+        return AutoShopBlockEntity.getCurrencyIdFromIndex(getCurrencyIndex());
     }
     
     private void addAutoShopSlots() {

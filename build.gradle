@@ -235,6 +235,9 @@ dependencies {
     }
     // Apotheosis requires Curios at dev runtime (optional for published mod)
     localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+
+    implementation "curse.maven:fusion-connected-textures-854949:8355217"
+    compileOnly "curse.maven:forbidden-arcanus-309858:6875895"
     
     // Verify that the value of include_compass_mods is valid
     if (project.hasProperty('include_compass_mods') && 

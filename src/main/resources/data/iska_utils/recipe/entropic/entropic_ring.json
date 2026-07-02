@@ -1,16 +1,9 @@
 {
   "type": "minecraft:smithing_transform",
-  "template": {
-    "item": "iska_utils:entropic_smithing_template"
-  },
-  "base": {
-    "item": "iska_utils:coarsely_forged_ring"
-  },
-  "addition": {
-    "item": "iska_utils:entropy_crystal"
-  },
+  "template": "iska_utils:entropic_smithing_template",
+  "base": "iska_utils:coarsely_forged_ring",
+  "addition": "iska_utils:entropy_crystal",
   "result": {
-    "count": 1,
     "id": "iska_utils:entropic_ring"
   }
 }

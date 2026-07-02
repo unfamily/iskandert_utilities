@@ -26,6 +26,14 @@ public class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EnderNullifierBlockEntity>> ENDER_NULLIFIER_BE =
             BLOCK_ENTITIES.register("ender_nullifier", () ->
                     new BlockEntityType<>(EnderNullifierBlockEntity::new, ModBlocks.ENDER_NULLIFIER.get()));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WanderNullifierBlockEntity>> WANDER_NULLIFIER_BE =
+            BLOCK_ENTITIES.register("wander_nullifier", () ->
+                    new BlockEntityType<>(WanderNullifierBlockEntity::new, ModBlocks.WANDER_NULLIFIER.get()));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SoulNullifierBlockEntity>> SOUL_NULLIFIER_BE =
+            BLOCK_ENTITIES.register("soul_nullifier", () ->
+                    new BlockEntityType<>(SoulNullifierBlockEntity::new, ModBlocks.SOUL_NULLIFIER.get()));
                             
     // BlockEntity per il nuovo blocco di legno di gomma vuoto
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RubberLogEmptyBlockEntity>> RUBBER_LOG_EMPTY =

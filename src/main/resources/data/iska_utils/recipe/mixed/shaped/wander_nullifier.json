@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " A ",
+    "ABA",
+    " A "
+  ],
+  "key": {
+    "A": "#c:gems/emerald",
+    "B": "iska_utils:base_module"
+  },
+  "result": {
+    "id": "iska_utils:wander_nullifier",
+    "count": 1
+  }
+}

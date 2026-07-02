@@ -11,12 +11,9 @@ import net.unfamily.iskautils.block.EnderNullifierBlock;
 import net.unfamily.iskautils.world.EnderNullifierSpatialIndex;
 
 public class EnderNullifierBlockEntity extends BlockEntity {
-    private static final int PULSE_DURATION_TICKS = 20;
-
     private EnderNullifierRedstoneMode redstoneMode = EnderNullifierRedstoneMode.MANUAL;
     private boolean manualEnabled = true;
     private boolean previousRedstoneState = false;
-    private int pulseTicksRemaining = 0;
 
     public EnderNullifierBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ENDER_NULLIFIER_BE.get(), pos, state);
@@ -25,10 +22,6 @@ public class EnderNullifierBlockEntity extends BlockEntity {
     public static void tick(Level level, BlockPos pos, BlockState state, EnderNullifierBlockEntity blockEntity) {
         if (level.isClientSide()) {
             return;
-        }
-
-        if (blockEntity.pulseTicksRemaining > 0) {
-            blockEntity.pulseTicksRemaining--;
         }
 
         boolean effectiveBefore = state.getValue(EnderNullifierBlock.ON);
@@ -40,9 +33,6 @@ public class EnderNullifierBlockEntity extends BlockEntity {
     }
 
     public void onRedstoneChanged(Level level, BlockPos pos, BlockState state, boolean powered) {
-        if (redstoneMode == EnderNullifierRedstoneMode.PULSE && powered && !previousRedstoneState) {
-            pulseTicksRemaining = PULSE_DURATION_TICKS;
-        }
         previousRedstoneState = powered;
 
         boolean effective = computeEffectiveActive(powered);
@@ -60,7 +50,6 @@ public class EnderNullifierBlockEntity extends BlockEntity {
 
     public void cycleRedstoneMode(Level level, BlockPos pos, BlockState state) {
         redstoneMode = redstoneMode.next();
-        pulseTicksRemaining = 0;
         applyEffectiveState(level, pos, state);
     }
 
@@ -80,7 +69,6 @@ public class EnderNullifierBlockEntity extends BlockEntity {
             case MANUAL -> true;
             case LOW -> !powered;
             case HIGH -> powered;
-            case PULSE -> pulseTicksRemaining > 0;
         };
     }
 
@@ -133,10 +121,13 @@ public class EnderNullifierBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
-        redstoneMode = EnderNullifierRedstoneMode.fromValue(input.getInt("RedstoneMode").orElse(0));
+        int modeValue = input.getInt("RedstoneMode").orElse(0);
+        if (modeValue == 3) {
+            modeValue = 0;
+        }
+        redstoneMode = EnderNullifierRedstoneMode.fromValue(modeValue);
         manualEnabled = input.getBooleanOr("ManualEnabled", true);
         previousRedstoneState = input.getBooleanOr("PreviousRedstoneState", false);
-        pulseTicksRemaining = input.getInt("PulseTicksRemaining").orElse(0);
         if (level != null && !level.isClientSide()) {
             reconcileEffectiveState();
         }
@@ -148,6 +139,5 @@ public class EnderNullifierBlockEntity extends BlockEntity {
         output.putInt("RedstoneMode", redstoneMode.getValue());
         output.putBoolean("ManualEnabled", manualEnabled);
         output.putBoolean("PreviousRedstoneState", previousRedstoneState);
-        output.putInt("PulseTicksRemaining", pulseTicksRemaining);
     }
 }

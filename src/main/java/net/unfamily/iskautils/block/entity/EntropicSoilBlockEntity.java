@@ -172,7 +172,7 @@ public class EntropicSoilBlockEntity extends BlockEntity {
             return false;
         }
         mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), EntitySpawnReason.MOB_SUMMONED, null);
-        if (!EntropicSoilSpawnRules.isWithinSpawnMaxHealth(mob)) {
+        if (!EntropicSoilSpawnRules.canSpawnMobAt(level, mob)) {
             mob.discard();
             return false;
         }

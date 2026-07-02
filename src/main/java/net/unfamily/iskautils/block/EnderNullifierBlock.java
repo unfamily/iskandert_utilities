@@ -177,7 +177,6 @@ public class EnderNullifierBlock extends DirectionalBlock implements EntityBlock
                 case MANUAL -> Component.translatable("gui.iska_utils.generic.redstone_mode.manual");
                 case LOW -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
                 case HIGH -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-                case PULSE -> Component.translatable("gui.iska_utils.generic.redstone_mode.pulse");
             };
             if (player instanceof ServerPlayer serverPlayer) {
                 serverPlayer.connection.send(new ClientboundSystemChatPacket(

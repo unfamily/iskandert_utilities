@@ -7,6 +7,8 @@
     "iska_utils:smooth_blackstone_wall",
     "iska_utils:hellfire_igniter",
     "iska_utils:ender_nullifier",
+    "iska_utils:wander_nullifier",
+    "iska_utils:soul_nullifier",
     "iska_utils:fan",
     "iska_utils:mob_reaper",
     "iska_utils:collecting_crate",

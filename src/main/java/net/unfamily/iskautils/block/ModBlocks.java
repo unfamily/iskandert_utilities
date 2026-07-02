@@ -93,7 +93,7 @@ public class ModBlocks {
 
     // Properties for Wither Proof Block
     private static final UnaryOperator<BlockBehaviour.Properties> WITHER_PROOF_PROPERTIES = p -> p
-            .strength(50.0f, 1200.0f)
+            .strength(3.0f, 1200.0f)
             .sound(SoundType.STONE)
             .requiresCorrectToolForDrops();
 
@@ -126,6 +126,21 @@ public class ModBlocks {
     // Wither Proof Wall
     public static final DeferredBlock<WallBlock> WITHER_PROOF_WALL = BLOCKS.register("wither_proof_wall",
             key -> new WallBlock(assignBlockId(key, p -> WITHER_PROOF_PROPERTIES.apply(p).forceSolidOn())));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> OBSCURE_GLASS_PROPERTIES = p -> p
+            .strength(0.3f, 1200.0f)
+            .sound(SoundType.GLASS)
+            .noOcclusion()
+            .isRedstoneConductor((state, level, pos) -> false)
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false)
+            .lightLevel(state -> 0);
+
+    public static final DeferredBlock<ObscureGlassBlock> OBSCURE_GLASS = BLOCKS.register("obscure_glass",
+            key -> new ObscureGlassBlock(assignBlockId(key, OBSCURE_GLASS_PROPERTIES)));
+
+    public static final DeferredBlock<ObscureGlassPaneBlock> OBSCURE_GLASS_PANE = BLOCKS.register("obscure_glass_pane",
+            key -> new ObscureGlassPaneBlock(assignBlockId(key, OBSCURE_GLASS_PROPERTIES)));
 
     // Netherite Bars
     public static final DeferredBlock<NetheriteBarsBlock> NETHERITE_BARS = BLOCKS.register("netherite_bars",
@@ -192,6 +207,28 @@ public class ModBlocks {
 
     public static final DeferredBlock<EnderNullifierBlock> ENDER_NULLIFIER = BLOCKS.register("ender_nullifier",
             key -> new EnderNullifierBlock(assignBlockId(key, ENDER_NULLIFIER_PROPERTIES)));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> WANDER_NULLIFIER_PROPERTIES = p -> p
+            .mapColor(MapColor.COLOR_GREEN)
+            .strength(1.5f, 6.0f)
+            .sound(SoundType.DEEPSLATE)
+            .requiresCorrectToolForDrops()
+            .noOcclusion()
+            .lightLevel((state) -> state.getValue(WanderNullifierBlock.ON) ? 7 : 0);
+
+    public static final DeferredBlock<WanderNullifierBlock> WANDER_NULLIFIER = BLOCKS.register("wander_nullifier",
+            key -> new WanderNullifierBlock(assignBlockId(key, WANDER_NULLIFIER_PROPERTIES)));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> SOUL_NULLIFIER_PROPERTIES = p -> p
+            .mapColor(MapColor.COLOR_PURPLE)
+            .strength(1.5f, 6.0f)
+            .sound(SoundType.DEEPSLATE)
+            .requiresCorrectToolForDrops()
+            .noOcclusion()
+            .lightLevel((state) -> state.getValue(SoulNullifierBlock.ON) ? 7 : 0);
+
+    public static final DeferredBlock<SoulNullifierBlock> SOUL_NULLIFIER = BLOCKS.register("soul_nullifier",
+            key -> new SoulNullifierBlock(assignBlockId(key, SOUL_NULLIFIER_PROPERTIES)));
 
     public static final DeferredBlock<FanBlock> FAN = BLOCKS.register("fan",
             key -> new FanBlock(assignBlockId(key, FAN_PROPERTIES)));

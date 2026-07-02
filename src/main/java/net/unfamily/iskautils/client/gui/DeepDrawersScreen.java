@@ -179,7 +179,7 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         guiGraphics.text(font, title, titleX, 7, GuiTextColors.TITLE, false);
 
         Component capacity = Component.translatable(
-                "gui.iska_utils.deep_drawers.capacity",
+                "gui.iska_utils.deep_drawer.capacity",
                 menu.getDisplayedOccupiedCount(),
                 menu.getDisplayedMaxSlots());
         int capacityWidth = font.width(capacity);

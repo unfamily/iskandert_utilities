@@ -13,6 +13,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.screens.Screen;
+import com.mojang.blaze3d.platform.InputConstants;
+import org.lwjgl.glfw.GLFW;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
@@ -71,8 +73,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final int BACK_BUTTON_WIDTH = 30;
     private static final int BACK_BUTTON_HEIGHT = 15;
     private static final int BACK_BUTTON_X = GUI_WIDTH - RIGHT_EDGE_MARGIN - BACK_BUTTON_WIDTH;  // 260
-    private static final int INFO_AREA_X = BACK_BUTTON_X - 2;
-    private static final int INFO_AREA_WIDTH = 35;
+    private static final int CURRENCIES_AREA_LEFT = SCROLLBAR_X + SCROLLBAR_WIDTH + 4;
+    private static final int CURRENCIES_AREA_RIGHT = GUI_WIDTH - RIGHT_EDGE_MARGIN;
     private static final int BACK_BUTTON_Y = 20; // Same level as entries
     private static final int CURRENCIES_START_Y = BACK_BUTTON_Y + BACK_BUTTON_HEIGHT + 13; // Spostato da 10px a 13px sotto il pulsante
     
@@ -824,13 +826,13 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     private void renderAvailableCurrencies(GuiGraphicsExtractor guiGraphics, int guiX, int guiY) {
         int startY = guiY + CURRENCIES_START_Y;
-        int textX = guiX + BACK_BUTTON_X; // Allineato con il pulsante Back
-        
-        // Se il giocatore non è in un team
+
         if (playerTeamName == null) {
             Component noTeamText = Component.translatable("gui.iska_utils.shop.no_team");
-            
-            // Applica scaling 0.77 per rimpicciolire il testo
+            int scaledWidth = (int) (this.font.width(noTeamText) * 0.77f);
+            int textX = guiX + CURRENCIES_AREA_RIGHT - scaledWidth;
+            textX = Math.max(guiX + CURRENCIES_AREA_LEFT, textX);
+
             guiGraphics.pose().pushMatrix();
             guiGraphics.pose().translate(textX, startY);
             guiGraphics.pose().scale(0.77f, 0.77f);
@@ -838,31 +840,28 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             guiGraphics.pose().popMatrix();
             return;
         }
-        
-        
+
         int lineIndex = 0;
         for (ShopCurrency currency : availableCurrencies.values()) {
-            int textY = startY + lineIndex * 10; // 10px di spaziatura tra le righe
-            
-            // Ottieni il balance reale del team per questa valuta
+            int textY = startY + lineIndex * 10;
+
             double balance = playerTeamBalances.getOrDefault(currency.id, 0.0);
-            
-            // Formatta il balance con abbreviazioni per numeri grandi
             String balanceStr = formatLargeNumber(balance);
-            
             String balanceText = balanceStr + " " + (currency.charSymbol != null ? currency.charSymbol : currency.id);
             Component currencyText = Component.literal(balanceText);
-            
-            // Colore: rosso se balance è 0, normale altrimenti
+
             int color = balance > 0 ? GuiTextColors.TITLE : GuiTextColors.NEGATIVE;
+            int textX = guiX + CURRENCIES_AREA_RIGHT - this.font.width(balanceText);
+            textX = Math.max(guiX + CURRENCIES_AREA_LEFT, textX);
             guiGraphics.text(this.font, currencyText, textX, textY, color, false);
-            
+
             lineIndex++;
         }
-        
-        // Se non ci sono valute configurate, mostra un messaggio
+
         if (availableCurrencies.isEmpty()) {
             Component noValutesText = Component.translatable("gui.iska_utils.shop.no_valutes");
+            int textX = guiX + CURRENCIES_AREA_RIGHT - this.font.width(noValutesText);
+            textX = Math.max(guiX + CURRENCIES_AREA_LEFT, textX);
             guiGraphics.text(this.font, noValutesText, textX, startY, GuiTextColors.MUTED, false);
         }
     }
@@ -1214,8 +1213,30 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Come specificato: click normale = 1, ctrl/alt = 4, shift = 16
      */
     private int calculateMultiplier() {
-        // Modifiers tracking moved to input event types; keep legacy behavior here without modifier support.
+        if (isShiftDownNow()) {
+            return 16;
+        } else if (isCtrlDownNow() || isAltDownNow()) {
+            return 4;
+        }
         return 1;
+    }
+
+    private boolean isShiftDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+    }
+
+    private boolean isCtrlDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+    }
+
+    private boolean isAltDownNow() {
+        if (this.minecraft == null) return false;
+        var window = this.minecraft.getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
     }
 
     /**

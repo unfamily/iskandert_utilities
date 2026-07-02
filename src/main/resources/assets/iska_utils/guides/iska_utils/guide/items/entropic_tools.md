@@ -11,7 +11,6 @@ item_ids:
   - iska_utils:entropic_shovel
   - iska_utils:entropic_hoe
   - iska_utils:entropic_paxel
-  - iska_utils:entropic_spear
 categories:
   - Entropy materials
   - Entropic gear
@@ -25,12 +24,6 @@ categories:
 <ItemImage id="iska_utils:entropic_sword" />
 
 Chance on hit to **partially ignore** target **armor and toughness** (values on the item tooltip).
-
-## Spear
-
-<ItemImage id="iska_utils:entropic_spear" />
-
-Same **armor penetration** on hit as the entropic sword (smithing upgrade from a **netherite spear**).
 
 ## Axe
 

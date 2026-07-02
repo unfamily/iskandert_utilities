@@ -18,7 +18,7 @@
         {
           "condition": "minecraft:match_tool",
           "predicate": {
-            "items": "#minecraft:pickaxes"
+            "tag": "minecraft:tools/pickaxes"
           }
         }
       ]

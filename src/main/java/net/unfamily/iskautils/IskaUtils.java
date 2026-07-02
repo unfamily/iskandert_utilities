@@ -95,6 +95,7 @@ public class IskaUtils {
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerMenuScreens);
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerEntityRenderers);
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerParticleProviders);
+            modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerModelLoaders);
             modEventBus.addListener(net.neoforged.neoforge.client.event.RegisterFluidModelsEvent.class,
                     net.unfamily.iskautils.client.fluid.ModFluidClient::registerFluidModels);
 

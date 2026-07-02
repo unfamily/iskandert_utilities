@@ -284,7 +284,8 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
         }
         if (!menu.isExtinguishing()
                 && menu.getRedstoneMode() != 4
-                && menu.getPlacementChunkTotal() > 0) {
+                && menu.getPlacementChunkTotal() > 0
+                && hasPlacerFuel()) {
             int current = Math.min(menu.getPlacementChunkProgress() + 1, menu.getPlacementChunkTotal());
             String progressKey = hasPlacerFuel()
                     ? "gui.iska_utils.blazing_altar.placement_chunks_progress"

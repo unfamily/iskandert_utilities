@@ -40,6 +40,7 @@ import net.unfamily.iskautils.item.custom.TemporalOverclockerBlockItem;
 import net.unfamily.iskautils.item.custom.FanBlockItem;
 import net.unfamily.iskautils.item.custom.ShopBlockItem;
 import net.unfamily.iskautils.item.custom.EnderNullifierBlockItem;
+import net.unfamily.iskautils.item.custom.NullifierBlockItem;
 import net.unfamily.iskautils.item.custom.HellfireIgniterBlockItem;
 import net.unfamily.iskautils.item.custom.RubberSapExtractorBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerMachineBlockItem;
@@ -108,6 +109,10 @@ public class ModItems {
     public static final DeferredItem<BlockItem> WITHER_PROOF_WALL = ITEMS.registerSimpleBlockItem(ModBlocks.WITHER_PROOF_WALL);
 
     public static final DeferredItem<BlockItem> NETHERITE_BARS = ITEMS.registerSimpleBlockItem(ModBlocks.NETHERITE_BARS);
+
+    public static final DeferredItem<BlockItem> OBSCURE_GLASS = ITEMS.registerSimpleBlockItem(ModBlocks.OBSCURE_GLASS);
+
+    public static final DeferredItem<BlockItem> OBSCURE_GLASS_PANE = ITEMS.registerSimpleBlockItem(ModBlocks.OBSCURE_GLASS_PANE);
 
     // ===== CUSTOM ITEMS =====
 
@@ -372,6 +377,12 @@ public class ModItems {
 
     public static final DeferredItem<Item> ENDER_NULLIFIER = ITEMS.registerItem("ender_nullifier",
             props -> new EnderNullifierBlockItem(ModBlocks.ENDER_NULLIFIER.get(), props), Item.Properties::useBlockDescriptionPrefix);
+
+    public static final DeferredItem<Item> WANDER_NULLIFIER = ITEMS.registerItem("wander_nullifier",
+            props -> new NullifierBlockItem(ModBlocks.WANDER_NULLIFIER.get(), props, "wander_nullifier"), Item.Properties::useBlockDescriptionPrefix);
+
+    public static final DeferredItem<Item> SOUL_NULLIFIER = ITEMS.registerItem("soul_nullifier",
+            props -> new NullifierBlockItem(ModBlocks.SOUL_NULLIFIER.get(), props, "soul_nullifier"), Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<Item> FAN = ITEMS.registerItem("fan",
             props -> new FanBlockItem(ModBlocks.FAN.get(), props), Item.Properties::useBlockDescriptionPrefix);

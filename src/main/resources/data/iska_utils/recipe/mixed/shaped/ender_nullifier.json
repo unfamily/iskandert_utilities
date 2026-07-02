@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " A ",
+    "ABA",
+    " A "
+  ],
+  "key": {
+    "A": "minecraft:ender_eye",
+    "B": "iska_utils:base_module"
+  },
+  "result": {
+    "id": "iska_utils:ender_nullifier",
+    "count": 1
+  }
+}

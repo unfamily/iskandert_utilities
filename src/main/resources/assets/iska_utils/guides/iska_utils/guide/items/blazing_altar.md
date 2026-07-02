@@ -26,8 +26,7 @@ Area controller for **Burning Flame** / **Cursed Burning Flame** placement and o
 ## GUI
 
 - **Spawn filter**: Off / All / Hostile / Passive — affects only `NATURAL` mob spawns in the area.
-- **Chunk radius** (Chebyshev): base max from config (default 4); the range bar shows **current / max**.
-- **Range module** slot (left row, next to redstone): stack **range modules** for +3 chunk max radius each (up to 4 modules by default, config).
+- **Chunk radius** (1–4, Chebyshev): area size for flames and spawn filter.
 - **Ground only**: flames only on top of solid ground (default on). With ground off, flames may place in open air.
 - **Light-sensitive blocks** (config `[general_utilities.blazing_altar]`): by default mushrooms, entropic soil, and dreadful dirt must keep **block light 0** on the block and the space above it — any simulated flame contribution is rejected (configurable via `005_light_sensitive_max_block_light`, default `0`).
 - **Flame Vision**: global client toggle to see mod flame blocks (also toggled with left-click in air or on a brazier/candle).
