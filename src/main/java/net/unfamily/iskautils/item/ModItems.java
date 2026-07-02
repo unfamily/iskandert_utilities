@@ -192,6 +192,36 @@ public class ModItems {
                     return stack;
                 }
             });
+
+    public static final DeferredItem<Item> SCANNER_CHIP_SPAWNERS = ITEMS.register("scanner_chip_spawners",
+            () -> new ScannerChipItem() {
+                @Override
+                public ItemStack getDefaultInstance() {
+                    ItemStack stack = super.getDefaultInstance();
+                    this.setGenericTarget(stack, net.unfamily.iskautils.util.ScannerSpawnerModes.ALL);
+                    return stack;
+                }
+            });
+
+    public static final DeferredItem<Item> SCANNER_CHIP_LOOT = ITEMS.register("scanner_chip_loot",
+            () -> new ScannerChipItem() {
+                @Override
+                public ItemStack getDefaultInstance() {
+                    ItemStack stack = super.getDefaultInstance();
+                    this.setGenericTarget(stack, net.unfamily.iskautils.util.ScannerLootModes.MODE_1);
+                    return stack;
+                }
+            });
+
+    public static final DeferredItem<Item> SCANNER_CHIP_LIQUID = ITEMS.register("scanner_chip_liquid",
+            () -> new ScannerChipItem() {
+                @Override
+                public ItemStack getDefaultInstance() {
+                    ItemStack stack = super.getDefaultInstance();
+                    this.setGenericTarget(stack, net.unfamily.iskautils.util.ScannerLiquidFilter.ALL);
+                    return stack;
+                }
+            });
     
     // Necrotic Crystal Heart - Custom item that modifies incoming damage
     // Registered as a Curio when Curios is available

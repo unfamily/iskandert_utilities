@@ -262,6 +262,8 @@ dependencies {
     implementation "curse.maven:fusion-connected-textures-854949:8355160"
     // Forbidden Arcanus optional (compile only — no auto-download)
     compileOnly "curse.maven:forbidden-arcanus-309858:8333815"
+    // Lootr optional (compile only — loot scanner chip integration uses reflection at runtime)
+    compileOnly "curse.maven:lootr-361276:8041234"
     
     // Apotheosis integration (optional at runtime; full stack for IDE autocomplete and dev client)
     def apotheosisStack = { String scope ->

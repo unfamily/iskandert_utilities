@@ -65,7 +65,7 @@ public class WanderNullifierBlock extends DirectionalBlock implements EntityBloc
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        Direction facing = context.getNearestLookingDirection().getOpposite();
+        Direction facing = context.getClickedFace();
         boolean powered = context.getLevel().hasNeighborSignal(context.getClickedPos());
         return this.defaultBlockState()
                 .setValue(FACING, facing)
@@ -204,8 +204,8 @@ public class WanderNullifierBlock extends DirectionalBlock implements EntityBloc
     /** Matches {@code models/block/wander_nullifier_off.json} element bounds (north-facing model). */
     private static VoxelShape buildShape(Direction facing) {
         return Shapes.or(
-                element(2, 3, 14, 14, 15, 16, facing),
-                element(4, 5, 11, 12, 13, 14, facing));
+                element(2, 2, 14, 14, 14, 16, facing),
+                element(4, 4, 11, 12, 12, 14, facing));
     }
 
     private static VoxelShape element(

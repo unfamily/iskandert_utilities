@@ -26,7 +26,12 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.Config;
+import net.minecraft.world.level.material.FluidState;
+import net.unfamily.iskautils.compat.lootr.LootrScannerCompat;
+import net.unfamily.iskautils.util.ScannerLiquidFilter;
+import net.unfamily.iskautils.util.ScannerLootModes;
 import net.unfamily.iskautils.util.ScannerMobCategories;
+import net.unfamily.iskautils.util.ScannerSpawnerModes;
 
 import java.util.List;
 
@@ -43,8 +48,12 @@ public class ScannerChipItem extends Item {
     private static final String INITIALIZED_TAG = "Initialized";
     private static final String MINING_LEVEL_TAG = "MiningLevel";
     
+    public ScannerChipItem(Item.Properties properties) {
+        super(properties);
+    }
+
     public ScannerChipItem() {
-        super(new Item.Properties()
+        this(new Item.Properties()
                 .stacksTo(1)
                 .rarity(Rarity.UNCOMMON));
     }
@@ -69,6 +78,8 @@ public class ScannerChipItem extends Item {
         
         // Inizializza l'NBT per i chip specifici se non è già impostato
         initializeSpecializedChip(itemStack);
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
+        normalizeLootChipTarget(itemStack, itemId.getPath());
         
         // Imposta il flag di inizializzazione
         tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
@@ -76,6 +87,14 @@ public class ScannerChipItem extends Item {
         itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
     
+    private static boolean isSpecializedChipPath(String itemPath) {
+        return itemPath.contains("scanner_chip_ores")
+                || itemPath.contains("scanner_chip_mobs")
+                || itemPath.contains("scanner_chip_spawners")
+                || itemPath.contains("scanner_chip_loot")
+                || itemPath.contains("scanner_chip_liquid");
+    }
+
     /**
      * Inizializza i chip specializzati con il loro target predefinito
      */
@@ -84,10 +103,30 @@ public class ScannerChipItem extends Item {
         String itemPath = itemId.getPath();
         
         if (itemPath.contains("scanner_chip_ores") && getGenericTarget(itemStack) == null) {
-            // Inizializza il chip per minerali
             setGenericTarget(itemStack, "ores");
         } else if (itemPath.contains("scanner_chip_mobs") && getGenericTarget(itemStack) == null) {
             setGenericTarget(itemStack, ScannerMobCategories.ALL);
+        } else if (itemPath.contains("scanner_chip_spawners") && getGenericTarget(itemStack) == null) {
+            setGenericTarget(itemStack, ScannerSpawnerModes.ALL);
+        } else if (itemPath.contains("scanner_chip_loot") && getGenericTarget(itemStack) == null) {
+            setGenericTarget(itemStack, ScannerLootModes.MODE_1);
+        } else if (itemPath.contains("scanner_chip_liquid") && getGenericTarget(itemStack) == null) {
+            setGenericTarget(itemStack, ScannerLiquidFilter.ALL);
+        }
+    }
+
+    private void normalizeLootChipTarget(ItemStack itemStack, String itemPath) {
+        if (!itemPath.contains("scanner_chip_loot")) {
+            return;
+        }
+        String current = getGenericTarget(itemStack);
+        if (current == null) {
+            return;
+        }
+        int normalized = ScannerLootModes.normalizedMode(current, LootrScannerCompat.isLoaded());
+        String expected = ScannerLootModes.toTarget(normalized);
+        if (!expected.equals(current)) {
+            setGenericTarget(itemStack, expected);
         }
     }
     
@@ -117,10 +156,27 @@ public class ScannerChipItem extends Item {
             return InteractionResult.SUCCESS;
         }
         
-        // Check if this is a specialized chip (ores or mobs) - these cannot be overwritten
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
         String itemPath = itemId.getPath();
-        boolean isSpecializedChip = itemPath.contains("scanner_chip_ores") || itemPath.contains("scanner_chip_mobs");
+        boolean isSpecializedChip = isSpecializedChipPath(itemPath);
+        boolean isLiquidChip = itemPath.contains("scanner_chip_liquid");
+
+        if (player.isCrouching() && isLiquidChip) {
+            FluidState fluidState = level.getFluidState(blockPos);
+            if (fluidState.isEmpty()) {
+                fluidState = level.getFluidState(blockPos.relative(context.getClickedFace()));
+            }
+            if (!fluidState.isEmpty()) {
+                ResourceLocation normalizedId = ScannerLiquidFilter.normalizeFluidId(fluidState.getType());
+                setGenericTarget(itemStack, ScannerLiquidFilter.fluidTarget(fluidState.getType()));
+                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.liquid_filter.set",
+                        ScannerLiquidFilter.getLocalizedFluidName(normalizedId)), true);
+                return InteractionResult.SUCCESS;
+            }
+            setGenericTarget(itemStack, ScannerLiquidFilter.ALL);
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.liquid_filter.reset"), true);
+            return InteractionResult.SUCCESS;
+        }
         
         // If the player is crouching (Shift), register the target block, but only for regular chips
         if (player.isCrouching() && !isSpecializedChip) {
@@ -173,10 +229,10 @@ public class ScannerChipItem extends Item {
             return InteractionResultHolder.success(itemStack);
         }
         
-        // Check if this is a specialized chip (ores or mobs)
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
         String itemPath = itemId.getPath();
-        boolean isSpecializedChip = itemPath.contains("scanner_chip_ores") || itemPath.contains("scanner_chip_mobs");
+        boolean isSpecializedChip = isSpecializedChipPath(itemPath);
+        normalizeLootChipTarget(itemStack, itemPath);
         
         // If the player is crouching (Shift), set the generic target based on the chip type
         if (player.isCrouching()) {
@@ -241,6 +297,47 @@ public class ScannerChipItem extends Item {
                     }
                     if (getGenericTarget(itemStack) == null) {
                         setGenericTarget(itemStack, ScannerMobCategories.ALL);
+                    }
+                    return InteractionResultHolder.success(itemStack);
+                } else if (itemPath.contains("scanner_chip_spawners")) {
+                    if (hand == InteractionHand.MAIN_HAND) {
+                        String current = getGenericTarget(itemStack);
+                        if (current == null) {
+                            setGenericTarget(itemStack, ScannerSpawnerModes.ALL);
+                            current = ScannerSpawnerModes.ALL;
+                        }
+                        String next = ScannerSpawnerModes.cycleSpawnerTarget(current);
+                        setGenericTarget(itemStack, next);
+                        String mode = ScannerSpawnerModes.normalizedMode(next);
+                        player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.spawner_category.set",
+                                Component.translatable("item.iska_utils.scanner_chip.spawner_category." + mode)), true);
+                        return InteractionResultHolder.success(itemStack);
+                    }
+                    if (getGenericTarget(itemStack) == null) {
+                        setGenericTarget(itemStack, ScannerSpawnerModes.ALL);
+                    }
+                    return InteractionResultHolder.success(itemStack);
+                } else if (itemPath.contains("scanner_chip_loot")) {
+                    if (hand == InteractionHand.MAIN_HAND) {
+                        String current = getGenericTarget(itemStack);
+                        if (current == null) {
+                            setGenericTarget(itemStack, ScannerLootModes.MODE_1);
+                            current = ScannerLootModes.MODE_1;
+                        }
+                        String next = ScannerLootModes.cycleLootTarget(current, LootrScannerCompat.isLoaded());
+                        setGenericTarget(itemStack, next);
+                        int mode = ScannerLootModes.normalizedMode(next, LootrScannerCompat.isLoaded());
+                        player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.loot_category.set",
+                                Component.translatable("item.iska_utils.scanner_chip.loot_category." + mode)), true);
+                        return InteractionResultHolder.success(itemStack);
+                    }
+                    if (getGenericTarget(itemStack) == null) {
+                        setGenericTarget(itemStack, ScannerLootModes.MODE_1);
+                    }
+                    return InteractionResultHolder.success(itemStack);
+                } else if (itemPath.contains("scanner_chip_liquid")) {
+                    if (getGenericTarget(itemStack) == null) {
+                        setGenericTarget(itemStack, ScannerLiquidFilter.ALL);
                     }
                     return InteractionResultHolder.success(itemStack);
                 }
@@ -510,6 +607,20 @@ public class ScannerChipItem extends Item {
         } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
             String mode = ScannerMobCategories.normalizedMode(genericTarget);
             player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mobs." + mode), true);
+        } else if (ScannerSpawnerModes.isSpawnerScanTarget(genericTarget)) {
+            String mode = ScannerSpawnerModes.normalizedMode(genericTarget);
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_spawners." + mode), true);
+        } else if (ScannerLootModes.isLootScanTarget(genericTarget)) {
+            int mode = ScannerLootModes.normalizedMode(genericTarget, LootrScannerCompat.isLoaded());
+            player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_loot." + mode), true);
+        } else if (ScannerLiquidFilter.isLiquidScanTarget(genericTarget)) {
+            if (ScannerLiquidFilter.isAllFluids(genericTarget)) {
+                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_liquid.all"), true);
+            } else {
+                ResourceLocation fluidId = ScannerLiquidFilter.getFluidId(genericTarget);
+                player.displayClientMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_liquid.filtered",
+                        ScannerLiquidFilter.getLocalizedFluidName(fluidId)), true);
+            }
         }
     }
     
@@ -555,6 +666,10 @@ public class ScannerChipItem extends Item {
         String itemPath = itemId.getPath();
         boolean isOresChip = itemPath.contains("scanner_chip_ores");
         boolean isMobsChip = itemPath.contains("scanner_chip_mobs");
+        boolean isSpawnersChip = itemPath.contains("scanner_chip_spawners");
+        boolean isLootChip = itemPath.contains("scanner_chip_loot");
+        boolean isLiquidChip = itemPath.contains("scanner_chip_liquid");
+        boolean isSpecializedChip = isOresChip || isMobsChip || isSpawnersChip || isLootChip || isLiquidChip;
         
         // Target information
         Block targetBlock = getTargetBlock(stack);
@@ -614,6 +729,33 @@ public class ScannerChipItem extends Item {
                         .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mobs." + mode)
                                 .withStyle(ChatFormatting.WHITE));
                 tooltipComponents.add(targetText);
+            } else if (ScannerSpawnerModes.isSpawnerScanTarget(genericTarget)) {
+                String mode = ScannerSpawnerModes.normalizedMode(genericTarget);
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_spawners_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_spawners." + mode)
+                                .withStyle(ChatFormatting.WHITE));
+                tooltipComponents.add(targetText);
+            } else if (ScannerLootModes.isLootScanTarget(genericTarget)) {
+                int mode = ScannerLootModes.normalizedMode(genericTarget, LootrScannerCompat.isLoaded());
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_loot_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_loot." + mode)
+                                .withStyle(ChatFormatting.WHITE));
+                tooltipComponents.add(targetText);
+            } else if (ScannerLiquidFilter.isLiquidScanTarget(genericTarget)) {
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_liquid_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+                if (ScannerLiquidFilter.isAllFluids(genericTarget)) {
+                    targetText = targetText.copy().append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_liquid.all")
+                            .withStyle(ChatFormatting.WHITE));
+                } else {
+                    ResourceLocation fluidId = ScannerLiquidFilter.getFluidId(genericTarget);
+                    targetText = targetText.copy().append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_liquid.filtered",
+                                    ScannerLiquidFilter.getLocalizedFluidName(fluidId))
+                            .withStyle(ChatFormatting.WHITE));
+                }
+                tooltipComponents.add(targetText);
             }
         } else {
             // For specialized chips, show default target even if not set yet
@@ -656,6 +798,36 @@ public class ScannerChipItem extends Item {
                         .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_mobs." + mode)
                                 .withStyle(ChatFormatting.WHITE));
                 tooltipComponents.add(targetText);
+            } else if (isSpawnersChip) {
+                String gt = getGenericTarget(stack);
+                String mode = ScannerSpawnerModes.normalizedMode(gt != null ? gt : ScannerSpawnerModes.ALL);
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_spawners_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_spawners." + mode)
+                                .withStyle(ChatFormatting.WHITE));
+                tooltipComponents.add(targetText);
+            } else if (isLootChip) {
+                String gt = getGenericTarget(stack);
+                int mode = ScannerLootModes.normalizedMode(gt != null ? gt : ScannerLootModes.MODE_1, LootrScannerCompat.isLoaded());
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_loot_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_loot." + mode)
+                                .withStyle(ChatFormatting.WHITE));
+                tooltipComponents.add(targetText);
+            } else if (isLiquidChip) {
+                String gt = getGenericTarget(stack);
+                Component targetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.target_liquid_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+                if (ScannerLiquidFilter.isAllFluids(gt != null ? gt : ScannerLiquidFilter.ALL)) {
+                    targetText = targetText.copy().append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_liquid.all")
+                            .withStyle(ChatFormatting.WHITE));
+                } else {
+                    ResourceLocation fluidId = ScannerLiquidFilter.getFluidId(gt);
+                    targetText = targetText.copy().append(Component.translatable("item.iska_utils.scanner_chip.tooltip.target_liquid.filtered",
+                                    ScannerLiquidFilter.getLocalizedFluidName(fluidId))
+                            .withStyle(ChatFormatting.WHITE));
+                }
+                tooltipComponents.add(targetText);
             } else {
                 Component noTargetText = Component.translatable("item.iska_utils.scanner_chip.tooltip.no_target")
                         .withStyle(style -> style.withColor(ChatFormatting.GRAY));
@@ -665,7 +837,7 @@ public class ScannerChipItem extends Item {
         }
         
         // Instructions - only show save-target hint for regular chips
-        if (!isOresChip && !isMobsChip) {
+        if (!isSpecializedChip) {
             Component instruction0Text = Component.translatable("item.iska_utils.scanner_chip.tooltip.instruction0")
                     .withStyle(style -> style.withColor(ChatFormatting.YELLOW));
             tooltipComponents.add(instruction0Text);
@@ -694,6 +866,24 @@ public class ScannerChipItem extends Item {
             Component chipTypeText = Component.translatable("item.iska_utils.scanner_chip.tooltip.mob_chip_desc")
                     .withStyle(style -> style.withColor(ChatFormatting.LIGHT_PURPLE));
             tooltipComponents.add(chipTypeText);
+        } else if (isSpawnersChip) {
+            Component chipTypeText = Component.translatable("item.iska_utils.scanner_chip.tooltip.spawner_chip_desc")
+                    .withStyle(style -> style.withColor(ChatFormatting.LIGHT_PURPLE));
+            tooltipComponents.add(chipTypeText);
+            tooltipComponents.add(Component.translatable("item.iska_utils.scanner_chip.tooltip.spawner_chip_cycle")
+                    .withStyle(style -> style.withColor(ChatFormatting.GRAY)));
+        } else if (isLootChip) {
+            Component chipTypeText = Component.translatable("item.iska_utils.scanner_chip.tooltip.loot_chip_desc")
+                    .withStyle(style -> style.withColor(ChatFormatting.LIGHT_PURPLE));
+            tooltipComponents.add(chipTypeText);
+            tooltipComponents.add(Component.translatable("item.iska_utils.scanner_chip.tooltip.loot_chip_cycle")
+                    .withStyle(style -> style.withColor(ChatFormatting.GRAY)));
+        } else if (isLiquidChip) {
+            Component chipTypeText = Component.translatable("item.iska_utils.scanner_chip.tooltip.liquid_chip_desc")
+                    .withStyle(style -> style.withColor(ChatFormatting.LIGHT_PURPLE));
+            tooltipComponents.add(chipTypeText);
+            tooltipComponents.add(Component.translatable("item.iska_utils.scanner_chip.tooltip.liquid_chip_filter")
+                    .withStyle(style -> style.withColor(ChatFormatting.GRAY)));
         }
     }
 }

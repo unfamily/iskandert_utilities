@@ -7,14 +7,14 @@
   ],
   "key": {
     "A": {
-      "item": "minecraft:glow_ink_sac"
+      "item": "minecraft:glass_bottle"
     },
     "B": {
       "item": "iska_utils:scanner_chip"
     }
   },
   "result": {
-    "id": "iska_utils:scanner_chip_mobs",
+    "id": "iska_utils:scanner_chip_liquid",
     "count": 1
   }
 }

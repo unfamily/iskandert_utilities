@@ -191,6 +191,9 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SCANNER_CHIP.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP_ORES.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP_MOBS.get());
+                                pOutput.accept(ModItems.SCANNER_CHIP_SPAWNERS.get());
+                                pOutput.accept(ModItems.SCANNER_CHIP_LOOT.get());
+                                pOutput.accept(ModItems.SCANNER_CHIP_LIQUID.get());
                                 pOutput.accept(ModItems.SHOP.get());
                                 pOutput.accept(ModItems.AUTO_SHOP.get());
                                 pOutput.accept(ModItems.RUBBER_BOOTS.get());
