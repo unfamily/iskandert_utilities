@@ -98,6 +98,10 @@ public class Config {
             .comment("Per-axis radius in blocks of the cubic area around an active Ender Nullifier that blocks mob teleports")
             .defineInRange("003_enderNullifierRadius", 8, 1, 128);
 
+    private static final ModConfigSpec.IntValue WANDER_NULLIFIER_RADIUS = BUILDER
+            .comment("Per-axis radius in blocks of the cubic area around an active Wander Nullifier that blocks wandering trader spawns")
+            .defineInRange("004_wanderNullifierRadius", 64, 1, 128);
+
     // Portable Dislocator energy configuration
     private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CAPACITY = BUILDER
             .comment("Energy capacity of the Portable Dislocator in RF/FE",
@@ -1780,6 +1784,7 @@ public class Config {
     public static int hellfireIgniterBuffer;
     public static boolean hellfireIgniterVanillaLike;
     public static int enderNullifierRadius;
+    public static int wanderNullifierRadius;
     public static boolean sacredRubberTreeGrowthEnabled;
     public static boolean sacredRubberMegaTreeGrowthEnabled;
     public static boolean verticalCharmEnabled;
@@ -2122,6 +2127,7 @@ public class Config {
         hellfireIgniterBuffer = HELLFIRE_IGNITER_BUFFER.get();
         hellfireIgniterVanillaLike = HELLFIRE_IGNITER_VANILLA_LIKE.get();
         enderNullifierRadius = ENDER_NULLIFIER_RADIUS.get();
+        wanderNullifierRadius = WANDER_NULLIFIER_RADIUS.get();
         sacredRubberTreeGrowthEnabled = SACRED_RUBBER_TREE_GROWTH_ENABLED.get();
         sacredRubberMegaTreeGrowthEnabled = SACRED_RUBBER_MEGA_TREE_GROWTH_ENABLED.get();
         portableDislocatorEnergyCapacity = PORTABLE_DISLOCATOR_ENERGY_CAPACITY.get();

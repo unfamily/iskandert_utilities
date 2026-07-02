@@ -70,7 +70,7 @@ public final class NullifierChunkIndex {
         BlockState state = level.getBlockState(pos);
         boolean active = isActiveBlock(state, kind);
         if (active) {
-            int radius = Config.enderNullifierRadius;
+            int radius = radiusFor(kind);
             NULLIFIER_TO_CHUNKS.put(key, chunksIntersectingCube(level.dimension(), pos, radius));
             markDirty(kind);
         }
@@ -101,7 +101,7 @@ public final class NullifierChunkIndex {
     }
 
     public static boolean isWithinActiveCoverage(ServerLevel level, double x, double y, double z, Kind kind) {
-        int radius = Config.enderNullifierRadius;
+        int radius = radiusFor(kind);
         int cx = SectionPos.posToSectionCoord(x);
         int cz = SectionPos.posToSectionCoord(z);
         int chunkRadius = (radius >> 4) + 1;
@@ -132,6 +132,10 @@ public final class NullifierChunkIndex {
             case SOUL -> state.getBlock() instanceof SoulNullifierBlock soul
                     && state.getValue(SoulNullifierBlock.ON);
         };
+    }
+
+    private static int radiusFor(Kind kind) {
+        return kind == Kind.WANDER ? Config.wanderNullifierRadius : Config.enderNullifierRadius;
     }
 
     private static boolean isWithinCubeRadius(BlockPos center, double x, double y, double z, int radius) {
