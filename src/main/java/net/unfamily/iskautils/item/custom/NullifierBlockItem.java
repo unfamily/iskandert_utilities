@@ -21,6 +21,7 @@ public class NullifierBlockItem extends BlockItem {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         tooltip.add(Component.translatable("tooltip.iska_utils." + tooltipKey + ".effect"));
-        tooltip.add(Component.translatable("tooltip.iska_utils." + tooltipKey + ".radius", Config.enderNullifierRadius));
+        int radius = "wander_nullifier".equals(tooltipKey) ? Config.wanderNullifierRadius : Config.enderNullifierRadius;
+        tooltip.add(Component.translatable("tooltip.iska_utils." + tooltipKey + ".radius", radius));
     }
 }
