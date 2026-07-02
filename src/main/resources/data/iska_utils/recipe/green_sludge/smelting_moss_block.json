@@ -1,9 +1,9 @@
 {
   "type": "minecraft:smelting",
-  "ingredient": "minecraft:poisonous_potato",
+  "ingredient": "minecraft:moss_block",
   "result": {
     "id": "iska_utils:green_sludge",
-    "count": 1
+    "count": 3
   },
   "experience": 0.0,
   "cookingtime": 200

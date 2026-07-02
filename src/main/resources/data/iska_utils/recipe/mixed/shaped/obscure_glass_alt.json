@@ -1,17 +1,17 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "ABA",
-    "BCB",
-    "ABA"
+    "BAB",
+    "ACA",
+    "BAB"
   ],
   "key": {
-    "A": "#c:stones",
+    "A": "#c:glass_blocks/colorless",
     "B": "#minecraft:coals",
     "C": "iska_utils:green_sludge"
   },
   "result": {
-    "id": "iska_utils:wither_proof_block",
+    "id": "iska_utils:obscure_glass",
     "count": 4
   }
 }

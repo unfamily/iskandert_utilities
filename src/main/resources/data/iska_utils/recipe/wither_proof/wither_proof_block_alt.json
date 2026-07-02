@@ -1,9 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "ABA",
-    "BCB",
-    "ABA"
+    "BAB",
+    "ACA",
+    "BAB"
   ],
   "key": {
     "A": "#c:stones",

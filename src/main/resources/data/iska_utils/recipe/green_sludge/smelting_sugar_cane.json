@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "ingredient": "minecraft:sugar_cane",
+  "result": {
+    "id": "iska_utils:green_sludge",
+    "count": 1
+  },
+  "experience": 0.0,
+  "cookingtime": 200
+}

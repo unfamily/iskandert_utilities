@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "ingredient": "minecraft:lily_pad",
+  "result": {
+    "id": "iska_utils:green_sludge",
+    "count": 2
+  },
+  "experience": 0.0,
+  "cookingtime": 200
+}
