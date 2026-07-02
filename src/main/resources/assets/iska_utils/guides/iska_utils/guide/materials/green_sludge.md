@@ -15,10 +15,8 @@ categories:
 
 ## Obtaining
 
-- Smelt a **Slime Ball** or **Poisonous Potato** in a furnace.
+- Smelt plant and organic materials in a furnace (see JEI).
 
 ## Uses
 
-- Craft **Druidic Agglomeration** and **Dye Bush** blocks.
-- Shapeless **Lime Dye** recipe.
-- Ingredient in **Factory** and production module recipes.
+- Crafting ingredient for druidic blocks, dye processing, and factory components.

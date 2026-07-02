@@ -1,12 +1,12 @@
 {
   "type": "minecraft:smelting",
   "ingredient": {
-    "item": "iska_utils:wither_proof_block"
+    "item": "minecraft:sugar_cane"
   },
   "result": {
-    "id": "iska_utils:obscure_glass",
+    "id": "iska_utils:green_sludge",
     "count": 1
   },
-  "experience": 0.1,
+  "experience": 0.0,
   "cookingtime": 200
 }

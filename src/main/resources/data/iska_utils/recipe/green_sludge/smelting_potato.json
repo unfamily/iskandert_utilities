@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:smelting",
+  "ingredient": {
+    "item": "minecraft:potato"
+  },
+  "result": {
+    "id": "iska_utils:green_sludge",
+    "count": 2
+  },
+  "experience": 0.0,
+  "cookingtime": 200
+}

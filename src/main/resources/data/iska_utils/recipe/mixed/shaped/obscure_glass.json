@@ -7,7 +7,7 @@
   ],
   "key": {
     "A": {
-      "tag": "c:stones"
+      "tag": "c:glass_blocks/colorless"
     },
     "B": {
       "tag": "minecraft:coals"
@@ -17,7 +17,7 @@
     }
   },
   "result": {
-    "id": "iska_utils:wither_proof_block",
+    "id": "iska_utils:obscure_glass",
     "count": 4
   }
 }
