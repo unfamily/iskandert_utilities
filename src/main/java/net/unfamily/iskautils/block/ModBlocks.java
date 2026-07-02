@@ -121,9 +121,6 @@ public class ModBlocks {
     public static final DeferredBlock<ObscureGlassBlock> OBSCURE_GLASS = BLOCKS.register("obscure_glass",
             () -> new ObscureGlassBlock(OBSCURE_GLASS_PROPERTIES));
 
-    public static final DeferredBlock<ObscureGlassPaneBlock> OBSCURE_GLASS_PANE = BLOCKS.register("obscure_glass_pane",
-            () -> new ObscureGlassPaneBlock(OBSCURE_GLASS_PROPERTIES));
-            
     // Netherite Bars
     public static final DeferredBlock<NetheriteBarsBlock> NETHERITE_BARS = BLOCKS.register("netherite_bars",
             () -> new NetheriteBarsBlock(NETHERITE_BARS_PROPERTIES));

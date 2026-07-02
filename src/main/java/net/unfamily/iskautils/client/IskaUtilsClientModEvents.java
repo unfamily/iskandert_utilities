@@ -58,8 +58,7 @@ public final class IskaUtilsClientModEvents {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_EMPTY.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_FILLED.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.NETHERITE_BARS.get(), RenderType.cutoutMipped());
-            ItemBlockRenderTypes.setRenderLayer(ModBlocks.OBSCURE_GLASS.get(), RenderType.cutoutMipped());
-            ItemBlockRenderTypes.setRenderLayer(ModBlocks.OBSCURE_GLASS_PANE.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.OBSCURE_GLASS.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.ENTROPIC_SPAWNER.get(), RenderType.cutout());
 

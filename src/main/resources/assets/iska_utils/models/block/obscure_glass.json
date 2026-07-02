@@ -1,5 +1,5 @@
 {
-  "render_type": "minecraft:cutout_mipped",
+  "render_type": "minecraft:translucent",
   "loader": "fusion:model",
   "type": "fusion:connecting",
   "parent": "minecraft:block/cube_all",

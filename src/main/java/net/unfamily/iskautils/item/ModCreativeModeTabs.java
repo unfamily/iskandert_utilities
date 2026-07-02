@@ -149,7 +149,6 @@ public class ModCreativeModeTabs {
                                     pOutput.accept(ModItems.SOUL_NULLIFIER.get());
                                 }
                                 pOutput.accept(ModItems.OBSCURE_GLASS.get());
-                                pOutput.accept(ModItems.OBSCURE_GLASS_PANE.get());
                                 pOutput.accept(ModItems.SMART_TIMER.get());
                                 pOutput.accept(ModItems.FAN.get());
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());

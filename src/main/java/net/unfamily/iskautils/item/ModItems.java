@@ -114,9 +114,6 @@ public class ModItems {
     public static final DeferredItem<Item> OBSCURE_GLASS = ITEMS.register("obscure_glass",
             () -> new BlockItem(ModBlocks.OBSCURE_GLASS.get(), ITEM_PROPERTIES));
 
-    public static final DeferredItem<Item> OBSCURE_GLASS_PANE = ITEMS.register("obscure_glass_pane",
-            () -> new BlockItem(ModBlocks.OBSCURE_GLASS_PANE.get(), ITEM_PROPERTIES));
-            
     // Netherite Bars
     public static final DeferredItem<Item> NETHERITE_BARS = ITEMS.register("netherite_bars",
             () -> new BlockItem(ModBlocks.NETHERITE_BARS.get(), ITEM_PROPERTIES));
