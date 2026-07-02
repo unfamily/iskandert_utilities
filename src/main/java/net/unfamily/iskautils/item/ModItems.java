@@ -161,6 +161,36 @@ public class ModItems {
                     return stack;
                 }
             }, p -> p.stacksTo(1).rarity(Rarity.UNCOMMON));
+
+    public static final DeferredItem<Item> SCANNER_CHIP_SPAWNERS = ITEMS.registerItem("scanner_chip_spawners",
+            props -> new ScannerChipItem(props) {
+                @Override
+                public ItemStack getDefaultInstance() {
+                    ItemStack stack = super.getDefaultInstance();
+                    setGenericTarget(stack, net.unfamily.iskautils.util.ScannerSpawnerModes.ALL);
+                    return stack;
+                }
+            }, p -> p.stacksTo(1).rarity(Rarity.UNCOMMON));
+
+    public static final DeferredItem<Item> SCANNER_CHIP_LOOT = ITEMS.registerItem("scanner_chip_loot",
+            props -> new ScannerChipItem(props) {
+                @Override
+                public ItemStack getDefaultInstance() {
+                    ItemStack stack = super.getDefaultInstance();
+                    setGenericTarget(stack, net.unfamily.iskautils.util.ScannerLootModes.MODE_1);
+                    return stack;
+                }
+            }, p -> p.stacksTo(1).rarity(Rarity.UNCOMMON));
+
+    public static final DeferredItem<Item> SCANNER_CHIP_LIQUID = ITEMS.registerItem("scanner_chip_liquid",
+            props -> new ScannerChipItem(props) {
+                @Override
+                public ItemStack getDefaultInstance() {
+                    ItemStack stack = super.getDefaultInstance();
+                    setGenericTarget(stack, net.unfamily.iskautils.util.ScannerLiquidFilter.ALL);
+                    return stack;
+                }
+            }, p -> p.stacksTo(1).rarity(Rarity.UNCOMMON));
     
     // Necrotic Crystal Heart - Custom item that modifies incoming damage
     // Registered as a Curio when Curios is available

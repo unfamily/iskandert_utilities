@@ -1563,6 +1563,22 @@ public class Config {
             .comment("Default color for mob markers (in hexadecimal RGB)")
             .define("008_scannerDefaultMobColor", "EB3480");
 
+    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_LOOT_COLOR = BUILDER
+            .comment("Default color for vanilla/non-Lootr loot container markers (hexadecimal RGB)")
+            .define("009_scannerDefaultLootColor", "CCAA00");
+
+    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_LOOTR_COLOR = BUILDER
+            .comment("Default color for Lootr container markers when no entry matches (hexadecimal RGB)")
+            .define("010_scannerDefaultLootrColor", "FAD64A");
+
+    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_LIQUID_COLOR = BUILDER
+            .comment("Default color for liquid scanner markers (hexadecimal RGB)")
+            .define("011_scannerDefaultLiquidColor", "4488FF");
+
+    private static final ModConfigSpec.ConfigValue<String> SCANNER_DEFAULT_SPAWNER_COLOR = BUILDER
+            .comment("Default color for spawner scanner markers (hexadecimal RGB)")
+            .define("012_scannerDefaultSpawnerColor", "FF6633");
+
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_MOB_ENTRIES = BUILDER
             .comment("List of mob entries that can be scanned with their colors",
                     "Format: '$mob_name;RRGGBB' for prefix matching or 'modid:exact_mob;RRGGBB' for exact match",
@@ -1607,6 +1623,63 @@ public class Config {
                         "c:budding_blocks"
                     ), 
                     obj -> obj instanceof String);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_LOOT_ENTRIES = BUILDER
+            .comment("Loot scanner marker colors for blocks. Format: 'lookup_key;RRGGBB' or '$pattern;RRGGBB'",
+                    "Lookup keys: lootr:<block_id>, vanilla:<block_id>",
+                    "Example: 'lootr:decorated_pot;E8B84A', '$chest;AABB33'")
+            .defineList("103_scanner_loot_entries",
+                    java.util.Arrays.asList(
+                        "lootr:decorated_pot;E8B84A",
+                        "$lootr;FAD64A",
+                        "minecraft:barrel;CCAA00",
+                        "$chest;AABB33",
+                        "$shulker;9966CC",
+                        "minecraft:decorated_pot;AA8800"
+                    ),
+                    obj -> obj instanceof String && ((String) obj).contains(";"));
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_LOOT_ENTITY_ENTRIES = BUILDER
+            .comment("Loot scanner marker colors for loot entities (e.g. Lootr item frames).",
+                    "Format: 'entity_type_id;RRGGBB' or '$pattern;RRGGBB'.",
+                    "These targets use billboard markers instead of block highlights.")
+            .defineList("107_scanner_loot_entity_entries",
+                    java.util.Arrays.asList(
+                        "lootr:item_frame;FFE066",
+                        "$item_frame;FFE066",
+                        "$lootr;FAD64A"
+                    ),
+                    obj -> obj instanceof String && ((String) obj).contains(";"));
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_LOOT_TAGS = BUILDER
+            .comment("Block tags treated as loot containers for the loot scanner chip")
+            .defineList("104_scanner_loot_tags",
+                    java.util.Arrays.asList(
+                        "c:chests",
+                        "minecraft:shulker_boxes"
+                    ),
+                    obj -> obj instanceof String);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_FLUID_ENTRIES = BUILDER
+            .comment("Liquid scanner marker colors. Format: 'fluid_id;RRGGBB' or '$pattern;RRGGBB'",
+                    "Use normalized fluid ids (minecraft:water, not flowing_water)")
+            .defineList("105_scanner_fluid_entries",
+                    java.util.Arrays.asList(
+                        "minecraft:water;4488FF",
+                        "minecraft:lava;FF4400",
+                        "$lava;FF4400"
+                    ),
+                    obj -> obj instanceof String && ((String) obj).contains(";"));
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_SPAWNER_ENTRIES = BUILDER
+            .comment("Spawner scanner marker colors and extra spawner blocks for 'all' mode",
+                    "Format: 'block_id;RRGGBB'. Blocks listed here are also scanned in spawners:all mode")
+            .defineList("106_scanner_spawner_entries",
+                    java.util.Arrays.asList(
+                        "minecraft:spawner;FF6633",
+                        "minecraft:trial_spawner;FF9900"
+                    ),
+                    obj -> obj instanceof String && ((String) obj).contains(";"));
 
     static {
         BUILDER.pop(); // End of scanner category
@@ -1753,6 +1826,15 @@ public class Config {
     public static int scannerDefaultAlpha;
     public static int scannerDefaultOreColor;
     public static int scannerDefaultMobColor;
+    public static int scannerDefaultLootColor;
+    public static int scannerDefaultLootrColor;
+    public static int scannerDefaultLiquidColor;
+    public static int scannerDefaultSpawnerColor;
+    public static java.util.List<String> scannerLootEntries;
+    public static java.util.List<String> scannerLootEntityEntries;
+    public static java.util.List<String> scannerLootTags;
+    public static java.util.List<String> scannerFluidEntries;
+    public static java.util.List<String> scannerSpawnerEntries;
     public static java.util.List<String> scannerOreTags;
     public static int structurePlacerMachineEnergyConsume;
     public static int structurePlacerMachineEnergyBuffer;
@@ -2061,11 +2143,20 @@ public class Config {
         scannerOreEntries = new java.util.ArrayList<>(SCANNER_ORE_ENTRIES.get());
         scannerMobEntries = new java.util.ArrayList<>(SCANNER_MOB_ENTRIES.get());
         scannerOreTags = new java.util.ArrayList<>(SCANNER_ORE_TAGS.get());
+        scannerLootEntries = new java.util.ArrayList<>(SCANNER_LOOT_ENTRIES.get());
+        scannerLootEntityEntries = new java.util.ArrayList<>(SCANNER_LOOT_ENTITY_ENTRIES.get());
+        scannerLootTags = new java.util.ArrayList<>(SCANNER_LOOT_TAGS.get());
+        scannerFluidEntries = new java.util.ArrayList<>(SCANNER_FLUID_ENTRIES.get());
+        scannerSpawnerEntries = new java.util.ArrayList<>(SCANNER_SPAWNER_ENTRIES.get());
                 
         // Default values for scanner colors
         scannerDefaultAlpha = Integer.parseInt(SCANNER_DEFAULT_ALPHA.get(), 16);
         scannerDefaultOreColor = Integer.parseInt(SCANNER_DEFAULT_ORE_COLOR.get(), 16);
         scannerDefaultMobColor = Integer.parseInt(SCANNER_DEFAULT_MOB_COLOR.get(), 16);
+        scannerDefaultLootColor = Integer.parseInt(SCANNER_DEFAULT_LOOT_COLOR.get(), 16);
+        scannerDefaultLootrColor = Integer.parseInt(SCANNER_DEFAULT_LOOTR_COLOR.get(), 16);
+        scannerDefaultLiquidColor = Integer.parseInt(SCANNER_DEFAULT_LIQUID_COLOR.get(), 16);
+        scannerDefaultSpawnerColor = Integer.parseInt(SCANNER_DEFAULT_SPAWNER_COLOR.get(), 16);
         // Structure Placer Machine logic
         structurePlacerMachineEnergyConsume = STRUCTURE_PLACER_MACHINE_ENERGY_CONSUME.get();
         structurePlacerMachineEnergyBuffer = STRUCTURE_PLACER_MACHINE_ENERGY_BUFFER.get();

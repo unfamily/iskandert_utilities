@@ -238,6 +238,7 @@ dependencies {
 
     implementation "curse.maven:fusion-connected-textures-854949:8355217"
     compileOnly "curse.maven:forbidden-arcanus-309858:6875895"
+    compileOnly "curse.maven:lootr-361276:8041234"
     
     // Verify that the value of include_compass_mods is valid
     if (project.hasProperty('include_compass_mods') && 

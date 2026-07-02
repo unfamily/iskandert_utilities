@@ -36,7 +36,20 @@ import net.neoforged.neoforge.common.Tags;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
+import net.unfamily.iskautils.scan.ScannerLootScan;
+import net.unfamily.iskautils.util.ScannerLiquidFilter;
+import net.unfamily.iskautils.util.ScannerLootModes;
 import net.unfamily.iskautils.util.ScannerMobCategories;
+import net.unfamily.iskautils.util.ScannerSpawnerModes;
+
+import net.unfamily.iskautils.util.ScannerEntryColors;
+import net.unfamily.iskautils.compat.lootr.LootrScannerCompat;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.phys.AABB;
+
+import java.util.function.BiPredicate;
+import java.util.function.BiFunction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
@@ -304,6 +317,23 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
                             String mode = ScannerMobCategories.normalizedMode(genericTarget);
                             serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_mobs." + mode));
                             scanForAllMobs(serverPlayer, itemstack, genericTarget);
+                            scanSuccess = true;
+                        } else if (ScannerSpawnerModes.isSpawnerScanTarget(genericTarget)) {
+                            String mode = ScannerSpawnerModes.normalizedMode(genericTarget);
+                            serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_spawners." + mode));
+                            scanForSpawners(serverPlayer, itemstack, genericTarget);
+                            scanSuccess = true;
+                        } else if (ScannerLootModes.isLootScanTarget(genericTarget)) {
+                            int mode = ScannerLootModes.normalizedMode(genericTarget, net.unfamily.iskautils.compat.lootr.LootrScannerCompat.isLoaded());
+                            serverPlayer.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.scan_started_loot." + mode));
+                            scanForLoot(serverPlayer, itemstack, genericTarget);
+                            scanSuccess = true;
+                        } else if (ScannerLiquidFilter.isLiquidScanTarget(genericTarget)) {
+                            serverPlayer.sendOverlayMessage(Component.translatable(
+                                    ScannerLiquidFilter.isAllFluids(genericTarget)
+                                            ? "item.iska_utils.scanner.scan_started_liquid.all"
+                                            : "item.iska_utils.scanner.scan_started_liquid.filtered"));
+                            scanForLiquids(serverPlayer, itemstack, genericTarget);
                             scanSuccess = true;
                         }
                     }
@@ -1109,6 +1139,33 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
                         .withStyle(style -> style.withColor(ChatFormatting.AQUA))
                         .append(Component.translatable("item.iska_utils.scanner.tooltip.target_mobs." + mode)
                             .withStyle(ChatFormatting.WHITE)));
+            } else if (ScannerSpawnerModes.isSpawnerScanTarget(genericTarget)) {
+                String mode = ScannerSpawnerModes.normalizedMode(genericTarget);
+                tooltipAdder.accept(
+                    Component.translatable("item.iska_utils.scanner.tooltip.target_spawners_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner.tooltip.target_spawners." + mode)
+                            .withStyle(ChatFormatting.WHITE)));
+            } else if (ScannerLootModes.isLootScanTarget(genericTarget)) {
+                int mode = ScannerLootModes.normalizedMode(genericTarget, net.unfamily.iskautils.compat.lootr.LootrScannerCompat.isLoaded());
+                tooltipAdder.accept(
+                    Component.translatable("item.iska_utils.scanner.tooltip.target_loot_prefix")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA))
+                        .append(Component.translatable("item.iska_utils.scanner.tooltip.target_loot." + mode)
+                            .withStyle(ChatFormatting.WHITE)));
+            } else if (ScannerLiquidFilter.isLiquidScanTarget(genericTarget)) {
+                Component targetText = Component.translatable("item.iska_utils.scanner.tooltip.target_liquid_prefix")
+                    .withStyle(style -> style.withColor(ChatFormatting.AQUA));
+                if (ScannerLiquidFilter.isAllFluids(genericTarget)) {
+                    targetText = targetText.copy().append(
+                        Component.translatable("item.iska_utils.scanner.tooltip.target_liquid.all").withStyle(ChatFormatting.WHITE));
+                } else {
+                    Identifier fluidId = ScannerLiquidFilter.getFluidId(genericTarget);
+                    targetText = targetText.copy().append(
+                        Component.translatable("item.iska_utils.scanner.tooltip.target_liquid.filtered",
+                                ScannerLiquidFilter.getLocalizedFluidName(fluidId)).withStyle(ChatFormatting.WHITE));
+                }
+                tooltipAdder.accept(targetText);
             }
         } else {
             tooltipAdder.accept(
@@ -1303,6 +1360,20 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
             } else if (ScannerMobCategories.isMobScanTarget(genericTarget)) {
                 String mode = ScannerMobCategories.normalizedMode(genericTarget);
                 player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_mobs." + mode));
+            } else if (ScannerSpawnerModes.isSpawnerScanTarget(genericTarget)) {
+                String mode = ScannerSpawnerModes.normalizedMode(genericTarget);
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_spawners." + mode));
+            } else if (ScannerLootModes.isLootScanTarget(genericTarget)) {
+                int mode = ScannerLootModes.normalizedMode(genericTarget, net.unfamily.iskautils.compat.lootr.LootrScannerCompat.isLoaded());
+                player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_loot." + mode));
+            } else if (ScannerLiquidFilter.isLiquidScanTarget(genericTarget)) {
+                if (ScannerLiquidFilter.isAllFluids(genericTarget)) {
+                    player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_liquid.all"));
+                } else {
+                    Identifier fluidId = ScannerLiquidFilter.getFluidId(genericTarget);
+                    player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner_chip.transfer_success_liquid.filtered",
+                            ScannerLiquidFilter.getLocalizedFluidName(fluidId)));
+                }
             }
         }
     }
@@ -1778,6 +1849,210 @@ public class ScannerItem extends Item implements net.unfamily.iskautils.item.RfS
         } else {
             player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.found_all_mobs", markersFound));
         }
+    }
+
+    private void scanForSpawners(ServerPlayer player, ItemStack itemStack, String genericTarget) {
+        scanBlocksWithOptionalColor(player, itemStack, (level, pos) -> {
+            if (!ScannerSpawnerModes.matches(level.getBlockState(pos), genericTarget)) {
+                return Optional.empty();
+            }
+            String blockId = BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock()).toString();
+            return Optional.of(ScannerEntryColors.resolveSpawnerColor(blockId));
+        }, "item.iska_utils.scanner.found_spawners");
+    }
+
+    private void scanForLoot(ServerPlayer player, ItemStack itemStack, String genericTarget) {
+        int blockMarkers = scanBlocksWithOptionalColor(player, itemStack, (level, pos) ->
+                ScannerLootScan.classify(level, pos, player, genericTarget)
+                        .filter(match -> !match.entity())
+                        .map(match -> ScannerEntryColors.resolveLootColor(match.colorKey(), match.lootr())),
+                null);
+
+        int entityMarkers = scanLootEntities(player, itemStack, genericTarget);
+        int total = blockMarkers + entityMarkers;
+        if (total > 0 || blockMarkers == 0) {
+            player.sendOverlayMessage(Component.translatable("item.iska_utils.scanner.found_loot", total));
+        }
+    }
+
+    private int scanLootEntities(ServerPlayer player, ItemStack itemStack, String genericTarget) {
+        if (!LootrScannerCompat.isLoaded() || player.level() == null || !(player.level() instanceof ServerLevel level)) {
+            return 0;
+        }
+
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        UUID scannerId = tag.getString(SCANNER_ID_TAG).map(UUID::fromString).orElse(null);
+        if (scannerId == null) {
+            return 0;
+        }
+
+        List<BlockPos> scannerMarkers = ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>());
+        BlockPos playerPos = player.blockPosition();
+        int scanRange = getScanRange(itemStack);
+        int maxMarkersScan = Config.scannerMaxBlocks;
+        int baseTTL = Config.scannerMarkerTTL;
+        List<Integer> rangeSteps = getRangeStepsUpTo(scanRange);
+        Set<BlockPos> existingMarkerPositions = new HashSet<>(scannerMarkers);
+
+        boolean infiniteMarkers = maxMarkersScan == -1;
+        int remainingCapacity = infiniteMarkers ? Integer.MAX_VALUE : maxMarkersScan - existingMarkerPositions.size();
+        if (!infiniteMarkers && remainingCapacity <= 0) {
+            return 0;
+        }
+
+        int markersFound = 0;
+        int playerChunkX = playerPos.getX() >> 4;
+        int playerChunkZ = playerPos.getZ() >> 4;
+
+        entityLoop:
+        for (int ringRange : rangeSteps) {
+            int chunkRadius = Math.max(1, ringRange / 16);
+            double ringRangeSquared = (double) ringRange * ringRange;
+            for (int chunkX = playerChunkX - chunkRadius; chunkX <= playerChunkX + chunkRadius; chunkX++) {
+                for (int chunkZ = playerChunkZ - chunkRadius; chunkZ <= playerChunkZ + chunkRadius; chunkZ++) {
+                    ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
+                    if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
+                        continue;
+                    }
+                    List<Entity> lootEntities = level.getEntitiesOfClass(
+                            Entity.class,
+                            new AABB(
+                                    currentChunkPos.getMinBlockX(), level.getMinY(), currentChunkPos.getMinBlockZ(),
+                                    currentChunkPos.getMaxBlockX(), level.getMaxY(), currentChunkPos.getMaxBlockZ()
+                            ),
+                            entity -> LootrScannerCompat.isLootrEntity(entity)
+                                    && isWithinHorizontalRange(player, entity.getX(), entity.getZ(), ringRangeSquared)
+                    );
+                    for (Entity entity : lootEntities) {
+                        Optional<ScannerLootScan.LootMatch> match = ScannerLootScan.classifyEntity(entity, player, genericTarget);
+                        if (match.isEmpty()) {
+                            continue;
+                        }
+                        BlockPos entityPos = entity.blockPosition();
+                        if (existingMarkerPositions.contains(entityPos)) {
+                            continue;
+                        }
+                        scannerMarkers.add(entityPos);
+                        existingMarkerPositions.add(entityPos);
+                        markersFound++;
+
+                        int colorWithAlpha = ScannerEntryColors.resolveLootEntityColor(
+                                match.get().colorKey(), match.get().lootr());
+                        net.unfamily.iskautils.network.ModMessages.sendAddBillboardWithNamePacket(
+                                player, entityPos, colorWithAlpha, baseTTL * TTL_MULTIPLIER, entity.getName().getString());
+
+                        if (!infiniteMarkers && markersFound >= remainingCapacity) {
+                            break entityLoop;
+                        }
+                    }
+                }
+            }
+        }
+        return markersFound;
+    }
+
+    private void scanForLiquids(ServerPlayer player, ItemStack itemStack, String genericTarget) {
+        scanBlocksWithOptionalColor(player, itemStack, (level, pos) -> {
+            FluidState fluidState = level.getFluidState(pos);
+            if (!ScannerLiquidFilter.matches(fluidState, genericTarget)) {
+                return Optional.empty();
+            }
+            String fluidId = ScannerLiquidFilter.normalizeFluidId(fluidState.getType()).toString();
+            return Optional.of(ScannerEntryColors.resolveFluidColor(fluidId));
+        }, "item.iska_utils.scanner.found_liquid");
+    }
+
+    private int scanBlocksWithOptionalColor(ServerPlayer player, ItemStack itemStack,
+            BiFunction<ServerLevel, BlockPos, Optional<Integer>> colorResolver, String foundTranslationKey) {
+        if (player.level() == null || !(player.level() instanceof ServerLevel level)) {
+            return 0;
+        }
+
+        CompoundTag tag = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        UUID scannerId = tag.getString(SCANNER_ID_TAG).map(UUID::fromString).orElse(null);
+        if (scannerId == null) {
+            return 0;
+        }
+
+        List<BlockPos> scannerMarkers = ACTIVE_MARKERS.computeIfAbsent(scannerId, k -> new ArrayList<>());
+        BlockPos playerPos = player.blockPosition();
+
+        int scanRange = getScanRange(itemStack);
+        int maxBlocksScan = Config.scannerMaxBlocks;
+        int baseTTL = Config.scannerMarkerTTL;
+        List<Integer> rangeSteps = getRangeStepsUpTo(scanRange);
+        Set<BlockPos> existingMarkerPositions = new HashSet<>(scannerMarkers);
+
+        boolean infiniteBlocks = maxBlocksScan == -1;
+        int remainingCapacity = infiniteBlocks ? Integer.MAX_VALUE : maxBlocksScan - existingMarkerPositions.size();
+        if (!infiniteBlocks && remainingCapacity <= 0) {
+            sendScanLimitReachedMessage(player, maxBlocksScan);
+            return 0;
+        }
+
+        int newMarkersFound = 0;
+        boolean limitReached = false;
+
+        int playerChunkX = playerPos.getX() >> 4;
+        int playerChunkZ = playerPos.getZ() >> 4;
+
+        scanLoop:
+        for (int ringRange : rangeSteps) {
+            int chunkRadius = Math.max(1, ringRange / 16);
+            long ringRangeSq = (long) ringRange * ringRange;
+            for (int chunkX = playerChunkX - chunkRadius; chunkX <= playerChunkX + chunkRadius; chunkX++) {
+                for (int chunkZ = playerChunkZ - chunkRadius; chunkZ <= playerChunkZ + chunkRadius; chunkZ++) {
+                    ChunkPos currentChunkPos = new ChunkPos(chunkX, chunkZ);
+                    if (!level.isLoaded(BlockPos.containing(currentChunkPos.getMiddleBlockX(), 0, currentChunkPos.getMiddleBlockZ()))) {
+                        continue;
+                    }
+                    for (int x = currentChunkPos.getMinBlockX(); x <= currentChunkPos.getMaxBlockX(); x++) {
+                        for (int z = currentChunkPos.getMinBlockZ(); z <= currentChunkPos.getMaxBlockZ(); z++) {
+                            for (int y = level.getMinY(); y <= level.getMaxY(); y++) {
+                                BlockPos pos = new BlockPos(x, y, z);
+                                if (!isWithinHorizontalRange(player, pos, ringRangeSq)) {
+                                    continue;
+                                }
+                                Optional<Integer> colorOpt = colorResolver.apply(level, pos);
+                                if (colorOpt.isEmpty()) {
+                                    continue;
+                                }
+                                if (existingMarkerPositions.contains(pos)) {
+                                    continue;
+                                }
+                                scannerMarkers.add(pos);
+                                existingMarkerPositions.add(pos);
+                                newMarkersFound++;
+
+                                String blockNameString = level.getBlockState(pos).getBlock().getName().getString();
+                                net.unfamily.iskautils.network.ModMessages.sendAddHighlightWithNamePacket(
+                                        player, pos, colorOpt.get(), baseTTL * TTL_MULTIPLIER, blockNameString);
+
+                                if (!infiniteBlocks && newMarkersFound >= remainingCapacity) {
+                                    limitReached = true;
+                                    break scanLoop;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (limitReached) {
+            sendScanLimitReachedMessage(player, maxBlocksScan);
+        } else if (foundTranslationKey != null) {
+            player.sendOverlayMessage(Component.translatable(foundTranslationKey, newMarkersFound));
+        }
+        return newMarkersFound;
+    }
+
+    private void scanBlocksWithPredicate(ServerPlayer player, ItemStack itemStack,
+            BiPredicate<ServerLevel, BlockPos> predicate, int markerColor, String foundTranslationKey) {
+        int alphaColor = (Config.scannerDefaultAlpha << 24) | (markerColor & 0xFFFFFF);
+        scanBlocksWithOptionalColor(player, itemStack,
+                (level, pos) -> predicate.test(level, pos) ? Optional.of(alphaColor) : Optional.empty(),
+                foundTranslationKey);
     }
 } 
 

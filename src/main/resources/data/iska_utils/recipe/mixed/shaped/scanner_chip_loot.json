@@ -6,11 +6,11 @@
     " A "
   ],
   "key": {
-    "A": "minecraft:glow_ink_sac",
+    "A": "#c:ingots/copper",
     "B": "iska_utils:scanner_chip"
   },
   "result": {
-    "id": "iska_utils:scanner_chip_mobs",
+    "id": "iska_utils:scanner_chip_loot",
     "count": 1
   }
 }
