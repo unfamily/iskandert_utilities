@@ -15,7 +15,7 @@ categories:
 
 ## What it does
 
-Arcane **charm** curio. While equipped, if you wear at least **three distinct arcane artifacts** in Curios at the same time, you gain bonus max health, armor, and armor toughness.
+Arcane **charm** curio. While equipped, if you wear at least **three distinct arcane artifacts** in Curios at the same time (for example <ItemImage id="iska_utils:ancient_star" /> **Ancient Star**, <ItemImage id="iska_utils:miniature_tent" /> **Miniature Tent**, or <ItemImage id="iska_utils:cursed_candle" /> **Arcane Candle**), you gain bonus max health, armor, and armor toughness.
 
 ## Obtaining
 

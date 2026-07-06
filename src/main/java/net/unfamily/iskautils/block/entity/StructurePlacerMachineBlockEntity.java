@@ -305,7 +305,10 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     }
 
     public void setSelectedStructure(String selectedStructure) {
-        this.selectedStructure = selectedStructure;
+        this.selectedStructure = selectedStructure != null ? selectedStructure : "";
+        if (this.selectedStructure.isEmpty() && this.showPreview) {
+            this.showPreview = false;
+        }
         setChanged();
     }
 

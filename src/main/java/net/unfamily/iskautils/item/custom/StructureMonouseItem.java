@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
+import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.structure.StructureBlockPlaceOrder;
 import net.unfamily.iskautils.structure.StructureMonouseDefinition;
 
@@ -226,22 +227,19 @@ public class StructureMonouseItem extends Item {
      */
     private void showPreview(ServerPlayer player, BlockPos centerPos, StructureDefinition structure, int rotation) {
         Map<BlockPos, String> positions = calculateStructurePositions(centerPos, structure, rotation);
-        
+
         int blueMarkers = 0;
         int redMarkers = 0;
         
         for (Map.Entry<BlockPos, String> entry : positions.entrySet()) {
             BlockPos blockPos = entry.getKey();
-            BlockState currentState = player.level().getBlockState(blockPos);
-            
-            if (canReplaceBlock(currentState, structure)) {
-                // Empty/replaceable space: blue marker at block position (5 seconds, no text)
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, PREVIEW_COLOR, 100); // 5 seconds
-                blueMarkers++;
-            } else {
-                // Occupied space: red marker at block position (5 seconds, no text)
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 100); // 5 seconds
+            int color = net.unfamily.iskautils.util.preview.MachinePreviewMarkerLogic.resolveStructureCellColor(
+                    player.level(), blockPos, structure);
+            ModMessages.sendEphemeralPreviewMarker(player, blockPos, color, 100);
+            if (color == CONFLICT_COLOR) {
                 redMarkers++;
+            } else {
+                blueMarkers++;
             }
         }
         

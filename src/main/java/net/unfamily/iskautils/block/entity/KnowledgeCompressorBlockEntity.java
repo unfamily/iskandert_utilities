@@ -17,7 +17,7 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
-import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
@@ -36,7 +36,7 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
     private final ExperienceTank experienceTank;
     private final ItemStackHandler outputHandler;
     private final IFluidHandler fluidHandler;
-    private final IItemHandler itemHandler;
+    private final IItemHandlerModifiable itemHandler;
     private final ResourceHandler<FluidResource> fluidTransferHandler;
     private final ResourceHandler<ItemResource> itemTransferHandler;
     private int conversionCooldown;
@@ -65,7 +65,7 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
         return fluidHandler;
     }
 
-    public IItemHandler getItemHandler() {
+    public IItemHandlerModifiable getItemHandler() {
         return itemHandler;
     }
 

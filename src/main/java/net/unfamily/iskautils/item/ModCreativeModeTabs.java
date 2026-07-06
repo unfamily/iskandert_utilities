@@ -34,6 +34,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.WITHER_PROOF_STAIRS.get());
                                 pOutput.accept(ModItems.WITHER_PROOF_SLAB.get());
                                 pOutput.accept(ModItems.WITHER_PROOF_WALL.get());
+                                pOutput.accept(ModItems.OBSCURE_GLASS.get());
                                 pOutput.accept(ModItems.NETHERITE_BARS.get());
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE.get());
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE_SLAB.get());
@@ -150,7 +151,6 @@ public class ModCreativeModeTabs {
                                 if (net.neoforged.fml.ModList.get().isLoaded("forbidden_arcanus")) {
                                     pOutput.accept(ModItems.SOUL_NULLIFIER.get());
                                 }
-                                pOutput.accept(ModItems.OBSCURE_GLASS.get());
                                 pOutput.accept(ModItems.SMART_TIMER.get());
                                 pOutput.accept(ModItems.FAN.get());
                                 pOutput.accept(ModItems.WEATHER_DETECTOR.get());

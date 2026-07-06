@@ -24,6 +24,10 @@ public final class IskaUtilsGuide {
     private IskaUtilsGuide() {
     }
 
+    public static void registerClientIfPresent() {
+        registerClient();
+    }
+
     public static void registerClient() {
         if (!ModList.get().isLoaded("guideme")) {
             return;

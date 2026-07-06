@@ -12,6 +12,15 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.sound.PlaySoundEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.minecraft.client.player.LocalPlayer;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.unfamily.iskautils.block.entity.FanBlockEntity;
+import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
+import net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket;
+import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity;
@@ -59,6 +68,45 @@ public final class IskaUtilsClientGameEvents {
         }
         if (effectivePercent < 100) {
             event.setSound(new SoundMufflerVolumeScaledSound(sound, effectivePercent / 100f));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        MachinePreviewTracker.tickPeriodicReconcile(mc.level);
+        for (BlockPos ownerPos : MachinePreviewTracker.pollOwnersNeedingWorldRefresh(mc.level)) {
+            MachinePreviewTracker.onFootprintRefreshRequested(mc.level, ownerPos);
+            var be = mc.level.getBlockEntity(ownerPos);
+            if (be instanceof FanBlockEntity fan && fan.isShowAreaEnabled()) {
+                ClientPacketDistributor.sendToServer(new FanShowAreaC2SPacket(ownerPos, true));
+            } else if (be instanceof StructurePlacerMachineBlockEntity machine && machine.isShowPreview()) {
+                ClientPacketDistributor.sendToServer(new StructurePlacerMachineTogglePreviewC2SPacket(ownerPos, true));
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onClientPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof LocalPlayer) {
+            MachinePreviewTracker.clearAll();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onBlockBreak(BreakBlockEvent event) {
+        if (event.getLevel() instanceof Level level) {
+            MachinePreviewTracker.onBlockInPreviewChanged(level, event.getPos());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
+        if (event.getLevel() instanceof Level level) {
+            MachinePreviewTracker.onBlockInPreviewChanged(level, event.getPos());
         }
     }
 

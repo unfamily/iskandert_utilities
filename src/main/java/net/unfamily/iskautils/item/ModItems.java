@@ -100,17 +100,32 @@ public class ModItems {
 
     // ===== WITHER PROOF BLOCKS =====
 
-    public static final DeferredItem<BlockItem> WITHER_PROOF_BLOCK = ITEMS.registerSimpleBlockItem(ModBlocks.WITHER_PROOF_BLOCK);
+    public static final DeferredItem<BlockItem> WITHER_PROOF_BLOCK = ITEMS.registerItem(
+            "wither_proof_block",
+            props -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_BLOCK.get(), props, "tooltip.iska_utils.wither_proof"),
+            UnaryOperator.identity());
 
-    public static final DeferredItem<BlockItem> WITHER_PROOF_STAIRS = ITEMS.registerSimpleBlockItem(ModBlocks.WITHER_PROOF_STAIRS);
+    public static final DeferredItem<BlockItem> WITHER_PROOF_STAIRS = ITEMS.registerItem(
+            "wither_proof_stairs",
+            props -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_STAIRS.get(), props, "tooltip.iska_utils.wither_proof"),
+            UnaryOperator.identity());
 
-    public static final DeferredItem<BlockItem> WITHER_PROOF_SLAB = ITEMS.registerSimpleBlockItem(ModBlocks.WITHER_PROOF_SLAB);
+    public static final DeferredItem<BlockItem> WITHER_PROOF_SLAB = ITEMS.registerItem(
+            "wither_proof_slab",
+            props -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_SLAB.get(), props, "tooltip.iska_utils.wither_proof"),
+            UnaryOperator.identity());
 
-    public static final DeferredItem<BlockItem> WITHER_PROOF_WALL = ITEMS.registerSimpleBlockItem(ModBlocks.WITHER_PROOF_WALL);
+    public static final DeferredItem<BlockItem> WITHER_PROOF_WALL = ITEMS.registerItem(
+            "wither_proof_wall",
+            props -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_WALL.get(), props, "tooltip.iska_utils.wither_proof"),
+            UnaryOperator.identity());
 
     public static final DeferredItem<BlockItem> NETHERITE_BARS = ITEMS.registerSimpleBlockItem(ModBlocks.NETHERITE_BARS);
 
-    public static final DeferredItem<BlockItem> OBSCURE_GLASS = ITEMS.registerSimpleBlockItem(ModBlocks.OBSCURE_GLASS);
+    public static final DeferredItem<BlockItem> OBSCURE_GLASS = ITEMS.registerItem(
+            "obscure_glass",
+            props -> new TranslatedTooltipBlockItem(ModBlocks.OBSCURE_GLASS.get(), props, "tooltip.iska_utils.wither_proof"),
+            UnaryOperator.identity());
 
     // ===== CUSTOM ITEMS =====
 

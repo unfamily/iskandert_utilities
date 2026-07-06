@@ -285,7 +285,7 @@ public class IskaUtils {
 
         Runtime.getRuntime().addShutdownHook(new Thread(ClientEvents::shutdown));
 
-        IskaUtilsGuide.registerClient();
+        IskaUtilsGuide.registerClientIfPresent();
 
         // Register custom GUI screens - will be done in ClientModEvents
     }
