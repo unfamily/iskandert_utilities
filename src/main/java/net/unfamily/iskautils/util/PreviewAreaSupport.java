@@ -8,6 +8,7 @@ import net.unfamily.iskautils.block.CollectingCrateBlock;
 import net.unfamily.iskautils.block.FanBlock;
 import net.unfamily.iskautils.block.StructurePlacerMachineBlock;
 import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskautils.util.preview.MachinePreviewServerTracker;
 
 /**
  * Clears client-side area preview markers when the owning machine block is removed.
@@ -48,6 +49,7 @@ public final class PreviewAreaSupport {
             return;
         }
         if (level instanceof ServerLevel serverLevel) {
+            MachinePreviewServerTracker.clearGeneration(pos);
             broadcastClearPreviewForOwner(serverLevel, pos);
         }
     }

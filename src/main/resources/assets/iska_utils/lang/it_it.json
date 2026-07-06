@@ -819,6 +819,7 @@
   "message.iska_utils.wander_nullifier.disabled": "Nullificatore del Vagabondo disattivato",
   "message.iska_utils.soul_nullifier.enabled": "Nullificatore delle Anime attivato",
   "message.iska_utils.soul_nullifier.disabled": "Nullificatore delle Anime disattivato",
+  "tooltip.iska_utils.wither_proof": "Resiliente al Wither",
   "tooltip.iska_utils.ender_nullifier.effect": "Blocca i teletrasporti dei mob",
   "tooltip.iska_utils.ender_nullifier.radius": "Raggio: %s blocchi",
   "tooltip.iska_utils.wander_nullifier.effect": "Blocca lo spawn del mercante ambulante",

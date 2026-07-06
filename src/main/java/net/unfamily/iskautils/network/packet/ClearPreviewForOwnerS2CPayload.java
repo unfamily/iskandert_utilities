@@ -2,15 +2,22 @@ package net.unfamily.iskautils.network.packet;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.client.ClientEvents;
+import net.unfamily.iskautils.client.MachinePreviewTracker;
 
 /** S2C: clear footprint preview markers for one owner block only. */
-public record ClearPreviewForOwnerS2CPayload(BlockPos owner) implements CustomPacketPayload {
+public record ClearPreviewForOwnerS2CPayload(BlockPos owner, boolean deactivate, int footprintGeneration)
+        implements CustomPacketPayload {
+
+    public ClearPreviewForOwnerS2CPayload(BlockPos owner) {
+        this(owner, true, 0);
+    }
 
     public static final Type<ClearPreviewForOwnerS2CPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "clear_preview_for_owner"));
@@ -18,6 +25,10 @@ public record ClearPreviewForOwnerS2CPayload(BlockPos owner) implements CustomPa
     public static final StreamCodec<FriendlyByteBuf, ClearPreviewForOwnerS2CPayload> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC,
             ClearPreviewForOwnerS2CPayload::owner,
+            ByteBufCodecs.BOOL,
+            ClearPreviewForOwnerS2CPayload::deactivate,
+            ByteBufCodecs.VAR_INT,
+            ClearPreviewForOwnerS2CPayload::footprintGeneration,
             ClearPreviewForOwnerS2CPayload::new
     );
 
@@ -27,6 +38,13 @@ public record ClearPreviewForOwnerS2CPayload(BlockPos owner) implements CustomPa
     }
 
     public static void handle(ClearPreviewForOwnerS2CPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientEvents.handleClearPreviewForOwner(payload.owner()));
+        context.enqueueWork(() -> {
+            if (payload.deactivate()) {
+                MachinePreviewTracker.deactivateOwner(payload.owner());
+                ClientEvents.handleClearPreviewForOwner(payload.owner());
+            } else {
+                MachinePreviewTracker.applyFootprintClear(payload.owner(), payload.footprintGeneration());
+            }
+        });
     }
 }

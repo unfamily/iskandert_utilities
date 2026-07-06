@@ -20,6 +20,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.BlockItem;
 import net.unfamily.iskalib.client.marker.MarkRenderer;
+import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.network.packet.StructurePlacerGuiOpenC2SPacket;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
@@ -141,7 +142,7 @@ public class StructurePlacerItem extends Item {
      */
     private void showDetailedPreview(ServerPlayer player, BlockPos centerPos, StructureDefinition structure, ItemStack stack) {
         // Remove previous markers if they exist
-        clearPreviousMarkers(player, stack);
+        // Markers from a previous preview expire automatically (~5s).
         
         // Calculate structure block positions
         Map<BlockPos, String> blockPositions = calculateStructurePositions(centerPos, structure, stack);
@@ -157,16 +158,13 @@ public class StructurePlacerItem extends Item {
         
         for (Map.Entry<BlockPos, String> entry : blockPositions.entrySet()) {
             BlockPos blockPos = entry.getKey();
-            BlockState currentState = player.level().getBlockState(blockPos);
-            
-            if (canReplaceBlock(currentState, structure)) {
-                // Empty/replaceable space: blue marker at block position (5 seconds, no text)
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, PREVIEW_COLOR, 100); // 5 seconds
-                blueMarkers++;
-            } else {
-                // Occupied space: red marker at block position (5 seconds, no text)
-                MarkRenderer.getInstance().addBillboardMarker(blockPos, CONFLICT_COLOR, 100); // 5 seconds
+            int color = net.unfamily.iskautils.util.preview.MachinePreviewMarkerLogic.resolveStructureCellColor(
+                    player.level(), blockPos, structure);
+            ModMessages.sendEphemeralPreviewMarker(player, blockPos, color, 100);
+            if (color == CONFLICT_COLOR) {
                 redMarkers++;
+            } else {
+                blueMarkers++;
             }
         }
         
@@ -1152,11 +1150,6 @@ public class StructurePlacerItem extends Item {
     /**
      * Remove previous markers
      */
-    private void clearPreviousMarkers(ServerPlayer player, ItemStack stack) {
-        // Markers expire automatically, but we could implement explicit removal
-        // if needed in the future
-    }
-    
     /**
      * Shows a formatted message of missing materials
      */

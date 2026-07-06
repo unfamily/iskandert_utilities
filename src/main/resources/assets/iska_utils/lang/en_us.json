@@ -507,6 +507,7 @@
   "message.iska_utils.wander_nullifier.disabled": "Wander Nullifier disabled",
   "message.iska_utils.soul_nullifier.enabled": "Soul Nullifier enabled",
   "message.iska_utils.soul_nullifier.disabled": "Soul Nullifier disabled",
+  "tooltip.iska_utils.wither_proof": "Wither proof",
   "tooltip.iska_utils.ender_nullifier.effect": "Blocks mob teleports",
   "tooltip.iska_utils.ender_nullifier.radius": "Range: %s blocks",
   "tooltip.iska_utils.wander_nullifier.effect": "Blocks wandering trader spawns",

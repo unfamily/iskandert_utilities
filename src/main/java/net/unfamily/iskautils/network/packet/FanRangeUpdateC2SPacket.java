@@ -1,9 +1,11 @@
 package net.unfamily.iskautils.network.packet;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.FanBlockEntity;
+import net.unfamily.iskautils.util.FanPreview;
 
 /**
  * Packet to update fan range parameters
@@ -101,8 +103,12 @@ public class FanRangeUpdateC2SPacket {
         
         // Mark the BlockEntity as changed
         fan.setChanged();
-        
-        // Update the client
-        player.level().sendBlockUpdated(pos, blockEntity.getBlockState(), blockEntity.getBlockState(), 3);
+
+        if (player.level() instanceof ServerLevel level) {
+            level.sendBlockUpdated(pos, blockEntity.getBlockState(), blockEntity.getBlockState(), 3);
+            if (fan.isShowAreaEnabled()) {
+                FanPreview.sendFootprint(player, level, pos, fan);
+            }
+        }
     }
 }

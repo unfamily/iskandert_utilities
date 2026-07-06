@@ -482,6 +482,16 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         tag.put("Modules", moduleHandler.serializeNBT(registries));
     }
 
+    @Override
+    public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
+    }
+
     // Tick method to push entities
     public static void tick(Level level, BlockPos pos, BlockState state, FanBlockEntity blockEntity) {
         if (level.isClientSide) {

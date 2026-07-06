@@ -23,17 +23,10 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadScheduler;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.fml.ModList;
-import guideme.Guide;
-import guideme.GuideItemSettings;
-import guideme.compiler.TagCompiler;
-import net.minecraft.ChatFormatting;
-import java.util.List;
-import java.util.Optional;
-import net.unfamily.iskautils.guide.TheRootsNavigationIndex;
-import net.unfamily.iskautils.guide.TheRootsTitleTagCompiler;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.ClientEvents;
+import net.unfamily.iskautils.client.GuideMeRegistration;
 import net.unfamily.iskautils.command.CommandItemLoader;
 import net.unfamily.iskautils.data.VectorCharmData;
 import net.unfamily.iskautils.events.LootEvents;
@@ -90,7 +83,7 @@ public class IskaUtils {
             // Register GUI MenuTypes (client-only)
             net.unfamily.iskautils.client.gui.ModMenuTypes.MENUS.register(modEventBus);
 
-            registerGuideMeGuide();
+            GuideMeRegistration.register();
         }
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
@@ -261,27 +254,6 @@ public class IskaUtils {
         Runtime.getRuntime().addShutdownHook(new Thread(ClientEvents::shutdown));
 
         // Register custom GUI screens - will be done in ClientModEvents
-    }
-
-    private static void registerGuideMeGuide() {
-        if (!ModList.get().isLoaded("guideme")) {
-            return;
-        }
-        try {
-            var guideItemSettings = new GuideItemSettings(
-                    Optional.of(Component.translatable("item.iska_utils.guide")),
-                    List.of(Component.translatable("tooltip.iska_utils.guide.line0")
-                            .withStyle(ChatFormatting.DARK_GRAY)),
-                    Optional.empty());
-            Guide.builder(ResourceLocation.fromNamespaceAndPath(MOD_ID, "guide"))
-                    .itemSettings(guideItemSettings)
-                    .extension(TagCompiler.EXTENSION_POINT, new TheRootsTitleTagCompiler())
-                    .index(new TheRootsNavigationIndex())
-                    .build();
-            LOGGER.info("GuideME guide registered");
-        } catch (Exception e) {
-            LOGGER.error("Failed to register GuideME guide", e);
-        }
     }
 
     // Add the example block item to the building blocks tab

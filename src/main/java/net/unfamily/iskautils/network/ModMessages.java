@@ -22,6 +22,7 @@ import net.unfamily.iskautils.network.packet.VectorCharmC2SPacket;
 import net.unfamily.iskautils.network.packet.PortableDislocatorC2SPacket;
 import net.unfamily.iskautils.network.packet.ClearPreviewForOwnerS2CPayload;
 import net.unfamily.iskautils.network.packet.PreviewMarkerS2CPayload;
+import net.unfamily.iskautils.network.MachinePreviewNetworking;
 import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
 import net.unfamily.iskautils.network.packet.TemporalOverclockerHighlightBlockC2SPacket;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -616,12 +617,34 @@ public class ModMessages {
 
     /** S2C: footprint preview marker owned by a machine block (toggle only). */
     public static void sendPreviewMarker(ServerPlayer player, BlockPos builderOrigin, BlockPos pos, int color, int durationTicks) {
-        PacketDistributor.sendToPlayer(player, new PreviewMarkerS2CPayload(builderOrigin, pos, color, durationTicks));
+        sendPreviewMarker(player, builderOrigin, pos, color, durationTicks, 0);
     }
 
-    /** S2C: clear footprint preview markers for one builder (toggle off only). */
+    public static void sendPreviewMarker(
+            ServerPlayer player, BlockPos builderOrigin, BlockPos pos, int color, int durationTicks, int footprintGeneration) {
+        PacketDistributor.sendToPlayer(player,
+                new PreviewMarkerS2CPayload(builderOrigin, pos, color, durationTicks, footprintGeneration));
+    }
+
+    /** S2C: clear footprint preview markers for one builder (toggle off). */
     public static void clearPreviewForBuilder(ServerPlayer player, BlockPos builderOrigin) {
-        PacketDistributor.sendToPlayer(player, new ClearPreviewForOwnerS2CPayload(builderOrigin));
+        clearPreviewForBuilder(player, builderOrigin, true, 0);
+    }
+
+    public static void clearPreviewForBuilder(
+            ServerPlayer player, BlockPos builderOrigin, boolean deactivate, int footprintGeneration) {
+        PacketDistributor.sendToPlayer(player,
+                new ClearPreviewForOwnerS2CPayload(builderOrigin, deactivate, footprintGeneration));
+    }
+
+    /** S2C: short-lived structure placer item preview marker (not machine-owned). */
+    public static void sendEphemeralPreviewMarker(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
+        PacketDistributor.sendToPlayer(player, new PreviewMarkerS2CPayload(
+                BlockPos.ZERO,
+                pos,
+                color,
+                durationTicks,
+                PreviewMarkerS2CPayload.EPHEMERAL_FOOTPRINT_GENERATION));
     }
 
     public static void sendAddBillboardPacket(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
@@ -1009,67 +1032,12 @@ public class ModMessages {
         if (structure == null) {
             return;
         }
-
-        String[][][][] pattern = structure.getPattern();
-        if (pattern == null || pattern.length == 0) {
-            return;
-        }
-
-        // Find structure center
-        BlockPos center = structure.findCenter();
-        if (center == null) center = new BlockPos(0, 0, 0);
-
-        int duration = 0; // no expiry until preview is toggled off
-
-        // Iterate through structure pattern [Y][X][Z][characters]
-        for (int y = 0; y < pattern.length; y++) {
-            for (int x = 0; x < pattern[y].length; x++) {
-                for (int z = 0; z < pattern[y][x].length; z++) {
-                    String[] cellChars = pattern[y][x][z];
-                    
-                    if (cellChars != null) {
-                        for (int charIndex = 0; charIndex < cellChars.length; charIndex++) {
-                            String patternChar = cellChars[charIndex];
-                            
-                            // Skip empty spaces
-                            if (patternChar == null || patternChar.equals(" ")) continue;
-                            
-                            // If it's @, check if it's defined in the key
-                            if (patternChar.equals("@")) {
-                                Map<String, List<StructureDefinition.BlockDefinition>> key = structure.getKey();
-                                if (key == null || !key.containsKey("@")) {
-                                    // @ is not defined in key, treat as empty space
-                                    continue;
-                                }
-                                // If we get here, @ is defined in key, so process as normal block
-                            }
-
-                            // Calculate effective Z position
-                            int effectiveZ = z * cellChars.length + charIndex;
-                            
-                            // Calculate offset from center
-                            int offsetX = x - center.getX();
-                            int offsetY = y - center.getY(); 
-                            int offsetZ = effectiveZ - center.getZ();
-                            
-                            // Apply rotation
-                            BlockPos rotatedOffset = applyRotation(offsetX, offsetY, offsetZ, rotation);
-                            
-                            // Calculate final position in world (shifted +1 in Y to avoid conflicts with machine)
-                            BlockPos finalPos = machinePos.offset(rotatedOffset.getX(), rotatedOffset.getY() + 1, rotatedOffset.getZ());
-                            
-                            // Check for conflicts
-                            boolean hasConflict = !world.getBlockState(finalPos).canBeReplaced();
-                              
-                            // Use colors for markers: same colors as items
-                            int markerColor = hasConflict ? 0x80FF4444 : 0x804444FF; // Red and blue like items
-                            
-                            sendPreviewMarker(player, machinePos, finalPos, markerColor, duration);
-                        }
-                    }
-                }
-            }
-        }
+        int generation = net.unfamily.iskautils.util.preview.MachinePreviewServerTracker.nextFootprintGeneration(machinePos);
+        MachinePreviewNetworking.clearClientPreview(player, machinePos, generation);
+        int duration = 0;
+        net.unfamily.iskautils.util.preview.MachinePreviewMarkerLogic.forEachStructurePlacerMarker(
+                world, machinePos, structure, rotation,
+                (worldPos, color) -> sendPreviewMarker(player, machinePos, worldPos, color, duration, generation));
     }
     
     /**

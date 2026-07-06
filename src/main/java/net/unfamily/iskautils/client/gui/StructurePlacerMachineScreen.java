@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.core.BlockPos;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
-import net.unfamily.iskalib.client.marker.MarkRenderer;
+import net.unfamily.iskautils.client.MachinePreviewTracker;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
 import net.minecraft.world.item.ItemStack;
@@ -94,7 +94,16 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
      * Updates button states and text based on current synced data
      */
     private void updateButtonStates() {
-        if (menu.isShowPreview() != previewButtonShowsHide) {
+        boolean hasStructure = hasStructureSelected();
+        if (showButton != null) {
+            showButton.active = hasStructure;
+        }
+
+        if (!hasStructure) {
+            if (menu.isShowPreview() || previewButtonShowsHide) {
+                turnPreviewOff();
+            }
+        } else if (menu.isShowPreview() != previewButtonShowsHide) {
             previewButtonShowsHide = menu.isShowPreview();
             updatePreviewButtonLabel();
         }
@@ -215,13 +224,16 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     }
     
     private void togglePreview() {
+        if (!hasStructureSelected()) {
+            return;
+        }
         BlockPos machinePos = resolveMachinePos();
         if (machinePos.equals(BlockPos.ZERO)) {
             return;
         }
         playButtonSound();
         boolean enabling = !menu.isShowPreview();
-        MarkRenderer.getInstance().clearBillboardMarkersForOwner(machinePos);
+        MachinePreviewTracker.setPreviewActive(machinePos, enabling);
         PacketDistributor.sendToServer(new StructurePlacerMachineTogglePreviewC2SPacket(machinePos, enabling));
         previewButtonShowsHide = enabling;
         updatePreviewButtonLabel();
@@ -248,6 +260,23 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                             ? "gui.iska_utils.generic.hide"
                             : "gui.iska_utils.generic.show"));
         }
+    }
+
+    private boolean hasStructureSelected() {
+        String structureId = menu.getCachedSelectedStructure();
+        return structureId != null && !structureId.isEmpty();
+    }
+
+    private void turnPreviewOff() {
+        BlockPos machinePos = resolveMachinePos();
+        if (!machinePos.equals(BlockPos.ZERO)) {
+            MachinePreviewTracker.setPreviewActive(machinePos, false);
+            if (menu.isShowPreview()) {
+                PacketDistributor.sendToServer(
+                        new StructurePlacerMachineTogglePreviewC2SPacket(machinePos, false));
+            }
+        }
+        previewButtonShowsHide = false;
     }
     
     private void onRotatePressed() {

@@ -46,6 +46,15 @@ public record StructurePlacerMachineTogglePreviewC2SPacket(BlockPos pos, boolean
                 return;
             }
             if (packet.enable()) {
+                String structureId = machine.getSelectedStructure();
+                if (structureId == null || structureId.isEmpty()) {
+                    if (machine.isShowPreview()) {
+                        machine.setShowPreview(false);
+                        machine.setChanged();
+                        ModMessages.clearPreviewForBuilder(player, packet.pos());
+                    }
+                    return;
+                }
                 machine.setShowPreview(true);
                 machine.setChanged();
                 ModMessages.sendStructurePlacerMachineFootprint(player, level, packet.pos(), machine);
