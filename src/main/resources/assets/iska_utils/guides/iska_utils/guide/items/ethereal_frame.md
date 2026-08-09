@@ -34,7 +34,7 @@ The **Ethereal Frame** is an advanced filter block that controls **which entity 
 
 ## Durability
 
-By default the frame is **wood-like** (not wither / blast proof). It can be **reinforced** with materials such as <ItemImage id="iska_utils:wither_proof_block" /> **Wither Proof Block** or Obscure Glass so the connected network becomes wither-proof like those blocks. Breaking a reinforced frame returns the reinforcement material (and camouflage if any).
+By default the frame is **wood-like** (not wither / blast proof). It can be **reinforced** with materials such as <ItemImage id="iska_utils:wither_proof_block" /> **Wither Proof Block**, Obscure Glass, Ethereal Obscure Glass, or Netherite Bars (`#c:bars/netherite`) so the connected network becomes wither-proof like those blocks. Breaking a reinforced frame returns the reinforcement material (and camouflage if any).
 
 ## Camouflage
 
