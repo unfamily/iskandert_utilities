@@ -9,7 +9,7 @@ categories:
 ---
 # Materials
 
-Crafting intermediates and processed materials used across the mod.
+Intermediates and processed materials used across the mod.
 
 
 <SubPages icons={true} alphabetical={true} />

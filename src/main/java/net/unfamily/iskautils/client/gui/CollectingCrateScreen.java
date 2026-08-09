@@ -10,20 +10,24 @@ import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPosition
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskalib.client.marker.AreaBorderRenderer;
 import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.network.packet.CollectingCratePreviewToggleC2SPacket;
 import net.unfamily.iskautils.network.packet.CollectingCrateSizeC2SPacket;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.CollectingCrateAreaLogic;
 import net.unfamily.iskautils.util.CollectingCrateMode;
 import net.unfamily.iskautils.util.ExperienceFluidMath;
 import org.lwjgl.glfw.GLFW;
@@ -119,7 +123,7 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         addRenderableWidget(buttonDepth);
         addRenderableWidget(buttonRight);
 
-        buttonPreview = Button.builder(Component.translatable("gui.iska_utils.collecting_crate.preview"), b -> togglePreview())
+        buttonPreview = Button.builder(Component.translatable("gui.iska_utils.generic.show"), b -> togglePreview())
                 .bounds(leftPos + PREVIEW_BUTTON_X, topPos + PREVIEW_BUTTON_Y, PREVIEW_BUTTON_W, BUTTON_H)
                 .build();
         buttonPreview.setTooltip(Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.preview.tooltip")));
@@ -145,12 +149,17 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
             previewButtonShowsHide = menu.isPreviewEnabled();
             updatePreviewButtonLabel();
         }
+        if (previewButtonShowsHide) {
+            refreshAreaBorder();
+        } else {
+            clearAreaBorder();
+        }
     }
 
     private void updatePreviewButtonLabel() {
         if (buttonPreview != null) {
             buttonPreview.setMessage(Component.translatable(
-                    previewButtonShowsHide ? "gui.iska_utils.generic.hide" : "gui.iska_utils.collecting_crate.preview"));
+                    previewButtonShowsHide ? "gui.iska_utils.generic.hide" : "gui.iska_utils.generic.show"));
         }
     }
 
@@ -263,6 +272,55 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         ClientPacketDistributor.sendToServer(new CollectingCratePreviewToggleC2SPacket(pos, enabling));
         previewButtonShowsHide = enabling;
         updatePreviewButtonLabel();
+        if (enabling) {
+            refreshAreaBorder();
+        } else {
+            clearAreaBorder();
+        }
+    }
+
+    private void refreshAreaBorder() {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        Direction facing = menu.getFacing();
+        if (minecraft != null && minecraft.level != null) {
+            var state = minecraft.level.getBlockState(pos);
+            if (state.hasProperty(HorizontalDirectionalBlock.FACING)) {
+                facing = state.getValue(HorizontalDirectionalBlock.FACING);
+            }
+        }
+        BlockPos[] corners = CollectingCrateAreaLogic.getCollectionVolumeCorners(
+                pos,
+                facing,
+                menu.getSizeLeft(),
+                menu.getSizeRight(),
+                menu.getSizeHeight(),
+                menu.getSizeDepth());
+        AreaBorderRenderer.getInstance().showArea(
+                areaBorderKey(pos),
+                corners[0],
+                corners[1],
+                AreaBorderRenderer.DEFAULT_MACHINE_COLOR,
+                0);
+    }
+
+    private void clearAreaBorder() {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (!pos.equals(BlockPos.ZERO)) {
+            AreaBorderRenderer.getInstance().clearArea(areaBorderKey(pos));
+        }
+    }
+
+    private static Object areaBorderKey(BlockPos pos) {
+        return "collecting_crate_area_" + pos.toShortString();
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        // Keep area border visible after GUI close while preview is enabled.
     }
 
     private void drawCenteredText(GuiGraphicsExtractor guiGraphics, Component text, int centerX, int y, int color) {

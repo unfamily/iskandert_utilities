@@ -17,7 +17,7 @@ Use <ItemImage id="iska_utils:druidic_agglomeration" /> **Druidic Agglomeration*
 
 ## Behavior
 
-- In **light**, **each** podzol block runs its own spawn timer for **biome animals** (configurable allow/deny). Animals above the configured max HP (default **60**) are skipped.
+- In **light**, **each** podzol block runs its own spawn timer for **biome animals**. Very tough animals are skipped.
 - In **darkness**, the block does **nothing** — no spawns, **no** block change (unlike Entropic Soil → Entropic Dirt).
 - **Redstone** on a **connected patch** (one clock on the edge is enough) switches every lit podzol in that patch to fast spawn timers (like Mob Grinding Utils delightful dirt): each valid tile tries on its own **20–60 tick** cooldown (max **8** animals nearby per block). Neighbor updates refresh the patch flag and can trigger an immediate attempt.
 

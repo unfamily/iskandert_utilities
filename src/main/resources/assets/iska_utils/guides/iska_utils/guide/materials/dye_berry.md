@@ -20,5 +20,5 @@ categories:
 
 ## Uses
 
-- Craft vanilla and Dyenamics dyes at a crafting table or **Factory** (see JEI for color mappings).
+- Used to make vanilla and Dyenamics dyes at a crafting table or **Factory**.
 - Edible, but not very appetizing.

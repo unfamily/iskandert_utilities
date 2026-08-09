@@ -1,14 +1,14 @@
 package net.unfamily.iskautils.block;
 
 import com.mojang.serialization.MapCodec;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -30,7 +30,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.block.entity.SoulNullifierBlockEntity;
-import net.unfamily.iskautils.block.entity.EnderNullifierRedstoneMode;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import org.jetbrains.annotations.Nullable;
 
@@ -110,6 +109,14 @@ public class SoulNullifierBlock extends DirectionalBlock implements EntityBlock 
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof SoulNullifierBlockEntity nullifier) {
             nullifier.clearSpatialIndex();
+            var handler = nullifier.getModuleHandler();
+            for (int i = 0; i < handler.getSlots(); i++) {
+                var stack = handler.getStackInSlot(i);
+                if (!stack.isEmpty()) {
+                    Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
+                    handler.setStackInSlot(i, net.minecraft.world.item.ItemStack.EMPTY);
+                }
+            }
         }
         super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
@@ -159,39 +166,23 @@ public class SoulNullifierBlock extends DirectionalBlock implements EntityBlock 
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (level.isClientSide()) {
-            return InteractionResult.SUCCESS;
-        }
-
+        if (level.isClientSide()) return InteractionResult.SUCCESS;
+        if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.PASS;
         BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (!(blockEntity instanceof SoulNullifierBlockEntity nullifier)) {
-            return InteractionResult.PASS;
-        }
-
-        level.playSound(null, pos, SoundEvents.STONE_BUTTON_CLICK_OFF, SoundSource.BLOCKS, 0.4F, 1.0F);
-
+        if (!(blockEntity instanceof SoulNullifierBlockEntity nullifier)) return InteractionResult.PASS;
         if (player.isShiftKeyDown()) {
-            nullifier.cycleRedstoneMode(level, pos, level.getBlockState(pos));
-            EnderNullifierRedstoneMode mode = nullifier.getRedstoneMode();
-            Component modeName = switch (mode) {
-                case MANUAL -> Component.translatable("gui.iska_utils.generic.redstone_mode.manual");
-                case LOW -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
-                case HIGH -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
-            };
-            if (player instanceof ServerPlayer serverPlayer) {
-                serverPlayer.connection.send(new ClientboundSystemChatPacket(
-                        Component.translatable("gui.iska_utils.generic.redstone_mode", modeName), true));
-            }
+            nullifier.toggleManualEnabled(level, pos, state);
+            level.playSound(null, pos,
+                    nullifier.isManualEnabled() ? SoundEvents.STONE_BUTTON_CLICK_ON : SoundEvents.STONE_BUTTON_CLICK_OFF,
+                    SoundSource.BLOCKS, 0.4F, 1.0F);
+            serverPlayer.sendSystemMessage(
+                    nullifier.isManualEnabled()
+                            ? Component.translatable("message.iska_utils.soul_nullifier.enabled").withStyle(ChatFormatting.GREEN)
+                            : Component.translatable("message.iska_utils.soul_nullifier.disabled").withStyle(ChatFormatting.RED),
+                    true);
             return InteractionResult.CONSUME;
         }
-
-        nullifier.toggleManualEnabled(level, pos, level.getBlockState(pos));
-        Component message = nullifier.isManualEnabled()
-                ? Component.translatable("message.iska_utils.soul_nullifier.enabled").withStyle(ChatFormatting.GREEN)
-                : Component.translatable("message.iska_utils.soul_nullifier.disabled").withStyle(ChatFormatting.RED);
-        if (player instanceof ServerPlayer serverPlayer) {
-            serverPlayer.connection.send(new ClientboundSystemChatPacket(message, true));
-        }
+        serverPlayer.openMenu(nullifier, pos);
         return InteractionResult.CONSUME;
     }
 

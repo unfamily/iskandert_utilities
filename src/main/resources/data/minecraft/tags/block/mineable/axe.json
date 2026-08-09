@@ -27,6 +27,7 @@
     "iska_utils:raft",
     "iska_utils:raft_no_drop",
     "iska_utils:collecting_crate",
-    "iska_utils:the_deception"
+    "iska_utils:the_deception",
+    "iska_utils:ethereal_frame"
   ]
 } 

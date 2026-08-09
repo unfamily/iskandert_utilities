@@ -17,7 +17,7 @@ categories:
 
 ## What it does
 
-- Pushes or pulls entities in a configurable box; upgrade with **Fan modules** in the GUI.
+- Pushes or pulls entities in a box sized in the GUI; upgrade with **Fan modules**.
 
 ## GUI
 

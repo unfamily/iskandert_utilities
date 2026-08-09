@@ -88,6 +88,12 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.TemporalOverclockerTogglePersistentC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.TemporalOverclockerTogglePersistentC2SPacket::handle
         );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.TemporalOverclockerShowAreaC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.TemporalOverclockerShowAreaC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.TemporalOverclockerShowAreaC2SPacket::handle
+        );
         
         // Register Fan Redstone Mode C2S Packet (Client to Server)
         registrar.playToServer(
@@ -206,6 +212,26 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket::handle
+        );
+
+        // Ethereal Frame filter update
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.EtherealFrameFilterUpdateC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.EtherealFrameFilterUpdateC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.EtherealFrameFilterUpdateC2SPacket::handle
+        );
+
+        // Ethereal Frame mode toggle
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.EtherealFrameModeToggleC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.EtherealFrameModeToggleC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.EtherealFrameModeToggleC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.EtherealFrameLightToggleC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.EtherealFrameLightToggleC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.EtherealFrameLightToggleC2SPacket::handle
         );
         
         // Register Fan Show Area C2S Packet (Client to Server)
@@ -337,6 +363,30 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.NullifierRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.NullifierRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.NullifierRedstoneModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.NullifierRangeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.NullifierRangeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.NullifierRangeC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.NullifierShowAreaC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.NullifierShowAreaC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.NullifierShowAreaC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.LabelingMachineRenameC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.LabelingMachineRenameC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.LabelingMachineRenameC2SPacket::handle
         );
 
         registrar.playToServer(
@@ -856,8 +906,6 @@ public class ModMessages {
             return;
         }
         showStructurePreview(world, machinePos, player, structure, machine.getRotation());
-        String structureName = structure.getName() != null ? structure.getName() : structure.getId();
-        player.sendOverlayMessage(net.minecraft.network.chat.Component.literal("§bShowing preview: §f" + structureName));
     }
 
     /**
@@ -1342,9 +1390,9 @@ public class ModMessages {
      * Sends a Gauntlet of Climbing toggle packet to the server
      * This toggles the climbing ability on/off
      */
-    public static void sendGauntletClimbingTogglePacket() {
+    public static void sendGauntletClimbingTogglePacket(boolean enabled) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket());
+                new net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket(enabled));
     }
 
     /**
@@ -1961,6 +2009,22 @@ public class ModMessages {
     public static void sendCollectingCratePreviewTogglePacket(BlockPos pos, boolean enable) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.CollectingCratePreviewToggleC2SPacket(pos, enable));
+    }
+
+    public static void sendEtherealFrameFilterUpdatePacket(BlockPos pos, java.util.List<String> entityTypeIds) {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.EtherealFrameFilterUpdateC2SPacket(pos,
+                        entityTypeIds != null ? new java.util.ArrayList<>(entityTypeIds) : new java.util.ArrayList<>()));
+    }
+
+    public static void sendEtherealFrameModeTogglePacket(BlockPos pos) {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.EtherealFrameModeToggleC2SPacket(pos));
+    }
+
+    public static void sendEtherealFrameLightTogglePacket(BlockPos pos) {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.EtherealFrameLightToggleC2SPacket(pos));
     }
     
 } 

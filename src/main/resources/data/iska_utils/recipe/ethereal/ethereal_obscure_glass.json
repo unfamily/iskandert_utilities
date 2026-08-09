@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BAB",
+    "ACA",
+    "BAB"
+  ],
+  "key": {
+    "A": "iska_utils:obscure_glass",
+    "B": "iska_utils:green_sludge",
+    "C": "#c:gems/lapis"
+  },
+  "result": {
+    "id": "iska_utils:ethereal_obscure_glass",
+    "count": 4
+  }
+}

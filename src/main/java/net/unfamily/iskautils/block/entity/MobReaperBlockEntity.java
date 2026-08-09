@@ -269,6 +269,12 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
         return moduleHandler.getStackInSlot(0).is(ModItems.LETHAL_DAMAGE_MODULE.get());
     }
 
+    /** True when an enchant module is installed and has at least one enchantment. */
+    public boolean isEnchantModuleActive() {
+        ItemStack weapon = getEnchantWeaponStack();
+        return !weapon.isEmpty() && EnchantmentHelper.hasAnyEnchantments(weapon);
+    }
+
     public int getNormalModuleCount() {
         ItemStack stack = moduleHandler.getStackInSlot(0);
         if (stack.is(ModItems.NORMAL_DAMAGE_MODULE.get())) {

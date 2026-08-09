@@ -188,6 +188,10 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("blazing_altar",
                     () -> new BlockEntityType<>(BlazingAltarBlockEntity::new, ModBlocks.BLAZING_ALTAR.get()));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EtherealFrameBlockEntity>> ETHEREAL_FRAME_BE =
+            BLOCK_ENTITIES.register("ethereal_frame",
+                    () -> new BlockEntityType<>(EtherealFrameBlockEntity::new, ModBlocks.ETHEREAL_FRAME.get()));
+
     /**
      * Registra tutte le entità blocco
      */

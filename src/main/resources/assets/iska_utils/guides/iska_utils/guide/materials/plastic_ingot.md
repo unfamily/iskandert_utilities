@@ -16,8 +16,8 @@ categories:
 ## Obtaining
 
 - Blast **Rubber Chunks** in a blast furnace (or compatible processing).
-- Break down **Plastic Block** or **Plastic Bricks** in a crafting table.
+- Obtained from **Plastic Block** or **Plastic Bricks**.
 
 ## Uses
 
-- Higher-tier components such as **Dollies**, plastic building blocks, and other advanced recipes.
+- Higher-tier components such as **Dollies** and plastic building blocks.

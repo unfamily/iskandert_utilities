@@ -27,13 +27,13 @@ Increases **max health**: a **base bonus** plus extra max HP for **each other en
 
 <ItemImage id="iska_utils:entropic_chestplate" />
 
-Grants **armor toughness** from **missing health**: divide HP you are missing by a step size (default **7**), then add toughness per step (default **+1**). At 50/100 HP → 50 missing → 50÷7 ≈ **7** toughness.
+Grants **armor toughness** from **missing health**: the more HP you are missing, the more toughness you gain (in steps).
 
 ## Leggings
 
 <ItemImage id="iska_utils:entropic_leggings" />
 
-Grants **armor** from **missing health** with a smaller step (default **3**). At 50/100 HP → 50÷3 ≈ **16** armor.
+Grants **armor** from **missing health** with smaller steps than the chestplate.
 
 ## Boots
 

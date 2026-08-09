@@ -4,14 +4,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.Config;
@@ -22,6 +19,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Gauntlet of Climbing - Allows player to climb walls when held in inventory.
  * Toggle state is in-memory per player UUID (same model as {@link BurningBrazierItem} auto-placement).
+ * Movement is applied on the client every tick; the server keeps the same toggle for consistency.
  */
 public class GauntletOfClimbingItem extends Item {
     private static final double DEFAULT_CLIMB_SPEED = 0.15D;
@@ -43,13 +41,17 @@ public class GauntletOfClimbingItem extends Item {
         return isClimbingEnabled(player.getUUID());
     }
 
+    public static void setClimbingEnabled(UUID playerId, boolean enabled) {
+        CLIMBING_ENABLED_BY_PLAYER.put(playerId, enabled);
+    }
+
     /**
      * Toggles climbing for the player; returns the new enabled state.
      */
     public static boolean toggleClimbing(ServerPlayer player) {
         UUID id = player.getUUID();
         boolean next = !isClimbingEnabled(id);
-        CLIMBING_ENABLED_BY_PLAYER.put(id, next);
+        setClimbingEnabled(id, next);
         return next;
     }
 
@@ -58,6 +60,7 @@ public class GauntletOfClimbingItem extends Item {
         return speed > 0.0 ? speed : DEFAULT_CLIMB_SPEED;
     }
 
+    /** Applies wall-climb motion when enabled and colliding horizontally. */
     public static void tickEquipped(Player player) {
         if (!isClimbingEnabled(player.getUUID())) {
             return;
@@ -91,7 +94,7 @@ public class GauntletOfClimbingItem extends Item {
         tooltip.accept(Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.desc"));
         tooltip.accept(Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.toggle", keybindName));
 
-        boolean on = true;
+        boolean on = isClimbingEnabled(net.unfamily.iskautils.util.ClientPlayerAccess.getLocalPlayer());
         tooltip.accept(
                 Component.translatable("tooltip.iska_utils.gauntlet_of_climbing.status." + (on ? "enabled" : "disabled"))
                         .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.RED));

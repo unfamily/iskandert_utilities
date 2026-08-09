@@ -37,13 +37,14 @@ public final class CurioBackedItemTickHandler {
             return;
         }
 
-        if (!ArtifactTickIntervals.isDue(level.getGameTime(), ArtifactTickIntervals.FAST_TICKS)) {
-            return;
-        }
-
+        // Climbing must run every tick; other Curio-backed artifacts use FAST_TICKS.
         ItemStack gauntlet = CurioEquipUtil.findActiveStack(sp, ModItems.GAUNTLET_OF_CLIMBING.get());
         if (!gauntlet.isEmpty()) {
             GauntletOfClimbingItem.tickEquipped(sp);
+        }
+
+        if (!ArtifactTickIntervals.isDue(level.getGameTime(), ArtifactTickIntervals.FAST_TICKS)) {
+            return;
         }
 
         ItemStack brazier = CurioEquipUtil.findActiveStack(sp, ModItems.BURNING_BRAZIER.get());

@@ -21,10 +21,10 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.BlazingAltarSpawnMode;
+import net.unfamily.iskautils.client.BlazingAltarAreaPreview;
 import net.unfamily.iskautils.client.FlameVisibilityClient;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.packet.BlazingAltarConfigC2SPacket;
-import net.unfamily.iskautils.network.packet.FlameVisionToggleC2SPacket;
 
 import java.util.List;
 
@@ -50,18 +50,25 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
     private static final int ROW_BTN_GAP = 2;
     private static final int GROUND_BTN_X = 8;
     private static final int VISION_BTN_X = GUI_WIDTH - 8 - BTN;
-    /** Same X columns as ground / vision; on the slot row, 1px above previous side-btn Y. */
-    private static final int REDSTONE_BTN_X = GROUND_BTN_X;
-    private static final int SPAWN_BTN_X = VISION_BTN_X;
+    /**
+     * Nullifier-style redstone control, mirrored opposite the range-module slot
+     * (module on the left → redstone on the right edge of the slot row).
+     */
+    private static final int REDSTONE_BTN_X = VISION_BTN_X;
+    private static final int SPAWN_BTN_X = REDSTONE_BTN_X - BTN - ROW_BTN_GAP;
     private static final int EXTINGUISH_BTN_X = SPAWN_BTN_X - BTN - ROW_BTN_GAP;
     private static final int SLOT_SIDE_BTN_Y = ROW_SLOT_Y - 1;
 
     /** Last button row: 2px gap above player inventory (inv starts at {@link BlazingAltarMenu#PLAYER_INV_Y}). */
     private static final int CHUNK_ROW_Y = BlazingAltarMenu.PLAYER_INV_Y - BTN - 2;
-    /** Shared line above the chunk/range button row (illumination or removal progress). */
-    private static final int CHUNK_PROGRESS_Y = CHUNK_ROW_Y - 9;
+    private static final int SHOW_BTN_H = 12;
+    private static final int SHOW_BTN_W = 36;
+    private static final int SHOW_BTN_Y = CHUNK_ROW_Y - SHOW_BTN_H - 2;
+    /** Progress under the title so it does not collide with Show. */
+    private static final int CHUNK_PROGRESS_Y = 20;
     private static final int CHUNK_RANGE_BTN_X = GROUND_BTN_X + BTN + ROW_BTN_GAP;
     private static final int CHUNK_RANGE_BTN_WIDTH = VISION_BTN_X - CHUNK_RANGE_BTN_X - ROW_BTN_GAP;
+    private static final int SHOW_BTN_X = CHUNK_RANGE_BTN_X + (CHUNK_RANGE_BTN_WIDTH - SHOW_BTN_W) / 2;
 
     private static final String TOOLTIP_RIGHT_CLICK_BACK = "gui.iska_utils.blazing_altar.tooltip.right_click_back";
 
@@ -75,10 +82,13 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
     private ItemIconButton spawnModeButton;
     private ItemIconButton extinguishButton;
     private Button chunkRangeButton;
+    private Button showAreaButton;
     private ItemIconButton groundButton;
     private ItemIconButton visionButton;
     private ItemIconButton redstoneButton;
     private Button closeButton;
+    private boolean showingArea;
+    private int lastPreviewChunkRadius = -1;
 
     public BlazingAltarScreen(BlazingAltarMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
@@ -130,7 +140,7 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
                 leftPos + VISION_BTN_X,
                 topPos + CHUNK_ROW_Y,
                 BTN,
-                b -> toggleFlameVision(),
+                b -> toggleFlameVision(false),
                 this::visionIcon,
                 Component.empty()));
 
@@ -142,6 +152,19 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
                 this::redstoneIcon,
                 () -> menu.getRedstoneMode() == 2 ? REDSTONE_GUI : null,
                 Component.empty()));
+
+        showingArea = menu.isShowAreaEnabled();
+        showAreaButton = addRenderableWidget(Button.builder(showAreaLabel(), b -> toggleShowArea())
+                .bounds(leftPos + SHOW_BTN_X, topPos + SHOW_BTN_Y, SHOW_BTN_W, SHOW_BTN_H)
+                .build());
+        if (showingArea) {
+            BlockPos pos = menu.getSyncedBlockPos();
+            if (!pos.equals(BlockPos.ZERO)) {
+                BlazingAltarAreaPreview.setActive(pos, true);
+                lastPreviewChunkRadius = menu.getChunkRadius();
+                BlazingAltarAreaPreview.refresh(pos, lastPreviewChunkRadius);
+            }
+        }
     }
 
     @Override
@@ -149,6 +172,30 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
         super.containerTick();
         if (chunkRangeButton != null) {
             chunkRangeButton.setMessage(chunkRangeButtonLabel());
+        }
+        boolean nowShowing = menu.isShowAreaEnabled();
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (nowShowing != showingArea) {
+            showingArea = nowShowing;
+            if (showAreaButton != null) {
+                showAreaButton.setMessage(showAreaLabel());
+            }
+            if (!pos.equals(BlockPos.ZERO)) {
+                BlazingAltarAreaPreview.setActive(pos, showingArea);
+                if (showingArea) {
+                    lastPreviewChunkRadius = menu.getChunkRadius();
+                    BlazingAltarAreaPreview.refresh(pos, lastPreviewChunkRadius);
+                } else {
+                    lastPreviewChunkRadius = -1;
+                }
+            }
+        } else if (showingArea && !pos.equals(BlockPos.ZERO)) {
+            int radius = menu.getChunkRadius();
+            if (radius != lastPreviewChunkRadius) {
+                lastPreviewChunkRadius = radius;
+                BlazingAltarAreaPreview.setActive(pos, true);
+                BlazingAltarAreaPreview.refresh(pos, radius);
+            }
         }
     }
 
@@ -189,7 +236,7 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
                 return true;
             }
             if (groundButton != null && groundButton.isMouseOver(mouseX, mouseY)) {
-                sendConfig(3);
+                sendConfig(11);
                 return true;
             }
             if (redstoneButton != null && redstoneButton.isMouseOver(mouseX, mouseY)) {
@@ -197,17 +244,24 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
                 return true;
             }
             if (visionButton != null && visionButton.isMouseOver(mouseX, mouseY)) {
-                toggleFlameVision();
+                toggleFlameVision(true);
                 return true;
             }
         }
         return super.mouseClicked(event, doubleClick);
     }
 
-    private void toggleFlameVision() {
+    private void toggleFlameVision(boolean backward) {
         FlameVisibilityClient.toggleGlobalFlameVision();
-        ClientPacketDistributor.sendToServer(
-                new FlameVisionToggleC2SPacket(FlameVisibilityClient.isGlobalFlameVisionEnabled()));
+        sendFlameVisionConfig(backward ? 12 : 4, FlameVisibilityClient.isGlobalFlameVisionEnabled());
+    }
+
+    private void sendFlameVisionConfig(int action, boolean enabled) {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        ClientPacketDistributor.sendToServer(new BlazingAltarConfigC2SPacket(pos, action, enabled));
     }
 
     private void sendConfig(int action) {
@@ -216,6 +270,32 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
             return;
         }
         ClientPacketDistributor.sendToServer(new BlazingAltarConfigC2SPacket(pos, action, false));
+    }
+
+    private void toggleShowArea() {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        boolean enabling = !menu.isShowAreaEnabled();
+        showingArea = enabling;
+        if (showAreaButton != null) {
+            showAreaButton.setMessage(showAreaLabel());
+        }
+        sendConfig(enabling ? 13 : 14);
+        BlazingAltarAreaPreview.setActive(pos, enabling);
+        if (enabling) {
+            lastPreviewChunkRadius = menu.getChunkRadius();
+            BlazingAltarAreaPreview.refresh(pos, lastPreviewChunkRadius);
+        } else {
+            lastPreviewChunkRadius = -1;
+        }
+    }
+
+    private Component showAreaLabel() {
+        return showingArea
+                ? Component.translatable("gui.iska_utils.generic.hide")
+                : Component.translatable("gui.iska_utils.generic.show");
     }
 
     @Override
@@ -369,6 +449,15 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
             renderButtonTooltip(graphics, mouseX, mouseY, flameVisionStateTooltip(), true);
         } else if (redstoneButton != null && redstoneButton.isMouseOver(mouseX, mouseY)) {
             renderButtonTooltip(graphics, mouseX, mouseY, redstoneStateLine(), true);
+        } else if (showAreaButton != null && showAreaButton.isMouseOver(mouseX, mouseY)) {
+            renderButtonTooltip(
+                    graphics,
+                    mouseX,
+                    mouseY,
+                    Component.translatable(showingArea
+                            ? "gui.iska_utils.blazing_altar.tooltip.hide_area"
+                            : "gui.iska_utils.blazing_altar.tooltip.show_area"),
+                    false);
         }
     }
 

@@ -30,7 +30,7 @@ categories:
 
 - **Player_*** variants affect players the same way but ignore mobs.
 
-## Crafting tiers
+## Speed tiers
 
-- Each speed tier is a different block. Higher tiers are crafted from lower tiers (see JEI for exact recipes).
+- Each speed tier is a different block. Higher tiers are upgrades of lower ones.
 

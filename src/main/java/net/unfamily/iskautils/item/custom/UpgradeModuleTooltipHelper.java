@@ -21,6 +21,7 @@ public final class UpgradeModuleTooltipHelper {
     private static final String MODULAR_FAN_MAX = "tooltip.iska_utils.module_compat.modular_fan.max";
     private static final String BLAZING_ALTAR_MAX = "tooltip.iska_utils.module_compat.blazing_altar.max";
     private static final String COLLECTING_CRATE_MAX = "tooltip.iska_utils.module_compat.collecting_crate.max";
+    private static final String NULLIFIERS = "tooltip.iska_utils.module_compat.nullifiers";
     private static final String MOB_REAPER_MAX = "tooltip.iska_utils.module_compat.mob_reaper.max";
     private static final String TEMPORAL_OVERCLOCKER_MAX = "tooltip.iska_utils.module_compat.temporal_overclocker.max";
     private static final String ENTROPIC_SPAWNER_MAX = "tooltip.iska_utils.module_compat.entropic_spawner.max";
@@ -112,6 +113,7 @@ public final class UpgradeModuleTooltipHelper {
         appendMachineMax(tooltip, MODULAR_FAN_MAX, Config.fanRangeUpgradeMax);
         appendMachineMax(tooltip, BLAZING_ALTAR_MAX, Config.blazingAltarRangeUpgradeMax);
         appendMachineMax(tooltip, COLLECTING_CRATE_MAX, Config.collectingCrateRangeUpgradeMax);
+        tooltip.accept(Component.translatable(NULLIFIERS).withStyle(GRAY));
     }
 
     private static void appendSpeedModuleInstalls(Consumer<Component> tooltip) {

@@ -9,6 +9,7 @@ import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskautils.util.preview.MachinePreviewMarkerLogic;
 
 /**
  * Packet to highlight a linked block in the world (creates a marker for 5 seconds)
@@ -37,8 +38,8 @@ public record TemporalOverclockerHighlightBlockC2SPacket(BlockPos blockPos) impl
     }
     
     private static void handlePacket(TemporalOverclockerHighlightBlockC2SPacket packet, ServerPlayer player) {
-        // Create marker at block position (5 seconds = 100 ticks)
-        int color = (0x80 << 24) | 0x00FF00; // Semi-transparent green
+        int color = MachinePreviewMarkerLogic.colorForMarkedPresence(
+                player.level().getBlockState(packet.blockPos()));
         int durationTicks = 100; // 5 seconds
         ModMessages.sendAddBillboardPacket(player, packet.blockPos(), color, durationTicks);
     }

@@ -15,6 +15,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.item.custom.AncientTabletItem;
+import net.unfamily.iskautils.item.custom.CrystalCageItem;
 import net.unfamily.iskautils.item.custom.UnstableEntropyCatalystItem;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
@@ -25,6 +26,7 @@ import net.unfamily.iskautils.item.custom.ScannerItem;
 import net.unfamily.iskautils.item.custom.ScannerChipItem;
 import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.SwissWrenchItem;
+import net.unfamily.iskautils.item.custom.LabelingMachineItem;
 import net.unfamily.iskautils.item.custom.AngelBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
 import net.unfamily.iskautils.item.custom.BurningBrazierItem;
@@ -33,6 +35,7 @@ import net.unfamily.iskautils.item.custom.GhostBrazierItem;
 import net.unfamily.iskautils.item.custom.GreedyShieldItem;
 import net.unfamily.iskautils.item.custom.BlueprintItem;
 import net.unfamily.iskautils.item.custom.AutoShopItem;
+import net.unfamily.iskautils.item.custom.EntropicChampagneItem;
 import net.unfamily.iskautils.item.custom.GiftItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerChipsetItem;
 import net.unfamily.iskautils.item.custom.TranslatedTooltipBlockItem;
@@ -127,6 +130,14 @@ public class ModItems {
             props -> new TranslatedTooltipBlockItem(ModBlocks.OBSCURE_GLASS.get(), props, "tooltip.iska_utils.wither_proof"),
             UnaryOperator.identity());
 
+    // ===== ETHEREAL GLASS =====
+    public static final DeferredItem<BlockItem> ETHEREAL_GLASS = ITEMS.registerSimpleBlockItem(ModBlocks.ETHEREAL_GLASS);
+    public static final DeferredItem<BlockItem> ETHEREAL_GLASS_PANE = ITEMS.registerSimpleBlockItem(ModBlocks.ETHEREAL_GLASS_PANE);
+    public static final DeferredItem<BlockItem> ETHEREAL_OBSCURE_GLASS = ITEMS.registerSimpleBlockItem(ModBlocks.ETHEREAL_OBSCURE_GLASS);
+
+    // ===== ETHEREAL FRAME =====
+    public static final DeferredItem<BlockItem> ETHEREAL_FRAME = ITEMS.registerSimpleBlockItem(ModBlocks.ETHEREAL_FRAME);
+
     // ===== CUSTOM ITEMS =====
 
     public static final DeferredItem<Item> BASE_MODULE = ITEMS.registerSimpleItem("base_module");
@@ -212,6 +223,9 @@ public class ModItems {
     public static final DeferredItem<Item> NECROTIC_CRYSTAL_HEART = ITEMS.registerItem("necrotic_crystal_heart", NecroticCrystalHeartItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<Item> SWISS_WRENCH = ITEMS.registerItem("swiss_wrench", SwissWrenchItem::new, p -> p.stacksTo(1));
+
+    public static final DeferredItem<Item> LABELING_MACHINE = ITEMS.registerItem(
+            "labeling_machine", LabelingMachineItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<Item> MINING_EQUITIZER = ITEMS.registerItem("mining_equitizer", MiningEquitizer::new, p -> p.stacksTo(1));
 
@@ -457,6 +471,14 @@ public class ModItems {
     public static final DeferredItem<BlockItem> SMOOTH_BLACKSTONE_STAIRS = ITEMS.registerSimpleBlockItem(ModBlocks.SMOOTH_BLACKSTONE_STAIRS);
     public static final DeferredItem<BlockItem> SMOOTH_BLACKSTONE_WALL = ITEMS.registerSimpleBlockItem(ModBlocks.SMOOTH_BLACKSTONE_WALL);
     public static final DeferredItem<BlockItem> PLATE_BASE_BLOCK = ITEMS.registerSimpleBlockItem(ModBlocks.PLATE_BASE_BLOCK);
+
+    // ===== CRYSTAL TRAP PLATE item =====
+    public static final DeferredItem<BlockItem> CRYSTAL_CAGE_TRAP_PLATE = ITEMS.registerSimpleBlockItem(ModBlocks.CRYSTAL_CAGE_TRAP_PLATE);
+
+    // ===== CRYSTAL CAGE item =====
+    public static final DeferredItem<Item> CRYSTAL_CAGE = ITEMS.registerItem(
+            "crystal_cage", CrystalCageItem::new, p -> p.stacksTo(16));
+
     public static final DeferredItem<BlockItem> RAFT = ITEMS.registerSimpleBlockItem(ModBlocks.RAFT);
     public static final DeferredItem<BlockItem> RAFT_NO_DROP = ITEMS.registerSimpleBlockItem(ModBlocks.RAFT_NO_DROP);
 
@@ -551,6 +573,10 @@ public class ModItems {
 
     public static final DeferredItem<Item> GIFT = ITEMS.registerItem("gift",
             props -> new GiftItem(ModBlocks.GIFT.get(), props), Item.Properties::useBlockDescriptionPrefix);
+
+    // ===== ENTROPIC CHAMPAGNE (seasonal curio, Jan 1–10, not in creative tab) =====
+    public static final DeferredItem<Item> ENTROPIC_CHAMPAGNE = ITEMS.registerItem(
+            "entropic_champagne", EntropicChampagneItem::new);
 
     public static final DeferredItem<BlockItem> HARD_ICE = ITEMS.registerSimpleBlockItem(ModBlocks.HARD_ICE);
 

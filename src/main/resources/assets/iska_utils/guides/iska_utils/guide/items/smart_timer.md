@@ -18,7 +18,7 @@ categories:
 The Smart Timer is a **repeating redstone source**. It alternates between:
 
 1. **Cooldown** — no output (the block is **off**).
-2. **Pulse** — full **strength 15** redstone output for a configurable duration.
+2. **Pulse** — full **strength 15** redstone output for a set duration.
 
 So you get a train of pulses with a quiet gap between them, without building huge hopper clocks.
 
@@ -65,4 +65,3 @@ During the **pulse** (ON phase), this gating does not apply; the output length i
 - Use **Ignore** for a clock that must run regardless of nearby dust or levers.
 - Pair with **comparators** or **opaque blocks** to branch signals without loading the same face twice.
 
-Recipe and exact labels match your installed language files; use **JEI** for crafting.

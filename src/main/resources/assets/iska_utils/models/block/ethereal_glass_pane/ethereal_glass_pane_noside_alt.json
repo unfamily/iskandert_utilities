@@ -1,0 +1,13 @@
+{
+  "parent": "minecraft:block/template_glass_pane_noside_alt",
+  "textures": {
+    "edge": {
+      "force_translucent": true,
+      "sprite": "iska_utils:block/ethereal_glass/ethereal_glass_edge"
+    },
+    "pane": {
+      "force_translucent": true,
+      "sprite": "iska_utils:block/ethereal_glass/ethereal_glass"
+    }
+  }
+}

@@ -8,8 +8,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
-import net.minecraft.world.phys.Vec3;
-import net.unfamily.iskautils.util.RubberNegateFallHandler;
 
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -26,7 +24,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Rubber boots that negate fall damage and make the player bounce
+ * Rubber boots that negate fall damage.
  */
 public class RubberBootsItem extends Item {
 
@@ -65,48 +63,19 @@ public class RubberBootsItem extends Item {
     }
     
     /**
-     * Handles the fall damage when the player wears the rubber boots
-     * @param stack The stack of the item
-     * @param entity The entity that wears the boots
-     * @param fallDistance The distance of the fall
-     * @return true if the fall damage should be negated
+     * Negates fall damage when the player wears rubber boots.
+     * @return true if fall damage should be canceled
      */
     public static boolean handleFallDamage(ItemStack stack, LivingEntity entity, float fallDistance) {
         if (!(entity instanceof Player player)) {
             return false;
         }
-        
-        // If the player is crouched, reduce the damage but don't bounce
-        if (player.isShiftKeyDown()) {
-            damageBootsForFallNegation(stack, player);
-            return true;
+        if (fallDistance <= 0) {
+            return false;
         }
-        
-        // Otherwise, negate the damage and make the player bounce
-        if (fallDistance > 2) {
-            player.resetFallDistance();
-            
-            // Add bounce effect
-            Vec3 motion = player.getDeltaMovement();
-            double bounce = -0.9F;
-            
-            player.setDeltaMovement(motion.x, motion.y * bounce, motion.z);
-            player.hurtMarked = true;
-            player.setOnGround(false);
-            
-            // Slightly slow down the horizontal movement
-            double horizontalSlowdown = 0.95D;
-            player.setDeltaMovement(motion.x / horizontalSlowdown, player.getDeltaMovement().y, motion.z / horizontalSlowdown);
-            
-            // Add the player to the list of bouncers
-            RubberNegateFallHandler.addBouncingPlayer(player, player.getDeltaMovement().y);
-            
-            damageBootsForFallNegation(stack, player);
-            
-            return true;
-        }
-        
-        return false;
+        player.resetFallDistance();
+        damageBootsForFallNegation(stack, player);
+        return true;
     }
 
     private static void damageBootsForFallNegation(ItemStack stack, Player player) {
@@ -115,4 +84,4 @@ public class RubberBootsItem extends Item {
         }
         stack.hurtAndBreak(1, player, EquipmentSlot.FEET);
     }
-} 
+}

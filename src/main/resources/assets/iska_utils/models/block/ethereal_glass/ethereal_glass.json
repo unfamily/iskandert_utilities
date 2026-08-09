@@ -1,0 +1,9 @@
+{
+  "render_type": "minecraft:translucent",
+  "loader": "fusion:model",
+  "type": "fusion:connecting",
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "iska_utils:block/ethereal_glass/ethereal_glass"
+  }
+}

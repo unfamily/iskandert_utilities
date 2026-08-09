@@ -8,6 +8,7 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.client.model.ConnectedTextureFallbackModelLoader;
 import net.unfamily.iskautils.client.gui.*;
+import net.unfamily.iskautils.client.gui.EtherealFrameFilterScreen;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.unfamily.iskautils.client.particle.EntropicFlameParticle;
 import net.unfamily.iskautils.particle.ModParticles;
@@ -22,7 +23,10 @@ public final class IskaUtilsClientModEvents {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        // Obscure glass render layers are set via "render_type" in block model JSON (26.x).
+        // Render layers are set via "render_type" in block model JSON in 26.x.
+        // Register client-side camouflage callback for EtherealFrame
+        net.unfamily.iskautils.block.entity.EtherealFrameBlockEntity.setClientCamouflageCallback(
+                net.unfamily.iskautils.client.ethereal.EtherealFrameClientEvents::onCamouflageUpdated);
     }
 
     @SubscribeEvent
@@ -63,5 +67,8 @@ public final class IskaUtilsClientModEvents {
         event.register(ModMenuTypes.COLLECTING_CRATE_MENU.get(), CollectingCrateScreen::new);
         event.register(ModMenuTypes.BLAZING_ALTAR_MENU.get(), BlazingAltarScreen::new);
         event.register(ModMenuTypes.ENTROPIC_SPAWNER_MENU.get(), EntropicSpawnerScreen::new);
+        event.register(ModMenuTypes.ETHEREAL_FRAME_FILTER_MENU.get(), EtherealFrameFilterScreen::new);
+        event.register(ModMenuTypes.NULLIFIER_MENU.get(), NullifierScreen::new);
+        event.register(ModMenuTypes.LABELING_MACHINE_MENU.get(), LabelingMachineScreen::new);
     }
 }

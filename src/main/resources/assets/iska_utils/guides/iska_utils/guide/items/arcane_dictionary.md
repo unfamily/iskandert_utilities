@@ -39,7 +39,7 @@ This does **not** use entropy charges.
 1. Hold the dictionary in your **main hand**.
 2. **Shift + right-click** — spends part of your experience. Only so much XP is taken per reroll; any experience beyond that stays with you.
 3. **The more XP you offer, the better the roll tends to be** — more traits, higher levels, or both — but each reroll is still **random** until you reach the full level budget; then you always get the maximum trait count and levels.
-4. Put a matching **catalyst** in your **offhand** (for example lapis for **Lucky**) to **boost** that trait’s roll chance — JEI and the Shift trait tooltip show the **new pick chance** with that catalyst. One catalyst is consumed per reroll; it does **not** guarantee the trait. Each trait on a roll is **unique** when the datapack offers enough entries; duplicates only appear if the roll asks for more traits than exist.
+4. Put a matching **catalyst** in your **offhand** (for example lapis for **Lucky**) to **boost** that trait’s roll chance — the Shift trait tooltip shows the **new pick chance** with that catalyst. One catalyst is consumed per reroll; it does **not** guarantee the trait. Each trait on a roll is **unique** when enough entries exist; duplicates only appear if the roll asks for more traits than exist.
 
 ## Luck and Bad Luck
 
@@ -47,30 +47,15 @@ Which **specific** traits appear on each slot is influenced separately from XP q
 
 - After the initial weighted pick, the vanilla **Luck** effect can reroll away from low-`luck` entries in the trait pool; **Bad Luck** can reroll away from high-`luck` ones. Stronger potion effects matter more.
 - The **Lucky** trait applies **Luck**; the **Unlucky** trait applies **Bad Luck** — so they can nudge later rerolls too.
-- Catalysts in the offhand **raise** the pick weight of matching traits (reroll chance on tooltip/JEI); they do not override luck entirely or guarantee a trait.
+- Catalysts in the offhand **raise** the pick weight of matching traits (reroll chance on tooltip); they do not override luck entirely or guarantee a trait.
 
 Datapacks can tag entries with how lucky or unlucky they are; pack authors decide which traits sit on which side of that scale.
 
 ## Arcane traits
 
-Each reroll draws from the trait pool in the datapack. With **JEI** installed, look up the **Arcane Dictionary** to see every trait: effects at levels I–V, pool weight, luck, entropy consume, and reroll catalysts.
+Each reroll draws from the trait pool. Trait details (effects, levels, catalysts) also appear on tooltips when you Shift-inspect the dictionary.
 
-Pack authors can gate entries with **`mods`** and **`stages`** (same syntax as Suspicious Delivery and command items). Use **`mods_logic`** / **`stages_logic`** with **`AND`** or **`OR`** only. The reroll pool **excludes** traits you cannot obtain; **chance percentages in JEI** are normalized to your current obtainable pool (mods always; stages when the game can read your progress). Traits gated by a **missing mod** are **hidden in JEI**. Stage-gated traits stay visible but show **0% chance** until you meet the stage. A trait already on your dictionary **does nothing** (no effects, no entropy consume) while its gates are not satisfied.
-
-**Apotheosis-only traits** (e.g. `tier_resonance`) use `"mods": [{ "mod": "apotheosis", "is": true }]` on the pool entry — they do not roll or appear in JEI without Apotheosis loaded.
-
-Example entry fields:
-
-```json
-{
-  "weight": 20,
-  "enchant": "modid:trait_id",
-  "mods": [{ "mod": "create", "is": true }],
-  "mods_logic": "AND",
-  "stages": [{ "stage_type": "player", "stage": "chapter_2", "is": true }],
-  "stages_logic": "OR"
-}
-```
+Some traits only appear when certain mods or progression stages are available. Traits you cannot obtain are skipped from the roll; a trait already on your dictionary does nothing while its requirements are not met.
 
 ## Tips
 

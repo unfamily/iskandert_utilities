@@ -20,6 +20,9 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.block.EtherealFrameBlock;
+import net.unfamily.iskautils.block.EtherealGlassBlock;
+import net.unfamily.iskautils.block.EtherealObscureGlassBlock;
 import net.unfamily.iskautils.block.player.*;
 import net.unfamily.iskautils.block.custom.DruidicPodzolBlock;
 import net.unfamily.iskautils.block.custom.DruidicPodzolBlock;
@@ -138,6 +141,49 @@ public class ModBlocks {
 
     public static final DeferredBlock<ObscureGlassBlock> OBSCURE_GLASS = BLOCKS.register("obscure_glass",
             key -> new ObscureGlassBlock(assignBlockId(key, OBSCURE_GLASS_PROPERTIES)));
+
+    // ===== ETHEREAL GLASS =====
+    // Glass-like: not wither/explosion proof (unlike obscure / ethereal obscure glass).
+    private static final UnaryOperator<BlockBehaviour.Properties> ETHEREAL_GLASS_PROPERTIES = p -> p
+            .strength(0.3f, 0.3f)
+            .sound(SoundType.GLASS)
+            .noOcclusion()
+            .isRedstoneConductor((state, level, pos) -> false)
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false)
+            .lightLevel(state -> 0);
+
+    public static final DeferredBlock<EtherealGlassBlock> ETHEREAL_GLASS = BLOCKS.register("ethereal_glass",
+            key -> new EtherealGlassBlock(assignBlockId(key, ETHEREAL_GLASS_PROPERTIES)));
+
+    public static final DeferredBlock<EtherealGlassPaneBlock> ETHEREAL_GLASS_PANE = BLOCKS.register("ethereal_glass_pane",
+            key -> new EtherealGlassPaneBlock(assignBlockId(key, ETHEREAL_GLASS_PROPERTIES)));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> ETHEREAL_OBSCURE_GLASS_PROPERTIES = p -> p
+            .strength(0.3f, 1200.0f)
+            .sound(SoundType.GLASS)
+            .noOcclusion()
+            .isRedstoneConductor((state, level, pos) -> false)
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false)
+            .lightLevel(state -> 0);
+
+    public static final DeferredBlock<EtherealObscureGlassBlock> ETHEREAL_OBSCURE_GLASS = BLOCKS.register("ethereal_obscure_glass",
+            key -> new EtherealObscureGlassBlock(assignBlockId(key, ETHEREAL_OBSCURE_GLASS_PROPERTIES)));
+
+    // ===== ETHEREAL FRAME =====
+    // Wood-like by default; can be reinforced to wither-proof values via gameplay.
+    private static final UnaryOperator<BlockBehaviour.Properties> ETHEREAL_FRAME_PROPERTIES = p -> p
+            .strength(2.0f, 3.0f)
+            .sound(SoundType.WOOD)
+            .noOcclusion()
+            .isRedstoneConductor((state, level, pos) -> false)
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false)
+            .lightLevel(state -> 0);
+
+    public static final DeferredBlock<EtherealFrameBlock> ETHEREAL_FRAME = BLOCKS.register("ethereal_frame",
+            key -> new EtherealFrameBlock(assignBlockId(key, ETHEREAL_FRAME_PROPERTIES)));
 
     // Netherite Bars
     public static final DeferredBlock<NetheriteBarsBlock> NETHERITE_BARS = BLOCKS.register("netherite_bars",
@@ -438,6 +484,11 @@ public class ModBlocks {
 
     public static final DeferredBlock<PlateBaseBlock> PLATE_BASE_BLOCK = BLOCKS.register("plate_base_block",
             key -> new PlateBaseBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
+    // ===== CRYSTAL TRAP PLATE (special non-JSON plate – captures mobs into Crystal Cage) =====
+    public static final DeferredBlock<net.unfamily.iskautils.block.CrystalCageTrapPlateBlock> CRYSTAL_CAGE_TRAP_PLATE =
+            BLOCKS.register("crystal_cage_trap_plate",
+                    key -> new net.unfamily.iskautils.block.CrystalCageTrapPlateBlock(assignBlockId(key, VECTOR_PROPERTIES)));
 
     private static final UnaryOperator<BlockBehaviour.Properties> RAFT_PROPERTIES = p -> p
             .mapColor(MapColor.WOOD)

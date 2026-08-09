@@ -78,6 +78,7 @@ public final class IskaUtilsClientGameEvents {
             return;
         }
         MachinePreviewTracker.tickPeriodicReconcile(mc.level);
+        TemporalOverclockerAreaPreview.tick(mc.level);
         for (BlockPos ownerPos : MachinePreviewTracker.pollOwnersNeedingWorldRefresh(mc.level)) {
             MachinePreviewTracker.onFootprintRefreshRequested(mc.level, ownerPos);
             var be = mc.level.getBlockEntity(ownerPos);
@@ -93,6 +94,8 @@ public final class IskaUtilsClientGameEvents {
     public static void onClientPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof LocalPlayer) {
             MachinePreviewTracker.clearAll();
+            BlazingAltarAreaPreview.clearAll();
+            TemporalOverclockerAreaPreview.clearAll();
         }
     }
 
@@ -100,6 +103,8 @@ public final class IskaUtilsClientGameEvents {
     public static void onBlockBreak(BreakBlockEvent event) {
         if (event.getLevel() instanceof Level level) {
             MachinePreviewTracker.onBlockInPreviewChanged(level, event.getPos());
+            BlazingAltarAreaPreview.clear(event.getPos());
+            TemporalOverclockerAreaPreview.clear(event.getPos());
         }
     }
 

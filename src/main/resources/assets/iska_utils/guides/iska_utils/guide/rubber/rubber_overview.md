@@ -17,13 +17,13 @@ categories:
 
 - Rubber trees and sap extraction.
 - Automation options.
-- Core materials used by rubber recipes.
+- Core materials used across rubber progression.
 
 ## Quick start
 
 1. Get a **Sacred Rubber Sapling** and grow a rubber tree.
 2. Find a tappable rubber log variant and use a **Tree Tap** to extract **Sap**.
-3. Process sap into **Rubber** (see JEI for the exact steps).
+3. Process sap into **Rubber**.
 
 <ItemGrid>
   <ItemIcon id="iska_utils:sacred_rubber_sapling" />

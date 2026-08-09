@@ -152,6 +152,11 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
                     Component.translatable("gui.iska_utils.mob_reaper.lethal_active"), centerX, y, 0xAA0000);
             y += 12;
         }
+        if (menu.isEnchantModuleActive()) {
+            drawCenteredText(guiGraphics,
+                    Component.translatable("gui.iska_utils.mob_reaper.enchant_active"), centerX, y, 0x55AAFF);
+            y += 12;
+        }
         if (menu.getBeheadingChance() > 0.0f) {
             drawCenteredText(guiGraphics,
                     Component.translatable("gui.iska_utils.mob_reaper.beheading", (int) (menu.getBeheadingChance() * 100)), centerX, y, 0x606060);

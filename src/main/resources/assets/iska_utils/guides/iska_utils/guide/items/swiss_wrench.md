@@ -7,7 +7,7 @@ navigation:
 item_ids:
   - iska_utils:swiss_wrench
 categories:
-  - Tools and scanner
+  - Useful tools
 ---
 # Swiss Wrench
 

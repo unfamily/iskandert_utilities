@@ -64,6 +64,11 @@
     "iska_utils:burning_flame",
     "iska_utils:cursed_burning_flame",
     "iska_utils:blazing_altar",
-    "iska_utils:redstone_activator_signal"
+    "iska_utils:redstone_activator_signal",
+    "iska_utils:ethereal_glass",
+    "iska_utils:ethereal_glass_pane",
+    "iska_utils:ethereal_obscure_glass",
+    "iska_utils:obscure_glass",
+    "iska_utils:crystal_cage_trap_plate"
   ]
 } 

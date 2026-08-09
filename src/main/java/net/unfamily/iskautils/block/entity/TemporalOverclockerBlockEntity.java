@@ -70,6 +70,9 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     
     // Persistent mode (if true, blocks are not removed when broken, only when out of range)
     private boolean persistentMode = false;
+
+    /** Client area-border preview for link range (GUI Preview/Hide). */
+    private boolean showAreaEnabled = false;
     
     public TemporalOverclockerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TEMPORAL_OVERCLOCKER_BE.get(), pos, state);
@@ -610,6 +613,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         output.putInt("redstoneMode", redstoneMode);
         output.putInt("accelerationFactor", accelerationFactor);
         output.putBoolean("persistentMode", persistentMode);
+        output.putBoolean("ShowArea", showAreaEnabled);
         output.putInt(STORED_ENTROPY_TAG, storedEntropy);
         ItemStack upgrade = machineItems.getItem(UPGRADE_SLOT_INDEX);
         if (!upgrade.isEmpty()) {
@@ -657,6 +661,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         
         // Load persistent mode
         this.persistentMode = input.getBooleanOr("persistentMode", this.persistentMode);
+        this.showAreaEnabled = input.getBooleanOr("ShowArea", false);
         
         // Load linked blocks
         linkedBlocks.clear();
@@ -706,6 +711,20 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
      */
     public void togglePersistentMode() {
         setPersistentMode(!persistentMode);
+    }
+
+    public boolean isShowAreaEnabled() {
+        return showAreaEnabled;
+    }
+
+    public void setShowAreaEnabled(boolean showAreaEnabled) {
+        if (this.showAreaEnabled != showAreaEnabled) {
+            this.showAreaEnabled = showAreaEnabled;
+            setChanged();
+            if (level != null && !level.isClientSide()) {
+                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            }
+        }
     }
     
     private final class OverclockerItemHandler implements IItemHandlerModifiable {

@@ -15,7 +15,7 @@ categories:
 
 ## Use
 
-- Crafting components used by Vector-motion recipes (for example **Vector Charm** requires the highest tier).
+- Components used in Vector-motion gear (for example **Vector Charm** requires the highest tier).
 - They are not installed into vector plates.
 
 ## Items

@@ -24,8 +24,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.entity.EntropicSpawnerBlockEntity;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
+import net.unfamily.iskautils.item.custom.CrystalCageItem;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -119,6 +121,15 @@ public class EntropicSpawnerBlock extends BaseEntityBlock {
                 }
                 return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.FAIL;
             }
+        }
+        if (stack.getItem() instanceof CrystalCageItem && CrystalCageItem.isFilled(stack)
+                && Config.crystalCageActsAsSpawnEggOnSpawners
+                && level.getBlockEntity(pos) instanceof EntropicSpawnerBlockEntity) {
+            if (!level.isClientSide()
+                    && CrystalCageItem.tryApplyAsSpawnEgg(stack, player, level, pos)) {
+                return InteractionResult.CONSUME;
+            }
+            return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.FAIL;
         }
         return InteractionResult.TRY_WITH_EMPTY_HAND;
     }

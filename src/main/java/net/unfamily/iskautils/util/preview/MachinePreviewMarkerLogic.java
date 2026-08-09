@@ -25,6 +25,9 @@ public final class MachinePreviewMarkerLogic {
     public static final int COLOR_OCCUPIED_FAN = 0x80FF0000;
     public static final int COLOR_OCCUPIED_STRUCTURE = 0x80FF4444;
     public static final int COLOR_VALID = 0x804444FF;
+    /** Linked / highlight markers: air cells are red, present blocks are green. */
+    public static final int COLOR_MARKED_AIR = 0x80FF0000;
+    public static final int COLOR_MARKED_SOLID = 0x8000FF00;
 
     @FunctionalInterface
     public interface MarkerSink {
@@ -32,6 +35,10 @@ public final class MachinePreviewMarkerLogic {
     }
 
     private MachinePreviewMarkerLogic() {}
+
+    public static int colorForMarkedPresence(BlockState state) {
+        return state.isAir() ? COLOR_MARKED_AIR : COLOR_MARKED_SOLID;
+    }
 
     public static void forEachFanMarker(Level level, FanBlockEntity fan, BlockPos fanPos, MarkerSink sink) {
         BlockState state = level.getBlockState(fanPos);
@@ -49,36 +56,7 @@ public final class MachinePreviewMarkerLogic {
         int maxY = (int) Math.floor(aabb.maxY);
         int maxZ = (int) Math.floor(aabb.maxZ);
 
-        for (int x = minX; x < maxX; x++) {
-            for (int z = minZ; z < maxZ; z++) {
-                boolean isOnEdge = (x == minX || x == maxX - 1 || z == minZ || z == maxZ - 1);
-                if (isOnEdge) {
-                    emitFanEdgeCell(level, sink, new BlockPos(x, maxY - 1, z), hasGhostModule);
-                    emitFanEdgeCell(level, sink, new BlockPos(x, minY, z), hasGhostModule);
-                }
-            }
-        }
-
-        for (int x = minX; x < maxX; x++) {
-            for (int y = minY; y < maxY; y++) {
-                boolean isOnEdge = (x == minX || x == maxX - 1 || y == minY || y == maxY - 1);
-                if (isOnEdge) {
-                    emitFanEdgeCell(level, sink, new BlockPos(x, y, minZ), hasGhostModule);
-                    emitFanEdgeCell(level, sink, new BlockPos(x, y, maxZ - 1), hasGhostModule);
-                }
-            }
-        }
-
-        for (int z = minZ; z < maxZ; z++) {
-            for (int y = minY; y < maxY; y++) {
-                boolean isOnEdge = (z == minZ || z == maxZ - 1 || y == minY || y == maxY - 1);
-                if (isOnEdge) {
-                    emitFanEdgeCell(level, sink, new BlockPos(minX, y, z), hasGhostModule);
-                    emitFanEdgeCell(level, sink, new BlockPos(maxX - 1, y, z), hasGhostModule);
-                }
-            }
-        }
-
+        // Outer shell is drawn via AreaBorderRenderer on the client; only occupied cells here.
         for (int x = minX; x < maxX; x++) {
             for (int y = minY; y < maxY; y++) {
                 for (int z = minZ; z < maxZ; z++) {

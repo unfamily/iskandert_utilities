@@ -15,7 +15,7 @@ categories:
 
 ## What it does
 
-The Factory processes materials into other items. It handles **special mod recipes** (for example dye berries into dyes, or recycling suspicious deliveries) and can work as an **alternative to the Stonecutter** for blocks you would normally cut there.
+The Factory processes materials into other items. It handles **special conversions** (for example dye berries into dyes, or recycling suspicious deliveries) and can work as an **alternative to the Stonecutter** for blocks you would normally cut there.
 
 ## How to use
 

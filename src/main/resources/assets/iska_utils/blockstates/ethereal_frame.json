@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "blocks_light=false,camouflaged=false,reinforced=false": {
+      "model": "iska_utils:block/ethereal_frame"
+    },
+    "blocks_light=false,camouflaged=false,reinforced=true": {
+      "model": "iska_utils:block/ethereal_frame_reinforced"
+    },
+    "blocks_light=false,camouflaged=true,reinforced=false": {
+      "model": "iska_utils:block/ethereal_frame"
+    },
+    "blocks_light=false,camouflaged=true,reinforced=true": {
+      "model": "iska_utils:block/ethereal_frame_reinforced"
+    },
+    "blocks_light=true,camouflaged=false,reinforced=false": {
+      "model": "iska_utils:block/ethereal_frame"
+    },
+    "blocks_light=true,camouflaged=false,reinforced=true": {
+      "model": "iska_utils:block/ethereal_frame_reinforced"
+    },
+    "blocks_light=true,camouflaged=true,reinforced=false": {
+      "model": "iska_utils:block/ethereal_frame"
+    },
+    "blocks_light=true,camouflaged=true,reinforced=true": {
+      "model": "iska_utils:block/ethereal_frame_reinforced"
+    }
+  }
+}

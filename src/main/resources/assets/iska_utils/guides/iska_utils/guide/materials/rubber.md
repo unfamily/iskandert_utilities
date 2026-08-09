@@ -16,9 +16,9 @@ categories:
 ## Obtaining
 
 - Smelt **Rubber Sap** in a furnace (or pack-compatible processing).
-- Combine **Rubber Chunks** in a crafting table.
+- Made from **Rubber Chunks**.
 
 ## Uses
 
-- Building blocks, **Rubber Boots**, treetaps, and many mod recipes.
+- Building blocks, **Rubber Boots**, treetaps, and other rubber gear.
 - Compressed into **Rubber Chunks** for plastic processing.

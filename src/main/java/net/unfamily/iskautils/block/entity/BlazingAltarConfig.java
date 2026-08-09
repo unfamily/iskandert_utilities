@@ -13,6 +13,7 @@ public final class BlazingAltarConfig {
     private boolean groundOnly = true;
     private BlazingAltarSpawnMode spawnMode = BlazingAltarSpawnMode.HOSTILE;
     private int redstoneMode;
+    private boolean showAreaEnabled;
     private int tickCounter;
     private int placementChunkIndex;
 
@@ -60,6 +61,14 @@ public final class BlazingAltarConfig {
         this.redstoneMode = redstoneMode;
     }
 
+    public boolean isShowAreaEnabled() {
+        return showAreaEnabled;
+    }
+
+    public void setShowAreaEnabled(boolean showAreaEnabled) {
+        this.showAreaEnabled = showAreaEnabled;
+    }
+
     public int getTickCounter() {
         return tickCounter;
     }
@@ -82,6 +91,7 @@ public final class BlazingAltarConfig {
         output.putBoolean("GroundOnly", groundOnly);
         output.putInt("SpawnMode", spawnMode.getId());
         output.putInt("RedstoneMode", redstoneMode);
+        output.putBoolean("ShowAreaEnabled", showAreaEnabled);
         output.putInt("TickCounter", tickCounter);
         output.putInt("PlacementChunkIndex", placementChunkIndex);
     }
@@ -103,6 +113,7 @@ public final class BlazingAltarConfig {
         if (redstoneMode == 3) {
             redstoneMode = 4;
         }
+        showAreaEnabled = input.getBooleanOr("ShowAreaEnabled", false);
         tickCounter = input.getIntOr("TickCounter", 0);
         placementChunkIndex = Math.max(0, input.getIntOr("PlacementChunkIndex", 0));
     }

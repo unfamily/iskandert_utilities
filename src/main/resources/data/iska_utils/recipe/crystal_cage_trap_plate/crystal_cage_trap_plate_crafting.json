@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "iska_utils:plate_base_block",
+    "iska_utils:crystal_cage"
+  ],
+  "result": {
+    "id": "iska_utils:crystal_cage_trap_plate",
+    "count": 1
+  }
+}

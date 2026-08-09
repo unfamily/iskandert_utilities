@@ -28,7 +28,7 @@ Outcomes include **Drop of Entropy**, delivery **artifacts** (pages below), **Du
 
 ## Recycling
 
-Unwanted unopened **Suspicious Delivery** and most **delivery artifacts** can be turned into **Drop of Entropy** at a crafting table or **Factory** — see **Drop of Entropy** under **Entropy materials**. **Drop of Entropy** itself is **not** recyclable.
+Unwanted unopened **Suspicious Delivery** and most **delivery artifacts** can be turned into **Drop of Entropy** — see **Drop of Entropy** under **Entropy materials**. **Drop of Entropy** itself is **not** recyclable.
 
 ## Curios
 

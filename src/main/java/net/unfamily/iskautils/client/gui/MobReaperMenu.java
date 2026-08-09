@@ -32,7 +32,8 @@ public class MobReaperMenu extends AbstractContainerMenu {
     private static final int LUCK_LEVEL_INDEX = 8;
     private static final int EXPERIENCE_MULT_INDEX = 9;
     private static final int AGE_FILTER_INDEX = 10;
-    private static final int DATA_COUNT = 11;
+    private static final int ENCHANT_ACTIVE_INDEX = 11;
+    private static final int DATA_COUNT = 12;
 
     public static final int MODULE_SLOTS_X = 7;
     public static final int[] MODULE_SLOT_Y = {19, 37, 55, 73, 91};
@@ -61,6 +62,7 @@ public class MobReaperMenu extends AbstractContainerMenu {
                     case LUCK_LEVEL_INDEX -> blockEntity.getEffectiveLuckLevel();
                     case EXPERIENCE_MULT_INDEX -> (int) (blockEntity.getExperienceMultiplier() * 1000);
                     case AGE_FILTER_INDEX -> blockEntity.getAgeFilter().getId();
+                    case ENCHANT_ACTIVE_INDEX -> blockEntity.isEnchantModuleActive() ? 1 : 0;
                     default -> 0;
                 };
             }
@@ -177,6 +179,10 @@ public class MobReaperMenu extends AbstractContainerMenu {
 
     public boolean isLethalActive() {
         return containerData.get(LETHAL_ACTIVE_INDEX) == 1;
+    }
+
+    public boolean isEnchantModuleActive() {
+        return containerData.get(ENCHANT_ACTIVE_INDEX) == 1;
     }
 
     public int getLuckLevel() {

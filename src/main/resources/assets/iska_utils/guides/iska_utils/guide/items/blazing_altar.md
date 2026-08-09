@@ -17,22 +17,23 @@ categories:
 
 Area controller for **Burning Flame** / **Cursed Burning Flame** placement and optional **natural spawn** blocking. Works only in **already loaded** chunks (no chunk loading).
 
-## Placer slot
+## What it does
 
-- Insert a **Burning Brazier** or **Arcane Candle** to auto-place matching flames in the configured chunk radius.
-- Empty slot: no flame placement; spawn blocking (if enabled) still works.
-- Brazier durability increases on each placement but **never** breaks (capped below max).
+- If you do **not** insert a **Burning Brazier** or an **Arcane Candle**, the altar **prevents natural mob spawning** in its area (according to the spawn filter and redstone).
+- Insert a **Burning Brazier** or **Arcane Candle** to also auto-place matching flames (**Burning Flame** / **Cursed Burning Flame**) in the chunk radius.
+- With a Brazier, remaining durability **decreases** on each placement but the item **never** breaks (capped so it cannot fully deplete).
 
 ## GUI
 
 - **Spawn filter**: Off / All / Hostile / Passive — affects only `NATURAL` mob spawns in the area.
-- **Chunk radius** (1–4, Chebyshev): area size for flames and spawn filter.
+- **Chunk radius** (Chebyshev): area size for flames and spawn filter.
 - **Ground only**: flames only on top of solid ground (default on). With ground off, flames may place in open air.
-- **Light-sensitive blocks** (config `[general_utilities.blazing_altar]`): by default mushrooms, entropic soil, and dreadful dirt must keep **block light 0** on the block and the space above it — any simulated flame contribution is rejected (configurable via `005_light_sensitive_max_block_light`, default `0`).
+- **Light-sensitive blocks**: mushrooms, entropic soil, and dreadful dirt must stay in darkness on the block and the space above it — flame placement that would light them is rejected.
 - **Flame Vision**: global client toggle to see mod flame blocks (also toggled with left-click in air or on a brazier/candle).
+- **Show**: corner pillars marking the extreme chunks of the coverage area.
 - **Redstone**: default **ignored** (always active). Other modes match factory machines (no pulse).
-- **Extinguish / break**: removing flames scans the area **progressively** (chunk columns per tick, config `008_extinguish_columns_per_tick`) so large radii do not freeze the server. Breaking the altar also schedules cleanup of flames in range.
+- **Extinguish / break**: removing flames scans the area progressively so large radii do not freeze the server. Breaking the altar also schedules cleanup of flames in range. Extinguish can restore Brazier durability when flames are removed.
 
 ## Visibility
 
-Burning and cursed flame blocks are hidden on the client unless **Flame Vision** is enabled (GUI, or left-click in air / on brazier or candle).
+**Burning Flame** and **Cursed Burning Flame** blocks are hidden on the client unless **Flame Vision** is enabled (GUI, or left-click in air / on brazier or candle).

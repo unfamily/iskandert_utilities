@@ -190,6 +190,18 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         BlazingAltarBlockSync.sync(this);
     }
 
+    public boolean isShowAreaEnabled() {
+        return config.isShowAreaEnabled();
+    }
+
+    public void setShowAreaEnabled(boolean enabled) {
+        if (config.isShowAreaEnabled() != enabled) {
+            config.setShowAreaEnabled(enabled);
+            setChanged();
+            BlazingAltarBlockSync.sync(this);
+        }
+    }
+
     public void extinguishFlamesInRange(ServerLevel level) {
         if (extinguishing || BlazingAltarExtinguishJobs.hasJob(level, worldPosition, getInstanceId())) {
             cancelExtinguishInRange(level);

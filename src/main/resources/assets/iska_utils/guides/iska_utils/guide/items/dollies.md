@@ -8,7 +8,7 @@ item_ids:
   - iska_utils:dolly
   - iska_utils:dolly_hard
 categories:
-  - Tools and scanner
+  - Useful tools
 ---
 # Dollies
 

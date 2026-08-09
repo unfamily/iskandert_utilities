@@ -183,7 +183,7 @@ dependencies {
     // Do not add the 1.21.1 jar to localRuntime on 26.x (version mismatch crashes FML).
 
     // Iskandert Library 26.x — local JAR when present, else CurseForge
-    def iskaLibLocalJar = file('libs/iska_lib-1.7.0.0.0.jar')
+    def iskaLibLocalJar = file('libs/iska_lib-1.9.0.0.0.jar')
     def iskaLibForceRemote = project.findProperty('iskaLibUseLocal')?.toString()?.toBoolean() == false
     if (iskaLibLocalJar.exists() && !iskaLibForceRemote) {
         implementation files(iskaLibLocalJar)

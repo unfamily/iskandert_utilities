@@ -30,6 +30,7 @@ public final class NullifierChunkIndex {
     private record NullifierKey(Kind kind, ResourceKey<Level> dimension, BlockPos pos) {}
 
     private static final Map<NullifierKey, Set<ChunkKey>> NULLIFIER_TO_CHUNKS = new ConcurrentHashMap<>();
+    private static final Map<NullifierKey, Integer> NULLIFIER_RANGES = new ConcurrentHashMap<>();
     private static final Map<Kind, Map<ChunkKey, Integer>> chunkCountsByKind = new ConcurrentHashMap<>();
     private static final Set<Kind> dirtyKinds = ConcurrentHashMap.newKeySet();
 
@@ -63,21 +64,23 @@ public final class NullifierChunkIndex {
         }
     }
 
-    public static void refresh(ServerLevel level, BlockPos pos, Kind kind) {
+    public static void refresh(ServerLevel level, BlockPos pos, Kind kind, int radius) {
         NullifierKey key = new NullifierKey(kind, level.dimension(), pos.immutable());
         NULLIFIER_TO_CHUNKS.remove(key);
+        NULLIFIER_RANGES.remove(key);
 
         BlockState state = level.getBlockState(pos);
         boolean active = isActiveBlock(state, kind);
         if (active) {
-            int radius = radiusFor(kind);
             NULLIFIER_TO_CHUNKS.put(key, chunksIntersectingCube(level.dimension(), pos, radius));
+            NULLIFIER_RANGES.put(key, radius);
             markDirty(kind);
         }
     }
 
     public static void remove(ServerLevel level, BlockPos pos, Kind kind) {
         NullifierKey key = new NullifierKey(kind, level.dimension(), pos.immutable());
+        NULLIFIER_RANGES.remove(key);
         if (NULLIFIER_TO_CHUNKS.remove(key) != null) {
             markDirty(kind);
         }
@@ -89,9 +92,9 @@ public final class NullifierChunkIndex {
                 .collect(java.util.stream.Collectors.toSet());
         for (NullifierKey key : keys) {
             ServerLevel sl = server.getLevel(key.dimension());
-            if (sl != null) {
-                refresh(sl, key.pos(), kind);
-            }
+            if (sl == null) continue;
+            int radius = NULLIFIER_RANGES.getOrDefault(key, radiusFor(kind));
+            refresh(sl, key.pos(), kind, radius);
         }
     }
 
@@ -101,24 +104,17 @@ public final class NullifierChunkIndex {
     }
 
     public static boolean isWithinActiveCoverage(ServerLevel level, double x, double y, double z, Kind kind) {
-        int radius = radiusFor(kind);
         int cx = SectionPos.posToSectionCoord(x);
         int cz = SectionPos.posToSectionCoord(z);
-        int chunkRadius = (radius >> 4) + 1;
-        for (int dcx = -chunkRadius; dcx <= chunkRadius; dcx++) {
-            for (int dcz = -chunkRadius; dcz <= chunkRadius; dcz++) {
-                if (getChunkCoverageCount(level, cx + dcx, cz + dcz, kind) <= 0) {
-                    continue;
-                }
+        int searchRadius = (128 >> 4) + 2;
+        for (int dcx = -searchRadius; dcx <= searchRadius; dcx++) {
+            for (int dcz = -searchRadius; dcz <= searchRadius; dcz++) {
+                if (getChunkCoverageCount(level, cx + dcx, cz + dcz, kind) <= 0) continue;
                 for (Map.Entry<NullifierKey, Set<ChunkKey>> entry : NULLIFIER_TO_CHUNKS.entrySet()) {
                     NullifierKey key = entry.getKey();
-                    if (key.kind() != kind || !key.dimension().equals(level.dimension())) {
-                        continue;
-                    }
-                    BlockPos center = key.pos();
-                    if (isWithinCubeRadius(center, x, y, z, radius)) {
-                        return true;
-                    }
+                    if (key.kind() != kind || !key.dimension().equals(level.dimension())) continue;
+                    int radius = NULLIFIER_RANGES.getOrDefault(key, radiusFor(kind));
+                    if (isWithinCubeRadius(key.pos(), x, y, z, radius)) return true;
                 }
             }
         }

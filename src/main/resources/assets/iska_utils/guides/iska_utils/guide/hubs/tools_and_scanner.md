@@ -1,15 +1,15 @@
 ---
 navigation:
-  title: Tools and scanner
+  title: Useful tools
   icon: iska_utils:scanner
   parent: index.md
   position: 30
 categories:
-  - Tools and scanner
+  - Useful tools
 ---
-# Tools and scanner
+# Useful tools
 
-Dollies, structure tools, Swiss Wrench, and the Scanner. For **Mining Equitizer** and other artifacts see **Suspicious Delivery**.
+Dollies, structure tools, Swiss Wrench, Scanner, and Crystal Cage. For **Mining Equitizer** and other artifacts see **Suspicious Delivery**.
 
 
 <SubPages icons={true} alphabetical={true} />

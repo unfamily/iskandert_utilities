@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "#c:gems/amethyst",
+    "iska_utils:drop_of_entropy",
+    "iska_utils:drop_of_entropy"
+  ],
+  "result": {
+    "id": "iska_utils:crystal_cage",
+    "count": 1
+  }
+}
