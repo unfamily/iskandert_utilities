@@ -1,6 +1,8 @@
 {
   "values": [
     "iska_utils:wither_proof_block",
-    "iska_utils:obscure_glass"
+    "iska_utils:obscure_glass",
+    "iska_utils:ethereal_obscure_glass",
+    "#c:bars/netherite"
   ]
 }

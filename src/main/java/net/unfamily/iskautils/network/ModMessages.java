@@ -433,6 +433,12 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.LabelingMachineRenameC2SPacket::handle
         );
 
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.LabelingMachineLoreC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.LabelingMachineLoreC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.LabelingMachineLoreC2SPacket::handle
+        );
+
     }
     
     /**
