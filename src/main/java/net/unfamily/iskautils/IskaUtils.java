@@ -79,6 +79,7 @@ public class IskaUtils {
         // If we are on the client, also register client setup
         if (FMLEnvironment.dist == Dist.CLIENT) {
             modEventBus.addListener(this::clientSetup);
+            net.unfamily.iskalib.client.marker.VanillaWorldMarkerClientHooks.registerIfNeeded(NeoForge.EVENT_BUS);
 
             // Register GUI MenuTypes (client-only)
             net.unfamily.iskautils.client.gui.ModMenuTypes.MENUS.register(modEventBus);

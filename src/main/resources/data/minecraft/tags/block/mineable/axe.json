@@ -22,6 +22,7 @@
     "iska_utils:structure_saver_machine",
     "iska_utils:structure_placer_machine",
     "iska_utils:collecting_crate",
-    "iska_utils:the_deception"
+    "iska_utils:the_deception",
+    "iska_utils:ethereal_frame"
   ]
 } 

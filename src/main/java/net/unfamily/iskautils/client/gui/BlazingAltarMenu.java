@@ -1,7 +1,6 @@
 package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -50,7 +49,8 @@ public class BlazingAltarMenu extends AbstractContainerMenu {
     private static final int EXTINGUISH_CHUNK_PROGRESS_INDEX = 10;
     private static final int EXTINGUISH_CHUNK_TOTAL_INDEX = 11;
     private static final int EXTINGUISHING_INDEX = 12;
-    private static final int DATA_COUNT = 13;
+    private static final int SHOW_AREA_INDEX = 13;
+    private static final int DATA_COUNT = 14;
 
     private final BlazingAltarBlockEntity blockEntity;
     private final ContainerLevelAccess levelAccess;
@@ -80,6 +80,7 @@ public class BlazingAltarMenu extends AbstractContainerMenu {
                     case EXTINGUISH_CHUNK_PROGRESS_INDEX -> blockEntity.getExtinguishChunkProgress();
                     case EXTINGUISH_CHUNK_TOTAL_INDEX -> blockEntity.getExtinguishChunkTotal();
                     case EXTINGUISHING_INDEX -> blockEntity.isExtinguishing() ? 1 : 0;
+                    case SHOW_AREA_INDEX -> blockEntity.isShowAreaEnabled() ? 1 : 0;
                     default -> 0;
                 };
             }
@@ -213,6 +214,10 @@ public class BlazingAltarMenu extends AbstractContainerMenu {
         return containerData.get(EXTINGUISHING_INDEX) != 0;
     }
 
+    public boolean isShowAreaEnabled() {
+        return containerData.get(SHOW_AREA_INDEX) != 0;
+    }
+
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         ItemStack result = ItemStack.EMPTY;
@@ -222,32 +227,35 @@ public class BlazingAltarMenu extends AbstractContainerMenu {
         }
         ItemStack stack = slot.getItem();
         result = stack.copy();
-        if (index == PLACER_SLOT_INDEX) {
-            if (!moveItemStackTo(stack, PLAYER_SLOT_START, slots.size(), true)) {
-                return ItemStack.EMPTY;
-            }
-        } else if (index == MODULE_SLOT_INDEX) {
+
+        if (index < PLAYER_SLOT_START) {
+            // Machine slots → player inventory
             if (!moveItemStackTo(stack, PLAYER_SLOT_START, slots.size(), true)) {
                 return ItemStack.EMPTY;
             }
         } else if (stack.is(ModItems.RANGE_MODULE.get())) {
-            if (!moveItemStackTo(stack, MODULE_SLOT_INDEX, MODULE_SLOT_INDEX + 1, false)
-                    && !moveItemStackTo(stack, PLAYER_SLOT_START, slots.size(), true)) {
+            if (!moveItemStackTo(stack, MODULE_SLOT_INDEX, MODULE_SLOT_INDEX + 1, false)) {
                 return ItemStack.EMPTY;
             }
         } else if (stack.is(ModItems.BURNING_BRAZIER.get()) || stack.is(ModItems.CURSED_CANDLE.get())) {
-            if (!moveItemStackTo(stack, PLACER_SLOT_INDEX, PLACER_SLOT_INDEX + 1, false)
-                    && !moveItemStackTo(stack, PLAYER_SLOT_START, slots.size(), true)) {
+            if (!moveItemStackTo(stack, PLACER_SLOT_INDEX, PLACER_SLOT_INDEX + 1, false)) {
                 return ItemStack.EMPTY;
             }
-        } else if (!moveItemStackTo(stack, PLAYER_SLOT_START, slots.size(), true)) {
+        } else {
+            // Not accepted by the altar — do not reshuffle within the player inventory
+            // (that path duplicated stacks on shift-click).
             return ItemStack.EMPTY;
         }
+
         if (stack.isEmpty()) {
             slot.set(ItemStack.EMPTY);
         } else {
             slot.setChanged();
         }
+        if (stack.getCount() == result.getCount()) {
+            return ItemStack.EMPTY;
+        }
+        slot.onTake(player, stack);
         return result;
     }
 

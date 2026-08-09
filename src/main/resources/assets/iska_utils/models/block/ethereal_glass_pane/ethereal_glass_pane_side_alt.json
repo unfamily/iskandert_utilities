@@ -1,0 +1,8 @@
+{
+  "render_type": "minecraft:translucent",
+  "parent": "minecraft:block/template_glass_pane_side_alt",
+  "textures": {
+    "pane": "iska_utils:block/ethereal_glass/ethereal_glass",
+    "edge": "iska_utils:block/ethereal_glass/ethereal_glass_edge"
+  }
+}

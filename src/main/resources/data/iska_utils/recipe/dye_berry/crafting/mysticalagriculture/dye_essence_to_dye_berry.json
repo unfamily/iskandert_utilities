@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "mysticalagriculture"
+    }
+  ],
+  "ingredients": [
+    { "item": "mysticalagriculture:dye_essence" },
+    { "item": "mysticalagriculture:dye_essence" },
+    { "item": "mysticalagriculture:dye_essence" },
+    { "item": "mysticalagriculture:dye_essence" }
+  ],
+  "result": {
+    "id": "iska_utils:dye_berry",
+    "count": 8
+  }
+}

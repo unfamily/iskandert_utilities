@@ -3,20 +3,107 @@ package net.unfamily.iskautils.block.entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.items.ItemStackHandler;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.SoulNullifierBlock;
+import net.unfamily.iskautils.client.gui.NullifierMenu;
+import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.world.NullifierChunkIndex;
 
-public class SoulNullifierBlockEntity extends BlockEntity {
+public class SoulNullifierBlockEntity extends BlockEntity implements MenuProvider, INullifierBE {
     private EnderNullifierRedstoneMode redstoneMode = EnderNullifierRedstoneMode.MANUAL;
     private boolean manualEnabled = true;
     private boolean previousRedstoneState = false;
+    private int range = -1;
+    private boolean showAreaEnabled = false;
+
+    private final ItemStackHandler moduleHandler = new ItemStackHandler(1) {
+        @Override
+        protected void onContentsChanged(int slot) {
+            clampRangeToMax();
+            setChanged();
+        }
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return stack.is(ModItems.RANGE_MODULE.get());
+        }
+        @Override
+        public int getSlotLimit(int slot) { return Config.nullifierRangeUpgradeMax; }
+    };
 
     public SoulNullifierBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SOUL_NULLIFIER_BE.get(), pos, state);
+    }
+
+    // --- INullifierBE ---
+    @Override public NullifierType getNullifierType() { return NullifierType.SOUL; }
+    @Override public ItemStackHandler getModuleHandler() { return moduleHandler; }
+    @Override public boolean isShowAreaEnabled() { return showAreaEnabled; }
+    @Override public void setShowAreaEnabled(boolean v) { showAreaEnabled = v; setChanged(); }
+
+    @Override
+    public int getRange() {
+        if (range < 0) range = Config.soulNullifierRadius;
+        return range;
+    }
+    @Override
+    public void setRange(int r) {
+        this.range = Math.max(1, Math.min(r, getMaxRange()));
+        setChanged();
+        syncIndex(computeEffectiveActive(getBlockState().getValue(SoulNullifierBlock.POWERED)));
+    }
+
+    private void clampRangeToMax() {
+        if (range < 0) {
+            return;
+        }
+        int max = getMaxRange();
+        if (range > max) {
+            setRange(max);
+        }
+    }
+
+    @Override
+    public int getMaxRange() {
+        int modules = moduleHandler.getStackInSlot(0).getCount();
+        return Config.soulNullifierMaxRange + modules * Config.soulNullifierRangeModuleBonus;
+    }
+    @Override
+    public int getRedstoneModeGui() {
+        if (!manualEnabled) return 1;
+        return switch (redstoneMode) { case MANUAL -> 0; case LOW -> 2; case HIGH -> 3; };
+    }
+    @Override
+    public void setRedstoneModeGui(int guiMode) {
+        switch (guiMode) {
+            case 0 -> { manualEnabled = true;  redstoneMode = EnderNullifierRedstoneMode.MANUAL; }
+            case 1 -> manualEnabled = false;
+            case 2 -> { manualEnabled = true;  redstoneMode = EnderNullifierRedstoneMode.LOW; }
+            case 3 -> { manualEnabled = true;  redstoneMode = EnderNullifierRedstoneMode.HIGH; }
+        }
+        if (level != null && !level.isClientSide) {
+            applyEffectiveState(level, worldPosition, getBlockState());
+        }
+    }
+
+    // --- MenuProvider ---
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("gui.iska_utils.soul_nullifier.title");
+    }
+    @Override
+    public AbstractContainerMenu createMenu(int id, Inventory inv, Player player) {
+        return new NullifierMenu(id, inv, this);
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, SoulNullifierBlockEntity blockEntity) {
@@ -97,11 +184,9 @@ public class SoulNullifierBlockEntity extends BlockEntity {
     }
 
     private void syncIndex(boolean active) {
-        if (!(level instanceof ServerLevel serverLevel)) {
-            return;
-        }
+        if (!(level instanceof ServerLevel serverLevel)) return;
         if (active) {
-            NullifierChunkIndex.refresh(serverLevel, worldPosition, NullifierChunkIndex.Kind.SOUL);
+            NullifierChunkIndex.refresh(serverLevel, worldPosition, NullifierChunkIndex.Kind.SOUL, getRange());
         } else {
             NullifierChunkIndex.remove(serverLevel, worldPosition, NullifierChunkIndex.Kind.SOUL);
         }
@@ -125,12 +210,15 @@ public class SoulNullifierBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         int modeValue = tag.contains("RedstoneMode") ? tag.getInt("RedstoneMode") : 0;
-        if (modeValue == 3) {
-            modeValue = 0;
-        }
+        if (modeValue == 3) modeValue = 0;
         redstoneMode = EnderNullifierRedstoneMode.fromValue(modeValue);
         manualEnabled = !tag.contains("ManualEnabled") || tag.getBoolean("ManualEnabled");
         previousRedstoneState = tag.getBoolean("PreviousRedstoneState");
+        range = tag.contains("Range") ? tag.getInt("Range") : -1;
+        showAreaEnabled = tag.getBoolean("ShowArea");
+        if (tag.contains("Modules")) {
+            moduleHandler.deserializeNBT(registries, tag.getCompound("Modules"));
+        }
         if (level != null && !level.isClientSide) {
             reconcileEffectiveState();
         }
@@ -142,5 +230,8 @@ public class SoulNullifierBlockEntity extends BlockEntity {
         tag.putInt("RedstoneMode", redstoneMode.getValue());
         tag.putBoolean("ManualEnabled", manualEnabled);
         tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
+        tag.putInt("Range", getRange());
+        tag.putBoolean("ShowArea", showAreaEnabled);
+        tag.put("Modules", moduleHandler.serializeNBT(registries));
     }
 }

@@ -2,6 +2,7 @@ package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -10,8 +11,11 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.client.TemporalOverclockerAreaPreview;
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.network.packet.TemporalOverclockerShowAreaC2SPacket;
 import net.minecraft.core.BlockPos;
 
 /**
@@ -66,6 +70,8 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
 
     // Acceleration factor button (vanilla button)
     private Button accelerationButton;
+    private Button previewButton;
+    private boolean showingArea;
     
     // Entry buttons (vanilla buttons for each visible entry)
     private final java.util.List<Button> highlightButtons = new java.util.ArrayList<>();
@@ -130,6 +136,27 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         
         this.addRenderableWidget(this.accelerationButton);
 
+        showingArea = menu.isShowAreaEnabled();
+        this.previewButton = Button.builder(previewAreaLabel(), b -> toggleAreaPreview())
+                .bounds(
+                        this.leftPos + accelerationButtonX + TemporalOverclockerMenu.PREVIEW_BUTTON_X_OFFSET,
+                        this.topPos + TemporalOverclockerMenu.PREVIEW_BUTTON_Y,
+                        TemporalOverclockerMenu.PREVIEW_BUTTON_WIDTH,
+                        TemporalOverclockerMenu.PREVIEW_BUTTON_HEIGHT)
+                .tooltip(Tooltip.create(Component.translatable(
+                        showingArea
+                                ? "gui.iska_utils.temporal_overclocker.tooltip.hide_area"
+                                : "gui.iska_utils.temporal_overclocker.tooltip.preview_area")))
+                .build();
+        this.addRenderableWidget(this.previewButton);
+        if (showingArea) {
+            BlockPos synced = menu.getSyncedBlockPos();
+            if (!synced.equals(BlockPos.ZERO)) {
+                TemporalOverclockerAreaPreview.setActive(synced, true);
+                TemporalOverclockerAreaPreview.refresh(synced);
+            }
+        }
+
         redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
                 sideButtonsScreenX(),
                 redstoneButtonScreenY(),
@@ -178,12 +205,34 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                     .append(Component.literal(String.valueOf(percentage)).withStyle(valueColor))
                     .append(Component.literal("%")));
         }
+
+        boolean nowShowing = menu.isShowAreaEnabled();
+        if (nowShowing != showingArea) {
+            showingArea = nowShowing;
+            if (previewButton != null) {
+                previewButton.setMessage(previewAreaLabel());
+                previewButton.setTooltip(Tooltip.create(Component.translatable(
+                        showingArea
+                                ? "gui.iska_utils.temporal_overclocker.tooltip.hide_area"
+                                : "gui.iska_utils.temporal_overclocker.tooltip.preview_area")));
+            }
+            if (!showingArea) {
+                TemporalOverclockerAreaPreview.setActive(menu.getSyncedBlockPos(), false);
+            } else {
+                BlockPos pos = menu.getSyncedBlockPos();
+                TemporalOverclockerAreaPreview.setActive(pos, true);
+                TemporalOverclockerAreaPreview.refresh(pos);
+            }
+        }
         
         // Update entry buttons SOLO se necessario (evita lampeggiamento tooltip)
         if (scrollOffset != lastScrollOffset || linkedBlocks.size() != lastLinkedBlocksSize) {
             updateEntryButtons();
             lastScrollOffset = scrollOffset;
             lastLinkedBlocksSize = linkedBlocks.size();
+            if (showingArea) {
+                refreshAreaPreview();
+            }
         }
     }
     
@@ -782,11 +831,47 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     private void playButtonSound() {
         if (this.minecraft != null) {
             this.minecraft.getSoundManager().play(
-                net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                            net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
         }
     }
-    
+
+    private void toggleAreaPreview() {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        playButtonSound();
+        boolean enabling = !menu.isShowAreaEnabled();
+        showingArea = enabling;
+        if (previewButton != null) {
+            previewButton.setMessage(previewAreaLabel());
+            previewButton.setTooltip(Tooltip.create(Component.translatable(
+                    enabling
+                            ? "gui.iska_utils.temporal_overclocker.tooltip.hide_area"
+                            : "gui.iska_utils.temporal_overclocker.tooltip.preview_area")));
+        }
+        PacketDistributor.sendToServer(new TemporalOverclockerShowAreaC2SPacket(pos, enabling));
+        TemporalOverclockerAreaPreview.setActive(pos, enabling);
+        if (enabling) {
+            refreshAreaPreview();
+        }
+    }
+
+    private void refreshAreaPreview() {
+        BlockPos center = menu.getSyncedBlockPos();
+        if (center.equals(BlockPos.ZERO)) {
+            return;
+        }
+        TemporalOverclockerAreaPreview.refresh(center);
+    }
+
+    private Component previewAreaLabel() {
+        return showingArea
+                ? Component.translatable("gui.iska_utils.generic.hide")
+                : Component.translatable("gui.iska_utils.generic.show");
+    }
+
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         // Draw the title (centered)

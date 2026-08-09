@@ -13,6 +13,7 @@ public final class BlazingAltarConfig {
     private static final String TAG_GROUND_ONLY = "GroundOnly";
     private static final String TAG_SPAWN_MODE = "SpawnMode";
     private static final String TAG_REDSTONE_MODE = "RedstoneMode";
+    private static final String TAG_SHOW_AREA = "ShowAreaEnabled";
     private static final String TAG_TICK_COUNTER = "TickCounter";
     private static final String TAG_PLACEMENT_CHUNK_INDEX = "PlacementChunkIndex";
 
@@ -21,6 +22,7 @@ public final class BlazingAltarConfig {
     private boolean groundOnly = true;
     private BlazingAltarSpawnMode spawnMode = BlazingAltarSpawnMode.HOSTILE;
     private int redstoneMode;
+    private boolean showAreaEnabled;
     private int tickCounter;
     private int placementChunkIndex;
 
@@ -68,6 +70,14 @@ public final class BlazingAltarConfig {
         this.redstoneMode = redstoneMode;
     }
 
+    public boolean isShowAreaEnabled() {
+        return showAreaEnabled;
+    }
+
+    public void setShowAreaEnabled(boolean showAreaEnabled) {
+        this.showAreaEnabled = showAreaEnabled;
+    }
+
     public int getTickCounter() {
         return tickCounter;
     }
@@ -90,6 +100,7 @@ public final class BlazingAltarConfig {
         tag.putBoolean(TAG_GROUND_ONLY, groundOnly);
         tag.putInt(TAG_SPAWN_MODE, spawnMode.getId());
         tag.putInt(TAG_REDSTONE_MODE, redstoneMode);
+        tag.putBoolean(TAG_SHOW_AREA, showAreaEnabled);
         tag.putInt(TAG_TICK_COUNTER, tickCounter);
         tag.putInt(TAG_PLACEMENT_CHUNK_INDEX, placementChunkIndex);
     }
@@ -110,6 +121,7 @@ public final class BlazingAltarConfig {
         if (redstoneMode == 3) {
             redstoneMode = 4;
         }
+        showAreaEnabled = tag.getBoolean(TAG_SHOW_AREA);
         tickCounter = tag.getInt(TAG_TICK_COUNTER);
         placementChunkIndex = Math.max(0, tag.getInt(TAG_PLACEMENT_CHUNK_INDEX));
     }

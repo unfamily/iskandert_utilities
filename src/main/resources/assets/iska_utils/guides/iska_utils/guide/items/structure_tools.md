@@ -8,7 +8,7 @@ item_ids:
   - iska_utils:structure_placer
   - iska_utils:blueprint
 categories:
-  - Tools and scanner
+  - Useful tools
 ---
 # Structure Placer and Blueprint
 

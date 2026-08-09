@@ -97,13 +97,53 @@ public class Config
                     "Also disables inverted placement (Shift when placing the block has no effect on direction)")
             .define("002_hellfireIgniterVanillaLike", false);
 
+    static {
+        BUILDER.comment("Nullifier Configuration").push("nullifiers");
+    }
+
     private static final ModConfigSpec.IntValue ENDER_NULLIFIER_RADIUS = BUILDER
-            .comment("Per-axis radius in blocks of the cubic area around an active Ender Nullifier that blocks mob teleports")
-            .defineInRange("003_enderNullifierRadius", 8, 1, 128);
+            .comment("Default per-axis radius for Ender Nullifier (overridable per-block via GUI)")
+            .defineInRange("000_enderNullifierRadius", 8, 1, 128);
+
+    private static final ModConfigSpec.IntValue ENDER_NULLIFIER_MAX_RANGE = BUILDER
+            .comment("Maximum per-axis radius an Ender Nullifier can reach (without range modules)")
+            .defineInRange("001_enderNullifierMaxRange", 8, 1, 256);
+
+    private static final ModConfigSpec.IntValue ENDER_NULLIFIER_RANGE_MODULE_BONUS = BUILDER
+            .comment("Extra per-axis range added per Range Module in an Ender Nullifier slot")
+            .defineInRange("002_enderNullifierRangeModuleBonus", 8, 1, 128);
 
     private static final ModConfigSpec.IntValue WANDER_NULLIFIER_RADIUS = BUILDER
-            .comment("Per-axis radius in blocks of the cubic area around an active Wander Nullifier that blocks wandering trader spawns")
-            .defineInRange("004_wanderNullifierRadius", 64, 1, 128);
+            .comment("Default per-axis radius for Wander Nullifier (overridable per-block via GUI)")
+            .defineInRange("003_wanderNullifierRadius", 64, 1, 128);
+
+    private static final ModConfigSpec.IntValue WANDER_NULLIFIER_MAX_RANGE = BUILDER
+            .comment("Maximum per-axis radius a Wander Nullifier can reach (without range modules)")
+            .defineInRange("004_wanderNullifierMaxRange", 64, 1, 256);
+
+    private static final ModConfigSpec.IntValue WANDER_NULLIFIER_RANGE_MODULE_BONUS = BUILDER
+            .comment("Extra per-axis range added per Range Module in a Wander Nullifier slot")
+            .defineInRange("005_wanderNullifierRangeModuleBonus", 64, 1, 128);
+
+    private static final ModConfigSpec.IntValue SOUL_NULLIFIER_RADIUS = BUILDER
+            .comment("Default per-axis radius for Soul Nullifier (overridable per-block via GUI)")
+            .defineInRange("006_soulNullifierRadius", 8, 1, 128);
+
+    private static final ModConfigSpec.IntValue SOUL_NULLIFIER_MAX_RANGE = BUILDER
+            .comment("Maximum per-axis radius a Soul Nullifier can reach (without range modules)")
+            .defineInRange("007_soulNullifierMaxRange", 8, 1, 256);
+
+    private static final ModConfigSpec.IntValue SOUL_NULLIFIER_RANGE_MODULE_BONUS = BUILDER
+            .comment("Extra per-axis range added per Range Module in a Soul Nullifier slot")
+            .defineInRange("008_soulNullifierRangeModuleBonus", 8, 1, 128);
+
+    private static final ModConfigSpec.IntValue NULLIFIER_RANGE_UPGRADE_MAX = BUILDER
+            .comment("Maximum number of Range Module items stackable in a nullifier's module slot")
+            .defineInRange("009_nullifierRangeUpgradeMax", 3, 1, 64);
+
+    static {
+        BUILDER.pop(); // End of nullifiers category
+    }
 
     // Portable Dislocator energy configuration
     private static final ModConfigSpec.IntValue PORTABLE_DISLOCATOR_ENERGY_CAPACITY = BUILDER
@@ -1133,6 +1173,18 @@ public class Config
             .comment("Armor toughness bonus while Calling Bell is active.")
             .defineInRange("547_calling_bell_toughness_bonus", 2.0D, 0.0D, 64.0D);
 
+    private static final ModConfigSpec.DoubleValue ENTROPIC_CHAMPAGNE_PROC_CHANCE = BUILDER
+            .comment("Chance (0.0–1.0) to re-apply a positive mob effect when it expires while Entropic Champagne is equipped.")
+            .defineInRange("548_entropic_champagne_proc_chance", 0.15D, 0.0D, 1.0D);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_CHAMPAGNE_MIN_DURATION_SECONDS = BUILDER
+            .comment("Minimum re-applied effect duration in seconds for Entropic Champagne.")
+            .defineInRange("549_entropic_champagne_min_duration_seconds", 5, 1, 3600);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_CHAMPAGNE_MAX_DURATION_SECONDS = BUILDER
+            .comment("Maximum re-applied effect duration in seconds for Entropic Champagne.")
+            .defineInRange("550_entropic_champagne_max_duration_seconds", 15, 1, 3600);
+
     private static final ModConfigSpec.DoubleValue ENTROPIC_RING_APOTHEOSIS_HAVEN_MULT = BUILDER
             .comment("Entropic Ring damage multiplier at Apotheosis WorldTier Haven.")
             .defineInRange("530_entropic_ring_apotheosis_haven_mult", 1.0D, 0.0D, 100.0D);
@@ -1199,7 +1251,7 @@ public class Config
 
     private static final ModConfigSpec.IntValue REAPER_NORMAL_UPGRADE_MAX = BUILDER
             .comment("Maximum normal damage modules in slot 0")
-            .defineInRange("100_reaperNormalUpgradeMax", 10, 0, Integer.MAX_VALUE);
+            .defineInRange("100_reaperNormalUpgradeMax", 8, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.DoubleValue REAPER_NORMAL_BONUS_PER_MODULE = BUILDER
             .comment("Bonus damage per normal module stack")
@@ -1328,6 +1380,25 @@ public class Config
     static {
         BUILDER.pop(); // End of blazing_altar category
     }
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> CRYSTAL_CAGE_CAPTURE_BLACKLIST = BUILDER
+            .comment("Entity types that cannot be captured by Crystal Cage / Crystal Cage Trap Plate.",
+                    "Entries starting with # are entity type tags (e.g. #c:bosses).",
+                    "Entries without # are entity type IDs (e.g. minecraft:warden).")
+            .defineList("500_crystalCageCaptureBlacklist",
+                    java.util.List.of("#c:bosses"),
+                    obj -> obj instanceof String);
+
+    private static final ModConfigSpec.BooleanValue CRYSTAL_CAGE_ACTS_AS_SPAWN_EGG_ON_SPAWNERS = BUILDER
+            .comment("If true, a filled Crystal Cage used on a Spawner, Trial Spawner, or Entropic Spawner",
+                    "sets the spawn type like a spawn egg (empties/consumes the cage like an egg).")
+            .define("501_crystalCageActsAsSpawnEggOnSpawners", true);
+
+    private static final ModConfigSpec.BooleanValue ETHEREAL_FRAME_REINFORCEMENT_ENABLED = BUILDER
+            .comment("If true, Ethereal Frames can be reinforced with blocks in #iska_utils:ethereal_frame_reinforcement",
+                    "(wither proof block / obscure glass) via left-click; reinforced frames use wither-proof hardness,",
+                    "blast resistance, and wither/dragon immunity. If false, frames always use wood-like parameters.")
+            .define("502_etherealFrameReinforcementEnabled", true);
 
     private static final ModConfigSpec.BooleanValue SACRED_RUBBER_TREE_GROWTH_ENABLED = BUILDER
             .comment("If true, sacred rubber saplings can grow after the required bonemeal uses.")
@@ -1792,7 +1863,15 @@ public class Config
     public static int hellfireIgniterBuffer;
     public static boolean hellfireIgniterVanillaLike;
     public static int enderNullifierRadius;
+    public static int enderNullifierMaxRange;
     public static int wanderNullifierRadius;
+    public static int wanderNullifierMaxRange;
+    public static int soulNullifierRadius;
+    public static int soulNullifierMaxRange;
+    public static int nullifierRangeUpgradeMax;
+    public static int enderNullifierRangeModuleBonus;
+    public static int wanderNullifierRangeModuleBonus;
+    public static int soulNullifierRangeModuleBonus;
     public static boolean sacredRubberTreeGrowthEnabled;
     public static boolean sacredRubberMegaTreeGrowthEnabled;
     public static boolean verticalCharmEnabled;
@@ -1997,6 +2076,9 @@ public class Config
     public static double callingBellHpBonus;
     public static double callingBellArmorBonus;
     public static double callingBellToughnessBonus;
+    public static double entropicChampagneProcChance;
+    public static int entropicChampagneMinDurationSeconds;
+    public static int entropicChampagneMaxDurationSeconds;
     public static double entropicClockMaxFactorMultiplier;
     public static int entropicClockEntropyPerTick;
     public static int entropicClockMaxStored;
@@ -2090,6 +2172,9 @@ public class Config
     public static java.util.List<String> deepDrawersDeny;
     public static int deepDrawerExtractorInterval;
     public static int deepDrawerExtractorMaxFilters;
+    public static java.util.List<String> crystalCageCaptureBlacklist;
+    public static boolean crystalCageActsAsSpawnEggOnSpawners;
+    public static boolean etherealFrameReinforcementEnabled;
     
     public static java.util.List<String> dollyWhitelist;
     public static java.util.List<String> dollyBlacklist;
@@ -2130,7 +2215,15 @@ public class Config
         hellfireIgniterBuffer = HELLFIRE_IGNITER_BUFFER.get();
         hellfireIgniterVanillaLike = HELLFIRE_IGNITER_VANILLA_LIKE.get();
         enderNullifierRadius = ENDER_NULLIFIER_RADIUS.get();
+        enderNullifierMaxRange = ENDER_NULLIFIER_MAX_RANGE.get();
         wanderNullifierRadius = WANDER_NULLIFIER_RADIUS.get();
+        wanderNullifierMaxRange = WANDER_NULLIFIER_MAX_RANGE.get();
+        soulNullifierRadius = SOUL_NULLIFIER_RADIUS.get();
+        soulNullifierMaxRange = SOUL_NULLIFIER_MAX_RANGE.get();
+        nullifierRangeUpgradeMax = NULLIFIER_RANGE_UPGRADE_MAX.get();
+        enderNullifierRangeModuleBonus = ENDER_NULLIFIER_RANGE_MODULE_BONUS.get();
+        wanderNullifierRangeModuleBonus = WANDER_NULLIFIER_RANGE_MODULE_BONUS.get();
+        soulNullifierRangeModuleBonus = SOUL_NULLIFIER_RANGE_MODULE_BONUS.get();
         sacredRubberTreeGrowthEnabled = SACRED_RUBBER_TREE_GROWTH_ENABLED.get();
         sacredRubberMegaTreeGrowthEnabled = SACRED_RUBBER_MEGA_TREE_GROWTH_ENABLED.get();
         portableDislocatorEnergyCapacity = PORTABLE_DISLOCATOR_ENERGY_CAPACITY.get();
@@ -2306,6 +2399,9 @@ public class Config
         // Deep Drawers configuration
         deepDrawersAllow = new java.util.ArrayList<>(DEEP_DRAWERS_ALLOW.get());
         deepDrawersDeny = new java.util.ArrayList<>(DEEP_DRAWERS_DENY.get());
+        crystalCageCaptureBlacklist = new java.util.ArrayList<>(CRYSTAL_CAGE_CAPTURE_BLACKLIST.get());
+        crystalCageActsAsSpawnEggOnSpawners = CRYSTAL_CAGE_ACTS_AS_SPAWN_EGG_ON_SPAWNERS.get();
+        etherealFrameReinforcementEnabled = ETHEREAL_FRAME_REINFORCEMENT_ENABLED.get();
         chosenCheeseMax = CHOSEN_CHEESE_MAX.get();
         chosenCheeseHpPerLevel = CHOSEN_CHEESE_HP_PER_LEVEL.get();
         oldBrickArmorBonus = OLD_BRICK_ARMOR_BONUS.get();
@@ -2363,6 +2459,9 @@ public class Config
         callingBellHpBonus = CALLING_BELL_HP_BONUS.get();
         callingBellArmorBonus = CALLING_BELL_ARMOR_BONUS.get();
         callingBellToughnessBonus = CALLING_BELL_TOUGHNESS_BONUS.get();
+        entropicChampagneProcChance = ENTROPIC_CHAMPAGNE_PROC_CHANCE.get();
+        entropicChampagneMinDurationSeconds = ENTROPIC_CHAMPAGNE_MIN_DURATION_SECONDS.get();
+        entropicChampagneMaxDurationSeconds = ENTROPIC_CHAMPAGNE_MAX_DURATION_SECONDS.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         

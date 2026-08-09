@@ -55,7 +55,7 @@ While mining, block drops always use **+1 Fortune tier** on top of any Fortune e
 
 <ItemImage id="iska_utils:entropic_paxel" />
 
-Combines <ItemImage id="iska_utils:entropic_pickaxe" /> pickaxe, <ItemImage id="iska_utils:entropic_axe" /> axe, and <ItemImage id="iska_utils:entropic_shovel" /> shovel powers (not the hoe), plus **armor penetration** on hit. Crafted by merging those three entropic tools with **netherite bars**.
+Combines <ItemImage id="iska_utils:entropic_pickaxe" /> pickaxe, <ItemImage id="iska_utils:entropic_axe" /> axe, and <ItemImage id="iska_utils:entropic_shovel" /> shovel powers (not the hoe), plus **armor penetration** on hit.
 
 ## Tips
 

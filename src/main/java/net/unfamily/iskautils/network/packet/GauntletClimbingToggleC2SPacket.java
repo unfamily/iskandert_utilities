@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -11,12 +12,15 @@ import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.GauntletOfClimbingItem;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 
-public record GauntletClimbingToggleC2SPacket() implements CustomPacketPayload {
+/** C2S: set climbing enabled to an absolute value (client already applied the same state). */
+public record GauntletClimbingToggleC2SPacket(boolean enabled) implements CustomPacketPayload {
     public static final Type<GauntletClimbingToggleC2SPacket> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "gauntlet_climbing_toggle"));
 
     public static final StreamCodec<FriendlyByteBuf, GauntletClimbingToggleC2SPacket> STREAM_CODEC =
-            StreamCodec.unit(new GauntletClimbingToggleC2SPacket());
+            StreamCodec.composite(
+                    ByteBufCodecs.BOOL, GauntletClimbingToggleC2SPacket::enabled,
+                    GauntletClimbingToggleC2SPacket::new);
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -29,9 +33,9 @@ public record GauntletClimbingToggleC2SPacket() implements CustomPacketPayload {
             if (CurioEquipUtil.findActiveStack(player, ModItems.GAUNTLET_OF_CLIMBING.get()).isEmpty()) {
                 return;
             }
-            boolean enabled = GauntletOfClimbingItem.toggleClimbing(player);
+            GauntletOfClimbingItem.setClimbingEnabled(player.getUUID(), packet.enabled());
             player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                    "message.iska_utils.gauntlet_climbing_toggle." + (enabled ? "enabled" : "disabled")), true);
+                    "message.iska_utils.gauntlet_climbing_toggle." + (packet.enabled() ? "enabled" : "disabled")), true);
         });
     }
 }

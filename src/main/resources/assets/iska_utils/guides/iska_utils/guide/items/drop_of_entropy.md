@@ -25,7 +25,7 @@ A rare **resource** — not worn on the body. Used on the <ItemImage id="iska_ut
 
 **From recycling**
 
-- Crafting table (shapeless) or <ItemImage id="iska_utils:factory" /> **Factory**: one eligible item → one Drop of Entropy.
+- At a crafting table or <ItemImage id="iska_utils:factory" /> **Factory**: one eligible item → one Drop of Entropy.
 - **Unopened** <ItemImage id="iska_utils:suspicious_delivery" /> **Suspicious Delivery**
 - Most **delivery artifacts** you do not need, for example:
   - <ItemImage id="iska_utils:ancient_tablet" /> Ancient Tablet

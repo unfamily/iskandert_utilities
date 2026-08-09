@@ -18,7 +18,7 @@ Deep Drawer is a massive storage system designed to contain items that are norma
 
 ## Key Features
 
-- **Massive Capacity**: Can store up to 50k unique non-stackable items (configurable)
+- **Massive Capacity**: Can store a very large number of unique non-stackable items
 - **Break Protection**: Cannot be broken when it contains items. You must use a dolly or similar items from other mods to move it!
 
 ## Use Cases

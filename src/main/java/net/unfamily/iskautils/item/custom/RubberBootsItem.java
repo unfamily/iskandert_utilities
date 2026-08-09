@@ -10,9 +10,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.Item.TooltipContext;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
-import net.unfamily.iskautils.util.RubberNegateFallHandler;
 import net.minecraft.core.Holder;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -29,7 +26,7 @@ import java.util.EnumMap;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Rubber boots that negate fall damage and make the player bounce
+ * Rubber boots that negate fall damage.
  */
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 public class RubberBootsItem extends ArmorItem {
@@ -67,60 +64,25 @@ public class RubberBootsItem extends ArmorItem {
     }
     
     /**
-     * Handles the fall damage when the player wears the rubber boots
-     * @param stack The stack of the item
-     * @param entity The entity that wears the boots
-     * @param fallDistance The distance of the fall
-     * @return true if the fall damage should be negated
+     * Negates fall damage when the player wears rubber boots.
+     * @return true if fall damage should be canceled
      */
     public static boolean handleFallDamage(ItemStack stack, LivingEntity entity, float fallDistance) {
         if (!(entity instanceof Player player)) {
             return false;
         }
-        
-        Level level = entity.level();
-        
-        // If the player is crouched, reduce the damage but don't bounce
-        if (player.isShiftKeyDown()) {
-            // Reduced damage by 80%
-            return true;
+        if (fallDistance <= 0) {
+            return false;
         }
-        
-        // Otherwise, negate the damage and make the player bounce
-        if (fallDistance > 2) {
-            player.resetFallDistance();
-            
-            // Add bounce effect
-            Vec3 motion = player.getDeltaMovement();
-            double bounce = -0.9F;
-            
-            player.setDeltaMovement(motion.x, motion.y * bounce, motion.z);
-            player.hasImpulse = true;
-            player.setOnGround(false);
-            
-            // Slightly slow down the horizontal movement
-            double horizontalSlowdown = 0.95D;
-            player.setDeltaMovement(motion.x / horizontalSlowdown, player.getDeltaMovement().y, motion.z / horizontalSlowdown);
-            
-            // Add the player to the list of bouncers
-            RubberNegateFallHandler.addBouncingPlayer(player, player.getDeltaMovement().y);
-            
-            // Slightly damage the boots (1 point of durability)
-            if (stack.isDamageableItem() && !player.getAbilities().instabuild) {
-                // Damage the item by 1
-                int newDamage = stack.getDamageValue() + 1;
-                if (newDamage >= stack.getMaxDamage()) {
-                    // If the item would break, remove it
-                    stack.setCount(0);
-                } else {
-                    // Otherwise add damage
-                    stack.setDamageValue(newDamage);
-                }
+        player.resetFallDistance();
+        if (stack.isDamageableItem() && !player.getAbilities().instabuild) {
+            int newDamage = stack.getDamageValue() + 1;
+            if (newDamage >= stack.getMaxDamage()) {
+                stack.setCount(0);
+            } else {
+                stack.setDamageValue(newDamage);
             }
-            
-            return true;
         }
-        
-        return false;
+        return true;
     }
 } 

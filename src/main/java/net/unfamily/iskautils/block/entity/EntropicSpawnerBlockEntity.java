@@ -270,6 +270,11 @@ public class EntropicSpawnerBlockEntity extends BlockEntity implements MenuProvi
             return false;
         }
         EntityType<?> type = spawnEgg.getType(eggStack);
+        return setSpawnEntityType(type);
+    }
+
+    /** Sets the spawn type from any source (spawn egg, crystal cage, etc.). */
+    public boolean setSpawnEntityType(@Nullable EntityType<?> type) {
         if (type == null) {
             return false;
         }

@@ -1,0 +1,7 @@
+{
+  "parent": "iska_utils:block/plate_base",
+  "textures": {
+    "top": "iska_utils:block/crystal_cage_trap",
+    "bottom": "iska_utils:block/plate_base"
+  }
+}

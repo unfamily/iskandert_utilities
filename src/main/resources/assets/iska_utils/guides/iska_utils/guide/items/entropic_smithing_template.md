@@ -20,7 +20,7 @@ A **smithing template** used to upgrade **netherite** tools, weapons, and armor 
 
 ## How to obtain
 
-Made in a **crafting table** from entropy materials: <ItemImage id="iska_utils:wither_proof_block" /> **Wither Proof Block**, <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal**, <ItemImage id="iska_utils:unstable_entropy_catalyst" /> **Unstable Entropy Catalyst**, and <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**. Existing templates can be copied without spending another catalyst.
+Made from advanced entropy materials. Existing templates can be copied without spending another catalyst.
 
 ## How to use
 

@@ -17,7 +17,7 @@ categories:
 
 The **Ancient Table** runs the same special crafts as the <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet**, but **automatically**. Ingredient **order does not matter**, and wrong layouts never destroy your inputs.
 
-Fuel is <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**. Each drop placed in the fuel slot is converted into **internal fuel** (no item NBT). The table holds a large buffer (configurable); a comparator reads **only** how full the physical fuel slot is, not the internal buffer.
+Fuel is <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**. Each drop placed in the fuel slot is converted into **internal fuel** (no item NBT). The table holds a large internal fuel buffer; a comparator reads **only** how full the physical fuel slot is, not the internal buffer.
 
 ## How to use
 

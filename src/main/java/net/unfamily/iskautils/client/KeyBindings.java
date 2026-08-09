@@ -246,7 +246,11 @@ public class KeyBindings {
             }
 
             if (GAUNTLET_CLIMBING_TOGGLE_KEY.consumeClick()) {
-                ModMessages.sendGauntletClimbingTogglePacket();
+                if (!net.unfamily.iskautils.util.CurioEquipUtil.findActiveStack(player, net.unfamily.iskautils.item.ModItems.GAUNTLET_OF_CLIMBING.get()).isEmpty()) {
+                    boolean next = !net.unfamily.iskautils.item.custom.GauntletOfClimbingItem.isClimbingEnabled(player);
+                    net.unfamily.iskautils.item.custom.GauntletOfClimbingItem.setClimbingEnabled(player.getUUID(), next);
+                    ModMessages.sendGauntletClimbingTogglePacket(next);
+                }
             }
 
             // Key for Scanner range cycle

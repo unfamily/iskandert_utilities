@@ -22,4 +22,4 @@ Produced by the <ItemImage id="iska_utils:knowledge_compressor" /> **Knowledge C
 - **Use** (right-click) while holding a jelly to gain the stored experience points.
 - **Shift + use** to consume the entire stack in one action.
 
-Check the item tooltip for the exact XP and fluid cost per jelly (configurable).
+Check the item tooltip for the exact XP and fluid cost per jelly.

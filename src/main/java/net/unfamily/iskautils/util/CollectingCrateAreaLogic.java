@@ -34,6 +34,22 @@ public final class CollectingCrateAreaLogic {
             int sizeRight,
             int sizeHeight,
             int sizeDepth) {
+        BlockPos[] corners = getCollectionVolumeCorners(cratePos, facing, sizeLeft, sizeRight, sizeHeight, sizeDepth);
+        BlockPos min = corners[0];
+        BlockPos max = corners[1];
+        return new AABB(min.getX(), min.getY(), min.getZ(), max.getX() + 1, max.getY() + 1, max.getZ() + 1);
+    }
+
+    /**
+     * Inclusive block corners of the collection volume (for {@code AreaBorderRenderer}).
+     */
+    public static BlockPos[] getCollectionVolumeCorners(
+            BlockPos cratePos,
+            Direction facing,
+            int sizeLeft,
+            int sizeRight,
+            int sizeHeight,
+            int sizeDepth) {
         Direction back = facing.getOpposite();
         Direction left = facing.getCounterClockWise(Direction.Axis.Y);
         Direction right = facing.getClockWise(Direction.Axis.Y);
@@ -61,6 +77,6 @@ public final class CollectingCrateAreaLogic {
                 }
             }
         }
-        return new AABB(minX, minY, minZ, maxX + 1, maxY + 1, maxZ + 1);
+        return new BlockPos[]{new BlockPos(minX, minY, minZ), new BlockPos(maxX, maxY, maxZ)};
     }
 }

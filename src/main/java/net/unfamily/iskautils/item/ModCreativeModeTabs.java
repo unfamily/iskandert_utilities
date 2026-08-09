@@ -33,6 +33,10 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.WITHER_PROOF_SLAB.get());
                                 pOutput.accept(ModItems.WITHER_PROOF_WALL.get());
                                 pOutput.accept(ModItems.OBSCURE_GLASS.get());
+                                pOutput.accept(ModItems.ETHEREAL_GLASS.get());
+                                pOutput.accept(ModItems.ETHEREAL_GLASS_PANE.get());
+                                pOutput.accept(ModItems.ETHEREAL_OBSCURE_GLASS.get());
+                                pOutput.accept(ModItems.ETHEREAL_FRAME.get());
                                 pOutput.accept(ModItems.NETHERITE_BARS.get());
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE.get());
                                 pOutput.accept(ModItems.SMOOTH_BLACKSTONE_SLAB.get());
@@ -53,6 +57,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.PLAYER_FAST_VECT.get());
                                 pOutput.accept(ModItems.PLAYER_EXTREME_VECT.get());
                                 pOutput.accept(ModItems.PLAYER_ULTRA_VECT.get());
+                                pOutput.accept(ModItems.CRYSTAL_CAGE_TRAP_PLATE.get());
                                 // Damage trap plates (grouped at the beginning)
                                 // These are added first if they exist, otherwise they're simply skipped
                                 DeferredHolder<Item, BlockItem> damagePlate = PotionPlateRegistry.getItem("iska_utils-damage");
@@ -187,6 +192,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.JELLY_OF_KNOWLEDGE.get());
                                 pOutput.accept(ModItems.ANGEL_BLOCK.get());
                                 pOutput.accept(ModItems.RAFT.get());
+                                pOutput.accept(ModItems.CRYSTAL_CAGE.get());
                                 pOutput.accept(ModItems.SCANNER.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP_ORES.get());
@@ -198,6 +204,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.AUTO_SHOP.get());
                                 pOutput.accept(ModItems.RUBBER_BOOTS.get());
                                 pOutput.accept(ModItems.SWISS_WRENCH.get());
+                                pOutput.accept(ModItems.LABELING_MACHINE.get());
                                 pOutput.accept(ModItems.PORTABLE_DISLOCATOR.get());
                                 pOutput.accept(ModItems.DOLLY.get());
                                 pOutput.accept(ModItems.DOLLY_HARD.get());

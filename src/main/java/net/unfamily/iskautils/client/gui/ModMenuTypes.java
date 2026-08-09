@@ -2,6 +2,7 @@ package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 
@@ -77,5 +78,17 @@ public class ModMenuTypes {
 
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<EntropicSpawnerMenu>> ENTROPIC_SPAWNER_MENU =
         MENUS.register("entropic_spawner_menu", () -> new MenuType<>(EntropicSpawnerMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<EtherealFrameFilterMenu>> ETHEREAL_FRAME_FILTER_MENU =
+        MENUS.register("ethereal_frame_filter_menu", () -> IMenuTypeExtension.create(
+                (containerId, inv, buf) -> new EtherealFrameFilterMenu(containerId, inv, buf.readBlockPos())));
+
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<NullifierMenu>> NULLIFIER_MENU =
+        MENUS.register("nullifier_menu", () -> new MenuType<>(
+                (id, inv) -> new NullifierMenu(id, inv), net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<LabelingMachineMenu>> LABELING_MACHINE_MENU =
+        MENUS.register("labeling_machine_menu", () -> new MenuType<>(
+                LabelingMachineMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
 
 } 

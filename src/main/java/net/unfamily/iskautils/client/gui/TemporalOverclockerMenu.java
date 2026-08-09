@@ -65,10 +65,20 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
     public static final int LINKED_ENTRIES_START_Y = 30 + CONTENT_Y_OFFSET;
     public static final int LINKED_ENTRIES_VISIBLE = 5;
     public static final int LINKED_ENTRY_HEIGHT = 24;
+    /** Gap after the last linked entry before Overclock — keep clear of the list. */
+    public static final int ACCELERATION_BUTTON_GAP = 2;
     public static final int ACCELERATION_BUTTON_Y =
-            LINKED_ENTRIES_START_Y + LINKED_ENTRIES_VISIBLE * LINKED_ENTRY_HEIGHT + 5;
+            LINKED_ENTRIES_START_Y + LINKED_ENTRIES_VISIBLE * LINKED_ENTRY_HEIGHT + ACCELERATION_BUTTON_GAP;
     public static final int ACCELERATION_BUTTON_HEIGHT = 20;
     public static final int ACCELERATION_BUTTON_WIDTH = 100;
+    /** Narrow Show under Overclock; both sit just below the entry list. */
+    public static final int PREVIEW_BUTTON_GAP = 1;
+    public static final int PREVIEW_BUTTON_HEIGHT = 12;
+    public static final int PREVIEW_BUTTON_WIDTH = 40;
+    public static final int PREVIEW_BUTTON_Y =
+            ACCELERATION_BUTTON_Y + ACCELERATION_BUTTON_HEIGHT + PREVIEW_BUTTON_GAP;
+    public static final int PREVIEW_BUTTON_X_OFFSET =
+            (ACCELERATION_BUTTON_WIDTH - PREVIEW_BUTTON_WIDTH) / 2;
     /** Vertically centered with the overclock button row. */
     public static final int ENTROPY_ROW_Y =
             ACCELERATION_BUTTON_Y + (ACCELERATION_BUTTON_HEIGHT - SLOT_SIZE) / 2;
@@ -133,7 +143,8 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
     private static final int PERSISTENT_MODE_INDEX = 9;
     private static final int STORED_ENTROPY_INDEX = 10;
     private static final int MAX_STORED_ENTROPY_INDEX = 11;
-    private static final int DATA_COUNT = 12;
+    private static final int SHOW_AREA_INDEX = 12;
+    private static final int DATA_COUNT = 13;
 
     public TemporalOverclockerMenu(int containerId, Inventory playerInventory, TemporalOverclockerBlockEntity blockEntity) {
         super(ModMenuTypes.TEMPORAL_OVERCLOCKER_MENU.get(), containerId);
@@ -158,6 +169,7 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
                     case PERSISTENT_MODE_INDEX -> blockEntity.isPersistentMode() ? 1 : 0;
                     case STORED_ENTROPY_INDEX -> blockEntity.getStoredEntropy();
                     case MAX_STORED_ENTROPY_INDEX -> blockEntity.getMaxStoredEntropy();
+                    case SHOW_AREA_INDEX -> blockEntity.isShowAreaEnabled() ? 1 : 0;
                     default -> 0;
                 };
             }
@@ -345,6 +357,10 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
 
     public boolean isPersistentMode() {
         return this.containerData.get(PERSISTENT_MODE_INDEX) != 0;
+    }
+
+    public boolean isShowAreaEnabled() {
+        return this.containerData.get(SHOW_AREA_INDEX) != 0;
     }
 
     public BlockPos getSyncedBlockPos() {

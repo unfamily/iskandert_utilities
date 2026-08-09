@@ -9,7 +9,7 @@ categories:
 ---
 # Vector motion
 
-Vector Charm, Fanpack, vector plates, and related crafting components.
+Vector Charm, Fanpack, vector plates, and related components.
 
 
 <SubPages icons={true} alphabetical={true} />

@@ -225,6 +225,12 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(DruidicPodzolBlockEntity::new, ModBlocks.DRUIDIC_PODZOL.get())
                             .build(null));
 
+    // Ethereal Frame Block Entity
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EtherealFrameBlockEntity>> ETHEREAL_FRAME_BE =
+            BLOCK_ENTITIES.register("ethereal_frame",
+                    () -> BlockEntityType.Builder.of(EtherealFrameBlockEntity::new, ModBlocks.ETHEREAL_FRAME.get())
+                            .build(null));
+
     /**
      * Registra tutte le entità blocco
      */

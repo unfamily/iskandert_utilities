@@ -15,9 +15,9 @@ categories:
 
 ## Obtaining
 
-- Craft from **Rubber** (shaped recipe — see JEI).
+- Made from **Rubber**.
 
 ## Uses
 
 - Blast into **Plastic Ingot** (furnace / blast furnace).
-- Ingredient in integration recipes when rubber is processed in machines.
+- Used when rubber is processed further in machines.

@@ -100,13 +100,8 @@ public class ClientEvents {
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         if (event.getStage() == Stage.AFTER_TRANSLUCENT_BLOCKS) {
-            PoseStack poseStack = event.getPoseStack();
-            
-            // Convert the DeltaTracker in float (the exact value is not important for this rendering)
-            float partialTick = 0.0f;
-            
-            // Render the marks
-            MarkRenderer.getInstance().render(poseStack, partialTick);
+            // Area borders are drawn by iska_lib VanillaWorldMarkerClientHooks (needs full stage event).
+            MarkRenderer.getInstance().render(event.getPoseStack(), 0.0f);
         }
     }
     
@@ -146,6 +141,7 @@ public class ClientEvents {
             return;
         }
         MachinePreviewTracker.tickPeriodicReconcile(mc.level);
+        TemporalOverclockerAreaPreview.tick(mc.level);
         for (BlockPos ownerPos : MachinePreviewTracker.pollOwnersNeedingWorldRefresh(mc.level)) {
             MachinePreviewTracker.onFootprintRefreshRequested(mc.level, ownerPos);
             var be = mc.level.getBlockEntity(ownerPos);
@@ -161,6 +157,8 @@ public class ClientEvents {
     public static void onClientPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof LocalPlayer) {
             MachinePreviewTracker.clearAll();
+            BlazingAltarAreaPreview.clearAll();
+            TemporalOverclockerAreaPreview.clearAll();
         }
     }
 
@@ -168,6 +166,8 @@ public class ClientEvents {
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.getLevel() instanceof net.minecraft.world.level.Level level) {
             MachinePreviewTracker.onBlockInPreviewChanged(level, event.getPos());
+            BlazingAltarAreaPreview.clear(event.getPos());
+            TemporalOverclockerAreaPreview.clear(event.getPos());
         }
     }
 

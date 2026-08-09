@@ -15,7 +15,7 @@ categories:
 
 ## Automation
 
-- Extracts sap from adjacent rubber logs; requires energy when configured.
+- Extracts sap from adjacent rubber logs; may require energy.
 
 ## Output
 

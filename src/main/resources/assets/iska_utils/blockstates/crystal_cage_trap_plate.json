@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "vertical=false,facing=north": { "model": "iska_utils:block/crystal_cage_trap_plate" },
+    "vertical=false,facing=east":  { "model": "iska_utils:block/crystal_cage_trap_plate", "y": 90 },
+    "vertical=false,facing=south": { "model": "iska_utils:block/crystal_cage_trap_plate", "y": 180 },
+    "vertical=false,facing=west":  { "model": "iska_utils:block/crystal_cage_trap_plate", "y": 270 },
+    "vertical=true,facing=north":  { "model": "iska_utils:block/crystal_cage_trap_plate_vertical" },
+    "vertical=true,facing=east":   { "model": "iska_utils:block/crystal_cage_trap_plate_vertical", "y": 90 },
+    "vertical=true,facing=south":  { "model": "iska_utils:block/crystal_cage_trap_plate_vertical", "y": 180 },
+    "vertical=true,facing=west":   { "model": "iska_utils:block/crystal_cage_trap_plate_vertical", "y": 270 }
+  }
+}

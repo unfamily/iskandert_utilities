@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BAB",
+    "ACA",
+    "BAB"
+  ],
+  "key": {
+    "A": {
+      "tag": "minecraft:planks"
+    },
+    "B": {
+      "item": "iska_utils:green_sludge"
+    },
+    "C": {
+      "tag": "c:gems/lapis"
+    }
+  },
+  "result": {
+    "id": "iska_utils:ethereal_frame",
+    "count": 1
+  }
+}

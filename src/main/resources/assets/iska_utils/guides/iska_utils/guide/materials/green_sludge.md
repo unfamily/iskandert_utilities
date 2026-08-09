@@ -15,8 +15,8 @@ categories:
 
 ## Obtaining
 
-- Smelt plant and organic materials in a furnace (see JEI).
+- Obtained by smelting plant and organic materials.
 
 ## Uses
 
-- Crafting ingredient for druidic blocks, dye processing, and factory components.
+- Used for druidic blocks, dye processing, and factory components.

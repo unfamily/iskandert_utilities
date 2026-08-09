@@ -31,6 +31,7 @@ import net.unfamily.iskautils.item.custom.GhostBrazierItem;
 import net.unfamily.iskautils.item.custom.GreedyShieldItem;
 import net.unfamily.iskautils.item.custom.BlueprintItem;
 import net.unfamily.iskautils.item.custom.AutoShopItem;
+import net.unfamily.iskautils.item.custom.EntropicChampagneItem;
 import net.unfamily.iskautils.item.custom.GiftItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerChipsetItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerBlockItem;
@@ -113,6 +114,20 @@ public class ModItems {
 
     public static final DeferredItem<Item> OBSCURE_GLASS = ITEMS.register("obscure_glass",
             () -> new TranslatedTooltipBlockItem(ModBlocks.OBSCURE_GLASS.get(), ITEM_PROPERTIES, "tooltip.iska_utils.wither_proof"));
+
+    // ===== ETHEREAL GLASS =====
+    public static final DeferredItem<Item> ETHEREAL_GLASS = ITEMS.register("ethereal_glass",
+            () -> new BlockItem(ModBlocks.ETHEREAL_GLASS.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> ETHEREAL_GLASS_PANE = ITEMS.register("ethereal_glass_pane",
+            () -> new BlockItem(ModBlocks.ETHEREAL_GLASS_PANE.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> ETHEREAL_OBSCURE_GLASS = ITEMS.register("ethereal_obscure_glass",
+            () -> new BlockItem(ModBlocks.ETHEREAL_OBSCURE_GLASS.get(), ITEM_PROPERTIES));
+
+    // ===== ETHEREAL FRAME =====
+    public static final DeferredItem<Item> ETHEREAL_FRAME = ITEMS.register("ethereal_frame",
+            () -> new BlockItem(ModBlocks.ETHEREAL_FRAME.get(), ITEM_PROPERTIES));
 
     // Netherite Bars
     public static final DeferredItem<Item> NETHERITE_BARS = ITEMS.register("netherite_bars",
@@ -231,6 +246,10 @@ public class ModItems {
     // Swiss Wrench - Custom item that can be used to repair vector plates
     public static final DeferredItem<Item> SWISS_WRENCH = ITEMS.register("swiss_wrench",
             () -> new SwissWrenchItem(new Item.Properties().stacksTo(1)));
+
+    // Labeling Machine - portable GUI to apply a formatted custom name to an item
+    public static final DeferredItem<Item> LABELING_MACHINE = ITEMS.register("labeling_machine",
+            () -> new net.unfamily.iskautils.item.custom.LabelingMachineItem(new Item.Properties().stacksTo(1)));
             
     // Mining Equitizer - Custom item that negates flying mining speed penalty
     public static final DeferredItem<Item> MINING_EQUITIZER = ITEMS.register("mining_equitizer",
@@ -589,6 +608,14 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_WALL.get(), ITEM_PROPERTIES));
     public static final DeferredItem<Item> PLATE_BASE_BLOCK = ITEMS.register("plate_base_block",
             () -> new BlockItem(ModBlocks.PLATE_BASE_BLOCK.get(), ITEM_PROPERTIES));
+
+    // ===== CRYSTAL TRAP PLATE item =====
+    public static final DeferredItem<Item> CRYSTAL_CAGE_TRAP_PLATE = ITEMS.register("crystal_cage_trap_plate",
+            () -> new BlockItem(ModBlocks.CRYSTAL_CAGE_TRAP_PLATE.get(), ITEM_PROPERTIES));
+
+    // ===== CRYSTAL CAGE item =====
+    public static final DeferredItem<Item> CRYSTAL_CAGE = ITEMS.register("crystal_cage",
+            () -> new net.unfamily.iskautils.item.custom.CrystalCageItem(new Item.Properties().stacksTo(16)));
     public static final DeferredItem<Item> RAFT = ITEMS.register("raft",
             () -> new BlockItem(ModBlocks.RAFT.get(), ITEM_PROPERTIES));
     public static final DeferredItem<Item> RAFT_NO_DROP = ITEMS.register("raft_no_drop",
@@ -749,6 +776,10 @@ public class ModItems {
     // Hidden block (not in creative tab)
     public static final DeferredItem<Item> GIFT = ITEMS.register("gift",
             () -> new GiftItem(ModBlocks.GIFT.get(), ITEM_PROPERTIES));
+
+    // ===== ENTROPIC CHAMPAGNE (seasonal curio, Jan 1–10, not in creative tab) =====
+    public static final DeferredItem<Item> ENTROPIC_CHAMPAGNE = ITEMS.register("entropic_champagne",
+            () -> new EntropicChampagneItem(new Item.Properties()));
 
     // ===== HARD ICE BLOCK =====
     // Hidden block (not in creative tab) - indestructible, placed by gift

@@ -12,6 +12,7 @@ import net.unfamily.iskautils.block.FanBlock;
 import net.unfamily.iskautils.block.entity.FanBlockEntity;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.unfamily.iskautils.util.preview.MachinePreviewMarkerLogic;
+import net.unfamily.iskalib.client.marker.AreaBorderRenderer;
 import net.unfamily.iskalib.client.marker.MarkRenderer;
 import net.unfamily.iskalib.structure.StructureDefinition;
 import net.unfamily.iskalib.structure.StructureLoader;
@@ -71,10 +72,17 @@ public final class MachinePreviewTracker {
         BlockPos key = owner.immutable();
         if (active) {
             activePreviews.add(key);
+            // Show the outer shell immediately; occupied cells arrive via server packets / reconcile.
+            refreshFanAreaBorder(key);
+            Level level = Minecraft.getInstance().level;
+            if (level != null) {
+                seedWorldHash(level, key);
+            }
         } else {
             activePreviews.remove(key);
             clearTrackingForOwner(key);
-            MarkRenderer.getInstance().clearBillboardMarkersForOwner(key);
+            clearBillboardMarkers(key);
+            clearAreaBorder(key);
         }
     }
 
@@ -84,7 +92,9 @@ public final class MachinePreviewTracker {
         }
         BlockPos key = owner.immutable();
         activeFootprintGeneration.put(key, INVALID_FOOTPRINT_GENERATION);
-        clearRendererForOwner(key);
+        clearBillboardMarkers(key);
+        // Keep / refresh the fan outer shell — marker rebuild must not hide the area border.
+        refreshFanAreaBorder(key);
     }
 
     public static void applyFootprintClear(BlockPos owner, int footprintGeneration) {
@@ -94,7 +104,8 @@ public final class MachinePreviewTracker {
         BlockPos key = owner.immutable();
         activeFootprintGeneration.put(key, footprintGeneration);
         pendingLayerResetByOwner.add(key);
-        clearRendererForOwner(key);
+        clearBillboardMarkers(key);
+        refreshFanAreaBorder(key);
     }
 
     public static void deactivateOwner(BlockPos owner) {
@@ -105,6 +116,7 @@ public final class MachinePreviewTracker {
         MarkRenderer renderer = MarkRenderer.getInstance();
         for (BlockPos key : activePreviews) {
             renderer.clearBillboardMarkersForOwner(key);
+            clearAreaBorder(key);
         }
         activePreviews.clear();
         lastWorldStateHashByOwner.clear();
@@ -286,8 +298,56 @@ public final class MachinePreviewTracker {
         markerLayersByOwner.remove(owner);
     }
 
-    private static void clearRendererForOwner(BlockPos owner) {
+    private static void clearBillboardMarkers(BlockPos owner) {
         MarkRenderer.getInstance().clearBillboardMarkersForOwner(owner);
+    }
+
+    private static void clearAreaBorder(BlockPos owner) {
+        AreaBorderRenderer.getInstance().clearArea(areaBorderKey(owner));
+    }
+
+    private static Object areaBorderKey(BlockPos owner) {
+        return "machine_area_" + owner.toShortString();
+    }
+
+    private static void showAreaBorder(BlockPos owner, AABB aabb) {
+        if (aabb == null) {
+            return;
+        }
+        int minX = (int) Math.floor(aabb.minX);
+        int minY = (int) Math.floor(aabb.minY);
+        int minZ = (int) Math.floor(aabb.minZ);
+        int maxX = (int) Math.floor(aabb.maxX) - 1;
+        int maxY = (int) Math.floor(aabb.maxY) - 1;
+        int maxZ = (int) Math.floor(aabb.maxZ) - 1;
+        AreaBorderRenderer.getInstance().showArea(
+                areaBorderKey(owner),
+                new BlockPos(minX, minY, minZ),
+                new BlockPos(maxX, maxY, maxZ),
+                AreaBorderRenderer.DEFAULT_MACHINE_COLOR,
+                0);
+    }
+
+    /** Recomputes the fan outer shell from the client block entity (call after range sync). */
+    public static void refreshActiveAreaBorder(BlockPos owner) {
+        if (owner != null) {
+            refreshFanAreaBorder(owner.immutable());
+        }
+    }
+
+    /** Outer push-area shell for fans; safe to call whenever the footprint may have changed. */
+    private static void refreshFanAreaBorder(BlockPos owner) {
+        if (owner == null || !activePreviews.contains(owner)) {
+            return;
+        }
+        Level level = Minecraft.getInstance().level;
+        if (level == null) {
+            return;
+        }
+        AABB volume = resolveFootprintVolume(level, owner);
+        if (volume != null && level.getBlockEntity(owner) instanceof FanBlockEntity) {
+            showAreaBorder(owner, volume);
+        }
     }
 
     private static void reconcileMarkersForOwner(BlockPos owner) {
@@ -297,6 +357,7 @@ public final class MachinePreviewTracker {
         }
         refreshLayerCacheFromWorld(level, owner);
         refreshAllMarkersForOwner(owner, MACHINE_PREVIEW_DURATION_TICKS);
+        refreshFanAreaBorder(owner);
     }
 
     private static void refreshLayerCacheFromWorld(Level level, BlockPos owner) {
@@ -346,14 +407,15 @@ public final class MachinePreviewTracker {
     private static void refreshAllMarkersForOwner(BlockPos owner, int durationTicks) {
         Map<BlockPos, Set<Integer>> layers = markerLayersByOwner.get(owner);
         if (layers == null || layers.isEmpty()) {
-            clearRendererForOwner(owner);
+            // Occupied markers only — never drop the fan area border here.
+            clearBillboardMarkers(owner);
             return;
         }
         Level level = Minecraft.getInstance().level;
         if (level == null) {
             return;
         }
-        clearRendererForOwner(owner);
+        clearBillboardMarkers(owner);
         for (Map.Entry<BlockPos, Set<Integer>> entry : layers.entrySet()) {
             Integer resolved = resolveDisplayColor(level, entry.getKey(), entry.getValue());
             if (resolved != null) {

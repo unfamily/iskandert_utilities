@@ -152,7 +152,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // Top Right: Show Button (aligned with title end) - testo fisso "Show"
         int showButtonX = this.leftPos + titleEndX - buttonWidth;
         this.showButton = Button.builder(
-                Component.translatable("gui.iska_utils.generic.show"),
+                Component.translatable("gui.iska_utils.generic.preview"),
                 button -> togglePreview()
         ).bounds(showButtonX, topRowY, buttonWidth, buttonHeight).build();
         this.addRenderableWidget(this.showButton);
@@ -258,7 +258,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
             showButton.setMessage(Component.translatable(
                     previewButtonShowsHide
                             ? "gui.iska_utils.generic.hide"
-                            : "gui.iska_utils.generic.show"));
+                            : "gui.iska_utils.generic.preview"));
         }
     }
 

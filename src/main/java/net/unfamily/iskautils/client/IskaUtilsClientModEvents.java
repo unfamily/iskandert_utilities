@@ -24,6 +24,7 @@ import net.unfamily.iskautils.particle.ModParticles;
 import net.unfamily.iskautils.client.entropic.EntropicAnimatedArmorTextures;
 import net.unfamily.iskautils.client.fluid.ModFluidClient;
 import net.unfamily.iskautils.client.gui.*;
+import net.unfamily.iskautils.client.gui.EtherealFrameFilterScreen;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.renderer.DeceptionSeatRenderer;
 import net.unfamily.iskautils.client.renderer.EntropicSpawnerRenderer;
@@ -59,6 +60,14 @@ public final class IskaUtilsClientModEvents {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DYE_BUSH_FILLED.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.NETHERITE_BARS.get(), RenderType.cutoutMipped());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.OBSCURE_GLASS.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.ETHEREAL_GLASS.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.ETHEREAL_GLASS_PANE.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.ETHEREAL_OBSCURE_GLASS.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.ETHEREAL_FRAME.get(), RenderType.translucent());
+
+            // Register client-side camouflage callback for EtherealFrame
+            net.unfamily.iskautils.block.entity.EtherealFrameBlockEntity.setClientCamouflageCallback(
+                    net.unfamily.iskautils.client.ethereal.EtherealFrameClientEvents::onCamouflageUpdated);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.ENTROPIC_SPAWNER.get(), RenderType.cutout());
 
@@ -98,6 +107,13 @@ public final class IskaUtilsClientModEvents {
                         CompoundTag nbt = customData.copyTag();
                         return nbt.getBoolean("HasBlock") ? 1.0F : 0.0F;
                     }
+            );
+
+            ItemProperties.register(
+                    ModItems.CRYSTAL_CAGE.get(),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "filled"),
+                    (stack, level, entity, seed) ->
+                            net.unfamily.iskautils.item.custom.CrystalCageItem.isFilled(stack) ? 1.0F : 0.0F
             );
 
             ItemProperties.register(
@@ -162,5 +178,8 @@ public final class IskaUtilsClientModEvents {
         event.register(ModMenuTypes.COLLECTING_CRATE_MENU.get(), CollectingCrateScreen::new);
         event.register(ModMenuTypes.BLAZING_ALTAR_MENU.get(), BlazingAltarScreen::new);
         event.register(ModMenuTypes.ENTROPIC_SPAWNER_MENU.get(), EntropicSpawnerScreen::new);
+        event.register(ModMenuTypes.ETHEREAL_FRAME_FILTER_MENU.get(), EtherealFrameFilterScreen::new);
+        event.register(ModMenuTypes.NULLIFIER_MENU.get(), NullifierScreen::new);
+        event.register(ModMenuTypes.LABELING_MACHINE_MENU.get(), LabelingMachineScreen::new);
     }
 }

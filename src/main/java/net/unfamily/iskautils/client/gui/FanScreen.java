@@ -139,13 +139,13 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         // Create range adjustment buttons around the grid
         createRangeButtons();
         
-        // Create "Show" button - aligned with right side buttons (redstoneMode, etc.)
+        // Create Preview/Hide button - aligned with right side buttons (redstoneMode, etc.)
         int gridY = this.topPos + GRID_START_Y;
         int bottomButtonY = gridY + GRID_TOTAL_SIZE + BUTTON_SPACING;
         int labelY = bottomButtonY + BUTTON_SIZE + 2;
         
-        Component showText = Component.translatable("gui.iska_utils.generic.show");
-        int buttonWidth = this.font.width(showText) + 6; // Minimal width: text + 3px padding each side
+        Component previewText = Component.translatable("gui.iska_utils.generic.show");
+        int buttonWidth = this.font.width(previewText) + 6; // Minimal width: text + 3px padding each side
         int buttonHeight = this.font.lineHeight + 2; // Minimal height: text + 1px padding each side
         
         // Align right edge with right edge of redstoneMode buttons above
@@ -162,14 +162,27 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         ).bounds(showButtonX, showButtonY, buttonWidth, buttonHeight).build();
         
         this.addRenderableWidget(showButton);
+
+        BlockPos syncedPos = menu.getSyncedBlockPos();
+        if (previewButtonShowsHide && !syncedPos.equals(BlockPos.ZERO)) {
+            MachinePreviewTracker.setPreviewActive(syncedPos, true);
+        }
     }
 
     @Override
     public void containerTick() {
         super.containerTick();
-        if (menu.isShowAreaEnabled() != previewButtonShowsHide) {
-            previewButtonShowsHide = menu.isShowAreaEnabled();
+        BlockPos pos = menu.getSyncedBlockPos();
+        boolean show = menu.isShowAreaEnabled();
+        if (show != previewButtonShowsHide) {
+            previewButtonShowsHide = show;
             updateShowButtonLabel();
+            if (!pos.equals(BlockPos.ZERO)) {
+                MachinePreviewTracker.setPreviewActive(pos, show);
+            }
+        } else if (show && !pos.equals(BlockPos.ZERO)) {
+            // Keep outer shell in sync with range ContainerData / BE updates.
+            MachinePreviewTracker.refreshActiveAreaBorder(pos);
         }
     }
     

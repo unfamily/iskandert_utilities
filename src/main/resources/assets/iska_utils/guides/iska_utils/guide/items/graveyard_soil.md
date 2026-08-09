@@ -15,4 +15,4 @@ categories:
 
 ## Behavior
 
-Undead (`#minecraft:undead`) standing on graveyard soil are **healed** on a random interval (configurable).
+Undead (`#minecraft:undead`) standing on graveyard soil are **healed** on a random interval.

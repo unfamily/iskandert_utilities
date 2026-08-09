@@ -15,11 +15,10 @@ categories:
 
 ## Obtaining
 
-- Integration recipes with tar / sap (see JEI for your pack).
-- Crafted from tar slime materials where available.
+- Comes from tar / sap processing when those materials are available.
 
 ## Uses
 
 - Processed in furnaces or machines into **Rubber** (alternative to smelting sap).
 - Compressed into **Tar Slime Block**.
-- Counts as a tar slimeball for slimeball-tagged recipes.
+- Counts as a tar slimeball wherever that material is accepted.

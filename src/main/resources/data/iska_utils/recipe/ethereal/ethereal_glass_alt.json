@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ABA",
+    "BCB",
+    "ABA"
+  ],
+  "key": {
+    "A": {
+      "tag": "c:glass_blocks/colorless"
+    },
+    "B": {
+      "item": "iska_utils:green_sludge"
+    },
+    "C": {
+      "tag": "c:gems/lapis"
+    }
+  },
+  "result": {
+    "id": "iska_utils:ethereal_glass",
+    "count": 4
+  }
+}

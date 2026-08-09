@@ -40,7 +40,7 @@ While opening, the vanilla **Luck** effect nudges outcomes toward rarer rewards.
 
 You do not have to open every **Suspicious Delivery**.
 
-- **Unopened** **Suspicious Delivery** and most **delivery artifacts** → one <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** each (crafting table shapeless or **Factory**).
+- **Unopened** **Suspicious Delivery** and most **delivery artifacts** → one <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** each (crafting table or **Factory**).
 - **Drop of Entropy** cannot be recycled into more drops.
 
 Recyclable delivery items include **Suspicious Delivery** itself, <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet**, <ItemImage id="iska_utils:durable_shears" /> **Durable Shears**, <ItemImage id="iska_utils:arcane_dictionary" /> **Arcane Dictionary**, <ItemImage id="iska_utils:miniature_tent" /> **Miniature Tent**, and the artifacts listed in the hub (Cheese, Totem, Heart, Bone, Gauntlet, Crown, Deception, Ice Diamond, Old Brick, Roots, Equitizer, Candle). Details on the **Drop of Entropy** page.

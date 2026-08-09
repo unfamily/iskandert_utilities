@@ -13,8 +13,6 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.client.KeyBindings;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.ClientPlayerAccess;
@@ -46,8 +44,12 @@ public class GauntletOfClimbingItem extends Item {
     public static boolean toggleClimbing(ServerPlayer player) {
         UUID id = player.getUUID();
         boolean next = !isClimbingEnabled(id);
-        CLIMBING_ENABLED_BY_PLAYER.put(id, next);
+        setClimbingEnabled(id, next);
         return next;
+    }
+
+    public static void setClimbingEnabled(UUID playerId, boolean enabled) {
+        CLIMBING_ENABLED_BY_PLAYER.put(playerId, enabled);
     }
 
     private static double getClimbSpeed() {
@@ -80,7 +82,6 @@ public class GauntletOfClimbingItem extends Item {
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
 

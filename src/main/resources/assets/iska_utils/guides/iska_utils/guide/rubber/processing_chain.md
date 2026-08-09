@@ -15,13 +15,13 @@ categories:
 
 ## From sap to rubber
 
-- Rubber processing is recipe-driven. Use JEI to see the exact machines / steps for your pack.
+- Sap is processed into rubber and related materials through the rubber progression.
 
 ## Common outputs
 
 - **Rubber**: core ingredient used for tools/armor/plastic.
-- **Plastic Ingot**: used in higher-tier crafting components.
-- **Green Sludge** / **Tar Slimeball**: intermediates used by some recipes.
+- **Plastic Ingot**: used in higher-tier components.
+- **Green Sludge** / **Tar Slimeball**: related intermediates.
 
 <ItemGrid>
   <ItemIcon id="iska_utils:sap" />
