@@ -226,3 +226,4 @@ public class EnderNullifierBlock extends DirectionalBlock implements EntityBlock
         };
     }
 }
+
