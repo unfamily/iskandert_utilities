@@ -92,6 +92,7 @@ public class IskaUtils {
             // Register key mappings (client-only, MOD bus)
             modEventBus.register(net.unfamily.iskautils.client.KeyBindings.class);
 
+            modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::onClientSetup);
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerMenuScreens);
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerEntityRenderers);
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerParticleProviders);

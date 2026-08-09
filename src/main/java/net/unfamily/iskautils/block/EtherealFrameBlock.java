@@ -360,8 +360,9 @@ public class EtherealFrameBlock extends Block implements EntityBlock {
         if (!level.isClientSide()) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof EtherealFrameBlockEntity frame) {
-                if (frame.hasCamouflage()) {
-                    Block.dropResources(frame.getCamouflage(), level, pos, null);
+                if (frame.hasCamouflage() && !player.getAbilities().instabuild) {
+                    // Return the camouflage block item itself (not its mining loot table).
+                    Block.popResource(level, pos, new ItemStack(frame.getCamouflage().getBlock()));
                 }
                 if (frame.isReinforced() && !player.getAbilities().instabuild) {
                     frame.dropReinforcementMaterial();

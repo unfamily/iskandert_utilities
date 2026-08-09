@@ -106,22 +106,22 @@ public class ModItems {
     public static final DeferredItem<BlockItem> WITHER_PROOF_BLOCK = ITEMS.registerItem(
             "wither_proof_block",
             props -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_BLOCK.get(), props, "tooltip.iska_utils.wither_proof"),
-            UnaryOperator.identity());
+            Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> WITHER_PROOF_STAIRS = ITEMS.registerItem(
             "wither_proof_stairs",
             props -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_STAIRS.get(), props, "tooltip.iska_utils.wither_proof"),
-            UnaryOperator.identity());
+            Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> WITHER_PROOF_SLAB = ITEMS.registerItem(
             "wither_proof_slab",
             props -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_SLAB.get(), props, "tooltip.iska_utils.wither_proof"),
-            UnaryOperator.identity());
+            Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> WITHER_PROOF_WALL = ITEMS.registerItem(
             "wither_proof_wall",
             props -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_WALL.get(), props, "tooltip.iska_utils.wither_proof"),
-            UnaryOperator.identity());
+            Item.Properties::useBlockDescriptionPrefix);
 
     public static final DeferredItem<BlockItem> NETHERITE_BARS = ITEMS.registerSimpleBlockItem(ModBlocks.NETHERITE_BARS);
 

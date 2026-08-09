@@ -88,7 +88,6 @@ public class ModMenuTypes {
                 (id, inv) -> new NullifierMenu(id, inv), net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
 
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<LabelingMachineMenu>> LABELING_MACHINE_MENU =
-        MENUS.register("labeling_machine_menu", () -> new MenuType<>(
-                LabelingMachineMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+        MENUS.register("labeling_machine_menu", () -> IMenuTypeExtension.create(LabelingMachineMenu::createClient));
 
 } 

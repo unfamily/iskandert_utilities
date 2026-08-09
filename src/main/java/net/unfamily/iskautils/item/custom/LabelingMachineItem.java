@@ -31,20 +31,32 @@ public class LabelingMachineItem extends Item {
     public @NotNull InteractionResult use(@NotNull Level level,
                                           @NotNull Player player,
                                           @NotNull InteractionHand hand) {
-        if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
-            serverPlayer.openMenu(new MenuProvider() {
-                @Override
-                public @NotNull Component getDisplayName() {
-                    return Component.translatable("gui.iska_utils.labeling_machine.title");
-                }
-
-                @Override
-                public AbstractContainerMenu createMenu(int containerId, @NotNull Inventory inv, @NotNull Player p) {
-                    return new LabelingMachineMenu(containerId, inv);
-                }
-            });
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
         }
-        return InteractionResult.SUCCESS;
+        if (player instanceof ServerPlayer serverPlayer) {
+            openMenu(serverPlayer, hand);
+        }
+        return InteractionResult.CONSUME;
+    }
+
+    public static void openMenu(ServerPlayer player, InteractionHand hand) {
+        int openingBandSlot =
+                LabelingMachineMenu.resolveOpeningToolMenuSlot(player.getInventory(), hand, player);
+        player.openMenu(new MenuProvider() {
+            @Override
+            public @NotNull Component getDisplayName() {
+                return Component.translatable("gui.iska_utils.labeling_machine.title");
+            }
+
+            @Override
+            public AbstractContainerMenu createMenu(int containerId, @NotNull Inventory inv, @NotNull Player p) {
+                return new LabelingMachineMenu(containerId, inv, hand);
+            }
+        }, buf -> {
+            buf.writeByte(hand == InteractionHand.OFF_HAND ? 1 : 0);
+            buf.writeVarInt(openingBandSlot);
+        });
     }
 
     @Override

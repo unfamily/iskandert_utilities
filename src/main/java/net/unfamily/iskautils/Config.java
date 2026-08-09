@@ -1792,6 +1792,23 @@ public class Config {
                     "Default: 5")
             .defineInRange("005_factory_stonecutter_energy_per_operation", 5, 0, Integer.MAX_VALUE);
 
+    private static final ModConfigSpec.IntValue LABELING_MAX_LINE_LENGTH = BUILDER
+            .comment("Max characters for a Labeling Machine custom name (total) and for each lore line.",
+                    "Default: 60")
+            .defineInRange("020_labeling_max_line_length", 60, 1, 256);
+
+    private static final ModConfigSpec.IntValue LABELING_MAX_LORE_LINES = BUILDER
+            .comment("Max lore lines editable in the Labeling Machine.",
+                    "Default: 8")
+            .defineInRange("021_labeling_max_lore_lines", 8, 1, 32);
+
+    private static final ModConfigSpec.BooleanValue LABELING_FORCE_ITALIC_NON_OPS = BUILDER
+            .comment("If true, Labeling Machine custom names are always italic for non-operators",
+                    "(permission level < 2), matching vanilla anvil behaviour that cannot be turned off.",
+                    "Operators can still disable italic. Default name segments still start italic either way.",
+                    "Default: false")
+            .define("022_labeling_force_italic_non_ops", false);
+
     static {
         BUILDER.pop(); // End of dev category
 
@@ -1978,6 +1995,9 @@ public class Config {
     public static int knowledgeCompressorConversionIntervalTicks;
     public static boolean factoryStonecutterEnabled;
     public static int factoryStonecutterEnergyPerOp;
+    public static int labelingMaxLineLength = 60;
+    public static int labelingMaxLoreLines = 8;
+    public static boolean labelingForceItalicNonOps = false;
     public static int soundMufflerRangeMax;
     public static String clientStructurePath;
     public static boolean acceptClientStructure;
@@ -2315,6 +2335,9 @@ public class Config {
         knowledgeCompressorConversionIntervalTicks = KNOWLEDGE_COMPRESSOR_CONVERSION_INTERVAL_TICKS.get();
         factoryStonecutterEnabled = FACTORY_STONECUTTER_ENABLED.get();
         factoryStonecutterEnergyPerOp = FACTORY_STONECUTTER_ENERGY_PER_OPERATION.get();
+        labelingMaxLineLength = LABELING_MAX_LINE_LENGTH.get();
+        labelingMaxLoreLines = LABELING_MAX_LORE_LINES.get();
+        labelingForceItalicNonOps = LABELING_FORCE_ITALIC_NON_OPS.get();
         soundMufflerRangeMax = SOUND_MUFFLER_RANGE_MAX.get();
 
         // Client Structure Path logic

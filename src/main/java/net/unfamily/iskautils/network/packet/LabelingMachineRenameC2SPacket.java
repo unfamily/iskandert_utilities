@@ -8,18 +8,16 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.client.gui.LabelingMachineMenu;
+import net.unfamily.iskautils.util.LabelingNameStyle;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * C2S: apply a formatted custom name to the Labeling Machine target slot.
+ * C2S: apply a multi-segment formatted custom name to the Labeling Machine target slot.
  */
 public record LabelingMachineRenameC2SPacket(
-        String name,
-        boolean bold,
-        boolean italic,
-        boolean underline,
-        boolean strikethrough,
-        boolean obfuscated,
-        int colorRgb
+        List<LabelingNameStyle.Segment> segments
 ) implements CustomPacketPayload {
 
     public static final Type<LabelingMachineRenameC2SPacket> TYPE = new Type<>(
@@ -27,28 +25,42 @@ public record LabelingMachineRenameC2SPacket(
 
     public static final StreamCodec<FriendlyByteBuf, LabelingMachineRenameC2SPacket> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {
-                buf.writeUtf(p.name());
-                int flags = 0;
-                if (p.bold()) flags |= 1;
-                if (p.italic()) flags |= 2;
-                if (p.underline()) flags |= 4;
-                if (p.strikethrough()) flags |= 8;
-                if (p.obfuscated()) flags |= 16;
-                buf.writeByte(flags);
-                buf.writeInt(p.colorRgb());
+                List<LabelingNameStyle.Segment> list = p.segments() == null ? List.of() : p.segments();
+                int count = Math.min(list.size(), LabelingNameStyle.MAX_SEGMENTS);
+                buf.writeVarInt(count);
+                for (int i = 0; i < count; i++) {
+                    LabelingNameStyle.Segment s = list.get(i);
+                    buf.writeUtf(LabelingNameStyle.clampSegmentText(s.text), LabelingNameStyle.MAX_SEGMENT_LENGTH);
+                    int flags = 0;
+                    if (s.bold) flags |= 1;
+                    if (s.italic) flags |= 2;
+                    if (s.underline) flags |= 4;
+                    if (s.strikethrough) flags |= 8;
+                    if (s.obfuscated) flags |= 16;
+                    buf.writeByte(flags);
+                    buf.writeInt(s.colorRgb);
+                }
             },
             buf -> {
-                String name = buf.readUtf();
-                int flags = buf.readUnsignedByte();
-                int color = buf.readInt();
-                return new LabelingMachineRenameC2SPacket(
-                        name,
-                        (flags & 1) != 0,
-                        (flags & 2) != 0,
-                        (flags & 4) != 0,
-                        (flags & 8) != 0,
-                        (flags & 16) != 0,
-                        color);
+                int count = buf.readVarInt();
+                if (count < 0 || count > LabelingNameStyle.MAX_SEGMENTS) {
+                    count = 0;
+                }
+                List<LabelingNameStyle.Segment> list = new ArrayList<>(count);
+                for (int i = 0; i < count; i++) {
+                    String text = buf.readUtf(LabelingNameStyle.MAX_SEGMENT_LENGTH);
+                    int flags = buf.readUnsignedByte();
+                    int color = buf.readInt();
+                    list.add(new LabelingNameStyle.Segment(
+                            text,
+                            (flags & 1) != 0,
+                            (flags & 2) != 0,
+                            (flags & 4) != 0,
+                            (flags & 8) != 0,
+                            (flags & 16) != 0,
+                            color));
+                }
+                return new LabelingMachineRenameC2SPacket(list);
             }
     );
 
@@ -63,14 +75,7 @@ public record LabelingMachineRenameC2SPacket(
             if (!(player.containerMenu instanceof LabelingMachineMenu menu)) {
                 return;
             }
-            menu.applyFormattedName(
-                    packet.name(),
-                    packet.bold(),
-                    packet.italic(),
-                    packet.underline(),
-                    packet.strikethrough(),
-                    packet.obfuscated(),
-                    packet.colorRgb());
+            menu.applyFormattedName(packet.segments(), player);
         });
     }
 }
