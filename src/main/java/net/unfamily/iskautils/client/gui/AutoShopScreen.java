@@ -48,11 +48,11 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
 
-    private static final int CURRENCY_BUTTON_X = 20;
+    private static final int CURRENCY_BUTTON_X = 2;
     private static final int CURRENCY_BUTTON_Y = 23;
-    private static final int BUCKET_BUTTON_X = 38;
+    private static final int BUCKET_BUTTON_X = 20;
     private static final int BUCKET_BUTTON_Y = 23;
-    private static final int SELECT_BUTTON_X = 56;
+    private static final int SELECT_BUTTON_X = 38;
     private static final int SELECT_BUTTON_Y = 23;
     private static final int REDSTONE_BUTTON_X = 20;
     private static final int REDSTONE_BUTTON_Y = 48;
