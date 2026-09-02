@@ -2,15 +2,34 @@ package net.unfamily.iskautils.shop;
 
 /**
  * Represents an entry in the shop system.
- * Within a category, entries are ordered by {@link #priority} (higher first), then by {@link #item}.
+ * Within a category, entries are ordered by {@link #priority} (higher first), then by resource id.
  */
 public class ShopEntry {
-    public String id; // Unique identifier for the entry
+    public enum EntryType {
+        ITEM,
+        FLUID,
+        GAS
+    }
+
+    public String id;
     public String inCategory;
-    public String item; // Also supports data components: "minecraft:diamond_sword[enchantments={...}]"
+    /** Entry resource type. Default {@link EntryType#ITEM}. */
+    public EntryType type = EntryType.ITEM;
+    /** Item selector (id, components, or {@code #tag}). Used when {@code type == ITEM}. */
+    public String item;
+    /** Fluid selector (id or {@code #tag}). Used when {@code type == FLUID}. */
+    public String fluid;
+    /** Gas/chemical id (no tags). Used when {@code type == GAS}. */
+    public String gas;
+    /**
+     * Generic quantity: item count, fluid mB, or gas mB.
+     * {@link #itemCount} mirrors this for legacy callers.
+     */
+    public int amount = 1;
+    /** Legacy mirror of {@link #amount}. */
     public int itemCount;
     public String currency;
-    public String valute; // Legacy field for backward compatibility
+    public String valute;
     public double buy;
     public double sell;
     /** Display order within category: higher value = shown first. Default 0. */

@@ -202,6 +202,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SCANNER_CHIP_LIQUID.get());
                                 pOutput.accept(ModItems.SHOP.get());
                                 pOutput.accept(ModItems.AUTO_SHOP.get());
+                                pOutput.accept(ModItems.PORTABLE_SHOP.get());
                                 pOutput.accept(ModItems.RUBBER_BOOTS.get());
                                 pOutput.accept(ModItems.SWISS_WRENCH.get());
                                 pOutput.accept(ModItems.LABELING_MACHINE.get());

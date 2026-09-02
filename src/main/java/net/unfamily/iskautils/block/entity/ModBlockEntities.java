@@ -391,9 +391,18 @@ public class ModBlockEntities {
                         return null;
                     }
             );
+
+            event.registerBlockEntity(
+                    Capabilities.FluidHandler.BLOCK,
+                    AUTO_SHOP_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof AutoShopBlockEntity autoShopEntity
+                                    ? autoShopEntity.getFluidTransferHandler()
+                                    : null
+            );
             
             // Shop Block non registra capability IItemHandler per prevenire interazioni con hopper
-            // Il negozio funziona solo tramite GUI diretta del giocatore
+            // Shop is opened via player GUI only
             
             // Register item handler capability for Deep Drawers
             event.registerBlockEntity(

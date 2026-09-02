@@ -15,7 +15,7 @@ categories:
 
 ## What it does
 
-**Cursed artifact.** Even small cuts become bleeding wounds — your attacks can apply **Curse of Pain** on enemies.
+**Arcane artifact.** Even small cuts become bleeding wounds — your attacks can apply **Curse of Pain** on enemies.
 
 Wear in **Curios** for the effect.
 

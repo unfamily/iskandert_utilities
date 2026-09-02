@@ -259,7 +259,8 @@ dependencies {
     }
 
     // Fusion connected textures (dev auto-download)
-    implementation "curse.maven:fusion-connected-textures-854949:8355160"
+    compileOnly "curse.maven:fusion-connected-textures-854949:8355160"
+    localRuntime "curse.maven:fusion-connected-textures-854949:8355160"
     // Forbidden Arcanus optional (compile only — no auto-download)
     compileOnly "curse.maven:forbidden-arcanus-309858:8333815"
     // Lootr optional (compile only — loot scanner chip integration uses reflection at runtime)

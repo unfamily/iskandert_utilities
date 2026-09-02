@@ -181,7 +181,7 @@ public class ShopDefaultGenerator {
             breadEntry.addProperty("id", "bread_default");
             breadEntry.addProperty("in_category", "000_default");
             breadEntry.addProperty("item", "minecraft:bread");
-            breadEntry.addProperty("item_count", 1);
+            breadEntry.addProperty("amount", 1);
             breadEntry.addProperty("currency", "null_coin");
             breadEntry.addProperty("buy", 1.0);
             breadEntry.addProperty("sell", 0.5);
@@ -289,8 +289,9 @@ Example:
     {
       "id": "bread_default",
       "in_category": "000_default",
+      "type": "item",
       "item": "minecraft:bread",
-      "item_count": 1,
+      "amount": 1,
       "currency": "null_coin",
       "buy": 1.0,
       "sell": 0.5,
@@ -300,7 +301,7 @@ Example:
       "id": "diamond_pickaxe_silk",
       "in_category": "tools",
       "item": "minecraft:diamond_pickaxe[custom_name='\"Silky\"',repair_cost=1,enchantments={levels:{\"minecraft:silk_touch\":1}}]",
-      "item_count": 1,
+      "amount": 1,
       "currency": "emerald",
       "buy": 50.0,
       "sell": 25.0,
@@ -311,13 +312,17 @@ Example:
 
 - id: Unique identifier for the entry
 - in_category: Category ID this entry belongs to
-- item: Item ID (supports NBT/compound tags)
-- item_count: Number of items in the stack
+- type: item | fluid | gas (optional, default item). Since 3.12.0.0.0
+- item / fluid / gas: resource selector for the type (#tags allowed on item and fluid only; sell-only for tags)
+- amount: Quantity (item count / fluid mB / gas mB). Since 3.12.0.0.0
+- item_count: Legacy alias for amount
 - currency: Currency ID for this entry
 - buy: Price to buy the item
 - sell: Price to sell the item
 - priority: Display order within category (optional, default 0). Higher value = entry shown first.
 - free: If true, item can be bought at no cost even when buy is 0; Buy button is shown (optional, default false).
+
+Fluid/gas entries are AutoShop-only (hidden from the player Shop GUI). Gas requires Mekanism (optional); disabled on NeoForge 26.x until Mekanism supports that loader.
 
 NBT/COMPOUND TAGS SUPPORT:
 ==========================

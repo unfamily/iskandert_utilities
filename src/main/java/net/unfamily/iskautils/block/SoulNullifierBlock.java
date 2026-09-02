@@ -30,6 +30,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.block.entity.SoulNullifierBlockEntity;
+import net.unfamily.iskautils.util.PreviewAreaSupport;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 
 import javax.annotation.Nullable;
@@ -120,6 +121,7 @@ public class SoulNullifierBlock extends DirectionalBlock implements EntityBlock 
                     }
                 }
             }
+            PreviewAreaSupport.onPreviewOwnerBlockRemoved(level, pos, state, newState);
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }

@@ -227,6 +227,16 @@ public class ModMessages {
             AutoShopSetSelectedItemC2SPacket::handle
         );
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket::handle
+        );
+        registrar.playToServer(
             GhostBrazierToggleC2SPacket.TYPE,
             GhostBrazierToggleC2SPacket.STREAM_CODEC,
             GhostBrazierToggleC2SPacket::handle
@@ -1445,6 +1455,17 @@ public class ModMessages {
     public static void sendAutoShopSelectedItemPacket(BlockPos pos, ItemStack stack) {
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(
                 new AutoShopSetSelectedItemC2SPacket(pos, stack == null ? ItemStack.EMPTY : stack));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendAutoShopApplyPickerSelectionPacket(BlockPos pos, String entryId, boolean buyMode) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket(pos, entryId, buyMode));
+    }
+
+    public static void sendAutoShopDumpTankPacket(BlockPos pos, boolean gas) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket(pos, gas));
     }
     
     /**

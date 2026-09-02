@@ -163,21 +163,28 @@ public class ShopLoader {
             
             JsonObject entryObj = element.getAsJsonObject();
             String id = entryObj.has("id") ? entryObj.get("id").getAsString() : null;
+            ShopEntry.EntryType entryType = ShopEntryHelper.parseType(
+                    entryObj.has("type") ? entryObj.get("type").getAsString() : null);
             String item = entryObj.has("item") ? entryObj.get("item").getAsString() : null;
+            String fluid = entryObj.has("fluid") ? entryObj.get("fluid").getAsString() : null;
+            String gas = entryObj.has("gas") ? entryObj.get("gas").getAsString() : null;
             String category = entryObj.has("in_category") ? entryObj.get("in_category").getAsString() : null;
-            
-            if (item == null || item.trim().isEmpty()) {
-                LOGGER.warn("Entry without valid item found in {}", fileName);
+
+            String resourceForKey = switch (entryType) {
+                case FLUID -> fluid;
+                case GAS -> gas;
+                case ITEM -> item;
+            };
+            if (resourceForKey == null || resourceForKey.trim().isEmpty()) {
+                LOGGER.warn("Entry without valid resource for type {} found in {}", entryType, fileName);
                 continue;
             }
             
-            // If no specific ID, generate one automatically based on item and category
             String entryKey;
             if (id != null && !id.trim().isEmpty()) {
                 entryKey = id.trim();
             } else {
-                // Fallback: use old system for compatibility
-                String baseItemId = extractBaseItemId(item);
+                String baseItemId = extractBaseItemId(resourceForKey);
                 entryKey = category != null ? category + ":" + baseItemId : baseItemId;
                 LOGGER.warn("Entry without ID found in {}, using fallback key: {}", fileName, entryKey);
             }
@@ -189,15 +196,24 @@ public class ShopLoader {
             ShopEntry entry = new ShopEntry();
             entry.id = entryKey;
             entry.inCategory = category;
+            entry.type = entryType;
             entry.item = item;
-            entry.itemCount = entryObj.has("item_count") ? entryObj.get("item_count").getAsInt() : 1;
-            // Support both currency and legacy valute fields
+            entry.fluid = fluid;
+            entry.gas = gas;
+            int amount = 1;
+            if (entryObj.has("amount")) {
+                amount = entryObj.get("amount").getAsInt();
+            } else if (entryObj.has("item_count")) {
+                amount = entryObj.get("item_count").getAsInt();
+            }
+            entry.amount = amount;
+            entry.itemCount = amount;
             if (entryObj.has("currency")) {
                 entry.currency = entryObj.get("currency").getAsString();
-                entry.valute = entry.currency; // For backward compatibility
+                entry.valute = entry.currency;
             } else if (entryObj.has("valute")) {
                 entry.valute = entryObj.get("valute").getAsString();
-                entry.currency = entry.valute; // For forward compatibility
+                entry.currency = entry.valute;
             } else {
                 entry.currency = null;
                 entry.valute = null;
@@ -222,6 +238,10 @@ public class ShopLoader {
                         entry.stages[i] = stage;
                     }
                 }
+            }
+
+            if (!ShopEntryHelper.validateEntry(entry, fileName)) {
+                continue;
             }
             
             ENTRIES.put(entryKey, entry);
@@ -282,7 +302,7 @@ public class ShopLoader {
                 if (category != null && !category.equals(e.inCategory)) {
                     continue;
                 }
-                String entryBaseItemId = extractBaseItemId(e.item);
+                String entryBaseItemId = extractBaseItemId(ShopEntryHelper.resourceSelector(e));
                 if (baseItemId.equals(entryBaseItemId)) {
                     return e;
                 }

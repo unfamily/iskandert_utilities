@@ -22,7 +22,18 @@ public class SymbolIconButton extends Button {
             Button.OnPress onPress,
             Supplier<String> symbolSupplier,
             Component tooltip) {
-        super(x, y, size, size, Component.empty(), onPress, DEFAULT_NARRATION);
+        this(x, y, size, size, onPress, symbolSupplier, tooltip);
+    }
+
+    public SymbolIconButton(
+            int x,
+            int y,
+            int width,
+            int height,
+            Button.OnPress onPress,
+            Supplier<String> symbolSupplier,
+            Component tooltip) {
+        super(x, y, width, height, Component.empty(), onPress, DEFAULT_NARRATION);
         this.symbolSupplier = symbolSupplier;
         if (!tooltip.getString().isEmpty()) {
             setTooltip(Tooltip.create(tooltip));

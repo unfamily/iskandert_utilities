@@ -20,13 +20,18 @@ public class ShopMenu extends AbstractContainerMenu {
     private final ContainerLevelAccess levelAccess;
     private final BlockPos blockPos;
 
-    // Server-side constructor
-    public ShopMenu(int containerId, Inventory playerInventory, ShopBlockEntity blockEntity) {
+    // Server-side constructor (blockEntity null for portable shop)
+    public ShopMenu(int containerId, Inventory playerInventory, @Nullable ShopBlockEntity blockEntity) {
         super(ModMenuTypes.SHOP_MENU.get(), containerId);
         this.blockEntity = blockEntity;
-        this.blockPos = blockEntity.getBlockPos();
-        this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
-        
+        if (blockEntity != null) {
+            this.blockPos = blockEntity.getBlockPos();
+            this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
+        } else {
+            this.blockPos = BlockPos.ZERO;
+            this.levelAccess = ContainerLevelAccess.NULL;
+        }
+
         addPlayerInventorySlots(playerInventory);
     }
 
@@ -44,7 +49,15 @@ public class ShopMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
+        if (blockEntity == null) {
+            return !player.isRemoved();
+        }
         return stillValid(levelAccess, player, ModBlocks.SHOP.get());
+    }
+
+    /** Portable shop menu (no block entity). */
+    public static ShopMenu createPortable(int containerId, Inventory playerInventory) {
+        return new ShopMenu(containerId, playerInventory, null);
     }
 
     @Override

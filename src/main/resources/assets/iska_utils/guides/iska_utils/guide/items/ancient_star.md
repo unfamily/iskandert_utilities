@@ -15,7 +15,7 @@ categories:
 
 ## What it does
 
-An artifact for the Curios **curio** slot (not cursed). While equipped:
+An artifact for the Curios **curio** slot (not an arcane artifact). While equipped:
 
 - **Always:** bonus armor
 - **High HP:** bonus outgoing damage

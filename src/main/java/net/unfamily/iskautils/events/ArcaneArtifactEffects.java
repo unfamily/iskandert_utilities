@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -18,8 +19,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
+import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.effect.DeceivedMobEffect;
 import net.unfamily.iskautils.effect.ModMobEffects;
 import net.unfamily.iskautils.integration.apotheosis.ApotheosisCompat;
 import net.unfamily.iskautils.item.ModItems;
@@ -163,6 +166,28 @@ public final class ArcaneArtifactEffects {
                 true,
                 true,
                 true));
+    }
+
+    @SubscribeEvent
+    public static void onMobEffectAdded(MobEffectEvent.Added event) {
+        LivingEntity entity = event.getEntity();
+        if (entity.level().isClientSide()) {
+            return;
+        }
+        MobEffectInstance added = event.getEffectInstance();
+        if (added == null || !added.is(MobEffects.ABSORPTION)) {
+            return;
+        }
+        MobEffectInstance deceived = entity.getEffect(ModMobEffects.DECEIVED);
+        if (deceived == null || entity.level().getServer() == null) {
+            return;
+        }
+        int amplifier = deceived.getAmplifier();
+        entity.level().getServer().execute(() -> {
+            if (entity.isAlive() && entity.hasEffect(ModMobEffects.DECEIVED)) {
+                DeceivedMobEffect.applyDeceivedAbsorptionStack(entity, amplifier);
+            }
+        });
     }
 
     private static Float resolveRitualGauntletCritMultiplier(Player player) {

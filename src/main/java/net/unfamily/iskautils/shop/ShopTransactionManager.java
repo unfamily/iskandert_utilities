@@ -13,13 +13,13 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * Manages shop transactions using team valutes
+ * Manages shop transactions using team currencies
  */
 public class ShopTransactionManager {
     private static final ModLogger LOGGER = ModLogger.of(ShopTransactionManager.class);
     
     /**
-     * Attempts to buy an item from the shop using team valutes
+     * Attempts to buy an item from the shop using team currencies
      * @param entryId The unique ID of the ShopEntry (not the itemId)
      */
     public static boolean buyItem(ServerPlayer player, String entryId, int quantity) {
@@ -31,7 +31,8 @@ public class ShopTransactionManager {
             return false;
         }
         
-        if (entry.buy <= 0 && !entry.free) {
+        if (entry.type != ShopEntry.EntryType.ITEM || ShopEntryHelper.isTagEntry(entry)
+                || !ShopEntryHelper.isBuyAllowed(entry)) {
             sendTransactionErrorToClient(player, "cannot_buy", entryId, null);
             return false;
         }
@@ -64,7 +65,7 @@ public class ShopTransactionManager {
             return false;
         }
         
-        // Remove valutes from team
+        // Remove currency from team
         if (!teamManager.removeTeamValutes(teamName, valuteId, totalCost)) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "transaction_failed", entryId, valuteId);
@@ -72,7 +73,7 @@ public class ShopTransactionManager {
         }
         
         // Give item to player - now uses the exact item from the entry
-        if (!giveItemToPlayer(player, entry, entry.itemCount * quantity)) {
+        if (!giveItemToPlayer(player, entry, entry.amount * quantity)) {
             // If we can't give the item, refund the money
             teamManager.addTeamValutes(teamName, valuteId, totalCost);
             // Send error to client instead of chat
@@ -89,7 +90,7 @@ public class ShopTransactionManager {
     }
     
     /**
-     * Attempts to sell an item to the shop using team valutes
+     * Attempts to sell an item to the shop using team currencies
      * @param entryId The unique ID of the ShopEntry (not the itemId)
      */
     public static boolean sellItem(ServerPlayer player, String entryId, int quantity) {
@@ -101,7 +102,7 @@ public class ShopTransactionManager {
             return false;
         }
         
-        if (entry.sell <= 0) {
+        if (entry.type != ShopEntry.EntryType.ITEM || !ShopEntryHelper.isSellAllowed(entry)) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "cannot_sell", entryId, null);
             return false;
@@ -128,13 +129,13 @@ public class ShopTransactionManager {
         }
         
         // Check if player has the item and remove it  
-        if (!removeItemFromPlayer(player, entry, entry.itemCount * quantity)) {
+        if (!removeItemFromPlayer(player, entry, entry.amount * quantity)) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "insufficient_items", entryId, valuteId);
             return false;
         }
         
-        // Add valutes to team
+        // Add currency to team
         if (!teamManager.addTeamValutes(teamName, valuteId, totalReward)) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "transaction_failed", entryId, valuteId);
@@ -318,45 +319,52 @@ public class ShopTransactionManager {
      */
     private static boolean removeItemFromPlayer(ServerPlayer player, ShopEntry entry, int count) {
         try {
-            // For selling, match exact item + data components (NBT/components).
-            // We parse once (count = 1) and then use ItemStack.isSameItemSameComponents for inventory checks.
-            ItemStack template = ItemConverter.parseItemString(entry.item, 1);
-            if (template.isEmpty()) {
-                LOGGER.warn("Unable to parse item for sell matching: {}", entry.item);
-                return false;
-            }
-            
             Inventory inventory = player.getInventory();
-            
-            // Count how many items the player has
+            boolean tagEntry = ShopEntryHelper.isTagEntry(entry);
+            ItemStack template = ItemStack.EMPTY;
+            if (!tagEntry) {
+                template = ItemConverter.parseItemString(entry.item, 1);
+                if (template.isEmpty()) {
+                    LOGGER.warn("Unable to parse item for sell matching: {}", entry.item);
+                    return false;
+                }
+            }
+
             int totalCount = 0;
             for (int i = 0; i < inventory.getContainerSize(); i++) {
                 ItemStack stack = inventory.getItem(i);
-                if (!stack.isEmpty() && ItemStack.isSameItemSameComponents(stack, template)) {
+                if (stack.isEmpty()) {
+                    continue;
+                }
+                if (tagEntry ? ShopEntryHelper.matchesItem(stack, entry.item)
+                        : ItemStack.isSameItemSameComponents(stack, template)) {
                     totalCount += stack.getCount();
                 }
             }
             
             if (totalCount < count) {
-                return false; // Not enough items
+                return false;
             }
             
-            // Remove items
             int remainingToRemove = count;
             for (int i = 0; i < inventory.getContainerSize() && remainingToRemove > 0; i++) {
                 ItemStack stack = inventory.getItem(i);
-                if (!stack.isEmpty() && ItemStack.isSameItemSameComponents(stack, template)) {
-                    int toRemove = Math.min(remainingToRemove, stack.getCount());
-                    stack.shrink(toRemove);
-                    remainingToRemove -= toRemove;
-                    
-                    if (stack.isEmpty()) {
-                        inventory.setItem(i, ItemStack.EMPTY);
-                    }
+                if (stack.isEmpty()) {
+                    continue;
+                }
+                boolean match = tagEntry ? ShopEntryHelper.matchesItem(stack, entry.item)
+                        : ItemStack.isSameItemSameComponents(stack, template);
+                if (!match) {
+                    continue;
+                }
+                int toRemove = Math.min(remainingToRemove, stack.getCount());
+                stack.shrink(toRemove);
+                remainingToRemove -= toRemove;
+                if (stack.isEmpty()) {
+                    inventory.setItem(i, ItemStack.EMPTY);
                 }
             }
-            
-            return true;
+            return remainingToRemove == 0;
         } catch (Exception e) {
             LOGGER.error("Error removing item {} from player {}: {}", entry.item, player.getName().getString(), e.getMessage());
             return false;

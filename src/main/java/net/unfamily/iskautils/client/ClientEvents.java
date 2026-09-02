@@ -18,6 +18,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.FanBlockEntity;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
+import net.unfamily.iskautils.client.MachineAreaPreviewClear;
 import net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket;
 import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -131,7 +132,7 @@ public class ClientEvents {
     }
 
     public static void handleClearPreviewForOwner(BlockPos owner) {
-        MarkRenderer.getInstance().clearBillboardMarkersForOwner(owner);
+        MachineAreaPreviewClear.clearAllForOwner(owner);
     }
 
     @SubscribeEvent
@@ -166,8 +167,7 @@ public class ClientEvents {
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.getLevel() instanceof net.minecraft.world.level.Level level) {
             MachinePreviewTracker.onBlockInPreviewChanged(level, event.getPos());
-            BlazingAltarAreaPreview.clear(event.getPos());
-            TemporalOverclockerAreaPreview.clear(event.getPos());
+            MachineAreaPreviewClear.clearAllForOwner(event.getPos());
         }
     }
 

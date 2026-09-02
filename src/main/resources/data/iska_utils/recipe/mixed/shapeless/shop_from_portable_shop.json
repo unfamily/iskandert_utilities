@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "iska_utils:portable_shop"
+    }
+  ],
+  "result": {
+    "id": "iska_utils:shop",
+    "count": 1
+  }
+}

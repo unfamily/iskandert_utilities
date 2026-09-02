@@ -24,6 +24,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity;
+import net.unfamily.iskautils.util.PreviewAreaSupport;
 import net.unfamily.iskautils.item.ModItems;
 import org.jetbrains.annotations.Nullable;
 
@@ -136,6 +137,7 @@ public class TemporalOverclockerBlock extends Block implements EntityBlock {
             if (be instanceof TemporalOverclockerBlockEntity overclocker) {
                 overclocker.drops();
             }
+            PreviewAreaSupport.onPreviewOwnerBlockRemoved(level, pos, state, newState);
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }

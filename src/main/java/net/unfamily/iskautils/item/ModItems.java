@@ -38,6 +38,7 @@ import net.unfamily.iskautils.item.custom.TemporalOverclockerBlockItem;
 import net.unfamily.iskautils.item.custom.TranslatedTooltipBlockItem;
 import net.unfamily.iskautils.item.custom.FanBlockItem;
 import net.unfamily.iskautils.item.custom.ShopBlockItem;
+import net.unfamily.iskautils.item.custom.PortableShopItem;
 import net.unfamily.iskautils.item.custom.EnderNullifierBlockItem;
 import net.unfamily.iskautils.item.custom.NullifierBlockItem;
 import net.unfamily.iskautils.item.custom.HellfireIgniterBlockItem;
@@ -683,6 +684,9 @@ public class ModItems {
 
     public static final DeferredItem<Item> AUTO_SHOP = ITEMS.register("auto_shop",
             () -> new AutoShopItem(ModBlocks.AUTO_SHOP.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> PORTABLE_SHOP = ITEMS.register("portable_shop",
+            () -> new PortableShopItem(ITEM_PROPERTIES.stacksTo(1)));
 
     public static final DeferredItem<Item> SMART_TIMER = ITEMS.register("smart_timer",
             () -> new BlockItem(ModBlocks.SMART_TIMER.get(), ITEM_PROPERTIES));

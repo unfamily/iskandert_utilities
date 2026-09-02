@@ -15,7 +15,7 @@ categories:
 
 ## What it does
 
-**Cursed artifact.** No matter who it belonged to, it is made of plastic. Worn in **Curios**, it grants **extra maximum health** for each other **cursed artifact** you wear. The **Arcane Candle** counts even if you only carry it in your **inventory or hotbar** (not only in Curios).
+**Arcane artifact.** No matter who it belonged to, it is made of plastic. Worn in **Curios**, it grants **extra maximum health** for each other **arcane artifact** you wear. The **Arcane Candle** counts even if you only carry it in your **inventory or hotbar** (not only in Curios).
 
 ## How to obtain
 

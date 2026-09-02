@@ -1,5 +1,9 @@
 {
+  "replace": false,
   "values": [
-    "mowziesmobs:grottol"
+    {
+      "id": "mowziesmobs:grottol",
+      "required": false
+    }
   ]
 }

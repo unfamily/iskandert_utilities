@@ -28,6 +28,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.block.entity.EnderNullifierBlockEntity;
+import net.unfamily.iskautils.util.PreviewAreaSupport;
 import net.unfamily.iskautils.block.entity.EnderNullifierRedstoneMode;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 
@@ -123,6 +124,7 @@ public class EnderNullifierBlock extends DirectionalBlock implements EntityBlock
                     }
                 }
             }
+            PreviewAreaSupport.onPreviewOwnerBlockRemoved(level, pos, state, newState);
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }

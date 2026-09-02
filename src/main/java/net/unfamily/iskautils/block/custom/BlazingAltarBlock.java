@@ -37,6 +37,7 @@ import net.unfamily.iskautils.block.entity.BlazingAltarBlockEntity;
 import net.unfamily.iskautils.block.entity.BlazingAltarBlockSync;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.gui.BlazingAltarMenu;
+import net.unfamily.iskautils.util.PreviewAreaSupport;
 
 import javax.annotation.Nullable;
 
@@ -132,6 +133,14 @@ public class BlazingAltarBlock extends BaseEntityBlock {
             }
         }
         return super.playerWillDestroy(level, pos, state, player);
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (!state.is(newState.getBlock())) {
+            PreviewAreaSupport.onPreviewOwnerBlockRemoved(level, pos, state, newState);
+        }
+        super.onRemove(state, level, pos, newState, isMoving);
     }
 
     @Override

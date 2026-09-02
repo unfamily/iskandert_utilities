@@ -15,7 +15,7 @@ categories:
 
 ## What it does
 
-**Cursed artifact** covered in runes. Wear in **Curios** (hands). While any **potion effect** is active on you, hits can proc **bonus critical damage** — stronger when your active effects are **harmful** than when they are **beneficial** or **neutral**. Exact chances are on the item tooltip.
+**Arcane artifact** covered in runes. Wear in **Curios** (hands). While any **potion effect** is active on you, hits can proc **bonus critical damage** — stronger when your active effects are **harmful** than when they are **beneficial** or **neutral**. Exact chances are on the item tooltip.
 
 ## How to obtain
 
