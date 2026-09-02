@@ -5,6 +5,10 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.unfamily.iskautils.shop.ShopEntry;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /** Shared shop GUI rendering helpers. */
 public final class ShopScreenHelper {
@@ -15,6 +19,35 @@ public final class ShopScreenHelper {
     public static final int SHOP_ENTRY_TEXTURE_HEIGHT = 24;
 
     private ShopScreenHelper() {
+    }
+
+    /** Quantity line: item count, or mB for fluid/gas entries. */
+    public static Component amountLine(ShopEntry entry) {
+        if (entry != null && (entry.type == ShopEntry.EntryType.FLUID || entry.type == ShopEntry.EntryType.GAS)) {
+            return Component.translatable("gui.iska_utils.shop.tooltip.amount_mb", entry.amount);
+        }
+        int amount = entry != null ? Math.max(1, entry.amount) : 1;
+        return Component.translatable("gui.iska_utils.shop.tooltip.amount", amount);
+    }
+
+    /**
+     * Disabled Buy/Sell tooltip for fluid/gas in the player shop: price, amount (mB), then Auto Shop hint.
+     */
+    public static List<Component> playerShopFluidGasHintTooltip(ShopEntry item, boolean buy, String currencySymbol) {
+        List<Component> tooltip = new ArrayList<>();
+        if (buy) {
+            if (item.free) {
+                tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.free"));
+            } else {
+                tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.cost", item.buy, currencySymbol));
+            }
+        } else {
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.price", item.sell, currencySymbol));
+        }
+        tooltip.add(amountLine(item));
+        tooltip.add(Component.empty());
+        tooltip.add(Component.translatable("gui.iska_utils.shop.use_auto_shop"));
+        return tooltip;
     }
 
     /**

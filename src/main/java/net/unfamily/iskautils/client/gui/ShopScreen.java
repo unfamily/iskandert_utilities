@@ -370,13 +370,15 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         boolean upButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
                                   mouseY >= guiY + upY && mouseY < guiY + upY + HANDLE_SIZE);
         int upButtonV = upButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + upY, SCROLLBAR_WIDTH * 2, upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + upY,
+                (float) (SCROLLBAR_WIDTH * 2), (float) upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // DOWN button (8x8 pixels) - below scrollbar
         boolean downButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
                                     mouseY >= guiY + downY && mouseY < guiY + downY + HANDLE_SIZE);
         int downButtonV = downButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + downY, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + downY,
+                (float) (SCROLLBAR_WIDTH * 3), (float) downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // Handle (8x8 pixels) - position based on scroll offset
         if (totalShopEntries > entries) {
@@ -386,7 +388,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             boolean handleHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
                                     mouseY >= handleY && mouseY < handleY + HANDLE_SIZE);
             int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-            guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY,
+                    (float) SCROLLBAR_WIDTH, (float) handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         }
     }
     
@@ -952,7 +955,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             if ((item.buy > 0 || item.free) && mouseX >= buyButtonX && mouseX < buyButtonX + BUTTON_WIDTH
                 && mouseY >= buttonsY && mouseY < buttonsY + BUTTON_HEIGHT) {
                 if (!ShopEntryHelper.isPlayerShopTradable(item)) {
-                    return List.of(Component.translatable("gui.iska_utils.shop.use_auto_shop"));
+                    return ShopScreenHelper.playerShopFluidGasHintTooltip(item, true, getCurrencySymbol(item.valute));
                 }
                 return createBuyTooltip(item);
             }
@@ -960,7 +963,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             if (item.sell > 0 && mouseX >= sellButtonX && mouseX < sellButtonX + BUTTON_WIDTH
                 && mouseY >= buttonsY && mouseY < buttonsY + BUTTON_HEIGHT) {
                 if (!ShopEntryHelper.isPlayerShopTradable(item)) {
-                    return List.of(Component.translatable("gui.iska_utils.shop.use_auto_shop"));
+                    return ShopScreenHelper.playerShopFluidGasHintTooltip(item, false, getCurrencySymbol(item.valute));
                 }
                 return createSellTooltip(item);
             }
@@ -1218,10 +1221,6 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                     handleBuyButtonClick(item, multiplier);
                 }).bounds(buyButtonX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
                 buyButton.active = tradable;
-                if (!tradable && item.type != ShopEntry.EntryType.ITEM) {
-                    buyButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
-                            Component.translatable("gui.iska_utils.shop.use_auto_shop")));
-                }
                 
                 buyButtons.add(buyButton);
                 this.addRenderableWidget(buyButton);
@@ -1239,10 +1238,6 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                     handleSellButtonClick(item, multiplier);
                 }).bounds(sellButtonX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
                 sellButton.active = tradable;
-                if (!tradable && item.type != ShopEntry.EntryType.ITEM) {
-                    sellButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
-                            Component.translatable("gui.iska_utils.shop.use_auto_shop")));
-                }
                 
                 sellButtons.add(sellButton);
                 this.addRenderableWidget(sellButton);

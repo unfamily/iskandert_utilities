@@ -2,6 +2,7 @@ package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.input.CharacterEvent;
@@ -415,6 +416,11 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (subView == SubView.ITEM_PICKER) {
+            // Draw picker chrome widgets; skip MAIN slot/ghost overlay path.
+            for (Renderable renderable : this.renderables) {
+                renderable.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+            }
+            extractTooltip(guiGraphics, mouseX, mouseY);
             return;
         }
 

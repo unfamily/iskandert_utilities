@@ -752,20 +752,20 @@ public final class AutoShopItemPickerOverlay {
 
         boolean upHovered = mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
                 && mouseY >= topPos + upY && mouseY < topPos + upY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, topPos + upY,
-                SCROLLBAR_WIDTH * 2, upHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, topPos + upY,
+                (float) (SCROLLBAR_WIDTH * 2), (float) (upHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
 
         boolean downHovered = mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
                 && mouseY >= topPos + downY && mouseY < topPos + downY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, topPos + downY,
-                SCROLLBAR_WIDTH * 3, downHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, topPos + downY,
+                (float) (SCROLLBAR_WIDTH * 3), (float) (downHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
 
         double scrollRatio = (double) scrollOffset / maxScrollOffset();
         int handleY = topPos + barY + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
         boolean handleHovered = mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + HANDLE_SIZE
                 && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, handleY,
-                SCROLLBAR_WIDTH, handleHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, handleY,
+                (float) SCROLLBAR_WIDTH, (float) (handleHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
     }
 
     private boolean handleEntryClick(double mouseX, double mouseY) {
@@ -904,13 +904,17 @@ public final class AutoShopItemPickerOverlay {
             tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.cost",
                     item.buy, getCurrencySymbol(currencyId)));
         }
+        tooltip.add(ShopScreenHelper.amountLine(item));
         return tooltip;
     }
 
     private List<Component> createSellTooltip(ShopEntry item) {
+        List<Component> tooltip = new ArrayList<>();
         String currencyId = item.valute != null ? item.valute : "null_coin";
-        return List.of(Component.translatable("gui.iska_utils.shop.tooltip.sell.price",
+        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.price",
                 item.sell, getCurrencySymbol(currencyId)));
+        tooltip.add(ShopScreenHelper.amountLine(item));
+        return tooltip;
     }
 
     private String getCurrencySymbol(String valuteId) {
