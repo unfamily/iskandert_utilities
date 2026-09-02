@@ -110,6 +110,9 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     @Override
     public void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         repositionLayout();
+        if (subView == SubView.ITEM_PICKER) {
+            itemPicker.layoutChromeWidgets();
+        }
         super.extractContents(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -123,18 +126,16 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     private void enterItemPicker() {
         subView = SubView.ITEM_PICKER;
         this.inventoryLabelY = 10000;
-        repositionLayout();
         itemPicker.loadData();
-        this.clearWidgets();
-        itemPicker.initWidgets(this);
+        this.clearFocus();
+        this.rebuildWidgets();
     }
 
     private void leaveItemPicker() {
         subView = SubView.MAIN;
         this.inventoryLabelY = 73;
-        repositionLayout();
-        this.clearWidgets();
-        init();
+        this.clearFocus();
+        this.rebuildWidgets();
     }
 
     @Override
@@ -185,7 +186,12 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
                 BUTTON_SIZE,
                 b -> {
                     playButtonSound();
-                    enterItemPicker();
+                    // Defer: clearing widgets inside the pressed button's onPress leaves a stale focus target.
+                    if (this.minecraft != null) {
+                        this.minecraft.execute(this::enterItemPicker);
+                    } else {
+                        enterItemPicker();
+                    }
                 },
                 () -> "≡",
                 Component.translatable("gui.iska_utils.auto_shop.select_item_catalog")));

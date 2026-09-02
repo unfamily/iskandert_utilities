@@ -227,14 +227,20 @@ dependencies {
         dependencies.add(scope, "dev.shadowsoffire:Apotheosis:${minecraft_version}-${apotheosis_version}")
     }
     apotheosisStack('compileOnly')
-    apotheosisStack('localRuntime')
+    // Apothic Spawners mixin broken on NeoForge 26.1.2.101 (ItemStack tooltip inject).
+    // Toggle via gradle.properties: include_apotheosis_runtime=true|false
+    def includeApotheosisRuntime = !project.hasProperty('include_apotheosis_runtime')
+            || project.include_apotheosis_runtime.toString() == 'true'
+    if (includeApotheosisRuntime) {
+        apotheosisStack('localRuntime')
+        // Apotheosis requires Curios at dev runtime (optional for published mod)
+        localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+    }
     configurations.configureEach {
         if (canBeResolved) {
             resolutionStrategy.force "dev.shadowsoffire:Placebo:${minecraft_version}-${placebo_version}"
         }
     }
-    // Apotheosis requires Curios at dev runtime (optional for published mod)
-    localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}"
 
     compileOnly "curse.maven:fusion-connected-textures-854949:8355217"
     localRuntime "curse.maven:fusion-connected-textures-854949:8355217"

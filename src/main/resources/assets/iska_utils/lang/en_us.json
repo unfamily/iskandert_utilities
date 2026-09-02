@@ -413,7 +413,7 @@
   "gui.iska_utils.auto_shop.mode.letter.buy": "B",
   "gui.iska_utils.auto_shop.mode.letter.sell": "S",
   "gui.iska_utils.auto_shop.select_item_catalog": "Browse shop catalog",
-  "gui.iska_utils.auto_shop.picker.title": "Select Shop Item",
+  "gui.iska_utils.auto_shop.picker.title": "Auto Shop Selector",
   "gui.iska_utils.auto_shop.picker.select_buy": "Set Buy",
   "gui.iska_utils.auto_shop.picker.select_sell": "Set Sell",
   "gui.iska_utils.auto_shop.picker.tag_not_supported": "Tag-based shop entries cannot be selected",

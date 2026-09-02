@@ -715,7 +715,7 @@
   "gui.iska_utils.auto_shop.mode.letter.buy": "C",
   "gui.iska_utils.auto_shop.mode.letter.sell": "V",
   "gui.iska_utils.auto_shop.select_item_catalog": "Sfoglia catalogo negozio",
-  "gui.iska_utils.auto_shop.picker.title": "Seleziona item negozio",
+  "gui.iska_utils.auto_shop.picker.title": "Auto Shop Selector",
   "gui.iska_utils.auto_shop.picker.select_buy": "Set Buy",
   "gui.iska_utils.auto_shop.picker.select_sell": "Set Sell",
   "gui.iska_utils.auto_shop.picker.tag_not_supported": "Le entry negozio basate su tag non possono essere selezionate",

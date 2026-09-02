@@ -153,6 +153,8 @@ public final class AutoShopItemPickerOverlay {
         searchBox.setBordered(true);
         searchBox.setHint(Component.translatable("gui.iska_utils.shop.search.placeholder"));
         searchBox.setResponder(text -> searchDebounceTicks = SEARCH_DEBOUNCE_TICKS);
+        searchBox.visible = true;
+        searchBox.active = true;
         screen.addPickerWidget(searchBox);
 
         scopeFilterButton = screen.addPickerWidget(new SymbolIconButton(
@@ -185,8 +187,39 @@ public final class AutoShopItemPickerOverlay {
             onCloseHost.run();
         }).bounds(leftPos + CLOSE_BUTTON_X, topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE).build());
 
+        layoutChromeWidgets();
         updateSelectButtons(screen);
         refreshFilteredLists();
+    }
+
+    /** Keep search/filter/back/close aligned after dual-layout leftPos/topPos changes. */
+    public void layoutChromeWidgets() {
+        int leftPos = leftPosSupplier.getAsInt();
+        int topPos = topPosSupplier.getAsInt();
+        if (searchBox != null) {
+            searchBox.setPosition(leftPos + ShopBrowsePanel.SEARCH_BAR_X, topPos + ShopBrowsePanel.SEARCH_BAR_Y);
+            searchBox.visible = true;
+            searchBox.active = true;
+        }
+        if (scopeFilterButton != null) {
+            scopeFilterButton.setPosition(leftPos + browsePanel.scopeButtonX(), topPos + ShopBrowsePanel.FILTER_ROW_Y);
+            scopeFilterButton.visible = true;
+            scopeFilterButton.active = true;
+        }
+        if (currencyFilterButton != null) {
+            currencyFilterButton.setPosition(leftPos + browsePanel.currencyButtonX(), topPos + ShopBrowsePanel.FILTER_ROW_Y);
+            currencyFilterButton.visible = true;
+            currencyFilterButton.active = true;
+        }
+        if (backButton != null) {
+            backButton.setPosition(leftPos + BACK_BUTTON_X, topPos + BACK_BUTTON_Y);
+            backButton.visible = true;
+        }
+        if (closeButton != null) {
+            closeButton.setPosition(leftPos + CLOSE_BUTTON_X, topPos + CLOSE_BUTTON_Y);
+            closeButton.visible = true;
+            closeButton.active = true;
+        }
     }
 
     public void tick() {
