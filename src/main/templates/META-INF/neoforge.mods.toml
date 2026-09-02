@@ -135,6 +135,20 @@ config="iska_utils.mixins.json"
     ordering="AFTER"
     side="BOTH"
 
+# Optional Mekanism (AutoShop gas tanks / shop gas entries)
+[[dependencies.${mod_id}]]
+    modId="mekanism"
+    type="optional"
+    ordering="AFTER"
+    side="BOTH"
+
+# Required dependency on Fusion (connected textures)
+[[dependencies.${mod_id}]]
+    modId="fusion"
+    type="required"
+    ordering="AFTER"
+    side="BOTH"
+
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't
 # stop your mod loading on the server for example.

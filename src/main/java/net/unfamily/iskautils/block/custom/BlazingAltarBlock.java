@@ -135,6 +135,12 @@ public class BlazingAltarBlock extends BaseEntityBlock {
     }
 
     @Override
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        net.unfamily.iskautils.util.PreviewAreaSupport.onPreviewOwnerBlockBroken(level, pos, state);
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
+    }
+
+    @Override
     protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
         super.onPlace(state, level, pos, oldState, movedByPiston);
         if (!level.isClientSide() && !movedByPiston && !oldState.is(this)) {

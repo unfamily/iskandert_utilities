@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.client.ClientEvents;
+import net.unfamily.iskautils.client.MachineAreaPreviewClear;
 import net.unfamily.iskautils.client.MachinePreviewTracker;
 
 /** S2C: clear footprint preview markers for one owner block only. */
@@ -40,8 +40,7 @@ public record ClearPreviewForOwnerS2CPayload(BlockPos owner, boolean deactivate,
     public static void handle(ClearPreviewForOwnerS2CPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (payload.deactivate()) {
-                MachinePreviewTracker.deactivateOwner(payload.owner());
-                ClientEvents.handleClearPreviewForOwner(payload.owner());
+                MachineAreaPreviewClear.clearAllForOwner(payload.owner());
             } else {
                 MachinePreviewTracker.applyFootprintClear(payload.owner(), payload.footprintGeneration());
             }

@@ -339,6 +339,11 @@ public class ModBlockEntities {
                     (blockEntity, ctx) -> blockEntity instanceof AutoShopBlockEntity be ? be.getItemTransferHandler() : null
             );
             event.registerBlockEntity(
+                    Capabilities.Fluid.BLOCK,
+                    AUTO_SHOP_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof AutoShopBlockEntity be ? be.getFluidTransferHandler() : null
+            );
+            event.registerBlockEntity(
                     Capabilities.Item.BLOCK,
                     STRUCTURE_PLACER_MACHINE_BE.get(),
                     (blockEntity, ctx) -> blockEntity instanceof StructurePlacerMachineBlockEntity be ? be.getItemTransferHandler() : null

@@ -40,20 +40,20 @@ public record ShopTeamDataRequestC2SPacket() implements CustomPacketPayload {
         ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
         String teamKey = teamManager.getPlayerTeamKey(player);
         
-        // Prepara i dati del team
+        // Prepare team data
         Map<String, Double> teamBalances = null;
         if (teamKey != null) {
             teamBalances = new java.util.HashMap<>();
             Map<String, ShopCurrency> currencies = ShopLoader.getCurrencies();
             
-            // Ottieni il balance per ogni valuta
+            // Collect balance for each currency
             for (String currencyId : currencies.keySet()) {
                 double balance = teamManager.getTeamValuteBalance(teamKey, currencyId);
                 teamBalances.put(currencyId, balance);
             }
         }
         
-        // Invia i dati al client
+        // Send data to client
         String displayName = teamKey != null ? teamManager.getTeamDisplayName(teamKey) : null;
         ModMessages.sendShopTeamDataToClient(player, displayName != null ? displayName : teamKey, teamBalances);
     }

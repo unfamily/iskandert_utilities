@@ -3,28 +3,25 @@ package net.unfamily.iskautils.client.gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
-import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.gui.screens.Screen;
 import com.mojang.blaze3d.platform.InputConstants;
 import org.lwjgl.glfw.GLFW;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopEntry;
+import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopCurrency;
-import net.unfamily.iskautils.shop.ItemConverter;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
@@ -46,9 +43,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     // Entry texture: enrty_wide_wide_wide.png = 220x24, aligned with inventory start (x=20)
     private static final int ENTRY_WIDTH = 220;
     private static final int ENTRY_HEIGHT = 24;
-    private static final int ENTRIES = 5;
     private static final int ENTRY_START_X = 19;
-    private static final int ENTRY_START_Y = 20;
+    private static final int SEARCH_DEBOUNCE_TICKS = 4;
     
     // Margin from right edge (don't go below this)
     private static final int RIGHT_EDGE_MARGIN = 10;
@@ -58,11 +54,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final int SCROLLBAR_HEIGHT = 34;
     private static final int HANDLE_SIZE = 8;
     
-    // Scrollbar: right next to entries
+    // Scrollbar: right next to entries (Y positions derived from entryStartY())
     private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 4;
-    private static final int BUTTON_UP_Y = ENTRY_START_Y;
-    private static final int SCROLLBAR_Y = ENTRY_START_Y + HANDLE_SIZE;
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
     
     // Buy/Sell button constants
     private static final int BUTTON_WIDTH = 30;
@@ -72,11 +65,11 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     // Right info area: as left as possible after scrollbar, but back button must end at least RIGHT_EDGE_MARGIN from right
     private static final int BACK_BUTTON_WIDTH = 30;
     private static final int BACK_BUTTON_HEIGHT = 15;
-    private static final int BACK_BUTTON_X = GUI_WIDTH - RIGHT_EDGE_MARGIN - BACK_BUTTON_WIDTH;  // 260
-    private static final int CURRENCIES_AREA_LEFT = SCROLLBAR_X + SCROLLBAR_WIDTH + 4;
-    private static final int CURRENCIES_AREA_RIGHT = GUI_WIDTH - RIGHT_EDGE_MARGIN;
-    private static final int BACK_BUTTON_Y = 20; // Same level as entries
-    private static final int CURRENCIES_START_Y = BACK_BUTTON_Y + BACK_BUTTON_HEIGHT + 13; // Spostato da 10px a 13px sotto il pulsante
+    private static final int BACK_BUTTON_X = GUI_WIDTH - RIGHT_EDGE_MARGIN - BACK_BUTTON_WIDTH; // 260
+    private static final int CURRENCIES_AREA_LEFT = SCROLLBAR_X + SCROLLBAR_WIDTH + 2;
+    private static final int BACK_BUTTON_Y = 20; // Same level as search row
+    /** Aligned with the first list entry row (search occupies the slot above entries). */
+    private static final int CURRENCIES_START_Y = ShopBrowsePanel.ENTRY_START_Y + ShopBrowsePanel.ENTRY_HEIGHT;
     
     // Scrolling variables
     private int scrollOffset = 0;
@@ -91,9 +84,12 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     protected String currentCategoryName = "Shop";
     
     // Shop data
-    private List<ShopCategory> availableCategories = new ArrayList<>();
-    private List<ShopEntry> availableItems = new ArrayList<>();
+    private final ShopBrowsePanel browsePanel = new ShopBrowsePanel();
     private Map<String, ShopCurrency> availableCurrencies = new HashMap<>();
+    private EditBox searchBox;
+    private int searchDebounceTicks = 0;
+    private SymbolIconButton currencyFilterButton;
+    private SymbolIconButton scopeFilterButton;
     
     // Vanilla buttons
     private Button backButton;
@@ -117,22 +113,41 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private long feedbackClearTime = 0;
     private static final long FEEDBACK_DISPLAY_TIME = 3000; // 3 seconds
     
-    // Calculate feedback position centered between fifth entry and inventory (Y=154)
-    private static final int INVENTORY_Y = 154; // Y of main inventory (from ShopMenu)
-    private static final int FIFTH_ENTRY_END = ENTRY_START_Y + (ENTRIES * ENTRY_HEIGHT); // End of fifth entry (Y=140)
-    private static final int FEEDBACK_Y_OFFSET = FIFTH_ENTRY_END + ((INVENTORY_Y - FIFTH_ENTRY_END) / 2) - 4; // Centered (Y=147-4=143)
-
     public ShopScreen(AbstractContainerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
         
         // Carica i dati del shop
         loadShopData();
         
-        // Registra questa istanza per il callback
+        // Keep instance for reload callbacks
         currentInstance = this;
         
-        // Richiedi i dati del team dal server
+        // Request team data from server
         net.unfamily.iskautils.network.ModMessages.sendShopTeamDataRequest();
+    }
+
+    private int entryStartY() {
+        return browsePanel.getEntryStartY();
+    }
+
+    private int visibleEntries() {
+        return browsePanel.getVisibleEntryCount();
+    }
+
+    private int buttonUpY() {
+        return browsePanel.getBrowseAreaStartY();
+    }
+
+    private int scrollbarY() {
+        return browsePanel.getBrowseAreaStartY() + HANDLE_SIZE;
+    }
+
+    private int buttonDownY() {
+        return scrollbarY() + SCROLLBAR_HEIGHT;
+    }
+
+    private int maxScrollOffset() {
+        return Math.max(0, totalShopEntries - visibleEntries());
     }
     
     @Override
@@ -144,6 +159,37 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         // Register this instance for callback
         currentInstance = this;
+
+        searchBox = new EditBox(
+                font,
+                leftPos + ShopBrowsePanel.SEARCH_BAR_X,
+                topPos + ShopBrowsePanel.SEARCH_BAR_Y,
+                ShopBrowsePanel.SEARCH_BAR_WIDTH,
+                ShopBrowsePanel.SEARCH_BAR_HEIGHT,
+                Component.empty());
+        searchBox.setMaxLength(256);
+        searchBox.setBordered(true);
+        searchBox.setHint(Component.translatable("gui.iska_utils.shop.search.placeholder"));
+        searchBox.setResponder(text -> searchDebounceTicks = SEARCH_DEBOUNCE_TICKS);
+        addRenderableWidget(searchBox);
+
+        scopeFilterButton = addRenderableWidget(new SymbolIconButton(
+                leftPos + browsePanel.scopeButtonX(),
+                topPos + ShopBrowsePanel.FILTER_ROW_Y,
+                ShopBrowsePanel.SCOPE_BUTTON_WIDTH,
+                ShopBrowsePanel.FILTER_BUTTON_HEIGHT,
+                button -> onScopeFilterPressed(false),
+                () -> browsePanel.scopeLetter(browsePanel.getSearchScope()),
+                getScopeTooltip(browsePanel.getSearchScope())));
+
+        currencyFilterButton = addRenderableWidget(new SymbolIconButton(
+                leftPos + browsePanel.currencyButtonX(),
+                topPos + ShopBrowsePanel.FILTER_ROW_Y,
+                ShopBrowsePanel.CURRENCY_BUTTON_WIDTH,
+                ShopBrowsePanel.FILTER_BUTTON_HEIGHT,
+                button -> onCurrencyFilterPressed(false),
+                this::getCurrencyFilterLabel,
+                getCurrencyFilterTooltip()));
         
         // Create vanilla Back button
         backButton = Button.builder(Component.translatable("gui.iska_utils.shop.back"), button -> {
@@ -168,6 +214,99 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Update button state and create Buy/Sell buttons
         updateBackButtonState();
         updateBuySellButtons();
+        refreshFilteredLists();
+    }
+
+    @Override
+    public void containerTick() {
+        super.containerTick();
+        if (searchDebounceTicks > 0) {
+            searchDebounceTicks--;
+            if (searchDebounceTicks == 0) {
+                refreshFilteredLists();
+            }
+        }
+    }
+
+    private boolean displayingItems() {
+        return browsePanel.isDisplayingItems(showingCategories);
+    }
+
+    private void refreshFilteredLists() {
+        if (searchBox != null) {
+            browsePanel.setSearchQuery(searchBox.getValue() == null ? "" : searchBox.getValue());
+        }
+        browsePanel.applyFilters(showingCategories);
+        totalShopEntries = displayingItems()
+                ? browsePanel.getFilteredItems().size()
+                : browsePanel.getFilteredCategories().size();
+        int maxScroll = maxScrollOffset();
+        if (totalShopEntries > visibleEntries()) {
+            scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
+        } else {
+            scrollOffset = 0;
+        }
+        updateBuySellButtons();
+    }
+
+    private void onScopeFilterPressed(boolean backward) {
+        browsePanel.cycleSearchScope(backward, showingCategories);
+        updateScopeFilterTooltip();
+        refreshFilteredLists();
+        playButtonSound();
+    }
+
+    private void onCurrencyFilterPressed(boolean backward) {
+        browsePanel.cycleCurrencyFilter(backward);
+        updateCurrencyFilterTooltip();
+        refreshFilteredLists();
+        playButtonSound();
+    }
+
+    private void updateScopeFilterTooltip() {
+        if (scopeFilterButton != null) {
+            scopeFilterButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    getScopeTooltip(browsePanel.getSearchScope())));
+        }
+    }
+
+    private String getCurrencyFilterLabel() {
+        String currencyId = browsePanel.getCurrencyFilterId();
+        if (currencyId == null) {
+            return Component.translatable("gui.iska_utils.shop.currency.any.button").getString();
+        }
+        ShopCurrency currency = availableCurrencies.get(currencyId);
+        if (currency != null && currency.charSymbol != null && !currency.charSymbol.isEmpty()) {
+            return currency.charSymbol;
+        }
+        return currencyId.length() > 4 ? currencyId.substring(0, 4) : currencyId;
+    }
+
+    private Component getScopeTooltip(ShopBrowsePanel.SearchScope scope) {
+        return switch (scope) {
+            case ALL -> Component.translatable("gui.iska_utils.shop.search_scope.all");
+            case BUYABLE -> Component.translatable("gui.iska_utils.shop.search_scope.buyable");
+            case SELLABLE -> Component.translatable("gui.iska_utils.shop.search_scope.sellable");
+            case CATEGORY -> Component.translatable("gui.iska_utils.shop.search_scope.category");
+        };
+    }
+
+    private Component getCurrencyFilterTooltip() {
+        String currencyId = browsePanel.getCurrencyFilterId();
+        if (currencyId == null) {
+            return Component.translatable("gui.iska_utils.shop.currency.any");
+        }
+        ShopCurrency currency = availableCurrencies.get(currencyId);
+        if (currency != null && currency.name != null && !currency.name.trim().isEmpty()) {
+            return Component.translatable(currency.name);
+        }
+        return Component.literal(currencyId);
+    }
+
+    private void updateCurrencyFilterTooltip() {
+        if (currencyFilterButton != null) {
+            currencyFilterButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(getCurrencyFilterTooltip()));
+        }
     }
 
     @Override
@@ -180,26 +319,26 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Main background
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiX, guiY, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
-        // Shop entries - always render 5 entries, even if some are empty
-        for (int i = 0; i < ENTRIES; i++) {
+        // Shop entries - render visible rows, even if some are empty
+        int entries = visibleEntries();
+        int startY = entryStartY();
+        for (int i = 0; i < entries; i++) {
             int entryIndex = scrollOffset + i;
             int entryX = guiX + ENTRY_START_X;
-            int entryY = guiY + ENTRY_START_Y + i * ENTRY_HEIGHT;
+            int entryY = guiY + startY + i * ENTRY_HEIGHT;
             
             // Render entry background (enrty_wide_wide_wide.png 220x24)
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENTRY_TEXTURE, entryX, entryY, 0.0F, 0.0F, ENTRY_WIDTH, ENTRY_HEIGHT, 220, 24);
             
             // Render entry content only if there's data to show
-            if (showingCategories) {
-                if (entryIndex < availableCategories.size()) {
-                    ShopCategory category = availableCategories.get(entryIndex);
-                    renderCategoryEntry(guiGraphics, entryX, entryY, category);
-                }
-            } else {
-                if (entryIndex < availableItems.size()) {
-                    ShopEntry item = availableItems.get(entryIndex);
+            if (displayingItems()) {
+                if (entryIndex < browsePanel.getFilteredItems().size()) {
+                    ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
                     renderItemEntry(guiGraphics, entryX, entryY, item);
                 }
+            } else if (entryIndex < browsePanel.getFilteredCategories().size()) {
+                ShopCategory category = browsePanel.getFilteredCategories().get(entryIndex);
+                renderCategoryEntry(guiGraphics, entryX, entryY, category);
             }
         }
         
@@ -214,31 +353,35 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        int entries = visibleEntries();
         // Only show scrollbar if there are more entries than can fit
-        if (totalShopEntries <= ENTRIES) return;
+        if (totalShopEntries <= entries) return;
         
         int guiX = this.leftPos;
         int guiY = this.topPos;
+        int upY = buttonUpY();
+        int barY = scrollbarY();
+        int downY = buttonDownY();
         
         // Draw scrollbar background (8 pixels wide, height 34)
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + barY, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
         
         // UP button (8x8 pixels) - above scrollbar
         boolean upButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-                                  mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE);
+                                  mouseY >= guiY + upY && mouseY < guiY + upY + HANDLE_SIZE);
         int upButtonV = upButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_UP_Y, SCROLLBAR_WIDTH * 2, upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + upY, SCROLLBAR_WIDTH * 2, upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // DOWN button (8x8 pixels) - below scrollbar
         boolean downButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-                                    mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE);
+                                    mouseY >= guiY + downY && mouseY < guiY + downY + HANDLE_SIZE);
         int downButtonV = downButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + downY, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // Handle (8x8 pixels) - position based on scroll offset
-        if (totalShopEntries > ENTRIES) {
-            double scrollRatio = (double) scrollOffset / (totalShopEntries - ENTRIES);
-            int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        if (totalShopEntries > entries) {
+            double scrollRatio = (double) scrollOffset / maxScrollOffset();
+            int handleY = guiY + barY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
             
             boolean handleHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
                                     mouseY >= handleY && mouseY < handleY + HANDLE_SIZE);
@@ -249,6 +392,16 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     
     @Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 1) {
+            if (scopeFilterButton != null && scopeFilterButton.isMouseOver(event.x(), event.y())) {
+                onScopeFilterPressed(true);
+                return true;
+            }
+            if (currencyFilterButton != null && currencyFilterButton.isMouseOver(event.x(), event.y())) {
+                onCurrencyFilterPressed(true);
+                return true;
+            }
+        }
         if (event.button() == 0) { // Left click
             // Handle scrollbar clicks first
             if (handleScrollButtonClick(event.x(), event.y())) {
@@ -292,10 +445,18 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
     @Override
     public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
-        if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle)) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle, searchBox)) {
             return true;
         }
         return super.keyPressed(event);
+    }
+
+    @Override
+    public boolean charTyped(CharacterEvent event) {
+        if (searchBox != null && searchBox.isFocused() && searchBox.charTyped(event)) {
+            return true;
+        }
+        return super.charTyped(event);
     }
 
     @Override
@@ -304,21 +465,24 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        if (totalShopEntries <= ENTRIES) return false;
+        int entries = visibleEntries();
+        if (totalShopEntries <= entries) return false;
         
         int guiX = this.leftPos;
         int guiY = this.topPos;
+        int upY = buttonUpY();
+        int downY = buttonDownY();
         
         // UP button
         if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE) {
+            mouseY >= guiY + upY && mouseY < guiY + upY + HANDLE_SIZE) {
             scrollUp();
             return true;
         }
         
         // DOWN button
         if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE) {
+            mouseY >= guiY + downY && mouseY < guiY + downY + HANDLE_SIZE) {
             scrollDown();
             return true;
         }
@@ -327,15 +491,16 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     private boolean handleHandleClick(double mouseX, double mouseY) {
-        if (totalShopEntries <= ENTRIES) return false; // Non draggabile se poche entry
+        int entries = visibleEntries();
+        if (totalShopEntries <= entries) return false;
         
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
         int scrollbarX = x + SCROLLBAR_X;
-        int scrollbarY = y + SCROLLBAR_Y;
+        int scrollbarYPos = y + scrollbarY();
         
-        float scrollRatio = (float) scrollOffset / (totalShopEntries - ENTRIES);
-        int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        float scrollRatio = maxScrollOffset() > 0 ? (float) scrollOffset / maxScrollOffset() : 0.0f;
+        int handleY = scrollbarYPos + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
         
         if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
             mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
@@ -350,22 +515,22 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     private boolean handleScrollbarClick(double mouseX, double mouseY) {
-        if (totalShopEntries <= ENTRIES) return false;
+        int entries = visibleEntries();
+        if (totalShopEntries <= entries) return false;
         
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
         int scrollbarX = x + SCROLLBAR_X;
-        int scrollbarY = y + SCROLLBAR_Y;
+        int scrollbarYPos = y + scrollbarY();
         
         if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH &&
-            mouseY >= scrollbarY && mouseY < scrollbarY + SCROLLBAR_HEIGHT) {
+            mouseY >= scrollbarYPos && mouseY < scrollbarYPos + SCROLLBAR_HEIGHT) {
             
-            // Calcola la nuova posizione del scroll in base al click
-            float clickRatio = (float)(mouseY - scrollbarY) / SCROLLBAR_HEIGHT;
-            clickRatio = Math.max(0, Math.min(1, clickRatio)); // Clamp tra 0 e 1
+            float clickRatio = (float)(mouseY - scrollbarYPos) / SCROLLBAR_HEIGHT;
+            clickRatio = Math.max(0, Math.min(1, clickRatio));
             
-            int newScrollOffset = (int)(clickRatio * (totalShopEntries - ENTRIES));
-            newScrollOffset = Math.max(0, Math.min(totalShopEntries - ENTRIES, newScrollOffset));
+            int newScrollOffset = (int)(clickRatio * maxScrollOffset());
+            newScrollOffset = Math.max(0, Math.min(maxScrollOffset(), newScrollOffset));
             
             if (newScrollOffset != scrollOffset) {
                 scrollOffset = newScrollOffset;
@@ -402,7 +567,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     private boolean scrollUpSilent() {
-        if (totalShopEntries > ENTRIES && scrollOffset > 0) {
+        if (totalShopEntries > visibleEntries() && scrollOffset > 0) {
             scrollOffset--;
             updateBuySellButtons();
             return true;
@@ -411,7 +576,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     private boolean scrollDownSilent() {
-        if (totalShopEntries > ENTRIES && scrollOffset < totalShopEntries - ENTRIES) {
+        if (totalShopEntries > visibleEntries() && scrollOffset < maxScrollOffset()) {
             scrollOffset++;
             updateBuySellButtons();
             return true;
@@ -430,9 +595,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     public void setTotalShopEntries(int totalEntries) {
         this.totalShopEntries = totalEntries;
-        // Assicurati che scrollOffset sia valido
-        if (totalShopEntries > ENTRIES) {
-            scrollOffset = Math.max(0, Math.min(scrollOffset, totalShopEntries - ENTRIES));
+        if (totalShopEntries > visibleEntries()) {
+            scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset()));
         } else {
             scrollOffset = 0;
         }
@@ -450,176 +614,122 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     public void reloadShopData() {
         loadShopData();
-        
-        // Aggiorna i pulsanti
         updateBackButtonState();
-        updateBuySellButtons();
+        refreshFilteredLists();
     }
     
     /**
      * Carica i dati del shop dal sistema
      */
     private void loadShopData() {
-        Map<String, ShopCategory> categories = ShopLoader.getCategories();
         availableCurrencies = ShopLoader.getCurrencies();
-        
-        // Convert to list and sort by priority (higher first), then by id
-        availableCategories = categories.values().stream()
-                .sorted(Comparator.comparingInt((ShopCategory cat) -> cat.priority).reversed()
-                        .thenComparing(cat -> cat.id))
-                .collect(Collectors.toList());
-        
-        // Inizializza modalità categorie
+        browsePanel.loadAllCategories();
         showingCategories = true;
         currentCategoryId = null;
         currentCategoryName = Component.translatable("gui.iska_utils.shop.title").getString();
-        totalShopEntries = availableCategories.size();
-        
-        // Reset scroll
         scrollOffset = 0;
+        totalShopEntries = browsePanel.getFilteredCategories().size();
     }
     
     /**
-     * Renderizza il contenuto di una entry (slot + testo)
+     * Render entry content (slot + text)
      */
     private void renderEntryContent(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, int entryIndex) {
         int actualIndex = scrollOffset + entryIndex;
         
-        if (showingCategories) {
-            // Modalità categorie
-            if (actualIndex < availableCategories.size()) {
-                ShopCategory category = availableCategories.get(actualIndex);
-                renderCategoryEntry(guiGraphics, entryX, entryY, category);
-            }
-        } else {
-            // Modalità item
-            if (actualIndex < availableItems.size()) {
-                ShopEntry item = availableItems.get(actualIndex);
+        if (displayingItems()) {
+            if (actualIndex < browsePanel.getFilteredItems().size()) {
+                ShopEntry item = browsePanel.getFilteredItems().get(actualIndex);
                 renderItemEntry(guiGraphics, entryX, entryY, item);
             }
+        } else if (actualIndex < browsePanel.getFilteredCategories().size()) {
+            ShopCategory category = browsePanel.getFilteredCategories().get(actualIndex);
+            renderCategoryEntry(guiGraphics, entryX, entryY, category);
         }
     }
     
     /**
-     * Renderizza una entry di categoria
+     * Render a category row
      */
     private void renderCategoryEntry(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, ShopCategory category) {
-        // Posizioni
-        int slotX = entryX + 3; // 3 pixel dal bordo sinistro
-        int slotY = entryY + 3; // 3 pixel dal bordo superiore
-        int textX = slotX + 18 + 6; // Dopo lo slot + 6 pixel di margine (spostato più al centro)
-        int textY = entryY + (ENTRY_HEIGHT - 8) / 2; // Centrato verticalmente
+        int slotX = entryX + 3;
+        int slotY = entryY + 3;
+        int textX = slotX + 18 + 6;
+        int textY = entryY + (ENTRY_HEIGHT - 8) / 2;
         
-        // Disegna lo slot (18x18)
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
         
-        // Ottieni l'ItemStack per l'icona della categoria
-        ItemStack categoryIcon = getItemStackFromString(category.item);
+        ItemStack categoryIcon = ShopEntryHelper.displayStackForItemSelector(category.item, 1);
         if (!categoryIcon.isEmpty()) {
             guiGraphics.item(categoryIcon, slotX + 1, slotY + 1);
         }
         
-        // Disegna il nome della categoria (scalato)
-        // Per le categorie, il testo può andare fino alla fine dell'entry (no pulsanti)
-        int maxTextWidth = entryX + ENTRY_WIDTH - textX - 5; // 5px di margine dal bordo destro
+        int maxTextWidth = entryX + ENTRY_WIDTH - textX - 5;
         
         renderScaledText(guiGraphics, Component.translatable(category.name).getString(), textX, textY, maxTextWidth, GuiTextColors.TITLE);
     }
     
     /**
-     * Renderizza una entry di item
+     * Render an item row
      */
     private void renderItemEntry(GuiGraphicsExtractor guiGraphics, int entryX, int entryY, ShopEntry item) {
-        // Controlla se l'item è bloccato
         boolean isBlocked = isItemBlocked(item);
         
-        // Se bloccato, applica overlay rosso
         if (isBlocked) {
-            // Overlay rosso semi-trasparente
             guiGraphics.fill(entryX, entryY, entryX + ENTRY_WIDTH, entryY + ENTRY_HEIGHT,
-                            0x80FF0000); // Rosso con alpha
+                            0x80FF0000);
         }
         
-        // Posizioni
-        int slotX = entryX + 3; // 3 pixel dal bordo sinistro
-        int slotY = entryY + 3; // 3 pixel dal bordo superiore
-        int textX = slotX + 18 + 6; // Dopo lo slot + 6 pixel di margine (spostato più al centro)
-        int textY = entryY + (ENTRY_HEIGHT - 8) / 2; // Centrato verticalmente
+        int slotX = entryX + 3;
+        int slotY = entryY + 3;
+        int textX = slotX + 18 + 6;
+        int textY = entryY + (ENTRY_HEIGHT - 8) / 2;
         
-        // Disegna lo slot (18x18)
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
         
-        // Ottieni l'ItemStack per l'item (supporta data components inline)
-        ItemStack itemStack = getItemStackFromString(item.item);
+        ItemStack itemStack = ShopEntryHelper.displayStackForEntry(item);
         if (!itemStack.isEmpty()) {
-            itemStack.setCount(item.itemCount);
+            itemStack.setCount(Math.max(1, item.amount));
             guiGraphics.item(itemStack, slotX + 1, slotY + 1);
             guiGraphics.itemDecorations(this.font, itemStack, slotX + 1, slotY + 1);
         }
         
-        // Disegna il nome dell'item (nome display scalato)
-        String displayName = getItemDisplayName(item.item);
+        String displayName = ShopEntryHelper.displayLabelForEntry(item);
         
-        // Calcola la larghezza massima disponibile per il testo
-        // Dal textX fino ai pulsanti (con un po' di margine)
         int buyButtonStartX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
-        int maxTextWidth = buyButtonStartX - textX - 5; // 5px di margine dai pulsanti
+        int maxTextWidth = buyButtonStartX - textX - 5;
         
-        // Renderizza il testo scalato
         renderScaledText(guiGraphics, displayName, textX, textY, maxTextWidth, GuiTextColors.TITLE);
         
-        // Calcola posizioni per i pulsanti Buy/Sell (alla fine dell'entry e centrati verticalmente)
-        int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3; // 3 pixel dal bordo destro
-        int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3; // 3 pixel dal bordo destro
-        int buttonsY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2; // Centrati verticalmente
+        int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
+        int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
+        int buttonsY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
         
-        // I pulsanti Buy/Sell sono ora gestiti come widget vanilla nel metodo init()
+        // Buy/Sell buttons are vanilla widgets created in init()
     }
     
     /**
-     * Converte una stringa item ID in ItemStack utilizzando il nuovo sistema 1.21.1
-     */
-    private ItemStack getItemStackFromString(String itemId) {
-        return ItemConverter.parseItemString(itemId, 1);
-    }
-    
-    /**
-     * Ottiene il nome display di un item
-     */
-    private String getItemDisplayName(String itemId) {
-        return ItemConverter.getItemDisplayName(itemId);
-    }
-    
-    /**
-     * Gestisce il click su una entry
+     * Handle entry click
      */
     private boolean handleEntryClick(double mouseX, double mouseY) {
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
+        int startY = entryStartY();
+        int entries = visibleEntries();
         
-        for (int i = 0; i < ENTRIES; i++) {
+        for (int i = 0; i < entries; i++) {
             int entryX = x + ENTRY_START_X;
-            int entryY = y + ENTRY_START_Y + i * ENTRY_HEIGHT;
+            int entryY = y + startY + i * ENTRY_HEIGHT;
             
             if (mouseX >= entryX && mouseX < entryX + ENTRY_WIDTH &&
                 mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT) {
                 
                 int actualIndex = scrollOffset + i;
                 
-                if (showingCategories) {
-                    // Click su categoria - naviga agli item
-                    if (actualIndex < availableCategories.size()) {
-                        ShopCategory category = availableCategories.get(actualIndex);
-                        navigateToCategory(category);
-                        playButtonSound();
-                        return true;
-                    }
-                } else {
-                    // In modalità item, controlla se il click è sui pulsanti Buy/Sell
-                    if (actualIndex < availableItems.size()) {
-                        ShopEntry item = availableItems.get(actualIndex);
+                if (displayingItems()) {
+                    if (actualIndex < browsePanel.getFilteredItems().size()) {
+                        ShopEntry item = browsePanel.getFilteredItems().get(actualIndex);
                         
-                        // Calcola le posizioni dei pulsanti Buy/Sell
                         int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
                         int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
                         int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
@@ -634,13 +744,18 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                             mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT;
                         
                         if (clickOnBuyButton || clickOnSellButton) {
-                            return false; // Lascia che super.mouseClicked gestisca i pulsanti
+                            return false; // Let super.mouseClicked handle buttons
                         }
                         
-                        // Click su item ma non sui pulsanti - per ora non fare nulla
+                        // Click on row (not buttons): no-op for now
                         playButtonSound();
                         return true;
                     }
+                } else if (actualIndex < browsePanel.getFilteredCategories().size()) {
+                    ShopCategory category = browsePanel.getFilteredCategories().get(actualIndex);
+                    navigateToCategory(category);
+                    playButtonSound();
+                    return true;
                 }
                 break;
             }
@@ -649,43 +764,39 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Naviga a una categoria specifica
+     * Navigate into a category
      */
     private void navigateToCategory(ShopCategory category) {
         showingCategories = false;
         currentCategoryId = category.id;
         currentCategoryName = Component.translatable(category.name).getString();
-        
-        // Load items for this category (order: higher priority first, then by item)
-        Map<String, ShopEntry> allEntries = ShopLoader.getEntries();
-        availableItems = allEntries.values().stream()
-                .filter(entry -> category.id.equals(entry.inCategory))
-                .sorted(Comparator.comparingInt((ShopEntry e) -> e.priority).reversed()
-                        .thenComparing(entry -> entry.item))
-                .collect(Collectors.toList());
-        
-        totalShopEntries = availableItems.size();
-        scrollOffset = 0; // Reset scroll
-        
-        // Aggiorna lo stato del pulsante Back
+        resetSearchOnNavigation(true);
+        browsePanel.loadCategoryItems(category.id);
+        scrollOffset = 0;
         updateBackButtonState();
-        updateBuySellButtons();
+        refreshFilteredLists();
     }
     
     /**
-     * Torna alla vista categorie
+     * Return to category view
      */
     public void navigateBackToCategories() {
         showingCategories = true;
         currentCategoryId = null;
         currentCategoryName = Component.translatable("gui.iska_utils.shop.title").getString();
-        availableItems.clear();
-        totalShopEntries = availableCategories.size();
-        scrollOffset = 0; // Reset scroll
-        
-        // Aggiorna lo stato del pulsante Back
+        resetSearchOnNavigation(false);
+        browsePanel.loadAllCategories();
+        scrollOffset = 0;
         updateBackButtonState();
-        updateBuySellButtons();
+        refreshFilteredLists();
+    }
+
+    private void resetSearchOnNavigation(boolean enteringCategory) {
+        browsePanel.resetSearchAndScope(enteringCategory);
+        if (searchBox != null) {
+            searchBox.setValue("");
+        }
+        updateScopeFilterTooltip();
     }
     
     @Override
@@ -699,59 +810,124 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
-
-        List<Component> tooltip = null;
-
-        // Tooltip for blocked entries (missing stages)
-        if (!showingCategories) {
-            int entryIndex = getEntryUnderMouse(mouseX, mouseY);
-            if (entryIndex >= 0 && entryIndex < availableItems.size()) {
-                ShopEntry item = availableItems.get(entryIndex);
-                if (isItemBlocked(item)) {
-                    tooltip = createMissingStagesTooltip(item);
-                }
-            }
+    protected void extractTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        if (tryShopEntryTooltip(guiGraphics, mouseX, mouseY)) {
+            return;
         }
-
-        // Tooltip for category descriptions
-        if (tooltip == null && showingCategories) {
-            int entryIndex = getEntryUnderMouse(mouseX, mouseY);
-            if (entryIndex >= 0 && entryIndex < availableCategories.size()) {
-                ShopCategory category = availableCategories.get(entryIndex);
-                if (category.description != null && !category.description.trim().isEmpty()) {
-                    tooltip = List.of(Component.translatable(category.description));
-                }
-            }
-        }
-
-        // Tooltip for Buy/Sell buttons
-        if (tooltip == null) {
-            tooltip = getButtonTooltip(mouseX, mouseY);
-        }
-
-        if (tooltip != null && !tooltip.isEmpty()) {
-            List<FormattedCharSequence> lines = tooltip.stream().map(Component::getVisualOrderText).toList();
-            guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
-        }
+        super.extractTooltip(guiGraphics, mouseX, mouseY);
     }
-    
-    /**
-     * Renderizza i tooltip per i pulsanti Buy/Sell
-     */
-    private List<Component> getButtonTooltip(int mouseX, int mouseY) {
-        if (showingCategories) return null;
+
+    private boolean tryShopEntryTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        int entryIndex = getEntryUnderMouse(mouseX, mouseY);
+        if (entryIndex < 0) {
+            return false;
+        }
 
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
+        int startY = entryStartY();
+        int row = entryIndex - scrollOffset;
+        if (row < 0 || row >= visibleEntries()) {
+            return false;
+        }
+        int entryX = x + ENTRY_START_X;
+        int entryY = y + startY + row * ENTRY_HEIGHT;
 
-        for (int i = 0; i < ENTRIES; i++) {
+        if (displayingItems()) {
+            if (entryIndex >= browsePanel.getFilteredItems().size()) {
+                return false;
+            }
+            ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
+
+            List<Component> buttonTooltip = getButtonTooltip(mouseX, mouseY);
+            if (buttonTooltip != null && !buttonTooltip.isEmpty()) {
+                guiGraphics.setTooltipForNextFrame(this.font,
+                        buttonTooltip.stream().map(Component::getVisualOrderText).toList(),
+                        mouseX, mouseY);
+                return true;
+            }
+
+            if (isItemBlocked(item)) {
+                List<Component> blockedTooltip = createMissingStagesTooltip(item);
+                guiGraphics.setTooltipForNextFrame(this.font,
+                        blockedTooltip.stream().map(Component::getVisualOrderText).toList(),
+                        mouseX, mouseY);
+                return true;
+            }
+
+            if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
+                if (ShopEntryHelper.isTagEntry(item)) {
+                    guiGraphics.setTooltipForNextFrame(this.font,
+                            List.of(ShopEntryHelper.displayTooltipForEntry(item).getVisualOrderText()),
+                            mouseX, mouseY);
+                    return true;
+                }
+                ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
+                if (!stack.isEmpty()) {
+                    stack.setCount(Math.max(1, item.amount));
+                    renderItemStackTooltip(guiGraphics, stack, mouseX, mouseY);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (entryIndex >= browsePanel.getFilteredCategories().size()) {
+            return false;
+        }
+        ShopCategory category = browsePanel.getFilteredCategories().get(entryIndex);
+
+        if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
+            if (ShopEntryHelper.isTagSelector(category.item)) {
+                guiGraphics.setTooltipForNextFrame(this.font,
+                        List.of(Component.literal(category.item.trim()).getVisualOrderText()),
+                        mouseX, mouseY);
+                return true;
+            }
+            ItemStack stack = ShopEntryHelper.displayStackForItemSelector(category.item, 1);
+            if (!stack.isEmpty()) {
+                renderItemStackTooltip(guiGraphics, stack, mouseX, mouseY);
+                return true;
+            }
+        }
+
+        if (category.description != null && !category.description.trim().isEmpty()) {
+            guiGraphics.setTooltipForNextFrame(this.font,
+                    List.of(Component.translatable(category.description).getVisualOrderText()),
+                    mouseX, mouseY);
+            return true;
+        }
+        return false;
+    }
+
+    private void renderItemStackTooltip(GuiGraphicsExtractor guiGraphics, ItemStack stack, int mouseX, int mouseY) {
+        guiGraphics.setTooltipForNextFrame(
+                this.font,
+                this.getTooltipFromContainerItem(stack),
+                stack.getTooltipImage(),
+                stack,
+                mouseX,
+                mouseY,
+                stack.get(DataComponents.TOOLTIP_STYLE));
+    }
+    
+    /**
+     * Buy/Sell button tooltips
+     */
+    private List<Component> getButtonTooltip(int mouseX, int mouseY) {
+        if (!displayingItems()) return null;
+
+        int x = (this.width - this.imageWidth) / 2;
+        int y = (this.height - this.imageHeight) / 2;
+        int startY = entryStartY();
+        int entries = visibleEntries();
+
+        for (int i = 0; i < entries; i++) {
             int actualIndex = scrollOffset + i;
-            if (actualIndex >= availableItems.size()) continue;
+            if (actualIndex >= browsePanel.getFilteredItems().size()) continue;
 
-            ShopEntry item = availableItems.get(actualIndex);
-            int entryY = y + ENTRY_START_Y + i * ENTRY_HEIGHT;
+            ShopEntry item = browsePanel.getFilteredItems().get(actualIndex);
+            int entryY = y + startY + i * ENTRY_HEIGHT;
             int entryX = x + ENTRY_START_X;
             int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
             int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
@@ -792,12 +968,12 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Crea il tooltip per il pulsante Sell
+     * Creates the tooltip for the Sell button
      */
     private List<Component> createSellTooltip(ShopEntry item) {
         List<Component> tooltip = new ArrayList<>();
         
-        // Prezzo con simbolo della valuta
+        // Price with currency symbol
         String currencySymbol = getCurrencySymbol(item.valute);
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.price", item.sell, currencySymbol));
         
@@ -811,27 +987,25 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Renderizza l'area informazioni a destra (solo valute, il pulsante Back è vanilla)
+     * Render right info area (currencies only; Back is a vanilla button)
      */
     private void renderInfoArea(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
         
-        // Renderizza le valute disponibili
+        // Render available currencies
         renderAvailableCurrencies(guiGraphics, x, y);
     }
     
     /**
-     * Renderizza le valute disponibili con i balance reali del team
+     * Render available currencies with real team balances
      */
     private void renderAvailableCurrencies(GuiGraphicsExtractor guiGraphics, int guiX, int guiY) {
         int startY = guiY + CURRENCIES_START_Y;
 
         if (playerTeamName == null) {
             Component noTeamText = Component.translatable("gui.iska_utils.shop.no_team");
-            int scaledWidth = (int) (this.font.width(noTeamText) * 0.77f);
-            int textX = guiX + CURRENCIES_AREA_RIGHT - scaledWidth;
-            textX = Math.max(guiX + CURRENCIES_AREA_LEFT, textX);
+            int textX = guiX + CURRENCIES_AREA_LEFT;
 
             guiGraphics.pose().pushMatrix();
             guiGraphics.pose().translate(textX, startY);
@@ -851,8 +1025,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             Component currencyText = Component.literal(balanceText);
 
             int color = balance > 0 ? GuiTextColors.TITLE : GuiTextColors.NEGATIVE;
-            int textX = guiX + CURRENCIES_AREA_RIGHT - this.font.width(balanceText);
-            textX = Math.max(guiX + CURRENCIES_AREA_LEFT, textX);
+            int textX = guiX + CURRENCIES_AREA_LEFT;
             guiGraphics.text(this.font, currencyText, textX, textY, color, false);
 
             lineIndex++;
@@ -860,20 +1033,19 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
         if (availableCurrencies.isEmpty()) {
             Component noValutesText = Component.translatable("gui.iska_utils.shop.no_valutes");
-            int textX = guiX + CURRENCIES_AREA_RIGHT - this.font.width(noValutesText);
-            textX = Math.max(guiX + CURRENCIES_AREA_LEFT, textX);
+            int textX = guiX + CURRENCIES_AREA_LEFT;
             guiGraphics.text(this.font, noValutesText, textX, startY, GuiTextColors.MUTED, false);
         }
     }
     
     /**
-     * Formatta un valore numerico con abbreviazioni per numeri grandi
-     * @param value Il valore da formattare
-     * @return Stringa formattata (es: 10K, 1.5M, 2.3B)
+     * Format a numeric value with K/M/B abbreviations
+     * @param value value to format
+     * @return formatted string (e.g. 10K, 1.5M, 2.3B)
      */
     private String formatLargeNumber(double value) {
         if (value < 10000) {
-            // Sotto i 10.000, mostra il numero normale
+            // Below 10_000 show plain number
             if (value == Math.floor(value)) {
                 return String.valueOf((int)value);
             } else {
@@ -885,13 +1057,13 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int suffixIndex = 0;
         double formattedValue = value;
         
-        // Trova il suffisso appropriato
+        // Pick magnitude suffix
         while (formattedValue >= 1000 && suffixIndex < suffixes.length - 1) {
             formattedValue /= 1000;
             suffixIndex++;
         }
         
-        // Formatta il numero con 1 decimale se necessario
+        // Format with one decimal when needed
         if (formattedValue == Math.floor(formattedValue)) {
             return String.format("%.0f%s", formattedValue, suffixes[suffixIndex]);
         } else {
@@ -900,7 +1072,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Aggiorna lo stato del pulsante Back
+     * Update Back button enabled state
      */
     private void updateBackButtonState() {
         if (backButton != null) {
@@ -909,7 +1081,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Ottiene il simbolo della valuta
+     * Resolve currency symbol
      */
     private String getCurrencySymbol(String valuteId) {
         if (valuteId == null) return "?";
@@ -921,7 +1093,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Ottiene il nome della valuta invece dell'ID
+     * Resolve currency display name instead of id
      */
     private String getCurrencyName(String valuteId) {
         if (valuteId == null) return "?";
@@ -933,7 +1105,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Mostra un messaggio di feedback nell'area sottostante
+     * Show feedback message in the area below
      */
     private void showFeedback(String message, int color) {
         this.feedbackMessage = message;
@@ -942,23 +1114,23 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Mostra un messaggio di errore di fondi insufficienti
+     * Show insufficient-funds error feedback
      */
     private void showInsufficientFundsError(String currencyName) {
         Component message = Component.translatable("gui.iska_utils.shop.feedback.insufficient_funds", currencyName);
-        showFeedback(message.getString(), 0xFF4444); // Rosso
+        showFeedback(message.getString(), 0xFF4444); // Red
     }
     
     /**
-     * Mostra un messaggio di errore di oggetti insufficienti
+     * Show insufficient-items error feedback
      */
     private void showInsufficientItemsError() {
         Component message = Component.translatable("gui.iska_utils.shop.feedback.insufficient_items");
-        showFeedback(message.getString(), 0xFF4444); // Rosso
+        showFeedback(message.getString(), 0xFF4444); // Red
     }
     
     /**
-     * Nasconde il messaggio di feedback (successo)
+     * Hide feedback message (success path)
      */
     private void hideFeedback() {
         this.feedbackMessage = null;
@@ -984,36 +1156,39 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Aggiorna i pulsanti Buy/Sell dinamici basandosi sulle entry visibili
+     * Rebuild dynamic Buy/Sell buttons for visible entries
      */
     private void updateBuySellButtons() {
-        // Rimuovi tutti i pulsanti esistenti
+        // Remove existing buy/sell buttons
         buyButtons.forEach(this::removeWidget);
         sellButtons.forEach(this::removeWidget);
         buyButtons.clear();
         sellButtons.clear();
         
-        // Se stiamo mostrando le categorie, non servono pulsanti Buy/Sell
-        if (showingCategories) {
+        // No buy/sell buttons while browsing categories
+        if (!displayingItems()) {
             return;
         }
         
-        // Crea pulsanti per ogni entry visibile
-        int visibleEntries = Math.min(ENTRIES, totalShopEntries - scrollOffset);
+        // Create buttons for visible entries
+        int entries = visibleEntries();
+        int startY = entryStartY();
+        int visibleCount = Math.min(entries, totalShopEntries - scrollOffset);
         
-        for (int i = 0; i < visibleEntries; i++) {
+        for (int i = 0; i < visibleCount; i++) {
             int entryIndex = scrollOffset + i;
-            if (entryIndex >= availableItems.size()) {
+            if (entryIndex >= browsePanel.getFilteredItems().size()) {
                 break;
             }
             
-            ShopEntry item = availableItems.get(entryIndex);
-            int entryY = this.topPos + ENTRY_START_Y + i * ENTRY_HEIGHT;
+            ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
+            int entryY = this.topPos + startY + i * ENTRY_HEIGHT;
             
-            // Buy button (shown when buy > 0 or entry is free)
-            if (item.buy > 0 || item.free) {
+            // Buy button (player shop: item only; tags are sell-only)
+            if (net.unfamily.iskautils.shop.ShopEntryHelper.isPlayerShopBrowsable(item)
+                    && net.unfamily.iskautils.shop.ShopEntryHelper.isBuyAllowed(item)) {
                 int buyButtonX = this.leftPos + ENTRY_START_X + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
-                int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2; // Centrati verticalmente
+                int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
                 
                 Component buyText = Component.translatable("gui.iska_utils.shop.buy");
                 
@@ -1026,10 +1201,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 this.addRenderableWidget(buyButton);
             }
             
-            // Pulsante Sell
-            if (item.sell > 0) {
+            if (net.unfamily.iskautils.shop.ShopEntryHelper.isPlayerShopBrowsable(item) && item.sell > 0) {
                 int sellButtonX = this.leftPos + ENTRY_START_X + ENTRY_WIDTH - BUTTON_WIDTH - 3;
-                int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2; // Centrati verticalmente
+                int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
                 
                 Component sellText = Component.translatable("gui.iska_utils.shop.sell");
                 
@@ -1045,7 +1219,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Metodo statico per gestire l'aggiornamento dei dati del team dal server
+     * Static hook for team data updates from the server
      */
     public static void handleTeamDataUpdate(String teamName, Map<String, Double> teamBalances) {
         if (currentInstance != null) {
@@ -1054,7 +1228,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Aggiorna i dati del team ricevuti dal server
+     * Apply team data received from the server
      */
     private void updateTeamData(String teamName, Map<String, Double> teamBalances) {
         this.playerTeamName = teamName;
@@ -1067,17 +1241,21 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     @Override
     public void removed() {
         super.removed();
-        // Cleanup del riferimento statico quando la GUI viene chiusa
+        // Clear static instance when GUI closes
         if (currentInstance == this) {
             currentInstance = null;
         }
     }
     
     /**
-     * Gestisce il click di acquisto
+     * Handle buy button click
      */
     private void handleBuyButtonClick(ShopEntry item, int multiplier) {
-        // Controlla se il giocatore è in un team
+        if (!net.unfamily.iskautils.shop.ShopEntryHelper.isPlayerShopBrowsable(item)
+                || !net.unfamily.iskautils.shop.ShopEntryHelper.isBuyAllowed(item)) {
+            return;
+        }
+        // Require player to be in a team
         if (playerTeamName == null) {
             Component message = Component.translatable("gui.iska_utils.shop.feedback.no_team");
             showFeedback(message.getString(), 0xFF4444);
@@ -1092,43 +1270,47 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         if (currentBalance < totalCost) {
             String currencyName = getCurrencyName(valuteId);
             showInsufficientFundsError(currencyName);
-            playButtonSound(); // Suono anche per il fallimento
+            playButtonSound();
             return;
         }
         
-        // Nascondi il feedback se presente (successo)
+        // Clear feedback on success path
         hideFeedback();
         
-        // Invia il packet al server - usa l'ID univoco della entry
+        // Send packet to server using entry id
         net.unfamily.iskautils.network.ModMessages.sendShopBuyItemPacket(item.id, multiplier);
         
         playButtonSound();
     }
     
     /**
-     * Gestisce il click di vendita
+     * Handle sell button click
      */
     private void handleSellButtonClick(ShopEntry item, int multiplier) {
-        // Controlla se il giocatore è in un team
+        if (!net.unfamily.iskautils.shop.ShopEntryHelper.isPlayerShopBrowsable(item)
+                || !net.unfamily.iskautils.shop.ShopEntryHelper.isSellAllowed(item)) {
+            return;
+        }
+        // Require player to be in a team
         if (playerTeamName == null) {
             Component message = Component.translatable("gui.iska_utils.shop.feedback.no_team");
             showFeedback(message.getString(), 0xFF4444);
             return;
         }
         
-        // Per la vendita non possiamo facilmente controllare l'inventario dal client
-        // quindi mostriamo solo l'errore se il server ci informa del fallimento
-        // Per ora nascondiamo il feedback e inviamo al server
+        // Client cannot reliably validate inventory for sell
+        // show errors when server reports failure
+        // Clear feedback and send to server
         hideFeedback();
         
-        // Invia il packet al server - usa l'ID univoco della entry
+        // Send packet to server using entry id
         net.unfamily.iskautils.network.ModMessages.sendShopSellItemPacket(item.id, multiplier);
         
         playButtonSound();
     }
 
     /**
-     * Metodo statico per gestire errori di transazione dal server
+     * Static hook for transaction errors from the server
      */
     public static void handleTransactionError(String errorType, String itemId, String valuteId) {
         if (currentInstance != null) {
@@ -1151,7 +1333,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Metodo statico per gestire il successo delle transazioni dal server
+     * Static hook for transaction success from the server
      */
     public static void handleTransactionSuccess() {
         if (currentInstance != null) {
@@ -1160,7 +1342,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
 
     /**
-     * Renderizza testo scalato per adattarsi alla larghezza disponibile.
+     * Draw text scaled to fit the available width.
      * Se anche alla scala minima sfora, tronca e aggiunge "..."
      */
     private void renderScaledText(GuiGraphicsExtractor guiGraphics, String text, int x, int y, int maxWidth, int color) {
@@ -1168,22 +1350,20 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int textWidth = this.font.width(textComponent);
         
         if (textWidth <= maxWidth) {
-            // Il testo sta già nella larghezza disponibile
             guiGraphics.text(this.font, textComponent, x, y, color, false);
         } else {
-            // Il testo è troppo lungo, dobbiamo scalarlo (min scale to reduce narrowing)
+            // Scale down long text (min scale to reduce narrowing)
             float scale = (float) maxWidth / textWidth;
             float minScale = 0.85f;
             if (scale < minScale) {
                 scale = minScale;
             }
             
-            // Se anche con la scala minima sfora, tronchiamo e aggiungiamo "..."
+            // If still too wide at min scale, truncate with ellipsis
             if (textWidth * scale > maxWidth && text.length() > 3) {
                 String base = text;
                 String ellipsis = "...";
                 String truncated = base;
-                // Riduci finché non entra nello spazio disponibile
                 while (truncated.length() > 3) {
                     String candidate = truncated + ellipsis;
                     int candidateWidth = this.font.width(candidate);
@@ -1195,21 +1375,18 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 }
             }
             
-            // Applica la trasformazione di scaling
             guiGraphics.pose().pushMatrix();
             guiGraphics.pose().translate(x, y);
             guiGraphics.pose().scale(scale, scale);
             
-            // Renderizza il testo scalato (eventualmente troncato) alla posizione (0,0)
             guiGraphics.text(this.font, textComponent, 0, 0, color, false);
             
-            // Ripristina la matrice
             guiGraphics.pose().popMatrix();
         }
     }
 
     /**
-     * Calcola il moltiplicatore basandosi sui modificatori premuti
+     * Compute quantity multiplier from pressed modifiers
      * Come specificato: click normale = 1, ctrl/alt = 4, shift = 16
      */
     private int calculateMultiplier() {
@@ -1292,14 +1469,14 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Controlla se un item è bloccato da stage mancanti
+     * Whether an entry is locked by missing stages
      */
     private boolean isItemBlocked(ShopEntry item) {
         return !getMissingStages(item).isEmpty();
     }
     
     /**
-     * Crea il tooltip per stage non soddisfatti: mancanti richiesti e "non devi avere".
+     * Build tooltip for unmet stages: missing required and "must not have".
      */
     private List<Component> createMissingStagesTooltip(ShopEntry item) {
         List<Component> tooltip = new ArrayList<>();
@@ -1351,15 +1528,17 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Ottiene l'indice dell'entry sotto il mouse
+     * Entry index under mouse
      */
     private int getEntryUnderMouse(int mouseX, int mouseY) {
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
+        int startY = entryStartY();
+        int entries = visibleEntries();
         
-        for (int i = 0; i < ENTRIES; i++) {
+        for (int i = 0; i < entries; i++) {
             int entryX = x + ENTRY_START_X;
-            int entryY = y + ENTRY_START_Y + i * ENTRY_HEIGHT;
+            int entryY = y + startY + i * ENTRY_HEIGHT;
             
             if (mouseX >= entryX && mouseX < entryX + ENTRY_WIDTH &&
                 mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT) {

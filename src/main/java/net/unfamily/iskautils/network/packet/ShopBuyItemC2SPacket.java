@@ -4,7 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.unfamily.iskautils.shop.ShopTransactionManager;
 
 /**
- * Packet per l'acquisto di item dal shop
+ * Client-to-server packet to buy a shop item
  */
 public class ShopBuyItemC2SPacket {
     private final String entryId;
@@ -16,13 +16,13 @@ public class ShopBuyItemC2SPacket {
     }
     
     /**
-     * Gestisce il packet sul server
+     * Handle packet on the server
      */
     public void handle(ServerPlayer player) {
         System.out.println("DEBUG: ShopBuyItemC2SPacket.handle chiamato - player: " + player.getName().getString() + 
                           ", entryId: " + entryId + ", quantity: " + quantity);
         
-        // Gestisci l'acquisto tramite il ShopTransactionManager
+        // Process buy via ShopTransactionManager
         ShopTransactionManager.handleBuyItem(player, entryId, quantity);
     }
 } 

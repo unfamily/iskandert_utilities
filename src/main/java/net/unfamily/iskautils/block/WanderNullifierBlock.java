@@ -30,6 +30,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.block.entity.WanderNullifierBlockEntity;
+import net.unfamily.iskautils.util.PreviewAreaSupport;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import org.jetbrains.annotations.Nullable;
 
@@ -118,6 +119,7 @@ public class WanderNullifierBlock extends DirectionalBlock implements EntityBloc
                 }
             }
         }
+        PreviewAreaSupport.onPreviewOwnerBlockBroken(level, pos, state);
         super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 

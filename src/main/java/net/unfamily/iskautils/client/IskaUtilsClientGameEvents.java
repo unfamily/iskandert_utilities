@@ -19,6 +19,8 @@ import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.unfamily.iskautils.block.entity.FanBlockEntity;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
+import net.unfamily.iskautils.client.MachineAreaPreviewClear;
+import net.unfamily.iskautils.client.MachinePreviewTracker;
 import net.unfamily.iskautils.network.packet.FanShowAreaC2SPacket;
 import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
 import net.unfamily.iskautils.Config;
@@ -103,8 +105,7 @@ public final class IskaUtilsClientGameEvents {
     public static void onBlockBreak(BreakBlockEvent event) {
         if (event.getLevel() instanceof Level level) {
             MachinePreviewTracker.onBlockInPreviewChanged(level, event.getPos());
-            BlazingAltarAreaPreview.clear(event.getPos());
-            TemporalOverclockerAreaPreview.clear(event.getPos());
+            MachineAreaPreviewClear.clearAllForOwner(event.getPos());
         }
     }
 

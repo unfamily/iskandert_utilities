@@ -20,11 +20,11 @@ categories:
 
 ## What it does
 
-The **Arcane Dictionary** is a **cursed Curio** (belt or charm) that stores random **arcane traits** (up to several traits, each with a level shown as Roman numerals). While exactly **one** dictionary is equipped in Curios and it has traits, those traits apply as passive effects.
+The **Arcane Dictionary** is an **arcane Curio** (belt or charm) that stores random **arcane traits** (up to several traits, each with a level shown as Roman numerals). While exactly **one** dictionary is equipped in Curios and it has traits, those traits apply as passive effects.
 
 **Two or more** dictionaries equipped in Curios at once **cancel all trait effects**.
 
-Tooltip layout: **grey** flavor lines, **lime** mechanical lines, **purple** cursed-artifact header; trait names use **per-trait colours** from the datapack. **Hold Shift** for brief trait descriptions and catalyst reroll hints.
+Tooltip layout: **grey** flavor lines, **lime** mechanical lines, **purple** arcane-artifact header; trait names use **per-trait colours** from the datapack. **Hold Shift** for brief trait descriptions and catalyst reroll hints.
 
 ## Entropy charges (fuel for active traits)
 
@@ -60,4 +60,4 @@ Some traits only appear when certain mods or progression stages are available. T
 ## Tips
 
 - An **empty** dictionary (no traits) can stack in a **Deep Drawer** like other traitless single-stack items.
-- Equipping it still counts as a **cursed artifact** for <ItemImage id="iska_utils:busted_crown" /> **Busted Crown**, even when empty.
+- Equipping it still counts as an **arcane artifact** for <ItemImage id="iska_utils:busted_crown" /> **Busted Crown**, even when empty.

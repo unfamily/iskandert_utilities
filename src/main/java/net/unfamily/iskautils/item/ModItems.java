@@ -19,6 +19,7 @@ import net.unfamily.iskautils.item.custom.CrystalCageItem;
 import net.unfamily.iskautils.item.custom.UnstableEntropyCatalystItem;
 import net.unfamily.iskautils.item.custom.VectorCharmItem;
 import net.unfamily.iskautils.item.custom.PortableDislocatorItem;
+import net.unfamily.iskautils.item.custom.PortableShopItem;
 import net.unfamily.iskautils.item.custom.GauntletOfClimbingItem;
 import net.unfamily.iskautils.item.custom.TreeTapItem;
 import net.unfamily.iskautils.item.custom.ElectricTreeTapItem;
@@ -533,6 +534,9 @@ public class ModItems {
 
     public static final DeferredItem<Item> AUTO_SHOP = ITEMS.registerItem("auto_shop",
             props -> new AutoShopItem(ModBlocks.AUTO_SHOP.get(), props), Item.Properties::useBlockDescriptionPrefix);
+
+    public static final DeferredItem<Item> PORTABLE_SHOP = ITEMS.registerItem("portable_shop",
+            PortableShopItem::new, p -> p.stacksTo(1));
 
     public static final DeferredItem<BlockItem> SMART_TIMER = ITEMS.registerSimpleBlockItem(ModBlocks.SMART_TIMER);
 

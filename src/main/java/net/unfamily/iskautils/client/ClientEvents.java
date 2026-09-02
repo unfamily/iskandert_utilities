@@ -84,6 +84,6 @@ public class ClientEvents {
     }
 
     public static void handleClearPreviewForOwner(BlockPos owner) {
-        MarkRenderer.getInstance().clearBillboardMarkersForOwner(owner);
+        MachineAreaPreviewClear.clearAllForOwner(owner);
     }
 }
