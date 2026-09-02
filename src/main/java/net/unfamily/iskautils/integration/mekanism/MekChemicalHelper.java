@@ -2,6 +2,7 @@ package net.unfamily.iskautils.integration.mekanism;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import net.unfamily.iskautils.util.ModLogger;
 import org.jetbrains.annotations.Nullable;
@@ -274,9 +275,19 @@ public final class MekChemicalHelper {
         }
         try {
             return (int) chemicalStack.getClass().getMethod("getChemicalTint").invoke(chemicalStack);
-        } catch (Throwable e) {
-            return 0;
+        } catch (Throwable ignored) {
         }
+        try {
+            Object chemical = chemicalStack.getClass().getMethod("getChemical").invoke(chemicalStack);
+            if (chemical != null) {
+                Object tint = chemical.getClass().getMethod("getTint").invoke(chemical);
+                if (tint instanceof Number number) {
+                    return number.intValue();
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0;
     }
 
     public static Component getDisplayName(@Nullable Object chemicalStack) {
@@ -302,6 +313,85 @@ public final class MekChemicalHelper {
         }
         String id = getTypeRegistryName(chemicalStack);
         return id != null ? Component.literal(id) : Component.empty();
+    }
+
+    public static boolean isChemicalStackObject(@Nullable Object ingredient) {
+        if (ingredient == null) {
+            return false;
+        }
+        String name = ingredient.getClass().getName();
+        return name.contains("ChemicalStack") && !name.contains("Ingredient");
+    }
+
+    @Nullable
+    public static Object getChemicalHandlerItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !isLoaded()) {
+            return null;
+        }
+        try {
+            Object itemCap = chemicalItemCapability();
+            return stack.getClass().getMethod("getCapability", itemCap.getClass()).invoke(stack, itemCap);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * Non-destructive sample of the first non-empty chemical stored in an item (tanks, cells, etc.).
+     * Returns a Mek {@code ChemicalStack} copy, or {@code null} if empty / unavailable.
+     */
+    @Nullable
+    public static Object sampleFromItemStack(ItemStack stack) {
+        Object handler = getChemicalHandlerItem(stack);
+        if (handler == null) {
+            return null;
+        }
+        try {
+            int tanks = (int) handler.getClass().getMethod("getChemicalTanks").invoke(handler);
+            Object actionSim = actionSimulate();
+            for (int i = 0; i < tanks; i++) {
+                Object inTank = handler.getClass().getMethod("getChemicalInTank", int.class).invoke(handler, i);
+                if (isEmpty(inTank)) {
+                    continue;
+                }
+                long amt = getAmount(inTank);
+                if (amt <= 0) {
+                    continue;
+                }
+                long drainAmt = Math.min(amt, 1L);
+                Object extracted = handler.getClass()
+                        .getMethod("extractChemical", int.class, long.class, actionSim.getClass())
+                        .invoke(handler, i, drainAmt, actionSim);
+                if (!isEmpty(extracted) && getAmount(extracted) > 0) {
+                    return copyWithAmount(extracted, getAmount(extracted));
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    @Nullable
+    private static Object copyWithAmount(@Nullable Object stack, long amount) {
+        if (stack == null || isEmpty(stack) || amount <= 0) {
+            return null;
+        }
+        try {
+            return stack.getClass().getMethod("copyWithAmount", long.class).invoke(stack, amount);
+        } catch (Throwable ignored) {
+            return stack;
+        }
+    }
+
+    private static Object chemicalItemCapability() throws ReflectiveOperationException {
+        Class<?> c = Class.forName("mekanism.common.capabilities.Capabilities");
+        Object chemicalCap = c.getField("CHEMICAL").get(null);
+        return chemicalCap.getClass().getMethod("item").invoke(chemicalCap);
+    }
+
+    private static Object actionSimulate() throws ReflectiveOperationException {
+        Class<?> a = Class.forName("mekanism.api.Action");
+        return a.getField("SIMULATE").get(null);
     }
 
     @Nullable

@@ -237,6 +237,11 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket::handle
         );
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket::handle
+        );
+        registrar.playToServer(
             GhostBrazierToggleC2SPacket.TYPE,
             GhostBrazierToggleC2SPacket.STREAM_CODEC,
             GhostBrazierToggleC2SPacket::handle
@@ -1466,6 +1471,12 @@ public class ModMessages {
     public static void sendAutoShopDumpTankPacket(BlockPos pos, boolean gas) {
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket(pos, gas));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void sendAutoShopConvertSelectedPacket(BlockPos pos) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket(pos));
     }
     
     /**

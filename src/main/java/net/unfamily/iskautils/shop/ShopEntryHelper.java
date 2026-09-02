@@ -68,6 +68,17 @@ public final class ShopEntryHelper {
     }
 
     public static boolean isPlayerShopBrowsable(@Nullable ShopEntry entry) {
+        if (entry == null) {
+            return false;
+        }
+        return switch (entry.type) {
+            case ITEM, FLUID -> true;
+            case GAS -> MekChemicalHelper.isLoaded();
+        };
+    }
+
+    /** Player shop can only trade item entries; fluids/gases are catalog-only. */
+    public static boolean isPlayerShopTradable(@Nullable ShopEntry entry) {
         return entry != null && entry.type == ShopEntry.EntryType.ITEM;
     }
 
@@ -322,5 +333,88 @@ public final class ShopEntryHelper {
         }
         int bracketIndex = trimmed.indexOf('[');
         return bracketIndex != -1 ? trimmed.substring(0, bracketIndex) : trimmed;
+    }
+
+    /**
+     * Prefers an entry matching {@code preferBuy}, otherwise any buy/sell-capable match.
+     */
+    @Nullable
+    public static ShopEntry findMatchingFluidEntry(FluidStack stack, boolean preferBuy) {
+        if (stack == null || stack.isEmpty()) {
+            return null;
+        }
+        ShopEntry preferred = null;
+        ShopEntry fallback = null;
+        for (ShopEntry entry : ShopLoader.getEntries().values()) {
+            if (entry.type != ShopEntry.EntryType.FLUID || !isAutoShopSelectable(entry)) {
+                continue;
+            }
+            if (!matchesFluid(stack, entry.fluid)) {
+                continue;
+            }
+            boolean preferredOk = preferBuy ? isBuyAllowed(entry) : isSellAllowed(entry);
+            boolean anyOk = isBuyAllowed(entry) || isSellAllowed(entry);
+            if (preferredOk) {
+                preferred = entry;
+                break;
+            }
+            if (fallback == null && anyOk) {
+                fallback = entry;
+            }
+        }
+        return preferred != null ? preferred : fallback;
+    }
+
+    /**
+     * Prefers an entry matching {@code preferBuy}, otherwise any buy/sell-capable match.
+     */
+    @Nullable
+    public static ShopEntry findMatchingGasEntry(@Nullable Object chemicalStack, boolean preferBuy) {
+        if (!MekChemicalHelper.isLoaded() || chemicalStack == null || MekChemicalHelper.isEmpty(chemicalStack)) {
+            return null;
+        }
+        ShopEntry preferred = null;
+        ShopEntry fallback = null;
+        for (ShopEntry entry : ShopLoader.getEntries().values()) {
+            if (entry.type != ShopEntry.EntryType.GAS || !isAutoShopSelectable(entry)) {
+                continue;
+            }
+            if (!matchesGas(chemicalStack, entry.gas)) {
+                continue;
+            }
+            boolean preferredOk = preferBuy ? isBuyAllowed(entry) : isSellAllowed(entry);
+            boolean anyOk = isBuyAllowed(entry) || isSellAllowed(entry);
+            if (preferredOk) {
+                preferred = entry;
+                break;
+            }
+            if (fallback == null && anyOk) {
+                fallback = entry;
+            }
+        }
+        return preferred != null ? preferred : fallback;
+    }
+
+    /** Chooses buy/sell so the entry remains selectable for AutoShop apply. */
+    public static boolean resolveBuyModeForEntry(@Nullable ShopEntry entry, boolean preferBuy) {
+        if (entry == null) {
+            return preferBuy;
+        }
+        if (preferBuy) {
+            if (isBuyAllowed(entry)) {
+                return true;
+            }
+            if (isSellAllowed(entry)) {
+                return false;
+            }
+        } else {
+            if (isSellAllowed(entry)) {
+                return false;
+            }
+            if (isBuyAllowed(entry)) {
+                return true;
+            }
+        }
+        return preferBuy;
     }
 }
