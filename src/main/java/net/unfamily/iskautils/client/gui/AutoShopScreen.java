@@ -50,7 +50,9 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
 
     private static final int CURRENCY_BUTTON_X = 20;
     private static final int CURRENCY_BUTTON_Y = 23;
-    private static final int SELECT_BUTTON_X = 38;
+    private static final int BUCKET_BUTTON_X = 38;
+    private static final int BUCKET_BUTTON_Y = 23;
+    private static final int SELECT_BUTTON_X = 56;
     private static final int SELECT_BUTTON_Y = 23;
     private static final int REDSTONE_BUTTON_X = 20;
     private static final int REDSTONE_BUTTON_Y = 48;
@@ -63,6 +65,7 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     private Button closeButton;
     private ItemIconButton redstoneModeButton;
     private SymbolIconButton currencyButton;
+    private SymbolIconButton convertBucketButton;
     private SymbolIconButton selectCatalogButton;
     private SymbolIconButton modeButton;
     private Button liquidDumpButton;
@@ -167,6 +170,14 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
                 b -> onCurrencyPressed(false),
                 this::getCurrencySymbol,
                 getCurrencyTooltip()));
+
+        convertBucketButton = addRenderableWidget(new SymbolIconButton(
+                this.leftPos + BUCKET_BUTTON_X,
+                this.topPos + BUCKET_BUTTON_Y,
+                BUTTON_SIZE,
+                b -> onConvertBucketPressed(),
+                () -> "🪣",
+                Component.translatable("gui.iska_utils.auto_shop.convert_bucket.tooltip")));
 
         selectCatalogButton = addRenderableWidget(new SymbolIconButton(
                 this.leftPos + SELECT_BUTTON_X,
@@ -287,13 +298,16 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
                     gasX + AutoShopGuiLayout.BAR_W,
                     gasY + AutoShopGuiLayout.BAR_H,
                     AutoShopGuiLayout.MASK_COLOR);
-        } else if (menu.getGasAmount() > 0 && menu.getGasCapacity() > 0) {
-            int fill = (int) Math.max(1L,
-                    menu.getGasAmount() * AutoShopGuiLayout.BAR_H / menu.getGasCapacity());
-            graphics.fill(gasX, gasY + AutoShopGuiLayout.BAR_H - fill,
-                    gasX + AutoShopGuiLayout.BAR_W,
-                    gasY + AutoShopGuiLayout.BAR_H,
-                    0xFF66DDEE);
+        } else {
+            FluidRenderHelper.renderChemicalTank(
+                    graphics,
+                    gasX,
+                    gasY,
+                    AutoShopGuiLayout.BAR_W,
+                    AutoShopGuiLayout.BAR_H,
+                    menu.getGasId(),
+                    menu.getGasAmount(),
+                    menu.getGasCapacity());
         }
     }
 
@@ -503,11 +517,31 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
         if (subView != SubView.MAIN) {
             return null;
         }
-        return new IGhostItemConsumer() {
+        return new IGhostIngredientConsumer() {
+            @Override
+            public Object supportedTarget(Object ingredient) {
+                if (ingredient instanceof ItemStack stack && !stack.isEmpty()) {
+                    return stack;
+                }
+                if (ingredient instanceof FluidStack fluid && !fluid.isEmpty()) {
+                    return fluid;
+                }
+                if (MekChemicalHelper.isLoaded()
+                        && MekChemicalHelper.isChemicalStackObject(ingredient)
+                        && !MekChemicalHelper.isEmpty(ingredient)) {
+                    return ingredient;
+                }
+                return null;
+            }
+
             @Override
             public void accept(Object ingredient) {
                 if (ingredient instanceof ItemStack stack) {
                     acceptJeiFilterItem(stack);
+                } else if (ingredient instanceof FluidStack fluid) {
+                    acceptJeiFilterFluid(fluid);
+                } else if (MekChemicalHelper.isLoaded() && MekChemicalHelper.isChemicalStackObject(ingredient)) {
+                    acceptJeiFilterGas(ingredient);
                 }
             }
         };
@@ -525,6 +559,14 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
         return new Rect2i(leftPos + filterSlot.x - 1, topPos + filterSlot.y - 1, 18, 18);
     }
 
+    private void onConvertBucketPressed() {
+        playButtonSound();
+        BlockPos machinePos = resolveMachinePos();
+        if (!machinePos.equals(BlockPos.ZERO)) {
+            net.unfamily.iskautils.network.ModMessages.sendAutoShopConvertSelectedPacket(machinePos);
+        }
+    }
+
     private void acceptJeiFilterItem(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return;
@@ -535,6 +577,38 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
             copy.setCount(1);
             net.unfamily.iskautils.network.ModMessages.sendAutoShopSelectedItemPacket(machinePos, copy);
         }
+    }
+
+    private void acceptJeiFilterFluid(FluidStack fluid) {
+        if (fluid == null || fluid.isEmpty()) {
+            return;
+        }
+        ShopEntry entry = ShopEntryHelper.findMatchingFluidEntry(fluid, menu.isAutoBuyMode());
+        tryApplyTypedShopEntry(entry);
+    }
+
+    private void acceptJeiFilterGas(Object chemicalStack) {
+        if (!MekChemicalHelper.isLoaded() || MekChemicalHelper.isEmpty(chemicalStack)) {
+            return;
+        }
+        ShopEntry entry = ShopEntryHelper.findMatchingGasEntry(chemicalStack, menu.isAutoBuyMode());
+        tryApplyTypedShopEntry(entry);
+    }
+
+    private void tryApplyTypedShopEntry(@Nullable ShopEntry entry) {
+        if (entry == null) {
+            return;
+        }
+        BlockPos machinePos = resolveMachinePos();
+        if (machinePos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        boolean buyMode = ShopEntryHelper.resolveBuyModeForEntry(entry, menu.isAutoBuyMode());
+        if (!ShopBrowsePanel.isSelectableAutoShopEntry(entry, buyMode)) {
+            return;
+        }
+        net.unfamily.iskautils.network.ModMessages.sendAutoShopApplyPickerSelectionPacket(
+                machinePos, entry.id, buyMode);
     }
 
     @Override

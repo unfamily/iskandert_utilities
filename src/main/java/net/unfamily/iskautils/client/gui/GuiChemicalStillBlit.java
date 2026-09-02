@@ -1,12 +1,8 @@
 package net.unfamily.iskautils.client.gui;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.sprite.SpriteId;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 
@@ -21,39 +17,21 @@ public final class GuiChemicalStillBlit {
         if (chemicalStack == null || MekChemicalHelper.isEmpty(chemicalStack)) {
             return;
         }
-        if (blitChemicalIconSprite(graphics, chemicalStack, x, y)) {
+        TextureAtlasSprite sprite = FluidRenderHelper.resolveChemicalSprite(chemicalStack);
+        int tint = MekChemicalHelper.getTint(chemicalStack);
+        if (sprite == null) {
+            blitTintQuadFallback(graphics, tint, x, y);
             return;
         }
-        blitTintQuadFallback(graphics, chemicalStack, x, y);
-    }
-
-    private static boolean blitChemicalIconSprite(GuiGraphicsExtractor graphics, Object chemicalStack, int x, int y) {
-        try {
-            Object chemical = chemicalStack.getClass().getMethod("getChemical").invoke(chemicalStack);
-            if (chemical == null) {
-                return false;
-            }
-            Identifier icon = (Identifier) chemical.getClass().getMethod("getIcon").invoke(chemical);
-            if (icon == null) {
-                return false;
-            }
-            int tint = MekChemicalHelper.getTint(chemicalStack);
-            TextureAtlasSprite sprite =
-                    Minecraft.getInstance().getAtlasManager().get(new SpriteId(TextureAtlas.LOCATION_BLOCKS, icon));
-            int alpha = (tint >> 24) & 0xFF;
-            if (alpha == 0) {
-                alpha = 0xFF;
-            }
-            int color = ARGB.color(alpha, (tint >> 16) & 0xFF, (tint >> 8) & 0xFF, tint & 0xFF);
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, color);
-            return true;
-        } catch (Throwable ignored) {
-            return false;
+        int alpha = (tint >> 24) & 0xFF;
+        if (alpha == 0) {
+            alpha = 0xFF;
         }
+        int color = ARGB.color(alpha, (tint >> 16) & 0xFF, (tint >> 8) & 0xFF, tint & 0xFF);
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, color);
     }
 
-    private static void blitTintQuadFallback(GuiGraphicsExtractor graphics, Object chemicalStack, int x, int y) {
-        int tint = MekChemicalHelper.getTint(chemicalStack);
+    private static void blitTintQuadFallback(GuiGraphicsExtractor graphics, int tint, int x, int y) {
         if (tint == 0) {
             tint = 0xFFB8B8B8;
         }
