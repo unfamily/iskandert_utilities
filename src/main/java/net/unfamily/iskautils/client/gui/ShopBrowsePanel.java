@@ -84,9 +84,9 @@ public final class ShopBrowsePanel {
         return ENTRY_START_Y + ENTRY_HEIGHT;
     }
 
-    /** Top of browse area (search row); aligns scrollbar with original five entry slots. */
+    /** Top of the entry list (first entry row). Scrollbar aligns here, below the search row. */
     public int getBrowseAreaStartY() {
-        return ENTRY_START_Y;
+        return getEntryStartY();
     }
 
     public int getVisibleEntryCount() {

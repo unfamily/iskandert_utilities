@@ -349,6 +349,8 @@
   "gui.iska_utils.auto_shop.tank.empty": "Vuoto",
   "gui.iska_utils.shop.tag_sell_only": "Le entry basate su tag possono soltanto essere vendute",
   "gui.iska_utils.shop.use_auto_shop": "Usa il Negozio Automatico per fluidi e gas",
+  "gui.iska_utils.shop.tooltip.amount": "Quantità: %s",
+  "gui.iska_utils.shop.tooltip.amount_mb": "Quantità: %s mB",
   "gui.iska_utils.auto_shop.picker.fluid_gas_autoshop_only": "Le entry di fluidi e gas sono disponibili soltanto nel Negozio Automatico",
   "gui.iska_utils.auto_shop.select_item_catalog": "Sfoglia catalogo negozio",
   "gui.iska_utils.shop.back": "Indietro",

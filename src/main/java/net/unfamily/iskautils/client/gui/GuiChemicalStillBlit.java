@@ -21,12 +21,15 @@ public final class GuiChemicalStillBlit {
             blitTintQuadFallback(graphics, tint, x, y);
             return;
         }
+        float a = ((tint >> 24) & 0xFF) / 255f;
+        if (a <= 1e-3f) {
+            a = 1f;
+        }
         float r = ((tint >> 16) & 0xFF) / 255f;
         float g = ((tint >> 8) & 0xFF) / 255f;
         float b = (tint & 0xFF) / 255f;
-        graphics.setColor(r, g, b, 1f);
-        graphics.blit(x, y, 0, 16, 16, sprite);
-        graphics.setColor(1f, 1f, 1f, 1f);
+        // POSITION_TEX_COLOR — setColor/setShaderColor do not tint plain blit(sprite) reliably
+        graphics.blit(x, y, 0, 16, 16, sprite, r, g, b, a);
     }
 
     private static void blitTintQuadFallback(GuiGraphics graphics, int tint, int x, int y) {

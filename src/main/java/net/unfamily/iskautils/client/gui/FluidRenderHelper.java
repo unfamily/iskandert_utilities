@@ -63,9 +63,7 @@ public final class FluidRenderHelper {
         float r = ((tint >> 16) & 0xFF) / 255f;
         float g = ((tint >> 8) & 0xFF) / 255f;
         float b = (tint & 0xFF) / 255f;
-        graphics.setColor(r, g, b, 1f);
-        drawTiledSpriteBottomUp(graphics, sprite, x, fillTop, width, fillHeight);
-        graphics.setColor(1f, 1f, 1f, 1f);
+        drawTiledSpriteBottomUp(graphics, sprite, x, fillTop, width, fillHeight, r, g, b);
     }
 
     public static void drawFluidInTank(GuiGraphics guiGraphics, FluidStack fluidStack, int x, int y, int width, int height) {
@@ -84,13 +82,12 @@ public final class FluidRenderHelper {
         float r = ((tint >> 16) & 0xFF) / 255f;
         float g = ((tint >> 8) & 0xFF) / 255f;
         float b = (tint & 0xFF) / 255f;
-        guiGraphics.setColor(r, g, b, 1f);
-        drawTiledSpriteBottomUp(guiGraphics, sprite, x, y, width, height);
-        guiGraphics.setColor(1f, 1f, 1f, 1f);
+        drawTiledSpriteBottomUp(guiGraphics, sprite, x, y, width, height, r, g, b);
     }
 
     private static void drawTiledSpriteBottomUp(GuiGraphics guiGraphics, TextureAtlasSprite sprite,
-                                                int x, int y, int width, int height) {
+                                                int x, int y, int width, int height,
+                                                float r, float g, float b) {
         int remainingHeight = height;
         int tileBottom = y + height;
         while (remainingHeight > 0) {
@@ -100,7 +97,7 @@ public final class FluidRenderHelper {
                 int tileW = Math.min(TILE_SIZE, width - dx);
                 int tileX = x + dx;
                 guiGraphics.enableScissor(tileX, tileBottom, tileX + tileW, tileBottom + tileH);
-                guiGraphics.blit(tileX, tileBottom, 0, TILE_SIZE, TILE_SIZE, sprite);
+                guiGraphics.blit(tileX, tileBottom, 0, TILE_SIZE, TILE_SIZE, sprite, r, g, b, 1f);
                 guiGraphics.disableScissor();
             }
             remainingHeight -= tileH;

@@ -400,6 +400,9 @@ public class ModBlockEntities {
                                     ? autoShopEntity.getFluidTransferHandler()
                                     : null
             );
+
+            // Mekanism CHEMICAL block capability so gas tubes can connect to AutoShop
+            registerAutoShopChemicalCapability(event);
             
             // Shop Block non registra capability IItemHandler per prevenire interazioni con hopper
             // Shop is opened via player GUI only
@@ -508,6 +511,33 @@ public class ModBlockEntities {
                     ENTROPIC_SPAWNER_BE.get(),
                     (blockEntity, context) ->
                             blockEntity instanceof EntropicSpawnerBlockEntity spawner ? spawner.getItemHandler() : null);
+        }
+
+        /**
+         * Registers Mekanism {@code Capabilities.CHEMICAL.block()} on AutoShop so gas tubes connect.
+         * Uses reflection so Mekanism remains an optional dependency (same pattern as Another-Dynamics).
+         */
+        @SuppressWarnings("unchecked")
+        private static void registerAutoShopChemicalCapability(RegisterCapabilitiesEvent event) {
+            if (!net.neoforged.fml.ModList.get().isLoaded("mekanism")) {
+                return;
+            }
+            try {
+                Class<?> capsClass = Class.forName("mekanism.common.capabilities.Capabilities");
+                Object chemicalMulti = capsClass.getField("CHEMICAL").get(null);
+                Object blockCapObj = chemicalMulti.getClass().getMethod("block").invoke(chemicalMulti);
+                net.neoforged.neoforge.capabilities.BlockCapability<Object, net.minecraft.core.Direction> blockCap =
+                        (net.neoforged.neoforge.capabilities.BlockCapability<Object, net.minecraft.core.Direction>) blockCapObj;
+                event.registerBlockEntity(
+                        blockCap,
+                        AUTO_SHOP_BE.get(),
+                        (blockEntity, context) ->
+                                blockEntity instanceof AutoShopBlockEntity autoShop
+                                        ? autoShop.getChemicalTransferHandler()
+                                        : null);
+            } catch (Throwable t) {
+                // Mek present but API shape unexpected — AutoShop still works without pipe connect.
+            }
         }
     }
 } 

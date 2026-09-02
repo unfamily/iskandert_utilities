@@ -338,6 +338,7 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
         if (subView == SubView.ITEM_PICKER) {
             itemPicker.renderTooltips(guiGraphics, mouseX, mouseY);
             return;

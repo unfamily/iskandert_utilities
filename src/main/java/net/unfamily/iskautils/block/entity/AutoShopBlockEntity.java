@@ -18,6 +18,7 @@ import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +63,10 @@ public class AutoShopBlockEntity extends BlockEntity {
     private Object gasTank;
     private String pendingGasId = "";
     private long pendingGasAmount;
-    private int tankCapacity = DEFAULT_TANK_MB;
+    /** Fluid buffer capacity (independent from gas). */
+    private int fluidCapacity = DEFAULT_TANK_MB;
+    /** Gas buffer capacity (independent from fluid). */
+    private int gasCapacity = DEFAULT_TANK_MB;
     
     /** Read-only handler for the filter slot display (ghost slot: no insert/extract). */
     private final IItemHandler filterDisplayHandler = new IItemHandler() {
@@ -212,7 +216,8 @@ public class AutoShopBlockEntity extends BlockEntity {
         shopData.putBoolean("previousRedstoneState", previousRedstoneState);
         
         tag.put("shopData", shopData);
-        tag.putInt("tankCapacity", tankCapacity);
+        tag.putInt("fluidCapacity", fluidCapacity);
+        tag.putInt("gasCapacity", gasCapacity);
         tag.put("fluidTank", fluidTank.writeToNBT(registries, new CompoundTag()));
         String gasId = getGasId();
         long gasAmount = getGasAmount();
@@ -315,8 +320,10 @@ public class AutoShopBlockEntity extends BlockEntity {
                 }
             } catch (Exception ignored) {}
         }
-        tankCapacity = Math.max(1, tag.contains("tankCapacity") ? tag.getInt("tankCapacity") : DEFAULT_TANK_MB);
-        fluidTank.setCapacity(tankCapacity);
+        int legacyCap = tag.contains("tankCapacity") ? Math.max(1, tag.getInt("tankCapacity")) : DEFAULT_TANK_MB;
+        fluidCapacity = Math.max(1, tag.contains("fluidCapacity") ? tag.getInt("fluidCapacity") : legacyCap);
+        gasCapacity = Math.max(1, tag.contains("gasCapacity") ? tag.getInt("gasCapacity") : legacyCap);
+        fluidTank.setCapacity(fluidCapacity);
         if (tag.contains("fluidTank")) {
             fluidTank.readFromNBT(registries, tag.getCompound("fluidTank"));
         }
@@ -361,6 +368,16 @@ public class AutoShopBlockEntity extends BlockEntity {
         return fluidTank;
     }
 
+    /** Mekanism {@code IChemicalHandler} for pipes / tubes (null if Mek absent). */
+    @Nullable
+    public Object getChemicalTransferHandler() {
+        if (!MekChemicalHelper.isLoaded()) {
+            return null;
+        }
+        ensureGasTank();
+        return gasTank;
+    }
+
     public int getFluidAmount() {
         return fluidTank.getFluidAmount();
     }
@@ -380,7 +397,7 @@ public class AutoShopBlockEntity extends BlockEntity {
 
     public long getGasCapacity() {
         ensureGasTank();
-        return gasTank != null ? MekChemicalHelper.getTankCapacityLong(gasTank) : tankCapacity;
+        return gasTank != null ? MekChemicalHelper.getTankCapacityLong(gasTank) : gasCapacity;
     }
 
     public String getGasId() {
@@ -437,7 +454,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         if (gasTank != null || !MekChemicalHelper.isLoaded()) {
             return;
         }
-        gasTank = MekChemicalHelper.createAllValidTank(tankCapacity);
+        gasTank = MekChemicalHelper.createAllValidTank(gasCapacity);
         if (gasTank != null && pendingGasAmount > 0 && !pendingGasId.isEmpty()) {
             Object stack = MekChemicalHelper.createStackFromId(pendingGasId, pendingGasAmount);
             MekChemicalHelper.fill(gasTank, stack, false);
@@ -446,15 +463,46 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
     }
 
-    private void resizeTanks(int entryAmount) {
-        // One shop unit fills the "slot"; no oversized buffer capacity.
-        tankCapacity = Math.max(1, entryAmount);
-        fluidTank.setCapacity(tankCapacity);
-        if (fluidTank.getFluidAmount() > tankCapacity) {
-            fluidTank.setFluid(fluidTank.getFluid().copyWithAmount(tankCapacity));
+    /** Resize only the buffer matching the selected shop entry type. Fluid and gas stay independent. */
+    private void resizeForEntry(@Nullable ShopEntry entry) {
+        if (entry == null) {
+            return;
         }
+        int amount = Math.max(1, entry.amount);
+        switch (entry.type) {
+            case FLUID -> resizeFluidTank(amount);
+            case GAS -> resizeGasTank(amount);
+            case ITEM -> { /* item selection does not touch buffers */ }
+        }
+    }
+
+    private void resizeFluidTank(int entryAmount) {
+        fluidCapacity = Math.max(1, entryAmount);
+        fluidTank.setCapacity(fluidCapacity);
+        if (fluidTank.getFluidAmount() > fluidCapacity) {
+            fluidTank.setFluid(fluidTank.getFluid().copyWithAmount(fluidCapacity));
+        }
+    }
+
+    private void resizeGasTank(int entryAmount) {
+        gasCapacity = Math.max(1, entryAmount);
+        if (!MekChemicalHelper.isLoaded()) {
+            return;
+        }
+        // BasicChemicalTank capacity is fixed at creation — recreate while preserving contents.
+        String keepId = "";
+        long keepAmt = 0L;
         if (gasTank != null) {
-            MekChemicalHelper.setTankCapacity(gasTank, tankCapacity);
+            Object inTank = MekChemicalHelper.getChemicalInTank(gasTank, 0);
+            if (!MekChemicalHelper.isEmpty(inTank)) {
+                keepId = MekChemicalHelper.getRegistryName(inTank);
+                keepAmt = MekChemicalHelper.getAmount(inTank);
+            }
+        }
+        gasTank = MekChemicalHelper.createAllValidTank(gasCapacity);
+        if (gasTank != null && keepId != null && !keepId.isEmpty() && keepAmt > 0) {
+            Object restack = MekChemicalHelper.createStackFromId(keepId, Math.min(keepAmt, gasCapacity));
+            MekChemicalHelper.fill(gasTank, restack, false);
         }
     }
     
@@ -573,7 +621,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
         this.selectedShopEntryId = "";
         this.selectedEntryType = ShopEntry.EntryType.ITEM;
-        resizeTanks(1);
+        // Do not resize fluid/gas buffers when selecting an item — buffers are independent.
         
         setChanged();
     }
@@ -592,7 +640,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         this.selectedShopEntryId = entryId != null ? entryId : "";
         this.selectedValute = normalizeCurrencyId(currencyId);
         this.autoBuyMode = buyMode;
-        resizeTanks(entry != null ? entry.amount : 1);
+        resizeForEntry(entry);
         setChanged();
     }
     
@@ -604,7 +652,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         this.selectedItem = ItemStack.EMPTY;
         this.selectedShopEntryId = "";
         this.selectedEntryType = ShopEntry.EntryType.ITEM;
-        resizeTanks(1);
+        // Leave buffer contents/capacities intact; only clear the shop selection.
         setChanged();
     }
     

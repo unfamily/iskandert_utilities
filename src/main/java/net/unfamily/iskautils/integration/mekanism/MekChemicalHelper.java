@@ -171,15 +171,39 @@ public final class MekChemicalHelper {
             return null;
         }
         try {
-            Object holder = resolveHolder(registry, chemicalId);
-            if (holder == null) {
+            Class<?> stackClass = Class.forName("mekanism.api.chemical.ChemicalStack");
+            Class<?> holderIface = Class.forName("net.minecraft.core.Holder");
+
+            // Preferred path (Another-Dynamics): CHEMICAL_REGISTRY.getHolder(id) → ChemicalStack(Holder, long)
+            Object holderOpt = registry.getClass().getMethod("getHolder", ResourceLocation.class).invoke(registry, chemicalId);
+            if (holderOpt instanceof Optional<?> ho && ho.isPresent()) {
+                return stackClass.getConstructor(holderIface, long.class).newInstance(ho.get(), amount);
+            }
+
+            // Fallback: registry.get → Chemical / Holder
+            Object chemicalOrHolder = resolveChemicalOrHolder(registry, chemicalId);
+            if (chemicalOrHolder == null) {
                 return null;
             }
-            Class<?> stackClass = Class.forName("mekanism.api.chemical.ChemicalStack");
-            Class<?> holderClass = Class.forName("net.minecraft.core.Holder");
-            return stackClass.getConstructor(holderClass, long.class).newInstance(holder, amount);
+            Class<?> chemicalClass = Class.forName("mekanism.api.chemical.Chemical");
+            if (chemicalClass.isInstance(chemicalOrHolder)) {
+                try {
+                    return stackClass.getConstructor(chemicalClass, long.class)
+                            .newInstance(chemicalOrHolder, amount);
+                } catch (NoSuchMethodException ignored) {
+                    Object holder = chemicalOrHolder.getClass().getMethod("getAsHolder").invoke(chemicalOrHolder);
+                    if (holder != null) {
+                        return stackClass.getConstructor(holderIface, long.class).newInstance(holder, amount);
+                    }
+                }
+            }
+            if (holderIface.isInstance(chemicalOrHolder)) {
+                return stackClass.getConstructor(holderIface, long.class)
+                        .newInstance(chemicalOrHolder, amount);
+            }
+            return null;
         } catch (Throwable t) {
-            LOGGER.debug("createStack failed for {}: {}", chemicalId, t.getMessage());
+            LOGGER.debug("createStack failed for {}: {}", chemicalId, t.toString());
             return null;
         }
     }
@@ -329,8 +353,9 @@ public final class MekChemicalHelper {
             return null;
         }
         try {
-            Object itemCap = chemicalItemCapability();
-            return stack.getClass().getMethod("getCapability", itemCap.getClass()).invoke(stack, itemCap);
+            Class<?> c = Class.forName("mekanism.common.capabilities.Capabilities");
+            Object chemicalCap = c.getField("CHEMICAL").get(null);
+            return chemicalCap.getClass().getMethod("getCapability", ItemStack.class).invoke(chemicalCap, stack);
         } catch (Throwable ignored) {
             return null;
         }
@@ -348,6 +373,16 @@ public final class MekChemicalHelper {
         }
         try {
             int tanks = (int) handler.getClass().getMethod("getChemicalTanks").invoke(handler);
+            for (int i = 0; i < tanks; i++) {
+                Object inTank = handler.getClass().getMethod("getChemicalInTank", int.class).invoke(handler, i);
+                if (isEmpty(inTank) || getAmount(inTank) <= 0) {
+                    continue;
+                }
+                Object preview = copyWithAmount(inTank, 1L);
+                if (!isEmpty(preview)) {
+                    return preview;
+                }
+            }
             Object actionSim = actionSimulate();
             for (int i = 0; i < tanks; i++) {
                 Object inTank = handler.getClass().getMethod("getChemicalInTank", int.class).invoke(handler, i);
@@ -383,33 +418,30 @@ public final class MekChemicalHelper {
         }
     }
 
-    private static Object chemicalItemCapability() throws ReflectiveOperationException {
-        Class<?> c = Class.forName("mekanism.common.capabilities.Capabilities");
-        Object chemicalCap = c.getField("CHEMICAL").get(null);
-        return chemicalCap.getClass().getMethod("item").invoke(chemicalCap);
-    }
-
     private static Object actionSimulate() throws ReflectiveOperationException {
         Class<?> a = Class.forName("mekanism.api.Action");
         return a.getField("SIMULATE").get(null);
     }
 
+    /**
+     * Resolves either a {@code Chemical} (DefaultedRegistry.get) or a {@code Holder} (getHolder).
+     */
     @Nullable
-    private static Object resolveHolder(Object registry, ResourceLocation id) {
-        try {
-            Object result = registry.getClass().getMethod("get", ResourceLocation.class).invoke(registry, id);
-            if (result instanceof Optional<?> optional) {
-                return optional.orElse(null);
-            }
-            return result;
-        } catch (Throwable ignored) {
-        }
+    private static Object resolveChemicalOrHolder(Object registry, ResourceLocation id) {
         try {
             Method getHolder = registry.getClass().getMethod("getHolder", ResourceLocation.class);
             Object result = getHolder.invoke(registry, id);
             if (result instanceof Optional<?> optional) {
                 return optional.orElse(null);
             }
+        } catch (Throwable ignored) {
+        }
+        try {
+            Object result = registry.getClass().getMethod("get", ResourceLocation.class).invoke(registry, id);
+            if (result instanceof Optional<?> optional) {
+                return optional.orElse(null);
+            }
+            return result;
         } catch (Throwable ignored) {
         }
         return null;

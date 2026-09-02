@@ -351,6 +351,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
         renderShopTooltips(guiGraphics, mouseX, mouseY);
     }
 
@@ -924,7 +925,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             if ((item.buy > 0 || item.free) && mouseX >= buyButtonX && mouseX < buyButtonX + BUTTON_WIDTH
                 && mouseY >= buttonsY && mouseY < buttonsY + BUTTON_HEIGHT) {
                 if (!ShopEntryHelper.isPlayerShopTradable(item)) {
-                    return List.of(Component.translatable("gui.iska_utils.shop.use_auto_shop"));
+                    return ShopScreenHelper.playerShopFluidGasHintTooltip(item, true, getCurrencySymbol(item.valute));
                 }
                 return createBuyTooltip(item);
             }
@@ -932,7 +933,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             if (item.sell > 0 && mouseX >= sellButtonX && mouseX < sellButtonX + BUTTON_WIDTH
                 && mouseY >= buttonsY && mouseY < buttonsY + BUTTON_HEIGHT) {
                 if (!ShopEntryHelper.isPlayerShopTradable(item)) {
-                    return List.of(Component.translatable("gui.iska_utils.shop.use_auto_shop"));
+                    return ShopScreenHelper.playerShopFluidGasHintTooltip(item, false, getCurrencySymbol(item.valute));
                 }
                 return createSellTooltip(item);
             }
@@ -1190,10 +1191,6 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                     handleBuyButtonClick(item, multiplier);
                 }).bounds(buyButtonX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
                 buyButton.active = tradable;
-                if (!tradable && item.type != ShopEntry.EntryType.ITEM) {
-                    buyButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
-                            Component.translatable("gui.iska_utils.shop.use_auto_shop")));
-                }
                 
                 buyButtons.add(buyButton);
                 this.addRenderableWidget(buyButton);
@@ -1211,10 +1208,6 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                     handleSellButtonClick(item, multiplier);
                 }).bounds(sellButtonX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
                 sellButton.active = tradable;
-                if (!tradable && item.type != ShopEntry.EntryType.ITEM) {
-                    sellButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
-                            Component.translatable("gui.iska_utils.shop.use_auto_shop")));
-                }
                 
                 sellButtons.add(sellButton);
                 this.addRenderableWidget(sellButton);

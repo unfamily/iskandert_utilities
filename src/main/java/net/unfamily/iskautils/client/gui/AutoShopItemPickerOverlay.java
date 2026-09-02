@@ -839,13 +839,17 @@ public final class AutoShopItemPickerOverlay {
             tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.cost",
                     item.buy, getCurrencySymbol(currencyId)));
         }
+        tooltip.add(ShopScreenHelper.amountLine(item));
         return tooltip;
     }
 
     private List<Component> createSellTooltip(ShopEntry item) {
+        List<Component> tooltip = new ArrayList<>();
         String currencyId = item.valute != null ? item.valute : "null_coin";
-        return List.of(Component.translatable("gui.iska_utils.shop.tooltip.sell.price",
+        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.price",
                 item.sell, getCurrencySymbol(currencyId)));
+        tooltip.add(ShopScreenHelper.amountLine(item));
+        return tooltip;
     }
 
     private String getCurrencySymbol(String valuteId) {

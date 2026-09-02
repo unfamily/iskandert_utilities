@@ -182,6 +182,8 @@
   "gui.iska_utils.auto_shop.tank.empty": "Empty",
   "gui.iska_utils.shop.tag_sell_only": "Tag-based entries can only be sold",
   "gui.iska_utils.shop.use_auto_shop": "Use the Auto Shop for fluids and gases",
+  "gui.iska_utils.shop.tooltip.amount": "Amount: %s",
+  "gui.iska_utils.shop.tooltip.amount_mb": "Amount: %s mB",
   "gui.iska_utils.auto_shop.picker.fluid_gas_autoshop_only": "Fluid and gas entries are available only in the Auto Shop",
   "gui.iska_utils.auto_shop.picker.title": "Select Shop Item",
   "gui.iska_utils.auto_shop.select_item": "Selected",
