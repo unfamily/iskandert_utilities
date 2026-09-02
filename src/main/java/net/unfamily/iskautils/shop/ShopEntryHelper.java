@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidUtil;
 import net.unfamily.iskalib.item.ItemConverter;
 import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.util.ModLogger;
@@ -142,7 +143,7 @@ public final class ShopEntryHelper {
     }
 
     public static boolean matchesFluid(FluidStack stack, @Nullable String selector) {
-        if (stack == null || stack.isEmpty() || selector == null || selector.isBlank()) {
+        if (stack == null || stack.getFluid() == Fluids.EMPTY || selector == null || selector.isBlank()) {
             return false;
         }
         String trimmed = selector.trim();
@@ -340,7 +341,7 @@ public final class ShopEntryHelper {
      */
     @Nullable
     public static ShopEntry findMatchingFluidEntry(FluidStack stack, boolean preferBuy) {
-        if (stack == null || stack.isEmpty()) {
+        if (stack == null || stack.getFluid() == Fluids.EMPTY) {
             return null;
         }
         ShopEntry preferred = null;
@@ -416,5 +417,32 @@ public final class ShopEntryHelper {
             }
         }
         return preferBuy;
+    }
+
+    /**
+     * Fluid contained in an item (bucket/tank). Uses legacy FluidUtil on 1.21.1.
+     */
+    public static FluidStack fluidContainedInItem(@Nullable ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return FluidStack.EMPTY;
+        }
+        return FluidUtil.getFluidContained(stack).orElse(FluidStack.EMPTY);
+    }
+
+    /**
+     * JEI may expose fluid types with amount 0; normalize so matching/isEmpty checks still work.
+     */
+    public static FluidStack normalizeFluidIngredient(@Nullable FluidStack fluid) {
+        if (fluid == null || fluid.getFluid() == Fluids.EMPTY) {
+            return FluidStack.EMPTY;
+        }
+        if (fluid.getAmount() <= 0) {
+            return new FluidStack(fluid.getFluid(), 1000);
+        }
+        return fluid;
+    }
+
+    public static boolean isFluidIngredient(@Nullable Object ingredient) {
+        return ingredient instanceof FluidStack fluid && fluid.getFluid() != Fluids.EMPTY;
     }
 }

@@ -13,6 +13,27 @@ public final class AutoShopGuiLayout {
     public static final int DUMP_GAP_BELOW = 3;
     public static final int DUMP_Y = BAR_Y + BAR_H + DUMP_GAP_BELOW;
     public static final int MASK_COLOR = 0xFFC6C6C6;
+    public static final int GAS_MASK_INSET = 1;
 
     private AutoShopGuiLayout() {}
+
+    /** Relative X of disabled-gas cover (inclusive left). */
+    public static int gasMaskLeft() {
+        return GAS_BAR_X - GAS_MASK_INSET;
+    }
+
+    /** Relative Y of disabled-gas cover (inclusive top). */
+    public static int gasMaskTop() {
+        return BAR_Y - GAS_MASK_INSET;
+    }
+
+    /** Relative X of disabled-gas cover (exclusive right; stops before liquid). */
+    public static int gasMaskRight() {
+        return LIQUID_BAR_X - 1;
+    }
+
+    /** Relative Y of disabled-gas cover (exclusive bottom; includes dump button). */
+    public static int gasMaskBottom() {
+        return DUMP_Y + DUMP_H;
+    }
 }

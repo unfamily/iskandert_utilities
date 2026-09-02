@@ -10,7 +10,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.AutoShopBlockEntity;
@@ -20,8 +19,6 @@ import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Optional;
 
 /**
  * Converts the AutoShop selected item into a matching fluid/gas shop entry (explicit button; not auto on insert).
@@ -88,9 +85,10 @@ public record AutoShopConvertSelectedC2SPacket(BlockPos pos) implements CustomPa
 
     @Nullable
     private static ShopEntry resolveConvertedEntry(ItemStack selected, boolean preferBuy) {
-        Optional<FluidStack> contained = FluidUtil.getFluidContained(selected);
-        if (contained.isPresent() && !contained.get().isEmpty()) {
-            ShopEntry fluidEntry = ShopEntryHelper.findMatchingFluidEntry(contained.get(), preferBuy);
+        FluidStack contained = ShopEntryHelper.fluidContainedInItem(selected);
+        contained = ShopEntryHelper.normalizeFluidIngredient(contained);
+        if (!contained.isEmpty()) {
+            ShopEntry fluidEntry = ShopEntryHelper.findMatchingFluidEntry(contained, preferBuy);
             if (fluidEntry != null) {
                 return fluidEntry;
             }
