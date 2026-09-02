@@ -48,15 +48,15 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
 
-    private static final int CURRENCY_BUTTON_X = 2;
+    private static final int CURRENCY_BUTTON_X = 7;
     private static final int CURRENCY_BUTTON_Y = 23;
-    private static final int BUCKET_BUTTON_X = 20;
+    private static final int BUCKET_BUTTON_X = 25;
     private static final int BUCKET_BUTTON_Y = 23;
-    private static final int SELECT_BUTTON_X = 38;
+    private static final int SELECT_BUTTON_X = 43;
     private static final int SELECT_BUTTON_Y = 23;
-    private static final int REDSTONE_BUTTON_X = 20;
+    private static final int REDSTONE_BUTTON_X = 25;
     private static final int REDSTONE_BUTTON_Y = 48;
-    private static final int MODE_BUTTON_X = 38;
+    private static final int MODE_BUTTON_X = 43;
     private static final int MODE_BUTTON_Y = 48;
 
     private SubView subView = SubView.MAIN;
@@ -294,9 +294,11 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
         int gasX = leftPos + AutoShopGuiLayout.GAS_BAR_X;
         int gasY = topPos + AutoShopGuiLayout.BAR_Y;
         if (!MekChemicalHelper.isLoaded()) {
-            graphics.fill(gasX, gasY,
-                    gasX + AutoShopGuiLayout.BAR_W,
-                    gasY + AutoShopGuiLayout.BAR_H,
+            graphics.fill(
+                    leftPos + AutoShopGuiLayout.gasMaskLeft(),
+                    topPos + AutoShopGuiLayout.gasMaskTop(),
+                    leftPos + AutoShopGuiLayout.gasMaskRight(),
+                    topPos + AutoShopGuiLayout.gasMaskBottom(),
                     AutoShopGuiLayout.MASK_COLOR);
         } else {
             FluidRenderHelper.renderChemicalTank(
@@ -327,10 +329,10 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
                 GuiTextColors.TITLE, false);
 
         Component selectText = Component.translatable("gui.iska_utils.auto_shop.select_item");
-        guiGraphics.text(this.font, selectText, leftPos + 75, topPos + 27, GuiTextColors.TITLE, false);
+        guiGraphics.text(this.font, selectText, leftPos + 80, topPos + 27, GuiTextColors.TITLE, false);
 
         Component encapsulatedText = Component.translatable("gui.iska_utils.auto_shop.encapsulated_item");
-        guiGraphics.text(this.font, encapsulatedText, leftPos + 75, topPos + 52, GuiTextColors.TITLE, false);
+        guiGraphics.text(this.font, encapsulatedText, leftPos + 80, topPos + 52, GuiTextColors.TITLE, false);
     }
 
     @Override
@@ -523,8 +525,8 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
                 if (ingredient instanceof ItemStack stack && !stack.isEmpty()) {
                     return stack;
                 }
-                if (ingredient instanceof FluidStack fluid && !fluid.isEmpty()) {
-                    return fluid;
+                if (ShopEntryHelper.isFluidIngredient(ingredient)) {
+                    return ShopEntryHelper.normalizeFluidIngredient((FluidStack) ingredient);
                 }
                 if (MekChemicalHelper.isLoaded()
                         && MekChemicalHelper.isChemicalStackObject(ingredient)
@@ -580,10 +582,11 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     }
 
     private void acceptJeiFilterFluid(FluidStack fluid) {
-        if (fluid == null || fluid.isEmpty()) {
+        FluidStack normalized = ShopEntryHelper.normalizeFluidIngredient(fluid);
+        if (normalized.isEmpty()) {
             return;
         }
-        ShopEntry entry = ShopEntryHelper.findMatchingFluidEntry(fluid, menu.isAutoBuyMode());
+        ShopEntry entry = ShopEntryHelper.findMatchingFluidEntry(normalized, menu.isAutoBuyMode());
         tryApplyTypedShopEntry(entry);
     }
 

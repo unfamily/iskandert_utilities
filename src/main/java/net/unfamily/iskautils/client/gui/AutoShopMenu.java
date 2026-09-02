@@ -257,7 +257,7 @@ public class AutoShopMenu extends AbstractContainerMenu {
         }
         
         // Ghost slot for filter (display only: set/clear via click, no put/take)
-        this.addSlot(new SlotItemHandler(filterHandler, 0, 56, 23) {
+        this.addSlot(new SlotItemHandler(filterHandler, 0, 61, 23) {
             @Override
             public boolean mayPlace(@NotNull ItemStack stack) {
                 return false;
@@ -269,7 +269,7 @@ public class AutoShopMenu extends AbstractContainerMenu {
         });
         
         // Physical slot for encapsulated item (auto buy/sell output or input)
-        this.addSlot(new SlotItemHandler(encapsulatedHandler, 0, 56, 48));
+        this.addSlot(new SlotItemHandler(encapsulatedHandler, 0, 61, 48));
     }
     
     private void addPlayerInventory(Inventory playerInventory) {

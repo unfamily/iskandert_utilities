@@ -117,7 +117,7 @@ config="iska_utils.mixins.json"
 [[dependencies.${mod_id}]]
     modId="kubejs"
     type="optional"
-    versionRange="[2100.7.0,)"
+    versionRange="[8.0.0,)"
     ordering="AFTER"
     side="BOTH"
 

@@ -44,7 +44,8 @@ public class IskaUtilsGhostIngredientHandler<T extends Screen> implements IGhost
 
             @Override
             public void accept(I ingredientDropped) {
-                consumer.accept(validated);
+                Object validatedDropped = consumer.supportedTarget(ingredientDropped);
+                consumer.accept(validatedDropped != null ? validatedDropped : ingredientDropped);
             }
         });
     }
