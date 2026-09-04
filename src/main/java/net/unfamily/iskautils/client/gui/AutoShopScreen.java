@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.client.gui;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -36,17 +37,15 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/auto_shop.png");
     private static final ResourceLocation ENERGY_BAR_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/energy_bar.png");
-    private static final ResourceLocation RF_ICON =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/rf_icon.png");
     private static final int GUI_WIDTH = AutoShopGuiLayout.GUI_WIDTH;
     private static final int GUI_HEIGHT = AutoShopGuiLayout.GUI_HEIGHT;
     private static final int PICKER_WIDTH = ShopBrowsePanel.GUI_WIDTH;
     private static final int PICKER_HEIGHT = 240;
     private static final int BUTTON_SIZE = 16;
 
-    private static final int CLOSE_BUTTON_Y = 5;
-    private static final int CLOSE_BUTTON_SIZE = 12;
-    private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
+    private static final int CLOSE_BUTTON_Y = AutoShopGuiLayout.CLOSE_BUTTON_Y;
+    private static final int CLOSE_BUTTON_SIZE = AutoShopGuiLayout.CLOSE_BUTTON_SIZE;
+    private static final int CLOSE_BUTTON_X = AutoShopGuiLayout.CLOSE_BUTTON_X;
 
     private static final int CURRENCY_BUTTON_X = 7;
     private static final int CURRENCY_BUTTON_Y = 23;
@@ -346,24 +345,25 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     }
 
     private void renderEnergyBar(GuiGraphics graphics) {
+        int maxEnergy = menu.getMaxEnergyStored();
+        if (maxEnergy <= 0) {
+            return;
+        }
         int x = leftPos + AutoShopGuiLayout.ENERGY_BAR_X;
-        int y = topPos + AutoShopGuiLayout.BAR_Y;
+        int y = topPos + AutoShopGuiLayout.ENERGY_BAR_Y;
         graphics.blit(ENERGY_BAR_TEXTURE, x, y,
-                AutoShopGuiLayout.BAR_W, AutoShopGuiLayout.BAR_H,
-                8, 0, 8, 32, 16, 32);
+                8, 0,
+                AutoShopGuiLayout.ENERGY_BAR_W, AutoShopGuiLayout.ENERGY_BAR_H,
+                16, 32);
 
         int stored = Math.max(0, menu.getEnergyStored());
-        int capacity = Math.max(0, menu.getMaxEnergyStored());
-        if (stored > 0 && capacity > 0) {
-            int fillHeight = Math.min(AutoShopGuiLayout.BAR_H,
-                    (int) ((long) stored * AutoShopGuiLayout.BAR_H / capacity));
-            int sourceHeight = Math.max(1, (fillHeight * 32 + AutoShopGuiLayout.BAR_H - 1)
-                    / AutoShopGuiLayout.BAR_H);
-            graphics.blit(ENERGY_BAR_TEXTURE, x, y + AutoShopGuiLayout.BAR_H - fillHeight,
-                    AutoShopGuiLayout.BAR_W, fillHeight,
-                    0, 32 - sourceHeight, 8, sourceHeight, 16, 32);
+        if (stored > 0) {
+            int fillHeight = (stored * AutoShopGuiLayout.ENERGY_BAR_H) / maxEnergy;
+            graphics.blit(ENERGY_BAR_TEXTURE, x, y + AutoShopGuiLayout.ENERGY_BAR_H - fillHeight,
+                    0, AutoShopGuiLayout.ENERGY_BAR_H - fillHeight,
+                    AutoShopGuiLayout.ENERGY_BAR_W, fillHeight,
+                    16, 32);
         }
-        graphics.blit(RF_ICON, x + 1, topPos + 1, 10, 10, 0, 0, 16, 16, 16, 16);
     }
 
     private void renderTanks(GuiGraphics graphics) {
@@ -457,14 +457,21 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     }
 
     private void renderTankTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        int energyX = leftPos + AutoShopGuiLayout.ENERGY_BAR_X;
+        int energyY = topPos + AutoShopGuiLayout.ENERGY_BAR_Y;
+        if (menu.getMaxEnergyStored() > 0
+                && isInside(mouseX, mouseY, energyX, energyY,
+                AutoShopGuiLayout.ENERGY_BAR_W, AutoShopGuiLayout.ENERGY_BAR_H)) {
+            Component tooltip = Component.translatable(
+                            "gui.iska_utils.auto_shop.energy.tooltip",
+                            String.format("%,d", menu.getEnergyStored()),
+                            String.format("%,d", menu.getMaxEnergyStored()))
+                    .withStyle(ChatFormatting.RED);
+            graphics.renderTooltip(font, tooltip, mouseX, mouseY);
+            return;
+        }
         int barY = topPos + AutoShopGuiLayout.BAR_Y;
-        if (isInside(mouseX, mouseY, leftPos + AutoShopGuiLayout.ENERGY_BAR_X, barY,
-                AutoShopGuiLayout.BAR_W, AutoShopGuiLayout.BAR_H)) {
-            graphics.renderComponentTooltip(font, List.of(
-                    Component.translatable("gui.iska_utils.auto_shop.energy.tooltip",
-                            menu.getEnergyStored(), menu.getMaxEnergyStored())
-            ), mouseX, mouseY);
-        } else if (isInside(mouseX, mouseY, leftPos + AutoShopGuiLayout.LIQUID_BAR_X, barY,
+        if (isInside(mouseX, mouseY, leftPos + AutoShopGuiLayout.LIQUID_BAR_X, barY,
                 AutoShopGuiLayout.BAR_W, AutoShopGuiLayout.BAR_H)) {
             if (menu.getFluidAmount() <= 0 || menu.getFluidRegistryId() < 0) {
                 graphics.renderComponentTooltip(font, java.util.List.of(

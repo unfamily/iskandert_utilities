@@ -25,7 +25,7 @@ public class ShopEntry {
     /** Other resource id (e.g. {@code iska_utils:rf}). Used when {@code type == OTHER}. */
     public String other;
     /**
-     * Generic quantity: item count, fluid mB, gas mB, or FE for RF other.
+     * Generic quantity: item count, fluid mB, gas mB, or RF for other.
      * {@link #itemCount} mirrors this for legacy callers.
      */
     public int amount = 1;

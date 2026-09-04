@@ -3,12 +3,19 @@ package net.unfamily.iskautils.client.gui;
 public final class AutoShopGuiLayout {
     public static final int GUI_WIDTH = 200;
     public static final int GUI_HEIGHT = 170;
-    public static final int ENERGY_BAR_X = 132;
     public static final int GAS_BAR_X = 150;
     public static final int LIQUID_BAR_X = 168;
     public static final int BAR_Y = 11;
     public static final int BAR_W = 12;
     public static final int BAR_H = 54;
+    /** Energy bar under the close (X) button — same 8×32 style as other machine GUIs. */
+    public static final int ENERGY_BAR_W = 8;
+    public static final int ENERGY_BAR_H = 32;
+    public static final int CLOSE_BUTTON_SIZE = 12;
+    public static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5; // 183
+    public static final int CLOSE_BUTTON_Y = 5;
+    public static final int ENERGY_BAR_X = CLOSE_BUTTON_X + (CLOSE_BUTTON_SIZE - ENERGY_BAR_W) / 2; // centered under X
+    public static final int ENERGY_BAR_Y = CLOSE_BUTTON_Y + CLOSE_BUTTON_SIZE + 2; // just below X
     public static final int DUMP_W = 14;
     public static final int DUMP_H = 12;
     public static final int DUMP_GAP_BELOW = 3;
