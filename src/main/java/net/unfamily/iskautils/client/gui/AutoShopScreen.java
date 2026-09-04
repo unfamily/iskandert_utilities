@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.client.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Renderable;
@@ -55,6 +56,8 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     private static final int BUCKET_BUTTON_Y = 23;
     private static final int SELECT_BUTTON_X = 43;
     private static final int SELECT_BUTTON_Y = 23;
+    private static final int MANUAL_TRADE_BUTTON_X = 7;
+    private static final int MANUAL_TRADE_BUTTON_Y = 48;
     private static final int REDSTONE_BUTTON_X = 25;
     private static final int REDSTONE_BUTTON_Y = 48;
     private static final int MODE_BUTTON_X = 43;
@@ -65,6 +68,7 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
 
     private Button closeButton;
     private ItemIconButton redstoneModeButton;
+    private ItemIconButton manualTradeButton;
     private SymbolIconButton currencyButton;
     private SymbolIconButton convertBucketButton;
     private SymbolIconButton selectCatalogButton;
@@ -165,6 +169,16 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
                 menu::getRedstoneMode,
                 true));
 
+        manualTradeButton = addRenderableWidget(new ItemIconButton(
+                this.leftPos + MANUAL_TRADE_BUTTON_X,
+                this.topPos + MANUAL_TRADE_BUTTON_Y,
+                BUTTON_SIZE,
+                b -> onManualTradePressed(),
+                () -> new ItemStack(net.minecraft.world.item.Items.EMERALD),
+                Component.translatable("gui.iska_utils.auto_shop.manual_trade.tooltip")));
+        manualTradeButton.active =
+                menu.getRedstoneMode() == AutoShopBlockEntity.RedstoneMode.DISABLED.getValue();
+
         currencyButton = addRenderableWidget(new SymbolIconButton(
                 this.leftPos + CURRENCY_BUTTON_X,
                 this.topPos + CURRENCY_BUTTON_Y,
@@ -227,6 +241,10 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
         super.containerTick();
         if (subView == SubView.ITEM_PICKER) {
             itemPicker.tick();
+        }
+        if (manualTradeButton != null) {
+            manualTradeButton.active =
+                    menu.getRedstoneMode() == AutoShopBlockEntity.RedstoneMode.DISABLED.getValue();
         }
     }
 
@@ -579,6 +597,37 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
         if (!machinePos.equals(BlockPos.ZERO)) {
             net.unfamily.iskautils.network.ModMessages.sendAutoShopConvertSelectedPacket(machinePos);
         }
+    }
+
+    private void onManualTradePressed() {
+        if (menu.getRedstoneMode() != AutoShopBlockEntity.RedstoneMode.DISABLED.getValue()) {
+            return;
+        }
+        playButtonSound();
+        BlockPos machinePos = resolveMachinePos();
+        if (machinePos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        net.unfamily.iskautils.network.ModMessages.sendAutoShopManualTradePacket(
+                machinePos, manualTradeQuantity());
+    }
+
+    private int manualTradeQuantity() {
+        if (minecraft == null || minecraft.getWindow() == null) {
+            return 1;
+        }
+        var window = minecraft.getWindow();
+        if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT)) {
+            return 16;
+        }
+        if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT)) {
+            return 4;
+        }
+        return 1;
     }
 
     private void acceptJeiFilterItem(ItemStack stack) {

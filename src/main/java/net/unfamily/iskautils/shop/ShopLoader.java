@@ -43,6 +43,7 @@ public class ShopLoader {
             PROTECTED_CURRENCIES.clear();
             PROTECTED_CATEGORIES.clear();
             PROTECTED_ENTRIES.clear();
+            ShopEntryHelper.clearTagDisplayCaches();
 
             Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
                     ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.SHOP)
@@ -126,7 +127,8 @@ public class ShopLoader {
             ShopCurrency currency = new ShopCurrency();
             currency.id = id;
             currency.name = currencyObj.has("name") ? currencyObj.get("name").getAsString() : id;
-            currency.charSymbol = currencyObj.has("char_symbol") ? currencyObj.get("char_symbol").getAsString() : "§";
+            currency.charSymbol = currencyObj.has("char_symbol") ? currencyObj.get("char_symbol").getAsString() : ShopCurrency.DEFAULT_SYMBOL;
+            currency.priority = currencyObj.has("priority") ? currencyObj.get("priority").getAsInt() : 0;
             
             CURRENCIES.put(id, currency);
             PROTECTED_CURRENCIES.put(id, !overwritable);

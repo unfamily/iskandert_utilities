@@ -279,9 +279,8 @@ public class ShopTransactionManager {
         
         // Show all available currencies with localized names and symbols
         Map<String, ShopCurrency> allCurrencies = ShopLoader.getCurrencies();
-        for (String valuteId : allCurrencies.keySet()) {
-            ShopCurrency currency = allCurrencies.get(valuteId);
-            double balance = teamManager.getTeamValuteBalance(teamKey, valuteId);
+        for (ShopCurrency currency : ShopCurrency.sorted(allCurrencies.values())) {
+            double balance = teamManager.getTeamValuteBalance(teamKey, currency.id);
             String localizedName = Component.translatable(currency.name).getString();
             String formattedName = localizedName + " " + currency.charSymbol;
             player.sendSystemMessage(Component.literal("§a" + formattedName + ": " + balance));

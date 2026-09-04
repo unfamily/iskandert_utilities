@@ -3,6 +3,7 @@ package net.unfamily.iskautils.block;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
@@ -19,6 +20,10 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.access.ItemAccess;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.block.entity.AutoShopBlockEntity;
 import org.jetbrains.annotations.Nullable;
@@ -94,6 +99,51 @@ public class AutoShopBlock extends BaseEntityBlock {
                         autoShopEntity.setOwnerTeamId(teamId);
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Bucket / fluid-container / chemical-tank click: fill AutoShop tanks from item or drain tanks into item.
+     */
+    @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                          Player player, InteractionHand hand, BlockHitResult hitResult) {
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (!(blockEntity instanceof AutoShopBlockEntity autoShop)) {
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
+        }
+        if (player instanceof ServerPlayer serverPlayer && !autoShop.canPlayerUse(serverPlayer)) {
+            player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
+                    "block.iska_utils.auto_shop.team.error"));
+            return InteractionResult.FAIL;
+        }
+
+        ItemAccess itemAccess = ItemAccess.forPlayerInteraction(player, hand).oneByOne();
+        ResourceHandler<FluidResource> fluidHandler = itemAccess.getCapability(Capabilities.Fluid.ITEM);
+        if (fluidHandler != null && autoShop.interactWithItemFluidHandler(fluidHandler, player)) {
+            return InteractionResult.SUCCESS_SERVER;
+        }
+        ItemStack singleStack = stack.copyWithCount(1);
+        if (autoShop.interactWithItemChemicalHandler(singleStack, player)) {
+            applyHandAfterItemTransfer(player, hand, stack, singleStack);
+            return InteractionResult.SUCCESS_SERVER;
+        }
+        return InteractionResult.TRY_WITH_EMPTY_HAND;
+    }
+
+    private static void applyHandAfterItemTransfer(Player player, InteractionHand hand,
+                                                   ItemStack held, ItemStack result) {
+        held.shrink(1);
+        if (held.isEmpty()) {
+            player.setItemInHand(hand, result);
+        } else {
+            player.setItemInHand(hand, held);
+            if (!player.getInventory().add(result)) {
+                player.drop(result, false);
             }
         }
     }

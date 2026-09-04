@@ -110,6 +110,7 @@ public final class ShopEditSession {
         c.id = src.id;
         c.name = src.name;
         c.charSymbol = src.charSymbol;
+        c.priority = src.priority;
         return c;
     }
 

@@ -4,12 +4,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.unfamily.iskautils.shop.ItemConverter;
 import net.unfamily.iskautils.shop.ShopCategory;
+import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.util.DeepDrawerItemFilter;
+import net.unfamily.iskalib.item.ItemConverter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
@@ -29,6 +30,12 @@ public final class ShopBrowsePanel {
         CATEGORY
     }
 
+    /** Show all entries (S, default) vs hide entries you can neither buy nor sell (H). */
+    public enum TradeVisibility {
+        SHOW,
+        HIDE_UNTRADEABLE
+    }
+
     public static final int GUI_WIDTH = 300;
     public static final int INVENTORY_Y = 154;
     public static final int ENTRY_WIDTH = 220;
@@ -41,26 +48,29 @@ public final class ShopBrowsePanel {
     public static final int SEARCH_BAR_HEIGHT = FILTER_ROW_HEIGHT;
     public static final int FILTER_BUTTON_HEIGHT = FILTER_ROW_HEIGHT;
     public static final int SCOPE_BUTTON_WIDTH = 16;
-    /** Wide enough for ~5 characters (e.g. "Any"). */
     public static final int CURRENCY_BUTTON_WIDTH = 36;
+    public static final int AVAILABILITY_BUTTON_WIDTH = 16;
     public static final int FILTER_BUTTON_GAP = 2;
 
     /** Search + filter row replaces the first entry slot (same Y as original entry list). */
     public static final int SEARCH_ROW_Y = ENTRY_START_Y;
     public static final int SEARCH_BAR_X = ENTRY_START_X;
-    public static final int SEARCH_BAR_WIDTH = ENTRY_WIDTH - SCOPE_BUTTON_WIDTH - CURRENCY_BUTTON_WIDTH - 2 * FILTER_BUTTON_GAP;
+    public static final int SEARCH_BAR_WIDTH = ENTRY_WIDTH - SCOPE_BUTTON_WIDTH - CURRENCY_BUTTON_WIDTH
+            - AVAILABILITY_BUTTON_WIDTH - 3 * FILTER_BUTTON_GAP;
     public static final int SEARCH_BAR_Y = SEARCH_ROW_Y + (ENTRY_HEIGHT - SEARCH_BAR_HEIGHT) / 2;
     public static final int FILTER_ROW_Y = SEARCH_BAR_Y;
     public static final int SCOPE_BUTTON_X = SEARCH_BAR_X + SEARCH_BAR_WIDTH + FILTER_BUTTON_GAP;
     public static final int CURRENCY_BUTTON_X = SCOPE_BUTTON_X + SCOPE_BUTTON_WIDTH + FILTER_BUTTON_GAP;
+    public static final int AVAILABILITY_BUTTON_X = CURRENCY_BUTTON_X + CURRENCY_BUTTON_WIDTH + FILTER_BUTTON_GAP;
 
-    /** @deprecated use {@link #FILTER_ROW_Y} */
+    /** @deprecated use {@link #SCOPE_BUTTON_WIDTH} */
     @Deprecated
     public static final int FILTER_BUTTON_SIZE = SCOPE_BUTTON_WIDTH;
 
     private SearchScope searchScope = SearchScope.ALL;
     @Nullable
     private String currencyFilterId = null;
+    private TradeVisibility tradeVisibility = TradeVisibility.SHOW;
     private String searchQuery = "";
     private final boolean autoShopMode;
 
@@ -141,6 +151,20 @@ public final class ShopBrowsePanel {
         return currencyFilterId;
     }
 
+    public TradeVisibility getTradeVisibility() {
+        return tradeVisibility;
+    }
+
+    public void cycleTradeVisibility() {
+        tradeVisibility = tradeVisibility == TradeVisibility.SHOW
+                ? TradeVisibility.HIDE_UNTRADEABLE
+                : TradeVisibility.SHOW;
+    }
+
+    public String tradeVisibilityLetter() {
+        return tradeVisibility == TradeVisibility.HIDE_UNTRADEABLE ? "H" : "S";
+    }
+
     public void cycleCurrencyFilter(boolean backward) {
         List<String> ids = getSortedCurrencyIds();
         if (ids.isEmpty()) {
@@ -163,10 +187,6 @@ public final class ShopBrowsePanel {
         } else {
             currencyFilterId = ids.get(idx + 1);
         }
-    }
-
-    public void setCurrencyFilterAny() {
-        currencyFilterId = null;
     }
 
     public String getSearchQuery() {
@@ -202,8 +222,8 @@ public final class ShopBrowsePanel {
                 .filter(this::isBrowsable)
                 .sorted(Comparator.comparingInt((ShopEntry e) -> e.priority).reversed()
                         .thenComparing(entry -> {
-                            String sel = ShopEntryHelper.resourceSelector(entry);
-                            return sel != null ? sel : "";
+                            String selector = ShopEntryHelper.resourceSelector(entry);
+                            return selector != null ? selector : "";
                         }))
                 .collect(Collectors.toList());
         applyFilters(false);
@@ -216,8 +236,8 @@ public final class ShopBrowsePanel {
                     .filter(this::matchesItemFilters)
                     .sorted(Comparator.comparingInt((ShopEntry e) -> e.priority).reversed()
                             .thenComparing(entry -> {
-                                String sel = ShopEntryHelper.resourceSelector(entry);
-                                return sel != null ? sel : "";
+                                String selector = ShopEntryHelper.resourceSelector(entry);
+                                return selector != null ? selector : "";
                             }))
                     .collect(Collectors.toList());
             filteredCategories = List.of();
@@ -247,10 +267,9 @@ public final class ShopBrowsePanel {
     }
 
     public static boolean isTagItemEntry(ShopEntry entry) {
-        return ShopEntryHelper.isTagEntry(entry) && entry != null && entry.type == ShopEntry.EntryType.ITEM;
+        return entry != null && entry.type == ShopEntry.EntryType.ITEM && ShopEntryHelper.isTagEntry(entry);
     }
 
-    /** Concrete non-tag item entry suitable for AutoShop buy selection. */
     public static boolean isConcreteShopEntry(ShopEntry entry) {
         if (entry == null || entry.type != ShopEntry.EntryType.ITEM || isTagItemEntry(entry)) {
             return false;
@@ -263,10 +282,7 @@ public final class ShopBrowsePanel {
         if (entry == null || !ShopEntryHelper.isAutoShopSelectable(entry)) {
             return false;
         }
-        if (buyMode) {
-            return ShopEntryHelper.isBuyAllowed(entry);
-        }
-        return ShopEntryHelper.isSellAllowed(entry);
+        return buyMode ? ShopEntryHelper.isBuyAllowed(entry) : ShopEntryHelper.isSellAllowed(entry);
     }
 
     private boolean matchesCategoryFilters(ShopCategory category) {
@@ -277,7 +293,9 @@ public final class ShopBrowsePanel {
             String query = searchQuery.trim();
             if (!query.isEmpty()) {
                 String name = Component.translatable(category.name).getString();
-                return name.toLowerCase().contains(query.toLowerCase());
+                if (!name.toLowerCase().contains(query.toLowerCase())) {
+                    return false;
+                }
             }
         } else if (searchScope == SearchScope.BUYABLE || searchScope == SearchScope.SELLABLE) {
             return categoryHasMatchingItem(category.id);
@@ -287,12 +305,18 @@ public final class ShopBrowsePanel {
                 return categoryHasMatchingItem(category.id);
             }
         }
+        if (tradeVisibility == TradeVisibility.HIDE_UNTRADEABLE) {
+            return categoryHasMatchingItem(category.id);
+        }
         return true;
     }
 
     private boolean categoryHasMatchingItem(String categoryId) {
         for (ShopEntry entry : ShopLoader.getEntries().values()) {
             if (!categoryId.equals(entry.inCategory) || !isBrowsable(entry)) {
+                continue;
+            }
+            if (!passesTradeVisibility(entry)) {
                 continue;
             }
             if (searchScope == SearchScope.BUYABLE && !ShopEntryHelper.isBuyAllowed(entry)) {
@@ -329,6 +353,9 @@ public final class ShopBrowsePanel {
         if (!isBrowsable(entry)) {
             return false;
         }
+        if (!passesTradeVisibility(entry)) {
+            return false;
+        }
         if (currencyFilterId != null && !currencyFilterId.equals(entryCurrency(entry))) {
             return false;
         }
@@ -348,6 +375,30 @@ public final class ShopBrowsePanel {
         return matchesItemSearch(entry, query);
     }
 
+    /**
+     * Whether the player can buy or sell this entry in the current shop context
+     * (stage + player-shop / AutoShop trade rules).
+     */
+    private boolean passesTradeVisibility(ShopEntry entry) {
+        if (tradeVisibility != TradeVisibility.HIDE_UNTRADEABLE) {
+            return true;
+        }
+        return canBuyOrSell(entry);
+    }
+
+    private boolean canBuyOrSell(ShopEntry entry) {
+        if (ShopClientStages.isEntryBlocked(entry)) {
+            return false;
+        }
+        if (autoShopMode) {
+            return isSelectableAutoShopEntry(entry, true) || isSelectableAutoShopEntry(entry, false);
+        }
+        if (!ShopEntryHelper.isPlayerShopTradable(entry)) {
+            return false;
+        }
+        return ShopEntryHelper.isBuyAllowed(entry) || ShopEntryHelper.isSellAllowed(entry);
+    }
+
     private boolean matchesItemSearch(ShopEntry entry, String query) {
         String lowerQuery = query.toLowerCase();
         String label = ShopEntryHelper.displayLabelForEntry(entry);
@@ -359,8 +410,8 @@ public final class ShopBrowsePanel {
             return selector != null && selector.toLowerCase().contains(lowerQuery);
         }
         if (ShopEntryHelper.isTagEntry(entry)) {
-            String sel = ShopEntryHelper.resourceSelector(entry);
-            return sel != null && sel.toLowerCase().contains(lowerQuery);
+            String selector = ShopEntryHelper.resourceSelector(entry);
+            return selector != null && selector.toLowerCase().contains(lowerQuery);
         }
         ItemStack stack = ShopEntryHelper.displayStackForEntry(entry);
         if (stack.isEmpty()) {
@@ -385,7 +436,7 @@ public final class ShopBrowsePanel {
     }
 
     public static List<String> getSortedCurrencyIds() {
-        return ShopLoader.getCurrencies().keySet().stream().sorted().collect(Collectors.toList());
+        return ShopCurrency.sortedIds(ShopLoader.getCurrencies().values());
     }
 
     public String scopeLetter(SearchScope scope) {
@@ -403,5 +454,9 @@ public final class ShopBrowsePanel {
 
     public int currencyButtonX() {
         return CURRENCY_BUTTON_X;
+    }
+
+    public int availabilityButtonX() {
+        return AVAILABILITY_BUTTON_X;
     }
 }
