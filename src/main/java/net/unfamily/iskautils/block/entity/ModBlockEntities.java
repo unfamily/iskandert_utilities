@@ -401,6 +401,15 @@ public class ModBlockEntities {
                                     : null
             );
 
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    AUTO_SHOP_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof AutoShopBlockEntity autoShopEntity
+                                    ? autoShopEntity.getEnergyStorage()
+                                    : null
+            );
+
             // Mekanism CHEMICAL block capability so gas tubes can connect to AutoShop
             registerAutoShopChemicalCapability(event);
             

@@ -42,7 +42,9 @@ public class AutoShopMenu extends AbstractContainerMenu {
     private static final int GAS_ID_START_INDEX = 14;
     private static final int GAS_ID_PACKED_INTS = 16;
     private static final int ENTRY_TYPE_INDEX = GAS_ID_START_INDEX + GAS_ID_PACKED_INTS;
-    private static final int DATA_COUNT = ENTRY_TYPE_INDEX + 1;
+    public static final int ENERGY_STORED_INDEX = ENTRY_TYPE_INDEX + 1;
+    public static final int ENERGY_CAPACITY_INDEX = ENERGY_STORED_INDEX + 1;
+    private static final int DATA_COUNT = ENERGY_CAPACITY_INDEX + 1;
 
     // Costruttore server-side
     public AutoShopMenu(int containerId, Inventory playerInventory, AutoShopBlockEntity blockEntity) {
@@ -69,6 +71,8 @@ public class AutoShopMenu extends AbstractContainerMenu {
                     case GAS_CAPACITY_HIGH_INDEX -> (int) (blockEntity.getGasCapacity() >>> 32);
                     case GAS_ID_LENGTH_INDEX -> Math.min(blockEntity.getGasId().length(), GAS_ID_PACKED_INTS * 2);
                     case ENTRY_TYPE_INDEX -> blockEntity.getSelectedEntryType().ordinal();
+                    case ENERGY_STORED_INDEX -> blockEntity.getEnergyStored();
+                    case ENERGY_CAPACITY_INDEX -> blockEntity.getEnergyCapacity();
                     default -> index >= GAS_ID_START_INDEX && index < ENTRY_TYPE_INDEX
                             ? packGasIdChars(blockEntity.getGasId(), index - GAS_ID_START_INDEX)
                             : 0;
@@ -230,6 +234,14 @@ public class AutoShopMenu extends AbstractContainerMenu {
         int index = containerData.get(ENTRY_TYPE_INDEX);
         var values = net.unfamily.iskautils.shop.ShopEntry.EntryType.values();
         return index >= 0 && index < values.length ? values[index] : values[0];
+    }
+
+    public int getEnergyStored() {
+        return containerData.get(ENERGY_STORED_INDEX);
+    }
+
+    public int getMaxEnergyStored() {
+        return containerData.get(ENERGY_CAPACITY_INDEX);
     }
 
     private static long combineLong(int low, int high) {

@@ -20,8 +20,11 @@ public final class ShopScreenHelper {
     private ShopScreenHelper() {
     }
 
-    /** Quantity line: item count, or mB for fluid/gas entries. */
+    /** Quantity line for items, fluids/chemicals, or FE resources. */
     public static Component amountLine(ShopEntry entry) {
+        if (entry != null && entry.type == ShopEntry.EntryType.OTHER) {
+            return Component.translatable("gui.iska_utils.shop.tooltip.amount_fe", entry.amount);
+        }
         if (entry != null && (entry.type == ShopEntry.EntryType.FLUID || entry.type == ShopEntry.EntryType.GAS)) {
             return Component.translatable("gui.iska_utils.shop.tooltip.amount_mb", entry.amount);
         }

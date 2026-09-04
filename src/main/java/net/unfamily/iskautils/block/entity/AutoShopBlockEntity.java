@@ -13,12 +13,15 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
+import net.neoforged.neoforge.energy.EnergyStorage;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopOtherRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.item.ItemStack;
@@ -69,6 +72,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     private int fluidCapacity = DEFAULT_TANK_MB;
     /** Gas buffer capacity (independent from fluid). */
     private int gasCapacity = DEFAULT_TANK_MB;
+    private final ResizableEnergyStorage energyStorage = new ResizableEnergyStorage();
     
     /** Read-only handler for the filter slot display (ghost slot: no insert/extract). */
     private final IItemHandler filterDisplayHandler = new IItemHandler() {
@@ -220,6 +224,8 @@ public class AutoShopBlockEntity extends BlockEntity {
         tag.put("shopData", shopData);
         tag.putInt("fluidCapacity", fluidCapacity);
         tag.putInt("gasCapacity", gasCapacity);
+        tag.putInt("energyStored", energyStorage.getEnergyStored());
+        tag.putInt("energyCapacity", energyStorage.getMaxEnergyStored());
         tag.put("fluidTank", fluidTank.writeToNBT(registries, new CompoundTag()));
         String gasId = getGasId();
         long gasAmount = getGasAmount();
@@ -331,6 +337,8 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
         pendingGasId = tag.getString("gasId");
         pendingGasAmount = Math.max(0L, tag.getLong("gasAmount"));
+        energyStorage.resize(Math.max(0, tag.getInt("energyCapacity")));
+        energyStorage.setEnergy(Math.max(0, tag.getInt("energyStored")));
         ensureGasTank();
     }
     
@@ -386,6 +394,18 @@ public class AutoShopBlockEntity extends BlockEntity {
 
     public int getFluidCapacity() {
         return fluidTank.getCapacity();
+    }
+
+    public IEnergyStorage getEnergyStorage() {
+        return energyStorage;
+    }
+
+    public int getEnergyStored() {
+        return energyStorage.getEnergyStored();
+    }
+
+    public int getEnergyCapacity() {
+        return energyStorage.getMaxEnergyStored();
     }
 
     public int getFluidRegistryId() {
@@ -468,14 +488,26 @@ public class AutoShopBlockEntity extends BlockEntity {
     /** Resize only the buffer matching the selected shop entry type. Fluid and gas stay independent. */
     private void resizeForEntry(@Nullable ShopEntry entry) {
         if (entry == null) {
+            resizeEnergy(0);
             return;
         }
         int amount = Math.max(1, entry.amount);
         switch (entry.type) {
-            case FLUID -> resizeFluidTank(amount);
-            case GAS -> resizeGasTank(amount);
-            case ITEM -> { /* item selection does not touch buffers */ }
+            case FLUID -> {
+                resizeFluidTank(amount);
+                resizeEnergy(0);
+            }
+            case GAS -> {
+                resizeGasTank(amount);
+                resizeEnergy(0);
+            }
+            case ITEM -> resizeEnergy(0);
+            case OTHER -> resizeEnergy(ShopOtherRegistry.isRf(entry.other) ? amount : 0);
         }
+    }
+
+    private void resizeEnergy(int capacity) {
+        energyStorage.resize(Math.max(0, capacity));
     }
 
     private void resizeFluidTank(int entryAmount) {
@@ -624,6 +656,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         this.selectedShopEntryId = "";
         this.selectedEntryType = ShopEntry.EntryType.ITEM;
         // Do not resize fluid/gas buffers when selecting an item — buffers are independent.
+        resizeEnergy(0);
         
         setChanged();
     }
@@ -655,6 +688,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         this.selectedShopEntryId = "";
         this.selectedEntryType = ShopEntry.EntryType.ITEM;
         // Leave buffer contents/capacities intact; only clear the shop selection.
+        resizeEnergy(0);
         setChanged();
     }
     
@@ -829,6 +863,8 @@ public class AutoShopBlockEntity extends BlockEntity {
                     && ShopEntryHelper.matchesFluid(fluidTank.getFluid(), entry.fluid);
             case GAS -> getGasAmount() >= entry.amount
                     && ShopEntryHelper.matchesGas(MekChemicalHelper.getChemicalInTank(gasTank, 0), entry.gas);
+            case OTHER -> ShopOtherRegistry.isRf(entry.other)
+                    && energyStorage.getEnergyStored() >= entry.amount;
             case ITEM -> false;
         };
     }
@@ -837,6 +873,8 @@ public class AutoShopBlockEntity extends BlockEntity {
         return switch (entry.type) {
             case FLUID -> fluidTank.drain(entry.amount, IFluidHandler.FluidAction.EXECUTE).getAmount() == entry.amount;
             case GAS -> MekChemicalHelper.extractFromTank(gasTank, entry.amount) == entry.amount;
+            case OTHER -> ShopOtherRegistry.isRf(entry.other)
+                    && energyStorage.extractEnergy(entry.amount, false) == entry.amount;
             case ITEM -> false;
         };
     }
@@ -860,6 +898,9 @@ public class AutoShopBlockEntity extends BlockEntity {
                 Object stack = MekChemicalHelper.createStackFromId(entry.gas, entry.amount);
                 yield stack != null && MekChemicalHelper.fill(gasTank, stack, true) == entry.amount;
             }
+            case OTHER -> ShopOtherRegistry.isRf(entry.other)
+                    && energyStorage.getEnergyStored() == 0
+                    && energyStorage.receiveEnergy(entry.amount, true) == entry.amount;
             case ITEM -> false;
         };
     }
@@ -875,6 +916,8 @@ public class AutoShopBlockEntity extends BlockEntity {
                 Object stack = MekChemicalHelper.createStackFromId(entry.gas, entry.amount);
                 yield stack != null && MekChemicalHelper.fill(gasTank, stack, false) == entry.amount;
             }
+            case OTHER -> ShopOtherRegistry.isRf(entry.other)
+                    && energyStorage.receiveEnergy(entry.amount, false) == entry.amount;
             case ITEM -> false;
         };
     }
@@ -1132,6 +1175,25 @@ public class AutoShopBlockEntity extends BlockEntity {
             setChanged();
             return true;
         }
+        if (entry.type == ShopEntry.EntryType.OTHER && ShopOtherRegistry.isRf(entry.other)) {
+            if (energyStorage.getEnergyStored() > 0) {
+                return false;
+            }
+            if (cost > 0 && (teamManager.getTeamValuteBalance(teamKey, currencyId) < cost
+                    || !teamManager.removeTeamValutes(teamKey, currencyId, cost))) {
+                return false;
+            }
+            resizeEnergy(totalAmount);
+            if (energyStorage.receiveEnergy(totalAmount, false) != totalAmount) {
+                if (cost > 0) {
+                    teamManager.addTeamValutes(teamKey, currencyId, cost);
+                }
+                resizeEnergy(unit);
+                return false;
+            }
+            setChanged();
+            return true;
+        }
         return false;
     }
 
@@ -1174,6 +1236,20 @@ public class AutoShopBlockEntity extends BlockEntity {
             }
             int extract = units * unit;
             if (MekChemicalHelper.extractFromTank(gasTank, extract) != extract) {
+                return false;
+            }
+            teamManager.addTeamValutes(teamKey, currencyId, entry.sell * units);
+            setChanged();
+            return true;
+        }
+        if (entry.type == ShopEntry.EntryType.OTHER && ShopOtherRegistry.isRf(entry.other)) {
+            int availableUnits = energyStorage.getEnergyStored() / unit;
+            int units = Math.min(quantity, availableUnits);
+            if (units <= 0) {
+                return false;
+            }
+            int extract = units * unit;
+            if (energyStorage.extractEnergy(extract, false) != extract) {
                 return false;
             }
             teamManager.addTeamValutes(teamKey, currencyId, entry.sell * units);
@@ -1241,8 +1317,10 @@ public class AutoShopBlockEntity extends BlockEntity {
                     net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
             int beforeFluid = fluidTank.getFluidAmount();
             long beforeGas = getGasAmount();
+            int beforeEnergy = energyStorage.getEnergyStored();
             processTypedEntry(this, boundEntry, teamManager, teamKey, currencyId, registry, placerPlayer);
-            return fluidTank.getFluidAmount() != beforeFluid || getGasAmount() != beforeGas;
+            return fluidTank.getFluidAmount() != beforeFluid || getGasAmount() != beforeGas
+                    || energyStorage.getEnergyStored() != beforeEnergy;
         }
 
         if (!isAutoBuyMode()) {
@@ -1324,5 +1402,38 @@ public class AutoShopBlockEntity extends BlockEntity {
         slot.setStackInSlot(0, itemToCreate);
         setChanged();
         return true;
+    }
+
+    private final class ResizableEnergyStorage extends EnergyStorage {
+        private ResizableEnergyStorage() {
+            super(0, Integer.MAX_VALUE, Integer.MAX_VALUE);
+        }
+
+        private void resize(int newCapacity) {
+            this.capacity = Math.max(0, newCapacity);
+            this.energy = Math.min(this.energy, this.capacity);
+        }
+
+        private void setEnergy(int amount) {
+            this.energy = Math.max(0, Math.min(this.capacity, amount));
+        }
+
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int received = super.receiveEnergy(maxReceive, simulate);
+            if (!simulate && received > 0) {
+                AutoShopBlockEntity.this.setChanged();
+            }
+            return received;
+        }
+
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            int extracted = super.extractEnergy(maxExtract, simulate);
+            if (!simulate && extracted > 0) {
+                AutoShopBlockEntity.this.setChanged();
+            }
+            return extracted;
+        }
     }
 } 

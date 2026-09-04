@@ -3,6 +3,7 @@ package net.unfamily.iskautils.client.gui;
 public final class AutoShopGuiLayout {
     public static final int GUI_WIDTH = 200;
     public static final int GUI_HEIGHT = 170;
+    public static final int ENERGY_BAR_X = 132;
     public static final int GAS_BAR_X = 150;
     public static final int LIQUID_BAR_X = 168;
     public static final int BAR_Y = 11;

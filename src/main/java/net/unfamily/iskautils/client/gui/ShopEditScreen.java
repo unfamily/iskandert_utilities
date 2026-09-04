@@ -24,6 +24,7 @@ import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopOtherRegistry;
 import net.unfamily.iskautils.shop.ShopStage;
 import net.unfamily.iskautils.shop.edit.ShopEditResourceFormats;
 import net.unfamily.iskautils.shop.edit.ShopEditSession;
@@ -1118,6 +1119,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             if (draftEntry.item != null) o.addProperty("item", draftEntry.item);
             if (draftEntry.fluid != null) o.addProperty("fluid", draftEntry.fluid);
             if (draftEntry.gas != null) o.addProperty("gas", draftEntry.gas);
+            if (draftEntry.other != null) o.addProperty("other", draftEntry.other);
             o.addProperty("amount", Math.max(1, draftEntry.amount));
             o.addProperty("currency", nullSafe(draftEntry.currency));
             o.addProperty("buy", draftEntry.buy);
@@ -1151,6 +1153,10 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 resourceVariants.addAll(ShopEditResourceFormats.variantsFromFluid(current));
             } else if (type == ShopEntry.EntryType.GAS) {
                 resourceVariants.addAll(ShopEditResourceFormats.variantsFromGas(current));
+            } else if (type == ShopEntry.EntryType.OTHER) {
+                resourceVariants.addAll(ShopOtherRegistry.all().stream()
+                        .map(ShopOtherRegistry.Definition::id)
+                        .toList());
             } else {
                 addItemResourceVariants(current);
             }
@@ -1199,16 +1205,25 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                     draftEntry.fluid = value;
                     draftEntry.item = null;
                     draftEntry.gas = null;
+                    draftEntry.other = null;
                 }
                 case GAS -> {
                     draftEntry.gas = value;
                     draftEntry.item = null;
                     draftEntry.fluid = null;
+                    draftEntry.other = null;
                 }
-                default -> {
+                case OTHER -> {
+                    draftEntry.other = value;
+                    draftEntry.item = null;
+                    draftEntry.fluid = null;
+                    draftEntry.gas = null;
+                }
+                case ITEM -> {
                     draftEntry.item = value;
                     draftEntry.fluid = null;
                     draftEntry.gas = null;
+                    draftEntry.other = null;
                 }
             }
         }
@@ -1220,6 +1235,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         }
         if (e.type == ShopEntry.EntryType.GAS) {
             return nullSafe(e.gas);
+        }
+        if (e.type == ShopEntry.EntryType.OTHER) {
+            return nullSafe(e.other);
         }
         return nullSafe(e.item);
     }
@@ -1233,7 +1251,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             menu.setGhostStack(ItemStack.EMPTY);
             return;
         }
-        if (subView == SubView.ENTRY_EDIT && draftEntry != null && draftEntry.type == ShopEntry.EntryType.GAS) {
+        if (subView == SubView.ENTRY_EDIT && draftEntry != null
+                && (draftEntry.type == ShopEntry.EntryType.GAS || draftEntry.type == ShopEntry.EntryType.OTHER)) {
             menu.setGhostStack(ItemStack.EMPTY);
             return;
         }
@@ -1257,6 +1276,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             draftEntry.fluid = id != null ? id.toString() : "minecraft:water";
             draftEntry.item = null;
             draftEntry.gas = null;
+            draftEntry.other = null;
             if (draftEntry.amount < 1000) {
                 draftEntry.amount = 1000;
             }
@@ -1272,6 +1292,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 draftEntry.gas = gasId;
                 draftEntry.item = null;
                 draftEntry.fluid = null;
+                draftEntry.other = null;
                 if (draftEntry.amount < 1000) {
                     draftEntry.amount = 1000;
                 }
@@ -1289,9 +1310,15 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         ShopEntry.EntryType cur = draftEntry.type != null ? draftEntry.type : ShopEntry.EntryType.ITEM;
         draftEntry.type = switch (cur) {
             case ITEM -> ShopEntry.EntryType.FLUID;
-            case FLUID -> MekChemicalHelper.isGasSupportEnabled() ? ShopEntry.EntryType.GAS : ShopEntry.EntryType.ITEM;
-            case GAS -> ShopEntry.EntryType.ITEM;
+            case FLUID -> MekChemicalHelper.isGasSupportEnabled() ? ShopEntry.EntryType.GAS : ShopEntry.EntryType.OTHER;
+            case GAS -> ShopEntry.EntryType.OTHER;
+            case OTHER -> ShopEntry.EntryType.ITEM;
         };
+        if (draftEntry.type == ShopEntry.EntryType.OTHER
+                && (draftEntry.other == null || draftEntry.other.isBlank())) {
+            draftEntry.other = ShopOtherRegistry.RF_ID;
+        }
+        applyResourceString(resourceString(draftEntry));
         if (typeButton != null) {
             typeButton.setMessage(Component.literal(typeLabel()));
         }
@@ -1396,6 +1423,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 if (gas != null) {
                     GuiChemicalStillBlit.blit16(graphics, gas, slotX, iconY);
                 }
+            } else if (subView == SubView.ENTRY_EDIT && draftEntry != null
+                    && draftEntry.type == ShopEntry.EntryType.OTHER) {
+                ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(draftEntry.other);
+                if (definition != null) {
+                    graphics.blit(definition.icon(), slotX, iconY, 0, 0, 16, 16, 16, 16);
+                }
             } else {
                 ItemStack ghost = menu.getGhostStack();
                 if (!ghost.isEmpty()) {
@@ -1458,6 +1491,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 Object gas = ShopEntryHelper.displayGasForEntry(entry);
                 if (gas != null) {
                     GuiChemicalStillBlit.blit16(graphics, gas, iconX, iconY);
+                }
+            }
+            case OTHER -> {
+                ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(entry.other);
+                if (definition != null) {
+                    graphics.blit(definition.icon(), iconX, iconY, 0, 0, 16, 16, 16, 16);
                 }
             }
         }
