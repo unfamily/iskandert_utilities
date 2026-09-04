@@ -21,6 +21,7 @@ public class PlayerConnectionEvents {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             StructurePlacementHistory.clearPlayerHistory(serverPlayer.getUUID());
             BurningBrazierItem.clearAutoPlacementState(serverPlayer.getUUID());
+            net.unfamily.iskautils.shop.edit.ShopEditSession.releaseIfHolder(serverPlayer);
         }
     }
 } 

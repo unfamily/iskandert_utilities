@@ -1781,6 +1781,12 @@ public class Config {
                     "Default: true")
             .define("010_ftb_teams_sync_enabled", true);
 
+    private static final ModConfigSpec.ConfigValue<String> SHOP_EDIT_WORK_PATH = BUILDER
+            .comment("Filesystem path (relative to the server/world root) for shop editor JSON files.",
+                    "Used by /iska_utils_shop edit. Files: default_currencies.json, default_categories.json, default_entries.json",
+                    "Default: kubejs/data/iska_utils/load/iska_utils_shop")
+            .define("011_shop_edit_work_path", "kubejs/data/iska_utils/load/iska_utils_shop");
+
     private static final ModConfigSpec.BooleanValue FACTORY_STONECUTTER_ENABLED = BUILDER
             .comment("If true, the Factory can process vanilla stonecutter recipes when no iska_utils:factory mapping exists.",
                     "Stonecutter recipes are not added to JEI Factory category.",
@@ -2186,6 +2192,7 @@ public class Config {
     public static boolean crystalCageActsAsSpawnEggOnSpawners;
     public static boolean etherealFrameReinforcementEnabled;
     public static boolean ftbTeamsSyncEnabled;
+    public static String shopEditWorkPath;
     
     public static java.util.List<String> dollyWhitelist;
     public static java.util.List<String> dollyBlacklist;
@@ -2484,6 +2491,7 @@ public class Config {
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         ftbTeamsSyncEnabled = FTB_TEAMS_SYNC_ENABLED.get();
+        shopEditWorkPath = SHOP_EDIT_WORK_PATH.get();
         
         // Dolly configuration
         dollyWhitelist = new java.util.ArrayList<>(DOLLY_WHITELIST.get());

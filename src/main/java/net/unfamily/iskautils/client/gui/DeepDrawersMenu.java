@@ -13,10 +13,12 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.RegistryAccess;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.entity.DeepDrawersBlockEntity;
 import net.unfamily.iskautils.util.DeepDrawerItemFilter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Menu for the Deep Drawers GUI
@@ -65,6 +67,8 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     private boolean searchFilterActive = false;
     private int filterScrollOffset = 0;
     private String lastSearchQuery = "";
+    @Nullable
+    private HolderLookup.Provider lastSearchRegistryAccess;
     private final java.util.List<Integer> filteredOccupiedIndices = new java.util.ArrayList<>();
     private final int totalSlots;
     
@@ -306,11 +310,11 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 return ItemStack.EMPTY;
             }
             this.blockEntity.setChanged();
+            refreshSearchFilterIfActive();
             updateViewHandler();
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                 sendAllSlotsToClient(serverPlayer);
             }
-            refreshSearchFilterIfActive();
             return original;
         }
 
@@ -331,6 +335,7 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             clicked.set(stackInSlot.isEmpty() ? ItemStack.EMPTY : stackInSlot);
             clicked.setChanged();
             this.blockEntity.setChanged();
+            refreshSearchFilterIfActive();
             updateViewHandler();
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                 sendAllSlotsToClient(serverPlayer);
@@ -363,6 +368,7 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 ItemStack remainder = this.blockEntity.getItemHandler().insertItem(virtualInsertSlot, carried, false);
                 this.setCarried(remainder);
                 this.blockEntity.setChanged();
+                refreshSearchFilterIfActive();
                 updateViewHandler();
                 if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                     sendAllSlotsToClient(serverPlayer);
@@ -380,7 +386,20 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 return;
             }
         }
+        boolean storageClick = slotId >= 0 && slotId < VISIBLE_SLOTS;
         super.clicked(slotId, button, containerInput, player);
+        // Occupied indices shift after extract/compact; keep search filter aligned with storage.
+        if (storageClick) {
+            refreshSearchFilterIfActive();
+            if (this.blockEntity != null
+                    && this.blockEntity.getLevel() != null
+                    && !this.blockEntity.getLevel().isClientSide()) {
+                updateViewHandler();
+                if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                    sendAllSlotsToClient(serverPlayer);
+                }
+            }
+        }
     }
     
     /**
@@ -401,8 +420,18 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
                 // Copy items from actual storage to the view handler
                 if (this.viewHandler instanceof net.neoforged.neoforge.items.ItemStackHandler stackHandler) {
                     for (int i = 0; i < VISIBLE_SLOTS; i++) {
-                        int occupiedIndex = this.scrollOffset + i;
-                        int physicalSlot = this.blockEntity.getPhysicalSlotAtOccupiedIndex(occupiedIndex);
+                        int occupiedIndex;
+                        if (searchFilterActive) {
+                            int listIndex = filterScrollOffset + i;
+                            occupiedIndex = (listIndex >= 0 && listIndex < filteredOccupiedIndices.size())
+                                    ? filteredOccupiedIndices.get(listIndex)
+                                    : -1;
+                        } else {
+                            occupiedIndex = this.scrollOffset + i;
+                        }
+                        int physicalSlot = occupiedIndex >= 0
+                                ? this.blockEntity.getPhysicalSlotAtOccupiedIndex(occupiedIndex)
+                                : -1;
                         ItemStack stack = physicalSlot >= 0
                                 ? this.blockEntity.getStackInPhysicalSlot(physicalSlot)
                                 : ItemStack.EMPTY;
@@ -441,6 +470,12 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             }
         }
         
+        // Rebuild search mapping against the freshly synced inventory, then refresh visible slots.
+        if (searchFilterActive) {
+            refreshSearchFilterIfActive();
+            return;
+        }
+
         // Also update viewHandler with visible slots based on current scroll offset
         if (this.viewHandler instanceof net.neoforged.neoforge.items.ItemStackHandler stackHandler) {
             for (int i = 0; i < VISIBLE_SLOTS; i++) {
@@ -846,20 +881,29 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
     }
 
     /**
-     * Client-side name filter (case-insensitive): visible grid shows only matching occupied slots.
+     * Re-apply the active search query after inventory mutations.
+     * Occupied indices compact on extract; a stale filter list shows unrelated items.
      */
     private void refreshSearchFilterIfActive() {
-        if (!searchFilterActive || blockEntity == null || blockEntity.getLevel() == null) {
+        if (!searchFilterActive || lastSearchQuery.isEmpty()) {
             return;
         }
         int preserved = filterScrollOffset;
-        applySearchFilter(lastSearchQuery, blockEntity.getLevel().registryAccess());
+        HolderLookup.Provider registryAccess = lastSearchRegistryAccess;
+        if (registryAccess == null && blockEntity != null && blockEntity.getLevel() != null) {
+            registryAccess = blockEntity.getLevel().registryAccess();
+        }
+        if (registryAccess == null) {
+            registryAccess = RegistryAccess.EMPTY;
+        }
+        applySearchFilter(lastSearchQuery, registryAccess);
         setFilterScrollOffset(Math.min(preserved, getEffectiveMaxScrollOffset()));
     }
 
     public void applySearchFilter(@NotNull String query, @NotNull HolderLookup.Provider registryAccess) {
         String trimmed = query == null ? "" : query.trim();
         lastSearchQuery = trimmed;
+        lastSearchRegistryAccess = registryAccess;
         if (trimmed.isEmpty()) {
             searchFilterActive = false;
             filteredOccupiedIndices.clear();
@@ -874,9 +918,13 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
         filteredOccupiedIndices.clear();
         filterScrollOffset = 0;
         if (itemHandler != null) {
-            int slotCount = blockEntity != null
-                    ? blockEntity.getOccupiedSlotsCount()
-                    : totalSlots;
+            int slotCount;
+            if (blockEntity != null) {
+                slotCount = blockEntity.getOccupiedSlotsCount();
+            } else {
+                int syncedOccupied = this.containerData.get(OCCUPIED_COUNT_INDEX);
+                slotCount = syncedOccupied > 0 ? syncedOccupied : totalSlots;
+            }
             for (int i = 0; i < slotCount; i++) {
                 ItemStack stack = itemHandler.getStackInSlot(i);
                 if (!stack.isEmpty() && DeepDrawerItemFilter.matchesSearch(stack, trimmed, registryAccess)) {
@@ -885,6 +933,9 @@ public class DeepDrawersMenu extends AbstractContainerMenu {
             }
         }
         refreshVisibleSlots();
+        if (blockEntity != null && blockEntity.getLevel() != null && !blockEntity.getLevel().isClientSide()) {
+            updateViewHandler();
+        }
     }
 
     public void refreshVisibleSlots() {

@@ -2151,11 +2151,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
         if (isFilterListOpen()) {
             if (deltaY > 0) {
-                scrollUp();
-                return true;
+                return scrollUpSilent();
             } else if (deltaY < 0) {
-                scrollDown();
-                return true;
+                return scrollDownSilent();
             }
         }
         return super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);

@@ -411,6 +411,16 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket::handle
         );
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket::handle
+        );
+        registrar.playToClient(
+            net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket::handle
+        );
+        registrar.playToServer(
             net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket::handle
@@ -826,6 +836,11 @@ public class ModMessages {
     public static void sendAutoShopSetModePacket(BlockPos machinePos, boolean buyMode, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket(machinePos, buyMode, backward));
+    }
+
+    public static void sendShopEditActionPacket(String action, String payloadJson) {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket(action, payloadJson));
     }
 
     /**

@@ -90,4 +90,7 @@ public class ModMenuTypes {
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<LabelingMachineMenu>> LABELING_MACHINE_MENU =
         MENUS.register("labeling_machine_menu", () -> IMenuTypeExtension.create(LabelingMachineMenu::createClient));
 
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<ShopEditMenu>> SHOP_EDIT_MENU =
+        MENUS.register("shop_edit_menu", () -> new MenuType<>(ShopEditMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+
 } 

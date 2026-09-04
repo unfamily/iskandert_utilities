@@ -13,6 +13,7 @@ import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.client.gui.AutoShopScreen;
 import net.unfamily.iskautils.client.gui.DeepDrawerExtractorScreen;
+import net.unfamily.iskautils.client.gui.ShopEditScreen;
 import net.unfamily.iskautils.integration.jei.ghost.IskaUtilsGhostIngredientHandler;
 import net.unfamily.iskautils.item.ModItems;
 
@@ -86,6 +87,9 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
                 new IskaUtilsGhostIngredientHandler<>());
         registration.addGhostIngredientHandler(
                 AutoShopScreen.class,
+                new IskaUtilsGhostIngredientHandler<>());
+        registration.addGhostIngredientHandler(
+                ShopEditScreen.class,
                 new IskaUtilsGhostIngredientHandler<>());
     }
 }
