@@ -369,17 +369,23 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private void buildDeleteDialog() {
+        final int btnW = 90;
+        final int btnH = 20;
+        final int gap = 12;
+        final int pairW = btnW * 2 + gap;
+        final int startX = leftPos + (GUI_WIDTH - pairW) / 2;
+        final int y = topPos + 100;
         addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.confirm_delete"), b -> {
             sendAction("delete_" + pendingDeleteKind, obj -> obj.addProperty("id", pendingDeleteId));
             dialog = Dialog.NONE;
             pendingDeleteKind = null;
             pendingDeleteId = null;
             rebuild();
-        }).bounds(leftPos + 40, topPos + 100, 100, 20).build());
+        }).bounds(startX, y, btnW, btnH).build());
         addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.cancel"), b -> {
             dialog = Dialog.NONE;
             rebuild();
-        }).bounds(leftPos + 160, topPos + 100, 80, 20).build());
+        }).bounds(startX + btnW + gap, y, btnW, btnH).build());
     }
 
     private void buildRenameDialog() {
@@ -841,7 +847,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if (id == null) {
             draftCategory = new ShopCategory();
             draftCategory.id = uniqueId("category");
-            draftCategory.name = draftCategory.id;
+            draftCategory.name = friendlyNameFromId(draftCategory.id);
             draftCategory.description = "";
             draftCategory.item = "minecraft:stone";
             draftCategory.priority = 0;
@@ -862,7 +868,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if (id == null) {
             draftCurrency = new ShopCurrency();
             draftCurrency.id = uniqueId("currency");
-            draftCurrency.name = draftCurrency.id;
+            draftCurrency.name = friendlyNameFromId(draftCurrency.id);
             draftCurrency.charSymbol = ShopCurrency.DEFAULT_SYMBOL;
             draftCurrency.priority = 0;
             draftCurrencyOldId = draftCurrency.id;
@@ -1397,6 +1403,33 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             id = base + "_" + (++n);
         }
         return id;
+    }
+
+    /** Turns {@code category_6545} into {@code Category 6545} for default display names. */
+    private static String friendlyNameFromId(String id) {
+        if (id == null || id.isBlank()) {
+            return "";
+        }
+        String[] parts = id.split("_");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            if (part.isEmpty()) {
+                continue;
+            }
+            if (!sb.isEmpty()) {
+                sb.append(' ');
+            }
+            if (i == 0) {
+                sb.append(Character.toUpperCase(part.charAt(0)));
+                if (part.length() > 1) {
+                    sb.append(part.substring(1));
+                }
+            } else {
+                sb.append(part);
+            }
+        }
+        return sb.toString();
     }
 
     @Override
