@@ -31,6 +31,7 @@ import net.unfamily.iskautils.shop.ShopLoader;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
@@ -175,9 +176,8 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
                 BUTTON_SIZE,
                 b -> onManualTradePressed(),
                 () -> new ItemStack(net.minecraft.world.item.Items.EMERALD),
-                Component.translatable("gui.iska_utils.auto_shop.manual_trade.tooltip")));
-        manualTradeButton.active =
-                menu.getRedstoneMode() == AutoShopBlockEntity.RedstoneMode.DISABLED.getValue();
+                Component.empty()));
+        updateManualTradeButton();
 
         currencyButton = addRenderableWidget(new SymbolIconButton(
                 this.leftPos + CURRENCY_BUTTON_X,
@@ -243,9 +243,67 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
             itemPicker.tick();
         }
         if (manualTradeButton != null) {
-            manualTradeButton.active =
-                    menu.getRedstoneMode() == AutoShopBlockEntity.RedstoneMode.DISABLED.getValue();
+            updateManualTradeButton();
         }
+    }
+
+    private void updateManualTradeButton() {
+        boolean enabled = menu.getRedstoneMode() == AutoShopBlockEntity.RedstoneMode.DISABLED.getValue();
+        manualTradeButton.active = enabled;
+        manualTradeButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                net.minecraft.network.chat.CommonComponents.joinLines(buildManualTradeTooltip(enabled))));
+    }
+
+    private List<Component> buildManualTradeTooltip(boolean enabled) {
+        List<Component> tooltip = new ArrayList<>();
+        boolean buyMode = menu.isAutoBuyMode();
+        tooltip.add(Component.translatable(buyMode
+                ? "gui.iska_utils.auto_shop.manual_buy.title"
+                : "gui.iska_utils.auto_shop.manual_sell.title"));
+        tooltip.add(Component.literal(""));
+        if (!enabled) {
+            tooltip.add(Component.translatable("gui.iska_utils.auto_shop.manual.require_disabled_redstone"));
+            return tooltip;
+        }
+        ShopEntry entry = getBoundShopEntry();
+        if (entry != null) {
+            String currencySymbol = getCurrencySymbolForEntry(entry);
+            if (buyMode) {
+                if (entry.free) {
+                    tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.free"));
+                } else if (entry.buy > 0) {
+                    tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.cost", entry.buy, currencySymbol));
+                }
+                tooltip.add(Component.literal(""));
+                tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.click"));
+                tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.ctrl"));
+                tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.shift"));
+            } else if (entry.sell > 0) {
+                tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.price", entry.sell, currencySymbol));
+                tooltip.add(Component.literal(""));
+                tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.click"));
+                tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.ctrl"));
+                tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.shift"));
+            }
+        } else if (buyMode) {
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.click"));
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.ctrl"));
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.shift"));
+        } else {
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.click"));
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.ctrl"));
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.shift"));
+        }
+        return tooltip;
+    }
+
+    private String getCurrencySymbolForEntry(ShopEntry entry) {
+        String currencyId = entry.valute != null ? entry.valute : menu.getSelectedCurrencyId();
+        ShopCurrency currency = ShopLoader.getCurrencies().get(currencyId);
+        if (currency != null && currency.charSymbol != null && !currency.charSymbol.isEmpty()) {
+            return currency.charSymbol;
+        }
+        return currencyId != null ? currencyId : "";
     }
 
     private void updateModeButtonTooltip() {

@@ -1218,6 +1218,13 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
         double mouseY = event.y();
         int button = event.button();
 
+        EditBox[] editBoxes = new EditBox[VISIBLE_SEGMENTS + 1];
+        System.arraycopy(segmentEdits, 0, editBoxes, 0, VISIBLE_SEGMENTS);
+        editBoxes[VISIBLE_SEGMENTS] = hexEdit;
+        if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, editBoxes)) {
+            return true;
+        }
+
         if (subView == SubView.COLOR_PICKER && button == 0) {
             if (isInSv(mouseX, mouseY)) {
                 colorDrag = ColorDrag.SV;

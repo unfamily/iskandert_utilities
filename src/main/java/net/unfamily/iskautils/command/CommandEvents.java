@@ -21,7 +21,6 @@ public final class CommandEvents {
 
         // Mod-owned commands (depend on mod configuration/assets)
         ShopCommand.register(event.getDispatcher());
-        ShopTeamCommand.register(event.getDispatcher());
     }
 }
 

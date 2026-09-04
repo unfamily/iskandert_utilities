@@ -88,6 +88,7 @@ public final class AutoShopItemPickerOverlay {
     private EditBox searchBox;
     private SymbolIconButton currencyFilterButton;
     private SymbolIconButton scopeFilterButton;
+    private SymbolIconButton availabilityFilterButton;
     private Button backButton;
     private Button closeButton;
     private final List<Button> selectBuyButtons = new ArrayList<>();
@@ -175,6 +176,15 @@ public final class AutoShopItemPickerOverlay {
                 this::getCurrencyFilterLabel,
                 getCurrencyFilterTooltip()));
 
+        availabilityFilterButton = screen.addPickerWidget(new SymbolIconButton(
+                leftPos + browsePanel.availabilityButtonX(),
+                topPos + ShopBrowsePanel.FILTER_ROW_Y,
+                ShopBrowsePanel.AVAILABILITY_BUTTON_WIDTH,
+                ShopBrowsePanel.FILTER_BUTTON_HEIGHT,
+                button -> onAvailabilityFilterPressed(),
+                browsePanel::tradeVisibilityLetter,
+                getAvailabilityFilterTooltip()));
+
         backButton = screen.addPickerWidget(Button.builder(
                         Component.translatable("gui.iska_utils.shop.back"),
                         button -> onBackPressed())
@@ -210,6 +220,12 @@ public final class AutoShopItemPickerOverlay {
             currencyFilterButton.setPosition(leftPos + browsePanel.currencyButtonX(), topPos + ShopBrowsePanel.FILTER_ROW_Y);
             currencyFilterButton.visible = true;
             currencyFilterButton.active = true;
+        }
+        if (availabilityFilterButton != null) {
+            availabilityFilterButton.setPosition(
+                    leftPos + browsePanel.availabilityButtonX(), topPos + ShopBrowsePanel.FILTER_ROW_Y);
+            availabilityFilterButton.visible = true;
+            availabilityFilterButton.active = true;
         }
         if (backButton != null) {
             backButton.setPosition(leftPos + BACK_BUTTON_X, topPos + BACK_BUTTON_Y);
@@ -293,32 +309,30 @@ public final class AutoShopItemPickerOverlay {
             int sellButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;
             int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
 
-            if (ShopEntryHelper.isTagEntry(item)) {
-                if (mouseX >= buyButtonX && mouseX < buyButtonX + SELECT_BUTTON_WIDTH
-                        && mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
-                    guiGraphics.setTooltipForNextFrame(font,
-                            List.of(Component.translatable("gui.iska_utils.auto_shop.picker.tag_not_supported")
-                                    .getVisualOrderText()),
-                            mouseX, mouseY);
-                    return true;
-                }
-            } else {
-                if ((item.buy > 0 || item.free)
-                        && mouseX >= buyButtonX && mouseX < buyButtonX + SELECT_BUTTON_WIDTH
-                        && mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
-                    guiGraphics.setTooltipForNextFrame(font,
-                            createBuyTooltip(item).stream().map(Component::getVisualOrderText).toList(),
-                            mouseX, mouseY);
-                    return true;
-                }
-                if (item.sell > 0
-                        && mouseX >= sellButtonX && mouseX < sellButtonX + SELECT_BUTTON_WIDTH
-                        && mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
-                    guiGraphics.setTooltipForNextFrame(font,
-                            createSellTooltip(item).stream().map(Component::getVisualOrderText).toList(),
-                            mouseX, mouseY);
-                    return true;
-                }
+            if (ShopEntryHelper.isTagEntry(item)
+                    && mouseX >= buyButtonX && mouseX < buyButtonX + SELECT_BUTTON_WIDTH
+                    && mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
+                guiGraphics.setTooltipForNextFrame(font,
+                        List.of(Component.translatable("gui.iska_utils.shop.tag_sell_only")
+                                .getVisualOrderText()),
+                        mouseX, mouseY);
+                return true;
+            }
+            if ((item.buy > 0 || item.free)
+                    && mouseX >= buyButtonX && mouseX < buyButtonX + SELECT_BUTTON_WIDTH
+                    && mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
+                guiGraphics.setTooltipForNextFrame(font,
+                        createBuyTooltip(item).stream().map(Component::getVisualOrderText).toList(),
+                        mouseX, mouseY);
+                return true;
+            }
+            if (item.sell > 0
+                    && mouseX >= sellButtonX && mouseX < sellButtonX + SELECT_BUTTON_WIDTH
+                    && mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
+                guiGraphics.setTooltipForNextFrame(font,
+                        createSellTooltip(item).stream().map(Component::getVisualOrderText).toList(),
+                        mouseX, mouseY);
+                return true;
             }
 
             if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
@@ -405,6 +419,13 @@ public final class AutoShopItemPickerOverlay {
             }
             if (currencyFilterButton != null && currencyFilterButton.isMouseOver(event.x(), event.y())) {
                 onCurrencyFilterPressed(true);
+                return true;
+            }
+            if (availabilityFilterButton != null && availabilityFilterButton.isMouseOver(event.x(), event.y())) {
+                onAvailabilityFilterPressed();
+                return true;
+            }
+            if (MachineGuiInput.clearEditBoxOnRightClick(event.x(), event.y(), event.button(), searchBox)) {
                 return true;
             }
         }
@@ -542,7 +563,7 @@ public final class AutoShopItemPickerOverlay {
                 buyButton.active = ShopBrowsePanel.isSelectableAutoShopEntry(item, true);
                 if (tagEntry) {
                     buyButton.setTooltip(Tooltip.create(
-                            Component.translatable("gui.iska_utils.auto_shop.picker.tag_not_supported")));
+                            Component.translatable("gui.iska_utils.shop.tag_sell_only")));
                 }
                 selectBuyButtons.add(buyButton);
                 screen.addPickerWidget(buyButton);
@@ -642,6 +663,13 @@ public final class AutoShopItemPickerOverlay {
         playButtonSound.run();
     }
 
+    private void onAvailabilityFilterPressed() {
+        browsePanel.cycleTradeVisibility();
+        updateAvailabilityFilterTooltip();
+        refreshFilteredLists();
+        playButtonSound.run();
+    }
+
     private void updateScopeFilterTooltip() {
         if (scopeFilterButton != null) {
             scopeFilterButton.setTooltip(Tooltip.create(getScopeTooltip(browsePanel.getSearchScope())));
@@ -684,6 +712,18 @@ public final class AutoShopItemPickerOverlay {
     private void updateCurrencyFilterTooltip() {
         if (currencyFilterButton != null) {
             currencyFilterButton.setTooltip(Tooltip.create(getCurrencyFilterTooltip()));
+        }
+    }
+
+    private Component getAvailabilityFilterTooltip() {
+        return browsePanel.getTradeVisibility() == ShopBrowsePanel.TradeVisibility.HIDE_UNTRADEABLE
+                ? Component.translatable("gui.iska_utils.shop.visibility.hide")
+                : Component.translatable("gui.iska_utils.shop.visibility.show");
+    }
+
+    private void updateAvailabilityFilterTooltip() {
+        if (availabilityFilterButton != null) {
+            availabilityFilterButton.setTooltip(Tooltip.create(getAvailabilityFilterTooltip()));
         }
     }
 

@@ -401,15 +401,14 @@ public final class ShopBrowsePanel {
 
     private boolean matchesItemSearch(ShopEntry entry, String query) {
         String lowerQuery = query.toLowerCase();
+        if (ShopEntryHelper.isTagEntry(entry)) {
+            return ShopEntryHelper.tagEntryMatchesSearch(entry, lowerQuery);
+        }
         String label = ShopEntryHelper.displayLabelForEntry(entry);
         if (label != null && label.toLowerCase().contains(lowerQuery)) {
             return true;
         }
         if (entry.type != ShopEntry.EntryType.ITEM) {
-            String selector = ShopEntryHelper.resourceSelector(entry);
-            return selector != null && selector.toLowerCase().contains(lowerQuery);
-        }
-        if (ShopEntryHelper.isTagEntry(entry)) {
             String selector = ShopEntryHelper.resourceSelector(entry);
             return selector != null && selector.toLowerCase().contains(lowerQuery);
         }

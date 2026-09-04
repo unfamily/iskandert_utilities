@@ -15,7 +15,8 @@ import net.unfamily.iskautils.block.entity.AutoShopBlockEntity;
 import net.unfamily.iskautils.client.gui.AutoShopMenu;
 
 /**
- * Manual buy/sell from the emerald button. Active only while redstone mode is disabled.
+ * Manual buy/sell from the emerald button. Active only while redstone mode is DISABLED;
+ * quantity uses shop multipliers (1 / 4 / 16).
  */
 public record AutoShopManualTradeC2SPacket(BlockPos pos, int quantity) implements CustomPacketPayload {
     public static final Type<AutoShopManualTradeC2SPacket> TYPE = new Type<>(
@@ -39,7 +40,7 @@ public record AutoShopManualTradeC2SPacket(BlockPos pos, int quantity) implement
             if (!(blockEntity instanceof AutoShopBlockEntity autoShop) || !autoShop.canPlayerUse(player)) {
                 return;
             }
-            if (autoShop.tryManualTrade(packet.quantity())) {
+            if (autoShop.tryManualTrade(player, packet.quantity())) {
                 player.level().sendBlockUpdated(packet.pos(), blockEntity.getBlockState(),
                         blockEntity.getBlockState(), 3);
                 if (player.containerMenu instanceof AutoShopMenu menu

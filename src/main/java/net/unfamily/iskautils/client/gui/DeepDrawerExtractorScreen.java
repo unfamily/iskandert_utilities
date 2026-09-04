@@ -713,25 +713,18 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 return false;
             }
             // First check if right click is on edit mode textbox
-            if (editModeTextBox != null && editModeFilterIndex >= 0) {
-                int textBoxX = editModeTextBox.getX();
-                int textBoxY = editModeTextBox.getY();
-                int textBoxWidth = editModeTextBox.getWidth();
-                int textBoxHeight = editModeTextBox.getHeight();
-                
-                if (mouseX >= textBoxX && mouseX < textBoxX + textBoxWidth &&
-                    mouseY >= textBoxY && mouseY < textBoxY + textBoxHeight) {
-                    // Right click on edit mode textbox: clear it (don't save - user must click Apply)
-                    editModeTextBox.setValue("");
-                    editModeTextBox.setCursorPosition(0);
-                    editModeTextBox.setHighlightPos(0);
+            if (editModeTextBox != null && editModeFilterIndex >= 0
+                    && MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, editModeTextBox)) {
                     // Clear ghost slot and variants
                     ghostSlotItem = ItemStack.EMPTY;
                     filterVariants.clear();
                     currentFilterVariantIndex = 0;
                     playButtonSound();
                     return true;
-                }
+            }
+            if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, editingEditBox)) {
+                playButtonSound();
+                return true;
             }
             
             // Then check entries

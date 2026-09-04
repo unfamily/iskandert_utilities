@@ -210,6 +210,9 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     }
 
     private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
+        if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, searchBox)) {
+            return true;
+        }
         if (button == 0) {
             if (handleScrollButtonClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();

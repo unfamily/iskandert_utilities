@@ -57,6 +57,7 @@ public final class ShopEntryHelper {
         return switch (raw.trim().toLowerCase()) {
             case "fluid" -> ShopEntry.EntryType.FLUID;
             case "gas" -> ShopEntry.EntryType.GAS;
+            case "other" -> ShopEntry.EntryType.OTHER;
             default -> ShopEntry.EntryType.ITEM;
         };
     }
@@ -69,6 +70,7 @@ public final class ShopEntryHelper {
         return switch (entry.type) {
             case FLUID -> entry.fluid;
             case GAS -> entry.gas;
+            case OTHER -> entry.other;
             case ITEM -> entry.item;
         };
     }
@@ -93,27 +95,77 @@ public final class ShopEntryHelper {
         return entry != null && entry.sell > 0;
     }
 
+    /**
+     * Search match against a tag entry: tag id plus every member display name
+     * (not only the currently cycling icon/label).
+     */
+    public static boolean tagEntryMatchesSearch(@Nullable ShopEntry entry, String lowerQuery) {
+        if (entry == null || lowerQuery == null || lowerQuery.isEmpty() || !isTagEntry(entry)) {
+            return false;
+        }
+        String selector = resourceSelector(entry);
+        if (selector != null && selector.toLowerCase().contains(lowerQuery)) {
+            return true;
+        }
+        return switch (entry.type) {
+            case ITEM -> {
+                for (ItemStack stack : itemStacksFromTag(selector)) {
+                    if (!stack.isEmpty() && stack.getHoverName().getString().toLowerCase().contains(lowerQuery)) {
+                        yield true;
+                    }
+                }
+                yield false;
+            }
+            case FLUID -> {
+                for (Fluid fluid : fluidsFromTag(selector)) {
+                    if (fluid != null && fluid != Fluids.EMPTY) {
+                        String name = new FluidStack(fluid, 1).getHoverName().getString().toLowerCase();
+                        if (name.contains(lowerQuery)) {
+                            yield true;
+                        }
+                    }
+                }
+                yield false;
+            }
+            case GAS -> false;
+            case OTHER -> false;
+        };
+    }
+
+    /** True if the entry has any buy/sell offer (not buy=0, sell=0, free=false). Editor still lists these. */
+    public static boolean hasTradeOffer(@Nullable ShopEntry entry) {
+        return entry != null && (entry.free || entry.buy > 0 || entry.sell > 0);
+    }
+
+    /**
+     * Player shop lists item/fluid/gas/other entries that have a trade offer.
+     * Fluids/gases/other are catalog-only (not tradable here); use AutoShop to trade them.
+     * Gas needs Mekanism. Entries with no offer stay in the editor only.
+     */
     public static boolean isPlayerShopBrowsable(@Nullable ShopEntry entry) {
-        if (entry == null) {
+        if (entry == null || !hasTradeOffer(entry)) {
             return false;
         }
         return switch (entry.type) {
-            case ITEM, FLUID -> true;
+            case ITEM, FLUID, OTHER -> true;
             case GAS -> MekChemicalHelper.isLoaded();
         };
     }
 
-    /** Player shop can only trade item entries; fluids/gases are catalog-only. */
+    /** Player shop can only trade item entries; fluids/gases/other are catalog-only (trade via AutoShop). */
     public static boolean isPlayerShopTradable(@Nullable ShopEntry entry) {
         return entry != null && entry.type == ShopEntry.EntryType.ITEM;
     }
 
     public static boolean isAutoShopSelectable(@Nullable ShopEntry entry) {
-        if (entry == null) {
+        if (entry == null || !hasTradeOffer(entry)) {
             return false;
         }
         if (entry.type == ShopEntry.EntryType.GAS && !MekChemicalHelper.isLoaded()) {
             return false;
+        }
+        if (entry.type == ShopEntry.EntryType.OTHER) {
+            return ShopOtherRegistry.isRegistered(entry.other);
         }
         return true;
     }
@@ -130,6 +182,16 @@ public final class ShopEntryHelper {
         if (entry.type == ShopEntry.EntryType.GAS && isTagSelector(entry.gas)) {
             LOGGER.warn("Skipping gas shop entry {} in {}: gas entries cannot use tags", entry.id, fileName);
             return false;
+        }
+        if (entry.type == ShopEntry.EntryType.OTHER) {
+            if (isTagSelector(entry.other)) {
+                LOGGER.warn("Skipping other shop entry {} in {}: other entries cannot use tags", entry.id, fileName);
+                return false;
+            }
+            if (!ShopOtherRegistry.isRegistered(entry.other)) {
+                LOGGER.warn("Skipping other shop entry {} in {}: unknown other id {}", entry.id, fileName, entry.other);
+                return false;
+            }
         }
 
         String selector = resourceSelector(entry);
@@ -269,6 +331,7 @@ public final class ShopEntryHelper {
                     yield !fluid.isEmpty() ? fluid.getHoverName().getString() : trimmed;
                 }
                 case GAS -> trimmed;
+                case OTHER -> trimmed;
             };
         }
         return switch (entry.type) {
@@ -285,6 +348,7 @@ public final class ShopEntryHelper {
                 Component name = MekChemicalHelper.getDisplayName(chemical);
                 yield !name.getString().isEmpty() ? name.getString() : trimmed;
             }
+            case OTHER -> trimmed;
         };
     }
 
@@ -344,6 +408,7 @@ public final class ShopEntryHelper {
                 Component name = MekChemicalHelper.getDisplayName(chemical);
                 yield !name.getString().isEmpty() ? name : Component.literal(displayLabelForEntry(entry));
             }
+            case OTHER -> Component.literal(displayLabelForEntry(entry));
         };
     }
 
@@ -379,12 +444,10 @@ public final class ShopEntryHelper {
         try {
             Identifier tagId = Identifier.parse(tagSelector.substring(1));
             TagKey<Item> itemTag = ItemTags.create(tagId);
-            var tagged = BuiltInRegistries.ITEM.getTag(itemTag);
-            if (tagged.isPresent()) {
-                for (Holder<Item> holder : tagged.get()) {
-                    stacks.add(new ItemStack(holder.value()));
-                }
-            } else {
+            for (Holder<Item> holder : BuiltInRegistries.ITEM.getTagOrEmpty(itemTag)) {
+                stacks.add(new ItemStack(holder.value()));
+            }
+            if (stacks.isEmpty()) {
                 for (Item item : BuiltInRegistries.ITEM) {
                     if (item.builtInRegistryHolder().is(itemTag)) {
                         stacks.add(new ItemStack(item));
@@ -401,15 +464,13 @@ public final class ShopEntryHelper {
         try {
             Identifier tagId = Identifier.parse(tagSelector.substring(1));
             TagKey<Fluid> fluidTag = TagKey.create(Registries.FLUID, tagId);
-            var tagged = BuiltInRegistries.FLUID.getTag(fluidTag);
-            if (tagged.isPresent()) {
-                for (Holder<Fluid> holder : tagged.get()) {
-                    Fluid fluid = holder.value();
-                    if (fluid != Fluids.EMPTY) {
-                        fluids.add(fluid);
-                    }
+            for (Holder<Fluid> holder : BuiltInRegistries.FLUID.getTagOrEmpty(fluidTag)) {
+                Fluid fluid = holder.value();
+                if (fluid != Fluids.EMPTY) {
+                    fluids.add(fluid);
                 }
-            } else {
+            }
+            if (fluids.isEmpty()) {
                 for (Fluid fluid : BuiltInRegistries.FLUID) {
                     if (fluid != Fluids.EMPTY && fluid.builtInRegistryHolder().is(fluidTag)) {
                         fluids.add(fluid);

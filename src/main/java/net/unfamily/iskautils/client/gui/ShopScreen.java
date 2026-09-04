@@ -25,9 +25,6 @@ import java.util.*;
 
 public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
-    /** Result of a stage check: required = stage was required but missing, !required = stage must not be present but player has it */
-    private record StageFailure(String stageType, String stageId, boolean required) {}
-
     private static final Identifier TEXTURE =
             Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
     private static final Identifier ENTRY_TEXTURE =
@@ -90,6 +87,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private int searchDebounceTicks = 0;
     private SymbolIconButton currencyFilterButton;
     private SymbolIconButton scopeFilterButton;
+    private SymbolIconButton availabilityFilterButton;
     
     // Vanilla buttons
     private Button backButton;
@@ -190,6 +188,15 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 button -> onCurrencyFilterPressed(false),
                 this::getCurrencyFilterLabel,
                 getCurrencyFilterTooltip()));
+
+        availabilityFilterButton = addRenderableWidget(new SymbolIconButton(
+                leftPos + browsePanel.availabilityButtonX(),
+                topPos + ShopBrowsePanel.FILTER_ROW_Y,
+                ShopBrowsePanel.AVAILABILITY_BUTTON_WIDTH,
+                ShopBrowsePanel.FILTER_BUTTON_HEIGHT,
+                button -> onAvailabilityFilterPressed(),
+                browsePanel::tradeVisibilityLetter,
+                getAvailabilityFilterTooltip()));
         
         // Create vanilla Back button
         backButton = Button.builder(Component.translatable("gui.iska_utils.shop.back"), button -> {
@@ -263,6 +270,13 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         playButtonSound();
     }
 
+    private void onAvailabilityFilterPressed() {
+        browsePanel.cycleTradeVisibility();
+        updateAvailabilityFilterTooltip();
+        refreshFilteredLists();
+        playButtonSound();
+    }
+
     private void updateScopeFilterTooltip() {
         if (scopeFilterButton != null) {
             scopeFilterButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
@@ -306,6 +320,19 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private void updateCurrencyFilterTooltip() {
         if (currencyFilterButton != null) {
             currencyFilterButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(getCurrencyFilterTooltip()));
+        }
+    }
+
+    private Component getAvailabilityFilterTooltip() {
+        return browsePanel.getTradeVisibility() == ShopBrowsePanel.TradeVisibility.HIDE_UNTRADEABLE
+                ? Component.translatable("gui.iska_utils.shop.visibility.hide")
+                : Component.translatable("gui.iska_utils.shop.visibility.show");
+    }
+
+    private void updateAvailabilityFilterTooltip() {
+        if (availabilityFilterButton != null) {
+            availabilityFilterButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    getAvailabilityFilterTooltip()));
         }
     }
 
@@ -402,6 +429,13 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             }
             if (currencyFilterButton != null && currencyFilterButton.isMouseOver(event.x(), event.y())) {
                 onCurrencyFilterPressed(true);
+                return true;
+            }
+            if (availabilityFilterButton != null && availabilityFilterButton.isMouseOver(event.x(), event.y())) {
+                onAvailabilityFilterPressed();
+                return true;
+            }
+            if (MachineGuiInput.clearEditBoxOnRightClick(event.x(), event.y(), event.button(), searchBox)) {
                 return true;
             }
         }
@@ -720,11 +754,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         renderScaledText(guiGraphics, displayName, textX, textY, maxTextWidth, GuiTextColors.TITLE);
         
-        int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
-        int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
-        int buttonsY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
-        
-        // Buy/Sell buttons are vanilla widgets created in init()
+        // Buy/Sell buttons are vanilla widgets created in updateBuySellButtons()
     }
     
     /**
@@ -1208,7 +1238,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
             int entryY = this.topPos + startY + i * ENTRY_HEIGHT;
             
-            // Buy button — fluids/gases shown disabled (catalog only)
+            // Buy button — fluids/gases shown disabled (catalog only; trade via AutoShop)
             if ((item.buy > 0 || item.free) && !ShopEntryHelper.isTagEntry(item)) {
                 int buyButtonX = this.leftPos + ENTRY_START_X + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
                 int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
@@ -1400,6 +1430,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                     }
                     truncated = truncated.substring(0, truncated.length() - 1);
                 }
+                if (this.font.width(textComponent) * scale > maxWidth) {
+                    textComponent = Component.literal(ellipsis);
+                }
             }
             
             guiGraphics.pose().pushMatrix();
@@ -1446,60 +1479,15 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     /**
      * Returns stage requirements that are not satisfied: required but missing, or forbidden but present.
      */
-    private List<StageFailure> getMissingStages(ShopEntry item) {
-        List<StageFailure> failures = new ArrayList<>();
-        
-        if (item.stages != null && this.minecraft != null && this.minecraft.player != null) {
-            try {
-                net.minecraft.server.MinecraftServer server = this.minecraft.getSingleplayerServer();
-                if (server != null) {
-                    net.minecraft.server.level.ServerPlayer serverPlayer = null;
-                    for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
-                        if (player.getName().getString().equals(this.minecraft.player.getName().getString())) {
-                            serverPlayer = player;
-                            break;
-                        }
-                    }
-                    
-                    if (serverPlayer != null) {
-                        net.unfamily.iskalib.stage.StageRegistry registry =
-                            net.unfamily.iskalib.stage.StageRegistry.getInstance(server);
-                        
-                        for (net.unfamily.iskautils.shop.ShopStage stage : item.stages) {
-                            boolean hasStage = false;
-                            switch (stage.stageType.toLowerCase()) {
-                                case "player":
-                                    hasStage = registry.hasPlayerStage(serverPlayer, stage.stage);
-                                    break;
-                                case "world":
-                                    hasStage = registry.hasWorldStage(stage.stage);
-                                    break;
-                                case "team":
-                                    hasStage = registry.hasPlayerTeamStage(serverPlayer, stage.stage);
-                                    break;
-                            }
-                            // stage.is == required; hasStage != stage.is means requirement not met
-                            if (hasStage != stage.is) {
-                                // required=true  -> stage required but missing (stage.is true, hasStage false)
-                                // required=false -> must not have but present (stage.is false, hasStage true)
-                                failures.add(new StageFailure(stage.stageType, stage.stage, stage.is));
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                // ignore
-            }
-        }
-        
-        return failures;
+    private List<ShopClientStages.StageFailure> getMissingStages(ShopEntry item) {
+        return ShopClientStages.getFailures(item);
     }
     
     /**
      * Whether an entry is locked by missing stages
      */
     private boolean isItemBlocked(ShopEntry item) {
-        return !getMissingStages(item).isEmpty();
+        return ShopClientStages.isEntryBlocked(item);
     }
     
     /**
@@ -1507,14 +1495,14 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     private List<Component> createMissingStagesTooltip(ShopEntry item) {
         List<Component> tooltip = new ArrayList<>();
-        List<StageFailure> failures = getMissingStages(item);
+        List<ShopClientStages.StageFailure> failures = getMissingStages(item);
         
         if (failures.isEmpty()) {
             return tooltip;
         }
         
-        List<StageFailure> requiredMissing = failures.stream().filter(f -> f.required()).toList();
-        List<StageFailure> mustNotHave = failures.stream().filter(f -> !f.required()).toList();
+        List<ShopClientStages.StageFailure> requiredMissing = failures.stream().filter(f -> f.required()).toList();
+        List<ShopClientStages.StageFailure> mustNotHave = failures.stream().filter(f -> !f.required()).toList();
         
         if (!requiredMissing.isEmpty()) {
             tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.missing_stages"));
@@ -1534,9 +1522,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         return tooltip;
     }
     
-    private void groupByTypeAndAppend(List<StageFailure> failures, List<Component> tooltip) {
+    private void groupByTypeAndAppend(List<ShopClientStages.StageFailure> failures, List<Component> tooltip) {
         Map<String, List<String>> byType = new HashMap<>();
-        for (StageFailure f : failures) {
+        for (ShopClientStages.StageFailure f : failures) {
             byType.computeIfAbsent(f.stageType(), k -> new ArrayList<>()).add(f.stageId());
         }
         for (Map.Entry<String, List<String>> entry : byType.entrySet()) {

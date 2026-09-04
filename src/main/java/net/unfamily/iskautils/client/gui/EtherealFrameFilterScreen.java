@@ -372,6 +372,9 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         double mx = event.x();
         double my = event.y();
+        if (MachineGuiInput.clearEditBoxOnRightClick(mx, my, event.button(), searchBox)) {
+            return true;
+        }
         if (event.button() == 0) {
             int sbx = leftPos + SCROLLBAR_X;
             if (filteredIds.size() > VISIBLE_ENTRIES) {

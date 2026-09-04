@@ -186,11 +186,13 @@ public class ShopLoader {
             String item = entryObj.has("item") ? entryObj.get("item").getAsString() : null;
             String fluid = entryObj.has("fluid") ? entryObj.get("fluid").getAsString() : null;
             String gas = entryObj.has("gas") ? entryObj.get("gas").getAsString() : null;
+            String other = entryObj.has("other") ? entryObj.get("other").getAsString() : null;
             String category = entryObj.has("in_category") ? entryObj.get("in_category").getAsString() : null;
 
             String resourceForKey = switch (entryType) {
                 case FLUID -> fluid;
                 case GAS -> gas;
+                case OTHER -> other;
                 case ITEM -> item;
             };
             if (resourceForKey == null || resourceForKey.trim().isEmpty()) {
@@ -218,6 +220,7 @@ public class ShopLoader {
             entry.item = item;
             entry.fluid = fluid;
             entry.gas = gas;
+            entry.other = other;
             int amount = 1;
             if (entryObj.has("amount")) {
                 amount = entryObj.get("amount").getAsInt();
