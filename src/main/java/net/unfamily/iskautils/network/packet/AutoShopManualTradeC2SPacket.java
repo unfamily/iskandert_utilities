@@ -39,7 +39,7 @@ public record AutoShopManualTradeC2SPacket(BlockPos pos, int quantity) implement
             if (!(blockEntity instanceof AutoShopBlockEntity autoShop) || !autoShop.canPlayerUse(player)) {
                 return;
             }
-            if (autoShop.tryManualTrade(packet.quantity())) {
+            if (autoShop.tryManualTrade(player, packet.quantity())) {
                 player.serverLevel().sendBlockUpdated(packet.pos(), blockEntity.getBlockState(),
                         blockEntity.getBlockState(), 3);
                 if (player.containerMenu instanceof AutoShopMenu autoMenu

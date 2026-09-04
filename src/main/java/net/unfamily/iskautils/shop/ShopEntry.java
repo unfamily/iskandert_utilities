@@ -8,7 +8,8 @@ public class ShopEntry {
     public enum EntryType {
         ITEM,
         FLUID,
-        GAS
+        GAS,
+        OTHER
     }
 
     public String id;
@@ -21,8 +22,10 @@ public class ShopEntry {
     public String fluid;
     /** Gas/chemical id (no tags). Used when {@code type == GAS}. */
     public String gas;
+    /** Other resource id (e.g. {@code iska_utils:rf}). Used when {@code type == OTHER}. */
+    public String other;
     /**
-     * Generic quantity: item count, fluid mB, or gas mB.
+     * Generic quantity: item count, fluid mB, gas mB, or FE for RF other.
      * {@link #itemCount} mirrors this for legacy callers.
      */
     public int amount = 1;

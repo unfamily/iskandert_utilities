@@ -132,6 +132,7 @@ public final class ShopEditSession {
         e.item = src.item;
         e.fluid = src.fluid;
         e.gas = src.gas;
+        e.other = src.other;
         e.amount = src.amount;
         e.itemCount = src.itemCount;
         e.currency = src.currency;

@@ -217,6 +217,7 @@ public final class ShopEditWorkspace {
             e.item = stringOrNull(o, "item");
             e.fluid = stringOrNull(o, "fluid");
             e.gas = stringOrNull(o, "gas");
+            e.other = stringOrNull(o, "other");
             if (o.has("amount")) {
                 e.amount = o.get("amount").getAsInt();
             } else if (o.has("item_count")) {
@@ -306,6 +307,11 @@ public final class ShopEditWorkspace {
                         o.addProperty("gas", e.gas);
                     }
                 }
+                case OTHER -> {
+                    if (e.other != null) {
+                        o.addProperty("other", e.other);
+                    }
+                }
                 default -> {
                     if (e.item != null) {
                         o.addProperty("item", e.item);
@@ -345,6 +351,7 @@ public final class ShopEditWorkspace {
         return switch (raw.trim().toLowerCase(Locale.ROOT)) {
             case "fluid" -> ShopEntry.EntryType.FLUID;
             case "gas" -> ShopEntry.EntryType.GAS;
+            case "other" -> ShopEntry.EntryType.OTHER;
             default -> ShopEntry.EntryType.ITEM;
         };
     }

@@ -355,6 +355,9 @@ public final class AutoShopItemPickerOverlay {
                 onAvailabilityFilterPressed();
                 return true;
             }
+            if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, searchBox)) {
+                return true;
+            }
         }
         if (button == 0) {
             if (handleScrollButtonClick(mouseX, mouseY)) {

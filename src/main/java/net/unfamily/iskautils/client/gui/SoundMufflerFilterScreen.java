@@ -337,6 +337,9 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, searchBox)) {
+            return true;
+        }
         if (button == 0) {
             int scrollbarX = leftPos + SCROLLBAR_X;
             if (filteredSoundIds.size() > VISIBLE_ENTRIES) {

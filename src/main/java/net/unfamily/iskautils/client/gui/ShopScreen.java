@@ -435,6 +435,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 onAvailabilityFilterPressed();
                 return true;
             }
+            if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, searchBox)) {
+                return true;
+            }
         }
         if (button == 0) {
             if (handleScrollButtonClick(mouseX, mouseY)) {
@@ -751,11 +754,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         renderScaledText(guiGraphics, displayName, textX, textY, maxTextWidth, GuiTextColors.TITLE);
         
-        int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
-        int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
-        int buttonsY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
-        
-        // Buy/Sell buttons are vanilla widgets created in init()
+        // Buy/Sell buttons are vanilla widgets created in updateBuySellButtons()
     }
     
     /**
@@ -1209,7 +1208,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
             int entryY = this.topPos + startY + i * ENTRY_HEIGHT;
             
-            // Buy button — fluids/gases shown disabled (catalog only)
+            // Buy button — fluids/gases shown disabled (catalog only; trade via AutoShop)
             if ((item.buy > 0 || item.free) && !ShopEntryHelper.isTagEntry(item)) {
                 int buyButtonX = this.leftPos + ENTRY_START_X + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
                 int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
@@ -1398,6 +1397,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                         break;
                     }
                     truncated = truncated.substring(0, truncated.length() - 1);
+                }
+                if (this.font.width(textComponent) * scale > maxWidth) {
+                    textComponent = Component.literal(ellipsis);
                 }
             }
             

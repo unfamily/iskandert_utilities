@@ -86,6 +86,9 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
             if (e.gas != null) {
                 o.addProperty("gas", e.gas);
             }
+            if (e.other != null) {
+                o.addProperty("other", e.other);
+            }
             o.addProperty("amount", e.amount);
             o.addProperty("currency", e.currency);
             o.addProperty("buy", e.buy);
@@ -148,11 +151,13 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
                 e.type = switch (type.toLowerCase(Locale.ROOT)) {
                     case "fluid" -> ShopEntry.EntryType.FLUID;
                     case "gas" -> ShopEntry.EntryType.GAS;
+                    case "other" -> ShopEntry.EntryType.OTHER;
                     default -> ShopEntry.EntryType.ITEM;
                 };
                 e.item = o.has("item") ? o.get("item").getAsString() : null;
                 e.fluid = o.has("fluid") ? o.get("fluid").getAsString() : null;
                 e.gas = o.has("gas") ? o.get("gas").getAsString() : null;
+                e.other = o.has("other") ? o.get("other").getAsString() : null;
                 e.amount = o.has("amount") ? o.get("amount").getAsInt() : 1;
                 e.itemCount = e.amount;
                 e.currency = o.has("currency") ? o.get("currency").getAsString() : "null_coin";

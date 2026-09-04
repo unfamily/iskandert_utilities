@@ -937,16 +937,20 @@ public class AutoShopBlockEntity extends BlockEntity {
     /**
      * Manual emerald-button trade: ignores redstone shouldRun, only allowed while mode is DISABLED.
      * {@code quantity} uses the same multipliers as the player shop (1 / 4 / 16).
+     * Items go to/from the opening player's inventory; fluids/gases use the machine tanks with qty capacity.
      */
-    public boolean tryManualTrade(int quantity) {
-        if (level == null || level.isClientSide()) {
+    public boolean tryManualTrade(ServerPlayer player, int quantity) {
+        if (level == null || level.isClientSide() || player == null) {
             return false;
         }
         if (RedstoneMode.fromValue(getRedstoneMode()) != RedstoneMode.DISABLED) {
             return false;
         }
+        if (!canPlayerUse(player)) {
+            return false;
+        }
         int qty = Math.max(1, Math.min(quantity, 64));
-        return runTradeCycles(qty);
+        return runManualTrade(player, qty);
     }
 
     /**
@@ -979,6 +983,204 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
 
         entity.runTradeCycles(1);
+    }
+
+    private boolean runManualTrade(ServerPlayer player, int quantity) {
+        if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) {
+            return false;
+        }
+        net.unfamily.iskalib.team.ShopTeamManager teamManager =
+                net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverLevel);
+
+        if (getOwnerTeamId() == null && getPlacedByPlayer() != null) {
+            String placerTeamName = teamManager.getPlayerTeam(getPlacedByPlayer());
+            if (placerTeamName != null) {
+                java.util.UUID teamId = teamManager.getTeamIdByName(placerTeamName);
+                if (teamId != null) {
+                    setOwnerTeamId(teamId);
+                }
+            }
+        }
+        if (getOwnerTeamId() == null) {
+            return false;
+        }
+
+        String teamKey = resolveTeamKey(teamManager, getOwnerTeamId());
+        if (teamKey == null) {
+            return false;
+        }
+        if (getPlacedByPlayer() != null) {
+            String placerTeamKey = teamManager.getPlayerTeam(getPlacedByPlayer());
+            if (placerTeamKey == null || !placerTeamKey.equals(teamKey)) {
+                return false;
+            }
+        }
+
+        String currencyId = normalizeCurrencyId(getSelectedValute());
+        if (!currencyId.equals(getSelectedValute())) {
+            setSelectedValute(currencyId);
+        }
+
+        ShopEntry entry = resolveManualEntry();
+        if (entry == null) {
+            return false;
+        }
+        String entryCurrency = entry.valute != null ? entry.valute : "null_coin";
+        if (!entryCurrency.equals(currencyId)) {
+            return false;
+        }
+
+        net.unfamily.iskalib.stage.StageRegistry registry =
+                net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
+        if (!stagesMet(entry, registry, player, teamKey)) {
+            return false;
+        }
+
+        if (entry.type == ShopEntry.EntryType.ITEM) {
+            String entryId = selectedShopEntryId != null && !selectedShopEntryId.isEmpty()
+                    ? selectedShopEntryId
+                    : entry.id;
+            if (entryId == null || entryId.isEmpty()) {
+                return false;
+            }
+            if (isAutoBuyMode()) {
+                if (ShopEntryHelper.isTagEntry(entry) || !ShopEntryHelper.isBuyAllowed(entry)) {
+                    return false;
+                }
+                return net.unfamily.iskautils.shop.ShopTransactionManager.buyItem(player, entryId, quantity);
+            }
+            if (!ShopEntryHelper.isSellAllowed(entry)) {
+                return false;
+            }
+            return net.unfamily.iskautils.shop.ShopTransactionManager.sellItem(player, entryId, quantity);
+        }
+
+        if (isAutoBuyMode()) {
+            return processManualTypedBuy(entry, teamManager, teamKey, currencyId, quantity);
+        }
+        return processManualTypedSell(entry, teamManager, teamKey, currencyId, quantity);
+    }
+
+    @Nullable
+    private ShopEntry resolveManualEntry() {
+        ShopEntry bound = getBoundEntry();
+        if (bound != null) {
+            return bound;
+        }
+        ItemStack selected = getSelectedItem();
+        if (!selected.isEmpty()) {
+            return findEntryForItemExact(selected, "");
+        }
+        return null;
+    }
+
+    private boolean processManualTypedBuy(ShopEntry entry,
+                                          net.unfamily.iskalib.team.ShopTeamManager teamManager,
+                                          String teamKey, String currencyId, int quantity) {
+        if (!ShopEntryHelper.isBuyAllowed(entry) || entry.amount <= 0 || quantity <= 0) {
+            return false;
+        }
+        int unit = entry.amount;
+        int totalAmount = unit * quantity;
+        double cost = entry.free ? 0 : entry.buy * quantity;
+
+        if (entry.type == ShopEntry.EntryType.FLUID) {
+            if (!fluidTank.isEmpty()) {
+                return false;
+            }
+            var fluid = ShopEntryHelper.resolveFluid(entry.fluid);
+            if (fluid == null) {
+                return false;
+            }
+            if (cost > 0 && (teamManager.getTeamValuteBalance(teamKey, currencyId) < cost
+                    || !teamManager.removeTeamValutes(teamKey, currencyId, cost))) {
+                return false;
+            }
+            resizeFluidTank(totalAmount);
+            if (fluidTank.fill(new FluidStack(fluid, totalAmount), IFluidHandler.FluidAction.EXECUTE) != totalAmount) {
+                if (cost > 0) {
+                    teamManager.addTeamValutes(teamKey, currencyId, cost);
+                }
+                resizeFluidTank(unit);
+                return false;
+            }
+            setChanged();
+            return true;
+        }
+
+        if (entry.type == ShopEntry.EntryType.GAS) {
+            ensureGasTank();
+            if (gasTank == null || getGasAmount() > 0) {
+                return false;
+            }
+            Object stack = MekChemicalHelper.createStackFromId(entry.gas, totalAmount);
+            if (stack == null) {
+                return false;
+            }
+            if (cost > 0 && (teamManager.getTeamValuteBalance(teamKey, currencyId) < cost
+                    || !teamManager.removeTeamValutes(teamKey, currencyId, cost))) {
+                return false;
+            }
+            resizeGasTank(totalAmount);
+            if (MekChemicalHelper.fill(gasTank, stack, false) != totalAmount) {
+                if (cost > 0) {
+                    teamManager.addTeamValutes(teamKey, currencyId, cost);
+                }
+                resizeGasTank(unit);
+                return false;
+            }
+            setChanged();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean processManualTypedSell(ShopEntry entry,
+                                           net.unfamily.iskalib.team.ShopTeamManager teamManager,
+                                           String teamKey, String currencyId, int quantity) {
+        if (!ShopEntryHelper.isSellAllowed(entry) || entry.amount <= 0 || quantity <= 0) {
+            return false;
+        }
+        int unit = entry.amount;
+
+        if (entry.type == ShopEntry.EntryType.FLUID) {
+            if (!ShopEntryHelper.matchesFluid(fluidTank.getFluid(), entry.fluid)) {
+                return false;
+            }
+            int availableUnits = fluidTank.getFluidAmount() / unit;
+            int units = Math.min(quantity, availableUnits);
+            if (units <= 0) {
+                return false;
+            }
+            int extract = units * unit;
+            if (fluidTank.drain(extract, IFluidHandler.FluidAction.EXECUTE).getAmount() != extract) {
+                return false;
+            }
+            teamManager.addTeamValutes(teamKey, currencyId, entry.sell * units);
+            setChanged();
+            return true;
+        }
+
+        if (entry.type == ShopEntry.EntryType.GAS) {
+            ensureGasTank();
+            Object inTank = MekChemicalHelper.getChemicalInTank(gasTank, 0);
+            if (!ShopEntryHelper.matchesGas(inTank, entry.gas)) {
+                return false;
+            }
+            long availableUnits = getGasAmount() / unit;
+            int units = (int) Math.min(quantity, availableUnits);
+            if (units <= 0) {
+                return false;
+            }
+            int extract = units * unit;
+            if (MekChemicalHelper.extractFromTank(gasTank, extract) != extract) {
+                return false;
+            }
+            teamManager.addTeamValutes(teamKey, currencyId, entry.sell * units);
+            setChanged();
+            return true;
+        }
+        return false;
     }
 
     private boolean runTradeCycles(int quantity) {

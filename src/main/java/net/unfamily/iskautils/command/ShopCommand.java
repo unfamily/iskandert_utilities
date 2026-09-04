@@ -3,7 +3,6 @@ package net.unfamily.iskautils.command;
 import net.unfamily.iskautils.util.ModLogger;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -67,37 +66,6 @@ public class ShopCommand {
                     showShopInfo(source);
                     return 1;
                 }))
-            .then(Commands.literal("currencies")
-                .executes(context -> {
-                    CommandSourceStack source = context.getSource();
-                    showValutes(source);
-                    return 1;
-                }))
-            .then(Commands.literal("valutes") // legacy command
-                .executes(context -> {
-                    CommandSourceStack source = context.getSource();
-                    showValutes(source);
-                    return 1;
-                }))
-            .then(Commands.literal("categories")
-                .executes(context -> {
-                    CommandSourceStack source = context.getSource();
-                    showCategories(source);
-                    return 1;
-                }))
-            .then(Commands.literal("entries")
-                .executes(context -> {
-                    CommandSourceStack source = context.getSource();
-                    showEntries(source);
-                    return 1;
-                })
-                .then(Commands.argument("category", StringArgumentType.string())
-                    .executes(context -> {
-                        CommandSourceStack source = context.getSource();
-                        String category = StringArgumentType.getString(context, "category");
-                        showEntriesInCategory(source, category);
-                        return 1;
-                    })))
             .then(Commands.literal("balance")
                 .executes(context -> {
                     CommandSourceStack source = context.getSource();
@@ -110,6 +78,7 @@ public class ShopCommand {
                 }))
             .then(Commands.literal("edit")
                 .executes(context -> openShopEditor(context.getSource())))
+            .then(ShopTeamCurrencyCommands.teamLiteral())
         );
     }
 
@@ -143,7 +112,6 @@ public class ShopCommand {
                 net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket.sendTo(player, data);
             }
         }
-        source.sendSuccess(() -> Component.translatable("gui.iska_utils.shop_edit.opened"), false);
         return 1;
     }
     
@@ -156,70 +124,6 @@ public class ShopCommand {
         source.sendSuccess(() -> Component.literal("Loaded currencies: " + currencies.size()), false);
         source.sendSuccess(() -> Component.literal("Loaded categories: " + categories.size()), false);
         source.sendSuccess(() -> Component.literal("Loaded entries: " + entries.size()), false);
-    }
-    
-    private static void showValutes(CommandSourceStack source) {
-        Map<String, ShopCurrency> currencies = ShopLoader.getCurrencies();
-        
-        source.sendSuccess(() -> Component.literal("=== Available Currencies ==="), false);
-        for (ShopCurrency currency : ShopCurrency.sorted(currencies.values())) {
-            // Use localized name and format with symbol after
-            String localizedName = Component.translatable(currency.name).getString();
-            String formattedName = localizedName + " " + currency.charSymbol;
-            source.sendSuccess(() -> Component.literal(
-                String.format("- %s (%s): %s", currency.id, formattedName, currency.charSymbol)
-            ), false);
-        }
-    }
-    
-    private static void showCategories(CommandSourceStack source) {
-        Map<String, ShopCategory> categories = ShopLoader.getCategories();
-        
-        source.sendSuccess(() -> Component.literal("=== Available Categories ==="), false);
-        for (ShopCategory category : categories.values()) {
-            source.sendSuccess(() -> Component.literal(
-                String.format("- %s (%s): %s", category.id, category.name, category.description)
-            ), false);
-        }
-    }
-    
-    private static void showEntries(CommandSourceStack source) {
-        Map<String, ShopEntry> entries = ShopLoader.getEntries();
-        
-        source.sendSuccess(() -> Component.literal("=== All Entries ==="), false);
-        for (Map.Entry<String, ShopEntry> entry : entries.entrySet()) {
-            ShopEntry shopEntry = entry.getValue();
-            String category = shopEntry.inCategory != null ? shopEntry.inCategory : "default";
-            String valute = shopEntry.valute != null ? shopEntry.valute : "default";
-            
-            source.sendSuccess(() -> Component.literal(
-                String.format("- %s (Cat: %s, Val: %s, Buy: %.1f, Sell: %.1f)", 
-                    shopEntry.item, category, valute, shopEntry.buy, shopEntry.sell)
-            ), false);
-        }
-    }
-    
-    private static void showEntriesInCategory(CommandSourceStack source, String categoryId) {
-        Map<String, ShopEntry> entries = ShopLoader.getEntries();
-        
-        source.sendSuccess(() -> Component.literal("=== Entries in Category: " + categoryId + " ==="), false);
-        
-        boolean found = false;
-        for (Map.Entry<String, ShopEntry> entry : entries.entrySet()) {
-            ShopEntry shopEntry = entry.getValue();
-            if (categoryId.equals(shopEntry.inCategory)) {
-                String valute = shopEntry.valute != null ? shopEntry.valute : "default";
-                source.sendSuccess(() -> Component.literal(
-                    String.format("- %s (Val: %s, Buy: %.1f, Sell: %.1f)", 
-                        shopEntry.item, valute, shopEntry.buy, shopEntry.sell)
-                ), false);
-                found = true;
-            }
-        }
-        
-        if (!found) {
-            source.sendSuccess(() -> Component.literal("No entries found for category: " + categoryId), false);
-        }
     }
     
     /**

@@ -323,7 +323,7 @@ Example:
 - priority: Display order within category (optional, default 0). Higher value = entry shown first.
 - free: If true, item can be bought at no cost even when buy is 0; Buy button is shown (optional, default false).
 
-Fluid/gas entries are AutoShop-only (hidden from the player Shop GUI). Gas requires Mekanism (optional); disabled on NeoForge 26.x until Mekanism supports that loader.
+Fluid/gas entries appear in the player Shop as catalog-only (buy/sell disabled; use AutoShop). They are hidden with the H visibility filter. Gas requires Mekanism (optional); disabled on NeoForge 26.x until Mekanism supports that loader.
 
 NBT/COMPOUND TAGS SUPPORT:
 ==========================

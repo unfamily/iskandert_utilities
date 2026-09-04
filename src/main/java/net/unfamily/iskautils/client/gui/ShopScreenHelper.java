@@ -117,6 +117,9 @@ public final class ShopScreenHelper {
                 }
                 truncated = truncated.substring(0, truncated.length() - 1);
             }
+            if (font.width(textComponent) * scale > maxWidth) {
+                textComponent = Component.literal(ellipsis);
+            }
         }
 
         guiGraphics.pose().pushPose();
