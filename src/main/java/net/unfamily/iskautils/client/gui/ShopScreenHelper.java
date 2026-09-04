@@ -33,7 +33,7 @@ public final class ShopScreenHelper {
     }
 
     /**
-     * Disabled Buy/Sell tooltip for fluid/gas in the player shop: price, amount (mB), then Auto Shop hint.
+     * Disabled Buy/Sell tooltip for non-item entries in the player shop: price, amount, then Auto Shop hint.
      */
     public static List<Component> playerShopFluidGasHintTooltip(ShopEntry item, boolean buy, String currencySymbol) {
         List<Component> tooltip = new ArrayList<>();
