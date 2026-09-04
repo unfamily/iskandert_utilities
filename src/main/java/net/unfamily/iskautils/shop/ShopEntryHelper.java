@@ -331,7 +331,7 @@ public final class ShopEntryHelper {
                     yield !fluid.isEmpty() ? fluid.getHoverName().getString() : trimmed;
                 }
                 case GAS -> trimmed;
-                case OTHER -> trimmed;
+                case OTHER -> ShopOtherRegistry.displayName(trimmed).getString();
             };
         }
         return switch (entry.type) {
@@ -348,7 +348,7 @@ public final class ShopEntryHelper {
                 Component name = MekChemicalHelper.getDisplayName(chemical);
                 yield !name.getString().isEmpty() ? name.getString() : trimmed;
             }
-            case OTHER -> trimmed;
+            case OTHER -> ShopOtherRegistry.displayName(trimmed).getString();
         };
     }
 
@@ -408,7 +408,7 @@ public final class ShopEntryHelper {
                 Component name = MekChemicalHelper.getDisplayName(chemical);
                 yield !name.getString().isEmpty() ? name : Component.literal(displayLabelForEntry(entry));
             }
-            case OTHER -> Component.literal(displayLabelForEntry(entry));
+            case OTHER -> ShopOtherRegistry.displayName(entry.other);
         };
     }
 

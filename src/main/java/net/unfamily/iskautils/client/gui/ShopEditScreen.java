@@ -1617,18 +1617,18 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         Component title = currentTitle();
         int titleX = (GUI_WIDTH - font.width(title)) / 2;
-        graphics.text(this.font, title, titleX, 6, 0x404040, false);
+        graphics.text(this.font, title, titleX, 6, GuiTextColors.TITLE, false);
         if (dialog == Dialog.CLOSE_HINT) {
             Component hint = Component.translatable("gui.iska_utils.shop_edit.close_reload_hint");
             int y = 50;
             for (var line : font.split(hint, GUI_WIDTH - 40)) {
-                graphics.text(this.font, line, 20, y, 0x404040, false);
+                graphics.text(this.font, line, 20, y, GuiTextColors.BODY, false);
                 y += 12;
             }
             return;
         }
         for (FormLabel label : formLabels) {
-            graphics.text(this.font, label.text(), label.x(), label.y(), 0x404040, false);
+            graphics.text(this.font, label.text(), label.x(), label.y(), GuiTextColors.BODY, false);
         }
         Component warning = entryEditWarning();
         if (warning != null) {

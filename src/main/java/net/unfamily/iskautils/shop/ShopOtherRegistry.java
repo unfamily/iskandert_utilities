@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.shop;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.unfamily.iskautils.IskaUtils;
 import org.jetbrains.annotations.Nullable;
@@ -15,14 +16,15 @@ import java.util.Map;
 public final class ShopOtherRegistry {
     public static final String RF_ID = "iska_utils:rf";
 
-    public record Definition(String id, Identifier icon) {}
+    public record Definition(String id, Identifier icon, Component displayName) {}
 
     private static final Map<String, Definition> DEFINITIONS = new LinkedHashMap<>();
 
     static {
         register(new Definition(
                 RF_ID,
-                Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/rf_icon.png")));
+                Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/rf_icon.png"),
+                Component.translatable("gui.iska_utils.shop.other.rf")));
     }
 
     private ShopOtherRegistry() {}
@@ -48,6 +50,14 @@ public final class ShopOtherRegistry {
             return null;
         }
         return DEFINITIONS.get(id.trim());
+    }
+
+    public static Component displayName(@Nullable String id) {
+        Definition definition = get(id);
+        if (definition != null) {
+            return definition.displayName();
+        }
+        return Component.literal(id != null ? id : "");
     }
 
     public static Collection<Definition> all() {

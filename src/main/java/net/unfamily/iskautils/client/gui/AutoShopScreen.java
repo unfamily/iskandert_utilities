@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.client.gui;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Renderable;
@@ -28,6 +29,7 @@ import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopLoader;
+import net.unfamily.iskautils.shop.ShopOtherRegistry;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -43,17 +45,15 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
             Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/auto_shop.png");
     private static final Identifier ENERGY_BAR_TEXTURE =
             Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/energy_bar.png");
-    private static final Identifier RF_ICON =
-            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/rf_icon.png");
     private static final int GUI_WIDTH = AutoShopGuiLayout.GUI_WIDTH;
     private static final int GUI_HEIGHT = AutoShopGuiLayout.GUI_HEIGHT;
     private static final int PICKER_WIDTH = ShopBrowsePanel.GUI_WIDTH;
     private static final int PICKER_HEIGHT = 240;
     private static final int BUTTON_SIZE = 16;
 
-    private static final int CLOSE_BUTTON_Y = 5;
-    private static final int CLOSE_BUTTON_SIZE = 12;
-    private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
+    private static final int CLOSE_BUTTON_Y = AutoShopGuiLayout.CLOSE_BUTTON_Y;
+    private static final int CLOSE_BUTTON_SIZE = AutoShopGuiLayout.CLOSE_BUTTON_SIZE;
+    private static final int CLOSE_BUTTON_X = AutoShopGuiLayout.CLOSE_BUTTON_X;
 
     private static final int CURRENCY_BUTTON_X = 7;
     private static final int CURRENCY_BUTTON_Y = 23;
@@ -369,28 +369,26 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     }
 
     private void renderEnergyBar(GuiGraphicsExtractor graphics) {
+        int maxEnergy = menu.getMaxEnergyStored();
+        if (maxEnergy <= 0) {
+            return;
+        }
         int x = leftPos + AutoShopGuiLayout.ENERGY_BAR_X;
-        int y = topPos + AutoShopGuiLayout.BAR_Y;
+        int y = topPos + AutoShopGuiLayout.ENERGY_BAR_Y;
         graphics.blit(RenderPipelines.GUI_TEXTURED, ENERGY_BAR_TEXTURE, x, y,
                 8.0F, 0.0F,
-                AutoShopGuiLayout.BAR_W, AutoShopGuiLayout.BAR_H,
+                AutoShopGuiLayout.ENERGY_BAR_W, AutoShopGuiLayout.ENERGY_BAR_H,
                 8, 32, 16, 32);
 
         int stored = Math.max(0, menu.getEnergyStored());
-        int capacity = Math.max(0, menu.getMaxEnergyStored());
-        if (stored > 0 && capacity > 0) {
-            int fillHeight = Math.min(AutoShopGuiLayout.BAR_H,
-                    (int) ((long) stored * AutoShopGuiLayout.BAR_H / capacity));
-            int sourceHeight = Math.max(1, (fillHeight * 32 + AutoShopGuiLayout.BAR_H - 1)
-                    / AutoShopGuiLayout.BAR_H);
+        if (stored > 0) {
+            int fillHeight = (stored * AutoShopGuiLayout.ENERGY_BAR_H) / maxEnergy;
             graphics.blit(RenderPipelines.GUI_TEXTURED, ENERGY_BAR_TEXTURE,
-                    x, y + AutoShopGuiLayout.BAR_H - fillHeight,
-                    0.0F, (float) (32 - sourceHeight),
-                    AutoShopGuiLayout.BAR_W, fillHeight,
-                    8, sourceHeight, 16, 32);
+                    x, y + AutoShopGuiLayout.ENERGY_BAR_H - fillHeight,
+                    0.0F, (float) (AutoShopGuiLayout.ENERGY_BAR_H - fillHeight),
+                    AutoShopGuiLayout.ENERGY_BAR_W, fillHeight,
+                    8, fillHeight, 16, 32);
         }
-        graphics.blit(RenderPipelines.GUI_TEXTURED, RF_ICON, x + 1, topPos + 1,
-                0.0F, 0.0F, 10, 10, 16, 16);
     }
 
     private void renderTanks(GuiGraphicsExtractor graphics) {
@@ -473,14 +471,21 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     }
 
     private void renderTankTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        int energyX = leftPos + AutoShopGuiLayout.ENERGY_BAR_X;
+        int energyY = topPos + AutoShopGuiLayout.ENERGY_BAR_Y;
+        if (menu.getMaxEnergyStored() > 0
+                && isInside(mouseX, mouseY, energyX, energyY,
+                AutoShopGuiLayout.ENERGY_BAR_W, AutoShopGuiLayout.ENERGY_BAR_H)) {
+            Component tooltip = Component.translatable(
+                            "gui.iska_utils.auto_shop.energy.tooltip",
+                            String.format("%,d", menu.getEnergyStored()),
+                            String.format("%,d", menu.getMaxEnergyStored()))
+                    .withStyle(ChatFormatting.RED);
+            graphics.setTooltipForNextFrame(font, List.of(tooltip.getVisualOrderText()), mouseX, mouseY);
+            return;
+        }
         int barY = topPos + AutoShopGuiLayout.BAR_Y;
-        if (isInside(mouseX, mouseY, leftPos + AutoShopGuiLayout.ENERGY_BAR_X, barY,
-                AutoShopGuiLayout.BAR_W, AutoShopGuiLayout.BAR_H)) {
-            graphics.setTooltipForNextFrame(font, List.of(
-                    Component.translatable("gui.iska_utils.auto_shop.energy.tooltip",
-                            menu.getEnergyStored(), menu.getMaxEnergyStored()).getVisualOrderText()
-            ), mouseX, mouseY);
-        } else if (isInside(mouseX, mouseY, leftPos + AutoShopGuiLayout.LIQUID_BAR_X, barY,
+        if (isInside(mouseX, mouseY, leftPos + AutoShopGuiLayout.LIQUID_BAR_X, barY,
                 AutoShopGuiLayout.BAR_W, AutoShopGuiLayout.BAR_H)) {
             if (menu.getFluidAmount() <= 0 || menu.getFluidRegistryId() < 0) {
                 graphics.setTooltipForNextFrame(font, List.of(
@@ -564,6 +569,14 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
             Object gas = ShopEntryHelper.displayGasForEntry(bound);
             if (gas != null) {
                 GuiChemicalStillBlit.blit16(guiGraphics, gas, leftPos + filterSlot.x, topPos + filterSlot.y);
+            }
+            return;
+        }
+        if (bound != null && bound.type == ShopEntry.EntryType.OTHER) {
+            ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(bound.other);
+            if (definition != null) {
+                guiGraphics.blit(RenderPipelines.GUI_TEXTURED, definition.icon(),
+                        leftPos + filterSlot.x, topPos + filterSlot.y, 0.0F, 0.0F, 16, 16, 16, 16);
             }
             return;
         }
