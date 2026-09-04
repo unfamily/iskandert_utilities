@@ -48,13 +48,11 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private enum Dialog {
-        NONE, DELETE_CONFIRM, RENAME_CONFIRM
+        NONE, DELETE_CONFIRM, RENAME_CONFIRM, CLOSE_HINT
     }
 
     private static final Identifier TEXTURE =
             Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
-    private static final Identifier ENTRY_TEXTURE =
-            Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/enrty_wide_wide_wide.png");
     private static final Identifier SCROLLBAR_TEXTURE =
             Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
     private static final Identifier SINGLE_SLOT_TEXTURE =
@@ -67,22 +65,16 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private static final int ENTRY_START_X = 19;
     private static final int ENTRY_START_Y = 28;
     private static final int MAX_VISIBLE = 4;
+    private static final int LIST_ICON_SIZE = 18;
+    private static final int LIST_ICON_GAP = 4;
     private static final int RESOURCE_ARROW_SIZE = 12;
     private static final int RESOURCE_ARROW_GAP = 4;
     private static final int RESOURCE_SLOT_SIZE = 18;
-    private static final int RESOURCE_ROW_LEFT = 20;
 
     private static final int SCROLLBAR_WIDTH = 8;
     private static final int SCROLLBAR_HEIGHT = 34;
     private static final int HANDLE_SIZE = 8;
     private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 4;
-
-    private static final int STAGE_ROW_HEIGHT = 14;
-    private static final int MAX_VISIBLE_STAGES = 6;
-    private static final int STAGE_LIST_X = 20;
-    private static final int STAGE_LIST_Y = 48;
-    private static final int STAGE_LIST_WIDTH = 220;
-    private static final int STAGE_SCROLLBAR_X = 250;
 
     /** Buttons beside the player inventory (inventory starts at x=20,y=154). */
     private static final int SIDE_BTN_X = 188;
@@ -90,9 +82,28 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private static final int SIDE_BTN_W = 72;
     private static final int SIDE_BTN_H = 14;
 
+    /** Form content aligns to the right edge of the Done button. */
+    private static final int FORM_LEFT = 20;
+    private static final int FORM_RIGHT = SIDE_BTN_X + SIDE_BTN_W;
+    private static final int FORM_WIDTH = FORM_RIGHT - FORM_LEFT;
+    private static final int FORM_GAP = 4;
+    private static final int SIDE_BTN_DONE_Y = SIDE_BTN_Y + SIDE_BTN_H + FORM_GAP;
+
+    private static final int STAGE_ROW_HEIGHT = 14;
+    private static final int MAX_VISIBLE_STAGES = 6;
+    private static final int STAGE_LIST_X = FORM_LEFT;
+    private static final int STAGE_LIST_Y = 48;
+    private static final int STAGE_SCROLLBAR_X = FORM_RIGHT - SCROLLBAR_WIDTH;
+    private static final int STAGE_LIST_WIDTH = STAGE_SCROLLBAR_X - STAGE_LIST_X - 2;
+
     private record FormLabel(int x, int y, Component text) {}
+    /** Left-side list preview: item icon slot, currency symbol cell, or empty placeholder. */
+    private enum ListRowKind { ITEM_SLOT, SYMBOL_CELL }
+    private record ListRowVisual(int rowIndex, ListRowKind kind, @Nullable ItemStack icon, @Nullable String symbol) {}
 
     private SubView subView = SubView.CATEGORIES;
+    /** Where Done from the currencies list returns (e.g. entry edit). */
+    @Nullable private SubView currenciesReturnTo;
     private Dialog dialog = Dialog.NONE;
     private int scrollOffset;
     private int stageScrollOffset;
@@ -115,12 +126,14 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private String renameKind;
     private String renameOldId;
     private String renameNewId;
+    private boolean closingConfirmed;
 
     private final List<String> resourceVariants = new ArrayList<>();
     private int resourceVariantIndex;
     private int formDebounceTicks;
     private boolean formDirty;
     private final List<FormLabel> formLabels = new ArrayList<>();
+    private final List<ListRowVisual> listRowVisuals = new ArrayList<>();
 
     private final List<Button> dynamicButtons = new ArrayList<>();
     private final List<EditBox> formBoxes = new ArrayList<>();
@@ -190,6 +203,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         }
         formBoxes.clear();
         formLabels.clear();
+        listRowVisuals.clear();
         idBox = nameBox = descBox = resourceBox = symbolBox = null;
         amountBox = buyBox = sellBox = priorityBox = stageNameBox = null;
         freeButton = typeButton = currencyButton = stageTypeButton = stageIsButton = stageAddButton = null;
@@ -223,22 +237,46 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         return addBox(x, boxY, w, h, value, maxLen);
     }
 
-    private void addDoneButton(Runnable action) {
-        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.done"), b -> action.run())
+    private void addSideNavButtons() {
+        boolean inCurrencyMenus = subView == SubView.CURRENCIES || subView == SubView.CURRENCY_EDIT;
+        Button currencies = addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.currencies"), b -> openCurrencies())
                 .bounds(leftPos + SIDE_BTN_X, topPos + SIDE_BTN_Y, SIDE_BTN_W, SIDE_BTN_H)
+                .build());
+        currencies.active = !inCurrencyMenus;
+
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.done"), b -> navigateBack())
+                .bounds(leftPos + SIDE_BTN_X, topPos + SIDE_BTN_DONE_Y, SIDE_BTN_W, SIDE_BTN_H)
                 .build());
     }
 
-    private void addCurrenciesSideButton() {
-        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.currencies"), b -> {
-            subView = SubView.CURRENCIES;
-            scrollOffset = 0;
-            rebuild();
-        }).bounds(leftPos + SIDE_BTN_X, topPos + SIDE_BTN_Y, SIDE_BTN_W, SIDE_BTN_H).build());
+    private void openCurrencies() {
+        if (subView != SubView.CURRENCIES && subView != SubView.CURRENCY_EDIT) {
+            flushFormToDraft();
+            autosaveCurrentForm(true);
+            currenciesReturnTo = subView;
+        }
+        subView = SubView.CURRENCIES;
+        scrollOffset = 0;
+        rebuild();
+    }
+
+    /** Equal-width column X for a row spanning {@link #FORM_LEFT}..{@link #FORM_RIGHT}. */
+    private static int formColX(int index, int count) {
+        int w = (FORM_WIDTH - FORM_GAP * Math.max(0, count - 1)) / count;
+        return FORM_LEFT + index * (w + FORM_GAP);
+    }
+
+    /** Equal-width column width; last column absorbs remainder so the row ends at {@link #FORM_RIGHT}. */
+    private static int formColW(int index, int count) {
+        int w = (FORM_WIDTH - FORM_GAP * Math.max(0, count - 1)) / count;
+        if (index >= count - 1) {
+            return FORM_RIGHT - formColX(index, count);
+        }
+        return w;
     }
 
     private int resourceSlotX() {
-        return RESOURCE_ROW_LEFT + RESOURCE_ARROW_SIZE + RESOURCE_ARROW_GAP;
+        return FORM_LEFT + RESOURCE_ARROW_SIZE + RESOURCE_ARROW_GAP;
     }
 
     private int resourceRightArrowX() {
@@ -250,32 +288,35 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     /**
-     * Deep Drawer style: {@code ← SLOT → EDITBOX} (+ optional trailing widget start X returned).
+     * Deep Drawer style: {@code ← SLOT → EDITBOX} (+ optional Convert), ending at {@link #FORM_RIGHT}.
      */
     private int addResourceSelectorRow(int rowY, String currentValue, boolean withConvert) {
-        int slotX = resourceSlotX();
         int arrowY = rowY + (RESOURCE_SLOT_SIZE - RESOURCE_ARROW_SIZE) / 2;
         int boxY = rowY + (RESOURCE_SLOT_SIZE - 12) / 2;
         syncGhostFromResource(currentValue);
         setupResourceVariants(currentValue);
         addDyn(Button.builder(Component.literal("←"), b -> cycleResource(-1))
-                .bounds(leftPos + RESOURCE_ROW_LEFT, topPos + arrowY, RESOURCE_ARROW_SIZE, RESOURCE_ARROW_SIZE)
+                .bounds(leftPos + FORM_LEFT, topPos + arrowY, RESOURCE_ARROW_SIZE, RESOURCE_ARROW_SIZE)
                 .build());
         addDyn(Button.builder(Component.literal("→"), b -> cycleResource(1))
                 .bounds(leftPos + resourceRightArrowX(), topPos + arrowY, RESOURCE_ARROW_SIZE, RESOURCE_ARROW_SIZE)
                 .build());
         int boxX = resourceEditBoxX();
-        int boxW = withConvert ? 110 : (GUI_WIDTH - boxX - 12);
-        resourceBox = addBox(boxX, boxY, boxW, 12, currentValue, 512);
+        final int convertW = 52;
+        int boxW;
         if (withConvert) {
-            int convertX = boxX + boxW + 4;
+            int convertX = FORM_RIGHT - convertW;
+            boxW = Math.max(40, convertX - FORM_GAP - boxX);
+            resourceBox = addBox(boxX, boxY, boxW, 12, currentValue, 512);
             addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.convert"), b -> convertResource())
-                    .bounds(leftPos + convertX, topPos + boxY, 52, 12)
+                    .bounds(leftPos + convertX, topPos + boxY, convertW, 12)
                     .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.convert.tooltip")))
                     .build());
-            return convertX + 52;
+            return FORM_RIGHT;
         }
-        return boxX + boxW;
+        boxW = Math.max(40, FORM_RIGHT - boxX);
+        resourceBox = addBox(boxX, boxY, boxW, 12, currentValue, 512);
+        return FORM_RIGHT;
     }
 
     private void markFormDirty() {
@@ -286,9 +327,10 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private void rebuild() {
         clearDynamic();
         scrollOffset = Math.max(0, scrollOffset);
-        addDyn(Button.builder(Component.literal("✕"), b -> onClose())
+        addDyn(Button.builder(Component.literal("✕"), b -> navigateBack())
                 .bounds(leftPos + GUI_WIDTH - 17, topPos + 5, 12, 12)
-                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.close")))
+                .tooltip(Tooltip.create(Component.translatable(
+                        isMainView() ? "gui.iska_utils.shop_edit.close" : "gui.iska_utils.shop.back")))
                 .build());
 
         if (dialog == Dialog.DELETE_CONFIRM) {
@@ -299,6 +341,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             buildRenameDialog();
             return;
         }
+        if (dialog == Dialog.CLOSE_HINT) {
+            buildCloseHintDialog();
+            return;
+        }
+
+        addSideNavButtons();
 
         switch (subView) {
             case CATEGORIES -> buildCategories();
@@ -326,6 +374,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private void buildRenameDialog() {
+        addLabel(30, 48, "gui.iska_utils.shop_edit.rename.prompt");
         addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.rename.propagate"), b -> {
             finishRename("propagate");
         }).bounds(leftPos + 30, topPos + 80, 240, 18).build());
@@ -335,6 +384,89 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.rename.ignore"), b -> {
             finishRename("ignore");
         }).bounds(leftPos + 30, topPos + 124, 240, 18).build());
+    }
+
+    private void buildCloseHintDialog() {
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.done"), b -> confirmClose())
+                .bounds(leftPos + SIDE_BTN_X, topPos + SIDE_BTN_DONE_Y, SIDE_BTN_W, SIDE_BTN_H)
+                .build());
+    }
+
+    private boolean isMainView() {
+        return dialog == Dialog.NONE && subView == SubView.CATEGORIES;
+    }
+
+    /**
+     * One layer up (same as Done). On the main categories list, shows the close hint instead.
+     */
+    private void navigateBack() {
+        if (dialog == Dialog.CLOSE_HINT) {
+            confirmClose();
+            return;
+        }
+        if (dialog == Dialog.DELETE_CONFIRM) {
+            dialog = Dialog.NONE;
+            pendingDeleteKind = null;
+            pendingDeleteId = null;
+            rebuild();
+            return;
+        }
+        if (dialog == Dialog.RENAME_CONFIRM) {
+            dialog = Dialog.NONE;
+            renameKind = renameOldId = renameNewId = null;
+            rebuild();
+            return;
+        }
+
+        switch (subView) {
+            case CATEGORIES -> {
+                dialog = Dialog.CLOSE_HINT;
+                rebuild();
+            }
+            case CURRENCIES -> {
+                SubView back = currenciesReturnTo != null ? currenciesReturnTo : SubView.CATEGORIES;
+                currenciesReturnTo = null;
+                subView = back;
+                scrollOffset = 0;
+                rebuild();
+            }
+            case ENTRIES -> {
+                subView = SubView.CATEGORIES;
+                scrollOffset = 0;
+                rebuild();
+            }
+            case CATEGORY_EDIT -> tryLeaveCategoryEdit();
+            case CURRENCY_EDIT -> tryLeaveCurrencyEdit();
+            case ENTRY_EDIT -> {
+                flushFormToDraft();
+                autosaveCurrentForm(true);
+                editingStageIndex = -1;
+                subView = SubView.ENTRIES;
+                scrollOffset = 0;
+                rebuild();
+            }
+            case ENTRY_STAGES -> {
+                flushFormToDraft();
+                autosaveCurrentForm(true);
+                editingStageIndex = -1;
+                subView = SubView.ENTRY_EDIT;
+                rebuild();
+            }
+        }
+    }
+
+    private void confirmClose() {
+        closingConfirmed = true;
+        onClose();
+    }
+
+    @Override
+    public void onClose() {
+        if (!closingConfirmed) {
+            navigateBack();
+            return;
+        }
+        super.onClose();
     }
 
     private void finishRename(String mode) {
@@ -354,23 +486,25 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private void buildCategories() {
-        addCurrenciesSideButton();
-
         List<ShopCategory> list = sortedCategories();
         int visible = Math.min(MAX_VISIBLE, list.size() + 1);
         ensureScroll(list.size() + 1);
+        int contentX = listContentX();
+        int mainW = listMainButtonWidth();
+        int addW = listAddButtonWidth();
         for (int i = 0; i < visible; i++) {
             int idx = scrollOffset + i;
             int y = ENTRY_START_Y + i * ENTRY_HEIGHT;
             if (idx < list.size()) {
                 ShopCategory cat = list.get(idx);
                 final String catId = cat.id;
-                addDyn(Button.builder(Component.literal(truncate(cat.id + " — " + displayName(cat.name), 28)), b -> {
+                listRowVisuals.add(new ListRowVisual(i, ListRowKind.ITEM_SLOT, iconStackFromId(cat.item), null));
+                addDyn(Button.builder(Component.literal(truncate(displayName(cat.name), 28)), b -> {
                     selectedCategoryId = catId;
                     subView = SubView.ENTRIES;
                     scrollOffset = 0;
                     rebuild();
-                }).bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH - 44, ENTRY_HEIGHT - 2).build());
+                }).bounds(leftPos + contentX, topPos + y, mainW, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("✎"), b -> openCategoryEdit(catId))
                         .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 42, topPos + y, 18, ENTRY_HEIGHT - 2)
                         .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.edit")))
@@ -380,68 +514,94 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                         .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.delete")))
                         .build());
             } else if (idx == list.size()) {
+                listRowVisuals.add(new ListRowVisual(i, ListRowKind.ITEM_SLOT, ItemStack.EMPTY, null));
                 addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.add_category"), b -> openCategoryEdit(null))
-                        .bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH, ENTRY_HEIGHT - 2).build());
+                        .bounds(leftPos + contentX, topPos + y, addW, ENTRY_HEIGHT - 2).build());
             }
         }
     }
 
     private void buildCurrencies() {
-        addDoneButton(() -> {
-            subView = SubView.CATEGORIES;
-            scrollOffset = 0;
-            rebuild();
-        });
-
         List<ShopCurrency> list = sortedCurrencies();
         int visible = Math.min(MAX_VISIBLE, list.size() + 1);
         ensureScroll(list.size() + 1);
+        int contentX = listContentX();
+        int mainW = listMainButtonWidth();
+        int addW = listAddButtonWidth();
         for (int i = 0; i < visible; i++) {
             int idx = scrollOffset + i;
             int y = ENTRY_START_Y + i * ENTRY_HEIGHT;
             if (idx < list.size()) {
                 ShopCurrency cur = list.get(idx);
                 final String curId = cur.id;
-                addDyn(Button.builder(Component.literal(truncate(cur.id + " " + nullSafe(cur.charSymbol), 30)), b -> openCurrencyEdit(curId))
-                        .bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH - 44, ENTRY_HEIGHT - 2).build());
+                listRowVisuals.add(new ListRowVisual(i, ListRowKind.SYMBOL_CELL, null, nullSafe(cur.charSymbol)));
+                addDyn(Button.builder(Component.literal(truncate(displayName(cur.name), 30)), b -> openCurrencyEdit(curId))
+                        .bounds(leftPos + contentX, topPos + y, mainW, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("✎"), b -> openCurrencyEdit(curId))
                         .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 42, topPos + y, 18, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("🗑"), b -> confirmDelete("currency", curId))
                         .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 22, topPos + y, 18, ENTRY_HEIGHT - 2).build());
             } else if (idx == list.size()) {
+                listRowVisuals.add(new ListRowVisual(i, ListRowKind.SYMBOL_CELL, null, ""));
                 addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.add_currency"), b -> openCurrencyEdit(null))
-                        .bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH, ENTRY_HEIGHT - 2).build());
+                        .bounds(leftPos + contentX, topPos + y, addW, ENTRY_HEIGHT - 2).build());
             }
         }
     }
 
     private void buildEntries() {
-        addDoneButton(() -> {
-            subView = SubView.CATEGORIES;
-            scrollOffset = 0;
-            rebuild();
-        });
-
         List<ShopEntry> list = entriesInCategory(selectedCategoryId);
         int visible = Math.min(MAX_VISIBLE, list.size() + 1);
         ensureScroll(list.size() + 1);
+        int contentX = listContentX();
+        int mainW = listMainButtonWidth();
+        int addW = listAddButtonWidth();
         for (int i = 0; i < visible; i++) {
             int idx = scrollOffset + i;
             int y = ENTRY_START_Y + i * ENTRY_HEIGHT;
             if (idx < list.size()) {
                 ShopEntry e = list.get(idx);
                 final String entryId = e.id;
-                addDyn(Button.builder(Component.literal(truncate(e.id, 30)), b -> openEntryEdit(entryId))
-                        .bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH - 44, ENTRY_HEIGHT - 2).build());
+                listRowVisuals.add(new ListRowVisual(i, ListRowKind.ITEM_SLOT, iconStackForEntry(e), null));
+                addDyn(Button.builder(Component.literal(truncate(entryContentLabel(e), 30)), b -> openEntryEdit(entryId))
+                        .bounds(leftPos + contentX, topPos + y, mainW, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("✎"), b -> openEntryEdit(entryId))
                         .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 42, topPos + y, 18, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("🗑"), b -> confirmDelete("entry", entryId))
                         .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 22, topPos + y, 18, ENTRY_HEIGHT - 2).build());
             } else if (idx == list.size()) {
+                listRowVisuals.add(new ListRowVisual(i, ListRowKind.ITEM_SLOT, ItemStack.EMPTY, null));
                 addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.add_entry"), b -> openEntryEdit(null))
-                        .bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH, ENTRY_HEIGHT - 2).build());
+                        .bounds(leftPos + contentX, topPos + y, addW, ENTRY_HEIGHT - 2).build());
             }
         }
+    }
+
+    private int listContentX() {
+        return ENTRY_START_X + LIST_ICON_SIZE + LIST_ICON_GAP;
+    }
+
+    private int listMainButtonWidth() {
+        return ENTRY_WIDTH - 44 - LIST_ICON_SIZE - LIST_ICON_GAP;
+    }
+
+    private int listAddButtonWidth() {
+        return ENTRY_WIDTH - 4 - LIST_ICON_SIZE - LIST_ICON_GAP;
+    }
+
+    private ItemStack iconStackFromId(@Nullable String itemId) {
+        if (itemId == null || itemId.isBlank() || itemId.startsWith("#")) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack stack = ItemConverter.parseItemString(itemId, 1);
+        return stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
+    }
+
+    private ItemStack iconStackForEntry(ShopEntry entry) {
+        if (entry.type != ShopEntry.EntryType.ITEM) {
+            return ItemStack.EMPTY;
+        }
+        return iconStackFromId(entry.item);
     }
 
     private void buildCategoryEdit() {
@@ -454,14 +614,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             draftCategory.priority = 0;
             draftCategoryOldId = draftCategory.id;
         }
-        addDoneButton(this::tryLeaveCategoryEdit);
-
-        idBox = addLabeledField(20, 22, 32, 200, 12, "gui.iska_utils.shop_edit.field.id", draftCategory.id, 128);
-        nameBox = addLabeledField(20, 48, 58, 240, 12, "gui.iska_utils.shop_edit.field.name", draftCategory.name, 256);
-        descBox = addLabeledField(20, 74, 84, 240, 12, "gui.iska_utils.shop_edit.field.description", draftCategory.description, 512);
-        priorityBox = addLabeledField(20, 100, 110, 60, 12, "gui.iska_utils.shop_edit.field.priority",
+        idBox = addLabeledField(FORM_LEFT, 22, 32, FORM_WIDTH, 12, "gui.iska_utils.shop_edit.field.id", draftCategory.id, 128);
+        nameBox = addLabeledField(FORM_LEFT, 48, 58, FORM_WIDTH, 12, "gui.iska_utils.shop_edit.field.name", draftCategory.name, 256);
+        descBox = addLabeledField(FORM_LEFT, 74, 84, FORM_WIDTH, 12, "gui.iska_utils.shop_edit.field.description", draftCategory.description, 512);
+        priorityBox = addLabeledField(FORM_LEFT, 100, 110, formColW(0, 4), 12, "gui.iska_utils.shop_edit.field.priority",
                 String.valueOf(draftCategory.priority), 16);
-        addLabel(20, 124, "gui.iska_utils.shop_edit.field.icon");
+        addLabel(FORM_LEFT, 124, "gui.iska_utils.shop_edit.field.icon");
         addResourceSelectorRow(134, draftCategory.item, false);
     }
 
@@ -473,10 +631,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             draftCurrency.charSymbol = "§";
             draftCurrencyOldId = draftCurrency.id;
         }
-        addDoneButton(this::tryLeaveCurrencyEdit);
-        idBox = addLabeledField(20, 28, 38, 200, 12, "gui.iska_utils.shop_edit.field.id", draftCurrency.id, 128);
-        nameBox = addLabeledField(20, 56, 66, 240, 12, "gui.iska_utils.shop_edit.field.name", draftCurrency.name, 256);
-        symbolBox = addLabeledField(20, 84, 94, 40, 12, "gui.iska_utils.shop_edit.field.symbol", draftCurrency.charSymbol, 8);
+        idBox = addLabeledField(FORM_LEFT, 28, 38, FORM_WIDTH, 12, "gui.iska_utils.shop_edit.field.id", draftCurrency.id, 128);
+        nameBox = addLabeledField(FORM_LEFT, 56, 66, FORM_WIDTH, 12, "gui.iska_utils.shop_edit.field.name", draftCurrency.name, 256);
+        symbolBox = addLabeledField(FORM_LEFT, 84, 94, formColW(0, 4), 12, "gui.iska_utils.shop_edit.field.symbol", draftCurrency.charSymbol, 8);
     }
 
     private void buildEntryEdit() {
@@ -495,36 +652,27 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             draftEntryOldId = draftEntry.id;
             draftStages.clear();
         }
-        addDoneButton(() -> {
-            flushFormToDraft();
-            autosaveCurrentForm(true);
-            editingStageIndex = -1;
-            subView = SubView.ENTRIES;
-            scrollOffset = 0;
-            rebuild();
-        });
-
-        addLabel(20, 20, "gui.iska_utils.shop_edit.field.id");
-        idBox = addBox(20, 30, 100, 12, draftEntry.id, 128);
-        addLabel(128, 20, "gui.iska_utils.shop_edit.field.type");
+        addLabel(formColX(0, 2), 20, "gui.iska_utils.shop_edit.field.id");
+        idBox = addBox(formColX(0, 2), 30, formColW(0, 2), 12, draftEntry.id, 128);
+        addLabel(formColX(1, 2), 20, "gui.iska_utils.shop_edit.field.type");
         typeButton = addDyn(Button.builder(Component.literal(typeLabel()), b -> cycleType())
-                .bounds(leftPos + 128, topPos + 30, 50, 12).build());
+                .bounds(leftPos + formColX(1, 2), topPos + 30, formColW(1, 2), 12).build());
 
-        addLabel(20, 42, "gui.iska_utils.shop_edit.field.resource");
+        addLabel(FORM_LEFT, 46, "gui.iska_utils.shop_edit.field.resource");
         addResourceSelectorRow(54, resourceString(draftEntry), true);
 
-        addLabel(20, 76, "gui.iska_utils.shop_edit.field.amount");
-        amountBox = addBox(20, 86, 40, 12, String.valueOf(draftEntry.amount), 16);
-        addLabel(68, 76, "gui.iska_utils.shop_edit.field.buy");
-        buyBox = addBox(68, 86, 40, 12, formatNum(draftEntry.buy), 24);
-        addLabel(116, 76, "gui.iska_utils.shop_edit.field.sell");
-        sellBox = addBox(116, 86, 40, 12, formatNum(draftEntry.sell), 24);
-        addLabel(164, 76, "gui.iska_utils.shop_edit.field.priority");
-        priorityBox = addBox(164, 86, 36, 12, String.valueOf(draftEntry.priority), 16);
+        addLabel(formColX(0, 4), 76, "gui.iska_utils.shop_edit.field.amount");
+        amountBox = addBox(formColX(0, 4), 86, formColW(0, 4), 12, String.valueOf(draftEntry.amount), 16);
+        addLabel(formColX(1, 4), 76, "gui.iska_utils.shop_edit.field.buy");
+        buyBox = addBox(formColX(1, 4), 86, formColW(1, 4), 12, formatNum(draftEntry.buy), 24);
+        addLabel(formColX(2, 4), 76, "gui.iska_utils.shop_edit.field.sell");
+        sellBox = addBox(formColX(2, 4), 86, formColW(2, 4), 12, formatNum(draftEntry.sell), 24);
+        addLabel(formColX(3, 4), 76, "gui.iska_utils.shop_edit.field.priority");
+        priorityBox = addBox(formColX(3, 4), 86, formColW(3, 4), 12, String.valueOf(draftEntry.priority), 16);
 
-        addLabel(20, 102, "gui.iska_utils.shop_edit.field.currency");
+        addLabel(formColX(0, 3), 102, "gui.iska_utils.shop_edit.field.currency");
         currencyButton = addDyn(Button.builder(Component.literal(nullSafe(draftEntry.currency)), b -> cycleCurrency())
-                .bounds(leftPos + 20, topPos + 112, 90, 12).build());
+                .bounds(leftPos + formColX(0, 3), topPos + 112, formColW(0, 3), 12).build());
         freeButton = addDyn(Button.builder(Component.translatable(
                 draftEntry.free ? "gui.iska_utils.shop_edit.field.free_on" : "gui.iska_utils.shop_edit.field.free_off"), b -> {
             flushFormToDraft();
@@ -532,47 +680,42 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             freeButton.setMessage(Component.translatable(
                     draftEntry.free ? "gui.iska_utils.shop_edit.field.free_on" : "gui.iska_utils.shop_edit.field.free_off"));
             autosaveCurrentForm(true);
-        }).bounds(leftPos + 118, topPos + 112, 70, 12).build());
+        }).bounds(leftPos + formColX(1, 3), topPos + 112, formColW(1, 3), 12).build());
         addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.stages_button", draftStages.size()), b -> {
             flushFormToDraft();
             editingStageIndex = -1;
             stageScrollOffset = 0;
             subView = SubView.ENTRY_STAGES;
             rebuild();
-        }).bounds(leftPos + 196, topPos + 112, 70, 12)
+        }).bounds(leftPos + formColX(2, 3), topPos + 112, formColW(2, 3), 12)
                 .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.stages")))
                 .build());
     }
 
     private void buildEntryStages() {
-        addDoneButton(() -> {
-            flushFormToDraft();
-            autosaveCurrentForm(true);
-            editingStageIndex = -1;
-            subView = SubView.ENTRY_EDIT;
-            rebuild();
-        });
-
-        addLabel(20, STAGE_LIST_Y - 24, "gui.iska_utils.shop_edit.stages");
-        stageNameBox = addBox(20, STAGE_LIST_Y - 14, 90, 12,
+        addLabel(FORM_LEFT, STAGE_LIST_Y - 24, "gui.iska_utils.shop_edit.stages");
+        int toolbarY = STAGE_LIST_Y - 14;
+        stageNameBox = addBox(formColX(0, 4), toolbarY, formColW(0, 4), 12,
                 editingStageIndex >= 0 && editingStageIndex < draftStages.size()
                         ? nullSafe(draftStages.get(editingStageIndex).stage) : "", 128);
         stageTypeButton = addDyn(Button.builder(Component.literal(stageTypeDraft), b -> {
             stageTypeDraft = nextStageType(stageTypeDraft);
             stageTypeButton.setMessage(Component.literal(stageTypeDraft));
-        }).bounds(leftPos + 114, topPos + STAGE_LIST_Y - 14, 44, 12).build());
+        }).bounds(leftPos + formColX(1, 4), topPos + toolbarY, formColW(1, 4), 12).build());
         stageIsButton = addDyn(Button.builder(Component.literal(stageIsDraft ? "is" : "!is"), b -> {
             stageIsDraft = !stageIsDraft;
             stageIsButton.setMessage(Component.literal(stageIsDraft ? "is" : "!is"));
-        }).bounds(leftPos + 162, topPos + STAGE_LIST_Y - 14, 28, 12).build());
+        }).bounds(leftPos + formColX(2, 4), topPos + toolbarY, formColW(2, 4), 12).build());
         stageAddButton = addDyn(Button.builder(Component.literal(editingStageIndex >= 0 ? "✓" : "+"), b -> applyStageDraft())
-                .bounds(leftPos + 194, topPos + STAGE_LIST_Y - 14, 18, 12)
+                .bounds(leftPos + formColX(3, 4), topPos + toolbarY, formColW(3, 4), 12)
                 .tooltip(Tooltip.create(Component.translatable(editingStageIndex >= 0
                         ? "gui.iska_utils.shop_edit.stage.apply" : "gui.iska_utils.shop_edit.stage.add")))
                 .build());
 
         ensureStageScroll();
         int visible = Math.min(MAX_VISIBLE_STAGES, draftStages.size());
+        int actionW = 16;
+        int labelW = STAGE_LIST_WIDTH - actionW * 2 - FORM_GAP * 2;
         for (int i = 0; i < visible; i++) {
             int idx = stageScrollOffset + i;
             if (idx >= draftStages.size()) {
@@ -583,9 +726,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             int stageY = STAGE_LIST_Y + i * STAGE_ROW_HEIGHT;
             String label = (st.is ? "" : "!") + nullSafe(st.stageType) + ":" + nullSafe(st.stage);
             addDyn(Button.builder(Component.literal(truncate(label, 28)), b -> {})
-                    .bounds(leftPos + STAGE_LIST_X, topPos + stageY, STAGE_LIST_WIDTH - 40, STAGE_ROW_HEIGHT - 2).build());
+                    .bounds(leftPos + STAGE_LIST_X, topPos + stageY, labelW, STAGE_ROW_HEIGHT - 2).build());
             addDyn(Button.builder(Component.literal("✎"), b -> beginEditStage(stageIndex))
-                    .bounds(leftPos + STAGE_LIST_X + STAGE_LIST_WIDTH - 38, topPos + stageY, 16, STAGE_ROW_HEIGHT - 2)
+                    .bounds(leftPos + STAGE_LIST_X + labelW + FORM_GAP, topPos + stageY, actionW, STAGE_ROW_HEIGHT - 2)
                     .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.edit")))
                     .build());
             addDyn(Button.builder(Component.literal("🗑"), b -> {
@@ -597,7 +740,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 }
                 autosaveCurrentForm(true);
                 rebuild();
-            }).bounds(leftPos + STAGE_LIST_X + STAGE_LIST_WIDTH - 20, topPos + stageY, 16, STAGE_ROW_HEIGHT - 2)
+            }).bounds(leftPos + STAGE_LIST_X + labelW + FORM_GAP + actionW + FORM_GAP, topPos + stageY, actionW, STAGE_ROW_HEIGHT - 2)
                     .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.delete")))
                     .build());
         }
@@ -751,7 +894,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             rebuild();
             return;
         }
-        if (!draftCategoryOldId.equals(draftCategory.id)) {
+        if (!draftCategoryOldId.equals(draftCategory.id)
+                && draftCategory.id != null
+                && !draftCategory.id.isBlank()) {
             renameKind = "category";
             renameOldId = draftCategoryOldId;
             renameNewId = draftCategory.id;
@@ -772,7 +917,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             rebuild();
             return;
         }
-        if (!draftCurrencyOldId.equals(draftCurrency.id)) {
+        if (!draftCurrencyOldId.equals(draftCurrency.id)
+                && draftCurrency.id != null
+                && !draftCurrency.id.isBlank()) {
             renameKind = "currency";
             renameOldId = draftCurrencyOldId;
             renameNewId = draftCurrency.id;
@@ -827,12 +974,23 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private void sendUpsertCategory(@Nullable String renameMode) {
-        if (draftCategory == null || draftCategory.id == null || draftCategory.id.isBlank()) {
+        if (draftCategory == null) {
+            return;
+        }
+        boolean pendingRename = renameMode == null
+                && draftCategoryOldId != null
+                && draftCategory.id != null
+                && !draftCategoryOldId.equals(draftCategory.id);
+        String saveId = pendingRename ? draftCategoryOldId : draftCategory.id;
+        if (saveId == null || saveId.isBlank()) {
+            return;
+        }
+        if (renameMode != null && (draftCategory.id == null || draftCategory.id.isBlank())) {
             return;
         }
         sendAction("upsert_category", o -> {
             o.addProperty("old_id", draftCategoryOldId);
-            o.addProperty("id", draftCategory.id);
+            o.addProperty("id", renameMode != null ? draftCategory.id : saveId);
             o.addProperty("name", nullSafe(draftCategory.name));
             o.addProperty("description", nullSafe(draftCategory.description));
             o.addProperty("item", nullSafe(draftCategory.item));
@@ -841,23 +999,38 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 o.addProperty("rename_mode", renameMode);
             }
         });
-        draftCategoryOldId = draftCategory.id;
+        if (renameMode != null || !pendingRename) {
+            draftCategoryOldId = draftCategory.id;
+        }
     }
 
     private void sendUpsertCurrency(@Nullable String renameMode) {
-        if (draftCurrency == null || draftCurrency.id == null || draftCurrency.id.isBlank()) {
+        if (draftCurrency == null) {
+            return;
+        }
+        boolean pendingRename = renameMode == null
+                && draftCurrencyOldId != null
+                && draftCurrency.id != null
+                && !draftCurrencyOldId.equals(draftCurrency.id);
+        String saveId = pendingRename ? draftCurrencyOldId : draftCurrency.id;
+        if (saveId == null || saveId.isBlank()) {
+            return;
+        }
+        if (renameMode != null && (draftCurrency.id == null || draftCurrency.id.isBlank())) {
             return;
         }
         sendAction("upsert_currency", o -> {
             o.addProperty("old_id", draftCurrencyOldId);
-            o.addProperty("id", draftCurrency.id);
+            o.addProperty("id", renameMode != null ? draftCurrency.id : saveId);
             o.addProperty("name", nullSafe(draftCurrency.name));
             o.addProperty("char_symbol", nullSafe(draftCurrency.charSymbol));
             if (renameMode != null) {
                 o.addProperty("rename_mode", renameMode);
             }
         });
-        draftCurrencyOldId = draftCurrency.id;
+        if (renameMode != null || !pendingRename) {
+            draftCurrencyOldId = draftCurrency.id;
+        }
     }
 
     private void sendUpsertEntry() {
@@ -1119,15 +1292,11 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
         graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, leftPos, topPos, 0.0F, 0.0F, GUI_WIDTH, GUI_HEIGHT, GUI_WIDTH, GUI_HEIGHT);
         if (dialog == Dialog.NONE && isListView()) {
-            int rows = Math.min(MAX_VISIBLE, Math.max(1, listTotalCount()));
-            for (int i = 0; i < rows; i++) {
-                graphics.blit(RenderPipelines.GUI_TEXTURED, ENTRY_TEXTURE, leftPos + ENTRY_START_X, topPos + ENTRY_START_Y + i * ENTRY_HEIGHT,
-                        0.0F, 0.0F, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
-            }
             renderListScrollbar(graphics, mouseX, mouseY);
+            renderListRowVisuals(graphics);
         }
         if ((subView == SubView.CATEGORY_EDIT || subView == SubView.ENTRY_EDIT) && dialog == Dialog.NONE) {
-            int slotY = subView == SubView.ENTRY_EDIT ? 51 : 133;
+            int slotY = subView == SubView.ENTRY_EDIT ? 53 : 133;
             graphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, leftPos + resourceSlotX() - 1, topPos + slotY, 0.0F, 0.0F, 18, 18, 18, 18);
             ItemStack ghost = menu.getGhostStack();
             if (!ghost.isEmpty()) {
@@ -1135,9 +1304,49 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 graphics.itemDecorations(this.font, ghost, leftPos + resourceSlotX(), topPos + slotY + 1);
             }
         }
-        if (subView == SubView.ENTRY_EDIT && dialog == Dialog.NONE) {
+        if (subView == SubView.ENTRY_STAGES && dialog == Dialog.NONE) {
             renderStageScrollbar(graphics, mouseX, mouseY);
         }
+    }
+
+    private void renderListRowVisuals(GuiGraphicsExtractor graphics) {
+        for (ListRowVisual visual : listRowVisuals) {
+            int rowY = ENTRY_START_Y + visual.rowIndex() * ENTRY_HEIGHT;
+            int x = leftPos + ENTRY_START_X;
+            int y = topPos + rowY + (ENTRY_HEIGHT - 2 - LIST_ICON_SIZE) / 2;
+            if (visual.kind() == ListRowKind.ITEM_SLOT) {
+                graphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, x, y, 0.0F, 0.0F, LIST_ICON_SIZE, LIST_ICON_SIZE, LIST_ICON_SIZE, LIST_ICON_SIZE);
+                ItemStack icon = visual.icon();
+                if (icon != null && !icon.isEmpty()) {
+                    graphics.item(icon, x + 1, y + 1);
+                    graphics.itemDecorations(this.font, icon, x + 1, y + 1);
+                }
+            } else {
+                renderSymbolCell(graphics, x, y, visual.symbol());
+            }
+        }
+    }
+
+    /** Neutral channel-style cell (Another Dynamics letter box look, no palette colors). */
+    private void renderSymbolCell(GuiGraphicsExtractor graphics, int x, int y, @Nullable String symbol) {
+        int bg = 0xFF404040;
+        int border = 0xFF303030;
+        graphics.fill(x + 1, y + 1, x + LIST_ICON_SIZE - 1, y + LIST_ICON_SIZE - 1, bg);
+        graphics.fill(x, y, x + LIST_ICON_SIZE, y + 1, border);
+        graphics.fill(x, y + LIST_ICON_SIZE - 1, x + LIST_ICON_SIZE, y + LIST_ICON_SIZE, border);
+        graphics.fill(x, y, x + 1, y + LIST_ICON_SIZE, border);
+        graphics.fill(x + LIST_ICON_SIZE - 1, y, x + LIST_ICON_SIZE, y + LIST_ICON_SIZE, border);
+        if (symbol == null || symbol.isBlank()) {
+            return;
+        }
+        String label = shortSymbolLabel(symbol);
+        int lw = font.width(label);
+        graphics.text(this.font, label, x + (LIST_ICON_SIZE - lw) / 2, y + (LIST_ICON_SIZE - 8) / 2, 0xFFFFFFFF, false);
+    }
+
+    private static String shortSymbolLabel(String symbol) {
+        int[] cps = symbol.codePoints().limit(2).toArray();
+        return new String(cps, 0, cps.length);
     }
 
     private void renderListScrollbar(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
@@ -1166,20 +1375,18 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if (draftStages.size() <= MAX_VISIBLE_STAGES) {
             return;
         }
+        int stageBarH = Math.max(HANDLE_SIZE, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT - HANDLE_SIZE * 2);
         int upY = STAGE_LIST_Y;
         int barY = STAGE_LIST_Y + HANDLE_SIZE;
-        int downY = barY + SCROLLBAR_HEIGHT;
+        int downY = barY + stageBarH;
         int sx = leftPos + STAGE_SCROLLBAR_X;
-        // Shorter track for stage area: reuse same texture but clip height to fit
-        int stageBarH = Math.min(SCROLLBAR_HEIGHT, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + barY, 0.0F, 0.0F, SCROLLBAR_WIDTH, stageBarH, 32, 34);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + barY, 0.0F, 0.0F, SCROLLBAR_WIDTH, Math.min(SCROLLBAR_HEIGHT, stageBarH), 32, 34);
         boolean upHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
                 && mouseY >= topPos + upY && mouseY < topPos + upY + HANDLE_SIZE;
         graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + upY, (float)(SCROLLBAR_WIDTH * 2), (float)(upHover ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        int stageDownY = STAGE_LIST_Y + HANDLE_SIZE + stageBarH;
         boolean downHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
-                && mouseY >= topPos + stageDownY && mouseY < topPos + stageDownY + HANDLE_SIZE;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + stageDownY, (float)(SCROLLBAR_WIDTH * 3), (float)(downHover ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+                && mouseY >= topPos + downY && mouseY < topPos + downY + HANDLE_SIZE;
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + downY, (float)(SCROLLBAR_WIDTH * 3), (float)(downHover ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         double ratio = maxStageScroll() == 0 ? 0 : (double) stageScrollOffset / maxStageScroll();
         int handleY = topPos + barY + (int) (ratio * Math.max(1, stageBarH - HANDLE_SIZE));
         boolean handleHover = mouseX >= sx && mouseX < sx + HANDLE_SIZE
@@ -1201,6 +1408,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             case DELETE_CONFIRM -> Component.translatable("gui.iska_utils.shop_edit.confirm_delete_title");
             case RENAME_CONFIRM -> Component.translatable("gui.iska_utils.shop_edit.rename.title",
                     nullSafe(renameOldId), nullSafe(renameNewId));
+            case CLOSE_HINT -> Component.translatable("gui.iska_utils.shop_edit.close_hint_title");
             default -> switch (subView) {
                 case CATEGORIES -> Component.translatable("gui.iska_utils.shop_edit.categories");
                 case CATEGORY_EDIT -> Component.translatable("gui.iska_utils.shop_edit.category_edit");
@@ -1219,6 +1427,15 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         Component title = currentTitle();
         int titleX = (GUI_WIDTH - font.width(title)) / 2;
         graphics.text(this.font, title, titleX, 6, 0x404040, false);
+        if (dialog == Dialog.CLOSE_HINT) {
+            Component hint = Component.translatable("gui.iska_utils.shop_edit.close_reload_hint");
+            int y = 50;
+            for (var line : font.split(hint, GUI_WIDTH - 40)) {
+                graphics.text(this.font, line, 20, y, 0x404040, false);
+                y += 12;
+            }
+            return;
+        }
         for (FormLabel label : formLabels) {
             graphics.text(this.font, label.text(), label.x(), label.y(), 0x404040, false);
         }
@@ -1238,7 +1455,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 rebuild();
                 return true;
             }
-            if (subView == SubView.ENTRY_EDIT
+            if (subView == SubView.ENTRY_STAGES
                     && mouseX >= leftPos + STAGE_LIST_X
                     && mouseX < leftPos + STAGE_SCROLLBAR_X + SCROLLBAR_WIDTH
                     && mouseY >= topPos + STAGE_LIST_Y - 14
@@ -1271,12 +1488,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
-            if (subView == SubView.ENTRY_EDIT && handleStageScrollbarClick(mouseX, mouseY)) {
+            if (subView == SubView.ENTRY_STAGES && handleStageScrollbarClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
             if ((subView == SubView.CATEGORY_EDIT || subView == SubView.ENTRY_EDIT)) {
-                int slotY = subView == SubView.ENTRY_EDIT ? 52 : 134;
+                int slotY = subView == SubView.ENTRY_EDIT ? 54 : 134;
                 int sx = leftPos + resourceSlotX();
                 int sy = topPos + slotY;
                 if (mouseX >= sx && mouseX < sx + 16 && mouseY >= sy && mouseY < sy + 16) {
@@ -1322,7 +1539,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             return true;
         }
         if (button == 0 && isDraggingStageHandle && maxStageScroll() > 0) {
-            int stageBarH = Math.min(SCROLLBAR_HEIGHT, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT);
+            int stageBarH = Math.max(HANDLE_SIZE, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT - HANDLE_SIZE * 2);
             int barY = topPos + STAGE_LIST_Y + HANDLE_SIZE;
             float ratio = (float) (mouseY - barY) / Math.max(1, stageBarH - HANDLE_SIZE);
             stageScrollOffset = Math.max(0, Math.min(maxStageScroll(), Math.round(ratio * maxStageScroll())));
@@ -1368,7 +1585,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             return false;
         }
         int sx = leftPos + STAGE_SCROLLBAR_X;
-        int stageBarH = Math.min(SCROLLBAR_HEIGHT, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT);
+        int stageBarH = Math.max(HANDLE_SIZE, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT - HANDLE_SIZE * 2);
         int upY = topPos + STAGE_LIST_Y;
         int barY = topPos + STAGE_LIST_Y + HANDLE_SIZE;
         int downY = barY + stageBarH;
@@ -1473,7 +1690,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             return null;
         }
         if (subView == SubView.ENTRY_EDIT) {
-            return new Rect2i(leftPos + resourceSlotX() - 1, topPos + 51, 18, 18);
+            return new Rect2i(leftPos + resourceSlotX() - 1, topPos + 53, 18, 18);
         }
         if (subView == SubView.CATEGORY_EDIT) {
             return new Rect2i(leftPos + resourceSlotX() - 1, topPos + 133, 18, 18);
@@ -1492,14 +1709,18 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         return s != null ? s : "";
     }
 
-    private static String displayName(String name) {
-        if (name == null) {
+    /** Localized name from lang key when available; otherwise the raw key/literal. */
+    private static String displayName(@Nullable String name) {
+        if (name == null || name.isBlank()) {
             return "";
         }
-        if (name.contains(":") || name.startsWith("item.") || name.startsWith("gui.") || name.startsWith("iska")) {
-            return Component.translatable(name).getString();
-        }
-        return name;
+        return Component.translatable(name).getString();
+    }
+
+    /** Item/fluid/gas id or tag shown in the entries list (not the shop entry id). */
+    private static String entryContentLabel(ShopEntry entry) {
+        String selector = ShopEntryHelper.resourceSelector(entry);
+        return selector != null ? selector.trim() : "";
     }
 
     private static String formatNum(double v) {

@@ -138,8 +138,6 @@ public class ShopEditMenu extends AbstractContainerMenu {
         super.removed(player);
         if (!player.level().isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
             ShopEditSession.releaseIfHolder(sp);
-            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                    "gui.iska_utils.shop_edit.close_reload_hint"));
         }
     }
 }
