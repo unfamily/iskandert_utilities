@@ -1,0 +1,1526 @@
+package net.unfamily.iskautils.client.gui;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.material.Fluids;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.unfamily.iskalib.item.ItemConverter;
+import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.integration.jei.ghost.IIskaUtilsGhostTarget;
+import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
+import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskautils.shop.ShopCategory;
+import net.unfamily.iskautils.shop.ShopCurrency;
+import net.unfamily.iskautils.shop.ShopEntry;
+import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopStage;
+import net.unfamily.iskautils.shop.edit.ShopEditResourceFormats;
+import net.unfamily.iskautils.shop.edit.ShopEditSession;
+import net.unfamily.iskautils.shop.edit.ShopEditWorkspace;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * Single-screen shop JSON editor with sub-views (no nested screens).
+ */
+public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implements IIskaUtilsGhostTarget {
+
+    private enum SubView {
+        CATEGORIES, CATEGORY_EDIT, ENTRIES, ENTRY_EDIT, ENTRY_STAGES, CURRENCIES, CURRENCY_EDIT
+    }
+
+    private enum Dialog {
+        NONE, DELETE_CONFIRM, RENAME_CONFIRM
+    }
+
+    private static final ResourceLocation TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
+    private static final ResourceLocation ENTRY_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/enrty_wide_wide_wide.png");
+    private static final ResourceLocation SCROLLBAR_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
+    private static final ResourceLocation SINGLE_SLOT_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
+
+    private static final int GUI_WIDTH = 300;
+    private static final int GUI_HEIGHT = 240;
+    private static final int ENTRY_WIDTH = 220;
+    private static final int ENTRY_HEIGHT = 24;
+    private static final int ENTRY_START_X = 19;
+    private static final int ENTRY_START_Y = 28;
+    private static final int MAX_VISIBLE = 4;
+    private static final int RESOURCE_ARROW_SIZE = 12;
+    private static final int RESOURCE_ARROW_GAP = 4;
+    private static final int RESOURCE_SLOT_SIZE = 18;
+    private static final int RESOURCE_ROW_LEFT = 20;
+
+    private static final int SCROLLBAR_WIDTH = 8;
+    private static final int SCROLLBAR_HEIGHT = 34;
+    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 4;
+
+    private static final int STAGE_ROW_HEIGHT = 14;
+    private static final int MAX_VISIBLE_STAGES = 6;
+    private static final int STAGE_LIST_X = 20;
+    private static final int STAGE_LIST_Y = 48;
+    private static final int STAGE_LIST_WIDTH = 220;
+    private static final int STAGE_SCROLLBAR_X = 250;
+
+    /** Buttons beside the player inventory (inventory starts at x=20,y=154). */
+    private static final int SIDE_BTN_X = 188;
+    private static final int SIDE_BTN_Y = 154;
+    private static final int SIDE_BTN_W = 72;
+    private static final int SIDE_BTN_H = 14;
+
+    private record FormLabel(int x, int y, Component text) {}
+
+    private SubView subView = SubView.CATEGORIES;
+    private Dialog dialog = Dialog.NONE;
+    private int scrollOffset;
+    private int stageScrollOffset;
+    private boolean isDraggingHandle;
+    private boolean isDraggingStageHandle;
+
+    @Nullable private String selectedCategoryId;
+
+    private ShopCategory draftCategory;
+    private String draftCategoryOldId;
+    private ShopCurrency draftCurrency;
+    private String draftCurrencyOldId;
+    private ShopEntry draftEntry;
+    private String draftEntryOldId;
+    private final List<ShopStage> draftStages = new ArrayList<>();
+    private int editingStageIndex = -1;
+
+    private String pendingDeleteKind;
+    private String pendingDeleteId;
+    private String renameKind;
+    private String renameOldId;
+    private String renameNewId;
+
+    private final List<String> resourceVariants = new ArrayList<>();
+    private int resourceVariantIndex;
+    private int formDebounceTicks;
+    private boolean formDirty;
+    private final List<FormLabel> formLabels = new ArrayList<>();
+
+    private final List<Button> dynamicButtons = new ArrayList<>();
+    private final List<EditBox> formBoxes = new ArrayList<>();
+    private EditBox idBox;
+    private EditBox nameBox;
+    private EditBox descBox;
+    private EditBox resourceBox;
+    private EditBox symbolBox;
+    private EditBox amountBox;
+    private EditBox buyBox;
+    private EditBox sellBox;
+    private EditBox priorityBox;
+    private EditBox stageNameBox;
+    private Button freeButton;
+    private Button typeButton;
+    private Button currencyButton;
+    private Button stageTypeButton;
+    private Button stageIsButton;
+    private Button stageAddButton;
+
+    private String stageTypeDraft = "world";
+    private boolean stageIsDraft = true;
+
+    public ShopEditScreen(ShopEditMenu menu, Inventory inv, Component title) {
+        super(menu, inv, title);
+        this.imageWidth = GUI_WIDTH;
+        this.imageHeight = GUI_HEIGHT;
+        this.inventoryLabelY = 142;
+        this.titleLabelY = 8;
+    }
+
+    public void applySync(ShopEditWorkspace.ShopEditData data) {
+        menu.applySync(data);
+        if (dialog == Dialog.NONE && isListView()) {
+            rebuild();
+        }
+    }
+
+    private boolean isListView() {
+        return subView == SubView.CATEGORIES || subView == SubView.ENTRIES || subView == SubView.CURRENCIES;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        rebuild();
+    }
+
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        if (formDirty && formDebounceTicks > 0) {
+            formDebounceTicks--;
+            if (formDebounceTicks == 0) {
+                formDirty = false;
+                flushFormToDraft();
+                autosaveCurrentForm(false);
+            }
+        }
+    }
+
+    private void clearDynamic() {
+        for (Button b : dynamicButtons) {
+            removeWidget(b);
+        }
+        dynamicButtons.clear();
+        for (EditBox box : formBoxes) {
+            removeWidget(box);
+        }
+        formBoxes.clear();
+        formLabels.clear();
+        idBox = nameBox = descBox = resourceBox = symbolBox = null;
+        amountBox = buyBox = sellBox = priorityBox = stageNameBox = null;
+        freeButton = typeButton = currencyButton = stageTypeButton = stageIsButton = stageAddButton = null;
+        if (subView != SubView.CATEGORY_EDIT && subView != SubView.ENTRY_EDIT) {
+            menu.clearGhostStack();
+        }
+    }
+
+    private <T extends Button> T addDyn(T button) {
+        dynamicButtons.add(button);
+        return addRenderableWidget(button);
+    }
+
+    private void addLabel(int x, int y, String langKey) {
+        formLabels.add(new FormLabel(x, y, Component.translatable(langKey)));
+    }
+
+    private EditBox addBox(int x, int y, int w, int h, String value, int maxLen) {
+        EditBox box = new EditBox(font, leftPos + x, topPos + y, w, h, Component.empty());
+        box.setMaxLength(maxLen);
+        box.setValue(value != null ? value : "");
+        box.setResponder(v -> markFormDirty());
+        formBoxes.add(box);
+        addRenderableWidget(box);
+        return box;
+    }
+
+    /** Label above, edit box below. Returns the edit box. */
+    private EditBox addLabeledField(int x, int labelY, int boxY, int w, int h, String langKey, String value, int maxLen) {
+        addLabel(x, labelY, langKey);
+        return addBox(x, boxY, w, h, value, maxLen);
+    }
+
+    private void addDoneButton(Runnable action) {
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.done"), b -> action.run())
+                .bounds(leftPos + SIDE_BTN_X, topPos + SIDE_BTN_Y, SIDE_BTN_W, SIDE_BTN_H)
+                .build());
+    }
+
+    private void addCurrenciesSideButton() {
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.currencies"), b -> {
+            subView = SubView.CURRENCIES;
+            scrollOffset = 0;
+            rebuild();
+        }).bounds(leftPos + SIDE_BTN_X, topPos + SIDE_BTN_Y, SIDE_BTN_W, SIDE_BTN_H).build());
+    }
+
+    private int resourceSlotX() {
+        return RESOURCE_ROW_LEFT + RESOURCE_ARROW_SIZE + RESOURCE_ARROW_GAP;
+    }
+
+    private int resourceRightArrowX() {
+        return resourceSlotX() + RESOURCE_SLOT_SIZE + RESOURCE_ARROW_GAP;
+    }
+
+    private int resourceEditBoxX() {
+        return resourceRightArrowX() + RESOURCE_ARROW_SIZE + RESOURCE_ARROW_GAP;
+    }
+
+    /**
+     * Deep Drawer style: {@code ← SLOT → EDITBOX} (+ optional trailing widget start X returned).
+     */
+    private int addResourceSelectorRow(int rowY, String currentValue, boolean withConvert) {
+        int slotX = resourceSlotX();
+        int arrowY = rowY + (RESOURCE_SLOT_SIZE - RESOURCE_ARROW_SIZE) / 2;
+        int boxY = rowY + (RESOURCE_SLOT_SIZE - 12) / 2;
+        syncGhostFromResource(currentValue);
+        setupResourceVariants(currentValue);
+        addDyn(Button.builder(Component.literal("←"), b -> cycleResource(-1))
+                .bounds(leftPos + RESOURCE_ROW_LEFT, topPos + arrowY, RESOURCE_ARROW_SIZE, RESOURCE_ARROW_SIZE)
+                .build());
+        addDyn(Button.builder(Component.literal("→"), b -> cycleResource(1))
+                .bounds(leftPos + resourceRightArrowX(), topPos + arrowY, RESOURCE_ARROW_SIZE, RESOURCE_ARROW_SIZE)
+                .build());
+        int boxX = resourceEditBoxX();
+        int boxW = withConvert ? 110 : (GUI_WIDTH - boxX - 12);
+        resourceBox = addBox(boxX, boxY, boxW, 12, currentValue, 512);
+        if (withConvert) {
+            int convertX = boxX + boxW + 4;
+            addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.convert"), b -> convertResource())
+                    .bounds(leftPos + convertX, topPos + boxY, 52, 12)
+                    .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.convert.tooltip")))
+                    .build());
+            return convertX + 52;
+        }
+        return boxX + boxW;
+    }
+
+    private void markFormDirty() {
+        formDirty = true;
+        formDebounceTicks = 8;
+    }
+
+    private void rebuild() {
+        clearDynamic();
+        scrollOffset = Math.max(0, scrollOffset);
+        addDyn(Button.builder(Component.literal("✕"), b -> onClose())
+                .bounds(leftPos + GUI_WIDTH - 17, topPos + 5, 12, 12)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.close")))
+                .build());
+
+        if (dialog == Dialog.DELETE_CONFIRM) {
+            buildDeleteDialog();
+            return;
+        }
+        if (dialog == Dialog.RENAME_CONFIRM) {
+            buildRenameDialog();
+            return;
+        }
+
+        switch (subView) {
+            case CATEGORIES -> buildCategories();
+            case CATEGORY_EDIT -> buildCategoryEdit();
+            case ENTRIES -> buildEntries();
+            case ENTRY_EDIT -> buildEntryEdit();
+            case ENTRY_STAGES -> buildEntryStages();
+            case CURRENCIES -> buildCurrencies();
+            case CURRENCY_EDIT -> buildCurrencyEdit();
+        }
+    }
+
+    private void buildDeleteDialog() {
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.confirm_delete"), b -> {
+            sendAction("delete_" + pendingDeleteKind, obj -> obj.addProperty("id", pendingDeleteId));
+            dialog = Dialog.NONE;
+            pendingDeleteKind = null;
+            pendingDeleteId = null;
+            rebuild();
+        }).bounds(leftPos + 40, topPos + 100, 100, 20).build());
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.cancel"), b -> {
+            dialog = Dialog.NONE;
+            rebuild();
+        }).bounds(leftPos + 160, topPos + 100, 80, 20).build());
+    }
+
+    private void buildRenameDialog() {
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.rename.propagate"), b -> {
+            finishRename("propagate");
+        }).bounds(leftPos + 30, topPos + 80, 240, 18).build());
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.rename.delete"), b -> {
+            finishRename("delete");
+        }).bounds(leftPos + 30, topPos + 102, 240, 18).build());
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.rename.ignore"), b -> {
+            finishRename("ignore");
+        }).bounds(leftPos + 30, topPos + 124, 240, 18).build());
+    }
+
+    private void finishRename(String mode) {
+        if ("category".equals(renameKind) && draftCategory != null) {
+            flushFormToDraft();
+            sendUpsertCategory(mode);
+            selectedCategoryId = draftCategory.id;
+            subView = SubView.CATEGORIES;
+        } else if ("currency".equals(renameKind) && draftCurrency != null) {
+            flushFormToDraft();
+            sendUpsertCurrency(mode);
+            subView = SubView.CURRENCIES;
+        }
+        dialog = Dialog.NONE;
+        renameKind = renameOldId = renameNewId = null;
+        rebuild();
+    }
+
+    private void buildCategories() {
+        addCurrenciesSideButton();
+
+        List<ShopCategory> list = sortedCategories();
+        int visible = Math.min(MAX_VISIBLE, list.size() + 1);
+        ensureScroll(list.size() + 1);
+        for (int i = 0; i < visible; i++) {
+            int idx = scrollOffset + i;
+            int y = ENTRY_START_Y + i * ENTRY_HEIGHT;
+            if (idx < list.size()) {
+                ShopCategory cat = list.get(idx);
+                final String catId = cat.id;
+                addDyn(Button.builder(Component.literal(truncate(cat.id + " — " + displayName(cat.name), 28)), b -> {
+                    selectedCategoryId = catId;
+                    subView = SubView.ENTRIES;
+                    scrollOffset = 0;
+                    rebuild();
+                }).bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH - 44, ENTRY_HEIGHT - 2).build());
+                addDyn(Button.builder(Component.literal("✎"), b -> openCategoryEdit(catId))
+                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 42, topPos + y, 18, ENTRY_HEIGHT - 2)
+                        .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.edit")))
+                        .build());
+                addDyn(Button.builder(Component.literal("🗑"), b -> confirmDelete("category", catId))
+                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 22, topPos + y, 18, ENTRY_HEIGHT - 2)
+                        .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.delete")))
+                        .build());
+            } else if (idx == list.size()) {
+                addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.add_category"), b -> openCategoryEdit(null))
+                        .bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH, ENTRY_HEIGHT - 2).build());
+            }
+        }
+    }
+
+    private void buildCurrencies() {
+        addDoneButton(() -> {
+            subView = SubView.CATEGORIES;
+            scrollOffset = 0;
+            rebuild();
+        });
+
+        List<ShopCurrency> list = sortedCurrencies();
+        int visible = Math.min(MAX_VISIBLE, list.size() + 1);
+        ensureScroll(list.size() + 1);
+        for (int i = 0; i < visible; i++) {
+            int idx = scrollOffset + i;
+            int y = ENTRY_START_Y + i * ENTRY_HEIGHT;
+            if (idx < list.size()) {
+                ShopCurrency cur = list.get(idx);
+                final String curId = cur.id;
+                addDyn(Button.builder(Component.literal(truncate(cur.id + " " + nullSafe(cur.charSymbol), 30)), b -> openCurrencyEdit(curId))
+                        .bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH - 44, ENTRY_HEIGHT - 2).build());
+                addDyn(Button.builder(Component.literal("✎"), b -> openCurrencyEdit(curId))
+                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 42, topPos + y, 18, ENTRY_HEIGHT - 2).build());
+                addDyn(Button.builder(Component.literal("🗑"), b -> confirmDelete("currency", curId))
+                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 22, topPos + y, 18, ENTRY_HEIGHT - 2).build());
+            } else if (idx == list.size()) {
+                addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.add_currency"), b -> openCurrencyEdit(null))
+                        .bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH, ENTRY_HEIGHT - 2).build());
+            }
+        }
+    }
+
+    private void buildEntries() {
+        addDoneButton(() -> {
+            subView = SubView.CATEGORIES;
+            scrollOffset = 0;
+            rebuild();
+        });
+
+        List<ShopEntry> list = entriesInCategory(selectedCategoryId);
+        int visible = Math.min(MAX_VISIBLE, list.size() + 1);
+        ensureScroll(list.size() + 1);
+        for (int i = 0; i < visible; i++) {
+            int idx = scrollOffset + i;
+            int y = ENTRY_START_Y + i * ENTRY_HEIGHT;
+            if (idx < list.size()) {
+                ShopEntry e = list.get(idx);
+                final String entryId = e.id;
+                addDyn(Button.builder(Component.literal(truncate(e.id, 30)), b -> openEntryEdit(entryId))
+                        .bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH - 44, ENTRY_HEIGHT - 2).build());
+                addDyn(Button.builder(Component.literal("✎"), b -> openEntryEdit(entryId))
+                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 42, topPos + y, 18, ENTRY_HEIGHT - 2).build());
+                addDyn(Button.builder(Component.literal("🗑"), b -> confirmDelete("entry", entryId))
+                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 22, topPos + y, 18, ENTRY_HEIGHT - 2).build());
+            } else if (idx == list.size()) {
+                addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.add_entry"), b -> openEntryEdit(null))
+                        .bounds(leftPos + ENTRY_START_X, topPos + y, ENTRY_WIDTH, ENTRY_HEIGHT - 2).build());
+            }
+        }
+    }
+
+    private void buildCategoryEdit() {
+        if (draftCategory == null) {
+            draftCategory = new ShopCategory();
+            draftCategory.id = "new_category";
+            draftCategory.name = "New Category";
+            draftCategory.description = "";
+            draftCategory.item = "minecraft:stone";
+            draftCategory.priority = 0;
+            draftCategoryOldId = draftCategory.id;
+        }
+        addDoneButton(this::tryLeaveCategoryEdit);
+
+        idBox = addLabeledField(20, 22, 32, 200, 12, "gui.iska_utils.shop_edit.field.id", draftCategory.id, 128);
+        nameBox = addLabeledField(20, 48, 58, 240, 12, "gui.iska_utils.shop_edit.field.name", draftCategory.name, 256);
+        descBox = addLabeledField(20, 74, 84, 240, 12, "gui.iska_utils.shop_edit.field.description", draftCategory.description, 512);
+        priorityBox = addLabeledField(20, 100, 110, 60, 12, "gui.iska_utils.shop_edit.field.priority",
+                String.valueOf(draftCategory.priority), 16);
+        addLabel(20, 124, "gui.iska_utils.shop_edit.field.icon");
+        addResourceSelectorRow(134, draftCategory.item, false);
+    }
+
+    private void buildCurrencyEdit() {
+        if (draftCurrency == null) {
+            draftCurrency = new ShopCurrency();
+            draftCurrency.id = "new_currency";
+            draftCurrency.name = "New Currency";
+            draftCurrency.charSymbol = "§";
+            draftCurrencyOldId = draftCurrency.id;
+        }
+        addDoneButton(this::tryLeaveCurrencyEdit);
+        idBox = addLabeledField(20, 28, 38, 200, 12, "gui.iska_utils.shop_edit.field.id", draftCurrency.id, 128);
+        nameBox = addLabeledField(20, 56, 66, 240, 12, "gui.iska_utils.shop_edit.field.name", draftCurrency.name, 256);
+        symbolBox = addLabeledField(20, 84, 94, 40, 12, "gui.iska_utils.shop_edit.field.symbol", draftCurrency.charSymbol, 8);
+    }
+
+    private void buildEntryEdit() {
+        if (draftEntry == null) {
+            draftEntry = new ShopEntry();
+            draftEntry.id = "new_entry";
+            draftEntry.inCategory = selectedCategoryId != null ? selectedCategoryId : "000_default";
+            draftEntry.type = ShopEntry.EntryType.ITEM;
+            draftEntry.item = "minecraft:stone";
+            draftEntry.amount = 1;
+            draftEntry.currency = firstCurrencyId();
+            draftEntry.buy = 0;
+            draftEntry.sell = 0;
+            draftEntry.priority = 0;
+            draftEntry.free = false;
+            draftEntryOldId = draftEntry.id;
+            draftStages.clear();
+        }
+        addDoneButton(() -> {
+            flushFormToDraft();
+            autosaveCurrentForm(true);
+            editingStageIndex = -1;
+            subView = SubView.ENTRIES;
+            scrollOffset = 0;
+            rebuild();
+        });
+
+        addLabel(20, 20, "gui.iska_utils.shop_edit.field.id");
+        idBox = addBox(20, 30, 100, 12, draftEntry.id, 128);
+        addLabel(128, 20, "gui.iska_utils.shop_edit.field.type");
+        typeButton = addDyn(Button.builder(Component.literal(typeLabel()), b -> cycleType())
+                .bounds(leftPos + 128, topPos + 30, 50, 12).build());
+
+        addLabel(20, 42, "gui.iska_utils.shop_edit.field.resource");
+        addResourceSelectorRow(54, resourceString(draftEntry), true);
+
+        addLabel(20, 76, "gui.iska_utils.shop_edit.field.amount");
+        amountBox = addBox(20, 86, 40, 12, String.valueOf(draftEntry.amount), 16);
+        addLabel(68, 76, "gui.iska_utils.shop_edit.field.buy");
+        buyBox = addBox(68, 86, 40, 12, formatNum(draftEntry.buy), 24);
+        addLabel(116, 76, "gui.iska_utils.shop_edit.field.sell");
+        sellBox = addBox(116, 86, 40, 12, formatNum(draftEntry.sell), 24);
+        addLabel(164, 76, "gui.iska_utils.shop_edit.field.priority");
+        priorityBox = addBox(164, 86, 36, 12, String.valueOf(draftEntry.priority), 16);
+
+        addLabel(20, 102, "gui.iska_utils.shop_edit.field.currency");
+        currencyButton = addDyn(Button.builder(Component.literal(nullSafe(draftEntry.currency)), b -> cycleCurrency())
+                .bounds(leftPos + 20, topPos + 112, 90, 12).build());
+        freeButton = addDyn(Button.builder(Component.translatable(
+                draftEntry.free ? "gui.iska_utils.shop_edit.field.free_on" : "gui.iska_utils.shop_edit.field.free_off"), b -> {
+            flushFormToDraft();
+            draftEntry.free = !draftEntry.free;
+            freeButton.setMessage(Component.translatable(
+                    draftEntry.free ? "gui.iska_utils.shop_edit.field.free_on" : "gui.iska_utils.shop_edit.field.free_off"));
+            autosaveCurrentForm(true);
+        }).bounds(leftPos + 118, topPos + 112, 70, 12).build());
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.stages_button", draftStages.size()), b -> {
+            flushFormToDraft();
+            editingStageIndex = -1;
+            stageScrollOffset = 0;
+            subView = SubView.ENTRY_STAGES;
+            rebuild();
+        }).bounds(leftPos + 196, topPos + 112, 70, 12)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.stages")))
+                .build());
+    }
+
+    private void buildEntryStages() {
+        addDoneButton(() -> {
+            flushFormToDraft();
+            autosaveCurrentForm(true);
+            editingStageIndex = -1;
+            subView = SubView.ENTRY_EDIT;
+            rebuild();
+        });
+
+        addLabel(20, STAGE_LIST_Y - 24, "gui.iska_utils.shop_edit.stages");
+        stageNameBox = addBox(20, STAGE_LIST_Y - 14, 90, 12,
+                editingStageIndex >= 0 && editingStageIndex < draftStages.size()
+                        ? nullSafe(draftStages.get(editingStageIndex).stage) : "", 128);
+        stageTypeButton = addDyn(Button.builder(Component.literal(stageTypeDraft), b -> {
+            stageTypeDraft = nextStageType(stageTypeDraft);
+            stageTypeButton.setMessage(Component.literal(stageTypeDraft));
+        }).bounds(leftPos + 114, topPos + STAGE_LIST_Y - 14, 44, 12).build());
+        stageIsButton = addDyn(Button.builder(Component.literal(stageIsDraft ? "is" : "!is"), b -> {
+            stageIsDraft = !stageIsDraft;
+            stageIsButton.setMessage(Component.literal(stageIsDraft ? "is" : "!is"));
+        }).bounds(leftPos + 162, topPos + STAGE_LIST_Y - 14, 28, 12).build());
+        stageAddButton = addDyn(Button.builder(Component.literal(editingStageIndex >= 0 ? "✓" : "+"), b -> applyStageDraft())
+                .bounds(leftPos + 194, topPos + STAGE_LIST_Y - 14, 18, 12)
+                .tooltip(Tooltip.create(Component.translatable(editingStageIndex >= 0
+                        ? "gui.iska_utils.shop_edit.stage.apply" : "gui.iska_utils.shop_edit.stage.add")))
+                .build());
+
+        ensureStageScroll();
+        int visible = Math.min(MAX_VISIBLE_STAGES, draftStages.size());
+        for (int i = 0; i < visible; i++) {
+            int idx = stageScrollOffset + i;
+            if (idx >= draftStages.size()) {
+                break;
+            }
+            ShopStage st = draftStages.get(idx);
+            final int stageIndex = idx;
+            int stageY = STAGE_LIST_Y + i * STAGE_ROW_HEIGHT;
+            String label = (st.is ? "" : "!") + nullSafe(st.stageType) + ":" + nullSafe(st.stage);
+            addDyn(Button.builder(Component.literal(truncate(label, 28)), b -> {})
+                    .bounds(leftPos + STAGE_LIST_X, topPos + stageY, STAGE_LIST_WIDTH - 40, STAGE_ROW_HEIGHT - 2).build());
+            addDyn(Button.builder(Component.literal("✎"), b -> beginEditStage(stageIndex))
+                    .bounds(leftPos + STAGE_LIST_X + STAGE_LIST_WIDTH - 38, topPos + stageY, 16, STAGE_ROW_HEIGHT - 2)
+                    .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.edit")))
+                    .build());
+            addDyn(Button.builder(Component.literal("🗑"), b -> {
+                draftStages.remove(stageIndex);
+                if (editingStageIndex == stageIndex) {
+                    editingStageIndex = -1;
+                } else if (editingStageIndex > stageIndex) {
+                    editingStageIndex--;
+                }
+                autosaveCurrentForm(true);
+                rebuild();
+            }).bounds(leftPos + STAGE_LIST_X + STAGE_LIST_WIDTH - 20, topPos + stageY, 16, STAGE_ROW_HEIGHT - 2)
+                    .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.delete")))
+                    .build());
+        }
+    }
+
+    private void beginEditStage(int index) {
+        if (index < 0 || index >= draftStages.size()) {
+            return;
+        }
+        ShopStage st = draftStages.get(index);
+        editingStageIndex = index;
+        stageTypeDraft = st.stageType != null ? st.stageType : "world";
+        stageIsDraft = st.is;
+        rebuild();
+    }
+
+    private void applyStageDraft() {
+        if (stageNameBox == null) {
+            return;
+        }
+        String stage = stageNameBox.getValue().trim();
+        if (stage.isEmpty()) {
+            return;
+        }
+        if (editingStageIndex >= 0 && editingStageIndex < draftStages.size()) {
+            ShopStage st = draftStages.get(editingStageIndex);
+            st.stage = stage;
+            st.stageType = stageTypeDraft;
+            st.is = stageIsDraft;
+            editingStageIndex = -1;
+        } else {
+            ShopStage st = new ShopStage();
+            st.stage = stage;
+            st.stageType = stageTypeDraft;
+            st.is = stageIsDraft;
+            draftStages.add(st);
+        }
+        autosaveCurrentForm(true);
+        rebuild();
+    }
+
+    private void ensureScroll(int total) {
+        int max = Math.max(0, total - MAX_VISIBLE);
+        if (scrollOffset > max) {
+            scrollOffset = max;
+        }
+    }
+
+    private void ensureStageScroll() {
+        int max = Math.max(0, draftStages.size() - MAX_VISIBLE_STAGES);
+        if (stageScrollOffset > max) {
+            stageScrollOffset = max;
+        }
+        if (stageScrollOffset < 0) {
+            stageScrollOffset = 0;
+        }
+    }
+
+    private int maxListScroll() {
+        return Math.max(0, listTotalCount() - MAX_VISIBLE);
+    }
+
+    private int maxStageScroll() {
+        return Math.max(0, draftStages.size() - MAX_VISIBLE_STAGES);
+    }
+
+    private void openCategoryEdit(@Nullable String id) {
+        if (id == null) {
+            draftCategory = new ShopCategory();
+            draftCategory.id = uniqueId("category");
+            draftCategory.name = draftCategory.id;
+            draftCategory.description = "";
+            draftCategory.item = "minecraft:stone";
+            draftCategory.priority = 0;
+            draftCategoryOldId = draftCategory.id;
+        } else {
+            ShopCategory src = menu.getData().categories.get(id);
+            draftCategory = src != null ? ShopEditSession.copyCategory(src) : new ShopCategory();
+            draftCategoryOldId = draftCategory.id;
+        }
+        subView = SubView.CATEGORY_EDIT;
+        scrollOffset = 0;
+        rebuild();
+    }
+
+    private void openCurrencyEdit(@Nullable String id) {
+        if (id == null) {
+            draftCurrency = new ShopCurrency();
+            draftCurrency.id = uniqueId("currency");
+            draftCurrency.name = draftCurrency.id;
+            draftCurrency.charSymbol = "§";
+            draftCurrencyOldId = draftCurrency.id;
+        } else {
+            ShopCurrency src = menu.getData().currencies.get(id);
+            draftCurrency = src != null ? ShopEditSession.copyCurrency(src) : new ShopCurrency();
+            draftCurrencyOldId = draftCurrency.id;
+        }
+        subView = SubView.CURRENCY_EDIT;
+        scrollOffset = 0;
+        rebuild();
+    }
+
+    private void openEntryEdit(@Nullable String id) {
+        draftStages.clear();
+        if (id == null) {
+            draftEntry = new ShopEntry();
+            draftEntry.id = uniqueId("entry");
+            draftEntry.inCategory = selectedCategoryId != null ? selectedCategoryId : "000_default";
+            draftEntry.type = ShopEntry.EntryType.ITEM;
+            draftEntry.item = "minecraft:stone";
+            draftEntry.amount = 1;
+            draftEntry.currency = firstCurrencyId();
+            draftEntry.valute = draftEntry.currency;
+            draftEntry.buy = 0;
+            draftEntry.sell = 0;
+            draftEntryOldId = draftEntry.id;
+        } else {
+            ShopEntry src = menu.getData().entries.get(id);
+            draftEntry = src != null ? ShopEditSession.copyEntry(src) : new ShopEntry();
+            draftEntryOldId = draftEntry.id;
+            if (draftEntry.stages != null) {
+                for (ShopStage st : draftEntry.stages) {
+                    if (st != null) {
+                        ShopStage copy = new ShopStage();
+                        copy.stage = st.stage;
+                        copy.stageType = st.stageType;
+                        copy.is = st.is;
+                        draftStages.add(copy);
+                    }
+                }
+            }
+        }
+        subView = SubView.ENTRY_EDIT;
+        scrollOffset = 0;
+        stageScrollOffset = 0;
+        editingStageIndex = -1;
+        rebuild();
+    }
+
+    private void confirmDelete(String kind, String id) {
+        pendingDeleteKind = kind;
+        pendingDeleteId = id;
+        dialog = Dialog.DELETE_CONFIRM;
+        rebuild();
+    }
+
+    private void tryLeaveCategoryEdit() {
+        flushFormToDraft();
+        if (draftCategory == null) {
+            subView = SubView.CATEGORIES;
+            rebuild();
+            return;
+        }
+        if (!draftCategoryOldId.equals(draftCategory.id)) {
+            renameKind = "category";
+            renameOldId = draftCategoryOldId;
+            renameNewId = draftCategory.id;
+            dialog = Dialog.RENAME_CONFIRM;
+            rebuild();
+            return;
+        }
+        sendUpsertCategory(null);
+        subView = SubView.CATEGORIES;
+        scrollOffset = 0;
+        rebuild();
+    }
+
+    private void tryLeaveCurrencyEdit() {
+        flushFormToDraft();
+        if (draftCurrency == null) {
+            subView = SubView.CURRENCIES;
+            rebuild();
+            return;
+        }
+        if (!draftCurrencyOldId.equals(draftCurrency.id)) {
+            renameKind = "currency";
+            renameOldId = draftCurrencyOldId;
+            renameNewId = draftCurrency.id;
+            dialog = Dialog.RENAME_CONFIRM;
+            rebuild();
+            return;
+        }
+        sendUpsertCurrency(null);
+        subView = SubView.CURRENCIES;
+        scrollOffset = 0;
+        rebuild();
+    }
+
+    private void flushFormToDraft() {
+        if (subView == SubView.CATEGORY_EDIT && draftCategory != null) {
+            if (idBox != null) draftCategory.id = idBox.getValue().trim();
+            if (nameBox != null) draftCategory.name = nameBox.getValue();
+            if (descBox != null) draftCategory.description = descBox.getValue();
+            if (priorityBox != null) draftCategory.priority = parseInt(priorityBox.getValue(), 0);
+            if (resourceBox != null) draftCategory.item = resourceBox.getValue().trim();
+        } else if (subView == SubView.CURRENCY_EDIT && draftCurrency != null) {
+            if (idBox != null) draftCurrency.id = idBox.getValue().trim();
+            if (nameBox != null) draftCurrency.name = nameBox.getValue();
+            if (symbolBox != null) draftCurrency.charSymbol = symbolBox.getValue();
+        } else if (subView == SubView.ENTRY_EDIT && draftEntry != null) {
+            if (idBox != null) draftEntry.id = idBox.getValue().trim();
+            if (amountBox != null) {
+                draftEntry.amount = Math.max(1, parseInt(amountBox.getValue(), 1));
+                draftEntry.itemCount = draftEntry.amount;
+            }
+            if (buyBox != null) draftEntry.buy = parseDouble(buyBox.getValue(), 0);
+            if (sellBox != null) draftEntry.sell = parseDouble(sellBox.getValue(), 0);
+            if (priorityBox != null) draftEntry.priority = parseInt(priorityBox.getValue(), 0);
+            if (resourceBox != null) applyResourceString(resourceBox.getValue().trim());
+            draftEntry.stages = draftStages.toArray(new ShopStage[0]);
+        } else if (subView == SubView.ENTRY_STAGES && draftEntry != null) {
+            draftEntry.stages = draftStages.toArray(new ShopStage[0]);
+        }
+    }
+
+    private void autosaveCurrentForm(boolean immediate) {
+        if (!immediate && formDirty) {
+            return;
+        }
+        if (subView == SubView.CATEGORY_EDIT) {
+            sendUpsertCategory(null);
+        } else if (subView == SubView.CURRENCY_EDIT) {
+            sendUpsertCurrency(null);
+        } else if (subView == SubView.ENTRY_EDIT || subView == SubView.ENTRY_STAGES) {
+            sendUpsertEntry();
+        }
+    }
+
+    private void sendUpsertCategory(@Nullable String renameMode) {
+        if (draftCategory == null || draftCategory.id == null || draftCategory.id.isBlank()) {
+            return;
+        }
+        sendAction("upsert_category", o -> {
+            o.addProperty("old_id", draftCategoryOldId);
+            o.addProperty("id", draftCategory.id);
+            o.addProperty("name", nullSafe(draftCategory.name));
+            o.addProperty("description", nullSafe(draftCategory.description));
+            o.addProperty("item", nullSafe(draftCategory.item));
+            o.addProperty("priority", draftCategory.priority);
+            if (renameMode != null) {
+                o.addProperty("rename_mode", renameMode);
+            }
+        });
+        draftCategoryOldId = draftCategory.id;
+    }
+
+    private void sendUpsertCurrency(@Nullable String renameMode) {
+        if (draftCurrency == null || draftCurrency.id == null || draftCurrency.id.isBlank()) {
+            return;
+        }
+        sendAction("upsert_currency", o -> {
+            o.addProperty("old_id", draftCurrencyOldId);
+            o.addProperty("id", draftCurrency.id);
+            o.addProperty("name", nullSafe(draftCurrency.name));
+            o.addProperty("char_symbol", nullSafe(draftCurrency.charSymbol));
+            if (renameMode != null) {
+                o.addProperty("rename_mode", renameMode);
+            }
+        });
+        draftCurrencyOldId = draftCurrency.id;
+    }
+
+    private void sendUpsertEntry() {
+        if (draftEntry == null || draftEntry.id == null || draftEntry.id.isBlank()) {
+            return;
+        }
+        sendAction("upsert_entry", o -> {
+            o.addProperty("old_id", draftEntryOldId);
+            o.addProperty("id", draftEntry.id);
+            o.addProperty("in_category", nullSafe(draftEntry.inCategory));
+            o.addProperty("type", (draftEntry.type != null ? draftEntry.type : ShopEntry.EntryType.ITEM)
+                    .name().toLowerCase(Locale.ROOT));
+            if (draftEntry.item != null) o.addProperty("item", draftEntry.item);
+            if (draftEntry.fluid != null) o.addProperty("fluid", draftEntry.fluid);
+            if (draftEntry.gas != null) o.addProperty("gas", draftEntry.gas);
+            o.addProperty("amount", Math.max(1, draftEntry.amount));
+            o.addProperty("currency", nullSafe(draftEntry.currency));
+            o.addProperty("buy", draftEntry.buy);
+            o.addProperty("sell", draftEntry.sell);
+            o.addProperty("priority", draftEntry.priority);
+            o.addProperty("free", draftEntry.free);
+            JsonArray stages = new JsonArray();
+            for (ShopStage st : draftStages) {
+                JsonObject so = new JsonObject();
+                so.addProperty("stage", nullSafe(st.stage));
+                so.addProperty("stage_type", nullSafe(st.stageType));
+                so.addProperty("is", st.is);
+                stages.add(so);
+            }
+            o.add("stages", stages);
+        });
+        draftEntryOldId = draftEntry.id;
+    }
+
+    private void sendAction(String action, java.util.function.Consumer<JsonObject> filler) {
+        JsonObject o = new JsonObject();
+        filler.accept(o);
+        ModMessages.sendShopEditActionPacket(action, o.toString());
+    }
+
+    private void setupResourceVariants(@Nullable String current) {
+        resourceVariants.clear();
+        ItemStack stack = menu.getGhostStack();
+        if (stack.isEmpty() && current != null && !current.startsWith("#")) {
+            stack = ItemConverter.parseItemString(current, 1);
+        }
+        if (!stack.isEmpty()) {
+            resourceVariants.addAll(ShopEditResourceFormats.variantsFromStack(stack));
+        }
+        if (current != null && !current.isBlank() && !resourceVariants.contains(current)) {
+            resourceVariants.add(0, current);
+        }
+        if (resourceVariants.isEmpty() && current != null) {
+            resourceVariants.add(current);
+        }
+        resourceVariantIndex = ShopEditResourceFormats.indexOfOrZero(resourceVariants, current);
+    }
+
+    private void cycleResource(int delta) {
+        if (resourceVariants.isEmpty()) {
+            return;
+        }
+        resourceVariantIndex = Math.floorMod(resourceVariantIndex + delta, resourceVariants.size());
+        String value = resourceVariants.get(resourceVariantIndex);
+        if (resourceBox != null) {
+            resourceBox.setValue(value);
+        }
+        applyResourceString(value);
+        autosaveCurrentForm(true);
+    }
+
+    private void applyResourceString(String value) {
+        if (subView == SubView.CATEGORY_EDIT && draftCategory != null) {
+            draftCategory.item = value;
+        } else if (subView == SubView.ENTRY_EDIT && draftEntry != null) {
+            ShopEntry.EntryType type = draftEntry.type != null ? draftEntry.type : ShopEntry.EntryType.ITEM;
+            switch (type) {
+                case FLUID -> {
+                    draftEntry.fluid = value;
+                    draftEntry.item = null;
+                    draftEntry.gas = null;
+                }
+                case GAS -> {
+                    draftEntry.gas = value;
+                    draftEntry.item = null;
+                    draftEntry.fluid = null;
+                }
+                default -> {
+                    draftEntry.item = value;
+                    draftEntry.fluid = null;
+                    draftEntry.gas = null;
+                }
+            }
+        }
+    }
+
+    private String resourceString(ShopEntry e) {
+        if (e.type == ShopEntry.EntryType.FLUID) {
+            return nullSafe(e.fluid);
+        }
+        if (e.type == ShopEntry.EntryType.GAS) {
+            return nullSafe(e.gas);
+        }
+        return nullSafe(e.item);
+    }
+
+    private void syncGhostFromResource(@Nullable String resource) {
+        if (resource == null || resource.isBlank() || resource.startsWith("#")) {
+            menu.setGhostStack(ItemStack.EMPTY);
+            return;
+        }
+        if (subView == SubView.ENTRY_EDIT && draftEntry != null && draftEntry.type == ShopEntry.EntryType.FLUID) {
+            menu.setGhostStack(ItemStack.EMPTY);
+            return;
+        }
+        if (subView == SubView.ENTRY_EDIT && draftEntry != null && draftEntry.type == ShopEntry.EntryType.GAS) {
+            menu.setGhostStack(ItemStack.EMPTY);
+            return;
+        }
+        ItemStack stack = ItemConverter.parseItemString(resource, 1);
+        menu.setGhostStack(stack);
+    }
+
+    private void convertResource() {
+        if (draftEntry == null || subView != SubView.ENTRY_EDIT) {
+            return;
+        }
+        flushFormToDraft();
+        ItemStack stack = menu.getGhostStack();
+        if (stack.isEmpty() && draftEntry.item != null) {
+            stack = ItemConverter.parseItemString(draftEntry.item, 1);
+        }
+        FluidStack fluid = ShopEntryHelper.normalizeFluidIngredient(ShopEntryHelper.fluidContainedInItem(stack));
+        if (!fluid.isEmpty() && fluid.getFluid() != Fluids.EMPTY) {
+            ResourceLocation id = BuiltInRegistries.FLUID.getKey(fluid.getFluid());
+            draftEntry.type = ShopEntry.EntryType.FLUID;
+            draftEntry.fluid = id != null ? id.toString() : "minecraft:water";
+            draftEntry.item = null;
+            draftEntry.gas = null;
+            if (draftEntry.amount < 1000) {
+                draftEntry.amount = 1000;
+            }
+            autosaveCurrentForm(true);
+            rebuild();
+            return;
+        }
+        if (MekChemicalHelper.isLoaded() && MekChemicalHelper.isGasSupportEnabled()) {
+            Object gas = MekChemicalHelper.sampleFromItemStack(stack);
+            String gasId = MekChemicalHelper.getRegistryName(gas);
+            if (gasId != null && !gasId.isBlank()) {
+                draftEntry.type = ShopEntry.EntryType.GAS;
+                draftEntry.gas = gasId;
+                draftEntry.item = null;
+                draftEntry.fluid = null;
+                if (draftEntry.amount < 1000) {
+                    draftEntry.amount = 1000;
+                }
+                autosaveCurrentForm(true);
+                rebuild();
+            }
+        }
+    }
+
+    private void cycleType() {
+        if (draftEntry == null) {
+            return;
+        }
+        flushFormToDraft();
+        ShopEntry.EntryType cur = draftEntry.type != null ? draftEntry.type : ShopEntry.EntryType.ITEM;
+        draftEntry.type = switch (cur) {
+            case ITEM -> ShopEntry.EntryType.FLUID;
+            case FLUID -> MekChemicalHelper.isGasSupportEnabled() ? ShopEntry.EntryType.GAS : ShopEntry.EntryType.ITEM;
+            case GAS -> ShopEntry.EntryType.ITEM;
+        };
+        if (typeButton != null) {
+            typeButton.setMessage(Component.literal(typeLabel()));
+        }
+        autosaveCurrentForm(true);
+        rebuild();
+    }
+
+    private String typeLabel() {
+        ShopEntry.EntryType t = draftEntry != null && draftEntry.type != null ? draftEntry.type : ShopEntry.EntryType.ITEM;
+        return t.name();
+    }
+
+    private void cycleCurrency() {
+        List<ShopCurrency> list = sortedCurrencies();
+        if (list.isEmpty() || draftEntry == null) {
+            return;
+        }
+        flushFormToDraft();
+        int idx = 0;
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).id.equals(draftEntry.currency)) {
+                idx = i;
+                break;
+            }
+        }
+        idx = (idx + 1) % list.size();
+        draftEntry.currency = list.get(idx).id;
+        draftEntry.valute = draftEntry.currency;
+        if (currencyButton != null) {
+            currencyButton.setMessage(Component.literal(draftEntry.currency));
+        }
+        autosaveCurrentForm(true);
+    }
+
+    private void addStageFromDraft() {
+        applyStageDraft();
+    }
+
+    private static String nextStageType(String current) {
+        return switch (current == null ? "world" : current) {
+            case "world" -> "player";
+            case "player" -> "team";
+            default -> "world";
+        };
+    }
+
+    private List<ShopCategory> sortedCategories() {
+        return menu.getData().categories.values().stream()
+                .sorted(Comparator.comparingInt((ShopCategory c) -> -c.priority).thenComparing(c -> c.id))
+                .toList();
+    }
+
+    private List<ShopCurrency> sortedCurrencies() {
+        return menu.getData().currencies.values().stream()
+                .sorted(Comparator.comparing(c -> c.id))
+                .toList();
+    }
+
+    private List<ShopEntry> entriesInCategory(@Nullable String categoryId) {
+        String cat = categoryId != null ? categoryId : "";
+        return menu.getData().entries.values().stream()
+                .filter(e -> cat.equals(e.inCategory))
+                .sorted(Comparator.comparingInt((ShopEntry e) -> -e.priority).thenComparing(e -> e.id))
+                .toList();
+    }
+
+    private String firstCurrencyId() {
+        return sortedCurrencies().stream().map(c -> c.id).findFirst().orElse("null_coin");
+    }
+
+    private String uniqueId(String prefix) {
+        String base = prefix + "_" + System.currentTimeMillis() % 100000;
+        int n = 0;
+        String id = base;
+        while (menu.getData().categories.containsKey(id)
+                || menu.getData().currencies.containsKey(id)
+                || menu.getData().entries.containsKey(id)) {
+            id = base + "_" + (++n);
+        }
+        return id;
+    }
+
+    @Override
+    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+        graphics.blit(TEXTURE, leftPos, topPos, 0, 0, GUI_WIDTH, GUI_HEIGHT, GUI_WIDTH, GUI_HEIGHT);
+        if (dialog == Dialog.NONE && isListView()) {
+            int rows = Math.min(MAX_VISIBLE, Math.max(1, listTotalCount()));
+            for (int i = 0; i < rows; i++) {
+                graphics.blit(ENTRY_TEXTURE, leftPos + ENTRY_START_X, topPos + ENTRY_START_Y + i * ENTRY_HEIGHT,
+                        0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, ENTRY_WIDTH, ENTRY_HEIGHT);
+            }
+            renderListScrollbar(graphics, mouseX, mouseY);
+        }
+        if ((subView == SubView.CATEGORY_EDIT || subView == SubView.ENTRY_EDIT) && dialog == Dialog.NONE) {
+            int slotY = subView == SubView.ENTRY_EDIT ? 53 : 133;
+            graphics.blit(SINGLE_SLOT_TEXTURE, leftPos + resourceSlotX() - 1, topPos + slotY, 0, 0, 18, 18, 18, 18);
+            ItemStack ghost = menu.getGhostStack();
+            if (!ghost.isEmpty()) {
+                graphics.renderItem(ghost, leftPos + resourceSlotX(), topPos + slotY + 1);
+                graphics.renderItemDecorations(font, ghost, leftPos + resourceSlotX(), topPos + slotY + 1);
+            }
+        }
+        if (subView == SubView.ENTRY_STAGES && dialog == Dialog.NONE) {
+            renderStageScrollbar(graphics, mouseX, mouseY);
+        }
+    }
+
+    private void renderListScrollbar(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (listTotalCount() <= MAX_VISIBLE) {
+            return;
+        }
+        int upY = ENTRY_START_Y;
+        int barY = ENTRY_START_Y + HANDLE_SIZE;
+        int downY = barY + SCROLLBAR_HEIGHT;
+        int sx = leftPos + SCROLLBAR_X;
+        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + barY, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        boolean upHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
+                && mouseY >= topPos + upY && mouseY < topPos + upY + HANDLE_SIZE;
+        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + upY, SCROLLBAR_WIDTH * 2, upHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        boolean downHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
+                && mouseY >= topPos + downY && mouseY < topPos + downY + HANDLE_SIZE;
+        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + downY, SCROLLBAR_WIDTH * 3, downHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        double ratio = maxListScroll() == 0 ? 0 : (double) scrollOffset / maxListScroll();
+        int handleY = topPos + barY + (int) (ratio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        boolean handleHover = mouseX >= sx && mouseX < sx + HANDLE_SIZE
+                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
+        graphics.blit(SCROLLBAR_TEXTURE, sx, handleY, SCROLLBAR_WIDTH, handleHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+    }
+
+    private void renderStageScrollbar(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (draftStages.size() <= MAX_VISIBLE_STAGES) {
+            return;
+        }
+        int stageBarH = Math.max(HANDLE_SIZE, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT - HANDLE_SIZE * 2);
+        int upY = STAGE_LIST_Y;
+        int barY = STAGE_LIST_Y + HANDLE_SIZE;
+        int downY = barY + stageBarH;
+        int sx = leftPos + STAGE_SCROLLBAR_X;
+        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + barY, 0, 0, SCROLLBAR_WIDTH, Math.min(SCROLLBAR_HEIGHT, stageBarH), 32, 34);
+        boolean upHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
+                && mouseY >= topPos + upY && mouseY < topPos + upY + HANDLE_SIZE;
+        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + upY, SCROLLBAR_WIDTH * 2, upHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        boolean downHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
+                && mouseY >= topPos + downY && mouseY < topPos + downY + HANDLE_SIZE;
+        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + downY, SCROLLBAR_WIDTH * 3, downHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        double ratio = maxStageScroll() == 0 ? 0 : (double) stageScrollOffset / maxStageScroll();
+        int handleY = topPos + barY + (int) (ratio * Math.max(1, stageBarH - HANDLE_SIZE));
+        boolean handleHover = mouseX >= sx && mouseX < sx + HANDLE_SIZE
+                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
+        graphics.blit(SCROLLBAR_TEXTURE, sx, handleY, SCROLLBAR_WIDTH, handleHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+    }
+
+    private int listTotalCount() {
+        return switch (subView) {
+            case CATEGORIES -> sortedCategories().size() + 1;
+            case CURRENCIES -> sortedCurrencies().size() + 1;
+            case ENTRIES -> entriesInCategory(selectedCategoryId).size() + 1;
+            default -> 0;
+        };
+    }
+
+    private Component currentTitle() {
+        return switch (dialog) {
+            case DELETE_CONFIRM -> Component.translatable("gui.iska_utils.shop_edit.confirm_delete_title");
+            case RENAME_CONFIRM -> Component.translatable("gui.iska_utils.shop_edit.rename.title",
+                    nullSafe(renameOldId), nullSafe(renameNewId));
+            default -> switch (subView) {
+                case CATEGORIES -> Component.translatable("gui.iska_utils.shop_edit.categories");
+                case CATEGORY_EDIT -> Component.translatable("gui.iska_utils.shop_edit.category_edit");
+                case ENTRIES -> Component.translatable("gui.iska_utils.shop_edit.entries",
+                        selectedCategoryId != null ? selectedCategoryId : "");
+                case ENTRY_EDIT -> Component.translatable("gui.iska_utils.shop_edit.entry_edit");
+                case ENTRY_STAGES -> Component.translatable("gui.iska_utils.shop_edit.stages_edit");
+                case CURRENCIES -> Component.translatable("gui.iska_utils.shop_edit.currencies_title");
+                case CURRENCY_EDIT -> Component.translatable("gui.iska_utils.shop_edit.currency_edit");
+            };
+        };
+    }
+
+    @Override
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        Component title = currentTitle();
+        int titleX = (GUI_WIDTH - font.width(title)) / 2;
+        graphics.drawString(font, title, titleX, 6, 0x404040, false);
+        for (FormLabel label : formLabels) {
+            graphics.drawString(font, label.text(), label.x(), label.y(), 0x404040, false);
+        }
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        renderBackground(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, partialTick);
+        renderTooltip(graphics, mouseX, mouseY);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (dialog == Dialog.NONE && scrollY != 0) {
+            if (isListView()) {
+                int max = maxListScroll();
+                scrollOffset = (int) Math.max(0, Math.min(max, scrollOffset - Math.signum(scrollY)));
+                rebuild();
+                return true;
+            }
+            if (subView == SubView.ENTRY_STAGES
+                    && mouseX >= leftPos + STAGE_LIST_X
+                    && mouseX < leftPos + STAGE_SCROLLBAR_X + SCROLLBAR_WIDTH
+                    && mouseY >= topPos + STAGE_LIST_Y - 14
+                    && mouseY < topPos + STAGE_LIST_Y + MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT + 16) {
+                int max = maxStageScroll();
+                stageScrollOffset = (int) Math.max(0, Math.min(max, stageScrollOffset - Math.signum(scrollY)));
+                rebuild();
+                return true;
+            }
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (MachineGuiInput.handleContainerKeyPressed(this, keyCode, scanCode, modifiers,
+                isDraggingHandle || isDraggingStageHandle, formBoxes.toArray(EditBox[]::new))) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && dialog == Dialog.NONE) {
+            if (isListView() && handleListScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
+                return true;
+            }
+            if (subView == SubView.ENTRY_STAGES && handleStageScrollbarClick(mouseX, mouseY)) {
+                MachineGuiInput.markScrollbarPressed();
+                return true;
+            }
+            if ((subView == SubView.CATEGORY_EDIT || subView == SubView.ENTRY_EDIT)) {
+                int slotY = subView == SubView.ENTRY_EDIT ? 54 : 134;
+                int sx = leftPos + resourceSlotX();
+                int sy = topPos + slotY;
+                if (mouseX >= sx && mouseX < sx + 16 && mouseY >= sy && mouseY < sy + 16) {
+                    ItemStack carried = minecraft.player.containerMenu.getCarried();
+                    if (!carried.isEmpty()) {
+                        acceptGhostItem(carried.copyWithCount(1));
+                        return true;
+                    }
+                    if (!menu.getGhostStack().isEmpty()) {
+                        menu.setGhostStack(ItemStack.EMPTY);
+                        if (resourceBox != null) {
+                            resourceBox.setValue("");
+                        }
+                        applyResourceString("");
+                        autosaveCurrentForm(true);
+                        return true;
+                    }
+                }
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            isDraggingHandle = false;
+            isDraggingStageHandle = false;
+            MachineGuiInput.clearScrollbarPressed();
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button == 0 && isDraggingHandle && maxListScroll() > 0) {
+            int barY = topPos + ENTRY_START_Y + HANDLE_SIZE;
+            float ratio = (float) (mouseY - barY) / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            scrollOffset = Math.max(0, Math.min(maxListScroll(), Math.round(ratio * maxListScroll())));
+            rebuild();
+            return true;
+        }
+        if (button == 0 && isDraggingStageHandle && maxStageScroll() > 0) {
+            int stageBarH = Math.max(HANDLE_SIZE, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT - HANDLE_SIZE * 2);
+            int barY = topPos + STAGE_LIST_Y + HANDLE_SIZE;
+            float ratio = (float) (mouseY - barY) / Math.max(1, stageBarH - HANDLE_SIZE);
+            stageScrollOffset = Math.max(0, Math.min(maxStageScroll(), Math.round(ratio * maxStageScroll())));
+            rebuild();
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    private boolean handleListScrollbarClick(double mouseX, double mouseY) {
+        if (listTotalCount() <= MAX_VISIBLE) {
+            return false;
+        }
+        int sx = leftPos + SCROLLBAR_X;
+        int upY = topPos + ENTRY_START_Y;
+        int barY = topPos + ENTRY_START_Y + HANDLE_SIZE;
+        int downY = barY + SCROLLBAR_HEIGHT;
+        if (mouseX < sx || mouseX >= sx + SCROLLBAR_WIDTH) {
+            return false;
+        }
+        if (mouseY >= upY && mouseY < upY + HANDLE_SIZE) {
+            scrollOffset = Math.max(0, scrollOffset - 1);
+            rebuild();
+            return true;
+        }
+        if (mouseY >= downY && mouseY < downY + HANDLE_SIZE) {
+            scrollOffset = Math.min(maxListScroll(), scrollOffset + 1);
+            rebuild();
+            return true;
+        }
+        if (mouseY >= barY && mouseY < barY + SCROLLBAR_HEIGHT) {
+            isDraggingHandle = true;
+            float ratio = (float) (mouseY - barY) / SCROLLBAR_HEIGHT;
+            scrollOffset = Math.max(0, Math.min(maxListScroll(), Math.round(ratio * maxListScroll())));
+            rebuild();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean handleStageScrollbarClick(double mouseX, double mouseY) {
+        if (draftStages.size() <= MAX_VISIBLE_STAGES) {
+            return false;
+        }
+        int sx = leftPos + STAGE_SCROLLBAR_X;
+        int stageBarH = Math.max(HANDLE_SIZE, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT - HANDLE_SIZE * 2);
+        int upY = topPos + STAGE_LIST_Y;
+        int barY = topPos + STAGE_LIST_Y + HANDLE_SIZE;
+        int downY = barY + stageBarH;
+        if (mouseX < sx || mouseX >= sx + SCROLLBAR_WIDTH) {
+            return false;
+        }
+        if (mouseY >= upY && mouseY < upY + HANDLE_SIZE) {
+            stageScrollOffset = Math.max(0, stageScrollOffset - 1);
+            rebuild();
+            return true;
+        }
+        if (mouseY >= downY && mouseY < downY + HANDLE_SIZE) {
+            stageScrollOffset = Math.min(maxStageScroll(), stageScrollOffset + 1);
+            rebuild();
+            return true;
+        }
+        if (mouseY >= barY && mouseY < barY + stageBarH) {
+            isDraggingStageHandle = true;
+            float ratio = (float) (mouseY - barY) / stageBarH;
+            stageScrollOffset = Math.max(0, Math.min(maxStageScroll(), Math.round(ratio * maxStageScroll())));
+            rebuild();
+            return true;
+        }
+        return false;
+    }
+
+    private void acceptGhostItem(ItemStack stack) {
+        menu.setGhostStack(stack);
+        String preferred = ShopEditResourceFormats.preferredFromStack(stack);
+        setupResourceVariants(preferred);
+        if (resourceBox != null) {
+            resourceBox.setValue(preferred);
+        }
+        if (subView == SubView.ENTRY_EDIT && draftEntry != null
+                && draftEntry.type != ShopEntry.EntryType.ITEM) {
+            draftEntry.type = ShopEntry.EntryType.ITEM;
+        }
+        applyResourceString(preferred);
+        autosaveCurrentForm(true);
+        rebuild();
+    }
+
+    @Override
+    public IGhostIngredientConsumer getGhostHandler() {
+        if (dialog != Dialog.NONE) {
+            return null;
+        }
+        if (subView != SubView.CATEGORY_EDIT && subView != SubView.ENTRY_EDIT) {
+            return null;
+        }
+        return new IGhostIngredientConsumer() {
+            @Override
+            public Object supportedTarget(Object ingredient) {
+                if (ingredient instanceof ItemStack stack && !stack.isEmpty()) {
+                    return stack;
+                }
+                if (subView == SubView.ENTRY_EDIT && ShopEntryHelper.isFluidIngredient(ingredient)) {
+                    return ShopEntryHelper.normalizeFluidIngredient((FluidStack) ingredient);
+                }
+                if (subView == SubView.ENTRY_EDIT
+                        && MekChemicalHelper.isLoaded()
+                        && MekChemicalHelper.isGasSupportEnabled()
+                        && MekChemicalHelper.isChemicalStackObject(ingredient)
+                        && !MekChemicalHelper.isEmpty(ingredient)) {
+                    return ingredient;
+                }
+                return null;
+            }
+
+            @Override
+            public void accept(Object ingredient) {
+                if (ingredient instanceof ItemStack stack) {
+                    acceptGhostItem(stack.copyWithCount(1));
+                } else if (ingredient instanceof FluidStack fluid && draftEntry != null) {
+                    FluidStack norm = ShopEntryHelper.normalizeFluidIngredient(fluid);
+                    ResourceLocation id = BuiltInRegistries.FLUID.getKey(norm.getFluid());
+                    draftEntry.type = ShopEntry.EntryType.FLUID;
+                    draftEntry.fluid = id != null ? id.toString() : "minecraft:water";
+                    draftEntry.item = null;
+                    draftEntry.gas = null;
+                    autosaveCurrentForm(true);
+                    rebuild();
+                } else if (MekChemicalHelper.isLoaded() && MekChemicalHelper.isChemicalStackObject(ingredient)
+                        && draftEntry != null) {
+                    String gasId = MekChemicalHelper.getRegistryName(ingredient);
+                    if (gasId != null) {
+                        draftEntry.type = ShopEntry.EntryType.GAS;
+                        draftEntry.gas = gasId;
+                        draftEntry.item = null;
+                        draftEntry.fluid = null;
+                        autosaveCurrentForm(true);
+                        rebuild();
+                    }
+                }
+            }
+        };
+    }
+
+    @Override
+    public Rect2i getGhostTargetArea() {
+        if (dialog != Dialog.NONE) {
+            return null;
+        }
+        if (subView == SubView.ENTRY_EDIT) {
+            return new Rect2i(leftPos + resourceSlotX() - 1, topPos + 53, 18, 18);
+        }
+        if (subView == SubView.CATEGORY_EDIT) {
+            return new Rect2i(leftPos + resourceSlotX() - 1, topPos + 133, 18, 18);
+        }
+        return null;
+    }
+
+    private static String truncate(String s, int max) {
+        if (s == null) {
+            return "";
+        }
+        return s.length() <= max ? s : s.substring(0, max - 1) + "…";
+    }
+
+    private static String nullSafe(@Nullable String s) {
+        return s != null ? s : "";
+    }
+
+    private static String displayName(String name) {
+        if (name == null) {
+            return "";
+        }
+        if (name.contains(":") || name.startsWith("item.") || name.startsWith("gui.") || name.startsWith("iska")) {
+            return Component.translatable(name).getString();
+        }
+        return name;
+    }
+
+    private static String formatNum(double v) {
+        if (Math.rint(v) == v) {
+            return String.valueOf((long) v);
+        }
+        return String.valueOf(v);
+    }
+
+    private static int parseInt(String s, int def) {
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (Exception e) {
+            return def;
+        }
+    }
+
+    private static double parseDouble(String s, double def) {
+        try {
+            return Double.parseDouble(s.trim());
+        } catch (Exception e) {
+            return def;
+        }
+    }
+}

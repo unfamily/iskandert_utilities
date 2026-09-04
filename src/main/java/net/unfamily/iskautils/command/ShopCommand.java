@@ -108,7 +108,43 @@ public class ShopCommand {
                     }
                     return 1;
                 }))
+            .then(Commands.literal("edit")
+                .executes(context -> openShopEditor(context.getSource())))
         );
+    }
+
+    private static int openShopEditor(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("This command can only be used by players"));
+            return 0;
+        }
+        if (!net.unfamily.iskautils.shop.edit.ShopEditSession.tryAcquire(player)) {
+            source.sendFailure(net.unfamily.iskautils.shop.edit.ShopEditSession.occupiedMessage());
+            return 0;
+        }
+        player.openMenu(new net.minecraft.world.MenuProvider() {
+            @Override
+            public Component getDisplayName() {
+                return Component.translatable("gui.iska_utils.shop_edit.title");
+            }
+
+            @Override
+            public net.minecraft.world.inventory.AbstractContainerMenu createMenu(
+                    int id, net.minecraft.world.entity.player.Inventory inv, net.minecraft.world.entity.player.Player p) {
+                return new net.unfamily.iskautils.client.gui.ShopEditMenu(id, inv, true);
+            }
+        });
+        if (player.containerMenu instanceof net.unfamily.iskautils.client.gui.ShopEditMenu) {
+            var data = net.unfamily.iskautils.shop.edit.ShopEditSession.getData();
+            if (data != null) {
+                net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket.sendTo(player, data);
+            }
+        }
+        source.sendSuccess(() -> Component.translatable("gui.iska_utils.shop_edit.opened"), false);
+        return 1;
     }
     
     private static void showShopInfo(CommandSourceStack source) {

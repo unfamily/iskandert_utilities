@@ -19,6 +19,7 @@ public class PlayerConnectionEvents {
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             StructurePlacementHistory.clearPlayerHistory(serverPlayer.getUUID());
+            net.unfamily.iskautils.shop.edit.ShopEditSession.releaseIfHolder(serverPlayer);
         }
     }
 } 
