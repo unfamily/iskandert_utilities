@@ -142,6 +142,25 @@ config="iska_utils.mixins.json"
     ordering="AFTER"
     side="BOTH"
 
+# FTB stack is fully optional (dedicated servers may omit all of these).
+[[dependencies.${mod_id}]]
+    modId="ftblibrary"
+    type="optional"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="ftbteams"
+    type="optional"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="ftbquests"
+    type="optional"
+    ordering="AFTER"
+    side="BOTH"
+
 # Required dependency on Fusion (connected textures)
 [[dependencies.${mod_id}]]
     modId="fusion"
