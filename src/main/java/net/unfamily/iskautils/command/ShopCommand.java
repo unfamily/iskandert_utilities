@@ -65,7 +65,6 @@ public class ShopCommand {
                 }))
             .then(Commands.literal("edit")
                 .executes(context -> openShopEditor(context.getSource())))
-            .then(ShopTeamCurrencyCommands.teamLiteral())
         );
     }
 
@@ -115,7 +114,7 @@ public class ShopCommand {
     
     /**
      * Notifies client GUIs of reload (executed on client).
-     * Public for use by iska_utils_debug reload.
+     * Public for use by iska_lib_debug reload.
      */
     public static void notifyClientGUIReload() {
         net.unfamily.iskautils.util.ClientRuntimeAccess.runOnClientThread(

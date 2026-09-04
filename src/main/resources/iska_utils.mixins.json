@@ -1,7 +1,7 @@
 {
   "required": true,
   "package": "net.unfamily.iskautils.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_25",
   "refmap": "iska_utils.refmap.json",
   "mixins": [
     "ItemStackMixin"

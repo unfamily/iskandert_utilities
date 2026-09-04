@@ -192,7 +192,7 @@ public class IskaUtils {
         ModMessages.register();
 
         // Wire stage side-effects (actions) into the library stage system
-        StageHooks.setListener(new StageHooks.Listener() {
+        StageHooks.addListener(new StageHooks.Listener() {
             @Override
             public void onPlayerStageChanged(ServerPlayer player, String stage, boolean value) {
                 net.unfamily.iskautils.command.StageActionsManager.onPlayerStageChanged(player, stage, value);
@@ -207,6 +207,31 @@ public class IskaUtils {
             public void onTeamStageChanged(MinecraftServer server, String teamName, String stage, boolean value) {
                 net.unfamily.iskautils.command.StageActionsManager.onTeamStageChanged(server, teamName, stage, value);
             }
+        });
+
+        net.unfamily.iskalib.shop.ShopCurrencyHooks.setListener(new net.unfamily.iskalib.shop.ShopCurrencyHooks.Listener() {
+            @Override
+            public java.util.List<String> listCurrencyIds() {
+                return net.unfamily.iskautils.shop.ShopCurrency.sortedIds(
+                        net.unfamily.iskautils.shop.ShopLoader.getCurrencies().values());
+            }
+
+            @Override
+            public java.util.Optional<net.unfamily.iskalib.shop.ShopCurrencyHooks.CurrencyInfo> getCurrencyInfo(String currencyId) {
+                net.unfamily.iskautils.shop.ShopCurrency currency =
+                        net.unfamily.iskautils.shop.ShopLoader.getCurrencies().get(currencyId);
+                if (currency == null) {
+                    return java.util.Optional.empty();
+                }
+                return java.util.Optional.of(new net.unfamily.iskalib.shop.ShopCurrencyHooks.CurrencyInfo(
+                        currency.name, currency.charSymbol));
+            }
+        });
+
+        net.unfamily.iskalib.reload.UtilsReloadHooks.setListener(source -> {
+            net.unfamily.iskautils.data.load.IskaUtilsLoadReloadEffects.applyReloadFromDatapacks();
+            net.unfamily.iskautils.data.load.IskaUtilsLoadReloadEffects.sendReloadNotice(source);
+            return 1;
         });
 
         // Wire stage "action" command callbacks into mod implementation

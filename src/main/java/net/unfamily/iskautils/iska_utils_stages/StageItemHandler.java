@@ -46,7 +46,7 @@ public class StageItemHandler {
     private static final Map<String, StageItemRestriction> ITEM_RESTRICTIONS = new HashMap<>();
     
     /**
-     * Loads all item restrictions from {@code data/<namespace>/load/iska_utils_stage_items/}.
+     * Loads all item restrictions from {@code data/<namespace>/load/iska_lib_stage_items/}.
      */
     public static void loadAll(ResourceManager resourceManagerOrNull) {
         ITEM_RESTRICTIONS.clear();
