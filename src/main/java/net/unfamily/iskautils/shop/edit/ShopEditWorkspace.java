@@ -162,7 +162,8 @@ public final class ShopEditWorkspace {
             ShopCurrency c = new ShopCurrency();
             c.id = id;
             c.name = stringOr(o, "name", id);
-            c.charSymbol = stringOr(o, "char_symbol", "§");
+            c.charSymbol = stringOr(o, "char_symbol", ShopCurrency.DEFAULT_SYMBOL);
+            c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
             map.put(id, c);
         }
         return map;
@@ -259,7 +260,8 @@ public final class ShopEditWorkspace {
             JsonObject o = new JsonObject();
             o.addProperty("id", c.id);
             o.addProperty("name", c.name != null ? c.name : c.id);
-            o.addProperty("char_symbol", c.charSymbol != null ? c.charSymbol : "§");
+            o.addProperty("char_symbol", c.charSymbol != null ? c.charSymbol : ShopCurrency.DEFAULT_SYMBOL);
+            o.addProperty("priority", c.priority);
             arr.add(o);
         }
         root.add("currencies", arr);

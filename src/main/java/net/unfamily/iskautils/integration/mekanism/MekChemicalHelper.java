@@ -406,6 +406,84 @@ public final class MekChemicalHelper {
         return null;
     }
 
+    /**
+     * Move chemical from item tanks into block tank, or from block tank into empty item tanks.
+     * Mutates {@code singleItem} in place (Colossal-style single-copy interaction).
+     */
+    public static boolean transferBetweenItemAndTank(ItemStack singleItem, @Nullable Object blockTank,
+                                                     net.minecraft.world.entity.player.Player player) {
+        if (!isLoaded() || singleItem == null || singleItem.isEmpty() || blockTank == null) {
+            return false;
+        }
+        Object itemHandler = getChemicalHandlerItem(singleItem);
+        if (itemHandler == null) {
+            return false;
+        }
+        try {
+            Class<?> actionClass = Class.forName("mekanism.api.Action");
+            Object execute = actionClass.getField("EXECUTE").get(null);
+            Object simulate = actionClass.getField("SIMULATE").get(null);
+            int itemTanks = (int) itemHandler.getClass().getMethod("getChemicalTanks").invoke(itemHandler);
+
+            // Item → block
+            for (int i = 0; i < itemTanks; i++) {
+                Object inItem = itemHandler.getClass().getMethod("getChemicalInTank", int.class).invoke(itemHandler, i);
+                if (isEmpty(inItem) || getAmount(inItem) <= 0) {
+                    continue;
+                }
+                Object simulated = blockTank.getClass()
+                        .getMethod("insertChemical", inItem.getClass(), actionClass)
+                        .invoke(blockTank, inItem, simulate);
+                long remaining = getAmount(simulated);
+                long wanted = getAmount(inItem);
+                long moved = wanted - remaining;
+                if (moved <= 0) {
+                    continue;
+                }
+                Object extracted = itemHandler.getClass()
+                        .getMethod("extractChemical", int.class, long.class, actionClass)
+                        .invoke(itemHandler, i, moved, execute);
+                if (isEmpty(extracted) || getAmount(extracted) <= 0) {
+                    continue;
+                }
+                blockTank.getClass()
+                        .getMethod("insertChemical", extracted.getClass(), actionClass)
+                        .invoke(blockTank, extracted, execute);
+                return true;
+            }
+
+            // Block → item
+            Object inBlock = getChemicalInTank(blockTank, 0);
+            if (isEmpty(inBlock) || getAmount(inBlock) <= 0) {
+                return false;
+            }
+            for (int i = 0; i < itemTanks; i++) {
+                Object simulated = itemHandler.getClass()
+                        .getMethod("insertChemical", int.class, inBlock.getClass(), actionClass)
+                        .invoke(itemHandler, i, inBlock, simulate);
+                long remaining = getAmount(simulated);
+                long wanted = getAmount(inBlock);
+                long moved = wanted - remaining;
+                if (moved <= 0) {
+                    continue;
+                }
+                Object extracted = blockTank.getClass()
+                        .getMethod("extractChemical", int.class, long.class, actionClass)
+                        .invoke(blockTank, 0, moved, execute);
+                if (isEmpty(extracted) || getAmount(extracted) <= 0) {
+                    continue;
+                }
+                itemHandler.getClass()
+                        .getMethod("insertChemical", int.class, extracted.getClass(), actionClass)
+                        .invoke(itemHandler, i, extracted, execute);
+                return true;
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("transferBetweenItemAndTank failed: {}", t.toString());
+        }
+        return false;
+    }
+
     @Nullable
     private static Object copyWithAmount(@Nullable Object stack, long amount) {
         if (stack == null || isEmpty(stack) || amount <= 0) {

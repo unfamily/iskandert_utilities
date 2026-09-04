@@ -202,7 +202,8 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
         ShopCurrency c = new ShopCurrency();
         c.id = o.has("id") ? o.get("id").getAsString() : "";
         c.name = o.has("name") ? o.get("name").getAsString() : c.id;
-        c.charSymbol = o.has("char_symbol") ? o.get("char_symbol").getAsString() : "§";
+        c.charSymbol = o.has("char_symbol") ? o.get("char_symbol").getAsString() : ShopCurrency.DEFAULT_SYMBOL;
+        c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
         return c;
     }
 

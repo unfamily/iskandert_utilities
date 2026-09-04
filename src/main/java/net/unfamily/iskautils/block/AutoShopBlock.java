@@ -3,9 +3,14 @@ package net.unfamily.iskautils.block;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.BlockGetter;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -20,12 +25,12 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import net.unfamily.iskautils.block.entity.ModBlockEntities;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
 import net.unfamily.iskautils.block.entity.AutoShopBlockEntity;
+import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import org.jetbrains.annotations.Nullable;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.server.level.ServerPlayer;
+
 import java.util.UUID;
 
 /**
@@ -104,6 +109,51 @@ public class AutoShopBlock extends BaseEntityBlock {
         }
     }
 
+    /**
+     * Bucket / fluid-container / chemical-tank click: fill AutoShop tanks from item or drain tanks into item
+     * (same pattern as Colossal Resource Port).
+     */
+    @Override
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                              Player player, InteractionHand hand, BlockHitResult hitResult) {
+        if (level.isClientSide()) {
+            return ItemInteractionResult.SUCCESS;
+        }
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof AutoShopBlockEntity autoShop)) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        if (player instanceof ServerPlayer serverPlayer && !autoShop.canPlayerUse(serverPlayer)) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("block.iska_utils.auto_shop.team.error"));
+            return ItemInteractionResult.FAIL;
+        }
+
+        ItemStack singleStack = stack.copyWithCount(1);
+        IFluidHandlerItem fluidHandler = singleStack.getCapability(Capabilities.FluidHandler.ITEM);
+        if (fluidHandler != null && autoShop.interactWithItemFluidHandler(fluidHandler, player)) {
+            applyHandAfterItemTransfer(player, hand, stack, fluidHandler.getContainer());
+            return ItemInteractionResult.SUCCESS;
+        }
+        if (autoShop.interactWithItemChemicalHandler(singleStack, player)) {
+            applyHandAfterItemTransfer(player, hand, stack, singleStack);
+            return ItemInteractionResult.SUCCESS;
+        }
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    private static void applyHandAfterItemTransfer(Player player, InteractionHand hand,
+                                                   ItemStack held, ItemStack result) {
+        held.shrink(1);
+        if (held.isEmpty()) {
+            player.setItemInHand(hand, result);
+        } else {
+            player.setItemInHand(hand, held);
+            if (!player.getInventory().add(result)) {
+                player.drop(result, false);
+            }
+        }
+    }
+
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
         if (level.isClientSide()) {
@@ -140,8 +190,8 @@ public class AutoShopBlock extends BaseEntityBlock {
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof AutoShopBlockEntity autoShopEntity) {
-
+            if (blockEntity instanceof AutoShopBlockEntity) {
+                // contents stay in BE for drop handling elsewhere if needed
             }
         }
         super.onRemove(state, level, pos, newState, isMoving);

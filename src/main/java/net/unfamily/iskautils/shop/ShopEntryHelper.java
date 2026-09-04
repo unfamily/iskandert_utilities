@@ -1,11 +1,13 @@
 package net.unfamily.iskautils.shop;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
+import net.minecraft.Util;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
@@ -17,13 +19,38 @@ import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.util.ModLogger;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Helpers for typed shop entries (item / fluid / gas) and {@code #tag} selectors.
  */
 public final class ShopEntryHelper {
     private static final ModLogger LOGGER = ModLogger.of(ShopEntryHelper.class);
+    private static final int TAG_CYCLE_MS = 1000;
+    private static final Map<String, List<ItemStack>> ITEM_TAG_STACKS = new ConcurrentHashMap<>();
+    private static final Map<String, List<Fluid>> FLUID_TAG_MEMBERS = new ConcurrentHashMap<>();
 
     private ShopEntryHelper() {}
+
+    /** Clears cached tag members (call on shop/datapack reload). */
+    public static void clearTagDisplayCaches() {
+        ITEM_TAG_STACKS.clear();
+        FLUID_TAG_MEMBERS.clear();
+    }
+
+    /** Shared cycle index so icon and label stay in sync across all shop UIs. */
+    public static int tagCycleIndex(int size) {
+        if (size <= 0) {
+            return 0;
+        }
+        if (size == 1) {
+            return 0;
+        }
+        return (int) ((Util.getMillis() / TAG_CYCLE_MS) % size);
+    }
 
     public static ShopEntry.EntryType parseType(@Nullable String raw) {
         if (raw == null || raw.isBlank()) {
@@ -198,7 +225,13 @@ public final class ShopEntryHelper {
         }
         String trimmed = selector.trim();
         if (trimmed.startsWith("#")) {
-            return firstItemFromTag(trimmed);
+            List<ItemStack> stacks = itemStacksFromTag(trimmed);
+            if (stacks.isEmpty()) {
+                return ItemStack.EMPTY;
+            }
+            ItemStack stack = stacks.get(tagCycleIndex(stacks.size())).copy();
+            stack.setCount(Math.max(1, amount));
+            return stack;
         }
         ItemStack stack = ItemConverter.parseItemString(trimmed, 1);
         if (!stack.isEmpty()) {
@@ -208,8 +241,8 @@ public final class ShopEntryHelper {
     }
 
     /**
-     * Label shown next to a shop entry icon: tag selectors stay as {@code #id};
-     * concrete resources use their localized display name.
+     * Label shown next to a shop entry icon. Tag entries cycle the localized name of the
+     * currently displayed member (same index as the icon).
      */
     public static String displayLabelForEntry(@Nullable ShopEntry entry) {
         if (entry == null) {
@@ -221,7 +254,17 @@ public final class ShopEntryHelper {
         }
         String trimmed = selector.trim();
         if (trimmed.startsWith("#")) {
-            return trimmed;
+            return switch (entry.type) {
+                case ITEM -> {
+                    ItemStack stack = displayStackForEntry(entry);
+                    yield !stack.isEmpty() ? stack.getHoverName().getString() : trimmed;
+                }
+                case FLUID -> {
+                    FluidStack fluid = displayFluidForEntry(entry);
+                    yield !fluid.isEmpty() ? fluid.getHoverName().getString() : trimmed;
+                }
+                case GAS -> trimmed;
+            };
         }
         return switch (entry.type) {
             case ITEM -> {
@@ -251,8 +294,12 @@ public final class ShopEntryHelper {
         String trimmed = selector.trim();
         int amount = Math.max(1, entry.amount);
         if (trimmed.startsWith("#")) {
-            Fluid first = firstFluidFromTag(trimmed);
-            return first != null && first != Fluids.EMPTY ? new FluidStack(first, amount) : FluidStack.EMPTY;
+            List<Fluid> fluids = fluidsFromTag(trimmed);
+            if (fluids.isEmpty()) {
+                return FluidStack.EMPTY;
+            }
+            Fluid fluid = fluids.get(tagCycleIndex(fluids.size()));
+            return fluid != Fluids.EMPTY ? new FluidStack(fluid, amount) : FluidStack.EMPTY;
         }
         Fluid fluid = resolveFluid(trimmed);
         return fluid != null && fluid != Fluids.EMPTY ? new FluidStack(fluid, amount) : FluidStack.EMPTY;
@@ -296,32 +343,77 @@ public final class ShopEntryHelper {
     }
 
     private static ItemStack firstItemFromTag(String tagSelector) {
-        try {
-            ResourceLocation tagId = ResourceLocation.parse(tagSelector.trim().substring(1));
-            TagKey<Item> itemTag = ItemTags.create(tagId);
-            for (Item item : BuiltInRegistries.ITEM) {
-                if (item.builtInRegistryHolder().is(itemTag)) {
-                    return new ItemStack(item);
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return ItemStack.EMPTY;
+        List<ItemStack> stacks = itemStacksFromTag(tagSelector);
+        return stacks.isEmpty() ? ItemStack.EMPTY : stacks.get(0).copy();
     }
 
     @Nullable
     private static Fluid firstFluidFromTag(String tagSelector) {
+        List<Fluid> fluids = fluidsFromTag(tagSelector);
+        return fluids.isEmpty() ? null : fluids.get(0);
+    }
+
+    public static List<ItemStack> itemStacksFromTag(String tagSelector) {
+        if (tagSelector == null || !tagSelector.trim().startsWith("#")) {
+            return List.of();
+        }
+        String key = tagSelector.trim();
+        return ITEM_TAG_STACKS.computeIfAbsent(key, ShopEntryHelper::computeItemStacksFromTag);
+    }
+
+    public static List<Fluid> fluidsFromTag(String tagSelector) {
+        if (tagSelector == null || !tagSelector.trim().startsWith("#")) {
+            return List.of();
+        }
+        String key = tagSelector.trim();
+        return FLUID_TAG_MEMBERS.computeIfAbsent(key, ShopEntryHelper::computeFluidsFromTag);
+    }
+
+    private static List<ItemStack> computeItemStacksFromTag(String tagSelector) {
+        List<ItemStack> stacks = new ArrayList<>();
         try {
-            ResourceLocation tagId = ResourceLocation.parse(tagSelector.trim().substring(1));
-            TagKey<Fluid> fluidTag = TagKey.create(Registries.FLUID, tagId);
-            for (Fluid fluid : BuiltInRegistries.FLUID) {
-                if (fluid != Fluids.EMPTY && fluid.builtInRegistryHolder().is(fluidTag)) {
-                    return fluid;
+            ResourceLocation tagId = ResourceLocation.parse(tagSelector.substring(1));
+            TagKey<Item> itemTag = ItemTags.create(tagId);
+            var tagged = BuiltInRegistries.ITEM.getTag(itemTag);
+            if (tagged.isPresent()) {
+                for (Holder<Item> holder : tagged.get()) {
+                    stacks.add(new ItemStack(holder.value()));
+                }
+            } else {
+                for (Item item : BuiltInRegistries.ITEM) {
+                    if (item.builtInRegistryHolder().is(itemTag)) {
+                        stacks.add(new ItemStack(item));
+                    }
                 }
             }
         } catch (Exception ignored) {
         }
-        return null;
+        return List.copyOf(stacks);
+    }
+
+    private static List<Fluid> computeFluidsFromTag(String tagSelector) {
+        List<Fluid> fluids = new ArrayList<>();
+        try {
+            ResourceLocation tagId = ResourceLocation.parse(tagSelector.substring(1));
+            TagKey<Fluid> fluidTag = TagKey.create(Registries.FLUID, tagId);
+            var tagged = BuiltInRegistries.FLUID.getTag(fluidTag);
+            if (tagged.isPresent()) {
+                for (Holder<Fluid> holder : tagged.get()) {
+                    Fluid fluid = holder.value();
+                    if (fluid != Fluids.EMPTY) {
+                        fluids.add(fluid);
+                    }
+                }
+            } else {
+                for (Fluid fluid : BuiltInRegistries.FLUID) {
+                    if (fluid != Fluids.EMPTY && fluid.builtInRegistryHolder().is(fluidTag)) {
+                        fluids.add(fluid);
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return List.copyOf(fluids);
     }
 
     public static String extractBaseId(@Nullable String resourceString) {

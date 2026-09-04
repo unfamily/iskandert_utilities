@@ -246,6 +246,7 @@ Example:
 - id: Unique identifier for the currency
 - name: Translation key for the currency name
 - char_symbol: Symbol displayed next to the currency name
+- priority: Display order (optional, default 0). Higher value = shown first in GUIs and cycle buttons
 
 CATEGORIES (default_categories.json):
 ====================================

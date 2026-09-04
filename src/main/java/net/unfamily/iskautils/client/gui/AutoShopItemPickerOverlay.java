@@ -82,6 +82,7 @@ public final class AutoShopItemPickerOverlay {
     private EditBox searchBox;
     private SymbolIconButton currencyFilterButton;
     private SymbolIconButton scopeFilterButton;
+    private SymbolIconButton availabilityFilterButton;
     private Button backButton;
     private Button closeButton;
     private final List<Button> selectBuyButtons = new ArrayList<>();
@@ -166,6 +167,15 @@ public final class AutoShopItemPickerOverlay {
                 button -> onCurrencyFilterPressed(false),
                 this::getCurrencyFilterLabel,
                 getCurrencyFilterTooltip()));
+
+        availabilityFilterButton = screen.addPickerWidget(new SymbolIconButton(
+                leftPos + browsePanel.availabilityButtonX(),
+                topPos + ShopBrowsePanel.FILTER_ROW_Y,
+                ShopBrowsePanel.AVAILABILITY_BUTTON_WIDTH,
+                ShopBrowsePanel.FILTER_BUTTON_HEIGHT,
+                button -> onAvailabilityFilterPressed(),
+                browsePanel::tradeVisibilityLetter,
+                getAvailabilityFilterTooltip()));
 
         backButton = screen.addPickerWidget(Button.builder(
                         Component.translatable("gui.iska_utils.shop.back"),
@@ -339,6 +349,10 @@ public final class AutoShopItemPickerOverlay {
             }
             if (currencyFilterButton != null && currencyFilterButton.isMouseOver(mouseX, mouseY)) {
                 onCurrencyFilterPressed(true);
+                return true;
+            }
+            if (availabilityFilterButton != null && availabilityFilterButton.isMouseOver(mouseX, mouseY)) {
+                onAvailabilityFilterPressed();
                 return true;
             }
         }
@@ -576,6 +590,13 @@ public final class AutoShopItemPickerOverlay {
         playButtonSound.run();
     }
 
+    private void onAvailabilityFilterPressed() {
+        browsePanel.cycleTradeVisibility();
+        updateAvailabilityFilterTooltip();
+        refreshFilteredLists();
+        playButtonSound.run();
+    }
+
     private void updateScopeFilterTooltip() {
         if (scopeFilterButton != null) {
             scopeFilterButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
@@ -619,6 +640,18 @@ public final class AutoShopItemPickerOverlay {
     private void updateCurrencyFilterTooltip() {
         if (currencyFilterButton != null) {
             currencyFilterButton.setTooltip(Tooltip.create(getCurrencyFilterTooltip()));
+        }
+    }
+
+    private Component getAvailabilityFilterTooltip() {
+        return browsePanel.getTradeVisibility() == ShopBrowsePanel.TradeVisibility.HIDE_UNTRADEABLE
+                ? Component.translatable("gui.iska_utils.shop.visibility.hide")
+                : Component.translatable("gui.iska_utils.shop.visibility.show");
+    }
+
+    private void updateAvailabilityFilterTooltip() {
+        if (availabilityFilterButton != null) {
+            availabilityFilterButton.setTooltip(Tooltip.create(getAvailabilityFilterTooltip()));
         }
     }
 

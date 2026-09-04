@@ -11,10 +11,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
+import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
 import org.jetbrains.annotations.NotNull;
@@ -526,7 +528,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
 
     public static List<String> getSortedCurrencyIds() {
-        return new ArrayList<>(net.unfamily.iskautils.shop.ShopLoader.getCurrencies().keySet().stream().sorted().toList());
+        return new ArrayList<>(ShopCurrency.sortedIds(net.unfamily.iskautils.shop.ShopLoader.getCurrencies().values()));
     }
 
     public static int getCurrencyIndex(String currencyId) {
@@ -878,6 +880,76 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
     
     /**
+     * Bucket / fluid container: fill AutoShop tank from item, or fill empty container from tank.
+     * Colossal Resource Port pattern.
+     */
+    public boolean interactWithItemFluidHandler(IFluidHandlerItem itemHandler, Player player) {
+        if (itemHandler == null || itemHandler.getTanks() == 0) {
+            return false;
+        }
+        FluidStack inItem = itemHandler.getFluidInTank(0);
+        if (!inItem.isEmpty()) {
+            if (fluidTank.fill(inItem.copy(), IFluidHandler.FluidAction.SIMULATE) > 0) {
+                int filled = fluidTank.fill(inItem.copy(), IFluidHandler.FluidAction.EXECUTE);
+                if (filled > 0) {
+                    itemHandler.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                    inItem.getFluid().getPickupSound().ifPresent(player::playSound);
+                    setChanged();
+                    return true;
+                }
+            }
+            return false;
+        }
+        FluidStack inBlock = fluidTank.getFluid();
+        if (!inBlock.isEmpty() && itemHandler.isFluidValid(0, inBlock)) {
+            int capacity = itemHandler.getTankCapacity(0);
+            FluidStack toFill = inBlock.copy();
+            toFill.setAmount(Math.min(inBlock.getAmount(), capacity));
+            int filled = itemHandler.fill(toFill, IFluidHandler.FluidAction.EXECUTE);
+            if (filled > 0) {
+                fluidTank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                var soundEvent = inBlock.getFluid().getFluidType()
+                        .getSound(net.neoforged.neoforge.common.SoundActions.BUCKET_EMPTY);
+                if (soundEvent != null) {
+                    player.playSound(soundEvent);
+                }
+                setChanged();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Chemical tanks / gas cells: same deposit/withdraw idea as fluid buckets when Mek is loaded.
+     */
+    public boolean interactWithItemChemicalHandler(ItemStack singleItem, Player player) {
+        if (!MekChemicalHelper.isLoaded() || singleItem == null || singleItem.isEmpty()) {
+            return false;
+        }
+        ensureGasTank();
+        if (gasTank == null) {
+            return false;
+        }
+        return MekChemicalHelper.transferBetweenItemAndTank(singleItem, gasTank, player);
+    }
+
+    /**
+     * Manual emerald-button trade: ignores redstone shouldRun, only allowed while mode is DISABLED.
+     * {@code quantity} uses the same multipliers as the player shop (1 / 4 / 16).
+     */
+    public boolean tryManualTrade(int quantity) {
+        if (level == null || level.isClientSide()) {
+            return false;
+        }
+        if (RedstoneMode.fromValue(getRedstoneMode()) != RedstoneMode.DISABLED) {
+            return false;
+        }
+        int qty = Math.max(1, Math.min(quantity, 64));
+        return runTradeCycles(qty);
+    }
+
+    /**
      * Block tick (called by server)
      */
     public static void tick(Level level, BlockPos pos, BlockState state, AutoShopBlockEntity entity) {
@@ -906,203 +978,149 @@ public class AutoShopBlockEntity extends BlockEntity {
             return;
         }
 
-        net.minecraft.server.level.ServerLevel serverLevel = (net.minecraft.server.level.ServerLevel) level;
-        net.unfamily.iskalib.team.ShopTeamManager teamManager = net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverLevel);
+        entity.runTradeCycles(1);
+    }
 
-        // Lazy-bind team if the placer joined a team after placing the block
-        if (entity.getOwnerTeamId() == null && entity.getPlacedByPlayer() != null) {
-            String placerTeamName = teamManager.getPlayerTeam(entity.getPlacedByPlayer());
+    private boolean runTradeCycles(int quantity) {
+        if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) {
+            return false;
+        }
+        net.unfamily.iskalib.team.ShopTeamManager teamManager =
+                net.unfamily.iskalib.team.ShopTeamManager.getInstance(serverLevel);
+
+        if (getOwnerTeamId() == null && getPlacedByPlayer() != null) {
+            String placerTeamName = teamManager.getPlayerTeam(getPlacedByPlayer());
             if (placerTeamName != null) {
                 java.util.UUID teamId = teamManager.getTeamIdByName(placerTeamName);
                 if (teamId != null) {
-                    entity.setOwnerTeamId(teamId);
+                    setOwnerTeamId(teamId);
                 }
             }
         }
-
-        // Get the owner's team (needed for both modes)
-        if (entity.getOwnerTeamId() == null) {
-            return;
+        if (getOwnerTeamId() == null) {
+            return false;
         }
-        
-        String teamKey = resolveTeamKey(teamManager, entity.getOwnerTeamId());
+
+        String teamKey = resolveTeamKey(teamManager, getOwnerTeamId());
         if (teamKey == null) {
-            return; // Team no longer exists
+            return false;
         }
-
-        // Check that the player who placed the AutoShop is still in the team
-        if (entity.getPlacedByPlayer() != null) {
-            String placerTeamKey = teamManager.getPlayerTeam(entity.getPlacedByPlayer());
+        if (getPlacedByPlayer() != null) {
+            String placerTeamKey = teamManager.getPlayerTeam(getPlacedByPlayer());
             if (placerTeamKey == null || !placerTeamKey.equals(teamKey)) {
-                return; // The placer is no longer in the team, block the AutoShop
+                return false;
             }
         }
 
-        // Retrieve the placer's ServerPlayer (if online) - needed for player stage
-        net.minecraft.server.level.ServerPlayer placerPlayer = serverLevel.getServer().getPlayerList().getPlayer(entity.getPlacedByPlayer());
-
-        String currencyId = normalizeCurrencyId(entity.getSelectedValute());
-        if (!currencyId.equals(entity.getSelectedValute())) {
-            entity.setSelectedValute(currencyId);
+        ServerPlayer placerPlayer = serverLevel.getServer().getPlayerList().getPlayer(getPlacedByPlayer());
+        String currencyId = normalizeCurrencyId(getSelectedValute());
+        if (!currencyId.equals(getSelectedValute())) {
+            setSelectedValute(currencyId);
         }
 
-        ShopEntry boundEntry = entity.getBoundEntry();
+        boolean any = false;
+        for (int i = 0; i < quantity; i++) {
+            if (!processOneTrade(teamManager, teamKey, currencyId, placerPlayer)) {
+                break;
+            }
+            any = true;
+        }
+        return any;
+    }
+
+    private boolean processOneTrade(net.unfamily.iskalib.team.ShopTeamManager teamManager, String teamKey,
+                                    String currencyId, @Nullable ServerPlayer placerPlayer) {
+        if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) {
+            return false;
+        }
+        ShopEntry boundEntry = getBoundEntry();
         if (boundEntry != null && boundEntry.type != ShopEntry.EntryType.ITEM) {
             net.unfamily.iskalib.stage.StageRegistry registry =
                     net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
-            processTypedEntry(entity, boundEntry, teamManager, teamKey, currencyId, registry, placerPlayer);
-            return;
+            int beforeFluid = fluidTank.getFluidAmount();
+            long beforeGas = getGasAmount();
+            processTypedEntry(this, boundEntry, teamManager, teamKey, currencyId, registry, placerPlayer);
+            return fluidTank.getFluidAmount() != beforeFluid || getGasAmount() != beforeGas;
         }
 
-        // SELL mode
-        if (!entity.isAutoBuyMode()) {
-            ItemStackHandler slot = entity.getEncapsulatedSlot();
+        if (!isAutoBuyMode()) {
+            ItemStackHandler slot = getEncapsulatedSlot();
             ItemStack stack = slot.getStackInSlot(0);
             if (stack.isEmpty()) {
-                return;
+                return false;
             }
 
-            ItemStack filterItem = entity.getSelectedItem();
-            ShopEntry selectedEntry = entity.getBoundEntry();
+            ItemStack filterItem = getSelectedItem();
+            ShopEntry selectedEntry = getBoundEntry();
             String itemSelector = selectedEntry != null ? selectedEntry.item : null;
             if (itemSelector != null
                     ? !ShopEntryHelper.matchesItem(stack, itemSelector)
                     : (!filterItem.isEmpty() && !ItemStack.isSameItemSameComponents(stack, filterItem))) {
-                return;
+                return false;
             }
 
-            net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItemExact(
-                    filterItem.isEmpty() ? stack : filterItem, entity.getSelectedShopEntryId());
+            ShopEntry entry = findEntryForItemExact(
+                    filterItem.isEmpty() ? stack : filterItem, getSelectedShopEntryId());
             if (entry == null || entry.sell <= 0) {
-                return;
+                return false;
             }
-
-            // Check that currency matches
             String entryCurrency = entry.valute != null ? entry.valute : "null_coin";
             if (!entryCurrency.equals(currencyId)) {
-                return;
+                return false;
             }
-
-            // Check required stages
-            net.unfamily.iskalib.stage.StageRegistry registry = net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
-            if (entry.stages != null && entry.stages.length > 0 && registry != null) {
-                boolean hasAllStages = true;
-                for (var stage : entry.stages) {
-                    boolean stageMet = false;
-                    String type = stage.stageType != null ? stage.stageType.toLowerCase() : "world";
-                    if ("player".equals(type)) {
-                        if (placerPlayer == null) {
-                            hasAllStages = false;
-                            break;
-                        }
-                        boolean hasPlayerStage = registry.hasPlayerStage(placerPlayer, stage.stage);
-                        stageMet = (hasPlayerStage == stage.is);
-                    } else if ("team".equals(type)) {
-                        boolean hasTeamStage = registry.hasTeamStage(teamKey, stage.stage);
-                        stageMet = (hasTeamStage == stage.is);
-                    } else if ("world".equals(type)) {
-                        boolean hasWorldStage = registry.hasWorldStage(stage.stage);
-                        stageMet = (hasWorldStage == stage.is);
-                    }
-                    if (!stageMet) {
-                        hasAllStages = false;
-                        break;
-                    }
-                }
-                if (!hasAllStages) {
-                    return;
-                }
+            net.unfamily.iskalib.stage.StageRegistry registry =
+                    net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
+            if (!stagesMet(entry, registry, placerPlayer, teamKey)) {
+                return false;
             }
-
-            // Check that there are enough items in the slot
             if (stack.getCount() < entry.amount) {
-                return;
+                return false;
             }
-
-            // Remove correct count from slot
             ItemStack removed = slot.extractItem(0, entry.amount, false);
             if (removed.isEmpty()) {
-                return;
+                return false;
             }
-
-            // Credit money to team (only single value)
             teamManager.addTeamValutes(teamKey, currencyId, entry.sell);
-            entity.setChanged();
+            setChanged();
+            return true;
         }
-        // BUY mode
-        else {
-            // Check if the slot is empty (can only buy if empty)
-            ItemStackHandler slot = entity.getEncapsulatedSlot();
-            ItemStack stack = slot.getStackInSlot(0);
-            if (!stack.isEmpty()) {
-                return;
-            }
 
-            // Check if there's a filter item set (ghost slot)
-            ItemStack selectedStack = entity.getSelectedItem();
-            if (selectedStack.isEmpty()) {
-                return;
-            }
-
-            net.unfamily.iskautils.shop.ShopEntry entry = findEntryForItemExact(selectedStack, entity.getSelectedShopEntryId());
-            if (entry == null || (entry.buy <= 0 && !entry.free)) {
-                return;
-            }
-
-            // Check that currency matches
-            String entryCurrency = entry.valute != null ? entry.valute : "null_coin";
-            if (!entryCurrency.equals(currencyId)) {
-                return;
-            }
-
-            // Check required stages
-            net.unfamily.iskalib.stage.StageRegistry registry = net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
-            if (entry.stages != null && entry.stages.length > 0 && registry != null) {
-                boolean hasAllStages = true;
-                for (var stage : entry.stages) {
-                    boolean stageMet = false;
-                    String type = stage.stageType != null ? stage.stageType.toLowerCase() : "world";
-                    if ("player".equals(type)) {
-                        if (placerPlayer == null) {
-                            hasAllStages = false;
-                            break;
-                        }
-                        boolean hasPlayerStage = registry.hasPlayerStage(placerPlayer, stage.stage);
-                        stageMet = (hasPlayerStage == stage.is);
-                    } else if ("team".equals(type)) {
-                        boolean hasTeamStage = registry.hasTeamStage(teamKey, stage.stage);
-                        stageMet = (hasTeamStage == stage.is);
-                    } else if ("world".equals(type)) {
-                        boolean hasWorldStage = registry.hasWorldStage(stage.stage);
-                        stageMet = (hasWorldStage == stage.is);
-                    }
-                    if (!stageMet) {
-                        hasAllStages = false;
-                        break;
-                    }
-                }
-                if (!hasAllStages) {
-                    return;
-                }
-            }
-
-            // Check team funds (free entries cost 0)
-            double cost = entry.free ? 0 : entry.buy;
-            double teamBalance = teamManager.getTeamValuteBalance(teamKey, currencyId);
-            if (teamBalance < cost) {
-                return; // Insufficient funds
-            }
-
-            // Deduct money from team
-            if (!teamManager.removeTeamValutes(teamKey, currencyId, cost)) {
-                return; // Removal failed
-            }
-
-            // Create item from found entry (not from template)
-            // This prevents duplication of NBT that don't exist in the shop
-            ItemStack itemToCreate = net.unfamily.iskalib.item.ItemConverter.parseItemString(entry.item, entry.amount);
-            slot.setStackInSlot(0, itemToCreate);
-            entity.setChanged();
+        ItemStackHandler slot = getEncapsulatedSlot();
+        ItemStack stack = slot.getStackInSlot(0);
+        if (!stack.isEmpty()) {
+            return false;
         }
+        ItemStack selectedStack = getSelectedItem();
+        if (selectedStack.isEmpty()) {
+            return false;
+        }
+        ShopEntry entry = findEntryForItemExact(selectedStack, getSelectedShopEntryId());
+        if (entry == null || (entry.buy <= 0 && !entry.free)) {
+            return false;
+        }
+        String entryCurrency = entry.valute != null ? entry.valute : "null_coin";
+        if (!entryCurrency.equals(currencyId)) {
+            return false;
+        }
+        net.unfamily.iskalib.stage.StageRegistry registry =
+                net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
+        if (!stagesMet(entry, registry, placerPlayer, teamKey)) {
+            return false;
+        }
+        double cost = entry.free ? 0 : entry.buy;
+        if (teamManager.getTeamValuteBalance(teamKey, currencyId) < cost
+                || !teamManager.removeTeamValutes(teamKey, currencyId, cost)) {
+            return false;
+        }
+        ItemStack itemToCreate = net.unfamily.iskalib.item.ItemConverter.parseItemString(entry.item, entry.amount);
+        if (itemToCreate.isEmpty()) {
+            if (cost > 0) {
+                teamManager.addTeamValutes(teamKey, currencyId, cost);
+            }
+            return false;
+        }
+        slot.setStackInSlot(0, itemToCreate);
+        setChanged();
+        return true;
     }
 } 

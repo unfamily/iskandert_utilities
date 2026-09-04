@@ -162,7 +162,7 @@ public class ShopCommand {
         Map<String, ShopCurrency> currencies = ShopLoader.getCurrencies();
         
         source.sendSuccess(() -> Component.literal("=== Available Currencies ==="), false);
-        for (ShopCurrency currency : currencies.values()) {
+        for (ShopCurrency currency : ShopCurrency.sorted(currencies.values())) {
             // Use localized name and format with symbol after
             String localizedName = Component.translatable(currency.name).getString();
             String formattedName = localizedName + " " + currency.charSymbol;

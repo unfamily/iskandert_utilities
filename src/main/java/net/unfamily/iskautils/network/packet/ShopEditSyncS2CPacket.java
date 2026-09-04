@@ -54,6 +54,7 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
             o.addProperty("id", c.id);
             o.addProperty("name", c.name);
             o.addProperty("char_symbol", c.charSymbol);
+            o.addProperty("priority", c.priority);
             currencies.add(o);
         }
         root.add("currencies", currencies);
@@ -120,7 +121,8 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
                 ShopCurrency c = new ShopCurrency();
                 c.id = o.get("id").getAsString();
                 c.name = o.has("name") ? o.get("name").getAsString() : c.id;
-                c.charSymbol = o.has("char_symbol") ? o.get("char_symbol").getAsString() : "§";
+                c.charSymbol = o.has("char_symbol") ? o.get("char_symbol").getAsString() : ShopCurrency.DEFAULT_SYMBOL;
+                c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
                 data.currencies.put(c.id, c);
             }
         }
