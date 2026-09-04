@@ -28,4 +28,5 @@ categories:
 
 ## Auto Shop
 
-- Automated selling / restocking behavior (see block GUI).
+- Automated selling / restocking (items, fluids, gases, and RF via `type: other` / `other: iska_utils:rf`).
+- RF buffer capacity matches the selected entry `amount`; energy bar sits left of the liquid/gas tanks.

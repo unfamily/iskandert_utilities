@@ -483,6 +483,8 @@
   "gui.iska_utils.shop.use_auto_shop": "Use the Auto Shop for fluids and gases",
   "gui.iska_utils.shop.tooltip.amount": "Amount: %s",
   "gui.iska_utils.shop.tooltip.amount_mb": "Amount: %s mB",
+  "gui.iska_utils.shop.tooltip.amount_fe": "%s FE",
+  "gui.iska_utils.auto_shop.energy.tooltip": "%s / %s FE",
   "gui.iska_utils.auto_shop.picker.fluid_gas_autoshop_only": "Fluid and gas entries are available only in the Auto Shop",
   "item.iska_utils.portable_shop": "Portable Shop",
   "item.iska_utils.base_module": "Base Module",

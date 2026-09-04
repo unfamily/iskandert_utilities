@@ -18,6 +18,7 @@ import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopOtherRegistry;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
@@ -743,6 +744,13 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 Object gas = ShopEntryHelper.displayGasForEntry(item);
                 if (gas != null) {
                     GuiChemicalStillBlit.blit16(guiGraphics, gas, slotX + 1, slotY + 1);
+                }
+            }
+            case OTHER -> {
+                ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(item.other);
+                if (definition != null) {
+                    guiGraphics.blit(RenderPipelines.GUI_TEXTURED, definition.icon(),
+                            slotX + 1, slotY + 1, 0.0F, 0.0F, 16, 16, 16, 16);
                 }
             }
         }

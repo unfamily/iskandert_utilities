@@ -343,6 +343,11 @@ public class ModBlockEntities {
                     AUTO_SHOP_BE.get(),
                     (blockEntity, ctx) -> blockEntity instanceof AutoShopBlockEntity be ? be.getFluidTransferHandler() : null
             );
+            event.registerBlockEntity(
+                    Capabilities.Energy.BLOCK,
+                    AUTO_SHOP_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof AutoShopBlockEntity be ? be.getEnergyHandler() : null
+            );
             registerAutoShopChemicalCapability(event);
             event.registerBlockEntity(
                     Capabilities.Item.BLOCK,
