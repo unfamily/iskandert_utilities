@@ -190,7 +190,7 @@ dependencies {
         implementation files(iskaLibLocalJar)
         localRuntime files(iskaLibLocalJar)
     } else {
-        implementation "curse.maven:iskanderts-library-1516512:8195543"
+        implementation "curse.maven:iskanderts-library-1516512:8612291"
     }
 
     tasks.register('syncIskaLibToRunMods', Copy) {
