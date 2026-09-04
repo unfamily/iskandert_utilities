@@ -22,6 +22,7 @@ import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopLoader;
+import net.unfamily.iskautils.shop.ShopOtherRegistry;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -539,6 +540,14 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
             Object gas = ShopEntryHelper.displayGasForEntry(bound);
             if (gas != null) {
                 GuiChemicalStillBlit.blit16(guiGraphics, gas, leftPos + filterSlot.x, topPos + filterSlot.y);
+            }
+            return;
+        }
+        if (bound != null && bound.type == ShopEntry.EntryType.OTHER) {
+            ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(bound.other);
+            if (definition != null) {
+                guiGraphics.blit(definition.icon(),
+                        leftPos + filterSlot.x, topPos + filterSlot.y, 0, 0, 16, 16, 16, 16);
             }
             return;
         }
