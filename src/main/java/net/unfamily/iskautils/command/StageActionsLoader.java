@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Loads stage action definitions from datapack JSON under {@code data/<namespace>/load/iska_utils_stage_actions/}.
+ * Loads stage action definitions from datapack JSON under {@code data/<namespace>/load/iska_lib_stage_actions/}.
  * Files use type {@code iska_utils:stage_actions} and contain actions that run when stages are added/removed.
  */
 public class StageActionsLoader {

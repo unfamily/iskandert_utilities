@@ -27,4 +27,4 @@ After changing the library sources, repeat steps 1–3 before `runClient`.
 5. Structure placer: structure in list → place → undo.
 6. Datapack reload: structures still listed.
 7. Reopen world: repeat (3) and (4).
-8. `/iska_utils_stage list all` shows world, player, and team stages for the player.
+8. `/iska_lib_stage list all` shows world, player, and team stages for the player.

@@ -184,7 +184,7 @@ dependencies {
     }
 
     // Iskandert Library 1.21.1 — local JAR in libs/ when present, else CurseForge
-    def iskaLibLocalJar = file('libs/iska_lib-1.9.0.0.0-neoforge-1.21.1.jar')
+    def iskaLibLocalJar = file('libs/iska_lib-1.10.0.0.0-neoforge-1.21.1.jar')
     def iskaLibForceRemote = project.findProperty('iskaLibUseLocal')?.toString()?.toBoolean() == false
     if (iskaLibLocalJar.exists() && !iskaLibForceRemote) {
         implementation files(iskaLibLocalJar)

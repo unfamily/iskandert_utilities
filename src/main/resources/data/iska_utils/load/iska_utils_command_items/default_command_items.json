@@ -24,7 +24,7 @@
           "onTick": [
             {"if": [
                 {"conditions":[0,1]},
-                {"execute": "iska_utils_stage add world initializing true"},
+                {"execute": "iska_lib_stage add world initializing true"},
                 {"message": {"target":"@a","color":"#FF0000","in":"action_bar","text":"message.iska_utils.world_init.stand_still"}},
                 {"message": {"target":"@a","color":"#FF0000","in":"action_bar","text":"message.iska_utils.world_init.initializing"}},
                 {"delay": 160},
@@ -36,8 +36,8 @@
                 {"execute": "reload"},
                 {"delay": 20},
                 {"message": {"target":"@a","color":"#00FF00","in":"action_bar","text":"message.iska_utils.world_init.completed"}},
-                {"execute": "iska_utils_stage add world initialized true"},
-                {"execute": "iska_utils_stage remove world initializing true"},
+                {"execute": "iska_lib_stage add world initialized true"},
+                {"execute": "iska_lib_stage remove world initializing true"},
                 {"item": "delete_all"}
             ]},
             {"if": [

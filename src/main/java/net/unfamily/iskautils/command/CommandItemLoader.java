@@ -135,7 +135,7 @@ public class CommandItemLoader {
                 "```json\n" +
                 "{\n" +
                 "  \"onTick\": [\n" +
-                "    {\"execute\": \"iska_utils_stage add player initialized true\"}\n" +
+                "    {\"execute\": \"iska_lib_stage add player initialized true\"}\n" +
                 "  ]\n" +
                 "}\n" +
                 "```\n\n" +
@@ -201,7 +201,7 @@ public class CommandItemLoader {
                 "  \"do\": [\n" +
                 "    {\n" +
                 "      \"onTick\": [\n" +
-                "        {\"execute\": \"iska_utils_stage add world initialized true\"},\n" +
+                "        {\"execute\": \"iska_lib_stage add world initialized true\"},\n" +
                 "        {\"execute\": \"say World initialized!\"},\n" +
                 "        {\"item\": \"consume\"}\n" +
                 "      ]\n" +
@@ -228,7 +228,7 @@ public class CommandItemLoader {
                 "- Default items are registered internally and always available even without configuration files.\n" +
                 "- To see the internal defaults as JSON files, run: `/iska_utils_debug dump_default`\n" +
                 "- Configuration files in this directory override the internal defaults.\n" +
-                "- Reload: `/iska_utils_debug reload` (quick) or `/reload` (full) to apply changes without restart.\n" +
+                "- Reload: `/iska_lib_debug reload` (quick) or `/reload` (full) to apply changes without restart.\n" +
                 "- You can create as many command item configurations as needed.\n";
             
             Files.write(readmePath, readmeContent.getBytes());

@@ -31,10 +31,6 @@ public class ShopCommand {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
 
         register(event.getDispatcher());
-        
-        // Register team commands
-
-        net.unfamily.iskalib.command.ShopTeamCommand.register(event.getDispatcher());
     }
     
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -78,7 +74,6 @@ public class ShopCommand {
                 }))
             .then(Commands.literal("edit")
                 .executes(context -> openShopEditor(context.getSource())))
-            .then(ShopTeamCurrencyCommands.teamLiteral())
         );
     }
 
@@ -128,7 +123,7 @@ public class ShopCommand {
     
     /**
      * Notifies client GUIs of reload (executed on client).
-     * Public for use by iska_utils_debug reload.
+     * Public for use by iska_lib_debug reload.
      */
     public static void notifyClientGUIReload() {
         net.unfamily.iskautils.util.ClientRuntimeAccess.runOnClientThread(

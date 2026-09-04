@@ -125,7 +125,7 @@ public class MacroLoader {
                 "\n" +
                 "This directory allows you to create command macros that can be executed directly in the game.\n" +
                 "\n"+
-                "Macros are reloadable by /reload or /reloader. For other configs (command items, stage actions, shop, structures) use `/iska_utils_debug reload` for a quick reload.\n" +
+                "Macros are reloadable by /reload or /reloader. For other configs (command items, stage actions, shop, structures) use `/iska_lib_debug reload` for a quick reload.\n" +
                 "If you change a default generated file, set overwritable to false in the file.\n" +
                 "\n" +
                 "## Format\n" +
@@ -299,24 +299,24 @@ public class MacroLoader {
                 "      \"do\": [\n" +
                 "      {\"if\": [\n" +
                 "        {\"conditions\":[3,4,5]},\n" +
-                "        {\"execute\": \"iska_utils_stage add player @s sub_command_#0 true\"},\n" +
+                "        {\"execute\": \"iska_lib_stage add player @s sub_command_#0 true\"},\n" +
                 "        {\"delay\": 5},\n" +
                 "        {\"execute\": \"sub_commad #0\"}\n" +
                 "      ]},\n" +
                 "        {\"if\": [\n" +
                 "            {\"conditions\": [0]},\n" +
                 "            {\"execute\": \"tellraw @s \\\"condition_0\\\"\"},\n" +
-                "            {\"execute\": \"iska_utils_stage remove player @s sub_command_#0 true\"}\n" +
+                "            {\"execute\": \"iska_lib_stage remove player @s sub_command_#0 true\"}\n" +
                 "        ]},\n" +
                 "        {\"if\": [\n" +
                 "            {\"conditions\": [1]},\n" +
                 "            {\"execute\": \"tellraw @s \\\"condition_1\\\"\"},\n" +
-                "            {\"execute\": \"iska_utils_stage remove player @s sub_command_#0 true\"}\n" +
+                "            {\"execute\": \"iska_lib_stage remove player @s sub_command_#0 true\"}\n" +
                 "        ]},\n" +
                 "        {\"if\": [\n" +
                 "            {\"conditions\": [2]},\n" +
                 "            {\"execute\": \"tellraw @s \\\"condition_1\\\"\"},\n" +
-                "            {\"execute\": \"iska_utils_stage remove player @s sub_command_#0 true\"}\n" +
+                "            {\"execute\": \"iska_lib_stage remove player @s sub_command_#0 true\"}\n" +
                 "        ]}\n" +
                 "      ]\n" +
                 "    }\n" +
