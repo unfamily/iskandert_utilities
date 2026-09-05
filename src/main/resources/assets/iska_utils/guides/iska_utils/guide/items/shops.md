@@ -24,7 +24,6 @@ categories:
 <ItemImage id="iska_utils:portable_shop" />
 
 - Opens the same shop GUI from your inventory (right-click), without placing a block.
-- Crafted from a <ItemImage id="iska_utils:shop" /> **Shop** (shapeless); craft the Portable Shop back into a Shop the same way.
 
 ## Auto Shop
 
