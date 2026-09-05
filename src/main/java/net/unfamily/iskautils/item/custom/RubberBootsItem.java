@@ -14,6 +14,7 @@ import net.minecraft.core.Holder;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.ModItems;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.resources.ResourceLocation;
@@ -28,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Rubber boots that negate fall damage.
  */
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class RubberBootsItem extends ArmorItem {
     
     public static Holder<ArmorMaterial> ARMOR_MATERIAL = null;

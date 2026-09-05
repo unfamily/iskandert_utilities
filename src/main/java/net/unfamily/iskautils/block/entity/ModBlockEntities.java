@@ -238,7 +238,7 @@ public class ModBlockEntities {
         BLOCK_ENTITIES.register(eventBus);
     }
 
-    @EventBusSubscriber(modid = IskaUtils.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
+    @EventBusSubscriber(modid = IskaUtils.MOD_ID)
     public static class ModBlockEntityEvents {
         @SubscribeEvent
         public static void registerCapabilities(RegisterCapabilitiesEvent event) {

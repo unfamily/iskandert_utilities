@@ -50,7 +50,7 @@ public class ShopDefaultGenerator {
             }
             
             JsonObject root = new JsonObject();
-            root.addProperty("type", "iska_utils:shop_currency");
+            root.addProperty("type", "iska_lib:shop_currency");
             root.addProperty("overwritable", true);
             
             JsonArray currencies = new JsonArray();
@@ -227,7 +227,7 @@ CURRENCIES (default_currencies.json):
 
 Example:
 {
-  "type": "iska_utils:shop_currency",
+  "type": "iska_lib:shop_currency",
   "overwritable": true,
   "currencies": [
     {

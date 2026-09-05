@@ -35,7 +35,7 @@ import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.artifact.TheRootsItem;
 
-@EventBusSubscriber(modid = IskaUtils.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT)
 public final class IskaUtilsClientModEvents {
     private IskaUtilsClientModEvents() {}
 

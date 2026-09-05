@@ -22,8 +22,8 @@ public final class IskaUtilsLoadPaths {
     public static final String TYPE_PLATES_LEGACY = "iska_utils:potion_plates";
     public static final String TYPE_COMMAND_ITEM = "iska_utils:command_item";
     public static final String TYPE_STRUCTURE_MONOUSE = "iska_utils:structure_monouse_item";
-    public static final String TYPE_SHOP_CURRENCY = "iska_utils:shop_currency";
-    public static final String TYPE_SHOP_CURRENCY_LIB = "iska_lib:shop_currency";
+    public static final String TYPE_SHOP_CURRENCY = "iska_lib:shop_currency";
+    public static final String TYPE_SHOP_CURRENCY_UTILS = "iska_utils:shop_currency";
     public static final String TYPE_SHOP_CURRENCY_LEGACY = "iska_utils:shop_valute";
     public static final String TYPE_SHOP_CATEGORY = "iska_utils:shop_category";
     public static final String TYPE_SHOP_ENTRY = "iska_utils:shop_entry";
@@ -53,7 +53,7 @@ public final class IskaUtilsLoadPaths {
             COMMAND_ITEMS, Set.of(TYPE_COMMAND_ITEM),
             PLATES, Set.of(TYPE_PLATES, TYPE_PLATES_LEGACY),
             STRUCTURE_MONOUSE, Set.of(TYPE_STRUCTURE_MONOUSE),
-            SHOP, Set.of(TYPE_SHOP_CURRENCY, TYPE_SHOP_CURRENCY_LIB, TYPE_SHOP_CURRENCY_LEGACY, TYPE_SHOP_CATEGORY, TYPE_SHOP_ENTRY),
+            SHOP, Set.of(TYPE_SHOP_CURRENCY, TYPE_SHOP_CURRENCY_UTILS, TYPE_SHOP_CURRENCY_LEGACY, TYPE_SHOP_CATEGORY, TYPE_SHOP_ENTRY),
             MACROS, Set.of(TYPE_MACRO),
             STAGE_ACTIONS, Set.of(TYPE_STAGE_ACTIONS),
             STAGE_ITEMS, Set.of(TYPE_STAGE_ITEM),

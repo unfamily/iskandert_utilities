@@ -22,7 +22,7 @@ import net.unfamily.iskautils.item.ModItems;
 import java.util.EnumMap;
 import java.util.List;
 
-@EventBusSubscriber(modid = IskaUtils.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class EntropicArmorItem extends ArmorItem {
     public static Holder<ArmorMaterial> ARMOR_MATERIAL;
 

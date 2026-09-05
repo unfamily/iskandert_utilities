@@ -23,7 +23,7 @@ import org.lwjgl.glfw.GLFW;
  * Manages keybindings for the mod
  */
 @OnlyIn(Dist.CLIENT)
-@EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT)
 public class KeyBindings {
     private static final ModLogger LOGGER = ModLogger.of(KeyBindings.class);
 

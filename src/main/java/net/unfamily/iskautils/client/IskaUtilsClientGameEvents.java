@@ -13,7 +13,7 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity;
 
-@EventBusSubscriber(modid = IskaUtils.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
+@EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT)
 public final class IskaUtilsClientGameEvents {
     private IskaUtilsClientGameEvents() {}
 
