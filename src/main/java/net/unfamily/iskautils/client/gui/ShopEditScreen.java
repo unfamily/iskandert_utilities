@@ -589,7 +589,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 ShopEntry e = list.get(idx);
                 final String entryId = e.id;
                 listRowVisuals.add(new ListRowVisual(i, ListRowKind.ENTRY_SLOT, null, null, null, e));
-                addDyn(Button.builder(Component.literal(truncate(entryContentLabel(e), 30)), b -> openEntryEdit(entryId))
+                addDyn(Button.builder(Component.empty(), b -> openEntryEdit(entryId))
                         .bounds(leftPos + contentX, topPos + y, mainW, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("✎"), b -> openEntryEdit(entryId))
                         .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 42, topPos + y, 18, ENTRY_HEIGHT - 2).build());
@@ -1520,6 +1520,27 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         }
     }
 
+    /** Drawn in extractLabels so text sits above the empty hitbox buttons. */
+    private void renderEntryListLabels(GuiGraphicsExtractor graphics) {
+        int contentX = listContentX();
+        int maxW = listMainButtonWidth() - 4;
+        for (ListRowVisual visual : listRowVisuals) {
+            if (visual.kind() != ListRowKind.ENTRY_SLOT || visual.entry() == null) {
+                continue;
+            }
+            int rowY = ENTRY_START_Y + visual.rowIndex() * ENTRY_HEIGHT;
+            ShopScreenHelper.renderEntryLabelWithAmount(
+                    graphics,
+                    this.font,
+                    truncate(entryContentLabel(visual.entry()), 28),
+                    visual.entry(),
+                    contentX + 2,
+                    rowY + 2,
+                    maxW,
+                    GuiTextColors.TITLE);
+        }
+    }
+
     private void renderEntryListIcon(GuiGraphicsExtractor graphics, ShopEntry entry, int iconX, int iconY) {
         switch (entry.type != null ? entry.type : ShopEntry.EntryType.ITEM) {
             case ITEM -> {
@@ -1659,6 +1680,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 y += 12;
             }
             return;
+        }
+        if (dialog == Dialog.NONE && subView == SubView.ENTRIES) {
+            renderEntryListLabels(graphics);
         }
         for (FormLabel label : formLabels) {
             graphics.text(this.font, label.text(), label.x(), label.y(), GuiTextColors.BODY, false);

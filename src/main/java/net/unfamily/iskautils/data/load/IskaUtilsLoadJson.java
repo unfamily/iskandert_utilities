@@ -121,29 +121,55 @@ public final class IskaUtilsLoadJson {
     }
 
     /**
-     * Order: built-in {@code iska_utils} namespace first, then other namespaces (string order),
+     * Order: built-in {@code iska_lib} then {@code iska_utils} namespaces first, then other namespaces,
      * so datapacks typically override mod defaults for the same logical ids inside JSON.
      */
     public static List<Map.Entry<Identifier, JsonElement>> orderedEntries(Map<Identifier, JsonElement> merged) {
         List<Map.Entry<Identifier, JsonElement>> list = new ArrayList<>(merged.entrySet());
         list.sort(
-                Comparator.comparing((Map.Entry<Identifier, JsonElement> e) -> !IskaUtils.MOD_ID.equals(e.getKey().getNamespace()))
+                Comparator.comparingInt((Map.Entry<Identifier, JsonElement> e) -> namespacePriority(e.getKey().getNamespace()))
                         .thenComparing(e -> e.getKey().toString()));
         return list;
+    }
+
+    private static int namespacePriority(String namespace) {
+        if ("iska_lib".equals(namespace)) {
+            return 0;
+        }
+        if (IskaUtils.MOD_ID.equals(namespace)) {
+            return 1;
+        }
+        return 2;
     }
 
     /**
      * Bootstrap from the mod jar / resources folder when no {@link ResourceManager} is available.
      */
     public static Map<Identifier, JsonElement> collectFromModJarOnly(String subdirUnderLoad) {
+        return collectFromModJarOnlyForMod(IskaUtils.MOD_ID, subdirUnderLoad);
+    }
+
+    /**
+     * Bootstrap JSON from another mod's jar. Data path defaults to {@code data/<modId>/load/…}.
+     */
+    public static Map<Identifier, JsonElement> collectFromModJarOnlyForMod(String modId, String subdirUnderLoad) {
+        return collectFromModJarOnlyForMod(modId, modId, subdirUnderLoad);
+    }
+
+    /**
+     * Bootstrap JSON from {@code modId}'s jar at {@code data/<dataNamespace>/load/<subdir>/}
+     * (e.g. Library jar contributing {@code data/iska_utils/load/iska_utils_shop/}).
+     */
+    public static Map<Identifier, JsonElement> collectFromModJarOnlyForMod(
+            String modId, String dataNamespace, String subdirUnderLoad) {
         Map<Identifier, JsonElement> out = new LinkedHashMap<>();
-        String dirInRoot = "data/" + IskaUtils.MOD_ID + "/" + IskaUtilsLoadPaths.LOAD_FOLDER + "/" + subdirUnderLoad;
-        LOGGER.info("Bootstrap loading from: {}", dirInRoot);
-        ModList.get().getModContainerById(IskaUtils.MOD_ID).ifPresentOrElse(
+        String dirInRoot = "data/" + dataNamespace + "/" + IskaUtilsLoadPaths.LOAD_FOLDER + "/" + subdirUnderLoad;
+        LOGGER.info("Bootstrap loading from: {} (jar {})", dirInRoot, modId);
+        ModList.get().getModContainerById(modId).ifPresentOrElse(
                 container -> {
                     var modFileInfo = container.getModInfo().getOwningFile();
                     if (modFileInfo == null) {
-                        LOGGER.warn("No mod jar file for {}, cannot bootstrap load/{}", IskaUtils.MOD_ID, subdirUnderLoad);
+                        LOGGER.warn("No mod jar file for {}, cannot bootstrap load/{}", modId, subdirUnderLoad);
                         return;
                     }
                     Path root = modFileInfo.getFile().getFilePath();
@@ -159,20 +185,19 @@ public final class IskaUtilsLoadJson {
                                         walk.filter(Files::isRegularFile)
                                                 .filter(p -> p.toString().endsWith(".json"))
                                                 .sorted()
-                                                .forEach(file -> readOneJsonFile(out, base, file));
+                                                .forEach(file -> readOneJsonFile(out, base, file, dataNamespace));
                                     }
                                 } else {
                                     LOGGER.warn("DEV resources directory does not exist: {}", base);
                                 }
                             } else {
-                                // Fallback to standard directory mode (in case resources folder doesn't exist where we expect)
                                 Path base = root.resolve(dirInRoot);
                                 if (Files.exists(base)) {
                                     try (Stream<Path> walk = Files.walk(base)) {
                                         walk.filter(Files::isRegularFile)
                                                 .filter(p -> p.toString().endsWith(".json"))
                                                 .sorted()
-                                                .forEach(file -> readOneJsonFile(out, base, file));
+                                                .forEach(file -> readOneJsonFile(out, base, file, dataNamespace));
                                     }
                                 } else {
                                     LOGGER.warn("Directory does not exist: {}", base);
@@ -186,7 +211,7 @@ public final class IskaUtilsLoadJson {
                                         walk.filter(Files::isRegularFile)
                                                 .filter(p -> p.toString().endsWith(".json"))
                                                 .sorted()
-                                                .forEach(file -> readOneJsonFile(out, base, file));
+                                                .forEach(file -> readOneJsonFile(out, base, file, dataNamespace));
                                     }
                                 } else {
                                     LOGGER.warn("Directory does not exist in JAR: {}", base);
@@ -198,14 +223,13 @@ public final class IskaUtilsLoadJson {
                     }
                 },
                 () -> {
-                    LOGGER.error("Mod container not found for {} during bootstrap! ModList: {}",
-                            IskaUtils.MOD_ID,
-                            ModList.get().getMods().stream().map(m -> m.getModId()).toList());
-                    LOGGER.warn("Mod file not found for {}, cannot bootstrap load/{}", IskaUtils.MOD_ID, subdirUnderLoad);
+                    LOGGER.warn("Mod container not found for {} during bootstrap load/{}", modId, subdirUnderLoad);
                 });
-        int externalFiles = IskaUtilsFilesystemBootstrap.mergeInto(out, subdirUnderLoad);
-        if (externalFiles > 0) {
-            LOGGER.info("Bootstrap load/{}: merged {} file(s) from kubejs/datapacks on disk", subdirUnderLoad, externalFiles);
+        if (IskaUtils.MOD_ID.equals(modId) && IskaUtils.MOD_ID.equals(dataNamespace)) {
+            int externalFiles = IskaUtilsFilesystemBootstrap.mergeInto(out, subdirUnderLoad);
+            if (externalFiles > 0) {
+                LOGGER.info("Bootstrap load/{}: merged {} file(s) from kubejs/datapacks on disk", subdirUnderLoad, externalFiles);
+            }
         }
         return out;
     }
@@ -348,11 +372,15 @@ public final class IskaUtilsLoadJson {
     }
 
     private static void readOneJsonFile(Map<Identifier, JsonElement> out, Path base, Path file) {
+        readOneJsonFile(out, base, file, IskaUtils.MOD_ID);
+    }
+
+    private static void readOneJsonFile(Map<Identifier, JsonElement> out, Path base, Path file, String modId) {
         try {
             String subdir = base.getFileName().toString();
             String rel = base.relativize(file).toString().replace('\\', '/');
             String pathPart = IskaUtilsLoadPaths.LOAD_FOLDER + "/" + subdir + "/" + rel;
-            Identifier id = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, pathPart);
+            Identifier id = Identifier.fromNamespaceAndPath(modId, pathPart);
             try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                 JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
                 if (parsed != null) {

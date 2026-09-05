@@ -721,7 +721,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int slotX = entryX + 3;
         int slotY = entryY + 3;
         int textX = slotX + 18 + 6;
-        int textY = entryY + (ENTRY_HEIGHT - 8) / 2;
+        int textY = entryY + 3;
         
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
         
@@ -729,7 +729,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             case ITEM -> {
                 ItemStack itemStack = ShopEntryHelper.displayStackForEntry(item);
                 if (!itemStack.isEmpty()) {
-                    itemStack.setCount(Math.max(1, item.amount));
+                    itemStack.setCount(1);
                     guiGraphics.item(itemStack, slotX + 1, slotY + 1);
                     guiGraphics.itemDecorations(this.font, itemStack, slotX + 1, slotY + 1);
                 }
@@ -760,7 +760,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int buyButtonStartX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
         int maxTextWidth = buyButtonStartX - textX - 5;
         
-        renderScaledText(guiGraphics, displayName, textX, textY, maxTextWidth, GuiTextColors.TITLE);
+        ShopScreenHelper.renderEntryLabelWithAmount(
+                guiGraphics, this.font, displayName, item, textX, textY, maxTextWidth, GuiTextColors.TITLE);
         
         // Buy/Sell buttons are vanilla widgets created in updateBuySellButtons()
     }
@@ -921,7 +922,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 }
                 ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
                 if (!stack.isEmpty()) {
-                    stack.setCount(Math.max(1, item.amount));
+                    stack.setCount(1);
                     renderItemStackTooltip(guiGraphics, stack, mouseX, mouseY);
                     return true;
                 }

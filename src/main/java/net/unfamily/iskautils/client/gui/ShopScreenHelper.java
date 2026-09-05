@@ -33,6 +33,42 @@ public final class ShopScreenHelper {
         return Component.translatable("gui.iska_utils.shop.tooltip.amount", amount);
     }
 
+    /** Compact quantity for row subtitles (no "Amount:" prefix). */
+    public static String amountSubtitle(ShopEntry entry) {
+        int amount = entry != null ? Math.max(1, entry.amount) : 1;
+        if (entry != null && entry.type == ShopEntry.EntryType.OTHER) {
+            return amount + " RF";
+        }
+        if (entry != null && (entry.type == ShopEntry.EntryType.FLUID || entry.type == ShopEntry.EntryType.GAS)) {
+            return amount + " mB";
+        }
+        return String.valueOf(amount);
+    }
+
+    /**
+     * Title on the first line, compact amount below in small muted text.
+     * {@code y} is the top of the text block within a typical 24px entry row.
+     */
+    public static void renderEntryLabelWithAmount(
+            GuiGraphicsExtractor guiGraphics,
+            Font font,
+            String title,
+            ShopEntry entry,
+            int x,
+            int y,
+            int maxWidth,
+            int titleColor) {
+        renderScaledText(guiGraphics, font, title != null ? title : "", x, y, maxWidth, titleColor);
+        String amount = amountSubtitle(entry);
+        float scale = 0.7f;
+        Component amountComponent = Component.literal(amount);
+        guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().translate(x, y + 10);
+        guiGraphics.pose().scale(scale, scale);
+        guiGraphics.text(font, amountComponent, 0, 0, GuiTextColors.MUTED, false);
+        guiGraphics.pose().popMatrix();
+    }
+
     /**
      * Disabled Buy/Sell tooltip for non-item entries in the player shop: price, amount, then Auto Shop hint.
      */
