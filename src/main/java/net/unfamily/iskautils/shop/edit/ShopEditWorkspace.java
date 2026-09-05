@@ -15,6 +15,7 @@ import net.unfamily.iskautils.shop.ShopStage;
 import net.unfamily.iskautils.util.ModLogger;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +39,7 @@ public final class ShopEditWorkspace {
     public static final String CATEGORIES_FILE = "default_categories.json";
     public static final String ENTRIES_FILE = "default_entries.json";
 
-    /** Classpath location of jar shop defaults (same files the datapack loader uses). */
+    /** Classpath location of jar shop defaults (categories/entries). Currencies come from Library at the same path. */
     private static final String JAR_DEFAULT_DIR = "/data/iska_utils/load/iska_utils_shop/";
 
     private ShopEditWorkspace() {}
@@ -88,10 +89,15 @@ public final class ShopEditWorkspace {
      */
     private static boolean copyJarDefault(Path target, String fileName) throws IOException {
         String resourcePath = JAR_DEFAULT_DIR + fileName;
-        try (var in = ShopEditWorkspace.class.getResourceAsStream(resourcePath)) {
-            if (in == null) {
-                return false;
-            }
+        InputStream stream = ShopEditWorkspace.class.getResourceAsStream(resourcePath);
+        if (stream == null && CURRENCIES_FILE.equals(fileName)) {
+            // Built-in currencies live in Library jar at the same data/iska_utils/… path.
+            stream = net.unfamily.iskalib.IskaLib.class.getResourceAsStream(resourcePath);
+        }
+        if (stream == null) {
+            return false;
+        }
+        try (InputStream in = stream) {
             Files.createDirectories(target.getParent());
             Files.copy(in, target);
             return true;

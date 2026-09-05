@@ -47,6 +47,11 @@ public class ShopLoader {
             Map<ResourceLocation, JsonElement> merged = resourceManagerOrNull != null
                     ? IskaUtilsLoadJson.collectMergedJsonForSubdir(resourceManagerOrNull, IskaUtilsLoadPaths.SHOP)
                     : IskaUtilsLoadJson.collectFromModJarOnly(IskaUtilsLoadPaths.SHOP);
+            if (resourceManagerOrNull == null) {
+                // Currencies ship in Library jar at data/iska_utils/load/iska_utils_shop/
+                merged.putAll(IskaUtilsLoadJson.collectFromModJarOnlyForMod(
+                        "iska_lib", "iska_utils", IskaUtilsLoadPaths.SHOP));
+            }
             for (var e : IskaUtilsLoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;
@@ -68,6 +73,7 @@ public class ShopLoader {
             String type = json.has("type") ? json.get("type").getAsString() : "";
             boolean overwritable = json.has("overwritable") && json.get("overwritable").getAsBoolean();
             switch (type) {
+                case "iska_lib:shop_currency":
                 case "iska_utils:shop_currency":
                 case "iska_utils:shop_valute":
                     processCurrenciesFile(json, overwritable, fileName);

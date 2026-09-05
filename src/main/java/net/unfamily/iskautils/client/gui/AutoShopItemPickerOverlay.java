@@ -294,7 +294,7 @@ public final class AutoShopItemPickerOverlay {
                 }
                 ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
                 if (!stack.isEmpty()) {
-                    stack.setCount(Math.max(1, item.amount));
+                    stack.setCount(1);
                     guiGraphics.renderTooltip(font, stack, mouseX, mouseY);
                 }
             }
@@ -678,13 +678,13 @@ public final class AutoShopItemPickerOverlay {
         int slotX = entryX + 3;
         int slotY = entryY + 3;
         int textX = slotX + 24;
-        int textY = entryY + (ENTRY_HEIGHT - 8) / 2;
+        int textY = entryY + 3;
         guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
         switch (item.type) {
             case ITEM -> {
                 ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
                 if (!stack.isEmpty()) {
-                    stack.setCount(Math.max(1, item.amount));
+                    stack.setCount(1);
                     guiGraphics.renderItem(stack, slotX + 1, slotY + 1);
                     guiGraphics.renderItemDecorations(fontSupplier.get(), stack, slotX + 1, slotY + 1);
                 }
@@ -710,8 +710,9 @@ public final class AutoShopItemPickerOverlay {
         }
         int buyButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - BUTTONS_SPACING - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;
         int maxTextWidth = buyButtonX - textX - 5;
-        ShopScreenHelper.renderScaledText(guiGraphics, fontSupplier.get(),
-                ShopEntryHelper.displayLabelForEntry(item), textX, textY, maxTextWidth, GuiTextColors.TITLE);
+        ShopScreenHelper.renderEntryLabelWithAmount(
+                guiGraphics, fontSupplier.get(), ShopEntryHelper.displayLabelForEntry(item), item,
+                textX, textY, maxTextWidth, GuiTextColors.TITLE);
     }
 
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {

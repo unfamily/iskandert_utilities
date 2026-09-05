@@ -78,44 +78,6 @@ public class MacroLoader {
     }
     
     /**
-     * Checks if the default_commands_macro.json file should be regenerated
-     */
-    private static boolean shouldRegenerateDefaultCommandsMacro(Path filePath) {
-        try {
-            try (InputStream inputStream = Files.newInputStream(filePath);
-                 InputStreamReader reader = new InputStreamReader(inputStream)) {
-                
-                JsonElement jsonElement = GSON.fromJson(reader, JsonElement.class);
-                if (jsonElement != null && jsonElement.isJsonObject()) {
-                    JsonObject json = jsonElement.getAsJsonObject();
-                    
-                    // Check if the overwritable field exists
-                    if (json.has("overwritable")) {
-                        // If overwritable is true, regenerate the file
-                        boolean overwritable = json.get("overwritable").getAsBoolean();
-                        if (overwritable) {
-                            LOGGER.debug("Found default_commands_macro.json with overwritable: true, will regenerate");
-                            return true;
-                        } else {
-                            LOGGER.debug("Found default_commands_macro.json with overwritable: false, will not regenerate");
-                            return false;
-                        }
-                    }
-                    
-                    // If no overwritable field, default to true (regenerate)
-                    LOGGER.debug("Found default_commands_macro.json without overwritable field, assuming true");
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Error reading default_commands_macro.json file: {}", e.getMessage());
-        }
-        
-        // If the file can't be read or isn't valid JSON, regenerate it
-        return true;
-    }
-    
-    /**
      * Creates a README file in the configuration directory
      */
     private static void createReadme(Path configPath) {
@@ -377,12 +339,10 @@ public class MacroLoader {
                 "  - If a file has `overwritable: true` or no overwritable field, its macros can be overwritten by later files\n" +
                 "  - Files are processed in alphabetical order\n" +
                 "\n" +
-                "## Default Commands Macro\n" +
+                "## Adding Macros\n" +
                 "\n" +
-                "The mod automatically generates a file called `default_commands_macro.json` with some example macros.\n" +
-                "- This file has `overwritable: true` by default, which means it will be regenerated on each start\n" +
-                "- If you want to keep your changes to this file, set `overwritable: false`\n" +
-                "- Best practice: Instead of editing the default file, create your own files with custom macros\n" +
+                "Place your own JSON files under `data/<namespace>/load/iska_utils_macros/` (for example via KubeJS).\n" +
+                "The jar no longer ships example macros.\n" +
                 "\n" +
                 "## Example Use Cases\n" +
                 "\n" +
@@ -631,44 +591,6 @@ public class MacroLoader {
         }
     }
     
-    /**
-     * Generates default macro configurations
-     */
-    private static void generateDefaultConfigurations(Path configPath) {
-        try {
-            // Create the default_commands_macro.json file
-            generateDefaultCommandsMacro(configPath);
-        } catch (Exception e) {
-            LOGGER.error("Error generating default configurations: {}", e.getMessage());
-        }
-    }
-    
-    /**
-     * Generates the default_commands_macro.json file
-     */
-    private static void generateDefaultCommandsMacro(Path configPath) throws IOException {
-        // Simplify and include only the reloader command
-        String content = "{\n" +
-            "  \"type\": \"iska_utils:commands_macro\",\n" +
-            "  \"overwritable\": true,\n" +
-            "  \"commands\": [\n" +
-            "    {\n" +
-            "      \"command\": \"reloader\",\n" +
-            "      \"level\": 2,\n" +
-            "      \"do\": [\n" +
-            "        {\"execute\": \"kubejs reload server-scripts\"},\n" +
-            "        {\"execute\": \"reload\"}\n" +
-//            "        {\"delay\": 20},\n" +
-//            "        {\"execute\": \"custommachinery reload\"}\n" +
-            "      ]\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}";
-        
-        Path filePath = configPath.resolve("default_commands_macro.json");
-        Files.writeString(filePath, content);
-        LOGGER.info("Generated default_commands_macro.json file: {}", filePath);
-    }
 
     /**
      * Reloads all macros from configuration files and registers commands
