@@ -131,7 +131,7 @@ public final class ShopEditWorkspace {
 
     public static void writeEmptyCurrencies(Path file) throws IOException {
         JsonObject root = new JsonObject();
-        root.addProperty("type", "iska_utils:shop_currency");
+        root.addProperty("type", "iska_lib:shop_currency");
         root.add("currencies", new JsonArray());
         writeJson(file, root);
     }
@@ -261,7 +261,7 @@ public final class ShopEditWorkspace {
 
     private static void writeCurrencies(Path file, Map<String, ShopCurrency> currencies) throws IOException {
         JsonObject root = new JsonObject();
-        root.addProperty("type", "iska_utils:shop_currency");
+        root.addProperty("type", "iska_lib:shop_currency");
         JsonArray arr = new JsonArray();
         for (ShopCurrency c : currencies.values()) {
             JsonObject o = new JsonObject();
