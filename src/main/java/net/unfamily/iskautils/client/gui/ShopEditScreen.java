@@ -58,7 +58,6 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
 
     private static final int GUI_WIDTH = 300;
     private static final int GUI_HEIGHT = 240;
-    private static final int ENTRY_WIDTH = 220;
     private static final int ENTRY_HEIGHT = 24;
     private static final int ENTRY_START_X = 19;
     private static final int ENTRY_START_Y = 28;
@@ -72,7 +71,6 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private static final int SCROLLBAR_WIDTH = 8;
     private static final int SCROLLBAR_HEIGHT = 34;
     private static final int HANDLE_SIZE = 8;
-    private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 4;
 
     /** Buttons beside the player inventory (inventory starts at x=20,y=154). */
     private static final int SIDE_BTN_X = 188;
@@ -86,6 +84,16 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private static final int FORM_WIDTH = FORM_RIGHT - FORM_LEFT;
     private static final int FORM_GAP = 4;
     private static final int SIDE_BTN_DONE_Y = SIDE_BTN_Y + SIDE_BTN_H + FORM_GAP;
+
+    /**
+     * Browse lists end flush with Done/Currencies ({@link #FORM_RIGHT}).
+     * Scrollbar sits just after that edge. Edit forms are unchanged.
+     */
+    private static final int LIST_ACTION_W = 18;
+    private static final int LIST_ACTION_GAP = 2;
+    private static final int LIST_ACTION_RIGHT = FORM_RIGHT;
+    private static final int ENTRY_WIDTH = LIST_ACTION_RIGHT - ENTRY_START_X;
+    private static final int SCROLLBAR_X = LIST_ACTION_RIGHT + 4;
 
     private static final int STAGE_ROW_HEIGHT = 14;
     private static final int MAX_VISIBLE_STAGES = 6;
@@ -389,16 +397,16 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private void buildRenameDialog() {
-        addLabel(30, 48, "gui.iska_utils.shop_edit.rename.prompt");
+        addLabel(FORM_LEFT, 48, "gui.iska_utils.shop_edit.rename.prompt");
         addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.rename.propagate"), b -> {
             finishRename("propagate");
-        }).bounds(leftPos + 30, topPos + 80, 240, 18).build());
+        }).bounds(leftPos + FORM_LEFT, topPos + 80, FORM_WIDTH, 18).build());
         addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.rename.delete"), b -> {
             finishRename("delete");
-        }).bounds(leftPos + 30, topPos + 102, 240, 18).build());
+        }).bounds(leftPos + FORM_LEFT, topPos + 102, FORM_WIDTH, 18).build());
         addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.rename.ignore"), b -> {
             finishRename("ignore");
-        }).bounds(leftPos + 30, topPos + 124, 240, 18).build());
+        }).bounds(leftPos + FORM_LEFT, topPos + 124, FORM_WIDTH, 18).build());
     }
 
     private void buildCloseHintDialog() {
@@ -527,11 +535,11 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                     rebuild();
                 }).bounds(leftPos + contentX, topPos + y, mainW, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("✎"), b -> openCategoryEdit(catId))
-                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 42, topPos + y, 18, ENTRY_HEIGHT - 2)
+                        .bounds(leftPos + LIST_ACTION_RIGHT - LIST_ACTION_W * 2 - LIST_ACTION_GAP, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2)
                         .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.edit")))
                         .build());
                 addDyn(Button.builder(Component.literal("D"), b -> confirmDelete("category", catId))
-                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 22, topPos + y, 18, ENTRY_HEIGHT - 2)
+                        .bounds(leftPos + LIST_ACTION_RIGHT - LIST_ACTION_W, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2)
                         .tooltip(deleteButtonTooltip())
                         .build());
             } else if (idx == list.size()) {
@@ -559,9 +567,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 addDyn(Button.builder(Component.literal(truncate(displayName(cur.name), 30)), b -> openCurrencyEdit(curId))
                         .bounds(leftPos + contentX, topPos + y, mainW, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("✎"), b -> openCurrencyEdit(curId))
-                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 42, topPos + y, 18, ENTRY_HEIGHT - 2).build());
+                        .bounds(leftPos + LIST_ACTION_RIGHT - LIST_ACTION_W * 2 - LIST_ACTION_GAP, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("D"), b -> confirmDelete("currency", curId))
-                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 22, topPos + y, 18, ENTRY_HEIGHT - 2)
+                        .bounds(leftPos + LIST_ACTION_RIGHT - LIST_ACTION_W, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2)
                         .tooltip(deleteButtonTooltip())
                         .build());
             } else if (idx == list.size()) {
@@ -586,12 +594,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 ShopEntry e = list.get(idx);
                 final String entryId = e.id;
                 listRowVisuals.add(new ListRowVisual(i, ListRowKind.ENTRY_SLOT, null, null, null, e));
-                addDyn(Button.builder(Component.empty(), b -> openEntryEdit(entryId))
+                addDyn(Button.builder(Component.literal(truncate(entryContentLabel(e), 30)), b -> openEntryEdit(entryId))
                         .bounds(leftPos + contentX, topPos + y, mainW, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("✎"), b -> openEntryEdit(entryId))
-                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 42, topPos + y, 18, ENTRY_HEIGHT - 2).build());
+                        .bounds(leftPos + LIST_ACTION_RIGHT - LIST_ACTION_W * 2 - LIST_ACTION_GAP, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2).build());
                 addDyn(Button.builder(Component.literal("D"), b -> confirmDelete("entry", entryId))
-                        .bounds(leftPos + ENTRY_START_X + ENTRY_WIDTH - 22, topPos + y, 18, ENTRY_HEIGHT - 2)
+                        .bounds(leftPos + LIST_ACTION_RIGHT - LIST_ACTION_W, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2)
                         .tooltip(deleteButtonTooltip())
                         .build());
             } else if (idx == list.size()) {
@@ -607,11 +615,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private int listMainButtonWidth() {
-        return ENTRY_WIDTH - 44 - LIST_ICON_SIZE - LIST_ICON_GAP;
+        int editX = LIST_ACTION_RIGHT - LIST_ACTION_W * 2 - LIST_ACTION_GAP;
+        return editX - LIST_ACTION_GAP - listContentX();
     }
 
     private int listAddButtonWidth() {
-        return ENTRY_WIDTH - 4 - LIST_ICON_SIZE - LIST_ICON_GAP;
+        return LIST_ACTION_RIGHT - listContentX();
     }
 
     private void buildCategoryEdit() {
@@ -1505,27 +1514,6 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         }
     }
 
-    /** Drawn in renderLabels so text sits above the empty hitbox buttons. */
-    private void renderEntryListLabels(GuiGraphics graphics) {
-        int contentX = listContentX();
-        int maxW = listMainButtonWidth() - 4;
-        for (ListRowVisual visual : listRowVisuals) {
-            if (visual.kind() != ListRowKind.ENTRY_SLOT || visual.entry() == null) {
-                continue;
-            }
-            int rowY = ENTRY_START_Y + visual.rowIndex() * ENTRY_HEIGHT;
-            ShopScreenHelper.renderEntryLabelWithAmount(
-                    graphics,
-                    this.font,
-                    truncate(entryContentLabel(visual.entry()), 28),
-                    visual.entry(),
-                    contentX + 2,
-                    rowY + 2,
-                    maxW,
-                    GuiTextColors.TITLE);
-        }
-    }
-
     private void renderEntryListIcon(GuiGraphics graphics, ShopEntry entry, int iconX, int iconY) {
         switch (entry.type != null ? entry.type : ShopEntry.EntryType.ITEM) {
             case ITEM -> {
@@ -1670,9 +1658,6 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 y += 12;
             }
             return;
-        }
-        if (dialog == Dialog.NONE && subView == SubView.ENTRIES) {
-            renderEntryListLabels(graphics);
         }
         for (FormLabel label : formLabels) {
             graphics.drawString(font, label.text(), label.x(), label.y(), 0x404040, false);

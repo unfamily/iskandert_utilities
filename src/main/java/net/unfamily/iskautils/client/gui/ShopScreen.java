@@ -720,7 +720,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int slotX = entryX + 3;
         int slotY = entryY + 3;
         int textX = slotX + 18 + 6;
-        int textY = entryY + 3;
+        int textY = entryY + (ENTRY_HEIGHT - 8) / 2;
         
         // Draw slot (18x18)
         guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
@@ -729,7 +729,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             case ITEM -> {
                 ItemStack itemStack = ShopEntryHelper.displayStackForEntry(item);
                 if (!itemStack.isEmpty()) {
-                    itemStack.setCount(1);
+                    itemStack.setCount(Math.max(1, item.amount));
                     guiGraphics.renderItem(itemStack, slotX + 1, slotY + 1);
                     guiGraphics.renderItemDecorations(this.font, itemStack, slotX + 1, slotY + 1);
                 }
@@ -759,8 +759,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int buyButtonStartX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
         int maxTextWidth = buyButtonStartX - textX - 5;
         
-        ShopScreenHelper.renderEntryLabelWithAmount(
-                guiGraphics, this.font, displayName, item, textX, textY, maxTextWidth, GuiTextColors.TITLE);
+        renderScaledText(guiGraphics, displayName, textX, textY, maxTextWidth, GuiTextColors.TITLE);
         
         // Buy/Sell buttons are vanilla widgets created in updateBuySellButtons()
     }
@@ -907,7 +906,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 }
                 ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
                 if (!stack.isEmpty()) {
-                    stack.setCount(1);
+                    stack.setCount(Math.max(1, item.amount));
                     guiGraphics.renderTooltip(this.font, stack, mouseX, mouseY);
                 }
             }
