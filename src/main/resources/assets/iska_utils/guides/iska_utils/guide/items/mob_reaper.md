@@ -64,7 +64,7 @@ Use **one damage module type** at a time: **Normal** (stackable) **or** **Lethal
   <ItemIcon id="iska_utils:experience_module" />
 </ItemGrid>
 
-Module inventory is **hopper / pipe** compatible.
+Module inventory is **hopper / pipe** compatible. See **Modules** for a short map of every machine module.
 
 ## Redstone
 

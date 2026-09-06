@@ -4,6 +4,8 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.ModList;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -31,11 +33,24 @@ import net.unfamily.iskautils.block.custom.EntropicDirtBlock;
 import net.unfamily.iskautils.block.custom.EntropicSoilBlock;
 import net.unfamily.iskautils.block.custom.BlazingAltarBlock;
 import net.unfamily.iskautils.block.custom.GraveyardSoilBlock;
+import net.unfamily.iskautils.block.custom.ImprovedPatternCrafterBlock;
+import net.unfamily.iskautils.block.custom.PatternCrafterBlock;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.unfamily.iskautils.fluid.ModFluids;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
+
+    static {
+        if (!ModList.get().isLoaded("pattern_crafter")) {
+            BLOCKS.addAlias(
+                    ResourceLocation.fromNamespaceAndPath("pattern_crafter", "pattern_crafter"),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "pattern_crafter"));
+            BLOCKS.addAlias(
+                    ResourceLocation.fromNamespaceAndPath("pattern_crafter", "improved_pattern_crafter"),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "improved_pattern_crafter"));
+        }
+    }
 
     // Common properties for all vector blocks
     private static final BlockBehaviour.Properties VECTOR_PROPERTIES = BlockBehaviour.Properties.of()
@@ -91,6 +106,12 @@ public class ModBlocks {
             .noOcclusion();
             
     private static final BlockBehaviour.Properties STRUCTURE_PLACER_MACHINE_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL)
+            .strength(3.0f, 6.0f)
+            .sound(SoundType.METAL)
+            .requiresCorrectToolForDrops();
+
+    private static final BlockBehaviour.Properties PATTERN_CRAFTER_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.METAL)
             .strength(3.0f, 6.0f)
             .sound(SoundType.METAL)
@@ -224,6 +245,12 @@ public class ModBlocks {
     // Structure Saver Machine (saves structures to compound tags)
     public static final DeferredBlock<StructureSaverMachineBlock> STRUCTURE_SAVER_MACHINE = BLOCKS.register("structure_saver_machine",
             () -> new StructureSaverMachineBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
+
+    public static final DeferredBlock<PatternCrafterBlock> PATTERN_CRAFTER = BLOCKS.register("pattern_crafter",
+            () -> new PatternCrafterBlock(PATTERN_CRAFTER_PROPERTIES));
+
+    public static final DeferredBlock<ImprovedPatternCrafterBlock> IMPROVED_PATTERN_CRAFTER = BLOCKS.register("improved_pattern_crafter",
+            () -> new ImprovedPatternCrafterBlock(PATTERN_CRAFTER_PROPERTIES));
 
     // Shop Block (allows players to buy and sell items)
     public static final DeferredBlock<ShopBlock> SHOP = BLOCKS.register("shop",

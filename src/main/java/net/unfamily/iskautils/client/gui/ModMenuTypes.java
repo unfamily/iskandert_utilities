@@ -93,4 +93,7 @@ public class ModMenuTypes {
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<ShopEditMenu>> SHOP_EDIT_MENU =
         MENUS.register("shop_edit_menu", () -> new MenuType<>(ShopEditMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
 
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<ImprovedPatternCrafterMenu>> IMPROVED_PATTERN_CRAFTER_MENU =
+        MENUS.register("improved_pattern_crafter_menu", () -> IMenuTypeExtension.create(ImprovedPatternCrafterMenu::new));
+
 } 

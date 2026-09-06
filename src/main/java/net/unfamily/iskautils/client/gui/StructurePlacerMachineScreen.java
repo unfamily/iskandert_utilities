@@ -2,22 +2,31 @@ package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.Rect2i;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.core.BlockPos;
 import net.unfamily.iskautils.block.entity.StructurePlacerMachineBlockEntity;
 import net.unfamily.iskautils.client.MachinePreviewTracker;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.unfamily.iskautils.integration.jei.ghost.IIskaUtilsGhostTarget;
+import net.unfamily.iskautils.network.packet.StructurePlacerMachineGhostFilterSetC2SPacket;
 import net.unfamily.iskautils.network.packet.StructurePlacerMachineTogglePreviewC2SPacket;
 import net.minecraft.world.item.ItemStack;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Screen for the Structure Placer Machine GUI
  */
-public class StructurePlacerMachineScreen extends AbstractContainerScreen<StructurePlacerMachineMenu> {
+public class StructurePlacerMachineScreen extends AbstractContainerScreen<StructurePlacerMachineMenu>
+        implements IIskaUtilsGhostTarget {
     
     private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/block_structure.png");
     private static final ResourceLocation ENERGY_BAR = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/energy_bar.png");
@@ -40,7 +49,11 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     
     private ItemIconButton redstoneModeButton;
     private static final int REDSTONE_BUTTON_SIZE = 16;
-    
+    private static final int MACHINE_SLOTS = 27;
+
+    private int lastClickSlotIndex = -1;
+    private long lastClickTime;
+
     // Close button position - top right
     private static final int CLOSE_BUTTON_Y = 5;
     private static final int CLOSE_BUTTON_SIZE = 12;
@@ -52,6 +65,29 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         // Set the GUI dimensions
         this.imageWidth = GUI_WIDTH;
         this.imageHeight = GUI_HEIGHT;
+    }
+
+    @Override
+    public IGhostIngredientConsumer getGhostHandler() {
+        return null; // multi-target only via getGhostDropTargets
+    }
+
+    @Override
+    public List<GhostDropTarget> getGhostDropTargets() {
+        List<GhostDropTarget> targets = new ArrayList<>();
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos == null || pos.equals(BlockPos.ZERO)) return targets;
+        for (int i = 0; i < MACHINE_SLOTS; i++) {
+            int slotIndex = i;
+            Slot slot = menu.getSlot(slotIndex);
+            if (!slot.isActive()) continue;
+            targets.add(new GhostDropTarget(
+                    new Rect2i(leftPos + slot.x - 1, topPos + slot.y - 1, 18, 18),
+                    stack -> PacketDistributor.sendToServer(
+                            new StructurePlacerMachineGhostFilterSetC2SPacket(
+                                    pos, slotIndex, stack.copyWithCount(1)))));
+        }
+        return targets;
     }
     
     @Override
@@ -537,6 +573,24 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         if (button == 1 && redstoneModeButton.isHovered()) {
             onRedstoneModePressed(true);
             return true;
+        }
+        if (button == 0 && !Screen.hasShiftDown() && hoveredSlot != null) {
+            int slotIndex = hoveredSlot.index;
+            if (slotIndex >= 0 && slotIndex < MACHINE_SLOTS) {
+                long now = System.currentTimeMillis();
+                boolean doubleClick = slotIndex == lastClickSlotIndex && now - lastClickTime <= 250L;
+                lastClickSlotIndex = slotIndex;
+                lastClickTime = now;
+                if (doubleClick && hoveredSlot.getItem().isEmpty() && menu.hasGhostFilter(slotIndex)) {
+                    BlockPos pos = menu.getSyncedBlockPos();
+                    if (pos != null && !pos.equals(BlockPos.ZERO)) {
+                        PacketDistributor.sendToServer(new StructurePlacerMachineGhostFilterSetC2SPacket(
+                                pos, slotIndex, ItemStack.EMPTY));
+                        playButtonSound();
+                        return true;
+                    }
+                }
+            }
         }
 
         return super.mouseClicked(mouseX, mouseY, button);

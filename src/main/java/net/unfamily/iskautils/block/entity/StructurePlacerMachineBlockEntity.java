@@ -339,6 +339,13 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
         setChanged();
     }
 
+    /** Sets or clears a single ghost filter (JEI drag / double-click). Empty stack clears. */
+    public void setGhostFilter(int slot, ItemStack stack) {
+        if (slot < 0 || slot >= ghostFilters.size()) return;
+        ghostFilters.set(slot, stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
+        setChanged();
+    }
+
     /**
      * Clear ghost filters only from slots that don't currently have the matching item (Ctrl+Click behavior)
      */

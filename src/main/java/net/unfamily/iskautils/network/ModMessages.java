@@ -479,6 +479,64 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.LabelingMachineLoreC2SPacket::handle
         );
 
+        registrar.playToServer(net.unfamily.iskautils.network.packet.CraftingModeSwitchC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.CraftingModeSwitchC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.CraftingModeSwitchC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.FilterLetterUpdateC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.FilterLetterUpdateC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.FilterLetterUpdateC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.FilterPageC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.FilterPageC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.FilterPageC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.FilterItemSetC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.FilterItemSetC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.FilterItemSetC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.MarkInputC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.MarkInputC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.MarkInputC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.MarkOutputC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.MarkOutputC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.MarkOutputC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.OutputPageC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.OutputPageC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.OutputPageC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.MarkFilterSetC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.MarkFilterSetC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.MarkFilterSetC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.StructurePlacerMachineGhostFilterSetC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.StructurePlacerMachineGhostFilterSetC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.StructurePlacerMachineGhostFilterSetC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.PatternCrafterJeiTransferC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.PatternCrafterJeiTransferC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.PatternCrafterJeiTransferC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.PatternCellUpdateC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.PatternCellUpdateC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.PatternCellUpdateC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.PatternCellItemAssignC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.PatternCellItemAssignC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.PatternCellItemAssignC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.PatternSwitchC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.PatternSwitchC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.PatternSwitchC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.RecursiveOutputModeC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.RecursiveOutputModeC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.RecursiveOutputModeC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.RemainderRoutingModeC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.RemainderRoutingModeC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.RemainderRoutingModeC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.RedstoneModeC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.RedstoneModeC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.RedstoneModeC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.ToolSafeguardC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.ToolSafeguardC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.ToolSafeguardC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.ForbiddenFiltersC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.ForbiddenFiltersC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.ForbiddenFiltersC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.VariableFilterSetC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.VariableFilterSetC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.VariableFilterSetC2SPacket::handle);
+
     }
     
     /**

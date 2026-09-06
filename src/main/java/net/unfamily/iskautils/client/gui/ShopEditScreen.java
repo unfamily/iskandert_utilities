@@ -947,7 +947,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 return null;
             }
             if (activeDraftStringList().isEmpty()) {
-                return Component.translatable("gui.iska_utils.shop_edit.warn.empty_string_list", handler.editorLabel());
+                return Component.translatable("gui.iska_utils.shop_edit.warn.empty_string_list");
             }
             return null;
         }

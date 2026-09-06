@@ -7,6 +7,8 @@ import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.ModList;
 import net.minecraft.world.food.FoodProperties;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -90,6 +92,17 @@ import net.unfamily.iskautils.item.custom.MiningEquitizer;
 public class ModItems {
     private static final ModLogger LOGGER = ModLogger.of(ModItems.class);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(IskaUtils.MOD_ID);
+
+    static {
+        if (!ModList.get().isLoaded("pattern_crafter")) {
+            ITEMS.addAlias(
+                    ResourceLocation.fromNamespaceAndPath("pattern_crafter", "pattern_crafter"),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "pattern_crafter"));
+            ITEMS.addAlias(
+                    ResourceLocation.fromNamespaceAndPath("pattern_crafter", "improved_pattern_crafter"),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "improved_pattern_crafter"));
+        }
+    }
 
     // Common properties for all items
     private static final Item.Properties ITEM_PROPERTIES = new Item.Properties();
@@ -678,6 +691,12 @@ public class ModItems {
     
     public static final DeferredItem<Item> STRUCTURE_SAVER_MACHINE = ITEMS.register("structure_saver_machine",
             () -> new StructureSaverMachineBlockItem(ModBlocks.STRUCTURE_SAVER_MACHINE.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> PATTERN_CRAFTER = ITEMS.register("pattern_crafter",
+            () -> new BlockItem(ModBlocks.PATTERN_CRAFTER.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> IMPROVED_PATTERN_CRAFTER = ITEMS.register("improved_pattern_crafter",
+            () -> new BlockItem(ModBlocks.IMPROVED_PATTERN_CRAFTER.get(), ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> SHOP = ITEMS.register("shop",
             () -> new ShopBlockItem(ModBlocks.SHOP.get(), ITEM_PROPERTIES));

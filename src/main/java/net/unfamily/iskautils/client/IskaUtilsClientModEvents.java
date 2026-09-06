@@ -182,5 +182,6 @@ public final class IskaUtilsClientModEvents {
         event.register(ModMenuTypes.NULLIFIER_MENU.get(), NullifierScreen::new);
         event.register(ModMenuTypes.LABELING_MACHINE_MENU.get(), LabelingMachineScreen::new);
         event.register(ModMenuTypes.SHOP_EDIT_MENU.get(), ShopEditScreen::new);
+        event.register(ModMenuTypes.IMPROVED_PATTERN_CRAFTER_MENU.get(), ImprovedPatternCrafterScreen::new);
     }
 }

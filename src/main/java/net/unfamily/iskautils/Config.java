@@ -1409,6 +1409,80 @@ public class Config
             .define("951_sacredRubberMegaTreeGrowthEnabled", true);
 
     static {
+        BUILDER.comment("Pattern Crafter Configuration").push("pattern_crafter");
+        BUILDER.comment("Normal Pattern Crafter Configuration").push("normal_pattern_crafter");
+    }
+
+    public static final ModConfigSpec.IntValue NORMAL_ENERGY_CAPACITY = BUILDER
+            .defineInRange("energyCapacity", 0, 0, Integer.MAX_VALUE);
+    public static final ModConfigSpec.IntValue NORMAL_ENERGY_PER_CRAFT = BUILDER
+            .defineInRange("energyPerCraft", 0, 0, Integer.MAX_VALUE);
+    public static final ModConfigSpec.IntValue NORMAL_CRAFTING_INTERVAL = BUILDER
+            .defineInRange("craftingInterval", 60, 1, Integer.MAX_VALUE);
+    public static final ModConfigSpec.IntValue NORMAL_MAX_PATTERNS = BUILDER
+            .defineInRange("maxPatterns", 4, 1, 64);
+    public static final ModConfigSpec.IntValue NORMAL_BASE_PATTERNS = BUILDER
+            .defineInRange("basePatterns", 2, 1, 64);
+    public static final ModConfigSpec.IntValue NORMAL_MAX_LOGIC_MODULES = BUILDER
+            .defineInRange("maxLogicModules", 0, 0, 64);
+    public static final ModConfigSpec.IntValue NORMAL_MAX_SPEED_MODULES = BUILDER
+            .defineInRange("maxSpeedModules", 0, 0, 64);
+    public static final ModConfigSpec.IntValue NORMAL_MAX_KEY_INPUTS = BUILDER
+            .defineInRange("maxKeyInputs", 18, 1, 256);
+    public static final ModConfigSpec.IntValue NORMAL_BASE_KEY_INPUTS = BUILDER
+            .defineInRange("baseKeyInputs", 18, 1, 256);
+    public static final ModConfigSpec.IntValue NORMAL_MAX_PRODUCTION_MODULES = BUILDER
+            .defineInRange("maxProductionModules", 0, 0, 64);
+    public static final ModConfigSpec.IntValue NORMAL_CRAFTS_PER_PRODUCTION_MODULE = BUILDER
+            .defineInRange("craftsPerProductionModule", 1, 1, 64);
+    public static final ModConfigSpec.BooleanValue NORMAL_PROCESS_AS_STACK = BUILDER
+            .comment("If true, each production batch crafts up to one result stack per production multiplier.")
+            .define("processAsStack", true);
+
+    static {
+        BUILDER.pop(); // End of normal_pattern_crafter category
+        BUILDER.comment("Improved Pattern Crafter Configuration").push("improved_pattern_crafter");
+    }
+
+    public static final ModConfigSpec.IntValue ENERGY_CAPACITY = BUILDER
+            .defineInRange("energyCapacity", 1000, 0, Integer.MAX_VALUE);
+    public static final ModConfigSpec.IntValue ENERGY_PER_CRAFT = BUILDER
+            .defineInRange("energyPerCraft", 5, 0, Integer.MAX_VALUE);
+    public static final ModConfigSpec.IntValue CRAFTING_INTERVAL = BUILDER
+            .defineInRange("craftingInterval", 20, 1, Integer.MAX_VALUE);
+    public static final ModConfigSpec.IntValue MAX_PATTERNS = BUILDER
+            .defineInRange("maxPatterns", 16, 1, 64);
+    public static final ModConfigSpec.IntValue BASE_PATTERNS = BUILDER
+            .defineInRange("basePatterns", 4, 1, 64);
+    public static final ModConfigSpec.IntValue MAX_LOGIC_MODULES = BUILDER
+            .defineInRange("maxLogicModules", 3, 0, 64);
+    public static final ModConfigSpec.IntValue MAX_SPEED_MODULES = BUILDER
+            .defineInRange("maxSpeedModules", 1, 0, 64);
+    public static final ModConfigSpec.DoubleValue SPEED_MULTIPLIER_SLOW = BUILDER
+            .defineInRange("slowSpeedMultiplier", 0.8D, 0.01D, 100.0D);
+    public static final ModConfigSpec.DoubleValue SPEED_MULTIPLIER_MODERATE = BUILDER
+            .defineInRange("moderateSpeedMultiplier", 0.6D, 0.01D, 100.0D);
+    public static final ModConfigSpec.DoubleValue SPEED_MULTIPLIER_FAST = BUILDER
+            .defineInRange("fastSpeedMultiplier", 0.4D, 0.01D, 100.0D);
+    public static final ModConfigSpec.DoubleValue SPEED_MULTIPLIER_EXTREME = BUILDER
+            .defineInRange("extremeSpeedMultiplier", 0.2D, 0.01D, 100.0D);
+    public static final ModConfigSpec.DoubleValue SPEED_MULTIPLIER_ULTRA = BUILDER
+            .defineInRange("ultraSpeedMultiplier", 0.1D, 0.01D, 100.0D);
+    public static final ModConfigSpec.IntValue IMPROVED_MAX_KEY_INPUTS = BUILDER
+            .defineInRange("maxKeyInputs", 36, 1, 256);
+    public static final ModConfigSpec.IntValue BASE_KEY_INPUTS = BUILDER
+            .defineInRange("baseKeyInputs", 18, 1, 256);
+    public static final ModConfigSpec.IntValue MAX_PRODUCTION_MODULES = BUILDER
+            .defineInRange("maxProductionModules", 1, 0, 64);
+    public static final ModConfigSpec.IntValue CRAFTS_PER_PRODUCTION_MODULE = BUILDER
+            .defineInRange("craftsPerProductionModule", 1, 1, 64);
+    public static final ModConfigSpec.BooleanValue PROCESS_AS_STACK = BUILDER
+            .comment("If true, each production batch crafts up to one result stack per production multiplier.")
+            .define("processAsStack", true);
+
+    static {
+        BUILDER.pop(); // End of improved_pattern_crafter category
+        BUILDER.pop(); // End of pattern_crafter category
         BUILDER.pop(); // End of general_utilities category
 
         // Category for Fan Configuration

@@ -1,6 +1,8 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.ModList;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -21,6 +23,17 @@ import java.util.function.Supplier;
 public class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, IskaUtils.MOD_ID);
+
+    static {
+        if (!ModList.get().isLoaded("pattern_crafter")) {
+            BLOCK_ENTITIES.addAlias(
+                    ResourceLocation.fromNamespaceAndPath("pattern_crafter", "pattern_crafter"),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "pattern_crafter"));
+            BLOCK_ENTITIES.addAlias(
+                    ResourceLocation.fromNamespaceAndPath("pattern_crafter", "improved_pattern_crafter"),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "improved_pattern_crafter"));
+        }
+    }
             
     // Register the block entity for Hellfire Igniter
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<HellfireIgniterBlockEntity>> HELLFIRE_IGNITER_BE =
@@ -107,6 +120,16 @@ public class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StructureSaverMachineBlockEntity>> STRUCTURE_SAVER_MACHINE_BE =
             BLOCK_ENTITIES.register("structure_saver_machine",
                     () -> BlockEntityType.Builder.of(StructureSaverMachineBlockEntity::new, ModBlocks.STRUCTURE_SAVER_MACHINE.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PatternCrafterBlockEntity>> PATTERN_CRAFTER_BE =
+            BLOCK_ENTITIES.register("pattern_crafter",
+                    () -> BlockEntityType.Builder.of(PatternCrafterBlockEntity::new, ModBlocks.PATTERN_CRAFTER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ImprovedPatternCrafterBlockEntity>> IMPROVED_PATTERN_CRAFTER_BE =
+            BLOCK_ENTITIES.register("improved_pattern_crafter",
+                    () -> BlockEntityType.Builder.of(ImprovedPatternCrafterBlockEntity::new, ModBlocks.IMPROVED_PATTERN_CRAFTER.get())
                             .build(null));
 
     // Shop Block Entity
@@ -367,6 +390,23 @@ public class ModBlockEntities {
                         return null;
                     }
             );
+
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, context) -> blockEntity.getAutomationHandler());
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, context) -> blockEntity.getEnergyStorage());
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    IMPROVED_PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, context) -> blockEntity.getAutomationHandler());
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    IMPROVED_PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, context) -> blockEntity.getEnergyStorage());
             
             // Register item handler capability for Structure Saver Machine
             event.registerBlockEntity(

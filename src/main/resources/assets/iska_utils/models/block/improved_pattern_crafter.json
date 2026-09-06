@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "iska_utils:block/pattern_crafter_bottom",
+    "top": "iska_utils:block/imp_pattern_crafter_top",
+    "side": "iska_utils:block/imp_pattern_crafter_side"
+  }
+}

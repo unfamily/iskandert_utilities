@@ -87,4 +87,5 @@ Module and fuel slots accept **hoppers and item pipes**. Breaking the block drop
 - Leave **headroom** on the block directly above the spawner and keep it free of solid blocks.
 - Pair with a **Mob Reaper** and **Collecting Crate** for unattended farms.
 - Stack **Production Modules** for throughput; stack **Entropic Clocks** for faster cycles; optional **entropy fuel** shortens the delay further.
+- See **Modules** for Production Module use on other machines (Pattern Crafter, scrubbers).
 - Use **High** or **Pulse** redstone to gate farms behind buttons or clocks.

@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["BAB", "ACA", "BAB"],
+  "key": {
+    "A": { "tag": "c:cobblestones" },
+    "B": { "tag": "minecraft:planks" },
+    "C": { "item": "minecraft:crafter" }
+  },
+  "result": {
+    "id": "iska_utils:pattern_crafter",
+    "count": 1
+  }
+}

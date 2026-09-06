@@ -25,7 +25,7 @@ Right-click the block to open its control GUI. All controls work the same as the
 - **Redstone Mode** button cycling through Ignore (gunpowder), Low, High, Disabled.
 - **Shift + Right-click**: toggles manual enable/disable without opening the GUI (action-bar feedback).
 - **Show / Hide** area preview.
-- **Range Module** slot for increasing the maximum radius.
+- **Range Module** slot for increasing the maximum radius. See **Modules**.
 
 ## Tips
 

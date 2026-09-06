@@ -2,23 +2,16 @@ package net.unfamily.iskautils.integration;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.neoforged.fml.ModList;
+import net.unfamily.iskautils.Config;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
  * Adds Pattern Crafter config-based tooltips to shared upgrade modules.
- * Uses reflection so no compile dependency on Pattern Crafter is required.
- * Only called when ModList.get().isLoaded("pattern_crafter") is true.
+ * Reads the integrated Iska Utils Pattern Crafter configuration.
  */
 public final class PatternCrafterTooltipHelper {
-
-    private static final String CONFIG_CLASS = "net.unfamily.pattern_crafter.Config";
-    private static final String PATTERN_CRAFTER_MOD_ID = "pattern_crafter";
-    private static final int[] MIN_PRODUCTION_MODULE_VERSION = {1, 2, 0, 0, 0};
 
     private PatternCrafterTooltipHelper() {}
 
@@ -26,36 +19,22 @@ public final class PatternCrafterTooltipHelper {
      * Production module tooltips require Pattern Crafter 1.2.0.0.0 or newer.
      */
     public static boolean supportsProductionModule() {
-        if (!ModList.get().isLoaded(PATTERN_CRAFTER_MOD_ID)) {
-            return false;
-        }
-        return ModList.get().getModContainerById(PATTERN_CRAFTER_MOD_ID)
-                .map(container -> isAtLeastVersion(container.getModInfo().getVersion().toString(), MIN_PRODUCTION_MODULE_VERSION))
-                .orElse(false);
+        return true;
     }
 
     public static boolean isPatternCrafterLoaded() {
-        return ModList.get().isLoaded(PATTERN_CRAFTER_MOD_ID);
+        return true;
     }
 
     public static void appendSpeedModuleMaxInstall(Consumer<Component> tooltip) {
-        if (!isPatternCrafterLoaded()) {
-            return;
-        }
         appendPatternCrafterMaxInstall(tooltip, getConfigInt("MAX_SPEED_MODULES", 1));
     }
 
     public static void appendLogicModuleMaxInstall(Consumer<Component> tooltip) {
-        if (!isPatternCrafterLoaded()) {
-            return;
-        }
         appendPatternCrafterMaxInstall(tooltip, getConfigInt("MAX_LOGIC_MODULES", 3));
     }
 
     public static void appendProductionModuleMaxInstall(Consumer<Component> tooltip) {
-        if (!supportsProductionModule()) {
-            return;
-        }
         appendPatternCrafterMaxInstall(tooltip, getConfigInt("MAX_PRODUCTION_MODULES", 1));
     }
 
@@ -96,26 +75,6 @@ public final class PatternCrafterTooltipHelper {
                 .withStyle(ChatFormatting.GRAY));
     }
 
-    private static boolean isAtLeastVersion(String version, int[] minimum) {
-        String[] parts = version.split("\\.");
-        for (int i = 0; i < minimum.length; i++) {
-            int current = 0;
-            if (i < parts.length) {
-                String digits = parts[i].replaceAll("[^0-9].*", "");
-                if (!digits.isEmpty()) {
-                    current = Integer.parseInt(digits);
-                }
-            }
-            if (current > minimum[i]) {
-                return true;
-            }
-            if (current < minimum[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     private static double getSpeedMultiplier(String speedType) {
         String fieldName = switch (speedType) {
             case "slow" -> "SPEED_MULTIPLIER_SLOW";
@@ -131,11 +90,12 @@ public final class PatternCrafterTooltipHelper {
 
     private static int getConfigInt(String fieldName, int defaultValue) {
         try {
-            Class<?> configClass = Class.forName(CONFIG_CLASS);
-            Field field = configClass.getField(fieldName);
-            Object spec = field.get(null);
-            Method get = spec.getClass().getMethod("get");
-            return (Integer) get.invoke(spec);
+            return switch (fieldName) {
+                case "MAX_SPEED_MODULES" -> Config.MAX_SPEED_MODULES.get();
+                case "MAX_LOGIC_MODULES" -> Config.MAX_LOGIC_MODULES.get();
+                case "MAX_PRODUCTION_MODULES" -> Config.MAX_PRODUCTION_MODULES.get();
+                default -> defaultValue;
+            };
         } catch (Exception e) {
             return defaultValue;
         }
@@ -143,11 +103,14 @@ public final class PatternCrafterTooltipHelper {
 
     private static double getConfigDouble(String fieldName, double defaultValue) {
         try {
-            Class<?> configClass = Class.forName(CONFIG_CLASS);
-            Field field = configClass.getField(fieldName);
-            Object spec = field.get(null);
-            Method get = spec.getClass().getMethod("get");
-            return (Double) get.invoke(spec);
+            return switch (fieldName) {
+                case "SPEED_MULTIPLIER_SLOW" -> Config.SPEED_MULTIPLIER_SLOW.get();
+                case "SPEED_MULTIPLIER_MODERATE" -> Config.SPEED_MULTIPLIER_MODERATE.get();
+                case "SPEED_MULTIPLIER_FAST" -> Config.SPEED_MULTIPLIER_FAST.get();
+                case "SPEED_MULTIPLIER_EXTREME" -> Config.SPEED_MULTIPLIER_EXTREME.get();
+                case "SPEED_MULTIPLIER_ULTRA" -> Config.SPEED_MULTIPLIER_ULTRA.get();
+                default -> defaultValue;
+            };
         } catch (Exception e) {
             return defaultValue;
         }

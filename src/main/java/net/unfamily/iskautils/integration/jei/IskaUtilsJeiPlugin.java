@@ -3,17 +3,23 @@ package net.unfamily.iskautils.integration.jei;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
+import mezz.jei.api.registration.IRecipeTransferRegistration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.fml.ModList;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.client.gui.AutoShopScreen;
 import net.unfamily.iskautils.client.gui.DeepDrawerExtractorScreen;
 import net.unfamily.iskautils.client.gui.ShopEditScreen;
+import net.unfamily.iskautils.client.gui.ImprovedPatternCrafterScreen;
+import net.unfamily.iskautils.client.gui.StructurePlacerMachineScreen;
 import net.unfamily.iskautils.integration.jei.ghost.IskaUtilsGhostIngredientHandler;
 import net.unfamily.iskautils.item.ModItems;
 
@@ -58,6 +64,26 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
     @Override
     public void onRuntimeAvailable(mezz.jei.api.runtime.IJeiRuntime jeiRuntime) {
         IskaUtilsJeiDynamicRefresh.setRuntime(jeiRuntime);
+        if (ModList.get().isLoaded("pattern_crafter")) {
+            var legacyStacks = BuiltInRegistries.ITEM.entrySet().stream()
+                    .filter(entry -> "pattern_crafter".equals(entry.getKey().location().getNamespace()))
+                    .map(entry -> new ItemStack(entry.getValue()))
+                    .toList();
+            jeiRuntime.getIngredientManager().removeIngredientsAtRuntime(VanillaTypes.ITEM_STACK, legacyStacks);
+
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.level != null) {
+                var legacyRecipes = minecraft.level.getRecipeManager()
+                        .getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING).stream()
+                        .filter(holder -> {
+                            ItemStack result = holder.value().getResultItem(minecraft.level.registryAccess());
+                            ResourceLocation id = BuiltInRegistries.ITEM.getKey(result.getItem());
+                            return id != null && "pattern_crafter".equals(id.getNamespace());
+                        })
+                        .toList();
+                jeiRuntime.getRecipeManager().hideRecipes(RecipeTypes.CRAFTING, legacyRecipes);
+            }
+        }
     }
 
     @Override
@@ -91,6 +117,19 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         registration.addGhostIngredientHandler(
                 ShopEditScreen.class,
                 new IskaUtilsGhostIngredientHandler<>());
+        registration.addGhostIngredientHandler(
+                ImprovedPatternCrafterScreen.class,
+                new IskaUtilsGhostIngredientHandler<>());
+        registration.addGhostIngredientHandler(
+                StructurePlacerMachineScreen.class,
+                new IskaUtilsGhostIngredientHandler<>());
+    }
+
+    @Override
+    public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
+        registration.addRecipeTransferHandler(
+                new PatternCrafterRecipeTransferHandler(registration.getTransferHelper()),
+                RecipeTypes.CRAFTING);
     }
 }
 

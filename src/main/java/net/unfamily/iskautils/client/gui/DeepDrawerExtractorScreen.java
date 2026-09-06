@@ -1585,70 +1585,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Order: ID item, &enchanted (if present), &damaged (if present), mod ID, all tags
      */
     private java.util.List<String> generateAllFilterVariants(ItemStack stack) {
-        java.util.List<String> variants = new java.util.ArrayList<>();
-        
-        if (stack.isEmpty()) {
-            return variants;
-        }
-        
-        ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
-        if (itemId == null) {
-            return variants;
-        }
-        
-        // 1. Always start with item ID
-        variants.add("-" + itemId.toString());
-        
-        // 2. Add mod ID (if not minecraft)
-        String namespace = itemId.getNamespace();
-        if (!namespace.equals("minecraft")) {
-            variants.add("@" + namespace);
-        }
-        
-        // 3. If enchanted, add &enchanted after mod ID
-        if (stack.isEnchanted()) {
-            variants.add("&enchanted");
-        }
-        
-        // 4. If damaged, add &damaged after mod ID (and after enchanted if present)
-        if (stack.isDamaged()) {
-            variants.add("&damaged");
-        }
-        
-        // 5. Add all tags (sorted)
-        var item = stack.getItem();
-        var itemHolder = net.minecraft.core.registries.BuiltInRegistries.ITEM.wrapAsHolder(item);
-        var itemTags = net.minecraft.core.registries.BuiltInRegistries.ITEM.getTagNames()
-                .filter(tagKey -> {
-                    var tag = net.minecraft.core.registries.BuiltInRegistries.ITEM.getTag(tagKey);
-                    return tag.isPresent() && tag.get().contains(itemHolder);
-                })
-                .map(net.minecraft.tags.TagKey::location)
-                .map(ResourceLocation::toString)
-                .sorted()
-                .toList();
-        
-        // Add all tags with # prefix
-        for (String tagId : itemTags) {
-            variants.add("#" + tagId);
-        }
-        
-        // NBT/SNBT filter: align with Another Dynamics and server matcher (stack.save(...).toString()).
-        try {
-            if (this.minecraft != null && this.minecraft.level != null) {
-                var saved = stack.save(this.minecraft.level.registryAccess());
-                if (saved instanceof CompoundTag compound) {
-                    String snbt = compound.toString();
-                    if (!snbt.isEmpty()) {
-                        variants.add("?" + snbt);
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-        
-        return variants;
+        return net.unfamily.iskautils.util.DeepDrawerFilterVariants.generateAllFilterVariants(
+                stack, this.minecraft != null && this.minecraft.level != null
+                        ? this.minecraft.level.registryAccess() : null);
     }
-    
+
     /**
      * Starts editing a filter entry at the given index
      */

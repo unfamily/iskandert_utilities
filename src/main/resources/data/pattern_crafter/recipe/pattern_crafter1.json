@@ -1,0 +1,13 @@
+{
+  "neoforge:conditions": [
+    { "type": "neoforge:false" }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["A"],
+  "key": {
+    "A": { "item": "minecraft:barrier" }
+  },
+  "result": {
+    "id": "pattern_crafter:pattern_crafter"
+  }
+}

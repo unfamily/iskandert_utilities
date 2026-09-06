@@ -72,6 +72,7 @@ public class IskaUtils {
     // FML will recognize some parameter types like IEventBus or ModContainer and pass them in automatically.
     public IskaUtils(IEventBus modEventBus, ModContainer modContainer) {
         net.unfamily.iskautils.migration.UtilsWorldBackupGate.register(modEventBus);
+        net.unfamily.iskautils.migration.PatternCrafterLegacySuppress.register(modEventBus);
 
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);

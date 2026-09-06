@@ -103,6 +103,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     // Player team data
     private String playerTeamName = null;
     private Map<String, Double> playerTeamBalances = new HashMap<>();
+    private int teamBalanceRefreshTicks;
     private static ShopScreen currentInstance = null; // For static callback
     
     // Feedback area for error/success messages
@@ -236,6 +237,11 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             if (searchDebounceTicks == 0) {
                 refreshFilteredLists();
             }
+        }
+        // Keep balances live while AutoShop (or other players) change team currencies.
+        if (++teamBalanceRefreshTicks >= 20) {
+            teamBalanceRefreshTicks = 0;
+            net.unfamily.iskautils.network.ModMessages.sendShopTeamDataRequest();
         }
     }
 

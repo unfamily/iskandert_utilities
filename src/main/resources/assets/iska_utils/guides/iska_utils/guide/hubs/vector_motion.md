@@ -9,7 +9,7 @@ categories:
 ---
 # Vector motion
 
-Vector Charm, Fanpack, vector plates, and related components.
+Vector Charm, Fanpack, vector plates, and related components. Speed / acceleration module crafts are documented under **Modules** → **Acceleration modules**.
 
 
 <SubPages icons={true} alphabetical={true} />
