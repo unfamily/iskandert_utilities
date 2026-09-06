@@ -11,25 +11,6 @@
       "buy": 1.0,
       "sell": 0.5,
       "priority": 0
-    },
-    {
-      "id": "demo_stage",
-      "in_category": "000_default",
-      "type": "iska_utils:stage",
-      "display": "shop.entry.demo_stage",
-      "stage": [
-        {
-          "stage": "demo_stage",
-          "stage_type": "player",
-          "is": true
-        }
-      ],
-      "currency": "null_coin",
-      "buy": 0,
-      "sell": 0,
-      "priority": 0,
-      "free": true
     }
   ]
 }
-

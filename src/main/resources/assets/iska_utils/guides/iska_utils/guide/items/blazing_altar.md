@@ -6,6 +6,7 @@ navigation:
   position: 23
 item_ids:
   - iska_utils:blazing_altar
+  - iska_utils:range_module
 categories:
   - Combat and travel
 ---
@@ -33,6 +34,12 @@ Area controller for **Burning Flame** / **Cursed Burning Flame** placement and o
 - **Show**: corner pillars marking the extreme chunks of the coverage area.
 - **Redstone**: default **ignored** (always active). Other modes match factory machines (no pulse).
 - **Extinguish / break**: removing flames scans the area progressively so large radii do not freeze the server. Breaking the altar also schedules cleanup of flames in range. Extinguish can restore Brazier durability when flames are removed.
+
+## Modules
+
+- **Range Module** slot: each module increases the altar’s **chunk radius** (coverage for flames and spawn filter).
+
+See **Modules** for the full module map.
 
 ## Visibility
 

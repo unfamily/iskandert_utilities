@@ -9,27 +9,63 @@ import net.minecraft.client.renderer.Rect2i;
 
 /**
  * JEI ghost ingredient handler for Iska Utils screens.
- * Enables drag-and-drop from JEI into GUI elements implementing {@link IIskaUtilsGhostTarget}.
+ * Mirrors Another-Dynamics: register drop areas only; leave highlight rendering to JEI.
  */
 public class IskaUtilsGhostIngredientHandler<T extends Screen> implements IGhostIngredientHandler<T> {
 
     @Override
     public <I> List<Target<I>> getTargetsTyped(T gui, ITypedIngredient<I> ingredient, boolean doStart) {
         List<Target<I>> targets = new ArrayList<>();
-        if (gui instanceof IIskaUtilsGhostTarget ghostTarget) {
-            tryAddTarget(targets, ghostTarget, ingredient.getIngredient());
+        if (!(gui instanceof IIskaUtilsGhostTarget ghostTarget)) {
+            return targets;
         }
+
+        List<IIskaUtilsGhostTarget.GhostDropTarget> multi = ghostTarget.getGhostDropTargets();
+        if (multi != null && !multi.isEmpty()) {
+            for (IIskaUtilsGhostTarget.GhostDropTarget drop : multi) {
+                if (drop == null || drop.area() == null || drop.accept() == null) {
+                    continue;
+                }
+                tryAddMultiTarget(targets, drop, ingredient.getIngredient());
+            }
+            return targets;
+        }
+
+        tryAddLegacySingleTarget(targets, ghostTarget, ingredient.getIngredient());
         return targets;
     }
 
     @SuppressWarnings("unchecked")
-    private <I> void tryAddTarget(List<Target<I>> targets, IIskaUtilsGhostTarget ghostTarget, I ingredient) {
+    private <I> void tryAddMultiTarget(
+            List<Target<I>> targets,
+            IIskaUtilsGhostTarget.GhostDropTarget drop,
+            I ingredient) {
+        if (!(ingredient instanceof net.minecraft.world.item.ItemStack stack) || stack.isEmpty()) {
+            return;
+        }
+        targets.add(new Target<>() {
+            @Override
+            public Rect2i getArea() {
+                return drop.area();
+            }
+
+            @Override
+            public void accept(I ingredientDropped) {
+                if (ingredientDropped instanceof net.minecraft.world.item.ItemStack dropped && !dropped.isEmpty()) {
+                    drop.accept().accept(dropped.copyWithCount(1));
+                }
+            }
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private <I> void tryAddLegacySingleTarget(List<Target<I>> targets, IIskaUtilsGhostTarget ghostTarget, I ingredient) {
         IIskaUtilsGhostTarget.IGhostIngredientConsumer consumer = ghostTarget.getGhostHandler();
         if (consumer == null) {
             return;
         }
-        Object validated = consumer.supportedTarget(ingredient);
-        if (validated == null) {
+        Object validatedIngredient = consumer.supportedTarget(ingredient);
+        if (validatedIngredient == null) {
             return;
         }
         Rect2i area = ghostTarget.getGhostTargetArea();
@@ -51,13 +87,12 @@ public class IskaUtilsGhostIngredientHandler<T extends Screen> implements IGhost
     }
 
     @Override
-    public boolean shouldHighlightTargets() {
-        return true;
+    public void onComplete() {
+        // No custom overlay to clear — JEI owns highlight rendering.
     }
 
     @Override
-    public void onComplete() {
-        // no-op
+    public boolean shouldHighlightTargets() {
+        return true;
     }
 }
-

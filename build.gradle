@@ -54,6 +54,21 @@ repositories {
             includeGroup "top.theillusivec4.curios"
         }
     }
+    maven {
+        name = "LatvianDev"
+        url = "https://maven.latvian.dev/releases"
+        content {
+            includeGroup "dev.latvian.mods"
+            includeGroup "dev.latvian.apps"
+        }
+    }
+    maven {
+        name = "JitPack"
+        url = "https://jitpack.io"
+        content {
+            includeGroup "com.github.rtyley"
+        }
+    }
 }
 
 base {
@@ -261,6 +276,13 @@ dependencies {
         localRuntime "dev.ftb.mods:ftb-library-neoforge:${ftb_library_version}"
         localRuntime "dev.ftb.mods:ftb-teams-neoforge:${ftb_teams_version}"
         localRuntime "dev.ftb.mods:ftb-quests-neoforge:${ftb_quests_version}"
+    }
+
+    // KubeJS for IDE/dev runtime (datapacks under kubejs/data, shop edit workspace, etc.)
+    def includeKubeJsRuntime = !project.hasProperty('include_kubejs_runtime')
+            || project.include_kubejs_runtime.toString() == 'true'
+    if (includeKubeJsRuntime) {
+        localRuntime "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"
     }
     
     // Verify that the value of include_compass_mods is valid

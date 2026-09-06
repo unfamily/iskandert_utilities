@@ -540,6 +540,11 @@ public class ModItems {
 
     public static final DeferredItem<BlockItem> SMART_TIMER = ITEMS.registerSimpleBlockItem(ModBlocks.SMART_TIMER);
 
+    public static final DeferredItem<BlockItem> PATTERN_CRAFTER = ITEMS.registerSimpleBlockItem(ModBlocks.PATTERN_CRAFTER);
+
+    public static final DeferredItem<BlockItem> IMPROVED_PATTERN_CRAFTER =
+            ITEMS.registerSimpleBlockItem(ModBlocks.IMPROVED_PATTERN_CRAFTER);
+
     public static final DeferredItem<Item> STRUCTURE_PLACER = ITEMS.registerItem("structure_placer", StructurePlacerItem::new, p -> p.stacksTo(1));
             
     // ===== DEV ITEMS =====

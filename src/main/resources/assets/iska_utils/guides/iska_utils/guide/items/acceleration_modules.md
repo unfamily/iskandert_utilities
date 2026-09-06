@@ -2,12 +2,17 @@
 navigation:
   title: Acceleration modules
   icon: iska_utils:slow_module
-  parent: hubs/vector_motion.md
-  position: 30
+  parent: hubs/modules.md
+  position: 20
 item_ids:
+  - iska_utils:base_module
   - iska_utils:slow_module
+  - iska_utils:moderate_module
+  - iska_utils:fast_module
+  - iska_utils:extreme_module
+  - iska_utils:ultra_module
 categories:
-  - Vector motion
+  - Modules
 ---
 # Acceleration modules
 
@@ -15,8 +20,13 @@ categories:
 
 ## Use
 
-- Components used in Vector-motion gear (for example **Vector Charm** requires the highest tier).
-- They are not installed into vector plates.
+- Crafting components for **Vector Charm** and related vector gear (higher tiers for higher-tier charms).
+- **Speed upgrades** when installed in machines that accept them:
+  - **Modular Fan** — faster thrust.
+  - **Pattern Crafter** — shorter crafting time.
+- They are **not** installed into vector plates.
+
+See **Machine modules** for the full module map.
 
 ## Items
 
@@ -28,4 +38,3 @@ categories:
   <ItemIcon id="iska_utils:extreme_module" />
   <ItemIcon id="iska_utils:ultra_module" />
 </ItemGrid>
-

@@ -1,7 +1,7 @@
 ---
 navigation:
   title: Storage
-  icon: iska_utils:deep_drawer
+  icon: iska_utils:deep_drawers
   parent: index.md
   position: 10
 categories:

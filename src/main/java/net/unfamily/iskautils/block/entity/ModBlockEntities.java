@@ -63,6 +63,14 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("knowledge_compressor", () ->
                     new BlockEntityType<>(KnowledgeCompressorBlockEntity::new, ModBlocks.KNOWLEDGE_COMPRESSOR.get()));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PatternCrafterBlockEntity>> PATTERN_CRAFTER_BE =
+            BLOCK_ENTITIES.register("pattern_crafter", () ->
+                    new BlockEntityType<>(PatternCrafterBlockEntity::new, ModBlocks.PATTERN_CRAFTER.get()));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ImprovedPatternCrafterBlockEntity>> IMPROVED_PATTERN_CRAFTER_BE =
+            BLOCK_ENTITIES.register("improved_pattern_crafter", () ->
+                    new BlockEntityType<>(ImprovedPatternCrafterBlockEntity::new, ModBlocks.IMPROVED_PATTERN_CRAFTER.get()));
+
     // Registra il Weather Alterer Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WeatherAltererBlockEntity>> WEATHER_ALTERER_BE =
             BLOCK_ENTITIES.register("weather_alterer_block_entity", () ->
@@ -243,6 +251,27 @@ public class ModBlockEntities {
                     Capabilities.Item.BLOCK,
                     KNOWLEDGE_COMPRESSOR.get(),
                     (blockEntity, ctx) -> blockEntity instanceof KnowledgeCompressorBlockEntity be ? be.getItemTransferHandler() : null
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof ImprovedPatternCrafterBlockEntity be ? be.getItemTransferHandler() : null
+            );
+            event.registerBlockEntity(
+                    Capabilities.Item.BLOCK,
+                    IMPROVED_PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof ImprovedPatternCrafterBlockEntity be ? be.getItemTransferHandler() : null
+            );
+            event.registerBlockEntity(
+                    Capabilities.Energy.BLOCK,
+                    PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof ImprovedPatternCrafterBlockEntity be ? be.getEnergyHandler() : null
+            );
+            event.registerBlockEntity(
+                    Capabilities.Energy.BLOCK,
+                    IMPROVED_PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, ctx) -> blockEntity instanceof ImprovedPatternCrafterBlockEntity be ? be.getEnergyHandler() : null
             );
             
             // Register energy capability for WeatherAlterer

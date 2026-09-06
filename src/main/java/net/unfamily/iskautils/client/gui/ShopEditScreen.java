@@ -948,7 +948,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 return null;
             }
             if (activeDraftStringList().isEmpty()) {
-                return Component.translatable("gui.iska_utils.shop_edit.warn.empty_string_list", handler.editorLabel());
+                return Component.translatable("gui.iska_utils.shop_edit.warn.empty_string_list");
             }
             return null;
         }
@@ -1971,7 +1971,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                     && !ShopEntryTypes.isItem(draftEntry)) {
                 Identifier icon = ShopEntryTypeRegistry.require(draftEntry).guiIcon(draftEntry);
                 if (icon != null) {
-                    graphics.blit(icon, slotX, iconY, 0, 0, 16, 16, 16, 16);
+                    graphics.blit(RenderPipelines.GUI_TEXTURED, icon, slotX, iconY, 0.0F, 0.0F, 16, 16, 16, 16);
                 }
             } else {
                 ItemStack ghost = menu.getGhostStack();
@@ -2038,7 +2038,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         } else {
             Identifier icon = ShopEntryTypeRegistry.require(entry).guiIcon(entry);
             if (icon != null) {
-                graphics.blit(icon, iconX, iconY, 0, 0, 16, 16, 16, 16);
+                graphics.blit(RenderPipelines.GUI_TEXTURED, icon, iconX, iconY, 0.0F, 0.0F, 16, 16, 16, 16);
             }
         }
     }
@@ -2153,18 +2153,18 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         Component title = currentTitle();
         int titleX = (GUI_WIDTH - font.width(title)) / 2;
-        graphics.text(font, title, titleX, 6, 0x404040, false);
+        graphics.text(font, title, titleX, 6, GuiTextColors.TITLE, false);
         if (dialog == Dialog.CLOSE_HINT) {
             Component hint = Component.translatable("gui.iska_utils.shop_edit.close_reload_hint");
             int y = 50;
             for (var line : font.split(hint, GUI_WIDTH - 40)) {
-                graphics.text(font, line, 20, y, 0x404040, false);
+                graphics.text(font, line, 20, y, GuiTextColors.TITLE, false);
                 y += 12;
             }
             return;
         }
         for (FormLabel label : formLabels) {
-            graphics.text(font, label.text(), label.x(), label.y(), 0x404040, false);
+            graphics.text(font, label.text(), label.x(), label.y(), GuiTextColors.TITLE, false);
         }
         Component warning = entryEditWarning();
         if (warning != null) {

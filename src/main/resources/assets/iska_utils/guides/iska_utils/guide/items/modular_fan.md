@@ -8,6 +8,7 @@ item_ids:
   - iska_utils:fan
   - iska_utils:range_module
   - iska_utils:ghost_module
+  - iska_utils:slow_module
 categories:
   - World and machines
 ---
@@ -22,7 +23,7 @@ categories:
 ## GUI
 
 - Adjust reach on each axis with **+ / −** around the grid; bottom bar shows forward depth (green = in bar, blue = extended beyond the visual cap).
-- Install modules in the module slots shown in the fan GUI.
+- Install modules in the module slots shown in the fan GUI (empty slots show ghost previews and name tooltips).
 
 ## Redstone
 
@@ -30,12 +31,17 @@ categories:
 
 ## Fan modules
 
-<ItemImage id="iska_utils:range_module" />
+| Slot | Module | Effect |
+| ---- | ------ | ------ |
+| Range | <ItemImage id="iska_utils:range_module" /> **Range Module** | Increases max reach on all axes. |
+| Ghost | <ItemImage id="iska_utils:ghost_module" /> **Ghost Module** | Lets airflow interact through solid blocks. |
+| Speed | Slow → Ultra vector modules | Speeds fan thrust (higher tier = stronger). |
 
-- **Range module**: increases max reach in all axes.
-- **Ghost module**: changes how the airflow interacts with blocks.
+See **Modules** for the full module map.
 
 <ItemGrid>
   <ItemIcon id="iska_utils:range_module" />
   <ItemIcon id="iska_utils:ghost_module" />
+  <ItemIcon id="iska_utils:slow_module" />
+  <ItemIcon id="iska_utils:ultra_module" />
 </ItemGrid>

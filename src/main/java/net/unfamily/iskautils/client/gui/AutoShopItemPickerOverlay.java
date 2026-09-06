@@ -741,7 +741,7 @@ public final class AutoShopItemPickerOverlay {
         } else {
             Identifier icon = ShopEntryTypeRegistry.require(item).guiIcon(item);
             if (icon != null) {
-                guiGraphics.blit(icon, slotX + 1, slotY + 1, 0, 0, 16, 16, 16, 16);
+                guiGraphics.blit(RenderPipelines.GUI_TEXTURED, icon, slotX + 1, slotY + 1, 0.0F, 0.0F, 16, 16, 16, 16);
             }
         }
         int buyButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - BUTTONS_SPACING - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;

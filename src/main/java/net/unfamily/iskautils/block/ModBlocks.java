@@ -30,6 +30,8 @@ import net.unfamily.iskautils.block.custom.EntropicDirtBlock;
 import net.unfamily.iskautils.block.custom.EntropicSoilBlock;
 import net.unfamily.iskautils.block.custom.BlazingAltarBlock;
 import net.unfamily.iskautils.block.custom.GraveyardSoilBlock;
+import net.unfamily.iskautils.block.custom.ImprovedPatternCrafterBlock;
+import net.unfamily.iskautils.block.custom.PatternCrafterBlock;
 import net.unfamily.iskautils.block.standard.*;
 
 public class ModBlocks {
@@ -109,6 +111,12 @@ public class ModBlocks {
             .noOcclusion();
 
     private static final UnaryOperator<BlockBehaviour.Properties> STRUCTURE_PLACER_MACHINE_PROPERTIES = p -> p
+            .mapColor(MapColor.METAL)
+            .strength(3.0f, 6.0f)
+            .sound(SoundType.METAL)
+            .requiresCorrectToolForDrops();
+
+    private static final UnaryOperator<BlockBehaviour.Properties> PATTERN_CRAFTER_PROPERTIES = p -> p
             .mapColor(MapColor.METAL)
             .strength(3.0f, 6.0f)
             .sound(SoundType.METAL)
@@ -236,6 +244,12 @@ public class ModBlocks {
 
     public static final DeferredBlock<AutoShopBlock> AUTO_SHOP = BLOCKS.register("auto_shop",
             key -> new AutoShopBlock(assignBlockId(key, STRUCTURE_PLACER_MACHINE_PROPERTIES)));
+
+    public static final DeferredBlock<PatternCrafterBlock> PATTERN_CRAFTER = BLOCKS.register("pattern_crafter",
+            key -> new PatternCrafterBlock(assignBlockId(key, PATTERN_CRAFTER_PROPERTIES)));
+
+    public static final DeferredBlock<ImprovedPatternCrafterBlock> IMPROVED_PATTERN_CRAFTER = BLOCKS.register("improved_pattern_crafter",
+            key -> new ImprovedPatternCrafterBlock(assignBlockId(key, PATTERN_CRAFTER_PROPERTIES)));
 
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
             key -> new HellfireIgniterBlock(assignBlockId(key, HELLFIRE_PROPERTIES)));

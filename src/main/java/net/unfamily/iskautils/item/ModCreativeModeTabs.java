@@ -191,6 +191,8 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.COLLECTING_CRATE.get());
                                 pOutput.accept(ModFluids.CONDENSED_KNOWLEDGE.getBucket());
                                 pOutput.accept(ModItems.KNOWLEDGE_COMPRESSOR.get());
+                                pOutput.accept(ModItems.PATTERN_CRAFTER.get());
+                                pOutput.accept(ModItems.IMPROVED_PATTERN_CRAFTER.get());
                                 pOutput.accept(ModItems.JELLY_OF_KNOWLEDGE.get());
                                 pOutput.accept(ModItems.ANGEL_BLOCK.get());
                                 pOutput.accept(ModItems.RAFT.get());

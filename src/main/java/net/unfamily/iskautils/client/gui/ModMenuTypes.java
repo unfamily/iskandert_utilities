@@ -83,6 +83,9 @@ public class ModMenuTypes {
         MENUS.register("ethereal_frame_filter_menu", () -> IMenuTypeExtension.create(
                 (containerId, inv, buf) -> new EtherealFrameFilterMenu(containerId, inv, buf.readBlockPos())));
 
+    public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<ImprovedPatternCrafterMenu>> IMPROVED_PATTERN_CRAFTER_MENU =
+        MENUS.register("improved_pattern_crafter_menu", () -> IMenuTypeExtension.create(ImprovedPatternCrafterMenu::new));
+
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<NullifierMenu>> NULLIFIER_MENU =
         MENUS.register("nullifier_menu", () -> new MenuType<>(
                 (id, inv) -> new NullifierMenu(id, inv), net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));

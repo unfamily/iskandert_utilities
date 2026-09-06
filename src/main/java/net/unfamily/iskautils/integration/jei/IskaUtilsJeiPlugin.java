@@ -7,13 +7,16 @@ import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
+import mezz.jei.api.registration.IRecipeTransferRegistration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.client.gui.AutoShopScreen;
 import net.unfamily.iskautils.client.gui.DeepDrawerExtractorScreen;
+import net.unfamily.iskautils.client.gui.ImprovedPatternCrafterScreen;
 import net.unfamily.iskautils.client.gui.ShopEditScreen;
+import net.unfamily.iskautils.client.gui.StructurePlacerMachineScreen;
 import net.unfamily.iskautils.integration.jei.ghost.IskaUtilsGhostIngredientHandler;
 import net.unfamily.iskautils.item.ModItems;
 
@@ -91,6 +94,19 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
         registration.addGhostIngredientHandler(
                 ShopEditScreen.class,
                 new IskaUtilsGhostIngredientHandler<>());
+        registration.addGhostIngredientHandler(
+                ImprovedPatternCrafterScreen.class,
+                new IskaUtilsGhostIngredientHandler<>());
+        registration.addGhostIngredientHandler(
+                StructurePlacerMachineScreen.class,
+                new IskaUtilsGhostIngredientHandler<>());
+    }
+
+    @Override
+    public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
+        registration.addRecipeTransferHandler(
+                new PatternCrafterRecipeTransferHandler(registration.getTransferHelper()),
+                RecipeTypes.CRAFTING);
     }
 }
 

@@ -86,7 +86,8 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
             blockEntity.conversionCooldown--;
             return;
         }
-        if (!blockEntity.outputHandler.getStackInSlot(0).isEmpty()) {
+        ItemStack jelly = new ItemStack(ModItems.JELLY_OF_KNOWLEDGE.get());
+        if (!blockEntity.outputHandler.insertItem(0, jelly, true).isEmpty()) {
             return;
         }
         int cost = ExperienceFluidMath.jellyMbCost();
@@ -94,7 +95,7 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
             return;
         }
         blockEntity.experienceTank.drain(cost, IFluidHandler.FluidAction.EXECUTE);
-        blockEntity.outputHandler.setStackInSlot(0, ModItems.JELLY_OF_KNOWLEDGE.get().getDefaultInstance());
+        blockEntity.outputHandler.insertItem(0, jelly, false);
         blockEntity.conversionCooldown = Math.max(1, Config.knowledgeCompressorConversionIntervalTicks);
         blockEntity.setChanged();
     }

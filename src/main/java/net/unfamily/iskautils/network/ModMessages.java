@@ -6,8 +6,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
@@ -19,6 +17,7 @@ import net.minecraft.core.Vec3i;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.network.packet.VectorCharmC2SPacket;
+import net.unfamily.iskautils.network.packet.*;
 import net.unfamily.iskautils.network.packet.PortableDislocatorC2SPacket;
 import net.unfamily.iskautils.network.packet.ClearPreviewForOwnerS2CPayload;
 import net.unfamily.iskautils.network.packet.PreviewMarkerS2CPayload;
@@ -479,6 +478,28 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.LabelingMachineLoreC2SPacket::handle
         );
 
+        registrar.playToServer(PatternSwitchC2SPacket.TYPE, PatternSwitchC2SPacket.STREAM_CODEC, PatternSwitchC2SPacket::handle);
+        registrar.playToServer(PatternCellUpdateC2SPacket.TYPE, PatternCellUpdateC2SPacket.STREAM_CODEC, PatternCellUpdateC2SPacket::handle);
+        registrar.playToServer(PatternCellItemAssignC2SPacket.TYPE, PatternCellItemAssignC2SPacket.STREAM_CODEC, PatternCellItemAssignC2SPacket::handle);
+        registrar.playToServer(CraftingModeSwitchC2SPacket.TYPE, CraftingModeSwitchC2SPacket.STREAM_CODEC, CraftingModeSwitchC2SPacket::handle);
+        registrar.playToServer(FilterLetterUpdateC2SPacket.TYPE, FilterLetterUpdateC2SPacket.STREAM_CODEC, FilterLetterUpdateC2SPacket::handle);
+        registrar.playToServer(FilterPageC2SPacket.TYPE, FilterPageC2SPacket.STREAM_CODEC, FilterPageC2SPacket::handle);
+        registrar.playToServer(FilterItemSetC2SPacket.TYPE, FilterItemSetC2SPacket.STREAM_CODEC, FilterItemSetC2SPacket::handle);
+        registrar.playToServer(MarkInputC2SPacket.TYPE, MarkInputC2SPacket.STREAM_CODEC, MarkInputC2SPacket::handle);
+        registrar.playToServer(MarkOutputC2SPacket.TYPE, MarkOutputC2SPacket.STREAM_CODEC, MarkOutputC2SPacket::handle);
+        registrar.playToServer(OutputPageC2SPacket.TYPE, OutputPageC2SPacket.STREAM_CODEC, OutputPageC2SPacket::handle);
+        registrar.playToServer(MarkFilterSetC2SPacket.TYPE, MarkFilterSetC2SPacket.STREAM_CODEC, MarkFilterSetC2SPacket::handle);
+        registrar.playToServer(StructurePlacerMachineGhostFilterSetC2SPacket.TYPE,
+                StructurePlacerMachineGhostFilterSetC2SPacket.STREAM_CODEC,
+                StructurePlacerMachineGhostFilterSetC2SPacket::handle);
+        registrar.playToServer(PatternCrafterJeiTransferC2SPacket.TYPE, PatternCrafterJeiTransferC2SPacket.STREAM_CODEC, PatternCrafterJeiTransferC2SPacket::handle);
+        registrar.playToServer(ToolSafeguardC2SPacket.TYPE, ToolSafeguardC2SPacket.STREAM_CODEC, ToolSafeguardC2SPacket::handle);
+        registrar.playToServer(ForbiddenFiltersC2SPacket.TYPE, ForbiddenFiltersC2SPacket.STREAM_CODEC, ForbiddenFiltersC2SPacket::handle);
+        registrar.playToServer(VariableFilterSetC2SPacket.TYPE, VariableFilterSetC2SPacket.STREAM_CODEC, VariableFilterSetC2SPacket::handle);
+        registrar.playToServer(RecursiveOutputModeC2SPacket.TYPE, RecursiveOutputModeC2SPacket.STREAM_CODEC, RecursiveOutputModeC2SPacket::handle);
+        registrar.playToServer(RedstoneModeC2SPacket.TYPE, RedstoneModeC2SPacket.STREAM_CODEC, RedstoneModeC2SPacket::handle);
+        registrar.playToServer(RemainderRoutingModeC2SPacket.TYPE, RemainderRoutingModeC2SPacket.STREAM_CODEC, RemainderRoutingModeC2SPacket::handle);
+
     }
     
     /**
@@ -502,7 +523,6 @@ public class ModMessages {
         // Simplified implementation for single player compatibility
     }
 
-    @net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
     public static void sendFactorySelectColor(net.minecraft.core.BlockPos pos, int index) {
         var packet = new net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket(pos, index);
         try {
@@ -525,7 +545,6 @@ public class ModMessages {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
-    @net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
     public static void sendFactoryScroll(net.minecraft.core.BlockPos pos, int offset) {
         var packet = new net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket(pos, offset);
         try {
@@ -548,7 +567,6 @@ public class ModMessages {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendFactoryRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
         var packet = new net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket(pos, backward);
         try {
@@ -575,7 +593,6 @@ public class ModMessages {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendEntropicSpawnerRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
         var packet = new net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket(pos, backward);
         try {
@@ -602,7 +619,6 @@ public class ModMessages {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendAncientTableScroll(net.minecraft.core.BlockPos pos, int side, int offset) {
         var packet = new net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket(pos, side, offset);
         try {
@@ -629,7 +645,6 @@ public class ModMessages {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendAncientTableRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
         var packet = new net.unfamily.iskautils.network.packet.AncientTableRedstoneModeC2SPacket(pos, backward);
         try {
@@ -659,7 +674,6 @@ public class ModMessages {
     /**
      * Sends a Structure Undo packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructureUndoPacket() {
         // Simplified implementation for single player compatibility
         try {
@@ -781,7 +795,6 @@ public class ModMessages {
     /**
      * Sends a shop team data request to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendShopTeamDataRequest() {
         // Simplified implementation - directly handle on the server side
         try {
@@ -836,7 +849,6 @@ public class ModMessages {
      * Sends a Structure Placer save packet to the server
      * This simulates a client-to-server packet for saving the selected structure
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerSavePacket(String structureId) {
 
         // Simplified implementation - directly handle on the server side
@@ -888,7 +900,6 @@ public class ModMessages {
      * Sends a Structure Placer Machine Rotate packet to the server
      * This simulates a client-to-server packet for rotating the structure
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineRotatePacket(BlockPos machinePos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -941,31 +952,26 @@ public class ModMessages {
     /**
      * Sends an Auto Shop Redstone Mode packet to the server (cycle mode on button click)
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopRedstoneModePacket(BlockPos machinePos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new AutoShopRedstoneModeC2SPacket(machinePos, backward));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopCycleCurrencyPacket(BlockPos machinePos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new AutoShopCycleCurrencyC2SPacket(machinePos, backward));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopSetModePacket(BlockPos machinePos, boolean buyMode, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new AutoShopSetModeC2SPacket(machinePos, buyMode, backward));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendShopEditActionPacket(String action, String payloadJson) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket(action, payloadJson));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void requestShopPurchaseLimits() {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.ShopPurchaseLimitsRequestC2SPacket());
@@ -974,7 +980,6 @@ public class ModMessages {
     /**
      * Sends a Structure Placer Machine Redstone Mode packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1013,7 +1018,6 @@ public class ModMessages {
     /**
      * Sends a Deep Drawer Extractor Redstone Mode packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1054,7 +1058,6 @@ public class ModMessages {
      * Sends a Structure Placer Machine Set Inventory packet to the server
      * Mode: 0 = normal, 1 = shift+click, 2 = ctrl/alt+click
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineSetInventoryPacket(BlockPos machinePos, int mode) {
         // Simplified implementation - directly handle on the server side
         try {
@@ -1255,7 +1258,6 @@ public class ModMessages {
      * Sends a Structure Placer Machine save packet to the server
      * This simulates a client-to-server packet for saving the selected structure in the machine
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineSavePacket(String structureId, BlockPos machinePos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1348,7 +1350,6 @@ public class ModMessages {
     /**
      * Sends a Structure Saver Machine recalculate packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineRecalculatePacket(BlockPos machinePos) {
 
         // Simplified implementation for single player compatibility
@@ -1371,7 +1372,6 @@ public class ModMessages {
      * Sends a Structure Saver Machine save packet to the server
      * This simulates a client-to-server packet for saving a structure from the machine
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer) {
         sendStructureSaverMachineSavePacket(structureName, structureId, machinePos, slower, placeAsPlayer, null);
     }
@@ -1380,7 +1380,6 @@ public class ModMessages {
      * Sends a Structure Saver Machine save/modify packet to the server
      * This simulates a client-to-server packet for saving or modifying a structure from the machine
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer, String oldStructureId) {
 
 
@@ -1429,7 +1428,6 @@ public class ModMessages {
     /**
      * Sends a shop buy item packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendShopBuyItemPacket(String entryId, int quantity) {
         // Simplified implementation for single player compatibility
         try {
@@ -1457,7 +1455,6 @@ public class ModMessages {
     /**
      * Sends a shop sell item packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendShopSellItemPacket(String entryId, int quantity) {
         // Simplified implementation for single player compatibility
         try {
@@ -1485,7 +1482,6 @@ public class ModMessages {
     /**
      * Invia il packet per settare lo slot encapsulato dell'Auto Shop
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopSetEncapsulatedPacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new AutoShopSetEncapsulatedC2SPacket(pos));
     }
@@ -1493,13 +1489,11 @@ public class ModMessages {
     /**
      * Invia il packet per settare lo slot selectedItem dell'Auto Shop
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopSelectedItemPacket(BlockPos pos, ItemStack stack) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new AutoShopSetSelectedItemC2SPacket(pos, stack == null ? ItemStack.EMPTY : stack));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopApplyPickerSelectionPacket(BlockPos pos, String entryId, boolean buyMode) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket(pos, entryId, buyMode));
@@ -1510,7 +1504,6 @@ public class ModMessages {
                 new net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket(pos, gas));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopConvertSelectedPacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket(pos));
@@ -1525,7 +1518,6 @@ public class ModMessages {
      * Sends a Deep Drawers scroll packet to the server
      * Updates the scroll offset for the Deep Drawers GUI
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawersSearchStatePacket(BlockPos pos, String query, int filterScrollOffset) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1546,7 +1538,6 @@ public class ModMessages {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawersScrollPacket(BlockPos pos, int scrollOffset) {
         // Simplified implementation for single player compatibility
         try {
@@ -1594,7 +1585,6 @@ public class ModMessages {
      * Sends a Burning Brazier toggle packet to the server
      * This toggles the auto-placement state for the Burning Brazier item
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendBurningBrazierTogglePacket() {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new BurningBrazierToggleC2SPacket());
     }
@@ -1603,7 +1593,6 @@ public class ModMessages {
      * Sends a Scanner range cycle packet to the server
      * This cycles through the available scan range options
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendScannerRangeCyclePacket() {
         // Simplified implementation for single player compatibility
         try {
@@ -1641,7 +1630,6 @@ public class ModMessages {
      * Sends a Gauntlet of Climbing toggle packet to the server
      * This toggles the climbing ability on/off
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendGauntletClimbingTogglePacket(boolean enabled) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new GauntletClimbingToggleC2SPacket(enabled));
     }
@@ -1650,7 +1638,6 @@ public class ModMessages {
      * Sends a Ghost Brazier toggle packet to the server
      * This toggles the game mode between Survival and Spectator
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendGhostBrazierTogglePacket() {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new GhostBrazierToggleC2SPacket());
     }
@@ -1658,7 +1645,6 @@ public class ModMessages {
     /**
      * Invia il packet per aggiornare i parametri del timer
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerUpdatePacket(BlockPos pos, boolean isCooldown, int deltaTicks) {
         // Simplified implementation for single player compatibility
         try {
@@ -1686,7 +1672,6 @@ public class ModMessages {
     /**
      * Sends packet to update fan range parameters
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanRangeUpdatePacket(BlockPos pos, net.unfamily.iskautils.network.packet.FanRangeUpdateC2SPacket.RangeType rangeType, int delta) {
         // Simplified implementation for single player compatibility
         try {
@@ -1714,7 +1699,6 @@ public class ModMessages {
     /**
      * Sends filter update packet to server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorFilterUpdatePacket(
             BlockPos pos, java.util.Map<Integer, String> filterMap,
             java.util.Map<Integer, Integer> concatMap, boolean isWhitelistMode) {
@@ -1730,7 +1714,6 @@ public class ModMessages {
     /**
      * Sends inverted filter update packet to server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorInvertedFilterUpdatePacket(
             BlockPos pos, java.util.Map<Integer, String> invertedFilterMap,
             java.util.Map<Integer, Integer> concatMap) {
@@ -1743,7 +1726,6 @@ public class ModMessages {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorSettingsCopierPacket(BlockPos pos, int action, int allowDeny) {
         if (pos == null || pos.equals(BlockPos.ZERO)) {
             return;
@@ -1756,7 +1738,6 @@ public class ModMessages {
      * Sends a Deep Drawer Extractor Mode Toggle packet to the server
      * Toggles between whitelist and blacklist mode (like rotation in Structure Placer)
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorModeTogglePacket(BlockPos machinePos) {
         if (machinePos == null || machinePos.equals(BlockPos.ZERO)) {
             return;
@@ -1765,7 +1746,6 @@ public class ModMessages {
                 new net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket(machinePos));
     }
     
-    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorFilterPanelPacket(BlockPos machinePos, int panel) {
         if (machinePos == null || machinePos.equals(BlockPos.ZERO)) {
             return;
@@ -1777,7 +1757,6 @@ public class ModMessages {
     /**
      * Invia il packet per ciclare il tipo I/O di una faccia del timer
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerIoConfigCyclePacket(BlockPos machinePos, net.minecraft.core.Direction direction) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1817,7 +1796,6 @@ public class ModMessages {
     /**
      * Invia il packet per resettare tutte le facce I/O del timer
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerIoConfigResetPacket(BlockPos machinePos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1859,7 +1837,6 @@ public class ModMessages {
      * @param machinePos Posizione del blocco
      * @param action Tipo di azione: 0=increase, 1=decrease, 2=increaseBy5, 3=decreaseBy5, 4=max, 5=min, 6=default
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerAccelerationChangePacket(BlockPos machinePos, int action) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1907,7 +1884,6 @@ public class ModMessages {
     /**
      * Invia il packet per cambiare il redstone mode del Temporal Overclocker
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1958,7 +1934,6 @@ public class ModMessages {
     /**
      * Invia il packet per fare toggle della modalità persistente del Temporal Overclocker
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerTogglePersistentPacket(BlockPos overclockerPos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1990,7 +1965,6 @@ public class ModMessages {
     /**
      * Invia il packet per evidenziare un blocco collegato nel mondo (crea un marker di 5 secondi)
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerHighlightBlockPacket(BlockPos blockPos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -2022,7 +1996,6 @@ public class ModMessages {
     /**
      * Invia il packet per rimuovere un blocco collegato dal Temporal Overclocker
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerRemoveLinkPacket(BlockPos overclockerPos, BlockPos linkedPos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -2054,7 +2027,6 @@ public class ModMessages {
         }
     }
     
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanRedstoneModePacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.FanRedstoneModeC2SPacket(pos, backward));
@@ -2063,7 +2035,6 @@ public class ModMessages {
     /**
      * Sends Smart Timer Redstone Mode packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerRedstoneModePacket(BlockPos pos, boolean backward) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -2102,7 +2073,6 @@ public class ModMessages {
     /**
      * Sends Sound Muffler volume change to the server (client-only).
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerVolumePacket(BlockPos pos, int categoryIndex, int delta) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerVolumeC2SPacket(pos, categoryIndex, delta);
         try {
@@ -2124,7 +2094,6 @@ public class ModMessages {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerRangePacket(BlockPos pos, int range) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket(pos, range);
         try {
@@ -2146,7 +2115,6 @@ public class ModMessages {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerModeTogglePacket(BlockPos pos) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerModeToggleC2SPacket(pos);
         try {
@@ -2168,7 +2136,6 @@ public class ModMessages {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerFilterUpdatePacket(BlockPos pos, java.util.List<String> filterSoundIds) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerFilterUpdateC2SPacket(pos, filterSoundIds != null ? new java.util.ArrayList<>(filterSoundIds) : new java.util.ArrayList<>());
         try {
@@ -2190,55 +2157,46 @@ public class ModMessages {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanPushPullSetPacket(BlockPos pos, boolean pull) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.FanPushPullSetC2SPacket(pos, pull));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanTargetTypeSetPacket(BlockPos pos, int typeId) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.FanTargetTypeSetC2SPacket(pos, typeId));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendMobReaperTargetTypePacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.MobReaperTargetTypeC2SPacket(pos, backward));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendMobReaperRedstoneModePacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket(pos, backward));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendMobReaperAgeFilterPacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket(pos, backward));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendCollectingCrateModePacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket(pos, backward));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendCollectingCrateRedstoneModePacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.CollectingCrateRedstoneModeC2SPacket(pos, backward));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendCollectingCrateXpCollectPacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.CollectingCrateXpCollectC2SPacket(pos));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendCollectingCrateXpDepositPacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.CollectingCrateXpDepositC2SPacket(pos));
@@ -2257,7 +2215,6 @@ public class ModMessages {
     /**
      * Sends Fan Push/Pull packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanPushPullPacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.FanPushPullC2SPacket(pos, backward));
@@ -2266,26 +2223,22 @@ public class ModMessages {
     /**
      * Sends Fan Push Type packet to the server
      */
-    @OnlyIn(Dist.CLIENT)
     public static void sendFanPushTypePacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket(pos, backward));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendEtherealFrameFilterUpdatePacket(BlockPos pos, java.util.List<String> entityTypeIds) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.EtherealFrameFilterUpdateC2SPacket(pos,
                         entityTypeIds != null ? new java.util.ArrayList<>(entityTypeIds) : new java.util.ArrayList<>()));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendEtherealFrameModeTogglePacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.EtherealFrameModeToggleC2SPacket(pos));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void sendEtherealFrameLightTogglePacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.EtherealFrameLightToggleC2SPacket(pos));
