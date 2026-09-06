@@ -22,6 +22,7 @@ public final class ShopGuiIcons {
     public static final String COMMAND_DEFAULT = "command_icon";
     public static final String STAGE_DEFAULT = "stage_icon";
     public static final String RF_DEFAULT = "rf_icon";
+    public static final String CURRENCY_DEFAULT = "currency_icon";
 
     private ShopGuiIcons() {}
 

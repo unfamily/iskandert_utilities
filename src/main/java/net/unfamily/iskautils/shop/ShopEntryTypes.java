@@ -13,6 +13,7 @@ public final class ShopEntryTypes {
     public static final Identifier RF = ShopEntryTypeRegistry.modId("rf");
     public static final Identifier COMMAND = ShopEntryTypeRegistry.modId("command");
     public static final Identifier STAGE = ShopEntryTypeRegistry.modId("stage");
+    public static final Identifier CURRENCY = ShopEntryTypeRegistry.modId("currency");
 
     private ShopEntryTypes() {}
 
@@ -38,6 +39,10 @@ public final class ShopEntryTypes {
 
     public static boolean isStage(@Nullable ShopEntry entry) {
         return entry != null && STAGE.equals(entry.typeId);
+    }
+
+    public static boolean isCurrency(@Nullable ShopEntry entry) {
+        return entry != null && CURRENCY.equals(entry.typeId);
     }
 
     public static boolean equals(@Nullable ShopEntry entry, Identifier id) {

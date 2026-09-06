@@ -136,6 +136,13 @@ public interface ShopEntryTypeHandler {
         return usesResultButton();
     }
 
+    /**
+     * Editor: From/To currency pair + Pay/Get amounts ({@code iska_utils:currency}).
+     */
+    default boolean usesCurrencyConvert() {
+        return false;
+    }
+
     default int resultCount(ShopEntry entry) {
         if (usesDisplayAndStringList()) {
             return stringList(entry).size();

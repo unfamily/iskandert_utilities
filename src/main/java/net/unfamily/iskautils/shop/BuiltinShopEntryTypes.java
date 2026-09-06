@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.unfamily.iskalib.stage.StageRegistry;
+import net.unfamily.iskalib.team.ShopTeamManager;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.command.PlayerCommandSources;
 import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
@@ -27,6 +28,7 @@ public final class BuiltinShopEntryTypes {
     public static final Identifier RF_ICON = ShopGuiIcons.texture("rf_icon");
     public static final Identifier COMMAND_ICON = ShopGuiIcons.texture(ShopGuiIcons.COMMAND_DEFAULT);
     public static final Identifier STAGE_ICON = ShopGuiIcons.texture(ShopGuiIcons.STAGE_DEFAULT);
+    public static final Identifier CURRENCY_ICON = ShopGuiIcons.texture(ShopGuiIcons.CURRENCY_DEFAULT);
 
     private BuiltinShopEntryTypes() {}
 
@@ -37,6 +39,7 @@ public final class BuiltinShopEntryTypes {
         ShopEntryTypeRegistry.register(new RfHandler());
         ShopEntryTypeRegistry.register(new CommandHandler());
         ShopEntryTypeRegistry.register(new StageGrantHandler());
+        ShopEntryTypeRegistry.register(new CurrencyHandler());
     }
 
     private static abstract class BaseHandler implements ShopEntryTypeHandler {
@@ -275,6 +278,166 @@ public final class BuiltinShopEntryTypes {
             }
             return Component.translatable("gui.iska_utils.shop.other.rf");
         }
+    }
+
+    private static final class CurrencyHandler extends BaseHandler {
+        CurrencyHandler() {
+            super(ShopEntryTypes.CURRENCY, "CURRENCY");
+        }
+
+        @Override
+        public boolean usesResourceSelector() {
+            return false;
+        }
+
+        @Override
+        public boolean usesDisplayAndIcon() {
+            return true;
+        }
+
+        @Override
+        public boolean usesCurrencyConvert() {
+            return true;
+        }
+
+        @Override
+        public boolean usesSell() {
+            return false;
+        }
+
+        @Override
+        public boolean usesBuy() {
+            return true;
+        }
+
+        @Override
+        public boolean isBuyOnly() {
+            return true;
+        }
+
+        @Override
+        public boolean scalesWithBuyQuantity() {
+            return true;
+        }
+
+        @Override
+        public void readExtras(JsonObject json, ShopEntry entry) {
+            if (json.has("display")) {
+                entry.display = json.get("display").getAsString();
+            }
+            if (json.has("icon")) {
+                entry.icon = json.get("icon").getAsString();
+            }
+            if (json.has("target_currency")) {
+                entry.targetCurrency = json.get("target_currency").getAsString();
+            }
+        }
+
+        @Override
+        public void writeExtras(JsonObject json, ShopEntry entry) {
+            if (entry.display != null && !entry.display.isBlank()) {
+                json.addProperty("display", entry.display);
+            }
+            if (entry.icon != null && !entry.icon.isBlank()
+                    && !ShopGuiIcons.isDefaultIcon(entry.icon, CURRENCY_ICON)) {
+                json.addProperty("icon", ShopGuiIcons.sanitizeStem(entry.icon));
+            }
+            if (entry.targetCurrency != null && !entry.targetCurrency.isBlank()) {
+                json.addProperty("target_currency", entry.targetCurrency);
+            }
+        }
+
+        @Override
+        public boolean validate(ShopEntry entry, String fileName) {
+            String source = entry.currency != null ? entry.currency : entry.valute;
+            if (source == null || source.isBlank() || ShopLoader.getCurrency(source) == null) {
+                LOGGER.warn("Skipping currency convert entry {} in {}: unknown source currency {}",
+                        entry.id, fileName, source);
+                return false;
+            }
+            if (entry.targetCurrency == null || entry.targetCurrency.isBlank()
+                    || ShopLoader.getCurrency(entry.targetCurrency) == null) {
+                LOGGER.warn("Skipping currency convert entry {} in {}: unknown target currency {}",
+                        entry.id, fileName, entry.targetCurrency);
+                return false;
+            }
+            if (source.equals(entry.targetCurrency)) {
+                LOGGER.warn("Skipping currency convert entry {} in {}: source and target are the same",
+                        entry.id, fileName);
+                return false;
+            }
+            if (!entry.free && entry.buy <= 0) {
+                LOGGER.warn("Skipping currency convert entry {} in {}: buy must be > 0 unless free",
+                        entry.id, fileName);
+                return false;
+            }
+            if (entry.amount < 1) {
+                LOGGER.warn("Skipping currency convert entry {} in {}: amount must be >= 1",
+                        entry.id, fileName);
+                return false;
+            }
+            entry.sell = 0;
+            entry.valute = source;
+            entry.currency = source;
+            return true;
+        }
+
+        @Override
+        @Nullable
+        public String resourceSelector(ShopEntry entry) {
+            return ShopEntryTypes.CURRENCY.toString();
+        }
+
+        @Override
+        public boolean isPlayerShopTradable(ShopEntry entry) {
+            return true;
+        }
+
+        @Override
+        public boolean isAutoShopSelectable(ShopEntry entry) {
+            return false;
+        }
+
+        @Override
+        public Identifier guiIcon() {
+            return CURRENCY_ICON;
+        }
+
+        @Override
+        public Component displayName(ShopEntry entry) {
+            if (entry.display != null && !entry.display.isBlank()) {
+                return Component.translatable(entry.display);
+            }
+            return Component.translatable("gui.iska_utils.shop.currency.convert",
+                    currencyDisplayName(entry.currency != null ? entry.currency : entry.valute),
+                    currencyDisplayName(entry.targetCurrency));
+        }
+
+        @Override
+        public boolean onBuy(ServerPlayer player, ShopEntry entry, int quantity) {
+            if (entry.targetCurrency == null || entry.targetCurrency.isBlank() || entry.amount < 1) {
+                return false;
+            }
+            ShopTeamManager teamManager = ShopTeamManager.getInstance(
+                    (net.minecraft.server.level.ServerLevel) player.level());
+            String teamName = teamManager.getPlayerTeam(player);
+            if (teamName == null) {
+                return false;
+            }
+            double credit = (double) entry.amount * quantity;
+            return teamManager.addTeamValutes(teamName, entry.targetCurrency, credit);
+        }
+    }
+
+    private static Component currencyDisplayName(@Nullable String currencyId) {
+        if (currencyId == null || currencyId.isBlank()) {
+            return Component.literal("?");
+        }
+        ShopCurrency currency = ShopLoader.getCurrency(currencyId);
+        if (currency != null && currency.name != null && !currency.name.isBlank()) {
+            return Component.translatable(currency.name);
+        }
+        return Component.literal(currencyId);
     }
 
     private static final class CommandHandler extends BaseHandler {

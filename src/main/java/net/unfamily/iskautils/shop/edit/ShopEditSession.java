@@ -154,6 +154,7 @@ public final class ShopEditSession {
         e.itemCount = src.itemCount;
         e.currency = src.currency;
         e.valute = src.valute;
+        e.targetCurrency = src.targetCurrency;
         e.buy = src.buy;
         e.sell = src.sell;
         e.priority = src.priority;

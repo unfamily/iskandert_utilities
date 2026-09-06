@@ -65,7 +65,7 @@ public final class ShopEditWorkspace {
     public static void ensureBootstrap(MinecraftServer server) throws IOException {
         Path dir = resolveWorkDir(server);
         Files.createDirectories(dir);
-        ensureFileFromJarOrEmpty(dir.resolve(CURRENCIES_FILE), CURRENCIES_FILE, ShopEditWorkspace::writeEmptyCurrencies);
+        ensureFileFromJarOrEmpty(dir.resolve(CURRENCIES_FILE), CURRENCIES_FILE, ShopEditWorkspace::writeBuiltinCurrencies);
         ensureFileFromJarOrEmpty(dir.resolve(CATEGORIES_FILE), CATEGORIES_FILE, ShopEditWorkspace::writeEmptyCategories);
         ensureFileFromJarOrEmpty(dir.resolve(ENTRIES_FILE), ENTRIES_FILE, ShopEditWorkspace::writeEmptyEntries);
     }
@@ -77,14 +77,33 @@ public final class ShopEditWorkspace {
 
     private static void ensureFileFromJarOrEmpty(Path target, String fileName, EmptyWriter emptyFallback) throws IOException {
         if (Files.exists(target)) {
-            return;
+            // Recover from a previous failed bootstrap that wrote an empty currencies file
+            // (KubeJS empty stack-top would override Library null_coin).
+            if (CURRENCIES_FILE.equals(fileName) && isEmptyCurrenciesFile(target)) {
+                LOGGER.warn("Shop currencies workspace is empty; re-seeding defaults at {}", target);
+                Files.deleteIfExists(target);
+            } else {
+                return;
+            }
         }
         if (copyJarDefault(target, fileName)) {
             LOGGER.info("Bootstrapped shop edit workspace from jar default: {}", target);
             return;
         }
-        LOGGER.warn("Jar default {} missing; writing empty shop file at {}", fileName, target);
+        LOGGER.warn("Jar default {} missing; writing built-in shop file at {}", fileName, target);
         emptyFallback.write(target);
+    }
+
+    private static boolean isEmptyCurrenciesFile(Path file) {
+        try {
+            JsonObject root = readJsonObject(file);
+            if (root == null || !root.has("currencies") || !root.get("currencies").isJsonArray()) {
+                return true;
+            }
+            return root.getAsJsonArray("currencies").isEmpty();
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     /**
@@ -93,12 +112,31 @@ public final class ShopEditWorkspace {
      * @return true if the jar resource was copied
      */
     private static boolean copyJarDefault(Path target, String fileName) throws IOException {
-        String resourcePath = JAR_DEFAULT_DIR + fileName;
-        InputStream stream = ShopEditWorkspace.class.getResourceAsStream(resourcePath);
-        if (stream == null && CURRENCIES_FILE.equals(fileName)) {
-            // Built-in currencies live in Library jar at the same data/iska_utils/… path.
-            stream = net.unfamily.iskalib.IskaLib.class.getResourceAsStream(resourcePath);
+        String classpathPath = JAR_DEFAULT_DIR + fileName;
+        String jarRelativePath = "data/iska_utils/load/iska_utils_shop/" + fileName;
+
+        // Categories/entries ship in Utils; currencies ship in Library under the same data path.
+        if (!CURRENCIES_FILE.equals(fileName)) {
+            if (copyClasspathResource(ShopEditWorkspace.class, classpathPath, target)) {
+                return true;
+            }
+            return copyFromModFile("iska_utils", jarRelativePath, target);
         }
+
+        if (copyFromModFile("iska_lib", jarRelativePath, target)) {
+            return true;
+        }
+        if (copyClasspathResource(net.unfamily.iskalib.IskaLib.class, classpathPath, target)) {
+            return true;
+        }
+        // Last resort: Utils classpath (legacy layouts that still bundled currencies).
+        return copyClasspathResource(ShopEditWorkspace.class, classpathPath, target)
+                || copyFromModFile("iska_utils", jarRelativePath, target);
+    }
+
+    private static boolean copyClasspathResource(Class<?> owner, String absoluteClasspathPath, Path target)
+            throws IOException {
+        InputStream stream = owner.getResourceAsStream(absoluteClasspathPath);
         if (stream == null) {
             return false;
         }
@@ -109,14 +147,76 @@ public final class ShopEditWorkspace {
         }
     }
 
+    /**
+     * Copy a single file out of a mod jar / DEV resources tree (same strategy as load bootstrap).
+     */
+    private static boolean copyFromModFile(String modId, String pathInModRoot, Path target) throws IOException {
+        var containerOpt = net.neoforged.fml.ModList.get().getModContainerById(modId);
+        if (containerOpt.isEmpty()) {
+            return false;
+        }
+        var owning = containerOpt.get().getModInfo().getOwningFile();
+        if (owning == null) {
+            return false;
+        }
+        Path root = owning.getFile().getFilePath();
+        Path source = null;
+        java.nio.file.FileSystem jarFs = null;
+        try {
+            if (Files.isDirectory(root)) {
+                Path buildDir = root.getParent() != null && root.getParent().getParent() != null
+                        ? root.getParent().getParent().getParent()
+                        : null;
+                Path resources = buildDir != null ? buildDir.resolve("resources").resolve("main") : null;
+                if (resources != null && Files.isRegularFile(resources.resolve(pathInModRoot))) {
+                    source = resources.resolve(pathInModRoot);
+                } else if (Files.isRegularFile(root.resolve(pathInModRoot))) {
+                    source = root.resolve(pathInModRoot);
+                }
+            } else {
+                jarFs = java.nio.file.FileSystems.newFileSystem(root, Map.of());
+                Path candidate = jarFs.getPath(pathInModRoot);
+                if (Files.isRegularFile(candidate)) {
+                    source = candidate;
+                }
+            }
+            if (source == null) {
+                return false;
+            }
+            Files.createDirectories(target.getParent());
+            Files.copy(source, target);
+            return true;
+        } finally {
+            if (jarFs != null) {
+                jarFs.close();
+            }
+        }
+    }
+
     public static ShopEditData load(MinecraftServer server) throws IOException {
         ensureBootstrap(server);
         Path dir = resolveWorkDir(server);
         ShopEditData data = new ShopEditData();
         data.currencies.putAll(readCurrencies(dir.resolve(CURRENCIES_FILE)));
+        ensureBuiltinNullCoinPresent(server, data);
         data.categories.putAll(readCategories(dir.resolve(CATEGORIES_FILE)));
         data.entries.putAll(readEntries(dir.resolve(ENTRIES_FILE)));
         return data;
+    }
+
+    /** Ensures workspace always includes Library's built-in {@code null_coin}. */
+    private static void ensureBuiltinNullCoinPresent(MinecraftServer server, ShopEditData data) throws IOException {
+        if (data.currencies.containsKey("null_coin")) {
+            return;
+        }
+        ShopCurrency nullCoin = new ShopCurrency();
+        nullCoin.id = "null_coin";
+        nullCoin.name = "shop.currency.null_coin";
+        nullCoin.charSymbol = "\u2205";
+        nullCoin.priority = 0;
+        data.currencies.put("null_coin", nullCoin);
+        writeCurrencies(resolveWorkDir(server).resolve(CURRENCIES_FILE), data.currencies);
+        LOGGER.info("Seeded missing built-in null_coin into shop edit workspace");
     }
 
     public static void saveCurrencies(MinecraftServer server, Map<String, ShopCurrency> currencies) throws IOException {
@@ -134,11 +234,25 @@ public final class ShopEditWorkspace {
         writeEntries(resolveWorkDir(server).resolve(ENTRIES_FILE), entries);
     }
 
-    public static void writeEmptyCurrencies(Path file) throws IOException {
+    /** Fallback when Library jar defaults cannot be copied: always seed {@code null_coin}. */
+    public static void writeBuiltinCurrencies(Path file) throws IOException {
         JsonObject root = new JsonObject();
         root.addProperty("type", "iska_lib:shop_currency");
-        root.add("currencies", new JsonArray());
+        root.addProperty("overwritable", true);
+        JsonArray currencies = new JsonArray();
+        JsonObject nullCoin = new JsonObject();
+        nullCoin.addProperty("id", "null_coin");
+        nullCoin.addProperty("name", "shop.currency.null_coin");
+        nullCoin.addProperty("char_symbol", "\u2205");
+        nullCoin.addProperty("priority", 0);
+        currencies.add(nullCoin);
+        root.add("currencies", currencies);
         writeJson(file, root);
+    }
+
+    /** @deprecated use {@link #writeBuiltinCurrencies} */
+    public static void writeEmptyCurrencies(Path file) throws IOException {
+        writeBuiltinCurrencies(file);
     }
 
     public static void writeEmptyCategories(Path file) throws IOException {

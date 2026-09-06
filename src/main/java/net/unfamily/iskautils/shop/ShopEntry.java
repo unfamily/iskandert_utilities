@@ -43,6 +43,11 @@ public class ShopEntry {
     public int itemCount;
     public String currency;
     public String valute;
+    /**
+     * Destination currency for {@code iska_utils:currency} convert entries
+     * (JSON {@code target_currency}).
+     */
+    public String targetCurrency;
     public double buy;
     public double sell;
     /** Display order within category: higher value = shown first. Default 0. */
